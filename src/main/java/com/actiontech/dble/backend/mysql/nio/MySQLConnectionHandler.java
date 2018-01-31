@@ -64,7 +64,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
         if (source.isComplexQuery()) {
             offerData(data, DbleServer.getInstance().getComplexQueryExecutor());
         } else {
-            offerData(data, source.getProcessor().getExecutor());
+            offerData(data, DbleServer.getInstance().getBusinessExecutor());
         }
     }
 
@@ -78,6 +78,9 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
     protected void handleData(byte[] data) {
         switch (resultStatus) {
             case RESULT_STATUS_INIT:
+                if (session != null) {
+                    session.startExecuteBackend();
+                }
                 switch (data[4]) {
                     case OkPacket.FIELD_COUNT:
                         handleOkPacket(data);

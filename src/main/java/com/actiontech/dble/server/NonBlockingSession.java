@@ -20,6 +20,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XACommitNode
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XARollbackNodesHandler;
 import com.actiontech.dble.backend.mysql.store.memalloc.MemSizeController;
 import com.actiontech.dble.backend.mysql.xa.TxState;
+import com.actiontech.dble.btrace.provider.CostTimeProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -45,6 +46,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
@@ -77,7 +79,9 @@ public class NonBlockingSession implements Session {
     private MemSizeController orderBufferMC;
     private MemSizeController otherBufferMC;
     private QueryTimeCost queryTimeCost;
+    private CostTimeProvider provider;
     private volatile boolean timeCost = false;
+    private AtomicBoolean firstBackConRes = new AtomicBoolean(false);
 
     public NonBlockingSession(ServerConnection source) {
         this.source = source;
@@ -109,13 +113,35 @@ public class NonBlockingSession implements Session {
             LOGGER.debug("clear");
         }
         queryTimeCost = new QueryTimeCost();
+        provider = new CostTimeProvider();
+        provider.beginRequest(source.getId());
         long requestTime = System.nanoTime();
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("frontend connection setRequestTime:" + requestTime);
         }
         queryTimeCost.setRequestTime(requestTime);
     }
+    public void startProcess() {
+        if (!timeCost) {
+            return;
+        }
+        provider.startProcess(source.getId());
+    }
 
+    public void endParse() {
+        if (!timeCost) {
+            return;
+        }
+        provider.endParse(source.getId());
+    }
+
+
+    public void endRoute() {
+        if (!timeCost) {
+            return;
+        }
+        provider.endRoute(source.getId());
+    }
     public void setResponseTime() {
         if (!timeCost) {
             return;
@@ -124,7 +150,8 @@ public class NonBlockingSession implements Session {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("setResponseTime:" + responseTime);
         }
-        queryTimeCost.setResponseTime(System.nanoTime());
+        queryTimeCost.getResponseTime().set(responseTime);
+        provider.beginResponse(source.getId());
         QueryTimeCostContainer.getInstance().add(queryTimeCost);
     }
 
@@ -139,6 +166,8 @@ public class NonBlockingSession implements Session {
         }
         backendCost.setRequestTime(requestTime);
         queryTimeCost.getBackEndTimeCosts().put(backendID, backendCost);
+
+
     }
 
     public void setBackendResponseTime(long backendID) {
@@ -146,15 +175,24 @@ public class NonBlockingSession implements Session {
             return;
         }
         QueryTimeCost backCost = queryTimeCost.getBackEndTimeCosts().get(backendID);
-        if (backCost != null && backCost.getResponseTime() == 0) {
-            long responseTime = System.nanoTime();
+        long responseTime = System.nanoTime();
+        if (backCost != null && backCost.getResponseTime().compareAndSet(0, responseTime)) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("backend connection[" + backendID + "] setResponseTime:" + responseTime);
             }
-            backCost.setResponseTime(System.nanoTime());
+            provider.resFromBack(source.getId());
+            firstBackConRes.set(false);
         }
     }
 
+    public void startExecuteBackend() {
+        if (!timeCost) {
+            return;
+        }
+        if (firstBackConRes.compareAndSet(false, true)) {
+            provider.startExecuteBackend(source.getId());
+        }
+    }
     @Override
     public int getTargetCount() {
         return target.size();

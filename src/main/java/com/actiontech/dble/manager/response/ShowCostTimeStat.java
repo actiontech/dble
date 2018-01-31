@@ -82,7 +82,7 @@ public final class ShowCostTimeStat {
 
     private static RowDataPacket getRow(QueryTimeCost queryTimeCost, String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        row.add(LongUtil.toBytes((queryTimeCost.getResponseTime() - queryTimeCost.getRequestTime()) / 1000));
+        row.add(LongUtil.toBytes((queryTimeCost.getResponseTime().get() - queryTimeCost.getRequestTime()) / 1000));
         String[] backendInfo = getBackendConnCost(queryTimeCost);
         row.add(StringUtil.encode(backendInfo[0], charset));
         row.add(StringUtil.encode(backendInfo[1], charset));
@@ -108,7 +108,7 @@ public final class ShowCostTimeStat {
             sb2.append("Id:");
             sb2.append(id);
             sb2.append(",Time:");
-            sb2.append((backendCost.getResponseTime() - backendCost.getRequestTime()) / 1000);
+            sb2.append((backendCost.getResponseTime().get() - backendCost.getRequestTime()) / 1000);
             i++;
         }
         return new String[]{sb.toString(), sb2.toString()};

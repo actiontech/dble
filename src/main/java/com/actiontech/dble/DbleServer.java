@@ -315,8 +315,8 @@ public final class DbleServer {
         complexQueryExecutor = ExecutorUtil.createCached("complexQueryExecutor", threadPoolSize);
         timerExecutor = ExecutorUtil.createFixed("Timer", 1);
 
-        for (int i = 0; i < processors.length; i++) {
-            processors[i] = new NIOProcessor("Processor" + i, bufferPool, businessExecutor);
+        for (int i = 0; i < processorCount; i++) {
+            processors[i] = new NIOProcessor("Processor" + i, bufferPool);
         }
 
         if (aio) {
@@ -324,7 +324,7 @@ public final class DbleServer {
             asyncChannelGroups = new AsynchronousChannelGroup[processorCount];
             // startup connector
             connector = new AIOConnector();
-            for (int i = 0; i < processors.length; i++) {
+            for (int i = 0; i < processorCount; i++) {
                 asyncChannelGroups[i] = AsynchronousChannelGroup.withFixedThreadPool(processorCount,
                         new ThreadFactory() {
                             private int inx = 1;
@@ -353,7 +353,7 @@ public final class DbleServer {
 
             NIOReactorPool reactorPool = new NIOReactorPool(
                     DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIOREACTOR",
-                    processors.length);
+                    processorCount);
             connector = new NIOConnector(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIOConnector", reactorPool);
             ((NIOConnector) connector).start();
 

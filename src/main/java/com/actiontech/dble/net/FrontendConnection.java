@@ -210,6 +210,8 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     protected abstract void setRequestTime();
 
+    public abstract void startProcess();
+
     public void initDB(byte[] data) {
 
         MySQLMessage mm = new MySQLMessage(data);
@@ -320,7 +322,6 @@ public abstract class FrontendConnection extends AbstractConnection {
     }
 
     public void query(byte[] data) {
-
         String sql = null;
         try {
             MySQLMessage mm = new MySQLMessage(data);
@@ -330,7 +331,6 @@ public abstract class FrontendConnection extends AbstractConnection {
             writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + charsetName.getClient() + "'");
             return;
         }
-
         this.query(sql);
     }
 
@@ -469,6 +469,7 @@ public abstract class FrontendConnection extends AbstractConnection {
             return;
         }
         handler.handle(data);
+
     }
 
     protected int getServerCapabilities() {

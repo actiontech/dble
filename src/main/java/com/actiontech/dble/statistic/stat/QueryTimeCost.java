@@ -5,12 +5,13 @@
 
 package com.actiontech.dble.statistic.stat;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class QueryTimeCost {
-    private long requestTime = 0;
-    private long responseTime = 0;
+    private volatile long requestTime = 0;
+    private AtomicLong responseTime = new AtomicLong(0);
     private volatile Map<Long, QueryTimeCost> backEndTimeCosts;
 
 
@@ -22,17 +23,12 @@ public class QueryTimeCost {
         this.requestTime = requestTime;
     }
 
-    public long getResponseTime() {
+    public AtomicLong getResponseTime() {
         return responseTime;
     }
-
-    public void setResponseTime(long responseTime) {
-        this.responseTime = responseTime;
-    }
-
     public Map<Long, QueryTimeCost> getBackEndTimeCosts() {
         if (backEndTimeCosts == null) {
-            backEndTimeCosts = new HashMap<>();
+            backEndTimeCosts = new ConcurrentHashMap<>();
         }
         return backEndTimeCosts;
     }

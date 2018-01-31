@@ -22,7 +22,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -34,7 +33,6 @@ public final class NIOProcessor {
 
     private final String name;
     private final BufferPool bufferPool;
-    private final ExecutorService executor;
     private final ConcurrentMap<Long, FrontendConnection> frontends;
     private final ConcurrentMap<Long, BackendConnection> backends;
     private final CommandCount commands;
@@ -46,11 +44,9 @@ public final class NIOProcessor {
 
     private AtomicInteger frontEndsLength = new AtomicInteger(0);
 
-    public NIOProcessor(String name, BufferPool bufferPool,
-                        ExecutorService executor) throws IOException {
+    public NIOProcessor(String name, BufferPool bufferPool) throws IOException {
         this.name = name;
         this.bufferPool = bufferPool;
-        this.executor = executor;
         this.frontends = new ConcurrentHashMap<>();
         this.backends = new ConcurrentHashMap<>();
         this.commands = new CommandCount();
@@ -76,10 +72,6 @@ public final class NIOProcessor {
         }
         return total;
 
-    }
-
-    public ExecutorService getExecutor() {
-        return this.executor;
     }
 
     public CommandCount getCommands() {

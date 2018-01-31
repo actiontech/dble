@@ -102,4 +102,8 @@ public class ByteBufferPage {
         }
         return false;
     }
+
+    public long getUsage() {
+        return chunkAllocateTrack.size();
+    }
 }

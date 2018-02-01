@@ -104,6 +104,6 @@ public class ByteBufferPage {
     }
 
     public long getUsage() {
-        return chunkAllocateTrack.cardinality() * chunkSize;
+        return chunkAllocateTrack.cardinality() * (long) chunkSize;
     }
 }

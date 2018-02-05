@@ -74,6 +74,7 @@ public final class SystemConfig {
     private String charset;
     private int processors;
     private int processorExecutor;
+    private int backendProcessorExecutor;
     private long idleTimeout;
     // sql execute timeout (second)
     private long sqlExecuteTimeout = 300;
@@ -398,6 +399,16 @@ public final class SystemConfig {
     public void setProcessorExecutor(int processorExecutor) {
         this.processorExecutor = processorExecutor < 4 ? 4 : processorExecutor;
     }
+
+    public int getBackendProcessorExecutor() {
+        return backendProcessorExecutor;
+    }
+
+    @SuppressWarnings("unused")
+    public void setBackendProcessorExecutor(int backendProcessorExecutor) {
+        this.backendProcessorExecutor = backendProcessorExecutor < 4 ? 4 : backendProcessorExecutor;
+    }
+
 
     public long getIdleTimeout() {
         return idleTimeout;

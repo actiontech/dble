@@ -42,7 +42,10 @@ import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.statistic.stat.SqlResultSizeRecorder;
 import com.actiontech.dble.statistic.stat.UserStat;
 import com.actiontech.dble.statistic.stat.UserStatAnalyzer;
-import com.actiontech.dble.util.*;
+import com.actiontech.dble.util.ExecutorUtil;
+import com.actiontech.dble.util.KVPathUtil;
+import com.actiontech.dble.util.TimeUtil;
+import com.actiontech.dble.util.ZKUtils;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.curator.framework.CuratorFramework;
@@ -106,6 +109,7 @@ public final class DbleServer {
     private NIOProcessor[] processors;
     private SocketConnector connector;
     private ExecutorService businessExecutor;
+    private ExecutorService backendBusinessExecutor;
     private ExecutorService complexQueryExecutor;
     private ExecutorService timerExecutor;
     private InterProcessMutex dnIndexLock;
@@ -312,6 +316,7 @@ public final class DbleServer {
 
         int threadPoolSize = system.getProcessorExecutor();
         businessExecutor = ExecutorUtil.createFixed("BusinessExecutor", threadPoolSize);
+        backendBusinessExecutor = ExecutorUtil.createFixed("backendBusinessExecutor", system.getBackendProcessorExecutor());
         complexQueryExecutor = ExecutorUtil.createCached("complexQueryExecutor", threadPoolSize);
         timerExecutor = ExecutorUtil.createFixed("Timer", 1);
 
@@ -652,6 +657,9 @@ public final class DbleServer {
         return businessExecutor;
     }
 
+    public ExecutorService getBackendBusinessExecutor() {
+        return backendBusinessExecutor;
+    }
     public RouteService getRouterService() {
         return routerService;
     }

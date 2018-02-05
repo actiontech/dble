@@ -64,7 +64,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
         if (source.isComplexQuery()) {
             offerData(data, DbleServer.getInstance().getComplexQueryExecutor());
         } else {
-            offerData(data, DbleServer.getInstance().getBusinessExecutor());
+            offerData(data, DbleServer.getInstance().getBackendBusinessExecutor());
         }
     }
 

@@ -73,6 +73,7 @@ public final class SystemConfig {
     private int serverBacklog;
     private String charset;
     private int processors;
+    private int backendProcessors;
     private int processorExecutor;
     private int backendProcessorExecutor;
     private long idleTimeout;
@@ -143,12 +144,14 @@ public final class SystemConfig {
         this.serverBacklog = DEFAULT_BACK_LOG_SIZE;
         this.charset = DEFAULT_CHARSET;
         this.processors = DEFAULT_PROCESSORS;
+        this.backendProcessors = DEFAULT_PROCESSORS;
         this.bufferPoolPageSize = DEFAULT_BUFFER_POOL_PAGE_SIZE;
         this.bufferPoolChunkSize = DEFAULT_BUFFER_CHUNK_SIZE;
         // if always big result,need large network buffer pool pages.
         this.bufferPoolPageNumber = (short) (DEFAULT_PROCESSORS * 20);
 
         this.processorExecutor = (DEFAULT_PROCESSORS != 1) ? DEFAULT_PROCESSORS * 2 : 4;
+        this.backendProcessorExecutor = processorExecutor;
 
         this.idleTimeout = DEFAULT_IDLE_TIMEOUT;
         this.processorCheckPeriod = DEFAULT_PROCESSOR_CHECK_PERIOD;
@@ -389,6 +392,15 @@ public final class SystemConfig {
     @SuppressWarnings("unused")
     public void setProcessors(int processors) {
         this.processors = processors;
+    }
+
+    public int getBackendProcessors() {
+        return backendProcessors;
+    }
+
+    @SuppressWarnings("unused")
+    public void setBackendProcessors(int backendProcessors) {
+        this.backendProcessors = backendProcessors;
     }
 
     public int getProcessorExecutor() {

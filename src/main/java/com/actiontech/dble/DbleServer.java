@@ -300,7 +300,9 @@ public final class DbleServer {
         aio = (system.getUsingAIO() == 1);
 
         // startup processors
-        int processorCount = system.getProcessors();
+        int frontProcessorCount = system.getProcessors();
+        int backendProcessorCount = system.getBackendProcessors();
+        int processorCount = frontProcessorCount + backendProcessorCount;
         processors = new NIOProcessor[processorCount];
         // a page size
         int bufferPoolPageSize = system.getBufferPoolPageSize();
@@ -356,17 +358,20 @@ public final class DbleServer {
         } else {
             LOGGER.info("using nio network handler ");
 
-            NIOReactorPool reactorPool = new NIOReactorPool(
-                    DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIOREACTOR",
-                    processorCount);
-            connector = new NIOConnector(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIOConnector", reactorPool);
+            NIOReactorPool frontReactorPool = new NIOReactorPool(
+                    DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIOREACTOR_FRONT",
+                    frontProcessorCount);
+            NIOReactorPool backendReactorPool = new NIOReactorPool(
+                    DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIOREACTOR_BACKEND",
+                    backendProcessorCount);
+            connector = new NIOConnector(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIOConnector", backendReactorPool);
             ((NIOConnector) connector).start();
 
             manager = new NIOAcceptor(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + NAME + "Manager", system.getBindIp(),
-                    system.getManagerPort(), 100, mf, reactorPool);
+                    system.getManagerPort(), 100, mf, frontReactorPool);
 
             server = new NIOAcceptor(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + NAME + "Server", system.getBindIp(),
-                    system.getServerPort(), system.getServerBacklog(), sf, reactorPool);
+                    system.getServerPort(), system.getServerBacklog(), sf, frontReactorPool);
         }
 
         // start transaction SQL log

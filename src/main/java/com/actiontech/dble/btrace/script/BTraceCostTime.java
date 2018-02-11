@@ -109,7 +109,6 @@ public class BTraceCostTime {
         Profiling.recordExit(profiler, "request->6.response", duration);
     }
 
-
     @OnTimer(4000)
     public static void print() {
         BTraceUtils.Profiling.printSnapshot("profiling:", profiler);

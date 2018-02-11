@@ -30,7 +30,7 @@ public class FrontendCommandHandler implements NIOHandler {
     private final AtomicBoolean handleStatus;
     protected final FrontendConnection source;
     protected final CommandCount commands;
-
+    private byte[] dataTodo;
     public FrontendCommandHandler(FrontendConnection source) {
         this.source = source;
         this.commands = source.getProcessor().getCommands();
@@ -47,13 +47,13 @@ public class FrontendCommandHandler implements NIOHandler {
             }
             return;
         }
-        if (dataQueue.offer(data)) {
-            handleQueue();
-        } else {
-            throw new RuntimeException("add data to queue error.");
-        }
+        dataTodo = data;
+        DbleServer.getInstance().getFrontHandlerQueue().offer(this);
     }
 
+    public void handle() {
+        handleData(dataTodo);
+    }
     protected void handleData(byte[] data) {
         source.startProcess();
         switch (data[4]) {

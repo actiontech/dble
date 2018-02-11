@@ -31,6 +31,8 @@ import com.actiontech.dble.manager.ManagerConnectionFactory;
 import com.actiontech.dble.memory.unsafe.Platform;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.net.*;
+import com.actiontech.dble.net.handler.FrondEndRunnable;
+import com.actiontech.dble.net.handler.FrontendCommandHandler;
 import com.actiontech.dble.route.RouteService;
 import com.actiontech.dble.route.sequence.handler.*;
 import com.actiontech.dble.server.ServerConnectionFactory;
@@ -116,6 +118,11 @@ public final class DbleServer {
     private long totalNetWorkBufferSize = 0;
     private XASessionCheck xaSessionCheck;
 
+    public Queue<FrontendCommandHandler> getFrontHandlerQueue() {
+        return frontHandlerQueue;
+    }
+
+    private BlockingQueue<FrontendCommandHandler> frontHandlerQueue = new LinkedBlockingQueue<>();
     private DbleServer() {
         this.config = new ServerConfig();
         scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("TimerScheduler-%d").build());
@@ -321,7 +328,9 @@ public final class DbleServer {
         backendBusinessExecutor = ExecutorUtil.createFixed("backendBusinessExecutor", system.getBackendProcessorExecutor());
         complexQueryExecutor = ExecutorUtil.createCached("complexQueryExecutor", threadPoolSize);
         timerExecutor = ExecutorUtil.createFixed("Timer", 1);
-
+        for (int i = 0; i < threadPoolSize; i++) {
+            businessExecutor.execute(new FrondEndRunnable(frontHandlerQueue));
+        }
         for (int i = 0; i < processorCount; i++) {
             processors[i] = new NIOProcessor("Processor" + i, bufferPool);
         }

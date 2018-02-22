@@ -500,7 +500,7 @@ public class XMLSchemaLoader implements SchemaLoader {
         String password = node.getAttribute("password");
         String usingDecrypt = node.getAttribute("usingDecrypt");
         String weightStr = node.getAttribute("weight");
-        
+
         if (empty(nodeHost) || empty(nodeUrl) || empty(user)) {
             throw new ConfigException(
                     "dataHost " + dataHost +
@@ -515,12 +515,12 @@ public class XMLSchemaLoader implements SchemaLoader {
         String passwordEncryty = DecryptUtil.dbHostDecrypt(usingDecrypt, nodeHost, user, password);
 
         int weight = "".equals(weightStr) ? PhysicalDBPool.WEIGHT : Integer.parseInt(weightStr);
-        
+
         DBHostConfig conf = new DBHostConfig(nodeHost, ip, port, nodeUrl, user, passwordEncryty);
         conf.setMaxCon(maxCon);
         conf.setMinCon(minCon);
         conf.setWeight(weight);
-        
+
         return conf;
     }
 

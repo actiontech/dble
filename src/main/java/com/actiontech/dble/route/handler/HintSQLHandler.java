@@ -51,7 +51,7 @@ public class HintSQLHandler implements HintHandler {
         RouteResultset rrs = routeStrategy.route(schema, hintSqlType,
                 hintSQLValue, sc, cachePool);
 
-        if(rrs.isNeedOptimizer()){
+        if (rrs.isNeedOptimizer()) {
             throw new SQLSyntaxErrorException("Complex SQL not supported in hint");
         }
         // replace the sql of RRS

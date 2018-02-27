@@ -27,21 +27,25 @@ public class UConfigStatusResponse implements UcoreXmlLoader {
 
     @Override
     public void notifyProcess(UKvBean pathValue) throws Exception {
-        LOGGER.debug("get into UConfigStatusResponse the value is " + pathValue);
+
         if (DbleServer.getInstance().getProcessors() != null) {
             //step 1 check if the change is from itself
+            LOGGER.debug("notify " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
             ConfStatus status = new ConfStatus(pathValue.getValue());
             if (status.getFrom().equals(UcoreConfig.getInstance().getValue(UcoreParamCfg.UCORE_CFG_MYID))) {
-                return; //self node
+                //self node
+                return;
             }
+
             //check if the reload is already be done by this node
             if (!"".equals(ClusterUcoreSender.getKey(UcorePathUtil.getSelfConfStatusPath()).getValue()) ||
                     "".equals(ClusterUcoreSender.getKey(UcorePathUtil.getConfStatusPath()).getValue())) {
                 return;
             }
-            LOGGER.debug("reload check end " + pathValue);
+
             //step 2 check the change type /rollback /reload
             if (status.getStatus() == ConfStatus.Status.ROLLBACK) {
+                LOGGER.debug("rollback " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
                 try {
                     RollbackConfig.rollback();
                     ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getSelfConfStatusPath(), UConfigStatusResponse.SUCCESS);
@@ -55,8 +59,10 @@ public class UConfigStatusResponse implements UcoreXmlLoader {
             //step 3 reload the config and set the self config status
             try {
                 if (status.getStatus() == ConfStatus.Status.RELOAD_ALL) {
+                    LOGGER.debug("reload_all " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
                     ReloadConfig.reloadAll(Integer.parseInt(status.getParams()));
                 } else {
+                    LOGGER.debug("reload " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
                     ReloadConfig.reload();
                 }
                 ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getSelfConfStatusPath(), UConfigStatusResponse.SUCCESS);
@@ -70,10 +76,5 @@ public class UConfigStatusResponse implements UcoreXmlLoader {
     @Override
     public void notifyCluster() throws Exception {
 
-    }
-
-    @Override
-    public void notifyProcessWithKey(String key, String value) throws Exception {
-        return;
     }
 }

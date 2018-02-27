@@ -10,6 +10,4 @@ public interface UcoreXmlLoader {
     void notifyProcess(UKvBean configValue) throws Exception;
 
     void notifyCluster() throws Exception;
-
-    void notifyProcessWithKey(String key, String value) throws Exception;
 }

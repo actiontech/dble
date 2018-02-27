@@ -25,11 +25,12 @@ public class UDdlChildResponse implements UcoreXmlLoader {
 
     @Override
     public void notifyProcess(UKvBean configValue) throws Exception {
-        LOGGER.debug("get into " + configValue.getValue());
-        if (configValue.getKey().split("/").length == 6) {
+        if (configValue.getKey().split("/").length == UcorePathUtil.getDDLPath().split("/").length + 2) {
             //child change the listener is not supported
+            //only response for the key /un.../d.../clu.../ddl/schema.table
             return;
         } else {
+            LOGGER.debug("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
             String nodeName = configValue.getKey().split("/")[4];
             String[] tableInfo = nodeName.split("\\.");
             final String schema = StringUtil.removeBackQuote(tableInfo[0]);
@@ -45,19 +46,23 @@ public class UDdlChildResponse implements UcoreXmlLoader {
                 return; //self node
             }
 
+            String fullName = schema + "." + table;
+            //if the start node is preparing to do the ddl
             if (ddlInfo.getStatus() == DDLInfo.DDLStatus.INIT) {
+                LOGGER.debug("init of ddl " + schema + " " + table);
                 try {
-                    LOGGER.debug("DDL LOCK SUCCESS IN " + configValue.getValue());
-                    lockMap.put(schema + "." + table, ddlInfo.getFrom());
+                    lockMap.put(fullName, ddlInfo.getFrom());
                     DbleServer.getInstance().getTmManager().addMetaLock(schema, table);
                 } catch (Exception t) {
                     DbleServer.getInstance().getTmManager().removeMetaLock(schema, table);
                     throw t;
                 }
+
             } else if (ddlInfo.getStatus() == DDLInfo.DDLStatus.SUCCESS && configValue.getChangeType() != UKvBean.DELETE &&
-                    lockMap.containsKey(schema + "." + table)) {
-                LOGGER.debug("DDL EXECUTE SUCCESS IN " + configValue.getValue());
-                lockMap.remove(schema + "." + table);
+                    lockMap.containsKey(fullName)) {
+                // if the start node is done the ddl execute
+                lockMap.remove(fullName);
+
                 //to judge the table is be drop
                 SQLStatementParser parser = new MySqlStatementParser(ddlInfo.getSql());
                 SQLStatement statement = parser.parseStatement();
@@ -68,11 +73,12 @@ public class UDdlChildResponse implements UcoreXmlLoader {
                     //else get the lastest table meta from db
                     DbleServer.getInstance().getTmManager().updateOnetableWithBackData(DbleServer.getInstance().getConfig(), schema, table);
                 }
-                ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLInstancePath(schema + "." + table), "SUCCESS");
+                ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLInstancePath(fullName), "SUCCESS");
             } else if (ddlInfo.getStatus() == DDLInfo.DDLStatus.FAILED && configValue.getChangeType() != UKvBean.DELETE) {
-                lockMap.remove(schema + "." + table);
+                //if the start node executing ddl with error,just release the lock
+                lockMap.remove(fullName);
                 DbleServer.getInstance().getTmManager().removeMetaLock(schema, table);
-                ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLInstancePath(schema + "." + table), "FAILED");
+                ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLInstancePath(fullName), "FAILED");
             }
         }
     }
@@ -89,10 +95,5 @@ public class UDdlChildResponse implements UcoreXmlLoader {
 
     public static void setLockMap(Map<String, String> lockMap) {
         UDdlChildResponse.lockMap = lockMap;
-    }
-
-    @Override
-    public void notifyProcessWithKey(String key, String value) throws Exception {
-        return;
     }
 }

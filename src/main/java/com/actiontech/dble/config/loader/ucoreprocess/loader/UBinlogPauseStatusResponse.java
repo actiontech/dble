@@ -32,6 +32,7 @@ public class UBinlogPauseStatusResponse implements UcoreXmlLoader {
         if (pauseInfo.getFrom().equals(UcoreConfig.getInstance().getValue(UcoreParamCfg.UCORE_CFG_MYID))) {
             return;
         }
+
         //step 2 if the flag is on than try to lock all the commit
         if (pauseInfo.getStatus() == BinlogPause.BinlogPauseStatus.ON && configValue.getChangeType() != UKvBean.DELETE) {
             DbleServer.getInstance().getBackupLocked().compareAndSet(false, true);
@@ -60,11 +61,6 @@ public class UBinlogPauseStatusResponse implements UcoreXmlLoader {
 
     @Override
     public void notifyCluster() throws Exception {
-        return;
-    }
-
-    @Override
-    public void notifyProcessWithKey(String key, String value) throws Exception {
         return;
     }
 }

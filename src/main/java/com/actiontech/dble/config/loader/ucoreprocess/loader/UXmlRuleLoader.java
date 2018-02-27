@@ -80,10 +80,4 @@ public class UXmlRuleLoader implements UcoreXmlLoader {
         ClusterUcoreSender.sendDataToUcore(CONFIG_PATH, rule.toJSONString());
     }
 
-    @Override
-    public void notifyProcessWithKey(String key, String value) throws Exception {
-        return;
-    }
-
-
 }

@@ -62,8 +62,4 @@ public class UPropertySequenceLoader implements UcoreXmlLoader {
         ClusterUcoreSender.sendDataToUcore(CONFIG_PATH, jsonObject.toJSONString());
     }
 
-    @Override
-    public void notifyProcessWithKey(String key, String value) throws Exception {
-        return;
-    }
 }

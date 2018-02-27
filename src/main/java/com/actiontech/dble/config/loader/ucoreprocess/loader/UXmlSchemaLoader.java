@@ -89,10 +89,4 @@ public class UXmlSchemaLoader implements UcoreXmlLoader {
 
     }
 
-    @Override
-    public void notifyProcessWithKey(String key, String value) throws Exception {
-        return;
-    }
-
-
 }

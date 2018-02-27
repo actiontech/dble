@@ -58,9 +58,4 @@ public class UXmlEhcachesLoader implements UcoreXmlLoader {
         ehcacheObj.put(UcorePathUtil.EHCACHE, ehcache);
         ClusterUcoreSender.sendDataToUcore(CONFIG_PATH, ehcacheObj.toJSONString());
     }
-
-    @Override
-    public void notifyProcessWithKey(String key, String value) throws Exception {
-        return;
-    }
 }

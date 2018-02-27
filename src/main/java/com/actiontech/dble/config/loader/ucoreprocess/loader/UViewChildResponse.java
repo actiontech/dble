@@ -19,15 +19,19 @@ public class UViewChildResponse implements UcoreXmlLoader {
 
     @Override
     public void notifyProcess(UKvBean configValue) throws Exception {
-        if (configValue.getKey().split("/").length != 6) {
+        LOGGER.debug("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
+        if (configValue.getKey().split("/").length != UcorePathUtil.getViewChangePath().split("/").length + 1) {
+            //only with the type u.../d.../clu.../view/update(delete)/schema.table
             return;
         }
+
         String schema = configValue.getKey().split("/")[5].split(Repository.SCHEMA_VIEW_SPLIT)[0];
         String viewName = configValue.getKey().split(Repository.SCHEMA_VIEW_SPLIT)[1];
         if ("".equals(configValue.getValue())) {
             //the value of key is empty,just doing nothing
             return;
         }
+
         String serverId = configValue.getValue().split(Repository.SCHEMA_VIEW_SPLIT)[0];
         String optionType = configValue.getValue().split(Repository.SCHEMA_VIEW_SPLIT)[1];
         String myId = UcoreConfig.getInstance().getValue(UcoreParamCfg.UCORE_CFG_MYID);
@@ -37,12 +41,14 @@ public class UViewChildResponse implements UcoreXmlLoader {
         } else {
             try {
                 if (Repository.DELETE.equals(optionType)) {
+                    LOGGER.debug("delete view " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
                     if (!DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().containsKey(viewName)) {
                         return;
                     }
                     DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().remove(viewName);
                     ClusterUcoreSender.sendDataToUcore(configValue.getKey() + SEPARATOR + myId, UcorePathUtil.SUCCESS);
                 } else if (Repository.UPDATE.equals(optionType)) {
+                    LOGGER.debug("update view " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
                     String stmt = ClusterUcoreSender.getKey(UcorePathUtil.getViewPath() + SEPARATOR + schema + Repository.SCHEMA_VIEW_SPLIT + viewName).getValue();
                     if (DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().get(viewName) != null &&
                             stmt.equals(DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().get(viewName).getCreateSql())) {
@@ -50,6 +56,7 @@ public class UViewChildResponse implements UcoreXmlLoader {
                     }
                     ViewMeta vm = new ViewMeta(stmt, schema, DbleServer.getInstance().getTmManager());
                     ErrorPacket error = vm.initAndSet(true);
+                    LOGGER.debug("update view result == " + error);
                     if (error != null) {
                         ClusterUcoreSender.sendDataToUcore(configValue.getKey() + SEPARATOR + myId, new String(error.getMessage()));
                         return;
@@ -62,10 +69,6 @@ public class UViewChildResponse implements UcoreXmlLoader {
         }
     }
 
-    @Override
-    public void notifyProcessWithKey(String key, String value) throws Exception {
-        return;
-    }
 
     @Override
     public void notifyCluster() throws Exception {

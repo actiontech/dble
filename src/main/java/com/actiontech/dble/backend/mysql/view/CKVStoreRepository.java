@@ -7,9 +7,9 @@ import com.actiontech.dble.log.alarm.AlarmCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
@@ -22,7 +22,7 @@ public class CKVStoreRepository implements Repository {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CKVStoreRepository.class);
 
-    private Map<String, Map<String, String>> viewCreateSqlMap = new ConcurrentHashMap<String, Map<String, String>>();
+    private Map<String, Map<String, String>> viewCreateSqlMap = new HashMap<String, Map<String, String>>();
 
     @Override
     public Map<String, Map<String, String>> getViewCreateSqlMap() {
@@ -42,7 +42,7 @@ public class CKVStoreRepository implements Repository {
             if (key.length == 5) {
                 String[] value = key[key.length - 1].split(SCHEMA_VIEW_SPLIT);
                 if (viewCreateSqlMap.get(value[0]) == null) {
-                    Map<String, String> schemaMap = new ConcurrentHashMap<String, String>();
+                    Map<String, String> schemaMap = new HashMap<String, String>();
                     viewCreateSqlMap.put(value[0], schemaMap);
                 }
                 viewCreateSqlMap.get(value[0]).put(value[1], bean.getValue());
@@ -55,7 +55,7 @@ public class CKVStoreRepository implements Repository {
     public void put(String schemaName, String viewName, String createSql) {
         Map<String, String> schemaMap = viewCreateSqlMap.get(schemaName);
         if (schemaMap == null) {
-            schemaMap = new ConcurrentHashMap<String, String>();
+            schemaMap = new HashMap<String, String>();
             viewCreateSqlMap.put(schemaName, schemaMap);
         } else {
             if (schemaMap.get(viewName) != null &&
@@ -75,8 +75,9 @@ public class CKVStoreRepository implements Repository {
         try {
             int time = 0;
             while (!distributeLock.acquire()) {
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
                 if (time++ % 10 == 0) {
-                    LOGGER.warn(" view meta waiting for the lock " + schemaName + " " + viewName);
+                    LOGGER.info(" view meta waiting for the lock " + schemaName + " " + viewName);
                 }
             }
 
@@ -96,7 +97,7 @@ public class CKVStoreRepository implements Repository {
             //check all the node status is success
             for (UKvBean kv : reponseList) {
                 if (!kv.getValue().equals(UcorePathUtil.SUCCESS)) {
-                    LOGGER.info(AlarmCode.CORE_CLUSTER_WARN + "view mate change error on key " + kv.getKey());
+                    LOGGER.info("view mate change error on key " + kv.getKey());
                 }
             }
 
@@ -134,6 +135,7 @@ public class CKVStoreRepository implements Repository {
                 viewCreateSqlMap.get(schemaName).remove(view);
                 int time = 0;
                 while (!distributeLock.acquire()) {
+                    LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
                     if (time++ % 10 == 0) {
                         LOGGER.warn(" view meta waiting for the lock " + schemaName + " " + view);
                     }

@@ -15,9 +15,9 @@ import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static com.actiontech.dble.util.KVPathUtil.SEPARATOR;
 
@@ -34,7 +34,7 @@ public class KVStoreRepository implements Repository {
     }
 
     public void init() {
-        Map<String, Map<String, String>> map = new ConcurrentHashMap<String, Map<String, String>>();
+        Map<String, Map<String, String>> map = new HashMap<String, Map<String, String>>();
         try {
             List<String> viewList = zkConn.getChildren().forPath(KVPathUtil.getViewPath());
             for (String singlePath : viewList) {
@@ -46,7 +46,7 @@ public class KVStoreRepository implements Repository {
                 String schema = paths[paths.length - 1].split(SCHEMA_VIEW_SPLIT)[0];
                 String viewName = paths[paths.length - 1].split(SCHEMA_VIEW_SPLIT)[1];
                 if (map.get(schema) == null) {
-                    map.put(schema, new ConcurrentHashMap<String, String>());
+                    map.put(schema, new HashMap<String, String>());
                 }
                 map.get(schema).put(viewName, createSql);
             }

@@ -5,13 +5,16 @@
 
 package com.actiontech.dble.net.handler;
 
+import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
+
 import java.util.concurrent.BlockingQueue;
 
 public class FrondEndRunnable implements Runnable {
     private final BlockingQueue<FrontendCommandHandler> frontHandlerQueue;
-
-    public FrondEndRunnable(BlockingQueue frontHandlerQueue) {
+    public FrondEndRunnable(BlockingQueue<FrontendCommandHandler> frontHandlerQueue) {
         this.frontHandlerQueue = frontHandlerQueue;
+
     }
 
     @Override
@@ -20,7 +23,15 @@ public class FrondEndRunnable implements Runnable {
         while (true) {
             try {
                 handler = frontHandlerQueue.take();
+                String threadName = Thread.currentThread().getName();
+                ThreadWorkUsage workUsage = DbleServer.getInstance().getThreadUsedMap().get(threadName);
+                if (workUsage == null) {
+                    workUsage = new ThreadWorkUsage();
+                    DbleServer.getInstance().getThreadUsedMap().put(threadName, workUsage);
+                }
+                long workStart = System.nanoTime();
                 handler.handle();
+                workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

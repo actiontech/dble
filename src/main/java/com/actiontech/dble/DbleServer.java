@@ -42,6 +42,7 @@ import com.actiontech.dble.server.variables.VarsExtractorHandler;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.statistic.stat.SqlResultSizeRecorder;
+import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import com.actiontech.dble.statistic.stat.UserStat;
 import com.actiontech.dble.statistic.stat.UserStatAnalyzer;
 import com.actiontech.dble.util.ExecutorUtil;
@@ -118,6 +119,11 @@ public final class DbleServer {
     private long totalNetWorkBufferSize = 0;
     private XASessionCheck xaSessionCheck;
 
+    public Map<String, ThreadWorkUsage> getThreadUsedMap() {
+        return threadUsedMap;
+    }
+
+    private Map<String, ThreadWorkUsage> threadUsedMap = new HashMap<>();
     public Queue<FrontendCommandHandler> getFrontHandlerQueue() {
         return frontHandlerQueue;
     }
@@ -368,11 +374,11 @@ public final class DbleServer {
             LOGGER.info("using nio network handler ");
 
             NIOReactorPool frontReactorPool = new NIOReactorPool(
-                    DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIOREACTOR_FRONT",
-                    frontProcessorCount);
+                    DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIO_REACTOR_FRONT",
+                    frontProcessorCount, true, threadUsedMap);
             NIOReactorPool backendReactorPool = new NIOReactorPool(
-                    DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIOREACTOR_BACKEND",
-                    backendProcessorCount);
+                    DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIO_REACTOR_BACKEND",
+                    backendProcessorCount, false, threadUsedMap);
             connector = new NIOConnector(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIOConnector", backendReactorPool);
             ((NIOConnector) connector).start();
 
@@ -432,6 +438,7 @@ public final class DbleServer {
         if (system.getUseGlobleTableCheck() == 1) {    // will be influence by dataHostWithoutWR
             scheduler.scheduleWithFixedDelay(globalTableConsistencyCheck(), 0L, system.getGlableTableCheckPeriod(), TimeUnit.MILLISECONDS);
         }
+        scheduler.scheduleAtFixedRate(threadStatRenew(), 0L, 1, TimeUnit.SECONDS);
 
 
         if (!this.getConfig().isDataHostWithoutWR()) {
@@ -720,6 +727,17 @@ public final class DbleServer {
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
         }
         return tmManager;
+    }
+
+    private Runnable threadStatRenew() {
+        return new Runnable() {
+            @Override
+            public void run() {
+                for (ThreadWorkUsage obj : threadUsedMap.values()) {
+                    obj.switchToNew();
+                }
+            }
+        };
     }
 
     private Runnable updateTime() {

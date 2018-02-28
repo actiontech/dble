@@ -167,6 +167,9 @@ public final class ShowHandler {
             case ManagerParseShow.COST_TIME:
                 ShowCostTimeStat.execute(c);
                 break;
+            case ManagerParseShow.THREAD_USED:
+                ShowThreadUsed.execute(c);
+                break;
             default:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
         }

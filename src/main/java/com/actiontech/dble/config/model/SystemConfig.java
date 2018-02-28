@@ -409,7 +409,7 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setProcessorExecutor(int processorExecutor) {
-        this.processorExecutor = processorExecutor < 4 ? 4 : processorExecutor;
+        this.processorExecutor = processorExecutor;
     }
 
     public int getBackendProcessorExecutor() {
@@ -418,7 +418,7 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setBackendProcessorExecutor(int backendProcessorExecutor) {
-        this.backendProcessorExecutor = backendProcessorExecutor < 4 ? 4 : backendProcessorExecutor;
+        this.backendProcessorExecutor = backendProcessorExecutor;
     }
 
 

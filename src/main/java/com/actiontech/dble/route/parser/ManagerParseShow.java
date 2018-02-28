@@ -62,6 +62,7 @@ public final class ManagerParseShow {
     public static final int COMMAND_COUNT = 49;
     public static final int BACKEND_STAT = 50;
     public static final int COST_TIME = 51;
+    public static final int THREAD_USED = 52;
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -1003,22 +1004,57 @@ public final class ManagerParseShow {
 
     // SHOW @@THREADPOOL
     private static int show2ThCheck(String stmt, int offset) {
-        if (stmt.length() > offset + "READPOOL".length()) {
+        if (stmt.length() > offset + "READ ".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
-            char c5 = stmt.charAt(++offset);
-            char c6 = stmt.charAt(++offset);
-            char c7 = stmt.charAt(++offset);
-            char c8 = stmt.charAt(++offset);
             if ((c1 == 'R' || c1 == 'r') && (c2 == 'E' || c2 == 'e') && (c3 == 'A' || c3 == 'a') &&
-                    (c4 == 'D' || c4 == 'd') && (c5 == 'P' || c5 == 'p') && (c6 == 'O' || c6 == 'o') &&
-                    (c7 == 'O' || c7 == 'o') && (c8 == 'L' || c8 == 'l')) {
+                    (c4 == 'D' || c4 == 'd')) {
+                switch (stmt.charAt(++offset)) {
+                    case 'P':
+                    case 'p':
+                        return show2ThreadpoolCheck(stmt, offset);
+                    case '_':
+                        return show2ThreadUsedCheck(stmt, offset);
+                    default:
+                        return OTHER;
+                }
+            }
+        }
+        return OTHER;
+    }
+
+    // SHOW @@THREADPOOL
+    private static int show2ThreadpoolCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "OOL".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            if ((c1 == 'O' || c1 == 'o') &&
+                    (c2 == 'O' || c2 == 'o') && (c3 == 'L' || c3 == 'l')) {
                 if (ParseUtil.isErrorTail(++offset, stmt)) {
                     return OTHER;
                 }
                 return THREADPOOL;
+            }
+        }
+        return OTHER;
+    }
+
+    // SHOW @@THREAD_USED
+    private static int show2ThreadUsedCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "USED".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            if ((c1 == 'U' || c1 == 'u') && (c2 == 'S' || c2 == 's') &&
+                    (c3 == 'E' || c3 == 'e') && (c4 == 'D' || c4 == 'd')) {
+                if (ParseUtil.isErrorTail(++offset, stmt)) {
+                    return OTHER;
+                }
+                return THREAD_USED;
             }
         }
         return OTHER;

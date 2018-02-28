@@ -5,7 +5,9 @@
 */
 package com.actiontech.dble.net.handler;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.net.NIOHandler;
+import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
@@ -33,8 +35,21 @@ public abstract class BackendAsyncHandler implements NIOHandler {
                 public void run() {
                     try {
                         byte[] data = null;
+                        String threadName = Thread.currentThread().getName();
+                        ThreadWorkUsage workUsage = DbleServer.getInstance().getThreadUsedMap().get(threadName);
+                        if (threadName.startsWith("backend")) {
+                            if (workUsage == null) {
+                                workUsage = new ThreadWorkUsage();
+                                DbleServer.getInstance().getThreadUsedMap().put(threadName, workUsage);
+                            }
+                        }
+
+                        long workStart = System.nanoTime();
                         while ((data = dataQueue.poll()) != null) {
                             handleData(data);
+                        }
+                        if (threadName.startsWith("backend")) {
+                            workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
                         }
                     } catch (Exception e) {
                         handleDataError(e);

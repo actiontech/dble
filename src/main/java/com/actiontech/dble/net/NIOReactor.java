@@ -5,6 +5,7 @@
 */
 package com.actiontech.dble.net;
 
+import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,6 +13,7 @@ import java.io.IOException;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -29,10 +31,15 @@ public final class NIOReactor {
     private static final Logger LOGGER = LoggerFactory.getLogger(NIOReactor.class);
     private final String name;
     private final RW reactorR;
+    private final boolean frontFlag;
+    private ThreadWorkUsage workUsage;
 
-    public NIOReactor(String name) throws IOException {
+    public NIOReactor(String name, boolean frontFlag, Map<String, ThreadWorkUsage> threadUsedMap) throws IOException {
         this.name = name;
         this.reactorR = new RW();
+        this.frontFlag = frontFlag;
+        this.workUsage = new ThreadWorkUsage();
+        threadUsedMap.put(name, workUsage);
     }
 
     void startup() {
@@ -63,6 +70,7 @@ public final class NIOReactor {
                     register(finalSelector);
                     keys = finalSelector.selectedKeys();
                     for (SelectionKey key : keys) {
+                        long workStart = System.nanoTime();
                         AbstractConnection con = null;
                         try {
                             Object att = key.attachment();
@@ -102,6 +110,7 @@ public final class NIOReactor {
                             }
                             LOGGER.info("caught err: ", e);
                         }
+                        workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
                     }
                 } catch (Exception e) {
                     LOGGER.info(name, e);

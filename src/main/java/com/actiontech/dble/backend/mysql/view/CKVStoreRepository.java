@@ -1,5 +1,6 @@
 package com.actiontech.dble.backend.mysql.view;
 
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.*;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.log.alarm.AlarmCode;
@@ -12,7 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
-import static com.actiontech.dble.config.loader.ucoreprocess.UcoreParamCfg.UCORE_CFG_MYID;
 import static com.actiontech.dble.util.KVPathUtil.SEPARATOR;
 
 /**
@@ -70,7 +70,7 @@ public class CKVStoreRepository implements Repository {
         StringBuffer nsb = new StringBuffer().append(UcorePathUtil.getViewPath()).
                 append(SEPARATOR).append(UPDATE).append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(viewName);
         UDistributeLock distributeLock = new UDistributeLock(nsb.toString(),
-                UcoreConfig.getInstance().getValue(UCORE_CFG_MYID) + SCHEMA_VIEW_SPLIT + UPDATE);
+                UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + UPDATE);
 
         try {
             int time = 0;
@@ -128,7 +128,7 @@ public class CKVStoreRepository implements Repository {
                     append(schemaName).append(SCHEMA_VIEW_SPLIT).append(view);
 
             UDistributeLock distributeLock = new UDistributeLock(nsb.toString(),
-                    UcoreConfig.getInstance().getValue(UCORE_CFG_MYID) + SCHEMA_VIEW_SPLIT + DELETE);
+                    UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + DELETE);
 
             try {
                 viewCreateSqlMap.get(schemaName).remove(view);

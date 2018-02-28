@@ -8,12 +8,12 @@ package com.actiontech.dble.manager.response;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.ucoreprocess.*;
 import com.actiontech.dble.config.loader.ucoreprocess.loader.UConfigStatusResponse;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.xmltozk.XmltoZkMain;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
 import com.actiontech.dble.config.model.ERTable;
@@ -38,7 +38,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.actiontech.dble.config.loader.ucoreprocess.UcoreParamCfg.UCORE_CFG_MYID;
 
 /**
  * @author mycat
@@ -69,7 +68,7 @@ public final class RollbackConfig {
             }
         } else if (DbleServer.getInstance().isUseUcore()) {
             UDistributeLock distributeLock = new UDistributeLock(UcorePathUtil.getConfChangeLockPath(),
-                    UcoreConfig.getInstance().getValue(UCORE_CFG_MYID));
+                    UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
             try {
                 if (!distributeLock.acquire()) {
                     c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rollbacking, please try again later.");
@@ -108,7 +107,7 @@ public final class RollbackConfig {
             rollback();
 
             //step 3 tail the ucore & notify the other dble
-            ConfStatus status = new ConfStatus(UcoreConfig.getInstance().getValue(UCORE_CFG_MYID), ConfStatus.Status.ROLLBACK, null);
+            ConfStatus status = new ConfStatus(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ConfStatus.Status.ROLLBACK, null);
             ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getConfStatusPath(), status.toString());
 
             //step 4 set self status success
@@ -144,7 +143,7 @@ public final class RollbackConfig {
             rollback();
             XmltoZkMain.rollbackConf();
             //tell zk this instance has prepared
-            ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
+            ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
             //check all session waiting status
             List<String> preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
             List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());

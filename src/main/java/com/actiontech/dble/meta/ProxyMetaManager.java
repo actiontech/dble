@@ -12,11 +12,11 @@ import com.actiontech.dble.backend.mysql.view.CKVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.view.KVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.Repository;
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.ucoreprocess.*;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.config.model.DBHostConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
@@ -286,10 +286,10 @@ public class ProxyMetaManager {
     private void metaUcoreinit(ServerConfig config) throws Exception {
         //check if the online mark is on than delete the mark and renew it
         ClusterUcoreSender.deleteKV(UcorePathUtil.getOnlinePath(UcoreConfig.getInstance().
-                getValue(UcoreParamCfg.UCORE_CFG_MYID)));
+                getValue(ClusterParamCfg.CLUSTER_CFG_MYID)));
         UDistributeLock onlineLock = new UDistributeLock(UcorePathUtil.getOnlinePath(UcoreConfig.getInstance().
-                getValue(UcoreParamCfg.UCORE_CFG_MYID)),
-                UcoreConfig.getInstance().getValue(UcoreParamCfg.UCORE_CFG_MYID));
+                getValue(ClusterParamCfg.CLUSTER_CFG_MYID)),
+                UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
         onlineLock.acquire();
         initMeta(config);
     }
@@ -328,7 +328,7 @@ public class ProxyMetaManager {
 
         initMeta(config);
         // online
-        ZKUtils.createTempNode(KVPathUtil.getOnlinePath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
+        ZKUtils.createTempNode(KVPathUtil.getOnlinePath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
         //add watcher
         ZKUtils.addChildPathCache(ddlPath, new DDLChildListener());
         //add watcher
@@ -455,12 +455,12 @@ public class ProxyMetaManager {
     public void notifyClusterDDL(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus) throws Exception {
         if (DbleServer.getInstance().isUseZK()) {
             CuratorFramework zkConn = ZKUtils.getConnection();
-            DDLInfo ddlInfo = new DDLInfo(schema, sql, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), ddlStatus);
+            DDLInfo ddlInfo = new DDLInfo(schema, sql, ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ddlStatus);
             String nodeName = StringUtil.getFullName(schema, table);
             String nodePath = ZKPaths.makePath(KVPathUtil.getDDLPath(), nodeName);
             zkConn.create().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
         } else if (DbleServer.getInstance().isUseUcore()) {
-            DDLInfo ddlInfo = new DDLInfo(schema, sql, UcoreConfig.getInstance().getValue(UcoreParamCfg.UCORE_CFG_MYID), ddlStatus);
+            DDLInfo ddlInfo = new DDLInfo(schema, sql, UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ddlStatus);
             String nodeName = StringUtil.getUFullName(schema, table);
             ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLPath(nodeName), ddlInfo.toString());
         }
@@ -477,12 +477,12 @@ public class ProxyMetaManager {
 
     public void notifyResponseZKDdl(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, boolean needNotifyOther) throws Exception {
         CuratorFramework zkConn = ZKUtils.getConnection();
-        DDLInfo ddlInfo = new DDLInfo(schema, sql, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), ddlStatus);
+        DDLInfo ddlInfo = new DDLInfo(schema, sql, ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ddlStatus);
         String nodeName = StringUtil.getFullName(schema, table);
         String nodePath = ZKPaths.makePath(KVPathUtil.getDDLPath(), nodeName);
 
         String instancePath = ZKPaths.makePath(nodePath, KVPathUtil.DDL_INSTANCE);
-        String thisNode = ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID);
+        String thisNode = ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
         ZKUtils.createTempNode(instancePath, thisNode);
         if (needNotifyOther) {
             zkConn.setData().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
@@ -510,7 +510,7 @@ public class ProxyMetaManager {
      */
     public void notifyReponseUcoreDDL(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, boolean needNotifyOther) throws Exception {
         String nodeName = StringUtil.getUFullName(schema, table);
-        DDLInfo ddlInfo = new DDLInfo(schema, sql, UcoreConfig.getInstance().getValue(UcoreParamCfg.UCORE_CFG_MYID), ddlStatus);
+        DDLInfo ddlInfo = new DDLInfo(schema, sql, UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ddlStatus);
         ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLInstancePath(nodeName), ddlInfo.toString());
         if (needNotifyOther) {
             ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLPath(nodeName), ddlInfo.toString());

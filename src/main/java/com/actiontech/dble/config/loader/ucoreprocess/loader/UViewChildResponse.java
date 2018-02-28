@@ -2,6 +2,7 @@ package com.actiontech.dble.config.loader.ucoreprocess.loader;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.view.Repository;
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.*;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.meta.ViewMeta;
@@ -34,7 +35,7 @@ public class UViewChildResponse implements UcoreXmlLoader {
 
         String serverId = configValue.getValue().split(Repository.SCHEMA_VIEW_SPLIT)[0];
         String optionType = configValue.getValue().split(Repository.SCHEMA_VIEW_SPLIT)[1];
-        String myId = UcoreConfig.getInstance().getValue(UcoreParamCfg.UCORE_CFG_MYID);
+        String myId = UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
         if (myId.equals(serverId) || configValue.getChangeType() == UKvBean.DELETE) {
             // self node do noting
             return;

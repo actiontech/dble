@@ -5,8 +5,8 @@
 
 package com.actiontech.dble.backend.mysql.view;
 
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
 import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
@@ -66,7 +66,7 @@ public class KVStoreRepository implements Repository {
     public void put(String schemaName, String viewName, String createSql) {
         StringBuffer sb = new StringBuffer(KVPathUtil.getViewPath()).append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(viewName);
         JSONObject m = new JSONObject();
-        m.put(SERVER_ID, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
+        m.put(SERVER_ID, ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
         m.put(CREATE_SQL, createSql);
         try {
             if (zkConn.checkExists().forPath(sb.toString()) == null) {

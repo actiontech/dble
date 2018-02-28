@@ -1,9 +1,9 @@
 package com.actiontech.dble.config.loader.ucoreprocess.listen;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
-import com.actiontech.dble.config.loader.ucoreprocess.UcoreParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.config.loader.ucoreprocess.loader.UDdlChildResponse;
@@ -33,8 +33,8 @@ public class UOffLineListener implements Runnable {
 
 
     public void init() {
-        Channel channel = ManagedChannelBuilder.forAddress(UcoreConfig.getInstance().getValue(UcoreParamCfg.UCORE_CFG_URL),
-                Integer.parseInt(UcoreConfig.getInstance().getValue(UcoreParamCfg.UCORE_CFG_PORT))).usePlaintext(true).build();
+        Channel channel = ManagedChannelBuilder.forAddress(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_IP),
+                Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
         stub = UcoreGrpc.newBlockingStub(channel);
     }
 

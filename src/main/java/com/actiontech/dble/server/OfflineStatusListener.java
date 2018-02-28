@@ -6,8 +6,8 @@
 package com.actiontech.dble.server;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.BinlogPause;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.log.alarm.AlarmCode;
@@ -100,7 +100,8 @@ public class OfflineStatusListener implements PathChildrenCacheListener {
                 return;
             }
             if (BinlogPause.BinlogPauseStatus.ON == binlogPauseInfo.getStatus()) {
-                String instancePath = ZKPaths.makePath(KVPathUtil.getBinlogPauseInstance(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
+                //ClusterParamCfg.CLUSTER_CFG_MYID
+                String instancePath = ZKPaths.makePath(KVPathUtil.getBinlogPauseInstance(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
                 boolean needDelete = true;
                 long beginTime = TimeUtil.currentTimeMillis();
                 long timeout = DbleServer.getInstance().getConfig().getSystem().getShowBinlogStatusTimeout();

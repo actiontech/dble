@@ -1,5 +1,6 @@
 package com.actiontech.dble.config.loader.ucoreprocess.loader;
 
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.*;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.config.loader.ucoreprocess.listen.UcoreClearKeyListener;
@@ -48,7 +49,7 @@ public class UXmlServerLoader implements UcoreXmlLoader {
     public void notifyProcess(UKvBean configValue) throws Exception {
 
         UKvBean lock = ClusterUcoreSender.getKey(UcorePathUtil.getConfChangeLockPath());
-        if (UcoreConfig.getInstance().getValue(UcoreParamCfg.UCORE_CFG_MYID).equals(lock.getValue())) {
+        if (UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID).equals(lock.getValue())) {
             return;
         }
         Server server = new Server();

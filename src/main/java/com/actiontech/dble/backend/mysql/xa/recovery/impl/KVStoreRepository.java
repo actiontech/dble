@@ -10,8 +10,8 @@ import com.actiontech.dble.backend.mysql.xa.Deserializer;
 import com.actiontech.dble.backend.mysql.xa.Serializer;
 import com.actiontech.dble.backend.mysql.xa.recovery.DeserializationException;
 import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
 import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
@@ -39,7 +39,7 @@ public class KVStoreRepository implements Repository {
 
     @Override
     public void init() {
-        logPath = KVPathUtil.XALOG + ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID);
+        logPath = KVPathUtil.XALOG + ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
     }
 
     @Override

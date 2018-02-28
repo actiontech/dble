@@ -1,6 +1,7 @@
 package com.actiontech.dble.config.loader.ucoreprocess.loader;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.*;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.config.loader.ucoreprocess.listen.UcoreClearKeyListener;
@@ -32,7 +33,7 @@ public class UConfigStatusResponse implements UcoreXmlLoader {
             //step 1 check if the change is from itself
             LOGGER.debug("notify " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
             ConfStatus status = new ConfStatus(pathValue.getValue());
-            if (status.getFrom().equals(UcoreConfig.getInstance().getValue(UcoreParamCfg.UCORE_CFG_MYID))) {
+            if (status.getFrom().equals(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) {
                 //self node
                 return;
             }

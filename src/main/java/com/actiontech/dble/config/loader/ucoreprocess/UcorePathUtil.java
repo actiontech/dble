@@ -1,5 +1,6 @@
 package com.actiontech.dble.config.loader.ucoreprocess;
 
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.Versions;
 
 /**
@@ -15,7 +16,7 @@ public final class UcorePathUtil {
     public static final String SEPARATOR = "/";
     private static final String ROOT_PATH = "universe" + SEPARATOR + Versions.ROOT_PREFIX;
 
-    public static final String BASE_PATH = ROOT_PATH + SEPARATOR + UcoreConfig.getInstance().getValue(UcoreParamCfg.UCORE_CFG_CLUSTERID) + SEPARATOR;
+    public static final String BASE_PATH = ROOT_PATH + SEPARATOR + UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_CLUSTERID) + SEPARATOR;
 
     public static final String SUCCESS = "success";
 
@@ -92,7 +93,7 @@ public final class UcorePathUtil {
     }
 
     public static String getSelfConfStatusPath() {
-        return CONF_BASE_PATH + CONF_STATUS + SEPARATOR + UcoreConfig.getInstance().getValue(UcoreParamCfg.UCORE_CFG_MYID);
+        return CONF_BASE_PATH + CONF_STATUS + SEPARATOR + UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
     }
 
     //depth:2,child node of base_path
@@ -117,7 +118,7 @@ public final class UcorePathUtil {
     }
 
     public static String getBinlogPauseStatusSelf() {
-        return getBinlogPauseStatus() + SEPARATOR + UcoreConfig.getInstance().getValue(UcoreParamCfg.UCORE_CFG_MYID);
+        return getBinlogPauseStatus() + SEPARATOR + UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
     }
 
     //depth:2,child node of base_path
@@ -132,7 +133,7 @@ public final class UcorePathUtil {
 
     //depth:2,child node of base_path
     public static String getDDLInstancePath(String fullName) {
-        return BASE_PATH + "ddl" + SEPARATOR + fullName + SEPARATOR + UcoreConfig.getInstance().getValue(UcoreParamCfg.UCORE_CFG_MYID);
+        return BASE_PATH + "ddl" + SEPARATOR + fullName + SEPARATOR + UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
     }
 
     public static String getViewPath() {

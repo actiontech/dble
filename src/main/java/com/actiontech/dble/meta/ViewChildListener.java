@@ -6,8 +6,8 @@
 package com.actiontech.dble.meta;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
@@ -75,7 +75,7 @@ public class ViewChildListener implements PathChildrenCacheListener {
 
         //if the view is create or replace by this server it self
         String serverId = obj.getString(SERVER_ID);
-        if (serverId.equals(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID))) {
+        if (serverId.equals(ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) {
             return;
         }
         String createSql = obj.getString(CREATE_SQL);

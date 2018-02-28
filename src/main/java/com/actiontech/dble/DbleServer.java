@@ -15,12 +15,11 @@ import com.actiontech.dble.backend.mysql.xa.recovery.impl.KVStoreRepository;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.buffer.DirectByteBufferPool;
 import com.actiontech.dble.cache.CacheService;
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.ConfigInitializer;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
-import com.actiontech.dble.config.loader.ucoreprocess.UcoreParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
@@ -176,7 +175,7 @@ public final class DbleServer {
         StringBuilder id = new StringBuilder();
         id.append("'" + NAME + "Server.");
         if (isUseZK()) {
-            id.append(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
+            id.append(ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
         } else {
             id.append(this.getConfig().getSystem().getServerNodeId());
         }
@@ -634,11 +633,11 @@ public final class DbleServer {
     }
 
     public boolean isUseZK() {
-        return Boolean.parseBoolean(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_FLAG));
+        return ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) != null;
     }
 
     public boolean isUseUcore() {
-        return Boolean.parseBoolean(UcoreConfig.getInstance().getValue(UcoreParamCfg.UCORE_FLAGE));
+        return UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) != null;
     }
 
     public TxnLogProcessor getTxnLogProcessor() {

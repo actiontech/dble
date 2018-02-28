@@ -1,7 +1,7 @@
 package com.actiontech.dble.config.loader.ucoreprocess.listen;
 
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
-import com.actiontech.dble.config.loader.ucoreprocess.UcoreParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreXmlLoader;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
@@ -32,8 +32,8 @@ public class UcoreClearKeyListener implements Runnable {
     private long index = 0;
 
     public void init() {
-        Channel channel = ManagedChannelBuilder.forAddress(UcoreConfig.getInstance().getValue(UcoreParamCfg.UCORE_CFG_URL),
-                Integer.parseInt(UcoreConfig.getInstance().getValue(UcoreParamCfg.UCORE_CFG_PORT))).usePlaintext(true).build();
+        Channel channel = ManagedChannelBuilder.forAddress(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_IP),
+                Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
         stub = UcoreGrpc.newBlockingStub(channel);
     }
 

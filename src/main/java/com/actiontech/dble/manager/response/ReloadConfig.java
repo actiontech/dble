@@ -7,6 +7,7 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.*;
 import com.actiontech.dble.config.loader.ucoreprocess.loader.UConfigStatusResponse;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
@@ -21,7 +22,6 @@ import com.actiontech.dble.config.ConfigInitializer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.xmltozk.XmltoZkMain;
 import com.actiontech.dble.config.loader.zkprocess.zktoxml.listen.ConfigStatusListener;
 import com.actiontech.dble.config.model.ERTable;
@@ -53,7 +53,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.actiontech.dble.config.loader.ucoreprocess.UcoreParamCfg.UCORE_CFG_MYID;
 import static com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil.SEPARATOR;
 
 /**
@@ -111,7 +110,7 @@ public final class ReloadConfig {
             }
         } else if (DbleServer.getInstance().isUseUcore()) {
             UDistributeLock distributeLock = new UDistributeLock(UcorePathUtil.getConfChangeLockPath(),
-                    UcoreConfig.getInstance().getValue(UCORE_CFG_MYID));
+                    UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
             try {
                 if (!distributeLock.acquire()) {
                     c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rolling back, please try again later.");
@@ -163,7 +162,7 @@ public final class ReloadConfig {
             XmltoUcore.writeFileToZK();
 
             //step 4 write the reload flag and self reload result into ucore,notify the other dble to reload
-            ConfStatus status = new ConfStatus(UcoreConfig.getInstance().getValue(UcoreParamCfg.UCORE_CFG_MYID),
+            ConfStatus status = new ConfStatus(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
                     loadAll ? ConfStatus.Status.RELOAD_ALL : ConfStatus.Status.RELOAD,
                     loadAll ? String.valueOf(loadAllMode) : null);
             ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getConfStatusPath(), status.toString());
@@ -194,7 +193,7 @@ public final class ReloadConfig {
         try {
             load(loadAll, loadAllMode);
             //tell zk this instance has prepared
-            ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID),
+            ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
                     ConfigStatusListener.SUCCESS.getBytes(StandardCharsets.UTF_8));
             XmltoZkMain.writeConfFileToZK(loadAll, loadAllMode);
 

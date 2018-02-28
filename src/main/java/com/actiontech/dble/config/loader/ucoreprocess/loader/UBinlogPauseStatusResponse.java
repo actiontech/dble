@@ -1,6 +1,7 @@
 package com.actiontech.dble.config.loader.ucoreprocess.loader;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.*;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.config.loader.ucoreprocess.listen.UcoreClearKeyListener;
@@ -29,7 +30,7 @@ public class UBinlogPauseStatusResponse implements UcoreXmlLoader {
 
         //step 1 check if the block is from the server itself
         BinlogPause pauseInfo = new BinlogPause(configValue.getValue());
-        if (pauseInfo.getFrom().equals(UcoreConfig.getInstance().getValue(UcoreParamCfg.UCORE_CFG_MYID))) {
+        if (pauseInfo.getFrom().equals(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) {
             return;
         }
 
@@ -56,7 +57,9 @@ public class UBinlogPauseStatusResponse implements UcoreXmlLoader {
 
 
     private synchronized void cleanResource() {
-        DbleServer.getInstance().getBackupLocked().compareAndSet(true, false);
+        if (DbleServer.getInstance().getBackupLocked() != null) {
+            DbleServer.getInstance().getBackupLocked().compareAndSet(true, false);
+        }
     }
 
     @Override

@@ -97,7 +97,12 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 
     @Override
     public void endVisit(SQLBetweenExpr x) {
-        item = new ItemFuncBetweenAnd(getItem(x.getTestExpr()), getItem(x.getBeginExpr()), getItem(x.getEndExpr()), x.isNot());
+        Item itemTest = getItem(x.getTestExpr());
+        Item itemBegin = getItem(x.getBeginExpr());
+        Item itemEnd = getItem(x.getEndExpr());
+        item = new ItemFuncBetweenAnd(itemTest, itemBegin, itemEnd, x.isNot());
+        item.setWithSubQuery(itemTest.isWithSubQuery() || itemBegin.isWithSubQuery() || itemEnd.isWithSubQuery());
+        item.setCorrelatedSubQuery(itemTest.isCorrelatedSubQuery() || itemBegin.isCorrelatedSubQuery() || itemEnd.isCorrelatedSubQuery());
         initName(x);
     }
 
@@ -122,7 +127,12 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     @Override
     public void endVisit(SQLBinaryOpExpr x) {
         Item itemLeft = getItem(x.getLeft());
-        Item itemRight = getItem(x.getRight());
+        SQLExpr rightExpr = x.getRight();
+        Item itemRight = getItem();
+        if (itemRight instanceof ItemInSubQuery && (rightExpr instanceof SQLSomeExpr || rightExpr instanceof SQLAllExpr || rightExpr instanceof SQLAnyExpr)) {
+            item = itemRight;
+            return;
+        }
         switch (x.getOperator()) {
             case Is:
                 // is null, or is unknown

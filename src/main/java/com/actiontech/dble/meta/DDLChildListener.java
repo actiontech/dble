@@ -6,8 +6,8 @@
 package com.actiontech.dble.meta;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo.DDLStatus;
 import com.actiontech.dble.util.StringUtil;
@@ -53,7 +53,7 @@ public class DDLChildListener implements PathChildrenCacheListener {
         LOGGER.info("DDL node " + childData.getPath() + " created , and data is " + data);
         DDLInfo ddlInfo = new DDLInfo(data);
         final String fromNode = ddlInfo.getFrom();
-        if (fromNode.equals(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID))) {
+        if (fromNode.equals(ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) {
             return; //self node
         }
         if (DDLStatus.INIT != ddlInfo.getStatus()) {
@@ -75,7 +75,7 @@ public class DDLChildListener implements PathChildrenCacheListener {
         String data = new String(childData.getData(), StandardCharsets.UTF_8);
         LOGGER.info("DDL node " + childData.getPath() + " updated , and data is " + data);
         DDLInfo ddlInfo = new DDLInfo(data);
-        if (ddlInfo.getFrom().equals(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID))) {
+        if (ddlInfo.getFrom().equals(ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) {
             return; //self node
         }
         if (DDLStatus.INIT == ddlInfo.getStatus()) {

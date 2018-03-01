@@ -8,12 +8,15 @@ package com.actiontech.dble.meta;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
+import com.actiontech.dble.backend.mysql.view.CKVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.view.KVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.Repository;
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.ServerConfig;
+import com.actiontech.dble.config.loader.ucoreprocess.*;
+import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.config.model.DBHostConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
@@ -21,11 +24,8 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.meta.protocol.StructureMeta;
-import com.actiontech.dble.meta.table.AbstractTableMetaHandler;
-import com.actiontech.dble.meta.table.MetaHelper;
+import com.actiontech.dble.meta.table.*;
 import com.actiontech.dble.meta.table.MetaHelper.IndexType;
-import com.actiontech.dble.meta.table.SchemaMetaHandler;
-import com.actiontech.dble.meta.table.TableMetaCheckHandler;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
@@ -181,12 +181,10 @@ public class ProxyMetaManager {
                 LOGGER.info("updateMetaData failed,sql is" + statement.toString(), e);
             } finally {
                 removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
-                if (DbleServer.getInstance().isUseZK()) {
-                    try {
-                        notifyClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
-                    } catch (Exception e) {
-                        LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyClusterDDL error", e);
-                    }
+                try {
+                    notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
+                } catch (Exception e) {
+                    LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyResponseZKDdl error", e);
                 }
             }
         }
@@ -262,52 +260,81 @@ public class ProxyMetaManager {
         return selfNode;
     }
 
+    public void updateOnetableWithBackData(ServerConfig config, String schema, String tableName) {
+        Set<String> selfNode = getSelfNodes(config);
+        List<String> dataNodes;
+        if (config.getSchemas().get(schema).getTables().get(tableName) == null) {
+            dataNodes = Collections.singletonList(config.getSchemas().get(schema).getDataNode());
+        } else {
+            dataNodes = config.getSchemas().get(schema).getTables().get(tableName).getDataNodes();
+        }
+        DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schema, tableName, dataNodes, selfNode);
+        handler.execute();
+    }
+
+
     public void init(ServerConfig config) throws Exception {
         if (DbleServer.getInstance().isUseZK()) {
-            //add syncMeta.lock the other DDL will wait
-            boolean createSuccess = false;
-            int times = 0;
-            while (!createSuccess) {
-                try {
-                    //syncMeta LOCK ,if another server start, it may failed
-                    ZKUtils.createTempNode(KVPathUtil.getSyncMetaLockPath());
-                    createSuccess = true;
-                } catch (Exception e) {
-                    LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-                    if (times % 60 == 0) {
-                        LOGGER.info("createTempNode syncMeta.lock failed", e);
-                        times = 0;
-                    }
-                    times++;
-                }
-            }
-            String ddlPath = KVPathUtil.getDDLPath();
-            CuratorFramework zkConn = ZKUtils.getConnection();
-            //WAIT DDL PATH HAS NOT CHILD
-            times = 0;
-            while (zkConn.getChildren().forPath(ddlPath).size() > 0) {
+            this.metaZKinit(config);
+        } else if (DbleServer.getInstance().isUseUcore()) {
+            metaUcoreinit(config);
+        } else {
+            initMeta(config);
+        }
+    }
+
+    private void metaUcoreinit(ServerConfig config) throws Exception {
+        //check if the online mark is on than delete the mark and renew it
+        ClusterUcoreSender.deleteKV(UcorePathUtil.getOnlinePath(UcoreConfig.getInstance().
+                getValue(ClusterParamCfg.CLUSTER_CFG_MYID)));
+        UDistributeLock onlineLock = new UDistributeLock(UcorePathUtil.getOnlinePath(UcoreConfig.getInstance().
+                getValue(ClusterParamCfg.CLUSTER_CFG_MYID)),
+                UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+        onlineLock.acquire();
+        initMeta(config);
+    }
+
+
+    private void metaZKinit(ServerConfig config) throws Exception {
+        //add syncMeta.lock the other DDL will wait
+        boolean createSuccess = false;
+        int times = 0;
+        while (!createSuccess) {
+            try {
+                //syncMeta LOCK ,if another server start, it may failed
+                ZKUtils.createTempNode(KVPathUtil.getSyncMetaLockPath());
+                createSuccess = true;
+            } catch (Exception e) {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
                 if (times % 60 == 0) {
-                    LOGGER.info("waiting for DDL in " + ddlPath);
+                    LOGGER.info("createTempNode syncMeta.lock failed", e);
                     times = 0;
                 }
                 times++;
             }
-
-
-            initMeta(config);
-            // online
-            ZKUtils.createTempNode(KVPathUtil.getOnlinePath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
-            //add watcher
-            ZKUtils.addChildPathCache(ddlPath, new DDLChildListener());
-            //add watcher
-            ZKUtils.addViewPathCache(KVPathUtil.getViewPath(), new ViewChildListener());
-            // syncMeta UNLOCK
-            zkConn.delete().forPath(KVPathUtil.getSyncMetaLockPath());
-
-        } else {
-            initMeta(config);
         }
+        String ddlPath = KVPathUtil.getDDLPath();
+        CuratorFramework zkConn = ZKUtils.getConnection();
+        //WAIT DDL PATH HAS NOT CHILD
+        times = 0;
+        while (zkConn.getChildren().forPath(ddlPath).size() > 0) {
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+            if (times % 60 == 0) {
+                LOGGER.info("waiting for DDL in " + ddlPath);
+                times = 0;
+            }
+            times++;
+        }
+
+        initMeta(config);
+        // online
+        ZKUtils.createTempNode(KVPathUtil.getOnlinePath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+        //add watcher
+        ZKUtils.addChildPathCache(ddlPath, new DDLChildListener());
+        //add watcher
+        ZKUtils.addViewPathCache(KVPathUtil.getViewPath(), new ViewChildListener());
+        // syncMeta UNLOCK
+        zkConn.delete().forPath(KVPathUtil.getSyncMetaLockPath());
     }
 
 
@@ -325,6 +352,15 @@ public class ProxyMetaManager {
      */
     private void loadViewFromFile() {
         repository = new FileSystemRepository();
+        Map<String, Map<String, String>> viewCreateSqlMap = repository.getViewCreateSqlMap();
+        loadViewMeta(viewCreateSqlMap);
+    }
+
+    /**
+     * recovery all the view info from ckvsystem
+     */
+    private void loadViewFromCKV() {
+        repository = new CKVStoreRepository();
         Map<String, Map<String, String>> viewCreateSqlMap = repository.getViewCreateSqlMap();
         loadViewMeta(viewCreateSqlMap);
     }
@@ -352,6 +388,8 @@ public class ProxyMetaManager {
         handler.execute();
         if (DbleServer.getInstance().isUseZK()) {
             loadViewFromKV();
+        } else if (DbleServer.getInstance().isUseUcore()) {
+            loadViewFromCKV();
         } else {
             loadViewFromFile();
         }
@@ -414,32 +452,81 @@ public class ProxyMetaManager {
         }
     }
 
-    public void notifyClusterDDL(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, boolean needNotifyOther) throws Exception {
+    public void notifyClusterDDL(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus) throws Exception {
+        if (DbleServer.getInstance().isUseZK()) {
+            CuratorFramework zkConn = ZKUtils.getConnection();
+            DDLInfo ddlInfo = new DDLInfo(schema, sql, ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ddlStatus);
+            String nodeName = StringUtil.getFullName(schema, table);
+            String nodePath = ZKPaths.makePath(KVPathUtil.getDDLPath(), nodeName);
+            zkConn.create().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
+        } else if (DbleServer.getInstance().isUseUcore()) {
+            DDLInfo ddlInfo = new DDLInfo(schema, sql, UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ddlStatus);
+            String nodeName = StringUtil.getUFullName(schema, table);
+            ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLPath(nodeName), ddlInfo.toString());
+        }
+    }
+
+
+    public void notifyResponseClusterDDL(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, boolean needNotifyOther) throws Exception {
+        if (DbleServer.getInstance().isUseZK()) {
+            notifyResponseZKDdl(schema, table, sql, ddlStatus, needNotifyOther);
+        } else if (DbleServer.getInstance().isUseUcore()) {
+            notifyReponseUcoreDDL(schema, table, sql, ddlStatus, needNotifyOther);
+        }
+    }
+
+    public void notifyResponseZKDdl(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, boolean needNotifyOther) throws Exception {
         CuratorFramework zkConn = ZKUtils.getConnection();
-        DDLInfo ddlInfo = new DDLInfo(schema, sql, ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), ddlStatus);
+        DDLInfo ddlInfo = new DDLInfo(schema, sql, ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ddlStatus);
         String nodeName = StringUtil.getFullName(schema, table);
         String nodePath = ZKPaths.makePath(KVPathUtil.getDDLPath(), nodeName);
-        if (zkConn.checkExists().forPath(nodePath) == null) {
-            zkConn.create().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
-        } else {
-            String instancePath = ZKPaths.makePath(nodePath, KVPathUtil.DDL_INSTANCE);
-            String thisNode = ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID);
-            ZKUtils.createTempNode(instancePath, thisNode);
-            if (needNotifyOther) {
-                //this node is ddl sender
-                zkConn.setData().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
-                while (true) {
-                    List<String> preparedList = zkConn.getChildren().forPath(instancePath);
-                    List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
-                    if (preparedList.size() >= onlineList.size()) {
-                        zkConn.delete().deletingChildrenIfNeeded().forPath(nodePath);
-                        break;
-                    }
-                    LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
+
+        String instancePath = ZKPaths.makePath(nodePath, KVPathUtil.DDL_INSTANCE);
+        String thisNode = ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
+        ZKUtils.createTempNode(instancePath, thisNode);
+        if (needNotifyOther) {
+            zkConn.setData().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
+            while (true) {
+                List<String> preparedList = zkConn.getChildren().forPath(instancePath);
+                List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
+                if (preparedList.size() >= onlineList.size()) {
+                    zkConn.delete().deletingChildrenIfNeeded().forPath(nodePath);
+                    break;
                 }
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
             }
         }
     }
+
+    /**
+     * Notify the ucore Cluster to do things
+     *
+     * @param schema
+     * @param table
+     * @param sql
+     * @param ddlStatus
+     * @param needNotifyOther
+     * @throws Exception
+     */
+    public void notifyReponseUcoreDDL(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, boolean needNotifyOther) throws Exception {
+        String nodeName = StringUtil.getUFullName(schema, table);
+        DDLInfo ddlInfo = new DDLInfo(schema, sql, UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ddlStatus);
+        ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLInstancePath(nodeName), ddlInfo.toString());
+        if (needNotifyOther) {
+            ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLPath(nodeName), ddlInfo.toString());
+            while (true) {
+                List<UKvBean> reponseList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getDDLPath(nodeName));
+                List<UKvBean> onlineList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getOnlinePath());
+                if (reponseList.size() >= onlineList.size()) {
+                    ClusterUcoreSender.deleteKVTree(UcorePathUtil.getDDLPath(nodeName) + "/");
+                    break;
+                }
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
+            }
+        }
+
+    }
+
 
     //no need to check user
     private static SchemaInfo getSchemaInfo(String schema, SQLExprTableSource tableSource) {
@@ -464,12 +551,10 @@ public class ProxyMetaManager {
             LOGGER.info("updateMetaData failed,sql is" + statement.toString(), e);
         } finally {
             removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
-            if (DbleServer.getInstance().isUseZK()) {
-                try {
-                    notifyClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
-                } catch (Exception e) {
-                    LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyClusterDDL error", e);
-                }
+            try {
+                notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
+            } catch (Exception e) {
+                LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyResponseZKDdl error", e);
             }
         }
     }
@@ -536,12 +621,10 @@ public class ProxyMetaManager {
             LOGGER.info("updateMetaData alterTable failed,sql is" + alterStatement.toString(), e);
         } finally {
             removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
-            if (DbleServer.getInstance().isUseZK()) {
-                try {
-                    notifyClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
-                } catch (Exception e) {
-                    LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyClusterDDL error", e);
-                }
+            try {
+                notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
+            } catch (Exception e) {
+                LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyResponseZKDdl error", e);
             }
         }
     }
@@ -551,12 +634,10 @@ public class ProxyMetaManager {
         SQLExprTableSource exprTableSource = statement.getTableSources().get(0);
         SchemaInfo schemaInfo = getSchemaInfo(schema, exprTableSource);
         removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
-        if (DbleServer.getInstance().isUseZK()) {
-            try {
-                notifyClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
-            } catch (Exception e) {
-                LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyClusterDDL error", e);
-            }
+        try {
+            notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
+        } catch (Exception e) {
+            LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyResponseZKDdl error", e);
         }
     }
 
@@ -583,12 +664,10 @@ public class ProxyMetaManager {
                 LOGGER.info("updateMetaData failed,sql is" + statement.toString(), e);
             } finally {
                 removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
-                if (DbleServer.getInstance().isUseZK()) {
-                    try {
-                        notifyClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
-                    } catch (Exception e) {
-                        LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyClusterDDL error", e);
-                    }
+                try {
+                    notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
+                } catch (Exception e) {
+                    LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyResponseZKDdl error", e);
                 }
             }
         }
@@ -634,12 +713,10 @@ public class ProxyMetaManager {
             LOGGER.info("updateMetaData failed,sql is" + dropIndexStatement.toString(), e);
         } finally {
             removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
-            if (DbleServer.getInstance().isUseZK()) {
-                try {
-                    notifyClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
-                } catch (Exception e) {
-                    LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyClusterDDL error", e);
-                }
+            try {
+                notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
+            } catch (Exception e) {
+                LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyResponseZKDdl error", e);
             }
         }
     }

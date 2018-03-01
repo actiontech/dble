@@ -5,8 +5,8 @@
 
 package com.actiontech.dble.config.loader.zkprocess.xmltozk;
 
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.loader.zkprocess.xmltozk.listen.*;
@@ -28,7 +28,7 @@ public final class XmltoZkMain {
 
     public static void rollbackConf() throws Exception {
         CuratorFramework zkConn = ZKUtils.getConnection();
-        ConfStatus status = new ConfStatus(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), ConfStatus.Status.ROLLBACK, null);
+        ConfStatus status = new ConfStatus(ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ConfStatus.Status.ROLLBACK, null);
         zkConn.setData().forPath(KVPathUtil.getConfStatusPath(), status.toString().getBytes(StandardCharsets.UTF_8));
     }
 
@@ -53,7 +53,7 @@ public final class XmltoZkMain {
         zkListen.initAllNode();
         zkListen.clearInited();
         //write flag
-        ConfStatus status = new ConfStatus(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID),
+        ConfStatus status = new ConfStatus(ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
                                            isAll ? ConfStatus.Status.RELOAD_ALL : ConfStatus.Status.RELOAD,
                                            isAll ? String.valueOf(allMode) : null);
         zkConn.setData().forPath(KVPathUtil.getConfStatusPath(), status.toString().getBytes(StandardCharsets.UTF_8));

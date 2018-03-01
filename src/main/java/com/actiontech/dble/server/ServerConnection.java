@@ -327,6 +327,7 @@ public class ServerConnection extends FrontendConnection {
         String schema = rrs.getSchema();
         String table = rrs.getTable();
         try {
+            //lock self meta
             DbleServer.getInstance().getTmManager().addMetaLock(schema, table);
             if (DbleServer.getInstance().isUseZK()) {
                 String nodeName = StringUtil.getFullName(schema, table);
@@ -342,7 +343,9 @@ public class ServerConnection extends FrontendConnection {
                     }
                     times++;
                 }
-                DbleServer.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement(), DDLInfo.DDLStatus.INIT, true);
+                DbleServer.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement(), DDLInfo.DDLStatus.INIT);
+            } else if (DbleServer.getInstance().isUseUcore()) {
+                DbleServer.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement(), DDLInfo.DDLStatus.INIT);
             }
         } catch (Exception e) {
             DbleServer.getInstance().getTmManager().removeMetaLock(schema, table);

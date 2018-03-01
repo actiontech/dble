@@ -6,9 +6,9 @@
 package com.actiontech.dble.config.loader.zkprocess.zktoxml.listen;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.NotifyService;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.DirectoryInf;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.BinlogPause;
@@ -48,7 +48,7 @@ public class BinlogPauseStatusListener extends ZkMultiLoader implements NotifySe
         LOGGER.info("BinlogPauseStatusListener notifyProcess zk to object  :" + strPauseInfo);
 
         BinlogPause pauseInfo = new BinlogPause(strPauseInfo);
-        String myID = ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID);
+        String myID = ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
         if (pauseInfo.getFrom().equals(myID)) {
             return true; //self node
         }

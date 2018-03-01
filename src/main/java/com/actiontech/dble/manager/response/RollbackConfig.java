@@ -8,11 +8,14 @@ package com.actiontech.dble.manager.response;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
+import com.actiontech.dble.config.loader.ucoreprocess.*;
+import com.actiontech.dble.config.loader.ucoreprocess.loader.UConfigStatusResponse;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.xmltozk.XmltoZkMain;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
 import com.actiontech.dble.config.model.ERTable;
 import com.actiontech.dble.config.model.FirewallConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
@@ -35,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
+
 /**
  * @author mycat
  */
@@ -53,35 +57,27 @@ public final class RollbackConfig {
                     c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rollbacking, please try again later.");
                 } else {
                     try {
-                        final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
-                        lock.lock();
-                        try {
-                            rollback();
-                            XmltoZkMain.rollbackConf();
-                            //tell zk this instance has prepared
-                            ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
-                            //check all session waiting status
-                            List<String> preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
-                            List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
-                            // TODO: While waiting, a new instance of MyCat is upping and working.
-                            while (preparedList.size() < onlineList.size()) {
-                                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-                                onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
-                                preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
-                            }
-                            for (String child : preparedList) {
-                                zkConn.delete().forPath(ZKPaths.makePath(KVPathUtil.getConfStatusPath(), child));
-                            }
-                            writeOKResult(c);
-                        } catch (Exception e) {
-                            LOGGER.info("reload config failure", e);
-                            writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
-                        } finally {
-                            lock.unlock();
-                        }
+                        rollbackWithZk(zkConn, c);
                     } finally {
                         distributeLock.release();
                     }
+                }
+            } catch (Exception e) {
+                LOGGER.info("reload config failure", e);
+                writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
+            }
+        } else if (DbleServer.getInstance().isUseUcore()) {
+            UDistributeLock distributeLock = new UDistributeLock(UcorePathUtil.getConfChangeLockPath(),
+                    UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+            try {
+                if (!distributeLock.acquire()) {
+                    c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rollbacking, please try again later.");
+                    return;
+                }
+                try {
+                    rollbackWithUcore(c);
+                } finally {
+                    distributeLock.release();
                 }
             } catch (Exception e) {
                 LOGGER.info("reload config failure", e);
@@ -100,6 +96,75 @@ public final class RollbackConfig {
             }
         }
     }
+
+
+    private static void rollbackWithUcore(ManagerConnection c) {
+        //step 1 lock the local meta ,than all the query depends on meta will be hanging
+        final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
+        lock.lock();
+        try {
+            // step 2 rollback self config
+            rollback();
+
+            //step 3 tail the ucore & notify the other dble
+            ConfStatus status = new ConfStatus(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ConfStatus.Status.ROLLBACK, null);
+            ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getConfStatusPath(), status.toString());
+
+            //step 4 set self status success
+            ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getSelfConfStatusPath(), UConfigStatusResponse.SUCCESS);
+
+            //step 5 start a loop to check if all the dble in cluster is reload finished
+            while (ClusterUcoreSender.getKeyTreeSize(UcorePathUtil.getConfStatusPath()) <
+                    ClusterUcoreSender.getKeyTreeSize(UcorePathUtil.getOnlinePath())) {
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+            }
+
+            //step 6 delete the reload flag
+            ClusterUcoreSender.deleteKVTree(UcorePathUtil.getConfStatusPath());
+        } catch (Exception e) {
+            LOGGER.warn("reload config failure", e);
+            writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
+        } finally {
+            lock.unlock();
+        }
+    }
+
+
+    /**
+     * start the rollback when the zk is in using
+     *
+     * @param zkConn
+     * @param c
+     */
+    private static void rollbackWithZk(CuratorFramework zkConn, ManagerConnection c) {
+        final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
+        lock.lock();
+        try {
+            rollback();
+            XmltoZkMain.rollbackConf();
+            //tell zk this instance has prepared
+            ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+            //check all session waiting status
+            List<String> preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
+            List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
+            // TODO: While waiting, a new instance of MyCat is upping and working.
+            while (preparedList.size() < onlineList.size()) {
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+                onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
+                preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
+            }
+            for (String child : preparedList) {
+                zkConn.delete().forPath(ZKPaths.makePath(KVPathUtil.getConfStatusPath(), child));
+            }
+            writeOKResult(c);
+        } catch (Exception e) {
+            LOGGER.info("reload config failure", e);
+            writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
+        } finally {
+            lock.unlock();
+        }
+    }
+
 
     private static void writeOKResult(ManagerConnection c) {
         LOGGER.info(String.valueOf(c) + "Rollback config success by manager");

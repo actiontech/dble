@@ -17,8 +17,8 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by szf on 2017/10/12.
@@ -28,7 +28,7 @@ public class FileSystemRepository implements Repository {
     private FileChannel rwChannel = null;
     private String baseDir;
     private String baseName;
-    private Map<String, Map<String, String>> viewCreateSqlMap = new ConcurrentHashMap<String, Map<String, String>>();
+    private Map<String, Map<String, String>> viewCreateSqlMap = new HashMap<String, Map<String, String>>();
 
 
     public FileSystemRepository() {
@@ -70,7 +70,7 @@ public class FileSystemRepository implements Repository {
             for (String singleName : viewName) {
                 Map<String, String> schemaMap = viewCreateSqlMap.get(schemaName);
                 if (schemaMap == null) {
-                    schemaMap = new ConcurrentHashMap<String, String>();
+                    schemaMap = new HashMap<String, String>();
                     viewCreateSqlMap.put(schemaName, schemaMap);
                 }
                 schemaMap.remove(singleName.trim());
@@ -92,7 +92,7 @@ public class FileSystemRepository implements Repository {
         try {
             Map<String, String> schemaMap = viewCreateSqlMap.get(schemaName);
             if (schemaMap == null) {
-                schemaMap = new ConcurrentHashMap<String, String>();
+                schemaMap = new HashMap<String, String>();
                 viewCreateSqlMap.put(schemaName, schemaMap);
             }
             schemaMap.put(viewName, createSql);
@@ -111,7 +111,7 @@ public class FileSystemRepository implements Repository {
      * @throws Exception
      */
     public Map<String, Map<String, String>> getObject() throws Exception {
-        Map<String, Map<String, String>> result = new ConcurrentHashMap<String, Map<String, String>>();
+        Map<String, Map<String, String>> result = new HashMap<String, Map<String, String>>();
         String jsonString = readFromFile();
         JSONArray jsonArray = JSONObject.parseArray(jsonString);
         if (jsonArray != null) {
@@ -119,7 +119,7 @@ public class FileSystemRepository implements Repository {
                 JSONObject x = (JSONObject) schema;
                 String schemaName = x.getString("schema");
                 JSONArray viewList = x.getJSONArray("list");
-                Map<String, String> schemaView = new ConcurrentHashMap<String, String>();
+                Map<String, String> schemaView = new HashMap<String, String>();
                 for (Object view : viewList) {
                     JSONObject y = (JSONObject) view;
                     schemaView.put(y.getString("name"), y.getString("sql"));

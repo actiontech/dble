@@ -5,15 +5,12 @@
 
 package com.actiontech.dble.config.loader.zkprocess.comm;
 
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.zktoxml.ZktoXmlMain;
 import com.actiontech.dble.log.alarm.AlarmCode;
-import com.actiontech.dble.util.ResourceUtil;
-import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Properties;
 
 
@@ -27,8 +24,6 @@ import java.util.Properties;
 public final class ZkConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(ZkConfig.class);
 
-    private static final String ZK_CONFIG_FILE_NAME = "/myid.properties";
-
     private ZkConfig() {
     }
 
@@ -36,20 +31,17 @@ public final class ZkConfig {
 
     private static Properties zkProperties = null;
 
-    static {
-        zkProperties = loadMyidPropersites();
-    }
-
 
     public String getZkURL() {
-        return zkProperties == null ? null : zkProperties.getProperty(ZkParamCfg.ZK_CFG_URL.getKey());
+        return zkProperties == null ? null :
+                zkProperties.getProperty(ClusterParamCfg.CLUSTER_PLUGINS_IP.getKey()) + ":" +
+                        zkProperties.getProperty(ClusterParamCfg.CLUSTER_PLUGINS_PORT.getKey());
     }
 
-    public void initZk() {
+    public static void initZk(Properties cluterProperties) {
         try {
-            if (zkProperties != null && Boolean.parseBoolean(zkProperties.getProperty(ZkParamCfg.ZK_CFG_FLAG.getKey()))) {
-                ZktoXmlMain.loadZktoFile();
-            }
+            zkProperties = cluterProperties;
+            ZktoXmlMain.loadZktoFile();
         } catch (Exception e) {
             LOGGER.error(AlarmCode.CORE_ZK_ERROR + "error:", e);
         }
@@ -60,7 +52,6 @@ public final class ZkConfig {
      * @Created 2016/9/15
      */
     public static ZkConfig getInstance() {
-
         return zkCfgInstance;
     }
 
@@ -71,46 +62,11 @@ public final class ZkConfig {
      * @return
      * @Created 2016/9/15
      */
-    public String getValue(ZkParamCfg param) {
+    public String getValue(ClusterParamCfg param) {
         if (zkProperties != null && null != param) {
             return zkProperties.getProperty(param.getKey());
         }
-
         return null;
-    }
-
-    /**
-     * @return
-     * @Created 2016/9/15
-     */
-    private static Properties loadMyidPropersites() {
-        Properties pros = new Properties();
-
-        try (InputStream configIS = ResourceUtil.getResourceAsStream(ZK_CONFIG_FILE_NAME)) {
-            if (configIS == null) {
-                return null;
-            }
-
-            pros.load(configIS);
-        } catch (IOException e) {
-            /**
-             * KEEP init server error
-             */
-            LOGGER.error(AlarmCode.CORE_ERROR + "ZkConfig LoadMyidPropersites error:", e);
-            throw new RuntimeException("can't find myid properties file : " + ZK_CONFIG_FILE_NAME);
-        }
-
-        // validate
-        String zkURL = pros.getProperty(ZkParamCfg.ZK_CFG_URL.getKey());
-        String myid = pros.getProperty(ZkParamCfg.ZK_CFG_MYID.getKey());
-
-        String clusterId = pros.getProperty(ZkParamCfg.ZK_CFG_CLUSTERID.getKey());
-
-        if (Strings.isNullOrEmpty(clusterId) || Strings.isNullOrEmpty(zkURL) || Strings.isNullOrEmpty(myid)) {
-            throw new RuntimeException("clusterId and zkURL and myid must not be null or empty!");
-        }
-        return pros;
-
     }
 
 }

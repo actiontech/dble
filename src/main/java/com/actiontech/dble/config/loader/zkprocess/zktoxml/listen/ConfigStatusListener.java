@@ -6,9 +6,9 @@
 package com.actiontech.dble.config.loader.zkprocess.zktoxml.listen;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.NotifyService;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.DirectoryInf;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
@@ -54,18 +54,18 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
             this.getTreeDirectory(currZkPath, KVPathUtil.CONF_STATUS, statusDirectory);
             ZkDataImpl zkData = (ZkDataImpl) statusDirectory.getSubordinateInfo().get(0);
             ConfStatus status = new ConfStatus(zkData.getValue());
-            if (status.getFrom().equals(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID))) {
+            if (status.getFrom().equals(ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) {
                 return true; //self node
             }
             LOGGER.info("ConfigStatusListener notifyProcess zk to object  :" + status);
             if (status.getStatus() == ConfStatus.Status.ROLLBACK) {
                 try {
                     RollbackConfig.rollback();
-                    ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID),
+                    ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
                                            SUCCESS.getBytes(StandardCharsets.UTF_8));
                 } catch (Exception e) {
                     String errorinfo = e.getMessage() == null ? e.toString() : e.getMessage();
-                    ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID),
+                    ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
                                            errorinfo.getBytes(StandardCharsets.UTF_8));
                 }
 
@@ -84,10 +84,10 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
                 } else {
                     ReloadConfig.reload();
                 }
-                ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), SUCCESS.getBytes(StandardCharsets.UTF_8));
+                ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), SUCCESS.getBytes(StandardCharsets.UTF_8));
             } catch (Exception e) {
                 String errorinfo = e.getMessage() == null ? e.toString() : e.getMessage();
-                ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID), errorinfo.getBytes(StandardCharsets.UTF_8));
+                ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), errorinfo.getBytes(StandardCharsets.UTF_8));
             }
         }
         return true;

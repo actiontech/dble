@@ -72,6 +72,13 @@
         </rule>
     </tableRule>
 
+    <tableRule name="sharding-by-string-jump">
+        <rule>
+            <columns>id</columns>
+            <algorithm>jumphash</algorithm>
+        </rule>
+    </tableRule>
+
 
     <!-- enum partition -->
     <function name="enum"
@@ -104,6 +111,12 @@
         <property name="partitionLength">512</property>
         <!-- <property name="partitionCount">2,3</property>
         <property name="partitionLength">4,5</property>-->
+    </function>
+
+    <function name="jumphash"
+              class="jumpStringHash">
+        <property name="partitionCount">2</property>
+        <property name="hashSlice">0:2</property>
     </function>
 
     <!-- Hash partition,when partitionLength=1, it is a mod partition-->

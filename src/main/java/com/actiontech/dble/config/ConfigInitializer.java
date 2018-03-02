@@ -128,7 +128,7 @@ public class ConfigInitializer {
                 }
             }
         }
-        Set<String> allUseDataNode = new HashSet<>();
+
         // check schema
         for (SchemaConfig sc : schemas.values()) {
             if (null == sc) {
@@ -143,17 +143,11 @@ public class ConfigInitializer {
                             throw new ConfigException("SelfCheck### schema dataNode is empty!");
                         }
                     }
-                    allUseDataNode.addAll(dataNodeNames);
                 }
             }
         }
 
-        // add global sequence node when it is some dedicated servers */
-        if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_MYSQL) {
-            allUseDataNode.addAll(IncrSequenceMySQLHandler.getInstance().getDataNodes());
-        }
-
-        deleteRedundancyConf(allUseDataNode);
+        deleteRedundancyConf();
         checkWriteHost();
 
     }
@@ -169,7 +163,22 @@ public class ConfigInitializer {
         }
     }
 
-    private void deleteRedundancyConf(Set<String> allUseDataNode) {
+    private void deleteRedundancyConf() {
+        Set<String> allUseDataNode = new HashSet<>();
+
+        for (SchemaConfig sc : schemas.values()) {
+            // check dataNode / dataHost
+            Set<String> dataNodeNames = sc.getAllDataNodes();
+            for (String dataNodeName : dataNodeNames) {
+                allUseDataNode.add(dataNodeName);
+            }
+        }
+
+        // add global sequence node when it is some dedicated servers */
+        if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_MYSQL) {
+            allUseDataNode.addAll(IncrSequenceMySQLHandler.getInstance().getDataNodes());
+        }
+
         Set<String> allUseHost = new HashSet<>();
         //delete redundancy dataNode
         Iterator<Map.Entry<String, PhysicalDBNode>> iterator = this.dataNodes.entrySet().iterator();
@@ -212,7 +221,7 @@ public class ConfigInitializer {
                     DBHostConfig wHost = pool.getSource().getConfig();
                     // start for first time, 2.you can set write host as yourself
                     if (("localhost".equalsIgnoreCase(wHost.getIp()) || "127.0.0.1".equalsIgnoreCase(wHost.getIp())) &&
-                        wHost.getPort() == this.system.getServerPort()) {
+                            wHost.getPort() == this.system.getServerPort()) {
                         continue;
                     }
                 }

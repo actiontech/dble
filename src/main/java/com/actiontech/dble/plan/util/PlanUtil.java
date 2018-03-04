@@ -17,7 +17,6 @@ import com.actiontech.dble.plan.common.item.function.ItemFunc.Functype;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.*;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondOr;
-import com.actiontech.dble.plan.common.item.function.operator.logic.ItemFuncNot;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum.SumFuncType;
 import com.actiontech.dble.plan.common.item.subquery.ItemAllAnySubQuery;
@@ -365,7 +364,7 @@ public final class PlanUtil {
         }
     }
 
-    public static boolean isCmpFunc(Item filter) {
+    private static boolean isCmpFunc(Item filter) {
         return filter instanceof ItemFuncEqual || filter instanceof ItemFuncGt || filter instanceof ItemFuncGe ||
                 filter instanceof ItemFuncLt || filter instanceof ItemFuncLe || filter instanceof ItemFuncNe ||
                 filter instanceof ItemFuncStrictEqual || filter instanceof ItemFuncLike;
@@ -452,14 +451,10 @@ public final class PlanUtil {
                 if (inSubItem.getValue().size() == 0) {
                     itemTmp.arguments().set(index, genBoolItem(inSubItem.isNeg()));
                 } else {
-                    List<Item> args = new ArrayList<>(inSubItem.getValue().size() + 1);
-                    args.add(inSubItem.getLeftOperand());
-                    args.addAll(inSubItem.getValue());
-                    boolean isNot = inSubItem.isNeg();
-                    if (item instanceof ItemFuncNot) {
-                        isNot = !isNot;
-                    }
-                    return new ItemFuncIn(args, isNot);
+                    List<Item> newArgs = new ArrayList<>(inSubItem.getValue().size() + 1);
+                    newArgs.add(inSubItem.getLeftOperand());
+                    newArgs.addAll(inSubItem.getValue());
+                    itemTmp.arguments().set(index, new ItemFuncIn(newArgs, inSubItem.isNeg()));
                 }
                 itemTmp.setItemName(null);
                 return itemTmp;

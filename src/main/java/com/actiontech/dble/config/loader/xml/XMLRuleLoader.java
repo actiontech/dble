@@ -187,6 +187,8 @@ public class XMLRuleLoader {
                 return new PartitionByString();
             case "enum":
                 return new PartitionByFileMap();
+            case "jumpstringhash":
+                return new PartitionByJumpConsistentHash();
             case "numberrange":
                 return new AutoPartitionByLong();
             case "patternrange":

@@ -43,7 +43,7 @@ public final class KillHandler {
 
             // get connection and close it
             FrontendConnection fc = null;
-            NIOProcessor[] processors = DbleServer.getInstance().getProcessors();
+            NIOProcessor[] processors = DbleServer.getInstance().getFrontProcessors();
             for (NIOProcessor p : processors) {
                 if ((fc = p.getFrontends().get(value)) != null) {
                     break;

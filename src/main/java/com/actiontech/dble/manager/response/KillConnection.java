@@ -49,7 +49,7 @@ public final class KillConnection {
         if (ids.length() > 0) {
             String[] idList = SplitUtil.split(ids, ',', true);
             List<FrontendConnection> fcList = new ArrayList<>(idList.length);
-            NIOProcessor[] processors = DbleServer.getInstance().getProcessors();
+            NIOProcessor[] processors = DbleServer.getInstance().getFrontProcessors();
             for (String id : idList) {
                 long value = 0;
                 try {

@@ -92,7 +92,8 @@ public final class DbleServer {
     private AsynchronousChannelGroup[] asyncChannelGroups;
     private AtomicInteger channelIndex = new AtomicInteger();
 
-    private volatile int nextProcessor;
+    private volatile int nextFrontProcessor;
+    private volatile int nextBackendProcessor;
 
     // System Buffer Pool Instance
     private BufferPool bufferPool;
@@ -109,7 +110,8 @@ public final class DbleServer {
     private final ScheduledExecutorService scheduler;
     private final AtomicBoolean isOnline;
     private final long startupTime;
-    private NIOProcessor[] processors;
+    private NIOProcessor[] frontProcessors;
+    private NIOProcessor[] backendProcessors;
     private SocketConnector connector;
     private ExecutorService businessExecutor;
     private ExecutorService backendBusinessExecutor;
@@ -315,8 +317,8 @@ public final class DbleServer {
         // startup processors
         int frontProcessorCount = system.getProcessors();
         int backendProcessorCount = system.getBackendProcessors();
-        int processorCount = frontProcessorCount + backendProcessorCount;
-        processors = new NIOProcessor[processorCount];
+        frontProcessors = new NIOProcessor[frontProcessorCount];
+        backendProcessors = new NIOProcessor[backendProcessorCount];
         // a page size
         int bufferPoolPageSize = system.getBufferPoolPageSize();
         // total page number
@@ -329,19 +331,21 @@ public final class DbleServer {
         }
         bufferPool = new DirectByteBufferPool(bufferPoolPageSize, bufferPoolChunkSize, bufferPoolPageNumber);
 
-        int threadPoolSize = system.getProcessorExecutor();
-        businessExecutor = ExecutorUtil.createFixed("BusinessExecutor", threadPoolSize);
+        businessExecutor = ExecutorUtil.createFixed("BusinessExecutor", system.getProcessorExecutor());
         backendBusinessExecutor = ExecutorUtil.createFixed("backendBusinessExecutor", system.getBackendProcessorExecutor());
         complexQueryExecutor = ExecutorUtil.createCached("complexQueryExecutor", system.getComplexExecutor());
         timerExecutor = ExecutorUtil.createFixed("Timer", 1);
-        for (int i = 0; i < threadPoolSize; i++) {
+        for (int i = 0; i < system.getProcessorExecutor(); i++) {
             businessExecutor.execute(new FrondEndRunnable(frontHandlerQueue));
         }
-        for (int i = 0; i < processorCount; i++) {
-            processors[i] = new NIOProcessor("Processor" + i, bufferPool);
+        for (int i = 0; i < frontProcessorCount; i++) {
+            frontProcessors[i] = new NIOProcessor("frontProcessor" + i, bufferPool);
         }
-
+        for (int i = 0; i < backendProcessorCount; i++) {
+            backendProcessors[i] = new NIOProcessor("backendProcessor" + i, bufferPool);
+        }
         if (aio) {
+            int processorCount = frontProcessorCount + backendProcessorCount;
             LOGGER.info("using aio network handler ");
             asyncChannelGroups = new AsynchronousChannelGroup[processorCount];
             // startup connector
@@ -509,7 +513,7 @@ public final class DbleServer {
     }
 
     public void reloadDnIndex() {
-        if (DbleServer.getInstance().getProcessors() == null) return;
+        if (DbleServer.getInstance().getFrontProcessors() == null) return;
         // load datanode active index from properties
         dnIndexProperties = DnPropertyUtil.loadDnIndexProps();
         // init datahost
@@ -685,16 +689,28 @@ public final class DbleServer {
         return routerService;
     }
 
-    public NIOProcessor nextProcessor() {
-        int i = ++nextProcessor;
-        if (i >= processors.length) {
-            i = nextProcessor = 0;
+    public NIOProcessor nextFrontProcessor() {
+        int i = ++nextFrontProcessor;
+        if (i >= frontProcessors.length) {
+            i = nextFrontProcessor = 0;
         }
-        return processors[i];
+        return frontProcessors[i];
     }
 
-    public NIOProcessor[] getProcessors() {
-        return processors;
+    public NIOProcessor nextBackendProcessor() {
+        int i = ++nextBackendProcessor;
+        if (i >= backendProcessors.length) {
+            i = nextBackendProcessor = 0;
+        }
+        return backendProcessors[i];
+    }
+
+    public NIOProcessor[] getFrontProcessors() {
+        return frontProcessors;
+    }
+
+    public NIOProcessor[] getBackendProcessors() {
+        return backendProcessors;
     }
 
     public SocketConnector getConnector() {
@@ -787,7 +803,7 @@ public final class DbleServer {
                     @Override
                     public void run() {
                         try {
-                            for (NIOProcessor p : processors) {
+                            for (NIOProcessor p : backendProcessors) {
                                 p.checkBackendCons();
                             }
                         } catch (Exception e) {
@@ -799,7 +815,7 @@ public final class DbleServer {
                     @Override
                     public void run() {
                         try {
-                            for (NIOProcessor p : processors) {
+                            for (NIOProcessor p : frontProcessors) {
                                 p.checkFrontCons();
                             }
                         } catch (Exception e) {

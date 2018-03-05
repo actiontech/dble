@@ -358,7 +358,7 @@ public final class ReloadConfig {
     private static void findAndcloseFrontCon(BackendConnection con) {
         if (con instanceof MySQLConnection) {
             MySQLConnection mcon1 = (MySQLConnection) con;
-            for (NIOProcessor processor : DbleServer.getInstance().getProcessors()) {
+            for (NIOProcessor processor : DbleServer.getInstance().getFrontProcessors()) {
                 for (FrontendConnection fcon : processor.getFrontends().values()) {
                     if (fcon instanceof ServerConnection) {
                         ServerConnection scon = (ServerConnection) fcon;
@@ -384,7 +384,7 @@ public final class ReloadConfig {
         for (PhysicalDBPool dbPool : oldDataHosts.values()) {
             dbPool.stopHeartbeat();
             for (PhysicalDatasource ds : dbPool.getAllDataSources()) {
-                for (NIOProcessor processor : DbleServer.getInstance().getProcessors()) {
+                for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
                     for (BackendConnection con : processor.getBackends().values()) {
                         if (con instanceof MySQLConnection) {
                             MySQLConnection mysqlCon = (MySQLConnection) con;

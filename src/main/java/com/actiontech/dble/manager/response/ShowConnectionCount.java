@@ -76,7 +76,7 @@ public final class ShowConnectionCount {
     private static RowDataPacket getRow() {
         int cons = 0;
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        NIOProcessor[] processors = DbleServer.getInstance().getProcessors();
+        NIOProcessor[] processors = DbleServer.getInstance().getFrontProcessors();
         for (NIOProcessor p : processors) {
             for (FrontendConnection fc : p.getFrontends().values()) {
                 if (fc != null) {

@@ -88,7 +88,7 @@ public final class ShowCommand {
 
         // write rows
         byte packetId = EOF.getPacketId();
-        for (NIOProcessor p : DbleServer.getInstance().getProcessors()) {
+        for (NIOProcessor p : DbleServer.getInstance().getFrontProcessors()) {
             RowDataPacket row = getRow(p);
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);

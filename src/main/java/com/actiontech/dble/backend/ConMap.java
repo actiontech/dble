@@ -65,7 +65,7 @@ public class ConMap {
 
     public int getActiveCountForSchema(String schema, PhysicalDatasource dataSource) {
         int total = 0;
-        for (NIOProcessor processor : DbleServer.getInstance().getProcessors()) {
+        for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
             for (BackendConnection con : processor.getBackends().values()) {
                 if (con instanceof MySQLConnection) {
                     MySQLConnection mysqlCon = (MySQLConnection) con;
@@ -83,7 +83,7 @@ public class ConMap {
 
     public int getActiveCountForDs(PhysicalDatasource dataSource) {
         int total = 0;
-        for (NIOProcessor processor : DbleServer.getInstance().getProcessors()) {
+        for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
             for (BackendConnection con : processor.getBackends().values()) {
                 if (con instanceof MySQLConnection) {
                     MySQLConnection mysqlCon = (MySQLConnection) con;
@@ -98,7 +98,7 @@ public class ConMap {
     }
 
     public void clearConnections(String reason, PhysicalDatasource dataSource) {
-        for (NIOProcessor processor : DbleServer.getInstance().getProcessors()) {
+        for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
             ConcurrentMap<Long, BackendConnection> map = processor.getBackends();
             Iterator<Entry<Long, BackendConnection>> iterator = map.entrySet().iterator();
 

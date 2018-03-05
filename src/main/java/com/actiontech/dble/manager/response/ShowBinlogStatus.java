@@ -328,7 +328,7 @@ public final class ShowBinlogStatus {
 
     private static List<NonBlockingSession> getNeedWaitSession() {
         List<NonBlockingSession> fcList = new ArrayList<>();
-        for (NIOProcessor process : DbleServer.getInstance().getProcessors()) {
+        for (NIOProcessor process : DbleServer.getInstance().getFrontProcessors()) {
             for (FrontendConnection front : process.getFrontends().values()) {
                 if (!(front instanceof ServerConnection)) {
                     continue;

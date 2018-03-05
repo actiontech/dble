@@ -14,10 +14,10 @@ public class NIOReactorPool {
     private final NIOReactor[] reactors;
     private volatile int nextReactor;
 
-    public NIOReactorPool(String name, int poolSize, boolean frontFlag, Map<String, ThreadWorkUsage> threadUsedMap) throws IOException {
+    public NIOReactorPool(String name, int poolSize, Map<String, ThreadWorkUsage> threadUsedMap) throws IOException {
         reactors = new NIOReactor[poolSize];
         for (int i = 0; i < poolSize; i++) {
-            NIOReactor reactor = new NIOReactor(name + "-" + i, frontFlag, threadUsedMap);
+            NIOReactor reactor = new NIOReactor(name + "-" + i, threadUsedMap);
             reactors[i] = reactor;
             reactor.startup();
         }

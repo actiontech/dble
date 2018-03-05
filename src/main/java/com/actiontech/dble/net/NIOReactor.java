@@ -31,13 +31,11 @@ public final class NIOReactor {
     private static final Logger LOGGER = LoggerFactory.getLogger(NIOReactor.class);
     private final String name;
     private final RW reactorR;
-    private final boolean frontFlag;
     private ThreadWorkUsage workUsage;
 
-    public NIOReactor(String name, boolean frontFlag, Map<String, ThreadWorkUsage> threadUsedMap) throws IOException {
+    public NIOReactor(String name, Map<String, ThreadWorkUsage> threadUsedMap) throws IOException {
         this.name = name;
         this.reactorR = new RW();
-        this.frontFlag = frontFlag;
         this.workUsage = new ThreadWorkUsage();
         threadUsedMap.put(name, workUsage);
     }

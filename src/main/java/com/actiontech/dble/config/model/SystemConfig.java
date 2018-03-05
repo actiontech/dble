@@ -137,7 +137,7 @@ public final class SystemConfig {
     private int costTimeStat = 0;
     private int maxCostStatSize = 100;
     private int costSamplePercent = 1;
-
+    private int useThreadUsageStat = 0;
 
     public SystemConfig() {
         this.serverPort = DEFAULT_PORT;
@@ -789,6 +789,16 @@ public final class SystemConfig {
     @SuppressWarnings("unused")
     public void setCostSamplePercent(int costSamplePercent) {
         this.costSamplePercent = costSamplePercent;
+    }
+
+
+    public int getUseThreadUsageStat() {
+        return useThreadUsageStat;
+    }
+
+    @SuppressWarnings("unused")
+    public void setUseThreadUsageStat(int useThreadUsageStat) {
+        this.useThreadUsageStat = useThreadUsageStat;
     }
 
     @Override

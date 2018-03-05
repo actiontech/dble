@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class ThreadWorkUsage {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ThreadWorkUsage.class);
     private final int statSecond1 = 15;
     private final int statSecond2 = 60;
     private final int statSecond3 = 300;

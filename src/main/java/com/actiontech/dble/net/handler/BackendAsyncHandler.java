@@ -34,21 +34,32 @@ public abstract class BackendAsyncHandler implements NIOHandler {
                 @Override
                 public void run() {
                     try {
-                        byte[] data = null;
-                        String threadName = Thread.currentThread().getName();
-                        ThreadWorkUsage workUsage = DbleServer.getInstance().getThreadUsedMap().get(threadName);
-                        if (threadName.startsWith("backend")) {
-                            if (workUsage == null) {
-                                workUsage = new ThreadWorkUsage();
-                                DbleServer.getInstance().getThreadUsedMap().put(threadName, workUsage);
-                            }
-                        }
+                        byte[] data;
 
-                        long workStart = System.nanoTime();
+                        //threadUsageStat start
+                        boolean useThreadUsageStat = false;
+                        String threadName = null;
+                        ThreadWorkUsage workUsage = null;
+                        long workStart = 0;
+                        if (DbleServer.getInstance().getConfig().getSystem().getUseThreadUsageStat() == 1) {
+                            useThreadUsageStat = true;
+                            threadName = Thread.currentThread().getName();
+                            workUsage = DbleServer.getInstance().getThreadUsedMap().get(threadName);
+                            if (threadName.startsWith("backend")) {
+                                if (workUsage == null) {
+                                    workUsage = new ThreadWorkUsage();
+                                    DbleServer.getInstance().getThreadUsedMap().put(threadName, workUsage);
+                                }
+                            }
+
+                            workStart = System.nanoTime();
+                        }
+                        //handleData
                         while ((data = dataQueue.poll()) != null) {
                             handleData(data);
                         }
-                        if (threadName.startsWith("backend")) {
+                        //threadUsageStat end
+                        if (useThreadUsageStat && threadName.startsWith("backend")) {
                             workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
                         }
                     } catch (Exception e) {

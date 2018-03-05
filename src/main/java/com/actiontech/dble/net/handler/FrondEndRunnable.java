@@ -23,17 +23,32 @@ public class FrondEndRunnable implements Runnable {
         while (true) {
             try {
                 handler = frontHandlerQueue.take();
-                String threadName = Thread.currentThread().getName();
-                ThreadWorkUsage workUsage = DbleServer.getInstance().getThreadUsedMap().get(threadName);
-                if (workUsage == null) {
-                    workUsage = new ThreadWorkUsage();
-                    DbleServer.getInstance().getThreadUsedMap().put(threadName, workUsage);
+
+                //threadUsageStat start
+                boolean useThreadUsageStat = false;
+                String threadName = null;
+                ThreadWorkUsage workUsage = null;
+                long workStart = 0;
+                if (DbleServer.getInstance().getConfig().getSystem().getUseThreadUsageStat() == 1) {
+                    useThreadUsageStat = true;
+                    threadName = Thread.currentThread().getName();
+                    workUsage = DbleServer.getInstance().getThreadUsedMap().get(threadName);
+
+                    if (workUsage == null) {
+                        workUsage = new ThreadWorkUsage();
+                        DbleServer.getInstance().getThreadUsedMap().put(threadName, workUsage);
+                    }
+                    workStart = System.nanoTime();
                 }
-                long workStart = System.nanoTime();
+                //handler data
                 handler.handle();
-                workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
+
+                //threadUsageStat end
+                if (useThreadUsageStat) {
+                    workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
+                }
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                throw new RuntimeException("FrontendCommandHandler error.", e);
             }
         }
     }

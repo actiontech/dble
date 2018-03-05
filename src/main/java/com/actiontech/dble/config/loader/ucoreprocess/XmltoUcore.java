@@ -1,5 +1,6 @@
 package com.actiontech.dble.config.loader.ucoreprocess;
 
+import com.actiontech.dble.cluster.ClusterController;
 import com.actiontech.dble.config.loader.ucoreprocess.listen.UcoreClearKeyListener;
 import com.actiontech.dble.config.loader.ucoreprocess.loader.*;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
@@ -16,6 +17,7 @@ public final class XmltoUcore {
     }
 
     public static void main(String[] args) throws Exception {
+        ClusterController.initFromShell();
         initFileToZK();
         System.out.println("XmltoZkMain Finished");
     }

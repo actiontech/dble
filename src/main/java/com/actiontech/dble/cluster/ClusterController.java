@@ -47,6 +47,12 @@ public final class ClusterController {
 
     }
 
+    public static void initFromShell() {
+        properties = loadMyidPropersites();
+        UcoreConfig.setUcoreProperties(properties);
+        ZkConfig.setZkProperties(properties);
+    }
+
 
     private static Properties loadMyidPropersites() {
         Properties pros = new Properties();

@@ -16,6 +16,8 @@ public final class UcoreConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(UcoreConfig.class);
     private static UcoreConfig instance = new UcoreConfig();
 
+
+
     private static Properties ucoreProperties = null;
 
     private UcoreConfig() {
@@ -45,6 +47,10 @@ public final class UcoreConfig {
         } catch (Exception e) {
             LOGGER.error(AlarmCode.CORE_ZK_ERROR + "error:", e);
         }
+    }
+
+    public static void setUcoreProperties(Properties ucoreProperties) {
+        UcoreConfig.ucoreProperties = ucoreProperties;
     }
 
 }

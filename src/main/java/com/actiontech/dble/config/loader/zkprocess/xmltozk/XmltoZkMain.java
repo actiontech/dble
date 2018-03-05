@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.config.loader.zkprocess.xmltozk;
 
+import com.actiontech.dble.cluster.ClusterController;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
@@ -22,6 +23,7 @@ public final class XmltoZkMain {
     }
 
     public static void main(String[] args) throws Exception {
+        ClusterController.initFromShell();
         initFileToZK();
         System.out.println("XmltoZkMain Finished");
     }

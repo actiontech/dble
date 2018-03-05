@@ -69,4 +69,8 @@ public final class ZkConfig {
         return null;
     }
 
+    public static void setZkProperties(Properties zkProperties) {
+        ZkConfig.zkProperties = zkProperties;
+    }
+
 }

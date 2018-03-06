@@ -5,10 +5,7 @@
 
 package com.actiontech.dble.net;
 
-import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
-
 import java.io.IOException;
-import java.util.Map;
 
 public class NIOReactorPool {
     private final NIOReactor[] reactors;

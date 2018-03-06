@@ -28,6 +28,16 @@ public abstract class BackendAsyncHandler implements NIOHandler {
         }
     }
 
+    protected void offerData(byte[] data) {
+        if (dataQueue.offer(data)) {
+            if (isHandling.compareAndSet(false, true)) {
+                DbleServer.getInstance().getBackHandlerQueue().offer(this);
+            }
+        } else {
+            offerDataError();
+        }
+    }
+
     protected void handleQueue(final Executor executor) {
         if (isHandling.compareAndSet(false, true)) {
             executor.execute(new Runnable() {
@@ -45,6 +55,20 @@ public abstract class BackendAsyncHandler implements NIOHandler {
                     }
                 }
             });
+        }
+    }
+
+
+    void executeQueue() {
+        try {
+            handleInnerData();
+        } catch (Exception e) {
+            handleDataError(e);
+        } finally {
+            isHandling.set(false);
+            if (dataQueue.size() > 0) {
+                DbleServer.getInstance().getBackHandlerQueue().offer(this);
+            }
         }
     }
 
@@ -78,27 +102,7 @@ public abstract class BackendAsyncHandler implements NIOHandler {
             workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
         }
     }
-    protected void executeQueue(){
-        try {
-            handleInnerData();
-        } catch (Exception e) {
-            handleDataError(e);
-        } finally {
-            isHandling.set(false);
-            if (dataQueue.size() > 0) {
-                DbleServer.getInstance().getBackHandlerQueue().offer(this);
-            }
-        }
-    }
-    protected void offerData(byte[] data) {
-        if (dataQueue.offer(data)) {
-            if (isHandling.compareAndSet(false, true)) {
-                DbleServer.getInstance().getBackHandlerQueue().offer(this);
-            }
-        } else {
-            offerDataError();
-        }
-    }
+
     protected abstract void offerDataError();
 
     protected abstract void handleData(byte[] data);

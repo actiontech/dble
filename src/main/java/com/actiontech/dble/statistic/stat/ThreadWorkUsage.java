@@ -5,9 +5,6 @@
 
 package com.actiontech.dble.statistic.stat;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class ThreadWorkUsage {

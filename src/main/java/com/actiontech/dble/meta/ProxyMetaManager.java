@@ -103,16 +103,6 @@ public class ProxyMetaManager {
         }
     }
 
-    public boolean isMetaLocked(String schema, String tbName) {
-        metaLock.lock();
-        try {
-            String lockKey = genLockKey(schema, tbName);
-            return lockTables.contains(lockKey);
-        } finally {
-            metaLock.unlock();
-        }
-    }
-
     public void removeMetaLock(String schema, String tbName) {
         metaLock.lock();
         try {
@@ -202,7 +192,7 @@ public class ProxyMetaManager {
                 metaLock.lock();
                 try {
                     if (lockTables.contains(genLockKey(schema, tbName))) {
-                        LOGGER.warn("schema:" + schema + ", table:" + tbName + " is doing ddl,Waiting for table metadata lock");
+                        LOGGER.info("schema:" + schema + ", table:" + tbName + " is doing ddl,Waiting for table metadata lock");
                         condRelease.await();
                     } else {
                         return getTableMeta(schema, tbName);
@@ -219,18 +209,26 @@ public class ProxyMetaManager {
 
     public QueryNode getSyncView(String schema, String vName) {
         while (true) {
-            metaLock.lock();
-            try {
-                if (lockTables.contains(genLockKey(schema, vName))) {
-                    LOGGER.info("schema:" + schema + ", view:" + vName + " is doing ddl,Waiting for table metadata lock");
-                    condRelease.await();
-                } else {
-                    return catalogs.get(schema).getView(vName);
+            int oldVersion = version.get();
+            if (metaCount.get() == 0) {
+                QueryNode viewNode = catalogs.get(schema).getView(vName);
+                if (version.get() == oldVersion) {
+                    return viewNode;
                 }
-            } catch (InterruptedException e) {
-                return null;
-            } finally {
-                metaLock.unlock();
+            } else {
+                metaLock.lock();
+                try {
+                    if (lockTables.contains(genLockKey(schema, vName))) {
+                        LOGGER.info("schema:" + schema + ", view:" + vName + " is doing ddl,Waiting for table metadata lock");
+                        condRelease.await();
+                    } else {
+                        return catalogs.get(schema).getView(vName);
+                    }
+                } catch (InterruptedException e) {
+                    return null;
+                } finally {
+                    metaLock.unlock();
+                }
             }
         }
     }

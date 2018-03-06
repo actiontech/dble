@@ -8,13 +8,13 @@ package com.actiontech.dble.statistic.stat;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class ThreadWorkUsage {
-    private final int statSecond1 = 15;
-    private final int statSecond2 = 60;
-    private final int statSecond3 = 300;
+    private static final int STAT_PERIOD_1 = 15;
+    private static final int STAT_PERIOD_2 = 60;
+    private static final int STAT_PERIOD_3 = 300;
     private long currentSecondUsed;
-    private LoopQueue lastStat1 = new LoopQueue(statSecond1);
-    private LoopQueue lastStat2 = new LoopQueue(statSecond2);
-    private LoopQueue lastStat3 = new LoopQueue(statSecond3);
+    private LoopQueue lastStat1 = new LoopQueue(STAT_PERIOD_1);
+    private LoopQueue lastStat2 = new LoopQueue(STAT_PERIOD_2);
+    private LoopQueue lastStat3 = new LoopQueue(STAT_PERIOD_3);
     private ReentrantReadWriteLock currentLock = new ReentrantReadWriteLock();
 
     public long getCurrentSecondUsed() {
@@ -57,7 +57,7 @@ public class ThreadWorkUsage {
         }
     }
 
-    private class LoopQueue {
+    private static class LoopQueue {
         private final int capacity;
         private long[] usedTime;
         private int index = 0;

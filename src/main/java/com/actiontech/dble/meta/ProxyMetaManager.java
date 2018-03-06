@@ -180,12 +180,12 @@ public class ProxyMetaManager {
             } catch (Exception e) {
                 LOGGER.info("updateMetaData failed,sql is" + statement.toString(), e);
             } finally {
-                removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
                 try {
                     notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
                 } catch (Exception e) {
                     LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyResponseZKDdl error", e);
                 }
+                removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
             }
         }
     }
@@ -462,7 +462,12 @@ public class ProxyMetaManager {
         } else if (DbleServer.getInstance().isUseUcore()) {
             DDLInfo ddlInfo = new DDLInfo(schema, sql, UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ddlStatus);
             String nodeName = StringUtil.getUFullName(schema, table);
-            ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLPath(nodeName), ddlInfo.toString());
+            UDistributeLock lock = new UDistributeLock(UcorePathUtil.getDDLPath(nodeName), ddlInfo.toString());
+            //ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLPath(nodeName), ddlInfo.toString());
+            while (!lock.acquire()) {
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
+            }
+            UDistrbtLockManager.addLock(lock);
         }
     }
 
@@ -518,6 +523,8 @@ public class ProxyMetaManager {
                 List<UKvBean> reponseList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getDDLPath(nodeName));
                 List<UKvBean> onlineList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getOnlinePath());
                 if (reponseList.size() >= onlineList.size()) {
+                    //release the lock
+                    UDistrbtLockManager.releaseLock(UcorePathUtil.getDDLPath(nodeName));
                     ClusterUcoreSender.deleteKVTree(UcorePathUtil.getDDLPath(nodeName) + "/");
                     break;
                 }
@@ -550,12 +557,12 @@ public class ProxyMetaManager {
         } catch (Exception e) {
             LOGGER.info("updateMetaData failed,sql is" + statement.toString(), e);
         } finally {
-            removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
             try {
                 notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
             } catch (Exception e) {
                 LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyResponseZKDdl error", e);
             }
+            removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
         }
     }
 
@@ -620,12 +627,12 @@ public class ProxyMetaManager {
         } catch (Exception e) {
             LOGGER.info("updateMetaData alterTable failed,sql is" + alterStatement.toString(), e);
         } finally {
-            removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
             try {
                 notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
             } catch (Exception e) {
                 LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyResponseZKDdl error", e);
             }
+            removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
         }
     }
 
@@ -633,12 +640,12 @@ public class ProxyMetaManager {
         //TODO:reset Sequence?
         SQLExprTableSource exprTableSource = statement.getTableSources().get(0);
         SchemaInfo schemaInfo = getSchemaInfo(schema, exprTableSource);
-        removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
         try {
             notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
         } catch (Exception e) {
             LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyResponseZKDdl error", e);
         }
+        removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
     }
 
     private void createIndex(String schema, String sql, SQLCreateIndexStatement statement, boolean isSuccess, boolean needNotifyOther) {
@@ -663,12 +670,12 @@ public class ProxyMetaManager {
             } catch (Exception e) {
                 LOGGER.info("updateMetaData failed,sql is" + statement.toString(), e);
             } finally {
-                removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
                 try {
                     notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
                 } catch (Exception e) {
                     LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyResponseZKDdl error", e);
                 }
+                removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
             }
         }
     }
@@ -712,12 +719,12 @@ public class ProxyMetaManager {
         } catch (Exception e) {
             LOGGER.info("updateMetaData failed,sql is" + dropIndexStatement.toString(), e);
         } finally {
-            removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
             try {
                 notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
             } catch (Exception e) {
                 LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "notifyResponseZKDdl error", e);
             }
+            removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
         }
     }
 

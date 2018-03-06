@@ -19,8 +19,7 @@ public class ConcurrentBackEndHandlerRunnable implements Runnable {
     public void run() {
         BackendAsyncHandler handler;
         while (true) {
-            handler = backendHandlerQueue.poll();
-            while (handler != null) {
+            while ((handler = backendHandlerQueue.poll()) != null) {
                 handler.executeQueue();
             }
         }

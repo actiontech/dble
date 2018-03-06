@@ -22,8 +22,7 @@ public class ConcurrentFrontEndHandlerRunnable implements Runnable {
     public void run() {
         FrontendCommandHandler handler;
         while (true) {
-            handler = frontHandlerQueue.poll();
-            while (handler != null) {
+            while ((handler = frontHandlerQueue.poll()) != null) {
 
                 //threadUsageStat start
                 boolean useThreadUsageStat = false;

@@ -86,7 +86,7 @@ public class ThreadWorkUsage {
             for (int i = 0; i < length; i++) {
                 sumUsed += usedTime[i];
             }
-            long percent = sumUsed / length / 10000000;
+            long percent = length == 0 ? 0 : sumUsed / length / 10000000;
             return Long.toString(percent) + "%";
         }
     }

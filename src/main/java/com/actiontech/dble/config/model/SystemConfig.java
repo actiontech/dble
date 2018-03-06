@@ -138,7 +138,7 @@ public final class SystemConfig {
 
     private boolean useJoinStrategy;
 
-    private int costTimeStat = 0;
+    private int useCostTimeStat = 0;
     private int maxCostStatSize = 100;
     private int costSamplePercent = 1;
     private int useThreadUsageStat = 0;
@@ -156,7 +156,7 @@ public final class SystemConfig {
         // if always big result,need large network buffer pool pages.
         this.bufferPoolPageNumber = (short) (DEFAULT_PROCESSORS * 20);
 
-        this.processorExecutor = (DEFAULT_PROCESSORS != 1) ? DEFAULT_PROCESSORS * 2 : 4;
+        this.processorExecutor = (DEFAULT_PROCESSORS != 1) ? DEFAULT_PROCESSORS : 2;
         this.backendProcessorExecutor = processorExecutor;
         this.complexExecutor = processorExecutor > 8 ? 8 : processorExecutor;
         this.idleTimeout = DEFAULT_IDLE_TIMEOUT;
@@ -800,11 +800,11 @@ public final class SystemConfig {
     }
 
     public int getCostTimeStat() {
-        return costTimeStat;
+        return useCostTimeStat;
     }
     @SuppressWarnings("unused")
     public void setCostTimeStat(int costTimeStat) {
-        this.costTimeStat = costTimeStat;
+        this.useCostTimeStat = costTimeStat;
     }
 
     public int getMaxCostStatSize() {
@@ -857,8 +857,10 @@ public final class SystemConfig {
                 ", managerPort=" + managerPort +
                 ", charset=" + charset +
                 ", processors=" + processors +
+                ", backendProcessors=" + backendProcessors +
                 ", processorExecutor=" + processorExecutor +
-                ", cachedExecutor=" + complexExecutor +
+                ", backendProcessorExecutor=" + backendProcessorExecutor +
+                ", complexExecutor=" + complexExecutor +
                 ", idleTimeout=" + idleTimeout +
                 ", sqlExecuteTimeout=" + sqlExecuteTimeout +
                 ", showBinlogStatusTimeout=" + showBinlogStatusTimeout +
@@ -883,6 +885,14 @@ public final class SystemConfig {
                 ", usingAIO=" + usingAIO +
                 ", maxPacketSize=" + maxPacketSize +
                 ", serverNodeId=" + serverNodeId +
+                ", otherMemSize=" + otherMemSize +
+                ", orderMemSize=" + orderMemSize +
+                ", joinMemSize=" + joinMemSize +
+                ", useCostTimeStat=" + useCostTimeStat +
+                ", maxCostStatSize=" + maxCostStatSize +
+                ", costSamplePercent=" + costSamplePercent +
+                ", useThreadUsageStat=" + useThreadUsageStat +
+                ", usePerformanceMode=" + usePerformanceMode +
                 "]";
     }
 }

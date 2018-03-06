@@ -10,9 +10,9 @@ import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 
 import java.util.concurrent.BlockingQueue;
 
-public class FrondEndRunnable implements Runnable {
+public class FrontEndHandlerRunnable implements Runnable {
     private final BlockingQueue<FrontendCommandHandler> frontHandlerQueue;
-    public FrondEndRunnable(BlockingQueue<FrontendCommandHandler> frontHandlerQueue) {
+    public FrontEndHandlerRunnable(BlockingQueue<FrontendCommandHandler> frontHandlerQueue) {
         this.frontHandlerQueue = frontHandlerQueue;
 
     }

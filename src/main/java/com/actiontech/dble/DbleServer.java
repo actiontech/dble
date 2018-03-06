@@ -31,8 +31,7 @@ import com.actiontech.dble.manager.ManagerConnectionFactory;
 import com.actiontech.dble.memory.unsafe.Platform;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.net.*;
-import com.actiontech.dble.net.handler.FrondEndRunnable;
-import com.actiontech.dble.net.handler.FrontendCommandHandler;
+import com.actiontech.dble.net.handler.*;
 import com.actiontech.dble.route.RouteService;
 import com.actiontech.dble.route.sequence.handler.*;
 import com.actiontech.dble.server.ServerConnectionFactory;
@@ -120,17 +119,10 @@ public final class DbleServer {
     private InterProcessMutex dnIndexLock;
     private long totalNetWorkBufferSize = 0;
     private XASessionCheck xaSessionCheck;
-
-    public Map<String, ThreadWorkUsage> getThreadUsedMap() {
-        return threadUsedMap;
-    }
-
     private Map<String, ThreadWorkUsage> threadUsedMap = new HashMap<>();
-    public Queue<FrontendCommandHandler> getFrontHandlerQueue() {
-        return frontHandlerQueue;
-    }
-
-    private BlockingQueue<FrontendCommandHandler> frontHandlerQueue = new LinkedBlockingQueue<>();
+    private BlockingQueue<FrontendCommandHandler> frontHandlerQueue;
+    private Queue<FrontendCommandHandler> concurrentFrontHandlerQueue;
+    private Queue<BackendAsyncHandler> concurrentBackHandlerQueue;
     private DbleServer() {
         this.config = new ServerConfig();
         scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("TimerScheduler-%d").build());
@@ -335,8 +327,21 @@ public final class DbleServer {
         backendBusinessExecutor = ExecutorUtil.createFixed("backendBusinessExecutor", system.getBackendProcessorExecutor());
         complexQueryExecutor = ExecutorUtil.createCached("complexQueryExecutor", system.getComplexExecutor());
         timerExecutor = ExecutorUtil.createFixed("Timer", 1);
-        for (int i = 0; i < system.getProcessorExecutor(); i++) {
-            businessExecutor.execute(new FrondEndRunnable(frontHandlerQueue));
+        if (system.getUsePerformanceMode() == 1) {
+            concurrentFrontHandlerQueue = new ConcurrentLinkedQueue<>();
+            for (int i = 0; i < system.getProcessorExecutor(); i++) {
+                businessExecutor.execute(new ConcurrentFrontEndHandlerRunnable(concurrentFrontHandlerQueue));
+            }
+
+            concurrentBackHandlerQueue = new ConcurrentLinkedQueue<>();
+            for (int i = 0; i < system.getBackendProcessorExecutor(); i++) {
+                backendBusinessExecutor.execute(new ConcurrentBackEndHandlerRunnable(concurrentBackHandlerQueue));
+            }
+        } else {
+            frontHandlerQueue = new LinkedBlockingQueue<>();
+            for (int i = 0; i < system.getProcessorExecutor(); i++) {
+                businessExecutor.execute(new FrontEndHandlerRunnable(frontHandlerQueue));
+            }
         }
         for (int i = 0; i < frontProcessorCount; i++) {
             frontProcessors[i] = new NIOProcessor("frontProcessor" + i, bufferPool);
@@ -703,6 +708,23 @@ public final class DbleServer {
             i = nextBackendProcessor = 0;
         }
         return backendProcessors[i];
+    }
+
+
+    public Map<String, ThreadWorkUsage> getThreadUsedMap() {
+        return threadUsedMap;
+    }
+
+    public Queue<FrontendCommandHandler> getFrontHandlerQueue() {
+        if (config.getSystem().getUsePerformanceMode() == 1) {
+            return concurrentFrontHandlerQueue;
+        } else {
+            return frontHandlerQueue;
+        }
+    }
+
+    public Queue<BackendAsyncHandler> getBackHandlerQueue() {
+        return concurrentBackHandlerQueue;
     }
 
     public NIOProcessor[] getFrontProcessors() {

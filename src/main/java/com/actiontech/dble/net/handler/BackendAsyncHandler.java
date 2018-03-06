@@ -34,34 +34,7 @@ public abstract class BackendAsyncHandler implements NIOHandler {
                 @Override
                 public void run() {
                     try {
-                        byte[] data;
-
-                        //threadUsageStat start
-                        boolean useThreadUsageStat = false;
-                        String threadName = null;
-                        ThreadWorkUsage workUsage = null;
-                        long workStart = 0;
-                        if (DbleServer.getInstance().getConfig().getSystem().getUseThreadUsageStat() == 1) {
-                            useThreadUsageStat = true;
-                            threadName = Thread.currentThread().getName();
-                            workUsage = DbleServer.getInstance().getThreadUsedMap().get(threadName);
-                            if (threadName.startsWith("backend")) {
-                                if (workUsage == null) {
-                                    workUsage = new ThreadWorkUsage();
-                                    DbleServer.getInstance().getThreadUsedMap().put(threadName, workUsage);
-                                }
-                            }
-
-                            workStart = System.nanoTime();
-                        }
-                        //handleData
-                        while ((data = dataQueue.poll()) != null) {
-                            handleData(data);
-                        }
-                        //threadUsageStat end
-                        if (useThreadUsageStat && threadName.startsWith("backend")) {
-                            workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
-                        }
+                        handleInnerData();
                     } catch (Exception e) {
                         handleDataError(e);
                     } finally {
@@ -75,6 +48,57 @@ public abstract class BackendAsyncHandler implements NIOHandler {
         }
     }
 
+    private void handleInnerData() {
+        byte[] data;
+
+        //threadUsageStat start
+        boolean useThreadUsageStat = false;
+        String threadName = null;
+        ThreadWorkUsage workUsage = null;
+        long workStart = 0;
+        if (DbleServer.getInstance().getConfig().getSystem().getUseThreadUsageStat() == 1) {
+            useThreadUsageStat = true;
+            threadName = Thread.currentThread().getName();
+            workUsage = DbleServer.getInstance().getThreadUsedMap().get(threadName);
+            if (threadName.startsWith("backend")) {
+                if (workUsage == null) {
+                    workUsage = new ThreadWorkUsage();
+                    DbleServer.getInstance().getThreadUsedMap().put(threadName, workUsage);
+                }
+            }
+
+            workStart = System.nanoTime();
+        }
+        //handleData
+        while ((data = dataQueue.poll()) != null) {
+            handleData(data);
+        }
+        //threadUsageStat end
+        if (useThreadUsageStat && threadName.startsWith("backend")) {
+            workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
+        }
+    }
+    protected void executeQueue(){
+        try {
+            handleInnerData();
+        } catch (Exception e) {
+            handleDataError(e);
+        } finally {
+            isHandling.set(false);
+            if (dataQueue.size() > 0) {
+                DbleServer.getInstance().getBackHandlerQueue().offer(this);
+            }
+        }
+    }
+    protected void offerData(byte[] data) {
+        if (dataQueue.offer(data)) {
+            if (isHandling.compareAndSet(false, true)) {
+                DbleServer.getInstance().getBackHandlerQueue().offer(this);
+            }
+        } else {
+            offerDataError();
+        }
+    }
     protected abstract void offerDataError();
 
     protected abstract void handleData(byte[] data);

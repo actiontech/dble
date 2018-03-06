@@ -138,6 +138,7 @@ public final class SystemConfig {
     private int maxCostStatSize = 100;
     private int costSamplePercent = 1;
     private int useThreadUsageStat = 0;
+    private int usePerformanceMode = 0;
 
     public SystemConfig() {
         this.serverPort = DEFAULT_PORT;
@@ -799,6 +800,16 @@ public final class SystemConfig {
     @SuppressWarnings("unused")
     public void setUseThreadUsageStat(int useThreadUsageStat) {
         this.useThreadUsageStat = useThreadUsageStat;
+    }
+
+
+    public int getUsePerformanceMode() {
+        return usePerformanceMode;
+    }
+
+    @SuppressWarnings("unused")
+    public void setUsePerformanceMode(int usePerformanceMode) {
+        this.usePerformanceMode = usePerformanceMode;
     }
 
     @Override

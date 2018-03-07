@@ -69,5 +69,7 @@ public class UDistributeLock {
         return true;
     }
 
-
+    public String getPath() {
+        return path;
+    }
 }

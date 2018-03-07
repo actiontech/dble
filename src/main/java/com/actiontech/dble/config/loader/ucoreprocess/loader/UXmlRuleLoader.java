@@ -4,6 +4,9 @@ import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.*;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.config.loader.ucoreprocess.listen.UcoreClearKeyListener;
+import com.actiontech.dble.config.loader.zkprocess.comm.ConfFileRWUtils;
+import com.actiontech.dble.config.loader.zkprocess.console.ParseParamEnum;
+import com.actiontech.dble.config.loader.zkprocess.entity.Property;
 import com.actiontech.dble.config.loader.zkprocess.entity.Rules;
 import com.actiontech.dble.config.loader.zkprocess.entity.rule.function.Function;
 import com.actiontech.dble.config.loader.zkprocess.entity.rule.tablerule.TableRule;
@@ -13,12 +16,15 @@ import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.rule.json.FunctionJsonParse;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.rule.json.TableRuleJsonParse;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.rule.xml.RuleParseXmlImpl;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.util.ResourceUtil;
 import com.alibaba.fastjson.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -36,7 +42,6 @@ public class UXmlRuleLoader implements UcoreXmlLoader {
     private ParseXmlServiceInf<Rules> parseRulesXMl;
 
     private static final String CONFIG_PATH = UcorePathUtil.getConfRulePath();
-
 
 
     public UXmlRuleLoader(XmlProcessBase xmlParseBase, UcoreClearKeyListener confListener) {
@@ -69,6 +74,8 @@ public class UXmlRuleLoader implements UcoreXmlLoader {
 
         this.parseRulesXMl.parseToXmlWrite(rule, path, "rule");
 
+        writeMapFileAddFunction(functions);
+
         LOGGER.info("SchemasLoader notifyProcess ucore to object zk schema      write :" + path + " is success");
     }
 
@@ -76,9 +83,94 @@ public class UXmlRuleLoader implements UcoreXmlLoader {
     public void notifyCluster() throws Exception {
         Rules rules = this.parseRulesXMl.parseXmlToBean(UcorePathUtil.UCORE_LOCAL_WRITE_PATH + WRITEPATH);
         JSONObject rule = new JSONObject();
+
+        readMapFileAddFunction(rules.getFunction());
         rule.put(UcorePathUtil.TABLE_RULE, rules.getTableRule());
         rule.put(UcorePathUtil.FUNCTION, rules.getFunction());
         ClusterUcoreSender.sendDataToUcore(CONFIG_PATH, rule.toJSONString());
+    }
+
+
+    /**
+     * readMapFileAddFunction
+     *
+     * @param functionList
+     * @Created 2016/9/18
+     */
+    private void readMapFileAddFunction(List<Function> functionList) {
+
+        List<Property> tempData = new ArrayList<>();
+
+        for (Function function : functionList) {
+            List<Property> proList = function.getProperty();
+            if (null != proList && !proList.isEmpty()) {
+                for (Property property : proList) {
+                    // if mapfile,read and save to json
+                    if (ParseParamEnum.ZK_PATH_RULE_MAPFILE_NAME.getKey().equals(property.getName())) {
+                        Property mapFilePro = new Property();
+                        mapFilePro.setName(property.getValue());
+                        try {
+                            mapFilePro.setValue(ConfFileRWUtils.readFile(property.getValue()));
+                            tempData.add(mapFilePro);
+                        } catch (IOException e) {
+                            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "RulesxmlTozkLoader readMapFile IOException", e);
+                        }
+                    }
+                }
+                proList.addAll(tempData);
+                tempData.clear();
+            }
+        }
+    }
+
+
+    /**
+     * writeMapFileAddFunction
+     *
+     * @param functionList
+     * @Created 2016/9/18
+     */
+    private void writeMapFileAddFunction(List<Function> functionList) {
+
+        List<Property> tempData = new ArrayList<>();
+
+        List<Property> writeData = new ArrayList<>();
+        for (Function function : functionList) {
+            List<Property> proList = function.getProperty();
+            if (null != proList && !proList.isEmpty()) {
+                for (Property property : proList) {
+                    if (ParseParamEnum.ZK_PATH_RULE_MAPFILE_NAME.getKey().equals(property.getName())) {
+                        tempData.add(property);
+                    }
+                }
+
+                if (!tempData.isEmpty()) {
+                    for (Property property : tempData) {
+                        for (Property prozkdownload : proList) {
+                            if (property.getValue().equals(prozkdownload.getName())) {
+                                writeData.add(prozkdownload);
+                            }
+                        }
+                    }
+                }
+
+                if (!writeData.isEmpty()) {
+                    for (Property writeMsg : writeData) {
+                        try {
+                            ConfFileRWUtils.writeFile(writeMsg.getName(), writeMsg.getValue());
+                        } catch (IOException e) {
+                            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "RuleszkToxmlLoader write File IOException", e);
+                        }
+                    }
+                }
+
+                proList.removeAll(writeData);
+
+                tempData.clear();
+                writeData.clear();
+            }
+        }
+
     }
 
 }

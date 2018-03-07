@@ -1,0 +1,55 @@
+/*
+ * Copyright (C) 2016-2018 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
+package com.actiontech.dble.net.handler;
+
+import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
+
+import java.util.concurrent.BlockingQueue;
+
+public class FrontEndHandlerRunnable implements Runnable {
+    private final BlockingQueue<FrontendCommandHandler> frontHandlerQueue;
+    public FrontEndHandlerRunnable(BlockingQueue<FrontendCommandHandler> frontHandlerQueue) {
+        this.frontHandlerQueue = frontHandlerQueue;
+
+    }
+
+    @Override
+    public void run() {
+        FrontendCommandHandler handler;
+        while (true) {
+            try {
+                handler = frontHandlerQueue.take();
+
+                //threadUsageStat start
+                boolean useThreadUsageStat = false;
+                String threadName = null;
+                ThreadWorkUsage workUsage = null;
+                long workStart = 0;
+                if (DbleServer.getInstance().getConfig().getSystem().getUseThreadUsageStat() == 1) {
+                    useThreadUsageStat = true;
+                    threadName = Thread.currentThread().getName();
+                    workUsage = DbleServer.getInstance().getThreadUsedMap().get(threadName);
+
+                    if (workUsage == null) {
+                        workUsage = new ThreadWorkUsage();
+                        DbleServer.getInstance().getThreadUsedMap().put(threadName, workUsage);
+                    }
+                    workStart = System.nanoTime();
+                }
+                //handler data
+                handler.handle();
+
+                //threadUsageStat end
+                if (useThreadUsageStat) {
+                    workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException("FrontendCommandHandler error.", e);
+            }
+        }
+    }
+}

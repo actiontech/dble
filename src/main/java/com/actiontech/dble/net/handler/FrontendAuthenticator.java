@@ -111,7 +111,7 @@ public class FrontendAuthenticator implements NIOHandler {
         if (benchmark > 0) {
 
             int frontendsLength = 0;
-            NIOProcessor[] processors = DbleServer.getInstance().getProcessors();
+            NIOProcessor[] processors = DbleServer.getInstance().getFrontProcessors();
             for (NIOProcessor p : processors) {
                 frontendsLength += p.getFrontendsLength();
             }

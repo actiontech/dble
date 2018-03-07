@@ -69,7 +69,7 @@ public final class ShowSession {
 
         // write rows
         byte packetId = EOF.getPacketId();
-        for (NIOProcessor process : DbleServer.getInstance().getProcessors()) {
+        for (NIOProcessor process : DbleServer.getInstance().getFrontProcessors()) {
             for (FrontendConnection front : process.getFrontends().values()) {
 
                 if (!(front instanceof ServerConnection)) {

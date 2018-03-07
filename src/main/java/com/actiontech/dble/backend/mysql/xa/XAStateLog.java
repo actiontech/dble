@@ -56,6 +56,9 @@ public final class XAStateLog {
         CoordinatorLogEntry coordinatorLogEntry = IN_MEMORY_REPOSITORY.get(xaTxId);
         coordinatorLogEntry.setTxState(sessionState);
         flushMemoryRepository(xaTxId, coordinatorLogEntry);
+        if (DbleServer.getInstance().getConfig().getSystem().getUsePerformanceMode() == 1) {
+            return true;
+        }
         //will preparing, may success send but failed received,should be rollback
         if (sessionState == TxState.TX_PREPARING_STATE ||
                 //will committing, may success send but failed received,should be commit agagin

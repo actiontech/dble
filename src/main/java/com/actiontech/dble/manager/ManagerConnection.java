@@ -32,6 +32,16 @@ public class ManagerConnection extends FrontendConnection {
     }
 
     @Override
+    protected void setRequestTime() {
+        //do nothing
+    }
+
+    @Override
+    public void startProcess() {
+        //do nothing
+    }
+
+    @Override
     public void handle(final byte[] data) {
         handler.handle(data);
     }

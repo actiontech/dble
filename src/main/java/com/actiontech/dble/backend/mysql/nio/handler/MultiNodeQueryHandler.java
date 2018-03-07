@@ -136,6 +136,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             return;
         }
         conn.setResponseHandler(this);
+        conn.setSession(session);
         conn.execute(node, session.getSource(), sessionAutocommit && !session.getSource().isTxStart() && !node.isModifySQL());
     }
 
@@ -306,6 +307,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     return;
                 }
             }
+            session.setResponseTime();
             writeEofResult(eof, source);
             doSqlStat(source);
         }
@@ -559,6 +561,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 source.setTxInterrupt("ROLLBACK");
             }
             if (nodeCount == 0) {
+                session.setResponseTime();
                 session.getSource().write(data);
             }
         }

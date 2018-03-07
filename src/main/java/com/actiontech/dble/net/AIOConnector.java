@@ -38,7 +38,7 @@ public final class AIOConnector implements SocketConnector,
         try {
             if (c.finishConnect()) {
                 c.setId(ID_GENERATOR.getId());
-                NIOProcessor processor = DbleServer.getInstance().nextProcessor();
+                NIOProcessor processor = DbleServer.getInstance().nextBackendProcessor();
                 c.setProcessor(processor);
                 c.register();
             }

@@ -40,11 +40,11 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
      * Otherwise will report error like this:can't find datanode for sharding column:column_name val:ffffffff
      */
     private int defaultNode = -1;
-
+    private int hashCode = 1;
     @Override
     public void init() {
-
         initialize();
+        initHashCode();
     }
 
     public void setMapFile(String mapFile) {
@@ -66,7 +66,7 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
             if (type == 0) {
                 value = Integer.valueOf(columnValue);
             }
-            Integer rst = null;
+            Integer rst;
             Integer pid = app2Partition.get(value);
             if (pid != null) {
                 rst = pid;
@@ -88,15 +88,12 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
     @Override
     public int getPartitionNum() {
         Set<Integer> set = new HashSet<>(app2Partition.values());
-        int count = set.size();
-        return count;
+        return set.size();
     }
 
     private void initialize() {
         BufferedReader in = null;
         try {
-            // FileInputStream fin = new FileInputStream(new File(fileMapPath));
-
             InputStream fin = ResourceUtil.getResourceAsStreamFromRoot(mapFile);
             if (fin == null) {
                 throw new RuntimeException("can't find class resource file " + mapFile);
@@ -105,7 +102,7 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
 
             app2Partition = new HashMap<>();
 
-            for (String line = null; (line = in.readLine()) != null; ) {
+            for (String line; (line = in.readLine()) != null; ) {
                 line = line.trim();
                 if (line.startsWith("#") || line.startsWith("//")) {
                     continue;
@@ -139,10 +136,54 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
 
         } finally {
             try {
-                in.close();
+                if (in != null) {
+                    in.close();
+                }
             } catch (Exception e2) {
                 //ignore error
             }
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        PartitionByFileMap other = (PartitionByFileMap) o;
+        if (other.defaultNode != defaultNode) {
+            return false;
+        }
+        if (other.type != type) {
+            return false;
+        }
+        if (other.app2Partition.size() != app2Partition.size()) {
+            return false;
+        }
+        for (Map.Entry<Object, Integer> entry : app2Partition.entrySet()) {
+            Integer otherValue = other.app2Partition.get(entry.getKey());
+            if (!entry.getValue().equals(otherValue)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return hashCode;
+    }
+
+    private void initHashCode() {
+        if (defaultNode != 0) {
+            hashCode *= defaultNode;
+        }
+        if (type != 0) {
+            hashCode *= type;
+        }
+        hashCode *= app2Partition.size();
     }
 }

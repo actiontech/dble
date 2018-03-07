@@ -16,6 +16,7 @@ import java.io.Serializable;
  * @author lxy
  */
 public abstract class AbstractPartitionAlgorithm implements RuleAlgorithm, Serializable {
+    protected String alias;
     protected String name;
 
     public String getName() {
@@ -24,6 +25,14 @@ public abstract class AbstractPartitionAlgorithm implements RuleAlgorithm, Seria
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getAlias() {
+        return alias;
+    }
+
+    public void setAlias(String alias) {
+        this.alias = alias;
     }
 
     private static final long serialVersionUID = -532594213256935577L;

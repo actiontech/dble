@@ -86,10 +86,14 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
         if (session.closed()) {
             return;
         }
+        setResponseTime();
         if (this.isFail()) {
             createErrPkg(error).write(session.getSource());
         } else {
             session.getSource().write(send);
         }
+    }
+
+    protected void setResponseTime() {
     }
 }

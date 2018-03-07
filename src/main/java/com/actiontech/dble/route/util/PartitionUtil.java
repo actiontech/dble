@@ -39,11 +39,16 @@ public final class PartitionUtil implements Serializable {
      */
     public PartitionUtil(int[] count, int[] length) {
         if (count == null || length == null || (count.length != length.length)) {
-            throw new RuntimeException("error,check your scope & scopeLength definition.");
+            throw new RuntimeException("error,check your partitionCount & partitionLength definition.");
+        }
+        for (int iLength : length) {
+            if (iLength <= 0) {
+                throw new RuntimeException("error,make sure your partitionLength at least 1.");
+            }
         }
         for (int aCount : count) {
             if (aCount <= 0) {
-                throw new RuntimeException("error,check your scope at least 1.");
+                throw new RuntimeException("error,make sure your partitionCount at least 1.");
             }
             segmentLength += aCount;
         }

@@ -61,7 +61,7 @@ public final class AIOAcceptor implements SocketAcceptor,
             FrontendConnection c = factory.make(channel);
             c.setAccepted(true);
             c.setId(id);
-            NIOProcessor processor = DbleServer.getInstance().nextProcessor();
+            NIOProcessor processor = DbleServer.getInstance().nextFrontProcessor();
             c.setProcessor(processor);
             c.register();
         } catch (Exception e) {

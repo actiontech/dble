@@ -95,12 +95,16 @@ public final class ShowProcessor {
 
         // write rows
         byte packetId = EOF.getPacketId();
-        for (NIOProcessor p : DbleServer.getInstance().getProcessors()) {
+        for (NIOProcessor p : DbleServer.getInstance().getFrontProcessors()) {
             RowDataPacket row = getRow(p);
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
         }
-
+        for (NIOProcessor p : DbleServer.getInstance().getBackendProcessors()) {
+            RowDataPacket row = getRow(p);
+            row.setPacketId(++packetId);
+            buffer = row.write(buffer, c, true);
+        }
         // write last eof
         EOFPacket lastEof = new EOFPacket();
         lastEof.setPacketId(++packetId);

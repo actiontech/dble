@@ -49,7 +49,7 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
 
     @Override
     public boolean notifyProcess() throws Exception {
-        if (DbleServer.getInstance().getProcessors() != null) {
+        if (DbleServer.getInstance().getFrontProcessors() != null) {
             DirectoryInf statusDirectory = new ZkDirectoryImpl(currZkPath, null);
             this.getTreeDirectory(currZkPath, KVPathUtil.CONF_STATUS, statusDirectory);
             ZkDataImpl zkData = (ZkDataImpl) statusDirectory.getSubordinateInfo().get(0);

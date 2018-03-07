@@ -26,4 +26,9 @@ public class XAAutoCommitNodesHandler extends XACommitNodesHandler {
             commit();
         }
     }
+
+    @Override
+    protected void setResponseTime() {
+        session.setResponseTime();
+    }
 }

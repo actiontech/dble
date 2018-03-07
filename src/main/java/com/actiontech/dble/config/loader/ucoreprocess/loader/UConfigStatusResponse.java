@@ -29,7 +29,7 @@ public class UConfigStatusResponse implements UcoreXmlLoader {
     @Override
     public void notifyProcess(UKvBean pathValue) throws Exception {
 
-        if (DbleServer.getInstance().getProcessors() != null) {
+        if (DbleServer.getInstance().getFrontProcessors() != null) {
             //step 1 check if the change is from itself
             LOGGER.debug("notify " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
             ConfStatus status = new ConfStatus(pathValue.getValue());

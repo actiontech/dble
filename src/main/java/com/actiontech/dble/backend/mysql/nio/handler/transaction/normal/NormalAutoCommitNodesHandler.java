@@ -12,4 +12,9 @@ public class NormalAutoCommitNodesHandler extends NormalCommitNodesHandler {
         super(session);
         this.sendData = packet;
     }
+
+    @Override
+    protected void setResponseTime() {
+        session.setResponseTime();
+    }
 }

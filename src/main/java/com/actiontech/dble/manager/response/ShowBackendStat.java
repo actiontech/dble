@@ -95,7 +95,7 @@ public final class ShowBackendStat {
     private static HashMap<String, BackendStat> stat() {
         HashMap<String, BackendStat> all = new HashMap<String, BackendStat>();
 
-        for (NIOProcessor p : DbleServer.getInstance().getProcessors()) {
+        for (NIOProcessor p : DbleServer.getInstance().getBackendProcessors()) {
             for (BackendConnection bc : p.getBackends().values()) {
                 if ((bc == null) || !(bc instanceof MySQLConnection)) {
                     break;

@@ -5,6 +5,7 @@
 */
 package com.actiontech.dble.net.handler;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.FrontendConnection;
@@ -29,7 +30,7 @@ public class FrontendCommandHandler implements NIOHandler {
     private final AtomicBoolean handleStatus;
     protected final FrontendConnection source;
     protected final CommandCount commands;
-
+    private byte[] dataTodo;
     public FrontendCommandHandler(FrontendConnection source) {
         this.source = source;
         this.commands = source.getProcessor().getCommands();
@@ -46,14 +47,15 @@ public class FrontendCommandHandler implements NIOHandler {
             }
             return;
         }
-        if (dataQueue.offer(data)) {
-            handleQueue();
-        } else {
-            throw new RuntimeException("add data to queue error.");
-        }
+        dataTodo = data;
+        DbleServer.getInstance().getFrontHandlerQueue().offer(this);
     }
 
+    public void handle() {
+        handleData(dataTodo);
+    }
     protected void handleData(byte[] data) {
+        source.startProcess();
         switch (data[4]) {
             case MySQLPacket.COM_INIT_DB:
                 commands.doInitDB();
@@ -107,7 +109,7 @@ public class FrontendCommandHandler implements NIOHandler {
 
     private void handleQueue() {
         if (this.handleStatus.compareAndSet(false, true)) {
-            this.source.getProcessor().getExecutor().execute(new Runnable() {
+            DbleServer.getInstance().getBusinessExecutor().execute(new Runnable() {
                 @Override
                 public void run() {
                     try {

@@ -295,6 +295,8 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         }
     }
 
+    protected void setResponseTime() {
+    }
 
     protected void nextParse() {
         if (this.isFail() && session.getXaState() != TxState.TX_PREPARE_UNCONNECT_STATE) {
@@ -310,11 +312,12 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         if (session.getXaState() == TxState.TX_INITIALIZE_STATE) { // clear all resources
             XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_COMMITTED_STATE);
             session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_INIT);
-            byte[] send = sendData;
             session.clearResources(false);
             if (session.closed()) {
                 return;
             }
+            setResponseTime();
+            byte[] send = sendData;
             session.getSource().write(send);
 
             // partially committed,must commit again
@@ -337,6 +340,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 byte[] toSend = sendData;
                 session.clearResources(false);
                 if (!session.closed()) {
+                    setResponseTime();
                     session.getSource().write(toSend);
                 }
             }
@@ -344,6 +348,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             // need to rollback;
         } else {
             XAStateLog.saveXARecoveryLog(session.getSessionXaID(), session.getXaState());
+            setResponseTime();
             session.getSource().write(sendData);
             LOGGER.info("cleanAndFeedback:" + error);
 

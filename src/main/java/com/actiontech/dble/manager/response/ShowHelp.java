@@ -91,6 +91,9 @@ public final class ShowHelp {
     private static final List<String> KEYS = new LinkedList<>();
 
     static {
+
+        //select
+        HELPS.put("select @@VERSION_COMMENT;", "Show the version comment of dble");
         // show
         HELPS.put("show @@time.current", "Report current timestamp");
         HELPS.put("show @@time.startup", "Report startup timestamp");
@@ -98,10 +101,8 @@ public final class ShowHelp {
         HELPS.put("show @@server", "Report server status");
         HELPS.put("show @@threadpool", "Report threadPool status");
         HELPS.put("show @@database", "Report databases");
-        HELPS.put("show @@datanode", "Report dataNodes");
-        HELPS.put("show @@datanode where schema = ?", "Report dataNodes");
-        HELPS.put("show @@datasource", "Report dataSources");
-        HELPS.put("show @@datasource where dataNode = ?", "Report dataSources");
+        HELPS.put("show @@datanode [where schema = ?]", "Report dataNodes");
+        HELPS.put("show @@datasource [where dataNode = ?]", "Report dataSources");
         HELPS.put("show @@datasource.synstatus", "Report datasource data synchronous");
         HELPS.put("show @@datasource.syndetail where name=?", "Report datasource data synchronous detail");
         HELPS.put("show @@datasource.cluster", "Report datasource galary cluster variables");
@@ -112,27 +113,32 @@ public final class ShowHelp {
         HELPS.put("show @@backend", "Report backend connection status");
         HELPS.put("show @@session", "Report front session details");
         HELPS.put("show @@connection.sql", "Report connection sql");
-        HELPS.put("show @@sql.execute", "Report execute status");
-        HELPS.put("show @@sql.detail where id = ?", "Report execute detail status");
         HELPS.put("show @@sql", "Report SQL list");
         // helps.put("show @@sql where id = ?", "Report  specify SQL");
         HELPS.put("show @@sql.high", "Report Hight Frequency SQL");
         HELPS.put("show @@sql.slow", "Report slow SQL");
+        HELPS.put("show @@sql.large", "Report the sql witch resultset larger than 10000 rows");
+        HELPS.put("show @@sql.condition", "Report the query of a specific table.column set by reload query_cf");
         HELPS.put("show @@sql.resultset", "Report BIG RESULTSET SQL");
         HELPS.put("show @@sql.sum", "Report  User RW Stat ");
         HELPS.put("show @@sql.sum.user", "Report  User RW Stat ");
         HELPS.put("show @@sql.sum.table", "Report  Table RW Stat ");
-        HELPS.put("show @@parser", "Report parser status");
-        HELPS.put("show @@router", "Report router status");
         HELPS.put("show @@heartbeat", "Report heartbeat status");
         HELPS.put("show @@heartbeat.detail where name=?", "Report heartbeat current detail");
-        HELPS.put("show @@slow where schema = ?", "Report schema slow sql");
-        HELPS.put("show @@slow where datanode = ?", "Report datanode slow sql");
         HELPS.put("show @@sysparam", "Report system param");
         HELPS.put("show @@syslog limit=?", "Report system log");
-        HELPS.put("show @@white", "show server white host ");
-        HELPS.put("show @@directmemory=1 or 2", "show server direct memory usage");
+        HELPS.put("show @@white", "Report server white host ");
+        HELPS.put("show @@directmemory=1 or 2", "Report server direct memory usage");
+        HELPS.put("show @@command.count", "Report the current number of querys");
+        HELPS.put("show @@connection.count", "Report the current number of connections");
+        HELPS.put("show @@backend.statistics", "Report backend node info");
+        HELPS.put("show @@backend.old", "Report old connections witch still alive after reload config all");
+        HELPS.put("show @@binlog.status", "Report the current GTID of all backend nodes");
+        HELPS.put("show @@help", "Report usage of manager port");
 
+        HELPS.put("show @@help", "Report usage of manager port");
+        HELPS.put("show @@help", "Report usage of manager port");
+        HELPS.put("show @@help", "Report usage of manager port");
         // switch
         HELPS.put("switch @@datasource name:index", "Switch dataSource");
 
@@ -148,20 +154,23 @@ public final class ShowHelp {
         HELPS.put("reload @@metadata", "Reload metadata of tables");
         HELPS.put("reload @@sqlslow=", "Set Slow SQL Time(ms)");
         HELPS.put("reload @@user_stat", "Reset show @@sql  @@sql.sum @@sql.slow");
+        HELPS.put("reload @@query_cf[=table&column]", "Reset show @@sql.conditiont");
         // rollback
         HELPS.put("rollback @@config", "Rollback all config from memory");
-
-        // open/close sql stat
-        HELPS.put("reload @@sqlstat=open", "Open real-time sql stat analyzer");
-        HELPS.put("reload @@sqlstat=close", "Close real-time sql stat analyzer");
 
         // offline/online
         HELPS.put("offline", "Change Server status to OFF");
         HELPS.put("online", "Change Server status to ON");
 
-        // clear
-        HELPS.put("clear @@slow where schema = ?", "Clear slow sql by schema");
-        HELPS.put("clear @@slow where datanode = ?", "Clear slow sql by datanode");
+        HELPS.put("show @@thread_used", "Report all bussiness&reactor thread usage");
+
+        //file
+        HELPS.put("file @@list", "List all the file in conf directory");
+        HELPS.put("file @@show filename", "Show the file data of specific file");
+        HELPS.put("file @@upload filename content", "Write content to file");
+
+        //log
+        HELPS.put("log @@[file=? limit=? key=? regex=?]", "Report logs by given regex");
 
         // list sort
         KEYS.addAll(HELPS.keySet());

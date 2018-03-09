@@ -24,6 +24,9 @@ public class CostTimeProvider {
     public void startExecuteBackend(long id) {
     }
 
+    public void allBackendConnReceive(long id) {
+    }
+
     public void beginResponse(long id) {
     }
 }

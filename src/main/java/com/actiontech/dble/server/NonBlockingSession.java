@@ -142,18 +142,6 @@ public class NonBlockingSession implements Session {
         }
         provider.endRoute(source.getId());
     }
-    public void setResponseTime() {
-        if (!timeCost) {
-            return;
-        }
-        long responseTime = System.nanoTime();
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("setResponseTime:" + responseTime);
-        }
-        queryTimeCost.getResponseTime().set(responseTime);
-        provider.beginResponse(source.getId());
-        QueryTimeCostContainer.getInstance().add(queryTimeCost);
-    }
 
     public void setBackendRequestTime(long backendID) {
         if (!timeCost) {
@@ -189,9 +177,28 @@ public class NonBlockingSession implements Session {
         if (!timeCost) {
             return;
         }
-        if (firstBackConRes.compareAndSet(false, true)) {
+        if (q.compareAndSet(false, true)) {
             provider.startExecuteBackend(source.getId());
         }
+    }
+    public void allBackendConnReceive() {
+        if (!timeCost) {
+            return;
+        }
+        provider.allBackendConnReceive(source.getId());
+    }
+
+    public void setResponseTime() {
+        if (!timeCost) {
+            return;
+        }
+        long responseTime = System.nanoTime();
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("setResponseTime:" + responseTime);
+        }
+        queryTimeCost.getResponseTime().set(responseTime);
+        provider.beginResponse(source.getId());
+        QueryTimeCostContainer.getInstance().add(queryTimeCost);
     }
     @Override
     public int getTargetCount() {

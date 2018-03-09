@@ -177,7 +177,7 @@ public class NonBlockingSession implements Session {
         if (!timeCost) {
             return;
         }
-        if (q.compareAndSet(false, true)) {
+        if (firstBackConRes.compareAndSet(false, true)) {
             provider.startExecuteBackend(source.getId());
         }
     }

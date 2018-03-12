@@ -7,6 +7,7 @@ package com.actiontech.dble.statistic.stat;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class QueryTimeCost {
@@ -16,6 +17,12 @@ public class QueryTimeCost {
 
     private AtomicLong sessionReponse = new AtomicLong(0);
     private volatile Map<Long, QueryTimeCost> backEndTimeCosts;
+
+    public AtomicBoolean getFirstBackConRes() {
+        return firstBackConRes;
+    }
+
+    private AtomicBoolean firstBackConRes = new AtomicBoolean(false);
 
 
     public long getRequestTime() {

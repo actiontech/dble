@@ -172,7 +172,7 @@ public class NonBlockingSession implements Session {
         }
         QueryTimeCost backCost = queryTimeCost.getBackEndTimeCosts().get(backendID);
         long responseTime = System.nanoTime();
-        if (backCost != null && backCost.getResponseTime().compareAndSet(0, responseTime)) {
+        if (backCost != null && backCost.getResponseTime().compareAndSet(0, responseTime) && queryTimeCost.getFirstBackConRes().compareAndSet(false, true)) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("backend connection[" + backendID + "] setResponseTime:" + responseTime);
             }

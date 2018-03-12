@@ -12,6 +12,9 @@ import java.util.concurrent.atomic.AtomicLong;
 public class QueryTimeCost {
     private volatile long requestTime = 0;
     private AtomicLong responseTime = new AtomicLong(0);
+
+
+    private AtomicLong sessionReponse = new AtomicLong(0);
     private volatile Map<Long, QueryTimeCost> backEndTimeCosts;
 
 
@@ -26,6 +29,7 @@ public class QueryTimeCost {
     public AtomicLong getResponseTime() {
         return responseTime;
     }
+
     public Map<Long, QueryTimeCost> getBackEndTimeCosts() {
         if (backEndTimeCosts == null) {
             backEndTimeCosts = new ConcurrentHashMap<>();
@@ -33,4 +37,11 @@ public class QueryTimeCost {
         return backEndTimeCosts;
     }
 
+    public AtomicLong getSessionReponse() {
+        return sessionReponse;
+    }
+
+    public void setSessionReponse(AtomicLong sessionReponse) {
+        this.sessionReponse = sessionReponse;
+    }
 }

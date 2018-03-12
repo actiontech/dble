@@ -30,11 +30,15 @@ public abstract class BackendAsyncHandler implements NIOHandler {
 
     protected void offerData(byte[] data) {
         if (dataQueue.offer(data)) {
-            if (isHandling.compareAndSet(false, true)) {
-                DbleServer.getInstance().getBackHandlerQueue().offer(this);
-            }
+            pushTask();
         } else {
             offerDataError();
+        }
+    }
+
+    private void pushTask() {
+        if (isHandling.compareAndSet(false, true)) {
+            DbleServer.getInstance().getBackHandlerQueue().offer(this);
         }
     }
 
@@ -67,7 +71,7 @@ public abstract class BackendAsyncHandler implements NIOHandler {
         } finally {
             isHandling.set(false);
             if (dataQueue.size() > 0) {
-                DbleServer.getInstance().getBackHandlerQueue().offer(this);
+                pushTask();
             }
         }
     }

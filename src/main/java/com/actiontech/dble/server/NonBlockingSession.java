@@ -121,6 +121,7 @@ public class NonBlockingSession implements Session {
         }
         queryTimeCost.setRequestTime(requestTime);
     }
+
     public void startProcess() {
         if (!timeCost) {
             return;
@@ -141,6 +142,13 @@ public class NonBlockingSession implements Session {
             return;
         }
         provider.endRoute(source.getId());
+    }
+
+    public void endDelive() {
+        if (!timeCost) {
+            return;
+        }
+        provider.endDelive(source.getId());
     }
 
     public void setBackendRequestTime(long backendID) {
@@ -168,7 +176,9 @@ public class NonBlockingSession implements Session {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("backend connection[" + backendID + "] setResponseTime:" + responseTime);
             }
-            provider.resFromBack(source.getId());
+            if (queryTimeCost.getSessionReponse().compareAndSet(0, 1)) {
+                provider.resFromBack(source.getId());
+            }
             firstBackConRes.set(false);
         }
     }
@@ -177,10 +187,11 @@ public class NonBlockingSession implements Session {
         if (!timeCost) {
             return;
         }
-        if (firstBackConRes.compareAndSet(false, true)) {
+        if (firstBackConRes.compareAndSet(false, true) && queryTimeCost.getSessionReponse().compareAndSet(1, 2)) {
             provider.startExecuteBackend(source.getId());
         }
     }
+
     public void allBackendConnReceive() {
         if (!timeCost) {
             return;
@@ -200,6 +211,7 @@ public class NonBlockingSession implements Session {
         provider.beginResponse(source.getId());
         QueryTimeCostContainer.getInstance().add(queryTimeCost);
     }
+
     @Override
     public int getTargetCount() {
         return target.size();

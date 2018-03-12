@@ -14,8 +14,6 @@ public class QueryTimeCost {
     private volatile long requestTime = 0;
     private AtomicLong responseTime = new AtomicLong(0);
 
-
-    private AtomicLong sessionReponse = new AtomicLong(0);
     private volatile Map<Long, QueryTimeCost> backEndTimeCosts;
 
     public AtomicBoolean getFirstBackConRes() {
@@ -42,13 +40,5 @@ public class QueryTimeCost {
             backEndTimeCosts = new ConcurrentHashMap<>();
         }
         return backEndTimeCosts;
-    }
-
-    public AtomicLong getSessionReponse() {
-        return sessionReponse;
-    }
-
-    public void setSessionReponse(AtomicLong sessionReponse) {
-        this.sessionReponse = sessionReponse;
     }
 }

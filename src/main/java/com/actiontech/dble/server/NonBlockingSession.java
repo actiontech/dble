@@ -176,9 +176,7 @@ public class NonBlockingSession implements Session {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("backend connection[" + backendID + "] setResponseTime:" + responseTime);
             }
-            if (queryTimeCost.getSessionReponse().compareAndSet(0, 1)) {
-                provider.resFromBack(source.getId());
-            }
+            provider.resFromBack(source.getId());
             firstBackConRes.set(false);
         }
     }
@@ -187,7 +185,7 @@ public class NonBlockingSession implements Session {
         if (!timeCost) {
             return;
         }
-        if (firstBackConRes.compareAndSet(false, true) && queryTimeCost.getSessionReponse().compareAndSet(1, 2)) {
+        if (firstBackConRes.compareAndSet(false, true)) {
             provider.startExecuteBackend(source.getId());
         }
     }

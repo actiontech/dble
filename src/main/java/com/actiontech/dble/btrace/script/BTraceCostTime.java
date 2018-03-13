@@ -85,6 +85,34 @@ public class BTraceCostTime {
 
     @OnMethod(
             clazz = "com.actiontech.dble.btrace.provider.CostTimeProvider",
+            method = "resLastBack"
+    )
+    public static void resLastBack(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod, long arg) {
+        Long ts = BTraceUtils.Collections.get(records, arg);
+        if (ts == null) {
+            return;
+        }
+        long duration = timeNanos() - ts;
+        Profiling.recordExit(profiler, "request->4L.resLastBack", duration);
+    }
+
+
+    @OnMethod(
+            clazz = "com.actiontech.dble.btrace.provider.CostTimeProvider",
+            method = "execLastBack"
+    )
+    public static void execLastBack(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod, long arg) {
+        Long ts = BTraceUtils.Collections.get(records, arg);
+        if (ts == null) {
+            return;
+        }
+        long duration = timeNanos() - ts;
+        Profiling.recordExit(profiler, "request->5L.execLastBack", duration);
+    }
+
+
+    @OnMethod(
+            clazz = "com.actiontech.dble.btrace.provider.CostTimeProvider",
             method = "resFromBack"
     )
     public static void resFromBack(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod, long arg) {

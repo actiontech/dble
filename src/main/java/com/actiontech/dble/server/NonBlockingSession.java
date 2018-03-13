@@ -142,6 +142,7 @@ public class NonBlockingSession implements Session {
             return;
         }
         provider.endRoute(source.getId());
+        queryTimeCost.setCount(target.size());
     }
 
     public void endDelive() {
@@ -179,6 +180,10 @@ public class NonBlockingSession implements Session {
             provider.resFromBack(source.getId());
             firstBackConRes.set(false);
         }
+
+        if (queryTimeCost.getBackendReserveCount().decrementAndGet() == 0) {
+            provider.resLastBack(source.getId());
+        }
     }
 
     public void startExecuteBackend() {
@@ -187,6 +192,10 @@ public class NonBlockingSession implements Session {
         }
         if (firstBackConRes.compareAndSet(false, true)) {
             provider.startExecuteBackend(source.getId());
+        }
+
+        if (queryTimeCost.getBackendExecuteCount().decrementAndGet() == 0) {
+            provider.execLastBack(source.getId());
         }
     }
 

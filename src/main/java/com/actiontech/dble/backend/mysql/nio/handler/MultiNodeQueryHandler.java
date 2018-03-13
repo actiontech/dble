@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.LoadDataUtil;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoTxOperation;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.NormalAutoCommitNodesHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.NormalAutoRollbackNodesHandler;
@@ -136,9 +137,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         if (clearIfSessionClosed(session)) {
             return;
         }
-        conn.setResponseHandler(this);
-        conn.setSession(session);
-        conn.execute(node, session.getSource(), sessionAutocommit && !session.getSource().isTxStart() && !node.isModifySQL());
+        MySQLConnection mysqlCon = (MySQLConnection) conn;
+        mysqlCon.setResponseHandler(this);
+        mysqlCon.setSession(session);
+        mysqlCon.executeMultiNode(node, session.getSource(), sessionAutocommit && !session.getSource().isTxStart() && !node.isModifySQL());
     }
 
     @Override

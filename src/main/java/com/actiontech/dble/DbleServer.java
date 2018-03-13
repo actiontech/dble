@@ -32,6 +32,7 @@ import com.actiontech.dble.memory.unsafe.Platform;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.net.*;
 import com.actiontech.dble.net.handler.*;
+import com.actiontech.dble.net.mysql.WriteToBackendTask;
 import com.actiontech.dble.route.RouteService;
 import com.actiontech.dble.route.sequence.handler.*;
 import com.actiontech.dble.server.ServerConnectionFactory;
@@ -114,6 +115,7 @@ public final class DbleServer {
     private SocketConnector connector;
     private ExecutorService businessExecutor;
     private ExecutorService backendBusinessExecutor;
+    private ExecutorService writeToBackendExecutor;
     private ExecutorService complexQueryExecutor;
     private ExecutorService timerExecutor;
     private InterProcessMutex dnIndexLock;
@@ -121,6 +123,7 @@ public final class DbleServer {
     private XASessionCheck xaSessionCheck;
     private Map<String, ThreadWorkUsage> threadUsedMap = new HashMap<>();
     private BlockingQueue<FrontendCommandHandler> frontHandlerQueue;
+    private BlockingQueue<List<WriteToBackendTask>> writeToBackendQueue;
     private Queue<FrontendCommandHandler> concurrentFrontHandlerQueue;
     private Queue<BackendAsyncHandler> concurrentBackHandlerQueue;
 
@@ -330,6 +333,7 @@ public final class DbleServer {
 
         businessExecutor = ExecutorUtil.createFixed("BusinessExecutor", system.getProcessorExecutor());
         backendBusinessExecutor = ExecutorUtil.createFixed("backendBusinessExecutor", system.getBackendProcessorExecutor());
+        writeToBackendExecutor = ExecutorUtil.createFixed("writeToBackendExecutor", system.getWriteToBackendExecutor());
         complexQueryExecutor = ExecutorUtil.createCached("complexQueryExecutor", system.getComplexExecutor());
         timerExecutor = ExecutorUtil.createFixed("Timer", 1);
         if (system.getUsePerformanceMode() == 1) {
@@ -347,6 +351,10 @@ public final class DbleServer {
             for (int i = 0; i < system.getProcessorExecutor(); i++) {
                 businessExecutor.execute(new FrontEndHandlerRunnable(frontHandlerQueue));
             }
+        }
+        writeToBackendQueue = new LinkedBlockingQueue<>();
+        for (int i = 0; i < system.getWriteToBackendExecutor(); i++) {
+            writeToBackendExecutor.execute(new WriteToBackendRunnable(writeToBackendQueue));
         }
         for (int i = 0; i < frontProcessorCount; i++) {
             frontProcessors[i] = new NIOProcessor("frontProcessor" + i, bufferPool);
@@ -719,6 +727,9 @@ public final class DbleServer {
         return backendProcessors[i];
     }
 
+    public BlockingQueue<List<WriteToBackendTask>> getWriteToBackendQueue() {
+        return writeToBackendQueue;
+    }
 
     public Map<String, ThreadWorkUsage> getThreadUsedMap() {
         return threadUsedMap;

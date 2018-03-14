@@ -142,7 +142,7 @@ public class NonBlockingSession implements Session {
             return;
         }
         provider.endRoute(source.getId());
-        queryTimeCost.setCount(rrs.getNodes().length);
+        queryTimeCost.setCount(rrs.getNodes() == null ? 0 : rrs.getNodes().length);
     }
 
     public void endDelive() {

@@ -137,12 +137,12 @@ public class NonBlockingSession implements Session {
     }
 
 
-    public void endRoute() {
+    public void endRoute(RouteResultset rrs) {
         if (!timeCost) {
             return;
         }
         provider.endRoute(source.getId());
-        queryTimeCost.setCount(target.size());
+        queryTimeCost.setCount(rrs.getNodes().length);
     }
 
     public void endDelive() {

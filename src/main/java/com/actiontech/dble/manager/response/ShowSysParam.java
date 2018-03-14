@@ -125,6 +125,17 @@ public final class ShowSysParam {
         paramValues.add(sysConfig.isUseJoinStrategy() + "");
         paramValues.add(sysConfig.getNestLoopConnSize() + "");
         paramValues.add(sysConfig.getNestLoopRowsSize() + "");
+        paramValues.add(sysConfig.getViewPersistenceConfBaseDir());
+        paramValues.add(sysConfig.getViewPersistenceConfBaseName());
+        paramValues.add(sysConfig.getComplexExecutor()+"");
+        paramValues.add(sysConfig.getOtherMemSize()+"M");
+        paramValues.add(sysConfig.getOrderMemSize()+"M");
+        paramValues.add(sysConfig.getJoinMemSize()+"M");
+        paramValues.add(sysConfig.getCostTimeStat()+"");
+        paramValues.add(sysConfig.getMaxCostStatSize()+"");
+        paramValues.add(sysConfig.getCostSamplePercent()+"");
+        paramValues.add(sysConfig.getUseThreadUsageStat()+"");
+        paramValues.add(sysConfig.getUsePerformanceMode()+"");
 
 
         for (int i = 0; i < PARAM_NAMES.length; i++) {
@@ -199,7 +210,18 @@ public final class ShowSysParam {
             "xaLogCleanPeriod",
             "useJoinStrategy",
             "nestLoopConnSize",
-            "nestLoopRowsSize"
+            "nestLoopRowsSize",
+            "viewPersistenceConfBaseDir",
+            "viewPersistenceConfBaseName",
+            "complexExecutor",
+            "otherMemSize",
+            "orderMemSize",
+            "joinMemSize",
+            "useCostTimeStat",
+            "maxCostStatSize",
+            "costSamplePercent",
+            "useThreadUsageStat",
+            "usePerformanceMode"
     };
 
     private static final String[] PARAM_DESCRIPTION = {
@@ -256,7 +278,18 @@ public final class ShowSysParam {
             "The xa log clear period.The default value is 1000ms",
             "Whether nest loop function is enabled.The default value is false",
             "The nest loop temporary tables block number.The default value is 4",
-            "The nest loop temporary tables rows for every block.The default value is 2000"
+            "The nest loop temporary tables rows for every block.The default value is 2000",
+            "The directory of the view record file,The default value is ./viewConf",
+            "The name of the view record file.The default value is viewJson",
+            "The executor for complex query.The default value is min(8,processorExecutor)",
+            "The additional size of memory can be used in a complex query.The default size is 4M",
+            "The additional size of memory can be used in a complex query order.The default size is 4M",
+            "The additional size of memory can be used in a complex query join.The default size is 4M",
+            "Whether the cost time of query can be track by Btrace.The default value is 0",
+            "The max cost total percentage.The default value is 100",
+            "The percentage of cost sample.The default value is 1",
+            "Whether the thread usage statistics function is enabled.The default value is 0",
+            "Whether use the performance mode is enabled.The default value is 0"
     };
 
     private static final String[] ISOLATION_LEVELS = {"", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ", "SERIALIZABLE"};

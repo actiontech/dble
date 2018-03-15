@@ -1,13 +1,16 @@
 #!/bin/bash
 
 echo "check JAVA_HOME & java"
-JAVA_CMD=$JAVA_HOME/bin/java
+JAVA_CMD="$2"/bin/java
 MAIN_CLASS=com.actiontech.dble.config.loader.ucoreprocess.XmltoUcore
-if [ ! -d "$JAVA_HOME" ]; then
-    echo ---------------------------------------------------
-    echo WARN: JAVA_HOME environment variable is not set. 
-    echo ---------------------------------------------------
-    JAVA_CMD=java
+if [ ! -n "$2" ]; then
+    JAVA_CMD=$JAVA_HOME/bin/java
+    if [ ! -d "$JAVA_HOME" ]; then
+        echo ---------------------------------------------------
+        echo WARN: JAVA_HOME environment variable is not set.
+        echo ---------------------------------------------------
+        JAVA_CMD=java
+    fi
 fi
 
 echo "---------set HOME_DIR------------"

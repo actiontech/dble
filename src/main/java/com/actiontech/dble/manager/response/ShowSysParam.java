@@ -127,15 +127,15 @@ public final class ShowSysParam {
         paramValues.add(sysConfig.getNestLoopRowsSize() + "");
         paramValues.add(sysConfig.getViewPersistenceConfBaseDir());
         paramValues.add(sysConfig.getViewPersistenceConfBaseName());
-        paramValues.add(sysConfig.getComplexExecutor()+"");
-        paramValues.add(sysConfig.getOtherMemSize()+"M");
-        paramValues.add(sysConfig.getOrderMemSize()+"M");
-        paramValues.add(sysConfig.getJoinMemSize()+"M");
-        paramValues.add(sysConfig.getCostTimeStat()+"");
-        paramValues.add(sysConfig.getMaxCostStatSize()+"");
-        paramValues.add(sysConfig.getCostSamplePercent()+"");
-        paramValues.add(sysConfig.getUseThreadUsageStat()+"");
-        paramValues.add(sysConfig.getUsePerformanceMode()+"");
+        paramValues.add(sysConfig.getComplexExecutor() + "");
+        paramValues.add(sysConfig.getOtherMemSize() + "M");
+        paramValues.add(sysConfig.getOrderMemSize() + "M");
+        paramValues.add(sysConfig.getJoinMemSize() + "M");
+        paramValues.add(sysConfig.getCostTimeStat() + "");
+        paramValues.add(sysConfig.getMaxCostStatSize() + "");
+        paramValues.add(sysConfig.getCostSamplePercent() + "");
+        paramValues.add(sysConfig.getUseThreadUsageStat() + "");
+        paramValues.add(sysConfig.getUsePerformanceMode() + "");
 
 
         for (int i = 0; i < PARAM_NAMES.length; i++) {
@@ -221,7 +221,7 @@ public final class ShowSysParam {
             "maxCostStatSize",
             "costSamplePercent",
             "useThreadUsageStat",
-            "usePerformanceMode"
+            "usePerformanceMode",
     };
 
     private static final String[] PARAM_DESCRIPTION = {
@@ -289,7 +289,7 @@ public final class ShowSysParam {
             "The max cost total percentage.The default value is 100",
             "The percentage of cost sample.The default value is 1",
             "Whether the thread usage statistics function is enabled.The default value is 0",
-            "Whether use the performance mode is enabled.The default value is 0"
+            "Whether use the performance mode is enabled.The default value is 0",
     };
 
     private static final String[] ISOLATION_LEVELS = {"", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ", "SERIALIZABLE"};

@@ -14,14 +14,20 @@ public class QueryTimeCost {
     private volatile long requestTime = 0;
     private AtomicLong responseTime = new AtomicLong(0);
 
-    private volatile Map<Long, QueryTimeCost> backEndTimeCosts;
+    private AtomicLong backendReserveCount = null;
+    private AtomicLong backendExecuteCount = null;
 
-    public AtomicBoolean getFirstBackConRes() {
-        return firstBackConRes;
-    }
+    private volatile Map<Long, QueryTimeCost> backEndTimeCosts;
 
     private AtomicBoolean firstBackConRes = new AtomicBoolean(false);
 
+    public QueryTimeCost() {
+    }
+
+    public void setCount(int x) {
+        backendReserveCount = new AtomicLong(x);
+        backendExecuteCount = new AtomicLong(x);
+    }
 
     public long getRequestTime() {
         return requestTime;
@@ -40,5 +46,25 @@ public class QueryTimeCost {
             backEndTimeCosts = new ConcurrentHashMap<>();
         }
         return backEndTimeCosts;
+    }
+
+    public AtomicBoolean getFirstBackConRes() {
+        return firstBackConRes;
+    }
+
+    public AtomicLong getBackendReserveCount() {
+        return backendReserveCount;
+    }
+
+    public void setBackendReserveCount(AtomicLong backendReserveCount) {
+        this.backendReserveCount = backendReserveCount;
+    }
+
+    public AtomicLong getBackendExecuteCount() {
+        return backendExecuteCount;
+    }
+
+    public void setBackendExecuteCount(AtomicLong backendExecuteCount) {
+        this.backendExecuteCount = backendExecuteCount;
     }
 }

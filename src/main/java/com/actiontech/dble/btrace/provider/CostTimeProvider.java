@@ -21,6 +21,14 @@ public class CostTimeProvider {
     public void resFromBack(long id) {
     }
 
+    public void resLastBack(long id) {
+
+    }
+
+    public void execLastBack(long id) {
+
+    }
+
     public void startExecuteBackend(long id) {
     }
 

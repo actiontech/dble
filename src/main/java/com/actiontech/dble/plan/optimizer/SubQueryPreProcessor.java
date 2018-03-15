@@ -57,6 +57,8 @@ public final class SubQueryPreProcessor {
                 findComparisonsSubQueryToJoinNode(scalarSubQuery.getPlanNode(), childTransform);
             }
         }
+        //having contains sub query
+        buildSubQuery(qtn, new SubQueryFilter(), qtn.getHavingFilter(), false, childTransform);
 
         SubQueryFilter find = new SubQueryFilter();
         find.query = qtn;

@@ -14,8 +14,8 @@ public class QueryTimeCost {
     private volatile long requestTime = 0;
     private AtomicLong responseTime = new AtomicLong(0);
 
-    private AtomicLong backendReserveCount = null;
-    private AtomicLong backendExecuteCount = null;
+    private AtomicLong backendReserveCount = new AtomicLong(0);
+    private AtomicLong backendExecuteCount = new AtomicLong(0);
 
     private volatile Map<Long, QueryTimeCost> backEndTimeCosts;
 
@@ -25,8 +25,8 @@ public class QueryTimeCost {
     }
 
     public void setCount(int x) {
-        backendReserveCount = new AtomicLong(x);
-        backendExecuteCount = new AtomicLong(x);
+        backendReserveCount.set(x);
+        backendExecuteCount.set(x);
     }
 
     public long getRequestTime() {

@@ -67,9 +67,11 @@ public class CKVStoreRepository implements Repository {
 
         StringBuffer sb = new StringBuffer().append(UcorePathUtil.getViewPath()).
                 append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(viewName);
+        StringBuffer lsb = new StringBuffer().append(UcorePathUtil.getViewPath()).
+                append(SEPARATOR).append(LOCK).append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(viewName);
         StringBuffer nsb = new StringBuffer().append(UcorePathUtil.getViewPath()).
                 append(SEPARATOR).append(UPDATE).append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(viewName);
-        UDistributeLock distributeLock = new UDistributeLock(nsb.toString(),
+        UDistributeLock distributeLock = new UDistributeLock(lsb.toString(),
                 UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + UPDATE);
 
         try {
@@ -83,6 +85,7 @@ public class CKVStoreRepository implements Repository {
 
             schemaMap.put(viewName, createSql);
             ClusterUcoreSender.sendDataToUcore(sb.toString(), createSql);
+            ClusterUcoreSender.sendDataToUcore(nsb.toString(), UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + UPDATE);
 
             //check if the online node number is equals to the reponse number
             List<UKvBean> onlineList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getOnlinePath() + SEPARATOR);
@@ -101,7 +104,8 @@ public class CKVStoreRepository implements Repository {
                 }
             }
 
-            distributeLock.deleteTree();
+            ClusterUcoreSender.deleteKVTree(nsb.toString() + SEPARATOR);
+            distributeLock.release();
 
         } catch (Exception e) {
             LOGGER.warn(AlarmCode.CORE_ZK_WARN + "delete ucore node error :　" + e.getMessage());

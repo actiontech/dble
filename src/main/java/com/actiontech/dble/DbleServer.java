@@ -270,6 +270,7 @@ public final class DbleServer {
             VarsExtractorHandler handler = new VarsExtractorHandler(config.getDataNodes());
             systemVariables = handler.execute();
             reviseSchemas();
+            initDataHost();
             //init tmManager
             try {
                 tmManager.init(this.getConfig());
@@ -450,23 +451,23 @@ public final class DbleServer {
         scheduler.scheduleAtFixedRate(threadStatRenew(), 0L, 1, TimeUnit.SECONDS);
 
 
-        if (!this.getConfig().isDataHostWithoutWR()) {
-            // init datahost
-            Map<String, PhysicalDBPool> dataHosts = this.getConfig().getDataHosts();
-            LOGGER.info("Initialize dataHost ...");
-            for (PhysicalDBPool node : dataHosts.values()) {
-                String index = dnIndexProperties.getProperty(node.getHostName(), "0");
-                if (!"0".equals(index)) {
-                    LOGGER.info("init datahost: " + node.getHostName() + "  to use datasource index:" + index);
-                }
-                node.init(Integer.parseInt(index));
-                node.startHeartbeat();
-            }
-        }
-
 
         if (isUseZkSwitch()) {
             initZkDnindex();
+        }
+    }
+
+    private void initDataHost() {
+        // init datahost
+        Map<String, PhysicalDBPool> dataHosts = this.getConfig().getDataHosts();
+        LOGGER.info("Initialize dataHost ...");
+        for (PhysicalDBPool node : dataHosts.values()) {
+            String index = dnIndexProperties.getProperty(node.getHostName(), "0");
+            if (!"0".equals(index)) {
+                LOGGER.info("init datahost: " + node.getHostName() + "  to use datasource index:" + index);
+            }
+            node.init(Integer.parseInt(index));
+            node.startHeartbeat();
         }
     }
 

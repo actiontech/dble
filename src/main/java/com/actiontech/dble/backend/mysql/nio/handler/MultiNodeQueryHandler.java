@@ -129,6 +129,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), sessionAutocommit, node, this, node);
             }
         }
+        session.endDelive();
     }
 
     private void innerExecute(BackendConnection conn, RouteResultsetNode node) {

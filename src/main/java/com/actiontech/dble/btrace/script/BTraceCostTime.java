@@ -29,6 +29,7 @@ public class BTraceCostTime {
     public static void beginRequest(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod, long arg) {
         BTraceUtils.Collections.put(records, arg, timeNanos());
     }
+
     @OnMethod(
             clazz = "com.actiontech.dble.btrace.provider.CostTimeProvider",
             method = "startProcess"
@@ -68,6 +69,47 @@ public class BTraceCostTime {
         Profiling.recordExit(profiler, "request->3.endRoute", duration);
     }
 
+    @OnMethod(
+            clazz = "com.actiontech.dble.btrace.provider.CostTimeProvider",
+            method = "endDelive"
+    )
+    public static void endDelive(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod, long arg) {
+        Long ts = BTraceUtils.Collections.get(records, arg);
+        if (ts == null) {
+            return;
+        }
+        long duration = timeNanos() - ts;
+        Profiling.recordExit(profiler, "request->3.05.endDelive", duration);
+    }
+
+
+    @OnMethod(
+            clazz = "com.actiontech.dble.btrace.provider.CostTimeProvider",
+            method = "resLastBack"
+    )
+    public static void resLastBack(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod, long arg) {
+        Long ts = BTraceUtils.Collections.get(records, arg);
+        if (ts == null) {
+            return;
+        }
+        long duration = timeNanos() - ts;
+        Profiling.recordExit(profiler, "request->4L.resLastBack", duration);
+    }
+
+
+    @OnMethod(
+            clazz = "com.actiontech.dble.btrace.provider.CostTimeProvider",
+            method = "execLastBack"
+    )
+    public static void execLastBack(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod, long arg) {
+        Long ts = BTraceUtils.Collections.get(records, arg);
+        if (ts == null) {
+            return;
+        }
+        long duration = timeNanos() - ts;
+        Profiling.recordExit(profiler, "request->5L.execLastBack", duration);
+    }
+
 
     @OnMethod(
             clazz = "com.actiontech.dble.btrace.provider.CostTimeProvider",
@@ -93,6 +135,20 @@ public class BTraceCostTime {
         }
         long duration = timeNanos() - ts;
         Profiling.recordExit(profiler, "request->5.startExecuteBackend", duration);
+    }
+
+
+    @OnMethod(
+            clazz = "com.actiontech.dble.btrace.provider.CostTimeProvider",
+            method = "allBackendConnReceive"
+    )
+    public static void allBackendConnReceive(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod, long arg) {
+        Long ts = BTraceUtils.Collections.get(records, arg);
+        if (ts == null) {
+            return;
+        }
+        long duration = timeNanos() - ts;
+        Profiling.recordExit(profiler, "request->5.1.allBackendConnReceive", duration);
     }
 
     @OnMethod(

@@ -109,6 +109,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
                 startEasyMerge();
             } else {
                 if (++reachedConCount == route.length) {
+                    session.allBackendConnReceive();
                     startOwnThread();
                 }
             }

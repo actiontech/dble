@@ -61,7 +61,7 @@ public class UcoreSingleKeyListener implements Runnable {
                 child.notifyProcess(entry.getValue());
             }
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + " ucore data parse to xml error ");
+            LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + " ucore event handle error");
             e.printStackTrace();
         }
     }

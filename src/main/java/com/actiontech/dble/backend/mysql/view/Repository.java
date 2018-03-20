@@ -16,6 +16,7 @@ public interface Repository {
     String CREATE_SQL = "createSql";
     String DELETE = "delete";
     String UPDATE = "update";
+    String LOCK = "lock";
 
     Map<String, Map<String, String>> getViewCreateSqlMap();
 

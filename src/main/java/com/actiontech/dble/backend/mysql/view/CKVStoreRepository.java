@@ -132,7 +132,7 @@ public class CKVStoreRepository implements Repository {
                     append(SEPARATOR).append(UPDATE).append(SEPARATOR).
                     append(schemaName).append(SCHEMA_VIEW_SPLIT).append(view);
             StringBuffer lsb = new StringBuffer().append(UcorePathUtil.getViewPath()).
-                    append(SEPARATOR).append(LOCK).append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(viewName);
+                    append(SEPARATOR).append(LOCK).append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(view);
             UDistributeLock distributeLock = new UDistributeLock(lsb.toString(),
                     UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + DELETE);
 

@@ -1,8 +1,10 @@
 package com.actiontech.dble.backend.mysql.view;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.*;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
+import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.log.alarm.AlarmCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
@@ -42,34 +45,32 @@ public class CKVStoreRepository implements Repository {
             if (key.length == 5) {
                 String[] value = key[key.length - 1].split(SCHEMA_VIEW_SPLIT);
                 if (viewCreateSqlMap.get(value[0]) == null) {
-                    Map<String, String> schemaMap = new HashMap<String, String>();
+                    Map<String, String> schemaMap = new ConcurrentHashMap<String, String>();
                     viewCreateSqlMap.put(value[0], schemaMap);
                 }
                 viewCreateSqlMap.get(value[0]).put(value[1], bean.getValue());
             }
         }
+        for (Map.Entry<String, SchemaConfig> schema : DbleServer.getInstance().getConfig().getSchemas().entrySet()) {
+            if (viewCreateSqlMap.get(schema.getKey()) == null) {
+                viewCreateSqlMap.put(schema.getKey(), new ConcurrentHashMap<String, String>());
+            }
+        }
+
     }
 
 
     @Override
     public void put(String schemaName, String viewName, String createSql) {
         Map<String, String> schemaMap = viewCreateSqlMap.get(schemaName);
-        if (schemaMap == null) {
-            schemaMap = new HashMap<String, String>();
-            viewCreateSqlMap.put(schemaName, schemaMap);
-        } else {
-            if (schemaMap.get(viewName) != null &&
-                    createSql.equals(schemaMap.get(viewName))) {
-                //create view has no change,return with nothing
-                return;
-            }
-        }
 
         StringBuffer sb = new StringBuffer().append(UcorePathUtil.getViewPath()).
                 append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(viewName);
+        StringBuffer lsb = new StringBuffer().append(UcorePathUtil.getViewPath()).
+                append(SEPARATOR).append(LOCK).append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(viewName);
         StringBuffer nsb = new StringBuffer().append(UcorePathUtil.getViewPath()).
                 append(SEPARATOR).append(UPDATE).append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(viewName);
-        UDistributeLock distributeLock = new UDistributeLock(nsb.toString(),
+        UDistributeLock distributeLock = new UDistributeLock(lsb.toString(),
                 UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + UPDATE);
 
         try {
@@ -83,6 +84,7 @@ public class CKVStoreRepository implements Repository {
 
             schemaMap.put(viewName, createSql);
             ClusterUcoreSender.sendDataToUcore(sb.toString(), createSql);
+            ClusterUcoreSender.sendDataToUcore(nsb.toString(), UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + UPDATE);
 
             //check if the online node number is equals to the reponse number
             List<UKvBean> onlineList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getOnlinePath() + SEPARATOR);
@@ -101,7 +103,8 @@ public class CKVStoreRepository implements Repository {
                 }
             }
 
-            distributeLock.deleteTree();
+            ClusterUcoreSender.deleteKVTree(nsb.toString() + SEPARATOR);
+            distributeLock.release();
 
         } catch (Exception e) {
             LOGGER.warn(AlarmCode.CORE_ZK_WARN + "delete ucore node error :　" + e.getMessage());
@@ -127,8 +130,9 @@ public class CKVStoreRepository implements Repository {
             StringBuffer nsb = new StringBuffer().append(UcorePathUtil.getViewPath()).
                     append(SEPARATOR).append(UPDATE).append(SEPARATOR).
                     append(schemaName).append(SCHEMA_VIEW_SPLIT).append(view);
-
-            UDistributeLock distributeLock = new UDistributeLock(nsb.toString(),
+            StringBuffer lsb = new StringBuffer().append(UcorePathUtil.getViewPath()).
+                    append(SEPARATOR).append(LOCK).append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(view);
+            UDistributeLock distributeLock = new UDistributeLock(lsb.toString(),
                     UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + DELETE);
 
             try {
@@ -141,6 +145,7 @@ public class CKVStoreRepository implements Repository {
                     }
                 }
                 ClusterUcoreSender.deleteKV(sb.toString());
+                ClusterUcoreSender.sendDataToUcore(nsb.toString(), UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + DELETE);
 
                 //check if the online node number is equals to the reponse number
                 List<UKvBean> onlineList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getOnlinePath());
@@ -161,7 +166,8 @@ public class CKVStoreRepository implements Repository {
                     }
                 }
 
-                distributeLock.deleteTree();
+                ClusterUcoreSender.deleteKVTree(nsb.toString() + SEPARATOR);
+                distributeLock.release();
 
             } catch (Exception e) {
                 LOGGER.warn(AlarmCode.CORE_ZK_WARN + "delete ucore node error :　" + e.getMessage());

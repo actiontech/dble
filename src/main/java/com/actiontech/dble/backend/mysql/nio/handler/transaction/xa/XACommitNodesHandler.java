@@ -87,7 +87,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             final String errorMsg = this.error;
             LOGGER.warn(AlarmCode.CORE_XA_WARN + "commit error and rollback the xa");
             if (decrementCountBy(1)) {
-                DbleServer.getInstance().getBusinessExecutor().execute(new Runnable() {
+                DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
                     @Override
                     public void run() {
                         ErrorPacket error = new ErrorPacket();

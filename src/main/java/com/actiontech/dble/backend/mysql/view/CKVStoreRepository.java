@@ -1,8 +1,10 @@
 package com.actiontech.dble.backend.mysql.view;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.*;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
+import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.log.alarm.AlarmCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +25,7 @@ public class CKVStoreRepository implements Repository {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CKVStoreRepository.class);
 
-    private Map<String, Map<String, String>> viewCreateSqlMap = new ConcurrentHashMap<String, Map<String, String>>();
+    private Map<String, Map<String, String>> viewCreateSqlMap = new HashMap<String, Map<String, String>>();
 
     @Override
     public Map<String, Map<String, String>> getViewCreateSqlMap() {
@@ -43,28 +45,24 @@ public class CKVStoreRepository implements Repository {
             if (key.length == 5) {
                 String[] value = key[key.length - 1].split(SCHEMA_VIEW_SPLIT);
                 if (viewCreateSqlMap.get(value[0]) == null) {
-                    Map<String, String> schemaMap = new HashMap<String, String>();
+                    Map<String, String> schemaMap = new ConcurrentHashMap<String, String>();
                     viewCreateSqlMap.put(value[0], schemaMap);
                 }
                 viewCreateSqlMap.get(value[0]).put(value[1], bean.getValue());
             }
         }
+        for (Map.Entry<String, SchemaConfig> schema : DbleServer.getInstance().getConfig().getSchemas().entrySet()) {
+            if (viewCreateSqlMap.get(schema.getKey()) == null) {
+                viewCreateSqlMap.put(schema.getKey(), new ConcurrentHashMap<String, String>());
+            }
+        }
+
     }
 
 
     @Override
     public void put(String schemaName, String viewName, String createSql) {
         Map<String, String> schemaMap = viewCreateSqlMap.get(schemaName);
-        if (schemaMap == null) {
-            schemaMap = new HashMap<String, String>();
-            viewCreateSqlMap.put(schemaName, schemaMap);
-        } else {
-            if (schemaMap.get(viewName) != null &&
-                    createSql.equals(schemaMap.get(viewName))) {
-                //create view has no change,return with nothing
-                return;
-            }
-        }
 
         StringBuffer sb = new StringBuffer().append(UcorePathUtil.getViewPath()).
                 append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(viewName);

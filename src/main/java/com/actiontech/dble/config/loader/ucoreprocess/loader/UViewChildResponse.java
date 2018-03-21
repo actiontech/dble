@@ -10,7 +10,6 @@ import com.actiontech.dble.net.mysql.ErrorPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import static com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil.SEPARATOR;
@@ -63,15 +62,7 @@ public class UViewChildResponse implements UcoreXmlLoader {
 
                     Map<String, Map<String, String>> viewCreateSqlMap = DbleServer.getInstance().getTmManager().getRepository().getViewCreateSqlMap();
                     Map<String, String> schemaMap = viewCreateSqlMap.get(schema);
-                    if (schemaMap == null) {
-                        schemaMap = new HashMap<String, String>();
-                        viewCreateSqlMap.put(schema, schemaMap);
-                    } else {
-                        if (schemaMap.get(viewName) != null &&
-                                stmt.equals(schemaMap.get(viewName))) {
-                            return;
-                        }
-                    }
+                    schemaMap.put(viewName, stmt);
 
                     LOGGER.debug("update view result == " + error);
                     if (error != null) {

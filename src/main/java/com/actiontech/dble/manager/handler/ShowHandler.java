@@ -53,7 +53,7 @@ public final class ShowHandler {
             case ManagerParseShow.DATA_NODE:
                 ShowDataNode.execute(c, null);
                 break;
-            case ManagerParseShow.DATANODE_WHERE: {
+            case ManagerParseShow.DATANODE_SCHEMA: {
                 String name = stmt.substring(rs >>> 8).trim();
                 if (StringUtil.isEmpty(name)) {
                     c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
@@ -74,6 +74,10 @@ public final class ShowHandler {
                 }
                 break;
             }
+            case ManagerParseShow.TABLE_DATA_NODE:
+                String tableInfo = stmt.substring(rs >>> 8).trim();
+                ShowTableDataNode.execute(c, tableInfo);
+                break;
             case ManagerParseShow.HELP:
                 ShowHelp.execute(c);
                 break;

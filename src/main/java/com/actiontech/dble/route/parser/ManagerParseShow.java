@@ -37,9 +37,10 @@ public final class ManagerParseShow {
     public static final int TIME_STARTUP = 23;
     public static final int VERSION = 24;
     public static final int CONNECTION_SQL = 27;
-    public static final int DATANODE_WHERE = 28;
+    public static final int DATANODE_SCHEMA = 28;
     public static final int DATASOURCE_WHERE = 29;
     public static final int HEARTBEAT = 30;
+    public static final int TABLE_DATA_NODE = 31;
     public static final int BACKEND = 33;
     public static final int BACKEND_OLD = 34;
 
@@ -769,6 +770,12 @@ public final class ManagerParseShow {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             if ((c1 == 'O' || c1 == 'o') && (c2 == 'D' || c2 == 'd') && (c3 == 'E' || c3 == 'e')) {
+                if ((stmt.length() > offset + 1)) {
+                    char cTest = stmt.charAt(offset + 1);
+                    if (cTest == 'S' || cTest == 's') {
+                        return showTableDataNodeCheck(stmt, ++offset);
+                    }
+                }
                 while (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':
@@ -784,6 +791,52 @@ public final class ManagerParseShow {
                     }
                 }
                 return DATA_NODE;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int showTableDataNodeCheck(String stmt, int offset) {
+        while (stmt.length() > ++offset) {
+            switch (stmt.charAt(offset)) {
+                case ' ':
+                    continue;
+                case 'W':
+                case 'w':
+                    if (stmt.charAt(offset - 1) != ' ') {
+                        return OTHER;
+                    }
+                    return showTableDataNode(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    // SHOW @@DATANODES WHERE S
+    private static int showTableDataNode(String stmt, int offset) {
+        if (stmt.length() > offset + "HERE".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            if ((c1 == 'H' || c1 == 'h') && (c2 == 'E' || c2 == 'e') && (c3 == 'R' || c3 == 'r') &&
+                    (c4 == 'E' || c4 == 'e')) {
+                while (stmt.length() > ++offset) {
+                    switch (stmt.charAt(offset)) {
+                        case ' ':
+                            continue;
+                        case 'S':
+                        case 's':
+                            if (stmt.charAt(offset - 1) != ' ') {
+                                return OTHER;
+                            }
+                            return ((offset - 1) << 8) | TABLE_DATA_NODE;
+                        default:
+                            return OTHER;
+                    }
+                }
             }
         }
         return OTHER;
@@ -837,7 +890,7 @@ public final class ManagerParseShow {
                                     case ' ':
                                         continue;
                                     default:
-                                        return (offset << 8) | DATANODE_WHERE;
+                                        return (offset << 8) | DATANODE_SCHEMA;
                                 }
                             }
                             return OTHER;

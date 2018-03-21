@@ -528,9 +528,9 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
      * @return
      */
     private String getOwnerTableName(SQLBetweenExpr betweenExpr, String column) {
-        if (tableStats.size() == 1) { //only has 1 table
-            return tableStats.keySet().iterator().next().getName();
-        } else if (tableStats.size() == 0) { //no table
+        if (aliasMap.size() == 1) { //only has 1 table
+            return aliasMap.keySet().iterator().next();
+        } else if (aliasMap.size() == 0) { //no table
             return "";
         } else { // multi tables
             for (Column col : columns.keySet()) {

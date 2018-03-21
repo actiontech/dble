@@ -74,10 +74,11 @@ public final class ShowHandler {
                 }
                 break;
             }
-            case ManagerParseShow.TABLE_DATA_NODE:
+            case ManagerParseShow.TABLE_DATA_NODE: {
                 String tableInfo = stmt.substring(rs >>> 8).trim();
                 ShowTableDataNode.execute(c, tableInfo);
                 break;
+            }
             case ManagerParseShow.HELP:
                 ShowHelp.execute(c);
                 break;
@@ -174,6 +175,11 @@ public final class ShowHandler {
             case ManagerParseShow.THREAD_USED:
                 ShowThreadUsed.execute(c);
                 break;
+            case ManagerParseShow.TABLE_ALGORITHM: {
+                String tableInfo = stmt.substring(rs >>> 8).trim();
+                ShowTableAlgorithm.execute(c, tableInfo);
+                break;
+            }
             default:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
         }

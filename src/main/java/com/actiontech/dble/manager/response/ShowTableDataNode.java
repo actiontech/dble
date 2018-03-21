@@ -26,7 +26,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import static com.actiontech.dble.route.parser.ManagerParseShow.PATTERN_FOR_TABLE_INFO;
 
 public final class ShowTableDataNode {
     private ShowTableDataNode() {
@@ -63,11 +64,8 @@ public final class ShowTableDataNode {
         EOF.setPacketId(++packetId);
     }
 
-    private static final String TABLE_PAT = "^(\\s*schema\\s*=\\s*)([a-zA-Z_0-9]+)(\\s+and\\s+table\\s*=\\s*)([a-zA-Z_0-9]+)\\s*$";
-    private static final Pattern PATTERN = Pattern.compile(TABLE_PAT, Pattern.CASE_INSENSITIVE);
-
     public static void execute(ManagerConnection c, String tableInfo) {
-        Matcher ma = PATTERN.matcher(tableInfo);
+        Matcher ma = PATTERN_FOR_TABLE_INFO.matcher(tableInfo);
         if (!ma.matches()) {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The Correct Query Format Is:show @@datanodes where schema=? and table =?");
             return;

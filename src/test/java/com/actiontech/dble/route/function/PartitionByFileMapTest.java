@@ -10,6 +10,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Map;
+
 public class PartitionByFileMapTest {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -25,6 +27,9 @@ public class PartitionByFileMapTest {
         Assert.assertEquals(true, 1 == partition.calculate(idVal));
         idVal = "10020";
         Assert.assertEquals(true, null == partition.calculate(idVal));
+        Map<String, String> map = partition.getAllProperties();
+        Assert.assertEquals(true, map.get("mapFile").equals("{\"10000\":\"0\"," +
+                "\"10010\":\"1\"}") );
     }
 
     @Test

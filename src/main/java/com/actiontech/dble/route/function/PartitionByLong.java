@@ -27,10 +27,12 @@ public final class PartitionByLong extends AbstractPartitionAlgorithm implements
 
     public void setPartitionCount(String partitionCount) {
         this.count = toIntArray(partitionCount);
+        propertiesMap.put("partitionCount", partitionCount);
     }
 
     public void setPartitionLength(String partitionLength) {
         this.length = toIntArray(partitionLength);
+        propertiesMap.put("partitionLength", partitionLength);
     }
 
     @Override

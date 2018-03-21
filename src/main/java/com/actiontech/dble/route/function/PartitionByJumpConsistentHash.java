@@ -77,10 +77,12 @@ public final class PartitionByJumpConsistentHash extends AbstractPartitionAlgori
         Pair<Integer, Integer> p = PairUtil.sequenceSlicing(hashSlice);
         hashSliceStart = p.getKey();
         hashSliceEnd = p.getValue();
+        propertiesMap.put("hashSlice", hashSlice);
     }
 
     public void setPartitionCount(int totalBuckets) {
         this.partitionCount = totalBuckets;
+        propertiesMap.put("partitionCount", String.valueOf(partitionCount));
     }
 
     public int getPartitionCount() {

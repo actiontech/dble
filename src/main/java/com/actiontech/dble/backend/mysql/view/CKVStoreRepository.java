@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
@@ -22,7 +23,7 @@ public class CKVStoreRepository implements Repository {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CKVStoreRepository.class);
 
-    private Map<String, Map<String, String>> viewCreateSqlMap = new HashMap<String, Map<String, String>>();
+    private Map<String, Map<String, String>> viewCreateSqlMap = new ConcurrentHashMap<String, Map<String, String>>();
 
     @Override
     public Map<String, Map<String, String>> getViewCreateSqlMap() {

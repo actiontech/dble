@@ -128,7 +128,7 @@ public class AlarmAppender extends AbstractAppender {
                 grpcUrlOld = grpcUrl;
                 grpcLevelOld = grpcLevel;
 
-                grpcLevel = Integer.parseInt(config.getLevel());
+                grpcLevel = "error".equalsIgnoreCase(config.getLevel()) ? 200 : 300;
                 serverId = config.getServerId();
                 port = Integer.parseInt(config.getPort());
                 grpcUrl = config.getUrl();

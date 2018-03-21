@@ -37,14 +37,10 @@ public class UDdlChildResponse implements UcoreXmlLoader {
             final String schema = StringUtil.removeBackQuote(tableInfo[0]);
             final String table = StringUtil.removeBackQuote(tableInfo[1]);
 
-            if (UKvBean.DELETE.equals(configValue.getChangeType())) {
+            if (UKvBean.DELETE.equals(configValue.getChangeType()) || "".equals(configValue.getValue())) {
                 return;
             }
 
-            if ("".equals(configValue.getValue())) {
-                //if the value is "" means the the ddl start server is shutdown after the ddl notify
-                DbleServer.getInstance().getTmManager().updateOnetableWithBackData(DbleServer.getInstance().getConfig(), schema, table);
-            }
             DDLInfo ddlInfo = new DDLInfo(configValue.getValue());
 
             if (ddlInfo.getFrom().equals(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) {

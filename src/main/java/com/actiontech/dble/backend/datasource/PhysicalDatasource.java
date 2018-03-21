@@ -373,7 +373,7 @@ public abstract class PhysicalDatasource {
                 LOGGER.warn(AlarmCode.CORE_PERFORMANCE_WARN + "the max activeConnnections size can not be max than maxconnections");
                 throw new IOException("the max activeConnnections size can not be max than maxconnections");
             } else { // create connection
-                LOGGER.info("no ilde connection in pool,create new connection for " +
+                LOGGER.info("no idle connection in pool,create new connection for " +
                         this.name + " of schema " + schema);
                 createNewConnection(handler, attachment, schema);
             }
@@ -396,6 +396,13 @@ public abstract class PhysicalDatasource {
             }
         }
         return takeCon(con, schema);
+    }
+
+    public void initMinConnection(String schema, boolean autocommit, final ResponseHandler handler,
+                                  final Object attachment) throws IOException {
+        LOGGER.info("create new connection for " +
+                this.name + " of schema " + schema);
+        createNewConnection(handler, attachment, schema);
     }
 
     private void returnCon(BackendConnection c) {

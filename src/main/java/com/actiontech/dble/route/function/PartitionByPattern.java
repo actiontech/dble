@@ -45,10 +45,12 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 
     public void setPatternValue(int patternValue) {
         this.patternValue = patternValue;
+        propertiesMap.put("patternValue", String.valueOf(patternValue));
     }
 
     public void setDefaultNode(int defaultNode) {
         this.defaultNode = defaultNode;
+        propertiesMap.put("defaultNode", String.valueOf(defaultNode));
     }
 
     private Integer findNode(long hash) {
@@ -168,6 +170,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
     }
 
     private void initialize() {
+        StringBuilder sb = new StringBuilder("{");
         BufferedReader in = null;
         try {
             InputStream fin = ResourceUtil.getResourceAsStreamFromRoot(mapFile);
@@ -177,7 +180,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
             in = new BufferedReader(new InputStreamReader(fin));
             LinkedList<LongRange> longRangeList = new LinkedList<>();
             HashSet<Integer> ids = new HashSet<>();
-
+            int iRow = 0;
             for (String line; (line = in.readLine()) != null; ) {
                 line = line.trim();
                 if (line.startsWith("#") || line.startsWith("//")) {
@@ -190,17 +193,31 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
                     continue;
                 }
 
-                String[] pairs = line.substring(0, ind).trim().split("-");
+                String key = line.substring(0, ind).trim();
+                String[] pairs = key.split("-");
                 long longStart = Long.parseLong(pairs[0].trim());
                 long longEnd = Long.parseLong(pairs[1].trim());
-                int nodeId = Integer.parseInt(line.substring(ind + 1).trim());
+                String value = line.substring(ind + 1).trim();
+                int nodeId = Integer.parseInt(value);
 
                 ids.add(nodeId);
                 initializeAux(longRangeList, new LongRange(nodeId, longStart, longEnd));
+                if (iRow > 0) {
+                    sb.append(",");
+                }
+                iRow++;
+                sb.append("\"");
+                sb.append(key);
+                sb.append("\":");
+                sb.append("\"");
+                sb.append(value);
+                sb.append("\"");
             }
 
             allNode = ids.toArray(new Integer[ids.size()]);
             longRanges = longRangeList.toArray(new LongRange[longRangeList.size()]);
+            sb.append("}");
+            propertiesMap.put("mapFile", sb.toString());
         } catch (Exception e) {
             if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;

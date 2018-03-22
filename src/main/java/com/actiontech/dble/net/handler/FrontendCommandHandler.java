@@ -52,7 +52,18 @@ public class FrontendCommandHandler implements NIOHandler {
     }
 
     public void handle() {
-        handleData(dataTodo);
+        try {
+            handleData(dataTodo);
+        } catch (Exception e) {
+            String msg = e.getMessage();
+            if (StringUtil.isEmpty(msg)) {
+                LOGGER.info("Maybe occur a bug, please check it.", e);
+                msg = e.toString();
+            } else {
+                LOGGER.info("There is an error you may need know.", e);
+            }
+            source.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, msg);
+        }
     }
     protected void handleData(byte[] data) {
         source.startProcess();

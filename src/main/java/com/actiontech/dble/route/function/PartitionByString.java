@@ -27,12 +27,15 @@ public final class PartitionByString extends AbstractPartitionAlgorithm implemen
     protected int[] length;
     protected PartitionUtil partitionUtil;
     private int hashCode = 1;
+
     public void setPartitionCount(String partitionCount) {
         this.count = toIntArray(partitionCount);
+        propertiesMap.put("partitionCount", partitionCount);
     }
 
     public void setPartitionLength(String partitionLength) {
         this.length = toIntArray(partitionLength);
+        propertiesMap.put("partitionLength", partitionLength);
     }
 
 
@@ -40,6 +43,7 @@ public final class PartitionByString extends AbstractPartitionAlgorithm implemen
         Pair<Integer, Integer> p = PairUtil.sequenceSlicing(hashSlice);
         hashSliceStart = p.getKey();
         hashSliceEnd = p.getValue();
+        propertiesMap.put("hashSlice", hashSlice);
     }
 
     @Override
@@ -80,6 +84,7 @@ public final class PartitionByString extends AbstractPartitionAlgorithm implemen
         }
         return nPartition;
     }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {

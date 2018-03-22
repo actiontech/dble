@@ -139,7 +139,7 @@ public final class ShowBinlogStatus {
                             break;
                         }
                         LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-                        responseList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getBinlogPauseLockPath());
+                        responseList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getBinlogPauseStatus());
                         onlineList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getOnlinePath());
                     }
 

@@ -37,6 +37,14 @@ public final class ConfFileRWUtils {
         return mapFileStr.toString();
     }
 
+    public static String readFileWithOutError(String name) {
+        try {
+            return readFile(name);
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
     public static void writeFile(String name, String value) throws IOException {
         String path = ResourceUtil.getResourcePathFromRoot(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey());
         checkNotNull(path, "write ecache file curr Path :" + path + " is null! It must be not null");

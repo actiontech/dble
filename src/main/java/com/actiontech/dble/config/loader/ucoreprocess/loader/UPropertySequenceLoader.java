@@ -65,7 +65,6 @@ public class UPropertySequenceLoader implements UcoreXmlLoader {
     @Override
     public void notifyCluster() throws Exception {
         JSONObject jsonObject = new JSONObject();
-        
         String cacheService = ConfFileRWUtils.readFileWithOutError(PROPERTIES_CACHESERVER_NAME + PROPERTIES_SUFFIX);
         if (cacheService != null && !"".equals(cacheService)) {
             jsonObject.put(PROPERTIES_CACHESERVER_NAME, cacheService);

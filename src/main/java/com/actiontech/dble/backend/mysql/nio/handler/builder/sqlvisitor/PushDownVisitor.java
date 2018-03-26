@@ -98,7 +98,6 @@ public class PushDownVisitor extends MysqlVisitor {
     }
 
 
-
     protected void visit(JoinNode join) {
         if (!isTopQuery) {
             sqlBuilder.append(" ( ");
@@ -391,14 +390,16 @@ public class PushDownVisitor extends MysqlVisitor {
     }
 
     protected void buildForUpdate(TableNode query, StringBuilder sb) {
-        SQLSelectQuery queryblock = query.getAst().getSelect().getQuery();
-        if (queryblock instanceof MySqlSelectQueryBlock) {
-            if (((MySqlSelectQueryBlock) queryblock).isForUpdate()) {
-                sb.append(" FOR UPDATE");
-            } else if (((MySqlSelectQueryBlock) queryblock).isLockInShareMode()) {
-                sb.append(" LOCK IN SHARE MODE ");
-            }
+        if (query.getAst() != null) {
+            SQLSelectQuery queryblock = query.getAst().getSelect().getQuery();
+            if (queryblock instanceof MySqlSelectQueryBlock) {
+                if (((MySqlSelectQueryBlock) queryblock).isForUpdate()) {
+                    sb.append(" FOR UPDATE");
+                } else if (((MySqlSelectQueryBlock) queryblock).isLockInShareMode()) {
+                    sb.append(" LOCK IN SHARE MODE ");
+                }
 
+            }
         }
     }
 }

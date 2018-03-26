@@ -64,6 +64,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
             return;
         }
         conn.setResponseHandler(this);
+        conn.setSession(session);
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info(conn.toString() + " send sql:" + rrss.getStatement());
         }

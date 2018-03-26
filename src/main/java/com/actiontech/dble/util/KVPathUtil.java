@@ -5,9 +5,9 @@
 
 package com.actiontech.dble.util;
 
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
 
 /**
  * Created by huqing.yan on 2017/6/26.
@@ -19,7 +19,7 @@ public final class KVPathUtil {
     public static final String SEPARATOR = "/";
     private static final String ROOT_PATH = Versions.ROOT_PREFIX;
     //depth:1, base_path" /root_name/cluster_name/
-    public static final String BASE_PATH = SEPARATOR + ROOT_PATH + SEPARATOR + ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_CLUSTERID) + SEPARATOR;
+    public static final String BASE_PATH = SEPARATOR + ROOT_PATH + SEPARATOR + ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_CLUSTERID) + SEPARATOR;
 
     //depth:2,child node of base_path
     public static final String CACHE = "cache";

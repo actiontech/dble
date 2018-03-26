@@ -6,7 +6,7 @@
 package com.actiontech.dble;
 
 
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
+import com.actiontech.dble.cluster.ClusterController;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.manager.handler.ShowServerLog;
@@ -29,7 +29,9 @@ public final class DbleStartup {
 
     public static void main(String[] args) {
         //use zk ?
-        ZkConfig.getInstance().initZk();
+        /*ZkConfig.getInstance().initZk();
+        UcoreConfig.getInstance().initUcore();*/
+        ClusterController.init();
         try {
             String home = SystemConfig.getHomePath();
             if (home == null) {

@@ -110,10 +110,14 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
         if (session.closed()) {
             return;
         }
+        setResponseTime();
         if (this.isFail()) {
             createErrPkg(error).write(session.getSource());
         } else {
             session.getSource().write(send);
         }
+    }
+
+    protected void setResponseTime() {
     }
 }

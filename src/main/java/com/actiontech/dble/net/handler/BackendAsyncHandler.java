@@ -5,7 +5,9 @@
 */
 package com.actiontech.dble.net.handler;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.net.NIOHandler;
+import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
@@ -26,16 +28,27 @@ public abstract class BackendAsyncHandler implements NIOHandler {
         }
     }
 
+    protected void offerData(byte[] data) {
+        if (dataQueue.offer(data)) {
+            pushTask();
+        } else {
+            offerDataError();
+        }
+    }
+
+    private void pushTask() {
+        if (isHandling.compareAndSet(false, true)) {
+            DbleServer.getInstance().getBackHandlerQueue().offer(this);
+        }
+    }
+
     protected void handleQueue(final Executor executor) {
         if (isHandling.compareAndSet(false, true)) {
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        byte[] data = null;
-                        while ((data = dataQueue.poll()) != null) {
-                            handleData(data);
-                        }
+                        handleInnerData();
                     } catch (Exception e) {
                         handleDataError(e);
                     } finally {
@@ -46,6 +59,51 @@ public abstract class BackendAsyncHandler implements NIOHandler {
                     }
                 }
             });
+        }
+    }
+
+
+    void executeQueue() {
+        try {
+            handleInnerData();
+        } catch (Exception e) {
+            handleDataError(e);
+        } finally {
+            isHandling.set(false);
+            if (dataQueue.size() > 0) {
+                pushTask();
+            }
+        }
+    }
+
+    private void handleInnerData() {
+        byte[] data;
+
+        //threadUsageStat start
+        boolean useThreadUsageStat = false;
+        String threadName = null;
+        ThreadWorkUsage workUsage = null;
+        long workStart = 0;
+        if (DbleServer.getInstance().getConfig().getSystem().getUseThreadUsageStat() == 1) {
+            useThreadUsageStat = true;
+            threadName = Thread.currentThread().getName();
+            workUsage = DbleServer.getInstance().getThreadUsedMap().get(threadName);
+            if (threadName.startsWith("backend")) {
+                if (workUsage == null) {
+                    workUsage = new ThreadWorkUsage();
+                    DbleServer.getInstance().getThreadUsedMap().put(threadName, workUsage);
+                }
+            }
+
+            workStart = System.nanoTime();
+        }
+        //handleData
+        while ((data = dataQueue.poll()) != null) {
+            handleData(data);
+        }
+        //threadUsageStat end
+        if (useThreadUsageStat && threadName.startsWith("backend")) {
+            workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
         }
     }
 

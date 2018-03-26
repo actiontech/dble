@@ -13,6 +13,8 @@ import com.actiontech.dble.plan.node.NoNameNode;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.util.PlanUtil;
+import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
@@ -83,6 +85,10 @@ public class PushDownVisitor extends MysqlVisitor {
             buildLimit(query, sqlBuilder);
         }
 
+        if (isTopQuery) {
+            buildForUpdate(query, sqlBuilder);
+        }
+
         if (query.isSubQuery() && !isTopQuery) {
             sqlBuilder.append(" ) ");
             if (query.getAlias() != null) {
@@ -90,6 +96,8 @@ public class PushDownVisitor extends MysqlVisitor {
             }
         }
     }
+
+
 
     protected void visit(JoinNode join) {
         if (!isTopQuery) {
@@ -207,6 +215,7 @@ public class PushDownVisitor extends MysqlVisitor {
         // refresh sqlbuilder
         sqlBuilder = replaceableSqlBuilder.getCurrentElement().getSb();
     }
+
     protected void buildSelect(PlanNode query) {
         sqlBuilder.append("select ");
         if (query.isDistinct()) {
@@ -379,5 +388,17 @@ public class PushDownVisitor extends MysqlVisitor {
             return orgPushDownName;
         else
             return orgPushDownName + " as `" + pushAlias + "`";
+    }
+
+    protected void buildForUpdate(TableNode query, StringBuilder sb) {
+        SQLSelectQuery queryblock = query.getAst().getSelect().getQuery();
+        if (queryblock instanceof MySqlSelectQueryBlock) {
+            if (((MySqlSelectQueryBlock) queryblock).isForUpdate()) {
+                sb.append(" FOR UPDATE");
+            } else if (((MySqlSelectQueryBlock) queryblock).isLockInShareMode()) {
+                sb.append(" LOCK IN SHARE MODE ");
+            }
+
+        }
     }
 }

@@ -11,6 +11,6 @@
     <suppress checks="Indentation" files="MyTime.java"/>
     <suppress checks="CyclomaticComplexity" files="MyTime.java"/>
     <suppress checks="CyclomaticComplexity" files="TimSort.java"/>
-
+    <suppress checks=".*" files="BTraceCostTime.java"/>
 
 </suppressions>

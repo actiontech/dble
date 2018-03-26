@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.Serializable;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.regex.Pattern;
@@ -32,10 +31,12 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
     private Integer[] allNode;
     private int defaultNode = -1; // default node for unexpected value
     private static final Pattern PATTERN = Pattern.compile("[0-9]*");
+    private int hashCode = 1;
 
     @Override
     public void init() {
         initialize();
+        initHashCode();
     }
 
     public void setMapFile(String mapFile) {
@@ -44,16 +45,18 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 
     public void setPatternValue(int patternValue) {
         this.patternValue = patternValue;
+        propertiesMap.put("patternValue", String.valueOf(patternValue));
     }
 
     public void setDefaultNode(int defaultNode) {
         this.defaultNode = defaultNode;
+        propertiesMap.put("defaultNode", String.valueOf(defaultNode));
     }
 
     private Integer findNode(long hash) {
         for (LongRange longRang : this.longRanges) {
-            if (hash <= longRang.valueEnd && hash >= longRang.valueStart) {
-                return longRang.nodeIndex;
+            if (hash <= longRang.getValueEnd() && hash >= longRang.getValueStart()) {
+                return longRang.getNodeIndex();
             }
         }
         return null;
@@ -71,20 +74,20 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
     }
 
     /* x2 - x1 < m
- *     n1 < n2 ---> n1 - n2          type1
- *     n1 > n2 ---> 0 - n2 && n1 - L      type2
- * x2 - x1 >= m
- *     L                 type3
- */
+    *     n1 < n2 ---> n1 - n2          type1
+    *     n1 > n2 ---> 0 - n2 && n1 - L      type2
+    * x2 - x1 >= m
+    *     L                 type3
+    */
     private void calcAux(HashSet<Integer> ids, long begin, long end) {
         for (LongRange longRang : this.longRanges) {
-            if (longRang.valueEnd < begin) {
+            if (longRang.getValueEnd() < begin) {
                 continue;
             }
-            if (longRang.valueStart > end) {
+            if (longRang.getValueStart() > end) {
                 break;
             }
-            ids.add(longRang.nodeIndex);
+            ids.add(longRang.getNodeIndex());
         }
     }
 
@@ -146,7 +149,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
         return this.longRanges.length;
     }
 
-    public static boolean isNumeric(String str) {
+    private static boolean isNumeric(String str) {
         return PATTERN.matcher(str).matches();
     }
 
@@ -157,7 +160,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
             LongRange tmp;
             for (int i = ll.size() - 1; i > -1; i--) {
                 tmp = ll.get(i);
-                if (tmp.valueStart < lr.valueStart) {
+                if (tmp.getValueStart() < lr.getValueStart()) {
                     ll.add(i + 1, lr);
                     return;
                 }
@@ -167,6 +170,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
     }
 
     private void initialize() {
+        StringBuilder sb = new StringBuilder("{");
         BufferedReader in = null;
         try {
             InputStream fin = ResourceUtil.getResourceAsStreamFromRoot(mapFile);
@@ -176,8 +180,8 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
             in = new BufferedReader(new InputStreamReader(fin));
             LinkedList<LongRange> longRangeList = new LinkedList<>();
             HashSet<Integer> ids = new HashSet<>();
-
-            for (String line = null; (line = in.readLine()) != null; ) {
+            int iRow = 0;
+            for (String line; (line = in.readLine()) != null; ) {
                 line = line.trim();
                 if (line.startsWith("#") || line.startsWith("//")) {
                     continue;
@@ -189,17 +193,31 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
                     continue;
                 }
 
-                String[] pairs = line.substring(0, ind).trim().split("-");
+                String key = line.substring(0, ind).trim();
+                String[] pairs = key.split("-");
                 long longStart = Long.parseLong(pairs[0].trim());
                 long longEnd = Long.parseLong(pairs[1].trim());
-                int nodeId = Integer.parseInt(line.substring(ind + 1).trim());
+                String value = line.substring(ind + 1).trim();
+                int nodeId = Integer.parseInt(value);
 
                 ids.add(nodeId);
                 initializeAux(longRangeList, new LongRange(nodeId, longStart, longEnd));
+                if (iRow > 0) {
+                    sb.append(",");
+                }
+                iRow++;
+                sb.append("\"");
+                sb.append(key);
+                sb.append("\":");
+                sb.append("\"");
+                sb.append(value);
+                sb.append("\"");
             }
 
             allNode = ids.toArray(new Integer[ids.size()]);
             longRanges = longRangeList.toArray(new LongRange[longRangeList.size()]);
+            sb.append("}");
+            propertiesMap.put("mapFile", sb.toString());
         } catch (Exception e) {
             if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;
@@ -208,23 +226,50 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
             }
         } finally {
             try {
-                in.close();
+                if (in != null) {
+                    in.close();
+                }
             } catch (Exception e2) {
                 //ignore error
             }
         }
     }
 
-    static class LongRange implements Serializable {
-        public final int nodeIndex;
-        public final long valueStart;
-        public final long valueEnd;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        PartitionByPattern other = (PartitionByPattern) o;
+        if (other.defaultNode != defaultNode) {
+            return false;
+        }
+        if (other.patternValue != patternValue) {
+            return false;
+        }
+        for (int i = 0; i < longRanges.length; i++) {
+            if (!other.longRanges[i].equals(longRanges[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
 
-        LongRange(int nodeIndex, long valueStart, long valueEnd) {
-            super();
-            this.nodeIndex = nodeIndex;
-            this.valueStart = valueStart;
-            this.valueEnd = valueEnd;
+    @Override
+    public int hashCode() {
+        return hashCode;
+    }
+
+    private void initHashCode() {
+        hashCode *= patternValue;
+        if (defaultNode != 0) {
+            hashCode *= defaultNode;
+        }
+        for (LongRange longRange : longRanges) {
+            hashCode *= longRange.hashCode();
         }
     }
 }

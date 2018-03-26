@@ -5,6 +5,8 @@
 */
 package com.actiontech.dble.net;
 
+import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,10 +31,17 @@ public final class NIOReactor {
     private static final Logger LOGGER = LoggerFactory.getLogger(NIOReactor.class);
     private final String name;
     private final RW reactorR;
+    private ThreadWorkUsage workUsage;
+    private boolean useThreadUsageStat = false;
 
     public NIOReactor(String name) throws IOException {
         this.name = name;
         this.reactorR = new RW();
+        if (DbleServer.getInstance().getConfig().getSystem().getUseThreadUsageStat() == 1) {
+            this.useThreadUsageStat = true;
+            this.workUsage = new ThreadWorkUsage();
+            DbleServer.getInstance().getThreadUsedMap().put(name, workUsage);
+        }
     }
 
     void startup() {
@@ -63,6 +72,10 @@ public final class NIOReactor {
                     register(finalSelector);
                     keys = finalSelector.selectedKeys();
                     for (SelectionKey key : keys) {
+                        long workStart = 0;
+                        if (useThreadUsageStat) {
+                            workStart = System.nanoTime();
+                        }
                         AbstractConnection con = null;
                         try {
                             Object att = key.attachment();
@@ -101,6 +114,9 @@ public final class NIOReactor {
                                 con.close("Bad: " + e);
                             }
                             LOGGER.info("caught err: ", e);
+                        }
+                        if (useThreadUsageStat) {
+                            workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
                         }
                     }
                 } catch (Exception e) {

@@ -120,7 +120,7 @@ public final class ShowConnection {
 
         // write rows
         byte packetId = EOF.getPacketId();
-        NIOProcessor[] processors = DbleServer.getInstance().getProcessors();
+        NIOProcessor[] processors = DbleServer.getInstance().getFrontProcessors();
         for (NIOProcessor p : processors) {
             for (FrontendConnection fc : p.getFrontends().values()) {
                 if (fc != null) {

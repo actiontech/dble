@@ -14,6 +14,7 @@ public final class PartitionByLong extends AbstractPartitionAlgorithm implements
     protected int[] count;
     protected int[] length;
     protected PartitionUtil partitionUtil;
+    private int hashCode = 1;
 
     private static int[] toIntArray(String string) {
         String[] strs = SplitUtil.split(string, ',', true);
@@ -26,16 +27,18 @@ public final class PartitionByLong extends AbstractPartitionAlgorithm implements
 
     public void setPartitionCount(String partitionCount) {
         this.count = toIntArray(partitionCount);
+        propertiesMap.put("partitionCount", partitionCount);
     }
 
     public void setPartitionLength(String partitionLength) {
         this.length = toIntArray(partitionLength);
+        propertiesMap.put("partitionLength", partitionLength);
     }
 
     @Override
     public void init() {
         partitionUtil = new PartitionUtil(count, length);
-
+        initHashCode();
     }
 
     private Integer calculate(long key) {
@@ -54,19 +57,21 @@ public final class PartitionByLong extends AbstractPartitionAlgorithm implements
 
     @Override
     public Integer[] calculateRange(String beginValue, String endValue) {
-        long begin = Long.parseLong(beginValue);
-        long end = Long.parseLong(endValue);
+        long begin = 0;
+        long end = 0;
+        try {
+            begin = Long.parseLong(beginValue);
+            end = Long.parseLong(endValue);
+        } catch (NumberFormatException e) {
+            return new Integer[0];
+        }
         int partitionLength = partitionUtil.getPartitionLength();
         if (end - begin >= partitionLength || begin > end) { //TODO: optimize begin > end
             return new Integer[0];
         }
-        Integer beginNode = 0, endNode = 0;
-        beginNode = calculate(begin);
-        endNode = calculate(end);
+        Integer beginNode = calculate(begin);
+        Integer endNode = calculate(end);
 
-        if (beginNode == null || endNode == null) {
-            return new Integer[0];
-        }
         if (endNode > beginNode || (endNode.equals(beginNode) && partitionUtil.isSingleNode(begin, end))) {
             int len = endNode - beginNode + 1;
             Integer[] re = new Integer[len];
@@ -92,4 +97,43 @@ public final class PartitionByLong extends AbstractPartitionAlgorithm implements
             return re;
         }
     }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        PartitionByLong other = (PartitionByLong) o;
+        if (other.count.length != this.count.length || other.length.length != this.length.length) {
+            return false;
+        }
+        for (int i = 0; i < count.length; i++) {
+            if (this.count[i] != other.count[i]) {
+                return false;
+            }
+        }
+        for (int i = 0; i < length.length; i++) {
+            if (this.length[i] != other.length[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return hashCode;
+    }
+
+    private void initHashCode() {
+        for (int aCount : count) {
+            hashCode *= aCount;
+        }
+        for (int aLength : length) {
+            hashCode *= aLength;
+        }
+    }
+
 }

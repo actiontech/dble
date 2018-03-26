@@ -59,6 +59,7 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
                 return;
             }
             conn.setResponseHandler(this);
+            conn.setSession(session);
             try {
                 conn.execute(node, session.getSource(), autocommit);
             } catch (Exception e) {

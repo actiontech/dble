@@ -73,7 +73,10 @@ public final class SystemConfig {
     private int serverBacklog;
     private String charset;
     private int processors;
+    private int backendProcessors;
     private int processorExecutor;
+    private int backendProcessorExecutor;
+    private int complexExecutor;
     private long idleTimeout;
     // sql execute timeout (second)
     private long sqlExecuteTimeout = 300;
@@ -124,6 +127,10 @@ public final class SystemConfig {
     private int mergeQueueSize;
     private int orderByQueueSize;
     private int joinQueueSize;
+
+    private int otherMemSize = 4;
+    private int orderMemSize = 4;
+    private int joinMemSize = 4;
     private int nestLoopRowsSize;
     private int nestLoopConnSize;
     private int mappedFileSize;
@@ -131,7 +138,11 @@ public final class SystemConfig {
 
     private boolean useJoinStrategy;
 
-
+    private int costTimeStat = 0;
+    private int maxCostStatSize = 100;
+    private int costSamplePercent = 1;
+    private int useThreadUsageStat = 0;
+    private int usePerformanceMode = 0;
 
     public SystemConfig() {
         this.serverPort = DEFAULT_PORT;
@@ -139,13 +150,15 @@ public final class SystemConfig {
         this.serverBacklog = DEFAULT_BACK_LOG_SIZE;
         this.charset = DEFAULT_CHARSET;
         this.processors = DEFAULT_PROCESSORS;
+        this.backendProcessors = DEFAULT_PROCESSORS;
         this.bufferPoolPageSize = DEFAULT_BUFFER_POOL_PAGE_SIZE;
         this.bufferPoolChunkSize = DEFAULT_BUFFER_CHUNK_SIZE;
         // if always big result,need large network buffer pool pages.
         this.bufferPoolPageNumber = (short) (DEFAULT_PROCESSORS * 20);
 
-        this.processorExecutor = (DEFAULT_PROCESSORS != 1) ? DEFAULT_PROCESSORS * 2 : 4;
-
+        this.processorExecutor = (DEFAULT_PROCESSORS != 1) ? DEFAULT_PROCESSORS : 2;
+        this.backendProcessorExecutor = processorExecutor;
+        this.complexExecutor = processorExecutor > 8 ? 8 : processorExecutor;
         this.idleTimeout = DEFAULT_IDLE_TIMEOUT;
         this.processorCheckPeriod = DEFAULT_PROCESSOR_CHECK_PERIOD;
         this.xaSessionCheckPeriod = DEFAULT_XA_SESSION_CHECK_PERIOD;
@@ -387,13 +400,40 @@ public final class SystemConfig {
         this.processors = processors;
     }
 
+    public int getBackendProcessors() {
+        return backendProcessors;
+    }
+
+    @SuppressWarnings("unused")
+    public void setBackendProcessors(int backendProcessors) {
+        this.backendProcessors = backendProcessors;
+    }
+
     public int getProcessorExecutor() {
         return processorExecutor;
     }
 
     @SuppressWarnings("unused")
     public void setProcessorExecutor(int processorExecutor) {
-        this.processorExecutor = processorExecutor < 4 ? 4 : processorExecutor;
+        this.processorExecutor = processorExecutor;
+    }
+
+    public int getBackendProcessorExecutor() {
+        return backendProcessorExecutor;
+    }
+
+    @SuppressWarnings("unused")
+    public void setBackendProcessorExecutor(int backendProcessorExecutor) {
+        this.backendProcessorExecutor = backendProcessorExecutor;
+    }
+
+    public int getComplexExecutor() {
+        return complexExecutor;
+    }
+
+    @SuppressWarnings("unused")
+    public void setComplexExecutor(int complexExecutor) {
+        this.complexExecutor = complexExecutor;
     }
 
     public long getIdleTimeout() {
@@ -686,6 +726,33 @@ public final class SystemConfig {
         this.mergeQueueSize = mergeQueueSize;
     }
 
+    public int getOtherMemSize() {
+        return otherMemSize;
+    }
+
+    @SuppressWarnings("unused")
+    public void setOtherMemSize(int otherMemSize) {
+        this.otherMemSize = otherMemSize;
+    }
+
+    public int getOrderMemSize() {
+        return orderMemSize;
+    }
+
+    @SuppressWarnings("unused")
+    public void setOrderMemSize(int orderMemSize) {
+        this.orderMemSize = orderMemSize;
+    }
+
+    public int getJoinMemSize() {
+        return joinMemSize;
+    }
+
+    @SuppressWarnings("unused")
+    public void setJoinMemSize(int joinMemSize) {
+        this.joinMemSize = joinMemSize;
+    }
+
     public int getMappedFileSize() {
         return mappedFileSize;
     }
@@ -732,6 +799,50 @@ public final class SystemConfig {
         this.viewPersistenceConfBaseName = viewPersistenceConfBaseName;
     }
 
+    public int getCostTimeStat() {
+        return costTimeStat;
+    }
+    @SuppressWarnings("unused")
+    public void setCostTimeStat(int costTimeStat) {
+        this.costTimeStat = costTimeStat;
+    }
+
+    public int getMaxCostStatSize() {
+        return maxCostStatSize;
+    }
+    @SuppressWarnings("unused")
+    public void setMaxCostStatSize(int maxCostStatSize) {
+        this.maxCostStatSize = maxCostStatSize;
+    }
+
+    public int getCostSamplePercent() {
+        return costSamplePercent;
+    }
+    @SuppressWarnings("unused")
+    public void setCostSamplePercent(int costSamplePercent) {
+        this.costSamplePercent = costSamplePercent;
+    }
+
+
+    public int getUseThreadUsageStat() {
+        return useThreadUsageStat;
+    }
+
+    @SuppressWarnings("unused")
+    public void setUseThreadUsageStat(int useThreadUsageStat) {
+        this.useThreadUsageStat = useThreadUsageStat;
+    }
+
+
+    public int getUsePerformanceMode() {
+        return usePerformanceMode;
+    }
+
+    @SuppressWarnings("unused")
+    public void setUsePerformanceMode(int usePerformanceMode) {
+        this.usePerformanceMode = usePerformanceMode;
+    }
+
     @Override
     public String toString() {
         return "SystemConfig [" +
@@ -746,7 +857,10 @@ public final class SystemConfig {
                 ", managerPort=" + managerPort +
                 ", charset=" + charset +
                 ", processors=" + processors +
+                ", backendProcessors=" + backendProcessors +
                 ", processorExecutor=" + processorExecutor +
+                ", backendProcessorExecutor=" + backendProcessorExecutor +
+                ", complexExecutor=" + complexExecutor +
                 ", idleTimeout=" + idleTimeout +
                 ", sqlExecuteTimeout=" + sqlExecuteTimeout +
                 ", showBinlogStatusTimeout=" + showBinlogStatusTimeout +
@@ -771,6 +885,14 @@ public final class SystemConfig {
                 ", usingAIO=" + usingAIO +
                 ", maxPacketSize=" + maxPacketSize +
                 ", serverNodeId=" + serverNodeId +
+                ", otherMemSize=" + otherMemSize +
+                ", orderMemSize=" + orderMemSize +
+                ", joinMemSize=" + joinMemSize +
+                ", useCostTimeStat=" + costTimeStat +
+                ", maxCostStatSize=" + maxCostStatSize +
+                ", costSamplePercent=" + costSamplePercent +
+                ", useThreadUsageStat=" + useThreadUsageStat +
+                ", usePerformanceMode=" + usePerformanceMode +
                 "]";
     }
 }

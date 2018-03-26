@@ -117,6 +117,7 @@ public final class ShowThreadPool {
         DbleServer server = DbleServer.getInstance();
         list.add(server.getTimerExecutor());
         list.add(server.getBusinessExecutor());
+        list.add(server.getBackendBusinessExecutor());
         list.add(server.getComplexQueryExecutor());
         // for (NIOProcessor pros : server.getProcessors()) {
         // list.add(pros.getExecutor());

@@ -52,7 +52,7 @@ public class MySQLConnection extends BackendAIOConnection {
     private volatile int txIsolation;
     private volatile boolean autocommit;
     private volatile boolean complexQuery;
-
+    private volatile NonBlockingSession session;
     private static long initClientFlags() {
         int flag = 0;
         flag |= Capabilities.CLIENT_LONG_PASSWORD;
@@ -326,18 +326,18 @@ public class MySQLConnection extends BackendAIOConnection {
         if (rrn.getSqlType() == ServerParse.DDL) {
             isDDL = true;
         }
-        String xaTxId = getConnXID(sc.getSession2());
+        String xaTxId = getConnXID(session);
         if (!sc.isAutocommit() && !sc.isTxStart() && modifiedSQLExecuted) {
             sc.setTxStart(true);
         }
         synAndDoExecute(xaTxId, rrn, sc.getCharset(), sc.getTxIsolation(), isAutoCommit, sc.getUsrVariables(), sc.getSysVariables());
     }
 
-    public String getConnXID(NonBlockingSession session) {
-        if (session.getSessionXaID() == null)
+    public String getConnXID(NonBlockingSession nonBlockingSession) {
+        if (nonBlockingSession.getSessionXaID() == null)
             return null;
         else {
-            String sessionXaID = session.getSessionXaID();
+            String sessionXaID = nonBlockingSession.getSessionXaID();
             return sessionXaID.substring(0, sessionXaID.length() - 1) + "." + this.schema + "'";
         }
     }
@@ -355,7 +355,7 @@ public class MySQLConnection extends BackendAIOConnection {
             this.xaStatus = TxState.TX_STARTED_STATE;
             xaSyn = 1;
         }
-        Set<String> toResetSys = new HashSet();
+        Set<String> toResetSys = new HashSet<>();
         String setSql = getSetSQL(usrVariables, sysVariables, toResetSys);
         int setSqlFlag = setSql == null ? 0 : 1;
         int schemaSyn = conSchema.equals(oldSchema) ? 0 : 1;
@@ -365,6 +365,9 @@ public class MySQLConnection extends BackendAIOConnection {
         int synCount = schemaSyn + charsetSyn + txIsolationSyn + autoCommitSyn + xaSyn + setSqlFlag;
         if (synCount == 0) {
             // not need syn connection
+            if (session != null) {
+                session.setBackendRequestTime(this.id);
+            }
             sendQueryCmd(rrn.getStatement(), clientCharset);
             return;
         }
@@ -404,6 +407,9 @@ public class MySQLConnection extends BackendAIOConnection {
         // and our query sql to multi command at last
         sb.append(rrn.getStatement()).append(";");
         // syn and execute others
+        if (session != null) {
+            session.setBackendRequestTime(this.id);
+        }
         this.sendQueryCmd(sb.toString(), clientCharset);
         // waiting syn result...
 
@@ -565,6 +571,7 @@ public class MySQLConnection extends BackendAIOConnection {
         modifiedSQLExecuted = false;
         isDDL = false;
         setResponseHandler(null);
+        setSession(null);
         pool.releaseChannel(this);
     }
 
@@ -577,6 +584,13 @@ public class MySQLConnection extends BackendAIOConnection {
             LOGGER.info("set not MySQLConnectionHandler " + queryHandler.getClass().getCanonicalName());
         }
         return false;
+    }
+
+    public void setSession(NonBlockingSession session) {
+        this.session = session;
+        if (handler instanceof MySQLConnectionHandler) {
+            ((MySQLConnectionHandler) handler).setSession(session);
+        }
     }
 
     public void writeQueueAvailable() {

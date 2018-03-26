@@ -516,4 +516,9 @@ public final class StringUtil {
     public static String getFullName(String schema, String tableName) {
         return String.format("`%s`.`%s`", schema, tableName);
     }
+
+
+    public static String getUFullName(String schema, String tableName) {
+        return String.format("%s.%s", schema, tableName);
+    }
 }

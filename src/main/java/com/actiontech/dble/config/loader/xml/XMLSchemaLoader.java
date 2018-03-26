@@ -210,7 +210,6 @@ public class XMLSchemaLoader implements SchemaLoader {
                 setFuncNode.addAll(entry.getValue());
             }
         }
-        schemaFuncNodeER = null;
     }
 
     private void mergeFkERMap(SchemaConfig schemaConfig) {
@@ -497,9 +496,10 @@ public class XMLSchemaLoader implements SchemaLoader {
         String nodeHost = node.getAttribute("host");
         String nodeUrl = node.getAttribute("url");
         String user = node.getAttribute("user");
+        String password = node.getAttribute("password");
+        String usingDecrypt = node.getAttribute("usingDecrypt");
+        String weightStr = node.getAttribute("weight");
 
-        String ip = null;
-        int port = 0;
         if (empty(nodeHost) || empty(nodeUrl) || empty(user)) {
             throw new ConfigException(
                     "dataHost " + dataHost +
@@ -508,19 +508,18 @@ public class XMLSchemaLoader implements SchemaLoader {
         }
 
         int colonIndex = nodeUrl.indexOf(':');
-        ip = nodeUrl.substring(0, colonIndex).trim();
-        port = Integer.parseInt(nodeUrl.substring(colonIndex + 1).trim());
+        String ip = nodeUrl.substring(0, colonIndex).trim();
+        int port = Integer.parseInt(nodeUrl.substring(colonIndex + 1).trim());
 
-        String password = node.getAttribute("password");
-        String usingDecrypt = node.getAttribute("usingDecrypt");
         String passwordEncryty = DecryptUtil.dbHostDecrypt(usingDecrypt, nodeHost, user, password);
+
+        int weight = "".equals(weightStr) ? PhysicalDBPool.WEIGHT : Integer.parseInt(weightStr);
+
         DBHostConfig conf = new DBHostConfig(nodeHost, ip, port, nodeUrl, user, passwordEncryty);
         conf.setMaxCon(maxCon);
         conf.setMinCon(minCon);
-
-        String weightStr = node.getAttribute("weight");
-        int weight = "".equals(weightStr) ? PhysicalDBPool.WEIGHT : Integer.parseInt(weightStr);
         conf.setWeight(weight);
+
         return conf;
     }
 

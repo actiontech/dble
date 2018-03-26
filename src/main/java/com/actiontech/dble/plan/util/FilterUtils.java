@@ -12,9 +12,10 @@ import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.*;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCond;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondOr;
+import com.actiontech.dble.plan.node.PlanNode;
+import com.actiontech.dble.plan.node.TableNode;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public final class FilterUtils {
     private FilterUtils() {
@@ -40,6 +41,26 @@ public final class FilterUtils {
                     List<Item> subSplits = splitFilter(subFilter);
                     filterList.addAll(subSplits);
                 }
+            } else if (cond.functype() == Functype.COND_OR_FUNC) {
+
+                //step1 divide the args into base  part
+                Set<List<Item>> saveSet = new HashSet<List<Item>>();
+                for (int index = 0; index < cond.getArgCount(); index++) {
+                    Item subFilter = cond.arguments().get(index);
+                    if (subFilter == null)
+                        continue;
+                    List<Item> subSplits = splitFilter(subFilter);
+                    saveSet.add(subSplits);
+                }
+
+                Map<String, List<Item>> itemMap = gourpByRefertTable(filter, saveSet);
+
+                for (Map.Entry<String, List<Item>> entry : itemMap.entrySet()) {
+                    ItemCondOr x = new ItemCondOr(entry.getValue());
+                    x.getReferTables().addAll(entry.getValue().get(0).getReferTables());
+                    filterList.add(x);
+                }
+                filterList.add(cond);
             } else {
                 filterList.add(cond);
             }
@@ -48,6 +69,79 @@ public final class FilterUtils {
         }
         return filterList;
     }
+
+    /**
+     * group the or filter into Map<table,List<condition>>
+     *  try to optimize where with 'OR'
+     *
+     * eg1: tabl1.join(table2).query((table1.id>5 && table1.name = table2.name)or (table2.id<10 && table1.name = table2.name)")
+     * after optimized:
+     * table1.query("table1.id>5").or(table2.query("table2.id<10").on("table1.name = table2.name")
+     *
+     * eg2: tabl1.join(table2).query(table1.id = table2.id && (table1.name = a or table2.name = b))
+     * after optimized:
+     * table1.query("table1.name = a").or(table2.query("table2.name = b").on("table1.name = table2.name")
+     *
+     * @param self
+     * @param saveSet
+     * @return
+     */
+    public static Map<String, List<Item>> gourpByRefertTable(Item self, Set<List<Item>> saveSet) {
+        Map<String, List<Item>> itemMap = new HashMap<>();
+
+        //step2 turned to group the base filter by refertTable
+        //only when a table has filter in every args of condition OR ,the table can be limit
+        //if a refertTable meet the criteria ,the table and all it's filter will be
+        jumpOut:
+        for (PlanNode refertTable : self.getReferTables()) { // Traversing related tables
+            if (refertTable instanceof TableNode) {
+                String tableName = ((TableNode) refertTable).getTableName();
+
+                //this loop is to check wether the table has filter in every Subconditions (....where subcondition1 or subcondition2 )
+                for (List<Item> singleList : saveSet) {
+                    boolean hasOutTable = false;
+                    //in every subcondition the default relationship is 'AND'
+                    //so the condition in subconditions also need be group by table
+                    Map<String, List<Item>> itemMapForSingle = new HashMap<String, List<Item>>();
+                    for (Item x : singleList) {
+                        if (x.getReferTables().size() == 1) {
+                            for (PlanNode backTable : x.getReferTables()) {
+                                if (((TableNode) backTable).getTableName().equals(tableName)) {
+                                    hasOutTable = true;
+                                    if (!itemMapForSingle.containsKey(tableName)) {
+                                        itemMapForSingle.put(tableName, new ArrayList<Item>());
+                                    }
+                                    itemMapForSingle.get(tableName).add(x);
+                                }
+                            }
+                        }
+                    }
+                    if (!hasOutTable) {
+                        //it the refertTable
+                        itemMap.remove(tableName);
+                        continue jumpOut;
+                    }
+
+                    //in every single list the sub expr  relationship default as 'AND'
+                    //so just group the relationship in every sub expr
+                    for (Map.Entry<String, List<Item>> entry : itemMapForSingle.entrySet()) {
+                        if (!itemMap.containsKey(entry.getKey())) {
+                            itemMap.put(tableName, new ArrayList<Item>());
+                        }
+                        if (entry.getValue().size() != 1) {
+                            ItemCondAnd x = new ItemCondAnd(entry.getValue());
+                            x.getReferTables().addAll(entry.getValue().get(0).getReferTables());
+                            itemMap.get(tableName).add(x);
+                        } else {
+                            itemMap.get(tableName).add(entry.getValue().get(0));
+                        }
+                    }
+                }
+            }
+        }
+        return itemMap;
+    }
+
 
     public static ItemCond createLogicalFilterNoName(boolean and, List<Item> subFilters) {
         ItemCond cond = null;

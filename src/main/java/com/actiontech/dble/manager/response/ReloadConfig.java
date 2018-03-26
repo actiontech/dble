@@ -7,6 +7,10 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
+import com.actiontech.dble.cluster.ClusterParamCfg;
+import com.actiontech.dble.config.loader.ucoreprocess.*;
+import com.actiontech.dble.config.loader.ucoreprocess.loader.UConfigStatusResponse;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -18,7 +22,6 @@ import com.actiontech.dble.config.ConfigInitializer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.xmltozk.XmltoZkMain;
 import com.actiontech.dble.config.loader.zkprocess.zktoxml.listen.ConfigStatusListener;
 import com.actiontech.dble.config.model.ERTable;
@@ -49,6 +52,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil.SEPARATOR;
 
 /**
  * @author mycat
@@ -94,50 +99,8 @@ public final class ReloadConfig {
                     c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rolling back, please try again later.");
                     return;
                 }
-
                 try {
-                    final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
-                    lock.lock();
-                    try {
-                        load(loadAll, loadAllMode);
-                        //tell zk this instance has prepared
-                        ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID),
-                                               ConfigStatusListener.SUCCESS.getBytes(StandardCharsets.UTF_8));
-                        XmltoZkMain.writeConfFileToZK(loadAll, loadAllMode);
-
-                        //check all session waiting status
-                        List<String> preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
-                        List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
-                        // TODO: While waiting, a new instance of MyCat is upping and working.
-                        while (preparedList.size() < onlineList.size()) {
-                            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-                            onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
-                            preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
-                        }
-
-                        StringBuilder sbErrorInfo = new StringBuilder();
-                        for (String child : preparedList) {
-                            String childPath = ZKPaths.makePath(KVPathUtil.getConfStatusPath(), child);
-                            byte[] errorInfo = zkConn.getData().forPath(childPath);
-                            if (!ConfigStatusListener.SUCCESS.equals(new String(errorInfo, StandardCharsets.UTF_8))) {
-                                sbErrorInfo.append(child).append(":");
-                                sbErrorInfo.append(new String(errorInfo, StandardCharsets.UTF_8));
-                                sbErrorInfo.append(";");
-                            }
-                            zkConn.delete().forPath(ZKPaths.makePath(KVPathUtil.getConfStatusPath(), child));
-                        }
-
-                        if (sbErrorInfo.length() == 0) {
-                            writeOKResult(c);
-                        } else {
-                            writeErrorResult(c, sbErrorInfo.toString());
-                        }
-                    } catch (Exception e) {
-                        LOGGER.warn("reload config failure", e);
-                        writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
-                    } finally {
-                        lock.unlock();
-                    }
+                    reloadWithZookeeper(loadAll, loadAllMode, zkConn, c);
                 } finally {
                     distributeLock.release();
                 }
@@ -145,6 +108,24 @@ public final class ReloadConfig {
                 LOGGER.info("reload config failure", e);
                 writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
             }
+        } else if (DbleServer.getInstance().isUseUcore()) {
+            UDistributeLock distributeLock = new UDistributeLock(UcorePathUtil.getConfChangeLockPath(),
+                    UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+            try {
+                if (!distributeLock.acquire()) {
+                    c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rolling back, please try again later.");
+                    return;
+                }
+                try {
+                    reloadWithUcore(loadAll, loadAllMode, c);
+                } finally {
+                    distributeLock.release();
+                }
+            } catch (Exception e) {
+                LOGGER.info("reload config failure", e);
+                writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
+            }
+
         } else {
             final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
             lock.lock();
@@ -161,6 +142,96 @@ public final class ReloadConfig {
             }
         }
     }
+
+    /**
+     * reload the config with ucore notify
+     *
+     * @param loadAll
+     * @param loadAllMode
+     * @param c
+     */
+    private static void reloadWithUcore(final boolean loadAll, final int loadAllMode, ManagerConnection c) {
+        //step 1 lock the local meta ,than all the query depends on meta will be hanging
+        final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
+        lock.lock();
+        try {
+            //step 2 reload the local config file
+            load(loadAll, loadAllMode);
+
+            //step 3 if the reload with no error ,than write the config file into ucore remote
+            XmltoUcore.initFileToUcore();
+
+            //step 4 write the reload flag and self reload result into ucore,notify the other dble to reload
+            ConfStatus status = new ConfStatus(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
+                    loadAll ? ConfStatus.Status.RELOAD_ALL : ConfStatus.Status.RELOAD,
+                    loadAll ? String.valueOf(loadAllMode) : null);
+            ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getConfStatusPath(), status.toString());
+            ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getSelfConfStatusPath(), UConfigStatusResponse.SUCCESS);
+
+            //step 5 start a loop to check if all the dble in cluster is reload finished
+            while (ClusterUcoreSender.getKeyTreeSize(UcorePathUtil.getConfStatusPath() + SEPARATOR) <
+                    ClusterUcoreSender.getKeyTreeSize(UcorePathUtil.getOnlinePath() + SEPARATOR)) {
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+            }
+
+            //step 6 delete the reload flag
+            ClusterUcoreSender.deleteKVTree(UcorePathUtil.getConfStatusPath() + SEPARATOR);
+
+            writeOKResult(c);
+        } catch (Exception e) {
+            LOGGER.warn("reload config failure", e);
+            writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
+        } finally {
+            lock.unlock();
+        }
+    }
+
+
+    private static void reloadWithZookeeper(final boolean loadAll, final int loadAllMode, CuratorFramework zkConn, ManagerConnection c) {
+        final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
+        lock.lock();
+        try {
+            load(loadAll, loadAllMode);
+            //tell zk this instance has prepared
+            ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
+                    ConfigStatusListener.SUCCESS.getBytes(StandardCharsets.UTF_8));
+            XmltoZkMain.writeConfFileToZK(loadAll, loadAllMode);
+
+            //check all session waiting status
+            List<String> preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
+            List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
+            // TODO: While waiting, a new instance of MyCat is upping and working.
+            while (preparedList.size() < onlineList.size()) {
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+                onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
+                preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
+            }
+
+            StringBuilder sbErrorInfo = new StringBuilder();
+            for (String child : preparedList) {
+                String childPath = ZKPaths.makePath(KVPathUtil.getConfStatusPath(), child);
+                byte[] errorInfo = zkConn.getData().forPath(childPath);
+                if (!ConfigStatusListener.SUCCESS.equals(new String(errorInfo, StandardCharsets.UTF_8))) {
+                    sbErrorInfo.append(child).append(":");
+                    sbErrorInfo.append(new String(errorInfo, StandardCharsets.UTF_8));
+                    sbErrorInfo.append(";");
+                }
+                zkConn.delete().forPath(ZKPaths.makePath(KVPathUtil.getConfStatusPath(), child));
+            }
+
+            if (sbErrorInfo.length() == 0) {
+                writeOKResult(c);
+            } else {
+                writeErrorResult(c, sbErrorInfo.toString());
+            }
+        } catch (Exception e) {
+            LOGGER.warn("reload config failure", e);
+            writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
+        } finally {
+            lock.unlock();
+        }
+    }
+
 
     private static void load(final boolean loadAll, final int loadAllMode) throws Exception {
         if (loadAll) {
@@ -287,7 +358,7 @@ public final class ReloadConfig {
     private static void findAndcloseFrontCon(BackendConnection con) {
         if (con instanceof MySQLConnection) {
             MySQLConnection mcon1 = (MySQLConnection) con;
-            for (NIOProcessor processor : DbleServer.getInstance().getProcessors()) {
+            for (NIOProcessor processor : DbleServer.getInstance().getFrontProcessors()) {
                 for (FrontendConnection fcon : processor.getFrontends().values()) {
                     if (fcon instanceof ServerConnection) {
                         ServerConnection scon = (ServerConnection) fcon;
@@ -313,7 +384,7 @@ public final class ReloadConfig {
         for (PhysicalDBPool dbPool : oldDataHosts.values()) {
             dbPool.stopHeartbeat();
             for (PhysicalDatasource ds : dbPool.getAllDataSources()) {
-                for (NIOProcessor processor : DbleServer.getInstance().getProcessors()) {
+                for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
                     for (BackendConnection con : processor.getBackends().values()) {
                         if (con instanceof MySQLConnection) {
                             MySQLConnection mysqlCon = (MySQLConnection) con;
@@ -353,7 +424,7 @@ public final class ReloadConfig {
 
         /* 2 apply the new conf */
         DbleServer.getInstance().getConfig().reload(users, schemas, dataNodes, dataHosts, erRelations, firewall,
-                                                    DbleServer.getInstance().getSystemVariables(), loader.isDataHostWithoutWH(), false);
+                DbleServer.getInstance().getSystemVariables(), loader.isDataHostWithoutWH(), false);
     }
 
 }

@@ -84,22 +84,14 @@ public class PhysicalDBNode {
             if (rrs.getRunOnSlave() != null) {  // hint like /*db_type=master/slave*/
                 // the hint is slave
                 if (rrs.getRunOnSlave()) {
-                    LOGGER.debug("rrs.isHasBlanceFlag() " + rrs.isHasBalanceFlag());
-                    if (rrs.isHasBalanceFlag()) {  // hint like /*balance*/ (only support one?)
-                        dbPool.getReadBalanceCon(schema, autoCommit, handler,
-                                attachment);
-                    } else {    // without /*balance*/
-                        LOGGER.debug("rrs.isHasBlanceFlag()" + rrs.isHasBalanceFlag());
-                        if (!dbPool.getReadCon(schema, autoCommit, handler,
-                                attachment)) {
-                            LOGGER.info("Do not have slave connection to use, " +
-                                    "use master connection instead.");
-                            PhysicalDatasource writeSource = dbPool.getSource();
-                            writeSource.setWriteCount();
-                            writeSource.getConnection(schema, autoCommit, handler, attachment);
-                            rrs.setRunOnSlave(false);
-                            rrs.setCanRunInReadDB(false);
-                        }
+                    if (!dbPool.getReadCon(schema, autoCommit, handler, attachment)) {
+                        LOGGER.info("Do not have slave connection to use, " +
+                                "use master connection instead.");
+                        PhysicalDatasource writeSource = dbPool.getSource();
+                        writeSource.setWriteCount();
+                        writeSource.getConnection(schema, autoCommit, handler, attachment);
+                        rrs.setRunOnSlave(false);
+                        rrs.setCanRunInReadDB(false);
                     }
                 } else {
                     LOGGER.debug("rrs.getRunOnSlave() " + rrs.getRunOnSlave());

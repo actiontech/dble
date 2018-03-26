@@ -326,11 +326,6 @@ public class PhysicalDBPool {
         for (int i = 0; i < writeSources.length; i++) {
             int j = loop(i + index);
             if (initSource(j, writeSources[j])) {
-                // if init failed and not allowed switch
-                boolean isNotSwitchDs = (dataHostConfig.getSwitchType() == DataHostConfig.NOT_SWITCH_DS);
-                if (isNotSwitchDs && j > 0) {
-                    return j;
-                }
                 activeIndex = j;
                 initSuccess = true;
                 LOGGER.info(getMessage(j, " init success"));
@@ -364,7 +359,7 @@ public class PhysicalDBPool {
 
         for (int i = 0; i < initSize; i++) {
             try {
-                ds.getConnection(this.schemas[i % schemas.length], true, getConHandler, null);
+                ds.initMinConnection(this.schemas[i % schemas.length], true, getConHandler, null);
             } catch (Exception e) {
                 LOGGER.info(getMessage(index, " init connection error."), e);
             }
@@ -544,21 +539,6 @@ public class PhysicalDBPool {
         return theNode;
     }
 
-    /**
-     * slave balance for read, balance in read sources
-     *
-     * @param schema     schema
-     * @param autocommit autocommit
-     * @param handler    handler
-     * @param attachment attachment
-     * @throws Exception Exception
-     */
-    void getReadBalanceCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
-        ArrayList<PhysicalDatasource> okSources = getAllActiveRWSources(false, false, checkSlaveSynStatus());
-        PhysicalDatasource theNode = randomSelect(okSources);
-        theNode.setReadCount();
-        theNode.getConnection(schema, autocommit, handler, attachment);
-    }
 
     /**
      * get a random readHost connection from writeHost, used by slave hint

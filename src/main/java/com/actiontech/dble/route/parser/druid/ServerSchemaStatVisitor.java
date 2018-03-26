@@ -148,13 +148,16 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         if (x.beginExpr instanceof SQLCharExpr) {
             begin = (String) ((SQLCharExpr) x.beginExpr).getValue();
         } else {
-            begin = x.beginExpr.toString();
+            Object value = ActionSQLEvalVisitorUtils.eval(this.getDbType(), x.beginExpr, this.getParameters(), false);
+            begin = value.toString();
+
         }
         String end;
         if (x.endExpr instanceof SQLCharExpr) {
             end = (String) ((SQLCharExpr) x.endExpr).getValue();
         } else {
-            end = x.endExpr.toString();
+            Object value = ActionSQLEvalVisitorUtils.eval(this.getDbType(), x.endExpr, this.getParameters(), false);
+            end = value.toString();
         }
         Column column = getColumn(x);
         if (column == null) {
@@ -230,6 +233,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         }
         return true;
     }
+
     @Override
     public boolean visit(MySqlInsertStatement x) {
         SQLName sqlName = x.getTableName();
@@ -287,6 +291,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
         return false;
     }
+
     @Override
     public boolean visit(SQLExprTableSource x) {
         if (this.isSimpleExprTableSource(x)) {
@@ -327,6 +332,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         this.accept(x.getOrderBy());
         return false;
     }
+
     @Override
     public boolean visit(SQLSelectQueryBlock x) {
         if (x.getFrom() == null) {
@@ -363,6 +369,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     @Override
     public void endVisit(SQLSelect x) {
     }
+
     @Override
     public void endVisit(MySqlDeleteStatement x) {
     }
@@ -528,9 +535,9 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
      * @return
      */
     private String getOwnerTableName(SQLBetweenExpr betweenExpr, String column) {
-        if (tableStats.size() == 1) { //only has 1 table
-            return tableStats.keySet().iterator().next().getName();
-        } else if (tableStats.size() == 0) { //no table
+        if (aliasMap.size() == 1) { //only has 1 table
+            return aliasMap.keySet().iterator().next();
+        } else if (aliasMap.size() == 0) { //no table
             return "";
         } else { // multi tables
             for (Column col : columns.keySet()) {

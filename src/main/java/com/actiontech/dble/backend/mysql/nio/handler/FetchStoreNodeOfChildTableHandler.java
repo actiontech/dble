@@ -83,6 +83,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
                         return null;
                     }
                     conn.setResponseHandler(this);
+                    conn.setSession(session);
                     ((MySQLConnection) conn).setComplexQuery(true);
                     conn.execute(node, session.getSource(), isAutoCommit());
                 } else {
@@ -131,6 +132,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
     @Override
     public void connectionAcquired(BackendConnection conn) {
         conn.setResponseHandler(this);
+        conn.setSession(session);
         try {
             conn.query(sql);
         } catch (Exception e) {

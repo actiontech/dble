@@ -286,6 +286,7 @@ public class DruidSelectParser extends DefaultDruidParser {
             }
         }
     }
+
     private boolean isSumFuncOrSubQuery(String schema, SQLExpr itemExpr) {
         MySQLItemVisitor ev = new MySQLItemVisitor(schema, CharsetUtil.getCharsetDefaultIndex("utf8"), DbleServer.getInstance().getTmManager());
         itemExpr.accept(ev);
@@ -616,6 +617,8 @@ public class DruidSelectParser extends DefaultDruidParser {
         } else if (mysqlSelectQuery.getLimit() != null) {
             return;
         } else if (!tableConfig.isNeedAddLimit()) {
+            return;
+        } else if (mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode()) {
             return;
         }
         SQLLimit limit = new SQLLimit();

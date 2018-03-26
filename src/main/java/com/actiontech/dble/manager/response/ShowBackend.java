@@ -97,7 +97,7 @@ public final class ShowBackend {
         }
         buffer = EOF.write(buffer, c, true);
         byte packetId = EOF.getPacketId();
-        for (NIOProcessor p : DbleServer.getInstance().getProcessors()) {
+        for (NIOProcessor p : DbleServer.getInstance().getBackendProcessors()) {
             for (BackendConnection bc : p.getBackends().values()) {
                 if (bc != null) {
                     RowDataPacket row = getRow(bc, c.getCharset().getResults());

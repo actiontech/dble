@@ -20,6 +20,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XACommitNode
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XARollbackNodesHandler;
 import com.actiontech.dble.backend.mysql.store.memalloc.MemSizeController;
 import com.actiontech.dble.backend.mysql.xa.TxState;
+import com.actiontech.dble.btrace.provider.CostTimeProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -31,6 +32,8 @@ import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.statistic.stat.QueryTimeCost;
+import com.actiontech.dble.statistic.stat.QueryTimeCostContainer;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +44,9 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
@@ -73,14 +78,17 @@ public class NonBlockingSession implements Session {
     private MemSizeController joinBufferMC;
     private MemSizeController orderBufferMC;
     private MemSizeController otherBufferMC;
-
+    private QueryTimeCost queryTimeCost;
+    private CostTimeProvider provider;
+    private volatile boolean timeCost = false;
+    private AtomicBoolean firstBackConRes = new AtomicBoolean(false);
 
     public NonBlockingSession(ServerConnection source) {
         this.source = source;
         this.target = new ConcurrentHashMap<>(2, 1f);
-        this.joinBufferMC = new MemSizeController(4 * 1024 * 1024);
-        this.orderBufferMC = new MemSizeController(4 * 1024 * 1024);
-        this.otherBufferMC = new MemSizeController(4 * 1024 * 1024);
+        this.joinBufferMC = new MemSizeController(DbleServer.getInstance().getConfig().getSystem().getJoinMemSize() * 1024 * 1024L);
+        this.orderBufferMC = new MemSizeController(DbleServer.getInstance().getConfig().getSystem().getOrderMemSize() * 1024 * 1024L);
+        this.otherBufferMC = new MemSizeController(DbleServer.getInstance().getConfig().getSystem().getOtherMemSize() * 1024 * 1024L);
     }
 
     public void setOutputHandler(OutputHandler outputHandler) {
@@ -90,6 +98,125 @@ public class NonBlockingSession implements Session {
     @Override
     public ServerConnection getSource() {
         return source;
+    }
+
+    public void setRequestTime() {
+        if (DbleServer.getInstance().getConfig().getSystem().getCostTimeStat() == 0) {
+            return;
+        }
+        timeCost = false;
+        if (ThreadLocalRandom.current().nextInt(100) >= DbleServer.getInstance().getConfig().getSystem().getCostSamplePercent()) {
+            return;
+        }
+        timeCost = true;
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("clear");
+        }
+        queryTimeCost = new QueryTimeCost();
+        provider = new CostTimeProvider();
+        provider.beginRequest(source.getId());
+        long requestTime = System.nanoTime();
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("frontend connection setRequestTime:" + requestTime);
+        }
+        queryTimeCost.setRequestTime(requestTime);
+    }
+
+    public void startProcess() {
+        if (!timeCost) {
+            return;
+        }
+        provider.startProcess(source.getId());
+    }
+
+    public void endParse() {
+        if (!timeCost) {
+            return;
+        }
+        provider.endParse(source.getId());
+    }
+
+
+    public void endRoute(RouteResultset rrs) {
+        if (!timeCost) {
+            return;
+        }
+        provider.endRoute(source.getId());
+        queryTimeCost.setCount(rrs.getNodes() == null ? 0 : rrs.getNodes().length);
+    }
+
+    public void endDelive() {
+        if (!timeCost) {
+            return;
+        }
+        provider.endDelive(source.getId());
+    }
+
+    public void setBackendRequestTime(long backendID) {
+        if (!timeCost) {
+            return;
+        }
+        QueryTimeCost backendCost = new QueryTimeCost();
+        long requestTime = System.nanoTime();
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("backend connection[" + backendID + "] setRequestTime:" + requestTime);
+        }
+        backendCost.setRequestTime(requestTime);
+        queryTimeCost.getBackEndTimeCosts().put(backendID, backendCost);
+
+
+    }
+
+    public void setBackendResponseTime(long backendID) {
+        if (!timeCost) {
+            return;
+        }
+        QueryTimeCost backCost = queryTimeCost.getBackEndTimeCosts().get(backendID);
+        long responseTime = System.nanoTime();
+        if (backCost != null && backCost.getResponseTime().compareAndSet(0, responseTime) && queryTimeCost.getFirstBackConRes().compareAndSet(false, true)) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("backend connection[" + backendID + "] setResponseTime:" + responseTime);
+            }
+            provider.resFromBack(source.getId());
+            firstBackConRes.set(false);
+        }
+
+        if (queryTimeCost.getBackendReserveCount().decrementAndGet() == 0) {
+            provider.resLastBack(source.getId());
+        }
+    }
+
+    public void startExecuteBackend() {
+        if (!timeCost) {
+            return;
+        }
+        if (firstBackConRes.compareAndSet(false, true)) {
+            provider.startExecuteBackend(source.getId());
+        }
+
+        if (queryTimeCost.getBackendExecuteCount().decrementAndGet() == 0) {
+            provider.execLastBack(source.getId());
+        }
+    }
+
+    public void allBackendConnReceive() {
+        if (!timeCost) {
+            return;
+        }
+        provider.allBackendConnReceive(source.getId());
+    }
+
+    public void setResponseTime() {
+        if (!timeCost) {
+            return;
+        }
+        long responseTime = System.nanoTime();
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("setResponseTime:" + responseTime);
+        }
+        queryTimeCost.getResponseTime().set(responseTime);
+        provider.beginResponse(source.getId());
+        QueryTimeCostContainer.getInstance().add(queryTimeCost);
     }
 
     @Override

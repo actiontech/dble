@@ -6,6 +6,7 @@
 package com.actiontech.dble.route.function;
 
 import com.actiontech.dble.config.model.rule.RuleAlgorithm;
+import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,8 +35,8 @@ public class PartitionByDate extends AbstractPartitionAlgorithm implements RuleA
     private int nCount;
     private int defaultNode = -1;
     private transient ThreadLocal<SimpleDateFormat> formatter;
-
     private static final long ONE_DAY = 86400000;
+    private int hashCode = -1;
 
     @Override
     public void init() {
@@ -44,7 +45,7 @@ public class PartitionByDate extends AbstractPartitionAlgorithm implements RuleA
 
             beginDate = new SimpleDateFormat(dateFormat).parse(sBeginDate).getTime();
 
-            if (sEndDate != null && !sEndDate.equals("")) {
+            if (!StringUtil.isEmpty(sEndDate)) {
                 endDate = new SimpleDateFormat(dateFormat).parse(sEndDate).getTime();
                 nCount = (int) ((endDate - beginDate) / partitionTime) + 1;
             }
@@ -57,6 +58,8 @@ public class PartitionByDate extends AbstractPartitionAlgorithm implements RuleA
         } catch (ParseException e) {
             throw new java.lang.IllegalArgumentException(e);
         }
+
+        initHashCode();
     }
 
     @Override
@@ -114,21 +117,60 @@ public class PartitionByDate extends AbstractPartitionAlgorithm implements RuleA
 
     public void setsBeginDate(String sBeginDate) {
         this.sBeginDate = sBeginDate;
+        propertiesMap.put("sBeginDate", sBeginDate);
     }
 
     public void setsPartionDay(String sPartionDay) {
         this.sPartionDay = sPartionDay;
+        propertiesMap.put("sPartionDay", sPartionDay);
     }
 
     public void setDateFormat(String dateFormat) {
         this.dateFormat = dateFormat;
+        propertiesMap.put("dateFormat", dateFormat);
     }
 
     public void setsEndDate(String sEndDate) {
         this.sEndDate = sEndDate;
+        propertiesMap.put("sEndDate", sEndDate);
     }
 
     public void setDefaultNode(int defaultNode) {
         this.defaultNode = defaultNode;
+        propertiesMap.put("defaultNode", String.valueOf(defaultNode));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        PartitionByDate other = (PartitionByDate) o;
+
+        return StringUtil.equals(other.sBeginDate, sBeginDate) &&
+                StringUtil.equals(other.sPartionDay, sPartionDay) &&
+                StringUtil.equals(other.dateFormat, dateFormat) &&
+                StringUtil.equals(other.sEndDate, sEndDate) &&
+                other.defaultNode == defaultNode;
+    }
+
+    @Override
+    public int hashCode() {
+        return hashCode;
+    }
+
+    private void initHashCode() {
+        long tmpCode = beginDate;
+        tmpCode *= partitionTime;
+        if (defaultNode != 0) {
+            tmpCode *= defaultNode;
+        }
+        if (!StringUtil.isEmpty(sEndDate)) {
+            tmpCode *= endDate;
+        }
+        hashCode = (int) tmpCode;
     }
 }

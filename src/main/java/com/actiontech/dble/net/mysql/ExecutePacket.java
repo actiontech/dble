@@ -88,8 +88,12 @@ public class ExecutePacket extends MySQLPacket {
         flags = mm.read();
         iterationCount = mm.readUB4();
 
-        // read nullBitMap
         int parameterCount = values.length;
+        if (parameterCount <= 0) {
+            return;
+        }
+
+        // read nullBitMap
         nullBitMap = new byte[(parameterCount + 7) / 8];
         for (int i = 0; i < nullBitMap.length; i++) {
             nullBitMap[i] = mm.read();

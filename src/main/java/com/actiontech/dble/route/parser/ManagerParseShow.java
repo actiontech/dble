@@ -7,6 +7,8 @@ package com.actiontech.dble.route.parser;
 
 import com.actiontech.dble.route.parser.util.ParseUtil;
 
+import java.util.regex.Pattern;
+
 /**
  * @author mycat
  */
@@ -37,9 +39,10 @@ public final class ManagerParseShow {
     public static final int TIME_STARTUP = 23;
     public static final int VERSION = 24;
     public static final int CONNECTION_SQL = 27;
-    public static final int DATANODE_WHERE = 28;
+    public static final int DATANODE_SCHEMA = 28;
     public static final int DATASOURCE_WHERE = 29;
     public static final int HEARTBEAT = 30;
+    public static final int TABLE_DATA_NODE = 31;
     public static final int BACKEND = 33;
     public static final int BACKEND_OLD = 34;
 
@@ -63,6 +66,10 @@ public final class ManagerParseShow {
     public static final int BACKEND_STAT = 50;
     public static final int COST_TIME = 51;
     public static final int THREAD_USED = 52;
+    public static final int TABLE_ALGORITHM = 53;
+
+    public static final Pattern PATTERN_FOR_TABLE_INFO = Pattern.compile("^(\\s*schema\\s*=\\s*)([a-zA-Z_0-9]+)" +
+            "(\\s+and\\s+table\\s*=\\s*)([a-zA-Z_0-9]+)\\s*$", Pattern.CASE_INSENSITIVE);
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -90,6 +97,9 @@ public final class ManagerParseShow {
     private static int show2Check(String stmt, int offset) {
         if (stmt.length() > ++offset && stmt.charAt(offset) == '@' && stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
+                case 'A':
+                case 'a':
+                    return showACheck(stmt, offset);
                 case 'B':
                 case 'b':
                     return show2BCheck(stmt, offset);
@@ -117,6 +127,49 @@ public final class ManagerParseShow {
                 case 'W':
                 case 'w':
                     return show2WCheck(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    // show @@algorithm
+    private static int showACheck(String stmt, int offset) {
+        if (stmt.length() > offset + "lgorithm ".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            if ((c1 == 'L' || c1 == 'l') && (c2 == 'G' || c2 == 'g') && (c3 == 'O' || c3 == 'o') &&
+                    (c4 == 'R' || c4 == 'r') && (c5 == 'I' || c5 == 'i') && (c6 == 'T' || c6 == 't') &&
+                    (c7 == 'H' || c7 == 'h') && (c8 == 'M' || c8 == 'm')) {
+                return checkWherePlus(stmt, offset, TABLE_ALGORITHM);
+
+            }
+
+        }
+        return OTHER;
+    }
+
+    private static int checkWherePlus(String stmt, int offset, int expectCode) {
+        while (stmt.length() > ++offset) {
+            switch (stmt.charAt(offset)) {
+                case ' ':
+                case '\r':
+                case '\n':
+                case '\t':
+                    continue;
+                case 'W':
+                case 'w':
+                    if (!ParseUtil.isSpace(stmt.charAt(offset - 1))) {
+                        return OTHER;
+                    }
+                    return checkWhereTableInfo(stmt, offset, expectCode);
                 default:
                     return OTHER;
             }
@@ -179,7 +232,7 @@ public final class ManagerParseShow {
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
             if ((c2 == 'C' || c2 == 'c') && (c3 == 'K' || c3 == 'k') && (c4 == 'E' || c4 == 'e') && (c5 == 'N' || c5 == 'n') &&
-                (c6 == 'D' || c6 == 'd')) {
+                    (c6 == 'D' || c6 == 'd')) {
 
                 if (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
@@ -244,8 +297,8 @@ public final class ManagerParseShow {
             char c8 = stmt.charAt(++offset);
             char c9 = stmt.charAt(++offset);
             if ((c1 == 't' || c1 == 'T') && (c2 == 'a' || c2 == 'A') && (c3 == 't' || c3 == 'T') && (c4 == 'i' || c4 == 'I') &&
-                (c5 == 's' || c5 == 'S') && (c6 == 't' || c6 == 'T') && (c7 == 'i' || c7 == 'I') && (c8 == 'c' || c8 == 'C') &&
-                (c9 == 's' || c9 == 'S')) {
+                    (c5 == 's' || c5 == 'S') && (c6 == 't' || c6 == 'T') && (c7 == 'i' || c7 == 'I') && (c8 == 'c' || c8 == 'C') &&
+                    (c9 == 's' || c9 == 'S')) {
                 if (ParseUtil.isErrorTail(++offset, stmt)) {
                     return OTHER;
                 }
@@ -769,13 +822,22 @@ public final class ManagerParseShow {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             if ((c1 == 'O' || c1 == 'o') && (c2 == 'D' || c2 == 'd') && (c3 == 'E' || c3 == 'e')) {
+                if ((stmt.length() > offset + 1)) {
+                    char cTest = stmt.charAt(offset + 1);
+                    if (cTest == 'S' || cTest == 's') {
+                        return checkWherePlus(stmt, ++offset, TABLE_DATA_NODE);
+                    }
+                }
                 while (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':
+                        case '\r':
+                        case '\n':
+                        case '\t':
                             continue;
                         case 'W':
                         case 'w':
-                            if (stmt.charAt(offset - 1) != ' ') {
+                            if (!ParseUtil.isSpace(stmt.charAt(offset - 1))) {
                                 return OTHER;
                             }
                             return show2DataNWhereCheck(stmt, offset);
@@ -784,6 +846,37 @@ public final class ManagerParseShow {
                     }
                 }
                 return DATA_NODE;
+            }
+        }
+        return OTHER;
+    }
+
+    // SHOW @@aaa WHERE S[chema=? and table =?]
+    private static int checkWhereTableInfo(String stmt, int offset, int expectCode) {
+        if (stmt.length() > offset + "HERE".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            if ((c1 == 'H' || c1 == 'h') && (c2 == 'E' || c2 == 'e') && (c3 == 'R' || c3 == 'r') &&
+                    (c4 == 'E' || c4 == 'e')) {
+                while (stmt.length() > ++offset) {
+                    switch (stmt.charAt(offset)) {
+                        case ' ':
+                        case '\r':
+                        case '\n':
+                        case '\t':
+                            continue;
+                        case 'S':
+                        case 's':
+                            if (!ParseUtil.isSpace(stmt.charAt(offset - 1))) {
+                                return OTHER;
+                            }
+                            return ((offset - 1) << 8) | expectCode;
+                        default:
+                            return OTHER;
+                    }
+                }
             }
         }
         return OTHER;
@@ -837,7 +930,7 @@ public final class ManagerParseShow {
                                     case ' ':
                                         continue;
                                     default:
-                                        return (offset << 8) | DATANODE_WHERE;
+                                        return (offset << 8) | DATANODE_SCHEMA;
                                 }
                             }
                             return OTHER;
@@ -1098,6 +1191,7 @@ public final class ManagerParseShow {
         }
         return OTHER;
     }
+
     // SHOW @@COST_TIME
     private static int show2CostTime(String stmt, int offset) {
         if (stmt.length() > offset + "T_TIME".length()) {
@@ -1169,7 +1263,7 @@ public final class ManagerParseShow {
             char c6 = stmt.charAt(++offset);
             char c7 = stmt.charAt(++offset);
             if ((c1 == 'N' || c1 == 'n') && (c2 == 'E' || c2 == 'e') && (c3 == 'C' || c3 == 'c') && (c4 == 'T' || c4 == 't') &&
-                (c5 == 'I' || c5 == 'i') && (c6 == 'O' || c6 == 'o') && (c7 == 'N' || c7 == 'n')) {
+                    (c5 == 'I' || c5 == 'i') && (c6 == 'O' || c6 == 'o') && (c7 == 'N' || c7 == 'n')) {
                 if (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':

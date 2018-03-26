@@ -27,10 +27,12 @@ public final class PartitionByLong extends AbstractPartitionAlgorithm implements
 
     public void setPartitionCount(String partitionCount) {
         this.count = toIntArray(partitionCount);
+        propertiesMap.put("partitionCount", partitionCount);
     }
 
     public void setPartitionLength(String partitionLength) {
         this.length = toIntArray(partitionLength);
+        propertiesMap.put("partitionLength", partitionLength);
     }
 
     @Override
@@ -55,8 +57,14 @@ public final class PartitionByLong extends AbstractPartitionAlgorithm implements
 
     @Override
     public Integer[] calculateRange(String beginValue, String endValue) {
-        long begin = Long.parseLong(beginValue);
-        long end = Long.parseLong(endValue);
+        long begin = 0;
+        long end = 0;
+        try {
+            begin = Long.parseLong(beginValue);
+            end = Long.parseLong(endValue);
+        } catch (NumberFormatException e) {
+            return new Integer[0];
+        }
         int partitionLength = partitionUtil.getPartitionLength();
         if (end - begin >= partitionLength || begin > end) { //TODO: optimize begin > end
             return new Integer[0];

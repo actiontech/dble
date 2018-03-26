@@ -5,6 +5,8 @@
 */
 package com.actiontech.dble.config.model.rule;
 
+import java.util.Map;
+
 /**
  * @author mycat
  */
@@ -26,4 +28,6 @@ public interface RuleAlgorithm {
     Integer calculate(String columnValue);
 
     Integer[] calculateRange(String beginValue, String endValue);
+
+    Map<String, String> getAllProperties();
 }

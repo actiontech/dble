@@ -27,6 +27,7 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
     private LongRange[] longRanges;
     private int defaultNode = -1;
     private int hashCode = 1;
+
     @Override
     public void init() {
         initialize();
@@ -113,6 +114,7 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
     }
 
     private void initialize() {
+        StringBuilder sb = new StringBuilder("{");
         BufferedReader in = null;
         try {
             // FileInputStream fin = new FileInputStream(new File(fileMapPath));
@@ -122,7 +124,7 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
             }
             in = new BufferedReader(new InputStreamReader(fin));
             LinkedList<LongRange> longRangeList = new LinkedList<>();
-
+            int iRow = 0;
             for (String line = null; (line = in.readLine()) != null; ) {
                 line = line.trim();
                 if ((line.length() == 0) || line.startsWith("#") || line.startsWith("//")) {
@@ -133,14 +135,28 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
                     LOGGER.info(" warn: bad line int " + mapFile + " :" + line);
                     continue;
                 }
-                String[] pairs = line.substring(0, ind).trim().split("-");
+
+                String key = line.substring(0, ind).trim();
+                String[] pairs = key.split("-");
                 long longStart = NumberParseUtil.parseLong(pairs[0].trim());
                 long longEnd = NumberParseUtil.parseLong(pairs[1].trim());
-                int nodeId = Integer.parseInt(line.substring(ind + 1).trim());
+                String value = line.substring(ind + 1).trim();
+                int nodeId = Integer.parseInt(value);
                 longRangeList.add(new LongRange(nodeId, longStart, longEnd));
-
+                if (iRow > 0) {
+                    sb.append(",");
+                }
+                iRow++;
+                sb.append("\"");
+                sb.append(key);
+                sb.append("\":");
+                sb.append("\"");
+                sb.append(value);
+                sb.append("\"");
             }
             longRanges = longRangeList.toArray(new LongRange[longRangeList.size()]);
+            sb.append("}");
+            propertiesMap.put("mapFile", sb.toString());
         } catch (Exception e) {
             if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;
@@ -159,7 +175,9 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
 
     public void setDefaultNode(int defaultNode) {
         this.defaultNode = defaultNode;
+        propertiesMap.put("defaultNode", String.valueOf(defaultNode));
     }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {

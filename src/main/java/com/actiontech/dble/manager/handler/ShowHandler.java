@@ -53,7 +53,7 @@ public final class ShowHandler {
             case ManagerParseShow.DATA_NODE:
                 ShowDataNode.execute(c, null);
                 break;
-            case ManagerParseShow.DATANODE_WHERE: {
+            case ManagerParseShow.DATANODE_SCHEMA: {
                 String name = stmt.substring(rs >>> 8).trim();
                 if (StringUtil.isEmpty(name)) {
                     c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
@@ -72,6 +72,11 @@ public final class ShowHandler {
                 } else {
                     ShowDataSource.execute(c, name);
                 }
+                break;
+            }
+            case ManagerParseShow.TABLE_DATA_NODE: {
+                String tableInfo = stmt.substring(rs >>> 8).trim();
+                ShowTableDataNode.execute(c, tableInfo);
                 break;
             }
             case ManagerParseShow.HELP:
@@ -170,6 +175,11 @@ public final class ShowHandler {
             case ManagerParseShow.THREAD_USED:
                 ShowThreadUsed.execute(c);
                 break;
+            case ManagerParseShow.TABLE_ALGORITHM: {
+                String tableInfo = stmt.substring(rs >>> 8).trim();
+                ShowTableAlgorithm.execute(c, tableInfo);
+                break;
+            }
             default:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
         }

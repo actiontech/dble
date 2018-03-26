@@ -398,6 +398,13 @@ public abstract class PhysicalDatasource {
         return takeCon(con, schema);
     }
 
+    public void initMinConnection(String schema, boolean autocommit, final ResponseHandler handler,
+                                  final Object attachment) throws IOException {
+        LOGGER.info("create new connection for " +
+                this.name + " of schema " + schema);
+        createNewConnection(handler, attachment, schema);
+    }
+
     private void returnCon(BackendConnection c) {
         if (dying.get()) {
             c.close("dying");

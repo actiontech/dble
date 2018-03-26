@@ -53,10 +53,12 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
 
     public void setType(int type) {
         this.type = type;
+        propertiesMap.put("type", String.valueOf(type));
     }
 
     public void setDefaultNode(int defaultNode) {
         this.defaultNode = defaultNode;
+        propertiesMap.put("defaultNode", String.valueOf(defaultNode));
     }
 
     @Override
@@ -92,6 +94,7 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
     }
 
     private void initialize() {
+        StringBuilder sb = new StringBuilder("{");
         BufferedReader in = null;
         try {
             InputStream fin = ResourceUtil.getResourceAsStreamFromRoot(mapFile);
@@ -102,6 +105,7 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
 
             app2Partition = new HashMap<>();
 
+            int iRow = 0;
             for (String line; (line = in.readLine()) != null; ) {
                 line = line.trim();
                 if (line.startsWith("#") || line.startsWith("//")) {
@@ -113,16 +117,29 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
                 }
                 try {
                     String key = line.substring(0, ind).trim();
-                    int pid = Integer.parseInt(line.substring(ind + 1).trim());
+                    String value = line.substring(ind + 1).trim();
+                    int pid = Integer.parseInt(value);
                     if (type == 0) {
                         app2Partition.put(Integer.parseInt(key), pid);
                     } else {
                         app2Partition.put(key, pid);
                     }
+                    if (iRow > 0) {
+                        sb.append(",");
+                    }
+                    iRow++;
+                    sb.append("\"");
+                    sb.append(key);
+                    sb.append("\":");
+                    sb.append("\"");
+                    sb.append(value);
+                    sb.append("\"");
                 } catch (Exception e) {
                     //ignore error
                 }
             }
+            sb.append("}");
+            propertiesMap.put("mapFile", sb.toString());
             //set default node
             if (defaultNode >= 0) {
                 app2Partition.put(DEFAULT_NODE, defaultNode);

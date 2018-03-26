@@ -76,11 +76,11 @@ public class ManagerParserTest {
         Assert.assertEquals(ManagerParseShow.DATA_NODE, ManagerParseShow.parse("SHOW @@DATANODE", 5));
         Assert.assertEquals(ManagerParseShow.DATA_NODE, ManagerParseShow.parse("show @@DATANODE", 5));
         Assert.assertEquals(ManagerParseShow.DATA_NODE, ManagerParseShow.parse("show @@DATANODE   ", 5));
-        Assert.assertEquals(ManagerParseShow.DATANODE_WHERE,
+        Assert.assertEquals(ManagerParseShow.DATANODE_SCHEMA,
                 0xff & ManagerParseShow.parse("show @@DATANODE WHERE SCHEMA=1", 5));
-        Assert.assertEquals(ManagerParseShow.DATANODE_WHERE,
+        Assert.assertEquals(ManagerParseShow.DATANODE_SCHEMA,
                 0xff & ManagerParseShow.parse("show @@DATANODE WHERE schema =1", 5));
-        Assert.assertEquals(ManagerParseShow.DATANODE_WHERE,
+        Assert.assertEquals(ManagerParseShow.DATANODE_SCHEMA,
                 0xff & ManagerParseShow.parse("show @@DATANODE WHERE SCHEMA= 1", 5));
         Assert.assertEquals(ManagerParseShow.OTHER,
                 ManagerParseShow.parse("show @@DATANODEWHERE SCHEMA= 1", 5));

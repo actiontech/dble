@@ -9,6 +9,8 @@ import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.model.rule.RuleAlgorithm;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * AbstractPartitionAlgorithm
@@ -18,6 +20,8 @@ import java.io.Serializable;
 public abstract class AbstractPartitionAlgorithm implements RuleAlgorithm, Serializable {
     protected String alias;
     protected String name;
+
+    protected Map<String, String> propertiesMap = new HashMap<>();
 
     public String getName() {
         return name;
@@ -77,6 +81,11 @@ public abstract class AbstractPartitionAlgorithm implements RuleAlgorithm, Seria
      */
     public int getPartitionNum() {
         return -1; // no limit
+    }
+
+    @Override
+    public Map<String, String> getAllProperties() {
+        return propertiesMap;
     }
 
 }

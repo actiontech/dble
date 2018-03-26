@@ -37,6 +37,7 @@ public class PartitionByDate extends AbstractPartitionAlgorithm implements RuleA
     private transient ThreadLocal<SimpleDateFormat> formatter;
     private static final long ONE_DAY = 86400000;
     private int hashCode = -1;
+
     @Override
     public void init() {
         try {
@@ -116,22 +117,27 @@ public class PartitionByDate extends AbstractPartitionAlgorithm implements RuleA
 
     public void setsBeginDate(String sBeginDate) {
         this.sBeginDate = sBeginDate;
+        propertiesMap.put("sBeginDate", sBeginDate);
     }
 
     public void setsPartionDay(String sPartionDay) {
         this.sPartionDay = sPartionDay;
+        propertiesMap.put("sPartionDay", sPartionDay);
     }
 
     public void setDateFormat(String dateFormat) {
         this.dateFormat = dateFormat;
+        propertiesMap.put("dateFormat", dateFormat);
     }
 
     public void setsEndDate(String sEndDate) {
         this.sEndDate = sEndDate;
+        propertiesMap.put("sEndDate", sEndDate);
     }
 
     public void setDefaultNode(int defaultNode) {
         this.defaultNode = defaultNode;
+        propertiesMap.put("defaultNode", String.valueOf(defaultNode));
     }
 
     @Override

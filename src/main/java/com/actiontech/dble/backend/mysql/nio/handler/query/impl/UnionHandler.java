@@ -54,10 +54,10 @@ public class UnionHandler extends BaseDMLHandler {
 
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
                                  byte[] eofNull, boolean isLeft, BackendConnection conn) {
-        if (terminate.get())
-            return;
         lock.lock();
         try {
+            if (terminate.get())
+                return;
             if (this.fieldPackets == null || this.fieldPackets.size() == 0) {
                 this.fieldPackets = fieldPackets;
             } else {
@@ -69,7 +69,7 @@ public class UnionHandler extends BaseDMLHandler {
                 nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, conn);
                 conFieldSend.signalAll();
             } else {
-                while (nodeCountField.get() != 0) {
+                while (nodeCountField.get() != 0 && !terminate.get()) {
                     conFieldSend.await();
                 }
             }

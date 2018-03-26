@@ -41,19 +41,4 @@ public final class XmltoUcore {
         ucoreListen.initAllNode();
     }
 
-    public static void writeFileToZK() throws Exception {
-        UcoreClearKeyListener ucoreListen = new UcoreClearKeyListener();
-
-        XmlProcessBase xmlProcess = new XmlProcessBase();
-
-        new UXmlRuleLoader(xmlProcess, ucoreListen);
-
-        new UXmlServerLoader(xmlProcess, ucoreListen);
-
-        new UXmlSchemaLoader(xmlProcess, ucoreListen);
-
-
-        xmlProcess.initJaxbClass();
-        ucoreListen.initAllNode();
-    }
 }

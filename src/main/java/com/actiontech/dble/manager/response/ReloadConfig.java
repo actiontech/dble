@@ -159,7 +159,7 @@ public final class ReloadConfig {
             load(loadAll, loadAllMode);
 
             //step 3 if the reload with no error ,than write the config file into ucore remote
-            XmltoUcore.writeFileToZK();
+            XmltoUcore.initFileToZK();
 
             //step 4 write the reload flag and self reload result into ucore,notify the other dble to reload
             ConfStatus status = new ConfStatus(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),

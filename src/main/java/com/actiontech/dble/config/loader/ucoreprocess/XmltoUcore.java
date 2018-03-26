@@ -18,11 +18,11 @@ public final class XmltoUcore {
 
     public static void main(String[] args) throws Exception {
         ClusterController.initFromShell();
-        initFileToZK();
+        initFileToUcore();
         System.out.println("XmltoZkMain Finished");
     }
 
-    public static void initFileToZK() throws Exception {
+    public static void initFileToUcore() throws Exception {
         UcoreClearKeyListener ucoreListen = new UcoreClearKeyListener();
 
         XmlProcessBase xmlProcess = new XmlProcessBase();
@@ -41,19 +41,4 @@ public final class XmltoUcore {
         ucoreListen.initAllNode();
     }
 
-    public static void writeFileToZK() throws Exception {
-        UcoreClearKeyListener ucoreListen = new UcoreClearKeyListener();
-
-        XmlProcessBase xmlProcess = new XmlProcessBase();
-
-        new UXmlRuleLoader(xmlProcess, ucoreListen);
-
-        new UXmlServerLoader(xmlProcess, ucoreListen);
-
-        new UXmlSchemaLoader(xmlProcess, ucoreListen);
-
-
-        xmlProcess.initJaxbClass();
-        ucoreListen.initAllNode();
-    }
 }

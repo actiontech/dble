@@ -75,6 +75,10 @@ public final class ClusterController {
                 throw new RuntimeException("Cluster Config is not completely set");
             }
         }
+
+        if (pros.getProperty(ClusterParamCfg.CLUSTER_PLUGINS_IP.getKey()).indexOf(",") != -1) {
+            pros.setProperty(ClusterParamCfg.CLUSTER_PLUGINS_IP.getKey(), pros.getProperty(ClusterParamCfg.CLUSTER_PLUGINS_IP.getKey()).split(",")[0]);
+        }
         return pros;
 
     }

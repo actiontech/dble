@@ -56,6 +56,7 @@ public class UDistributeLock {
                             LOGGER.info("renew lock of session  success:" + sessionId + " " + path);
                         } catch (Exception e) {
                             LOGGER.info("renew lock of session  failure:" + sessionId + " " + path);
+                            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(5000));
                         }
                     }
                 }

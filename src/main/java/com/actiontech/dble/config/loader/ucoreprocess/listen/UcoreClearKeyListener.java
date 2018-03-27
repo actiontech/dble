@@ -15,6 +15,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * Created by szf on 2018/1/24.
@@ -40,13 +42,18 @@ public class UcoreClearKeyListener implements Runnable {
     @Override
     public void run() {
         for (; ; ) {
-            UcoreInterface.SubscribeKvPrefixInput input
-                    = UcoreInterface.SubscribeKvPrefixInput.newBuilder().setIndex(index).setDuration(60).setKeyPrefix(UcorePathUtil.CONF_BASE_PATH).build();
-            UcoreInterface.SubscribeKvPrefixOutput output = stub.subscribeKvPrefix(input);
-            Map<String, UKvBean> diffMap = getDiffMap(output);
-            if (output.getIndex() != index) {
-                handle(diffMap);
-                index = output.getIndex();
+            try {
+                UcoreInterface.SubscribeKvPrefixInput input
+                        = UcoreInterface.SubscribeKvPrefixInput.newBuilder().setIndex(index).setDuration(60).setKeyPrefix(UcorePathUtil.CONF_BASE_PATH).build();
+                UcoreInterface.SubscribeKvPrefixOutput output = stub.subscribeKvPrefix(input);
+                Map<String, UKvBean> diffMap = getDiffMap(output);
+                if (output.getIndex() != index) {
+                    handle(diffMap);
+                    index = output.getIndex();
+                }
+            }catch (Exception e){
+                LOGGER.info("error in deal with key,may be the ucore is shut down");
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(2000));
             }
         }
     }

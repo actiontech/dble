@@ -80,34 +80,10 @@ public class MySQLConnection extends BackendAIOConnection {
         return flag;
     }
 
-    private static final CommandPacket READ_UNCOMMITTED = new CommandPacket();
-    private static final CommandPacket READ_COMMITTED = new CommandPacket();
-    private static final CommandPacket REPEATABLE_READ = new CommandPacket();
-    private static final CommandPacket SERIALIZABLE = new CommandPacket();
-    private static final CommandPacket AUTOCOMMIT_ON = new CommandPacket();
-    private static final CommandPacket AUTOCOMMIT_OFF = new CommandPacket();
     private static final CommandPacket COMMIT = new CommandPacket();
     private static final CommandPacket ROLLBACK = new CommandPacket();
 
     static {
-        READ_UNCOMMITTED.setPacketId(0);
-        READ_UNCOMMITTED.setCommand(MySQLPacket.COM_QUERY);
-        READ_UNCOMMITTED.setArg("SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED".getBytes());
-        READ_COMMITTED.setPacketId(0);
-        READ_COMMITTED.setCommand(MySQLPacket.COM_QUERY);
-        READ_COMMITTED.setArg("SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED".getBytes());
-        REPEATABLE_READ.setPacketId(0);
-        REPEATABLE_READ.setCommand(MySQLPacket.COM_QUERY);
-        REPEATABLE_READ.setArg("SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ".getBytes());
-        SERIALIZABLE.setPacketId(0);
-        SERIALIZABLE.setCommand(MySQLPacket.COM_QUERY);
-        SERIALIZABLE.setArg("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE".getBytes());
-        AUTOCOMMIT_ON.setPacketId(0);
-        AUTOCOMMIT_ON.setCommand(MySQLPacket.COM_QUERY);
-        AUTOCOMMIT_ON.setArg("SET autocommit=1".getBytes());
-        AUTOCOMMIT_OFF.setPacketId(0);
-        AUTOCOMMIT_OFF.setCommand(MySQLPacket.COM_QUERY);
-        AUTOCOMMIT_OFF.setArg("SET autocommit=0".getBytes());
         COMMIT.setPacketId(0);
         COMMIT.setCommand(MySQLPacket.COM_QUERY);
         COMMIT.setArg("commit".getBytes());

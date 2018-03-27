@@ -33,7 +33,7 @@ public final class ShowTableDataNode {
     private ShowTableDataNode() {
     }
 
-    private static final int FIELD_COUNT = 6;
+    private static final int FIELD_COUNT = 7;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
@@ -44,6 +44,9 @@ public final class ShowTableDataNode {
         HEADER.setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].setPacketId(++packetId);
+
+        FIELDS[i] = PacketUtil.getField("SEQUENCE", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("HOST", Fields.FIELD_TYPE_VAR_STRING);
@@ -129,18 +132,20 @@ public final class ShowTableDataNode {
 
     private static List<RowDataPacket> getRows(List<String> dataNodes, String charset) {
         List<RowDataPacket> list = new ArrayList<>();
+        int sequence = 0;
         for (String dataNode : dataNodes) {
             PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
             DBHostConfig dbConfig = dn.getDbPool().getSource().getConfig();
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
             row.add(StringUtil.encode(dn.getName(), charset));
+            row.add(LongUtil.toBytes(sequence));
             row.add(StringUtil.encode(dbConfig.getIp(), charset));
             row.add(LongUtil.toBytes(dbConfig.getPort()));
             row.add(StringUtil.encode(dn.getDatabase(), charset));
             row.add(StringUtil.encode(dbConfig.getUser(), charset));
             row.add(StringUtil.encode(dbConfig.getPassword(), charset));
-
             list.add(row);
+            sequence++;
         }
         return list;
     }

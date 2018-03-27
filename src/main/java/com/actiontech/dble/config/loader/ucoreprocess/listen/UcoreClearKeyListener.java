@@ -51,7 +51,7 @@ public class UcoreClearKeyListener implements Runnable {
                     handle(diffMap);
                     index = output.getIndex();
                 }
-            }catch (Exception e){
+            } catch (Exception e) {
                 LOGGER.info("error in deal with key,may be the ucore is shut down");
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(2000));
             }
@@ -104,11 +104,10 @@ public class UcoreClearKeyListener implements Runnable {
      * handle the back data from the subscribe
      * if the config version changes,write the file
      * or just start a new waiting
-     *
      */
     public void handle(Map<String, UKvBean> diffMap) {
         try {
-            for (Map.Entry<String, UKvBean> entry:diffMap.entrySet()) {
+            for (Map.Entry<String, UKvBean> entry : diffMap.entrySet()) {
                 UcoreXmlLoader x = childService.get(entry.getKey());
                 if (x != null) {
                     x.notifyProcess(entry.getValue());

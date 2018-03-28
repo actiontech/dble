@@ -1,6 +1,7 @@
 package com.actiontech.dble.backend.mysql.view;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.*;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
@@ -73,6 +74,7 @@ public class CKVStoreRepository implements Repository {
         UDistributeLock distributeLock = new UDistributeLock(lsb.toString(),
                 UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + UPDATE);
 
+
         try {
             int time = 0;
             while (!distributeLock.acquire()) {
@@ -82,9 +84,12 @@ public class CKVStoreRepository implements Repository {
                 }
             }
 
+            ClusterDelayProvider.delayAfterGetLock();
             schemaMap.put(viewName, createSql);
             ClusterUcoreSender.sendDataToUcore(sb.toString(), createSql);
+            ClusterDelayProvider.delayAfterViewSetKey();
             ClusterUcoreSender.sendDataToUcore(nsb.toString(), UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + UPDATE);
+            ClusterDelayProvider.delayAfterViewNotic();
 
             //check if the online node number is equals to the reponse number
             List<UKvBean> onlineList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getOnlinePath() + SEPARATOR);
@@ -102,14 +107,16 @@ public class CKVStoreRepository implements Repository {
                     LOGGER.info("view mate change error on key " + kv.getKey());
                 }
             }
-
+            ClusterDelayProvider.beforeDeleteViewNotic();
             ClusterUcoreSender.deleteKVTree(nsb.toString() + SEPARATOR);
+            ClusterDelayProvider.beforeReleaseViewLock();
             distributeLock.release();
-
+        } catch (RuntimeException e) {
+            LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "set to ucore node error :　" + e.getMessage());
+            throw e;
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "delete ucore node error :　" + e.getMessage());
+            LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "set to ucore node error :　" + e.getMessage());
         }
-
 
     }
 
@@ -144,8 +151,11 @@ public class CKVStoreRepository implements Repository {
                         LOGGER.warn(" view meta waiting for the lock " + schemaName + " " + view);
                     }
                 }
+                ClusterDelayProvider.delayAfterGetLock();
                 ClusterUcoreSender.deleteKV(sb.toString());
+                ClusterDelayProvider.delayAfterViewSetKey();
                 ClusterUcoreSender.sendDataToUcore(nsb.toString(), UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + DELETE);
+                ClusterDelayProvider.delayAfterViewNotic();
 
                 //check if the online node number is equals to the reponse number
                 List<UKvBean> onlineList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getOnlinePath());
@@ -165,12 +175,15 @@ public class CKVStoreRepository implements Repository {
                         }
                     }
                 }
-
+                ClusterDelayProvider.beforeDeleteViewNotic();
                 ClusterUcoreSender.deleteKVTree(nsb.toString() + SEPARATOR);
+                ClusterDelayProvider.beforeReleaseViewLock();
                 distributeLock.release();
-
+            } catch (RuntimeException e) {
+                LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "delete ucore node error :　" + e.getMessage());
+                throw e;
             } catch (Exception e) {
-                LOGGER.warn(AlarmCode.CORE_ZK_WARN + "delete ucore node error :　" + e.getMessage());
+                LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "delete ucore node error :　" + e.getMessage());
             }
         }
     }

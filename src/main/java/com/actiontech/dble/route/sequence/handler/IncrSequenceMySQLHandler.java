@@ -86,47 +86,70 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
     }
 
     private Long getNextValidSeqVal(SequenceVal seqVal) throws SQLNonTransientException {
-        Long nexVal = seqVal.nextValue();
-        if (seqVal.isNexValValid(nexVal)) {
+        Long nexVal = seqVal.counter.getNext();
+        if (nexVal != -1) {
             return nexVal;
         } else {
-            seqVal.fetching.compareAndSet(true, false);
             return getSeqValueFromDB(seqVal);
         }
     }
 
     private long getSeqValueFromDB(SequenceVal seqVal) throws SQLNonTransientException {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("get next segement of sequence from db for sequence:" + seqVal.seqName + " curVal " + seqVal.curVal);
-        }
         if (seqVal.fetching.compareAndSet(false, true)) {
+            //if get the lock ,connect to mysql and get next
+            return this.execSeqFetcher(seqVal);
+        } else {
+            //other who does get the lock just wait for awhile
+            return this.waitForResult(seqVal);
+        }
+    }
+
+    /**
+     * get the next segment & get the value[0]
+     *
+     * @param seqVal
+     * @return
+     * @throws SQLNonTransientException
+     */
+    private long execSeqFetcher(SequenceVal seqVal) throws SQLNonTransientException {
+        try {
             seqVal.dbretVal = null;
             seqVal.dbfinished = false;
-            seqVal.newValueSetted.set(false);
             mysqlSeqFetcher.execute(seqVal);
-        }
-        Long[] values = seqVal.waitFinish();
-        if (values == null) {
-            seqVal.fetching.compareAndSet(true, false);
-            throw new RuntimeException("can't fetch sequence in db,sequence :" + seqVal.seqName + " detail:" +
-                                       mysqlSeqFetcher.getLastError(seqVal.seqName));
-        } else if (values[0] == 0) {
-            seqVal.fetching.compareAndSet(true, false);
-            String msg = "sequence," + seqVal.seqName + "has not been set, please check configure in dble_sequence";
-            LOGGER.info(msg);
-            throw new SQLNonTransientException(msg);
-        } else {
-            if (seqVal.newValueSetted.compareAndSet(false, true)) {
-                seqVal.setCurValue(values[0]);
-                seqVal.maxSegValue = values[1];
-                return values[0];
+            Long[] values = seqVal.waitFinish();
+
+            //check if the result is right
+            if (values == null) {
+                throw new RuntimeException("can't fetch sequence in db,sequence :" + seqVal.seqName + " detail:" +
+                        mysqlSeqFetcher.getLastError(seqVal.seqName));
+            } else if (values[0] == 0) {
+                String msg = "sequence," + seqVal.seqName + "has not been set, please check configure in dble_sequence";
+                LOGGER.info(msg);
+                throw new SQLNonTransientException(msg);
             } else {
-                return seqVal.nextValue();
+                //if the result is OK just return the first value
+                seqVal.setNewCounter(values[0], values[1]);
+                return values[0];
             }
-
+        } catch (Exception e) {
+            throw e;
+        } finally {
+            seqVal.signalAll();
         }
-
     }
+
+    /**
+     * waiting for the packet exec to finish and get the next value
+     *
+     * @param seqVal
+     * @return
+     * @throws SQLNonTransientException
+     */
+    private long waitForResult(SequenceVal seqVal) throws SQLNonTransientException {
+        seqVal.waitOtherFinish();
+        return this.getNextValidSeqVal(seqVal);
+    }
+
 }
 
 

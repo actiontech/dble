@@ -72,9 +72,9 @@ public class UXmlRuleLoader implements UcoreXmlLoader {
 
         LOGGER.info("SchemasLoader notifyProcess ucore to object writePath :" + path);
 
-        this.parseRulesXMl.parseToXmlWrite(rule, path, "rule");
-
         writeMapFileAddFunction(functions);
+
+        this.parseRulesXMl.parseToXmlWrite(rule, path, "rule");
 
         LOGGER.info("SchemasLoader notifyProcess ucore to object zk schema      write :" + path + " is success");
     }

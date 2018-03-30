@@ -82,7 +82,7 @@ public class SequenceVal {
     public void waitOtherFinish() {
         executeLock.lock();
         try {
-            if (fetching.get()) {
+            while (fetching.get()) {
                 condRelease.await();
             }
         } catch (Exception e) {

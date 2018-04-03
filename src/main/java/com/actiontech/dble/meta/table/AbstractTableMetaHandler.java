@@ -14,6 +14,7 @@ import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.sqlengine.SQLQueryResultListener;
+import com.actiontech.dble.util.FormatUtil;
 import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
@@ -134,20 +135,12 @@ public abstract class AbstractTableMetaHandler {
         }
 
         private StructureMeta.TableMeta initTableMeta(String table, String sql, long timeStamp) {
-            if (sql.indexOf(" COMMENT ") != -1) {
-                //deal with COMMENT the druid did not support
-                String[] parts = sql.split(" COMMENT ");
-                StringBuffer sb = new StringBuffer(parts[0]);
-                for (int i = 1; i < parts.length; i++) {
-                    int index1 = parts[i].indexOf(",") == -1 ? Integer.MAX_VALUE : parts[i].indexOf(",");
-                    int index2 = parts[i].indexOf(")") == -1 ? Integer.MAX_VALUE : parts[i].indexOf(")");
-                    sb.append(parts[i].substring(Math.min(index1, index2), parts[i].length()));
-                }
-                sql = sb.toString();
-            }
+            sql = FormatUtil.deleteComment(sql);
             SQLStatementParser parser = new MySqlStatementParser(sql);
             SQLCreateTableStatement createStatement = parser.parseCreateTable();
             return MetaHelper.initTableMeta(table, createStatement, timeStamp);
         }
+
+
     }
 }

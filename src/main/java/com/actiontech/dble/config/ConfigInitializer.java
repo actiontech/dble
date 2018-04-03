@@ -66,6 +66,8 @@ public class ConfigInitializer {
         }
 
         this.firewall = serverLoader.getFirewall();
+
+        deleteRedundancyConf();
         checkWriteHost();
     }
 

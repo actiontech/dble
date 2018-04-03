@@ -134,6 +134,17 @@ public abstract class AbstractTableMetaHandler {
         }
 
         private StructureMeta.TableMeta initTableMeta(String table, String sql, long timeStamp) {
+            if (sql.indexOf(" COMMENT ") != -1) {
+                //deal with COMMENT the druid did not support
+                String[] parts = sql.split(" COMMENT ");
+                StringBuffer sb = new StringBuffer(parts[0]);
+                for (int i = 1; i < parts.length; i++) {
+                    int index1 = parts[i].indexOf(",") == -1 ? Integer.MAX_VALUE : parts[i].indexOf(",");
+                    int index2 = parts[i].indexOf(")") == -1 ? Integer.MAX_VALUE : parts[i].indexOf(")");
+                    sb.append(parts[i].substring(Math.min(index1, index2), parts[i].length()));
+                }
+                sql = sb.toString();
+            }
             SQLStatementParser parser = new MySqlStatementParser(sql);
             SQLCreateTableStatement createStatement = parser.parseCreateTable();
             return MetaHelper.initTableMeta(table, createStatement, timeStamp);

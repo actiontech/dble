@@ -73,6 +73,12 @@ public final class NIOReactor {
                         workStart = System.nanoTime();
                     }
                     finalSelector.select(500L);
+                    if (useThreadUsageStat) {
+                        long afterSelect = System.nanoTime();
+                        if (afterSelect - workStart > 3000000) { // 3ms
+                            workStart = afterSelect;
+                        }
+                    }
                     register(finalSelector);
                     keys = finalSelector.selectedKeys();
                     if (keys.size() == 0) {

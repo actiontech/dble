@@ -32,6 +32,9 @@ public final class ShowHandler {
             case ServerParseShow.TABLES:
                 ShowTables.response(c, stmt);
                 break;
+            case ServerParseShow.TABLE_STATUS:
+                ShowTableStatus.response(c, stmt);
+                break;
             case ServerParseShow.COLUMNS:
                 ShowColumns.response(c, stmt);
                 break;

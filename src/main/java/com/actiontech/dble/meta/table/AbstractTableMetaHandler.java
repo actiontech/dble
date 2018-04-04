@@ -15,7 +15,6 @@ import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.sqlengine.SQLQueryResultListener;
 import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
-import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -134,9 +133,11 @@ public abstract class AbstractTableMetaHandler {
         }
 
         private StructureMeta.TableMeta initTableMeta(String table, String sql, long timeStamp) {
-            SQLStatementParser parser = new MySqlStatementParser(sql);
+            SQLStatementParser parser = new CreateTableParserImp(sql);
             SQLCreateTableStatement createStatement = parser.parseCreateTable();
             return MetaHelper.initTableMeta(table, createStatement, timeStamp);
         }
+
+
     }
 }

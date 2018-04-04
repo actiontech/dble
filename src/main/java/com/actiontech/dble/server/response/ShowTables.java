@@ -47,9 +47,9 @@ public final class ShowTables {
     }
 
     public static void response(ServerConnection c, String stmt) {
-        ShowCreateStmtInfo info;
+        ShowTablesStmtInfo info;
         try {
-            info = new ShowCreateStmtInfo(stmt);
+            info = new ShowTablesStmtInfo(stmt);
         } catch (Exception e) {
             c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.toString());
             return;
@@ -88,9 +88,9 @@ public final class ShowTables {
         }
     }
 
-    private static void parserAndExecuteShowTables(ServerConnection c, String originSql, String node, ShowCreateStmtInfo info) throws Exception {
+    private static void parserAndExecuteShowTables(ServerConnection c, String originSql, String node, ShowTablesStmtInfo info) throws Exception {
         RouteResultset rrs = new RouteResultset(originSql, ServerParse.SHOW);
-        if (info.getSchema() != null) {
+        if (info.getSchema() != null || info.isAll()) {
             StringBuilder sql = new StringBuilder();
             sql.append("SHOW ");
             if (info.isFull()) {
@@ -107,7 +107,7 @@ public final class ShowTables {
         showTablesHandler.execute();
     }
 
-    private static void responseDirect(ServerConnection c, String cSchema, ShowCreateStmtInfo info) {
+    private static void responseDirect(ServerConnection c, String cSchema, ShowTablesStmtInfo info) {
         ByteBuffer buffer = c.allocate();
         Map<String, String> tableMap = getTableSet(cSchema, info);
         PackageBufINf bufInf;
@@ -224,7 +224,7 @@ public final class ShowTables {
         c.write(buffer);
     }
 
-    public static Map<String, String> getTableSet(String cSchema, ShowCreateStmtInfo info) {
+    public static Map<String, String> getTableSet(String cSchema, ShowTablesStmtInfo info) {
         //remove the table which is not created but configured
         SchemaMeta schemata = DbleServer.getInstance().getTmManager().getCatalogs().get(cSchema);
         if (schemata == null) {
@@ -242,7 +242,10 @@ public final class ShowTables {
                 String tbName = tbConfig.getName();
                 maLike = pattern.matcher(tbName);
                 if (maLike.matches() && meta.get(tbName) != null) {
-                    String tbType = tbConfig.getTableType() == TableConfig.TableTypeEnum.TYPE_GLOBAL_TABLE ? "GLOBAL TABLE" : "SHARDING TABLE";
+                    String tbType = "BASE TABLE";
+                    if (info.isAll()) {
+                        tbType = tbConfig.getTableType() == TableConfig.TableTypeEnum.TYPE_GLOBAL_TABLE ? "GLOBAL TABLE" : "SHARDING TABLE";
+                    }
                     tableMap.put(tbName, tbType);
                 }
             }
@@ -250,7 +253,10 @@ public final class ShowTables {
             for (TableConfig tbConfig : schemas.get(cSchema).getTables().values()) {
                 String tbName = tbConfig.getName();
                 if (meta.get(tbName) != null) {
-                    String tbType = tbConfig.getTableType() == TableConfig.TableTypeEnum.TYPE_GLOBAL_TABLE ? "GLOBAL TABLE" : "SHARDING TABLE";
+                    String tbType = "BASE TABLE";
+                    if (info.isAll()) {
+                        tbType = tbConfig.getTableType() == TableConfig.TableTypeEnum.TYPE_GLOBAL_TABLE ? "GLOBAL TABLE" : "SHARDING TABLE";
+                    }
                     tableMap.put(tbName, tbType);
                 }
             }

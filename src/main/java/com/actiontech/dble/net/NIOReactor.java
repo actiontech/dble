@@ -68,56 +68,25 @@ public final class NIOReactor {
             Set<SelectionKey> keys = null;
             for (; ; ) {
                 try {
+                    long workStart = 0;
+                    if (useThreadUsageStat) {
+                        workStart = System.nanoTime();
+                    }
                     finalSelector.select(500L);
+                    if (useThreadUsageStat) {
+                        long afterSelect = System.nanoTime();
+                        if (afterSelect - workStart > 3000000) { // 3ms
+                            workStart = afterSelect;
+                        }
+                    }
                     register(finalSelector);
                     keys = finalSelector.selectedKeys();
-                    for (SelectionKey key : keys) {
-                        long workStart = 0;
-                        if (useThreadUsageStat) {
-                            workStart = System.nanoTime();
-                        }
-                        AbstractConnection con = null;
-                        try {
-                            Object att = key.attachment();
-                            if (att != null) {
-                                con = (AbstractConnection) att;
-                                if (key.isValid() && key.isReadable()) {
-                                    try {
-                                        con.asyncRead();
-                                    } catch (IOException e) {
-                                        con.close("program err:" + e.toString());
-                                        continue;
-                                    } catch (Exception e) {
-                                        LOGGER.info("caught err:", e);
-                                        con.close("program err:" + e.toString());
-                                        continue;
-                                    }
-                                }
-                                if (key.isValid() && key.isWritable()) {
-                                    con.doNextWriteCheck();
-                                }
-                            } else {
-                                key.cancel();
-                            }
-                        } catch (CancelledKeyException e) {
-                            if (LOGGER.isDebugEnabled()) {
-                                LOGGER.debug(con + " socket key canceled");
-                            }
-                        } catch (Exception e) {
-                            LOGGER.info(con + " " + e);
-                        } catch (final Throwable e) {
-                            // Catch exceptions such as OOM and close connection if exists
-                            //so that the reactor can keep running!
-                            // @author Uncle-pan
-                            // @since 2016-03-30
-                            if (con != null) {
-                                con.close("Bad: " + e);
-                            }
-                            LOGGER.info("caught err: ", e);
-                        }
-                        if (useThreadUsageStat) {
-                            workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
-                        }
+                    if (keys.size() == 0) {
+                        continue;
+                    }
+                    executeKeys(keys);
+                    if (useThreadUsageStat) {
+                        workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
                     }
                 } catch (Exception e) {
                     LOGGER.info(name, e);
@@ -131,6 +100,50 @@ public final class NIOReactor {
                         keys.clear();
                     }
 
+                }
+            }
+        }
+
+        private void executeKeys(Set<SelectionKey> keys) {
+            for (SelectionKey key : keys) {
+                AbstractConnection con = null;
+                try {
+                    Object att = key.attachment();
+                    if (att != null) {
+                        con = (AbstractConnection) att;
+                        if (key.isValid() && key.isReadable()) {
+                            try {
+                                con.asyncRead();
+                            } catch (IOException e) {
+                                con.close("program err:" + e.toString());
+                                continue;
+                            } catch (Exception e) {
+                                LOGGER.info("caught err:", e);
+                                con.close("program err:" + e.toString());
+                                continue;
+                            }
+                        }
+                        if (key.isValid() && key.isWritable()) {
+                            con.doNextWriteCheck();
+                        }
+                    } else {
+                        key.cancel();
+                    }
+                } catch (CancelledKeyException e) {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug(con + " socket key canceled");
+                    }
+                } catch (Exception e) {
+                    LOGGER.info(con + " " + e);
+                } catch (final Throwable e) {
+                    // Catch exceptions such as OOM and close connection if exists
+                    //so that the reactor can keep running!
+                    // @author Uncle-pan
+                    // @since 2016-03-30
+                    if (con != null) {
+                        con.close("Bad: " + e);
+                    }
+                    LOGGER.info("caught err: ", e);
                 }
             }
         }

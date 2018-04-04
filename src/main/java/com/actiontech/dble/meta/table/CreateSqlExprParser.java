@@ -158,8 +158,8 @@ public class CreateSqlExprParser extends MySqlExprParser {
                 MysqlForeignKey.Option option = parseReferenceOption();
                 fk.setOnUpdate(option);
             } else {
-                throw new ParserException("syntax error, expect DELETE or UPDATE, actual " + lexer.token() + " "
-                        + lexer.stringVal());
+                throw new ParserException("syntax error, expect DELETE or UPDATE, actual " + lexer.token() + " " +
+                        lexer.stringVal());
             }
         }
 

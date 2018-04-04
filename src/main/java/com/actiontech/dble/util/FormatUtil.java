@@ -142,28 +142,4 @@ public final class FormatUtil {
         return formatDate(new Timestamp(time));
     }
 
-    public static String deleteComment(String sql) {
-        //deal with COMMENT the druid did not support
-        String[] parts = sql.split(" COMMENT ");
-        StringBuffer sb = new StringBuffer(parts[0]);
-        for (int i = 1; i < parts.length; i++) {
-            int index = 0;
-            for (int j = 0, flag = 0; j < parts[i].length(); j++) {
-                if (parts[i].charAt(j) == '\'') {
-                    if (flag == 0) {
-                        flag++;
-                        continue;
-                    } else if (j + 1 < parts[i].length() && parts[i].charAt(j + 1) == '\'') {
-                        j++;
-                        continue;
-                    } else {
-                        index = ++j;
-                        break;
-                    }
-                }
-            }
-            sb.append(parts[i].substring(index, parts[i].length()));
-        }
-        return sb.toString();
-    }
 }

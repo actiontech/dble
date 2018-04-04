@@ -135,8 +135,7 @@ public abstract class AbstractTableMetaHandler {
         }
 
         private StructureMeta.TableMeta initTableMeta(String table, String sql, long timeStamp) {
-            sql = FormatUtil.deleteComment(sql);
-            SQLStatementParser parser = new MySqlStatementParser(sql);
+            SQLStatementParser parser = new CreateTableParserImp(sql);
             SQLCreateTableStatement createStatement = parser.parseCreateTable();
             return MetaHelper.initTableMeta(table, createStatement, timeStamp);
         }

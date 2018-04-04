@@ -9,6 +9,7 @@ import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.response.ShowColumns;
 import com.actiontech.dble.server.response.ShowTablesStmtInfo;
 import com.actiontech.dble.server.response.ShowIndex;
+import com.actiontech.dble.server.response.ShowTableStatus;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,6 +24,7 @@ public final class ServerParseShow {
     public static final int OTHER = -1;
     public static final int DATABASES = 1;
     public static final int TABLES = 5;
+    public static final int TABLE_STATUS = 6;
     public static final int CHARSET = 7;
     public static final int COLUMNS = 8;
     public static final int INDEX = 9;
@@ -340,8 +342,12 @@ public final class ServerParseShow {
     public static int showTableType(String sql) {
         Pattern pattern = ShowTablesStmtInfo.PATTERN;
         Matcher ma = pattern.matcher(sql);
+        Pattern pattern1 = ShowTableStatus.PATTERN;
+        Matcher tableStatus = pattern1.matcher(sql);
         if (ma.matches()) {
             return TABLES;
+        } else if (tableStatus.matches()) {
+            return TABLE_STATUS;
         } else {
             return OTHER;
         }

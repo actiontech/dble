@@ -17,31 +17,48 @@ import java.util.regex.Pattern;
 /**
  * Created by huqing.yan on 2017/7/20.
  */
-public class ShowCreateStmtInfo {
+public class ShowTablesStmtInfo {
     private static final String TABLE_PAT = "^\\s*(show)" +
-            "(\\s+full)?" +
+            "(\\s+(full|all))?" +
             "(\\s+tables)" +
             "(\\s+(from|in)\\s+([a-zA-Z_0-9]+))?" +
             "((\\s+(like)\\s+'((. *)*)'\\s*)|(\\s+(where)\\s+((. *)*)\\s*))?" +
             "\\s*$";
     public static final Pattern PATTERN = Pattern.compile(TABLE_PAT, Pattern.CASE_INSENSITIVE);
     private final boolean isFull;
+    private final boolean isAll;
     private final String schema;
     private final String cond;
     private final String like;
     private final String where;
     private final SQLExpr whereExpr;
 
-    public ShowCreateStmtInfo(String sql) throws SQLSyntaxErrorException {
+    public ShowTablesStmtInfo(String sql) throws SQLSyntaxErrorException {
         Matcher ma = PATTERN.matcher(sql);
         ma.matches(); //always RETURN TRUE
         isFull = ma.group(2) != null;
-        schema = ma.group(6);
-        cond = ma.group(7);
-        like = ma.group(10);
-        where = ma.group(14);
+        isAll = isFull && ma.group(3).equalsIgnoreCase("all");
+        schema = ma.group(7);
+        cond = ma.group(8);
+        like = ma.group(11);
+        where = ma.group(15);
+        if (isAll) {
+            StringBuilder sb = new StringBuilder(ma.group(1));
+            sb.append(" full ");
+            sb.append(ma.group(4));
+            if (ma.group(5) != null) {
+                sb.append(ma.group(5));
+            }
+            if (cond != null)
+                sb.append(cond);
+            sql = sb.toString();
+        }
         SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(sql);
         whereExpr = ((SQLShowTablesStatement) statement).getWhere();
+    }
+
+    public boolean isAll() {
+        return isAll;
     }
 
     public boolean isFull() {

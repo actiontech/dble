@@ -121,6 +121,8 @@ public final class ServerParseShow {
                             return showTableType(stmt);
                         case 'C':
                         case 'c':
+                        case 'F':
+                        case 'f':
                             return showColumns(stmt);
                         default:
                             return OTHER;

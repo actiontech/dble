@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 /**
  * Created by szf on 2018/4/4.
  */
-public class ShowTableStatus {
+public final class ShowTableStatus {
 
     private static final String SHOW_TABLE_STATUS = "^\\s*(show)" +
             "(\\s+table)" +

@@ -67,7 +67,7 @@ BEGIN
         END IF;
         SELECT RELEASE_LOCK(seq_name) into seq_lock;
     end if;
-    SELECT CONCAT(CAST((val - count + 1) as CHAR), ",", CAST(val as CHAR)) INTO retval;
+    SELECT CONCAT(CAST((val - count + 1) as CHAR), ",", CAST(count as CHAR)) INTO retval;
     RETURN retval;
 END
 ;;

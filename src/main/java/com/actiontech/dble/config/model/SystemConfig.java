@@ -138,7 +138,7 @@ public final class SystemConfig {
 
     private boolean useJoinStrategy;
 
-    private int costTimeStat = 0;
+    private int useCostTimeStat = 0;
     private int maxCostStatSize = 100;
     private int costSamplePercent = 1;
     private int useThreadUsageStat = 0;
@@ -799,12 +799,12 @@ public final class SystemConfig {
         this.viewPersistenceConfBaseName = viewPersistenceConfBaseName;
     }
 
-    public int getCostTimeStat() {
-        return costTimeStat;
+    public int getUseCostTimeStat() {
+        return useCostTimeStat;
     }
     @SuppressWarnings("unused")
-    public void setCostTimeStat(int costTimeStat) {
-        this.costTimeStat = costTimeStat;
+    public void setUseCostTimeStat(int useCostTimeStat) {
+        this.useCostTimeStat = useCostTimeStat;
     }
 
     public int getMaxCostStatSize() {
@@ -888,7 +888,7 @@ public final class SystemConfig {
                 ", otherMemSize=" + otherMemSize +
                 ", orderMemSize=" + orderMemSize +
                 ", joinMemSize=" + joinMemSize +
-                ", useCostTimeStat=" + costTimeStat +
+                ", useCostTimeStat=" + useCostTimeStat +
                 ", maxCostStatSize=" + maxCostStatSize +
                 ", costSamplePercent=" + costSamplePercent +
                 ", useThreadUsageStat=" + useThreadUsageStat +

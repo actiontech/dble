@@ -101,7 +101,7 @@ public class NonBlockingSession implements Session {
     }
 
     public void setRequestTime() {
-        if (DbleServer.getInstance().getConfig().getSystem().getCostTimeStat() == 0) {
+        if (DbleServer.getInstance().getConfig().getSystem().getUseCostTimeStat() == 0) {
             return;
         }
         timeCost = false;

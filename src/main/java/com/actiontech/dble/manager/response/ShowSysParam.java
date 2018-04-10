@@ -131,7 +131,7 @@ public final class ShowSysParam {
         paramValues.add(sysConfig.getOtherMemSize() + "M");
         paramValues.add(sysConfig.getOrderMemSize() + "M");
         paramValues.add(sysConfig.getJoinMemSize() + "M");
-        paramValues.add(sysConfig.getCostTimeStat() + "");
+        paramValues.add(sysConfig.getUseCostTimeStat() + "");
         paramValues.add(sysConfig.getMaxCostStatSize() + "");
         paramValues.add(sysConfig.getCostSamplePercent() + "");
         paramValues.add(sysConfig.getUseThreadUsageStat() + "");

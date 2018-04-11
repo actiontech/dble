@@ -12,6 +12,7 @@ import com.actiontech.dble.backend.mysql.view.CKVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.view.KVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.Repository;
+import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.ucoreprocess.*;
@@ -465,6 +466,7 @@ public class ProxyMetaManager {
             while (!lock.acquire()) {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
             }
+            ClusterDelayProvider.delayAfterDdlLockMeta();
             UDistrbtLockManager.addLock(lock);
         }
     }
@@ -474,6 +476,7 @@ public class ProxyMetaManager {
         if (DbleServer.getInstance().isUseZK()) {
             notifyResponseZKDdl(schema, table, sql, ddlStatus, needNotifyOther);
         } else if (DbleServer.getInstance().isUseUcore()) {
+            ClusterDelayProvider.delayAfterDdlExecuted();
             notifyReponseUcoreDDL(schema, table, sql, ddlStatus, needNotifyOther);
         }
     }
@@ -516,14 +519,18 @@ public class ProxyMetaManager {
         DDLInfo ddlInfo = new DDLInfo(schema, sql, UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ddlStatus);
         ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLInstancePath(nodeName), ddlInfo.toString());
         if (needNotifyOther) {
+            ClusterDelayProvider.delayBeforeDdlNotice();
             ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLPath(nodeName), ddlInfo.toString());
+            ClusterDelayProvider.delayAfterDdlNotice();
             while (true) {
                 List<UKvBean> reponseList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getDDLPath(nodeName));
                 List<UKvBean> onlineList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getOnlinePath());
                 if (reponseList.size() >= onlineList.size()) {
-                    //release the lock
-                    UDistrbtLockManager.releaseLock(UcorePathUtil.getDDLPath(nodeName));
+                    ClusterDelayProvider.delayBeforeDdlNoticeDeleted();
                     ClusterUcoreSender.deleteKVTree(UcorePathUtil.getDDLPath(nodeName) + "/");
+                    //release the lock
+                    ClusterDelayProvider.delayBeforeDdlLockRelease();
+                    UDistrbtLockManager.releaseLock(UcorePathUtil.getDDLPath(nodeName));
                     break;
                 }
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));

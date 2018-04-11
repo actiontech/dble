@@ -7,12 +7,16 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
+import static com.actiontech.dble.log.alarm.AlarmCode.CORE_CLUSTER_WARN;
+
 /**
  * Created by szf on 2018/1/31.
  */
 public class UDistributeLock {
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(UDistributeLock.class);
+    private static final int UCORE_ERROR_RETURN_COUNT = 3;
+    int errorCount = 0;
     private String path;
     private String value;
     private String session;
@@ -33,10 +37,12 @@ public class UDistributeLock {
     }
 
     public boolean acquire() {
+
         try {
 
             final String sessionId = ClusterUcoreSender.lockKey(this.path, value);
             session = sessionId;
+            errorCount = 0;
             if ("".equals(sessionId)) {
                 return false;
             }
@@ -63,7 +69,11 @@ public class UDistributeLock {
             });
             renewThread.start();
         } catch (Exception e) {
-            LOGGER.info("get lock from ucore error", e);
+            LOGGER.warn(CORE_CLUSTER_WARN + " get lock from ucore error", e);
+            errorCount++;
+            if (errorCount == UCORE_ERROR_RETURN_COUNT) {
+                throw new RuntimeException(" get lock from ucore error,ucore maybe offline ");
+            }
             return false;
         }
         return true;

@@ -2,6 +2,7 @@ package com.actiontech.dble.config.loader.ucoreprocess.loader;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.view.Repository;
+import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.*;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
@@ -42,6 +43,7 @@ public class UViewChildResponse implements UcoreXmlLoader {
             // self node do noting
             return;
         } else {
+            ClusterDelayProvider.delayWhenReponseViewNotic();
             try {
                 if (Repository.DELETE.equals(optionType)) {
                     LOGGER.debug("delete view " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
@@ -49,9 +51,12 @@ public class UViewChildResponse implements UcoreXmlLoader {
                         return;
                     }
                     DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().remove(viewName);
+
+                    ClusterDelayProvider.delayBeforeReponseView();
                     ClusterUcoreSender.sendDataToUcore(configValue.getKey() + SEPARATOR + myId, UcorePathUtil.SUCCESS);
                 } else if (Repository.UPDATE.equals(optionType)) {
                     LOGGER.debug("update view " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
+                    ClusterDelayProvider.delayBeforeReponseGetView();
                     String stmt = ClusterUcoreSender.getKey(UcorePathUtil.getViewPath() + SEPARATOR + schema + Repository.SCHEMA_VIEW_SPLIT + viewName).getValue();
                     if (DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().get(viewName) != null &&
                             stmt.equals(DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().get(viewName).getCreateSql())) {
@@ -66,9 +71,12 @@ public class UViewChildResponse implements UcoreXmlLoader {
 
                     LOGGER.debug("update view result == " + error);
                     if (error != null) {
+                        ClusterDelayProvider.delayBeforeReponseView();
                         ClusterUcoreSender.sendDataToUcore(configValue.getKey() + SEPARATOR + myId, new String(error.getMessage()));
                         return;
                     }
+
+                    ClusterDelayProvider.delayBeforeReponseView();
                     ClusterUcoreSender.sendDataToUcore(configValue.getKey() + SEPARATOR + myId, UcorePathUtil.SUCCESS);
                 }
             } catch (Exception e) {

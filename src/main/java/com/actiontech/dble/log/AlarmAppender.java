@@ -79,7 +79,7 @@ public class AlarmAppender extends AbstractAppender {
         if (stub != null) {
             try {
                 send(event);
-            }catch (Exception e){
+            } catch (Exception e) {
                 //error when send info to ucore , try again
                 Channel channel = ManagedChannelBuilder.forAddress(grpcUrl, port).usePlaintext(true).build();
                 stub = UcoreGrpc.newBlockingStub(channel);
@@ -89,7 +89,7 @@ public class AlarmAppender extends AbstractAppender {
 
     }
 
-    public void send(LogEvent event){
+    public void send(LogEvent event) {
         if (grpcLevel >= event.getLevel().intLevel()) {
             String data = new String(getLayout().toByteArray(event));
             String[] d = data.split("::");

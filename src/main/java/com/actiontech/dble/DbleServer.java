@@ -123,6 +123,7 @@ public final class DbleServer {
     private BlockingQueue<FrontendCommandHandler> frontHandlerQueue;
     private Queue<FrontendCommandHandler> concurrentFrontHandlerQueue;
     private Queue<BackendAsyncHandler> concurrentBackHandlerQueue;
+
     private DbleServer() {
         this.config = new ServerConfig();
         scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("TimerScheduler-%d").build());
@@ -187,8 +188,11 @@ public final class DbleServer {
         id.append("'" + NAME + "Server.");
         if (isUseZK()) {
             id.append(ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+        } else if (isUseUcore()) {
+            id.append(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
         } else {
             id.append(this.getConfig().getSystem().getServerNodeId());
+
         }
         id.append(".");
         id.append(seq);
@@ -451,7 +455,6 @@ public final class DbleServer {
         scheduler.scheduleAtFixedRate(threadStatRenew(), 0L, 1, TimeUnit.SECONDS);
 
 
-
         if (isUseZkSwitch()) {
             initZkDnindex();
         }
@@ -691,6 +694,7 @@ public final class DbleServer {
     public ExecutorService getBackendBusinessExecutor() {
         return backendBusinessExecutor;
     }
+
     public RouteService getRouterService() {
         return routerService;
     }

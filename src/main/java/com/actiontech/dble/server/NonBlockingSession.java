@@ -101,7 +101,7 @@ public class NonBlockingSession implements Session {
     }
 
     public void setRequestTime() {
-        if (DbleServer.getInstance().getConfig().getSystem().getCostTimeStat() == 0) {
+        if (DbleServer.getInstance().getConfig().getSystem().getUseCostTimeStat() == 0) {
             return;
         }
         timeCost = false;
@@ -173,16 +173,17 @@ public class NonBlockingSession implements Session {
         }
         QueryTimeCost backCost = queryTimeCost.getBackEndTimeCosts().get(backendID);
         long responseTime = System.nanoTime();
-        if (backCost != null && backCost.getResponseTime().compareAndSet(0, responseTime) && queryTimeCost.getFirstBackConRes().compareAndSet(false, true)) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("backend connection[" + backendID + "] setResponseTime:" + responseTime);
+        if (backCost != null && backCost.getResponseTime().compareAndSet(0, responseTime)) {
+            if (queryTimeCost.getFirstBackConRes().compareAndSet(false, true)) {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("backend connection[" + backendID + "] setResponseTime:" + responseTime);
+                }
+                provider.resFromBack(source.getId());
+                firstBackConRes.set(false);
             }
-            provider.resFromBack(source.getId());
-            firstBackConRes.set(false);
-        }
-
-        if (queryTimeCost.getBackendReserveCount().decrementAndGet() == 0) {
-            provider.resLastBack(source.getId());
+            if (queryTimeCost.getBackendReserveCount().decrementAndGet() == 0) {
+                provider.resLastBack(source.getId());
+            }
         }
     }
 

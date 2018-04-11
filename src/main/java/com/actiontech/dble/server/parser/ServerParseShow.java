@@ -7,8 +7,9 @@ package com.actiontech.dble.server.parser;
 
 import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.response.ShowColumns;
-import com.actiontech.dble.server.response.ShowCreateStmtInfo;
+import com.actiontech.dble.server.response.ShowTablesStmtInfo;
 import com.actiontech.dble.server.response.ShowIndex;
+import com.actiontech.dble.server.response.ShowTableStatus;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,6 +24,7 @@ public final class ServerParseShow {
     public static final int OTHER = -1;
     public static final int DATABASES = 1;
     public static final int TABLES = 5;
+    public static final int TABLE_STATUS = 6;
     public static final int CHARSET = 7;
     public static final int COLUMNS = 8;
     public static final int INDEX = 9;
@@ -42,6 +44,9 @@ public final class ServerParseShow {
                 case 'F':
                 case 'f':
                     return showFCheck(stmt, i);
+                case 'A':
+                case 'a':
+                    return showACheck(stmt, i);
                 case '/':
                 case '#':
                     i = ParseUtil.comment(stmt, i);
@@ -121,7 +126,32 @@ public final class ServerParseShow {
                             return showTableType(stmt);
                         case 'C':
                         case 'c':
+                        case 'F':
+                        case 'f':
                             return showColumns(stmt);
+                        default:
+                            return OTHER;
+                    }
+                }
+            }
+        }
+        return OTHER;
+    }
+
+    private static int showACheck(String stmt, int offset) {
+        if (stmt.length() > offset + "ll ?".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            if ((c1 == 'L' || c1 == 'l') &&
+                    (c2 == 'L' || c2 == 'l') && ParseUtil.isSpace(stmt.charAt(++offset))) {
+                while (stmt.length() > ++offset) {
+                    if (ParseUtil.isSpace(stmt.charAt(offset))) {
+                        continue;
+                    }
+                    switch (stmt.charAt(offset)) {
+                        case 'T':
+                        case 't':
+                            return showTableType(stmt);
                         default:
                             return OTHER;
                     }
@@ -310,10 +340,14 @@ public final class ServerParseShow {
     }
 
     public static int showTableType(String sql) {
-        Pattern pattern = ShowCreateStmtInfo.PATTERN;
+        Pattern pattern = ShowTablesStmtInfo.PATTERN;
         Matcher ma = pattern.matcher(sql);
+        Pattern pattern1 = ShowTableStatus.PATTERN;
+        Matcher tableStatus = pattern1.matcher(sql);
         if (ma.matches()) {
             return TABLES;
+        } else if (tableStatus.matches()) {
+            return TABLE_STATUS;
         } else {
             return OTHER;
         }

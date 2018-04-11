@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2018 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble;
 
 import com.actiontech.dble.backend.BackendConnection;
@@ -411,6 +411,10 @@ public final class DbleServer {
         }
 
         pullVarAndMeta();
+
+        if (isUseUcore()) {
+            tmManager.metaUcoreinit();
+        }
         //initialized the cache service
         cacheService = new CacheService(this.systemVariables.isLowerCaseTableNames());
 

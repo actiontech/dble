@@ -275,14 +275,12 @@ public class ProxyMetaManager {
     public void init(ServerConfig config) throws Exception {
         if (DbleServer.getInstance().isUseZK()) {
             this.metaZKinit(config);
-        } else if (DbleServer.getInstance().isUseUcore()) {
-            metaUcoreinit(config);
         } else {
             initMeta(config);
         }
     }
 
-    private void metaUcoreinit(ServerConfig config) throws Exception {
+    public void metaUcoreinit() {
         //check if the online mark is on than delete the mark and renew it
         ClusterUcoreSender.deleteKV(UcorePathUtil.getOnlinePath(UcoreConfig.getInstance().
                 getValue(ClusterParamCfg.CLUSTER_CFG_MYID)));
@@ -290,7 +288,6 @@ public class ProxyMetaManager {
                 getValue(ClusterParamCfg.CLUSTER_CFG_MYID)),
                 UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
         onlineLock.acquire();
-        initMeta(config);
     }
 
 

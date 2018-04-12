@@ -62,10 +62,6 @@ import static com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil.SEPAR
 public final class ReloadConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReloadConfig.class);
 
-    private static final int OTHER = -1;
-    private static final int CONFIG = 1;
-    private static final int CONFIG_ALL = 2;
-
     private ReloadConfig() {
     }
 

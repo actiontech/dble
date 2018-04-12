@@ -68,20 +68,22 @@ public final class ShowTableAlgorithm {
         }
 
         SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schemaName);
-        TableType tableType;
+        TableType tableType = null;
         TableConfig tableConfig = null;
         if (schemaConfig == null) {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "the schema [" + schemaName + "] does not exists");
             return;
         } else if (schemaConfig.isNoSharding()) {
-            tableType = TableType.BASE;
+            if (DbleServer.getInstance().getTmManager().checkTableExists(schemaName, tableName)) {
+                tableType = TableType.BASE;
+            }
         } else {
             tableConfig = schemaConfig.getTables().get(tableName);
             if (tableConfig == null) {
                 if (schemaConfig.getDataNode() == null) {
                     c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "the table [" + tableName + "] in schema [" + schemaName + "] does not exists");
                     return;
-                } else {
+                } else if (DbleServer.getInstance().getTmManager().checkTableExists(schemaName, tableName)) {
                     tableType = TableType.BASE;
                 }
             } else if (tableConfig.isGlobalTable()) {
@@ -110,9 +112,11 @@ public final class ShowTableAlgorithm {
         // write rows
         byte packetId = EOF.getPacketId();
 
-        for (RowDataPacket row : getRows(tableConfig, tableType, c.getCharset().getResults())) {
-            row.setPacketId(++packetId);
-            buffer = row.write(buffer, c, true);
+        if (tableType != null) {
+            for (RowDataPacket row : getRows(tableConfig, tableType, c.getCharset().getResults())) {
+                row.setPacketId(++packetId);
+                buffer = row.write(buffer, c, true);
+            }
         }
 
         // write last eof

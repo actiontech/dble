@@ -81,19 +81,21 @@ public final class ShowTableDataNode {
         }
 
         SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schemaName);
-        List<String> dataNodes;
+        List<String> dataNodes = null;
         if (schemaConfig == null) {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "the schema [" + schemaName + "] does not exists");
             return;
         } else if (schemaConfig.isNoSharding()) {
-            dataNodes = Collections.singletonList(schemaConfig.getDataNode());
+            if (DbleServer.getInstance().getTmManager().checkTableExists(schemaName, tableName)) {
+                dataNodes = Collections.singletonList(schemaConfig.getDataNode());
+            }
         } else {
             TableConfig tableConfig = schemaConfig.getTables().get(tableName);
             if (tableConfig == null) {
                 if (schemaConfig.getDataNode() == null) {
                     c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "the table [" + tableName + "] in schema [" + schemaName + "] does not exists");
                     return;
-                } else {
+                } else if (DbleServer.getInstance().getTmManager().checkTableExists(schemaName, tableName)) {
                     dataNodes = Collections.singletonList(schemaConfig.getDataNode());
                 }
             } else {
@@ -116,9 +118,11 @@ public final class ShowTableDataNode {
         // write rows
         byte packetId = EOF.getPacketId();
 
-        for (RowDataPacket row : getRows(dataNodes, c.getCharset().getResults())) {
-            row.setPacketId(++packetId);
-            buffer = row.write(buffer, c, true);
+        if (dataNodes != null) {
+            for (RowDataPacket row : getRows(dataNodes, c.getCharset().getResults())) {
+                row.setPacketId(++packetId);
+                buffer = row.write(buffer, c, true);
+            }
         }
 
         // write last eof

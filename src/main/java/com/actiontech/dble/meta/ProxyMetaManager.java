@@ -138,7 +138,7 @@ public class ProxyMetaManager {
         return schema != null && this.catalogs.containsKey(schema);
     }
 
-    private boolean checkTableExists(String schema, String strTable) {
+    public boolean checkTableExists(String schema, String strTable) {
         return checkDbExists(schema) && strTable != null && this.catalogs.get(schema).getTableMetas().containsKey(strTable);
     }
 

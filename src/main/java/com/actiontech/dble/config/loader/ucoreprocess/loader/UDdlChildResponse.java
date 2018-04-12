@@ -1,6 +1,7 @@
 package com.actiontech.dble.config.loader.ucoreprocess.loader;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.*;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
@@ -32,6 +33,7 @@ public class UDdlChildResponse implements UcoreXmlLoader {
             return;
         } else {
             LOGGER.debug("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
+            ClusterDelayProvider.delayAfterGetDdlNotice();
             String nodeName = configValue.getKey().split("/")[4];
             String[] tableInfo = nodeName.split("\\.");
             final String schema = StringUtil.removeBackQuote(tableInfo[0]);
@@ -64,6 +66,7 @@ public class UDdlChildResponse implements UcoreXmlLoader {
                 // if the start node is done the ddl execute
                 lockMap.remove(fullName);
 
+                ClusterDelayProvider.delayBeforeUpdateMeta();
                 //to judge the table is be drop
                 SQLStatementParser parser = new MySqlStatementParser(ddlInfo.getSql());
                 SQLStatement statement = parser.parseStatement();
@@ -74,11 +77,14 @@ public class UDdlChildResponse implements UcoreXmlLoader {
                     //else get the lastest table meta from db
                     DbleServer.getInstance().getTmManager().updateOnetableWithBackData(DbleServer.getInstance().getConfig(), schema, table);
                 }
+
+                ClusterDelayProvider.delayBeforeDdlResponse();
                 ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLInstancePath(fullName), "SUCCESS");
             } else if (ddlInfo.getStatus() == DDLInfo.DDLStatus.FAILED && configValue.getChangeType() != UKvBean.DELETE) {
                 //if the start node executing ddl with error,just release the lock
                 lockMap.remove(fullName);
                 DbleServer.getInstance().getTmManager().removeMetaLock(schema, table);
+                ClusterDelayProvider.delayBeforeDdlResponse();
                 ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLInstancePath(fullName), "FAILED");
             }
         }

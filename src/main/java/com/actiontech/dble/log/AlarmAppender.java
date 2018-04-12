@@ -77,27 +77,38 @@ public class AlarmAppender extends AbstractAppender {
             }
         }
         if (stub != null) {
-            if (grpcLevel >= event.getLevel().intLevel()) {
-                String data = new String(getLayout().toByteArray(event));
-                String[] d = data.split("::");
-                if (d.length >= 2) {
-                    String level = event.getLevel().intLevel() == 300 ? "WARN" : "CRITICAL";
-                    UcoreInterface.AlertInput inpurt = UcoreInterface.AlertInput.newBuilder().
-                            setCode(d[0]).
-                            setDesc(d[1]).
-                            setLevel(level).
-                            setSourceComponentType(ushardCode).
-                            setSourceComponentId(alertComponentId).
-                            setAlertComponentId(alertComponentId).
-                            setAlertComponentType(ushardCode).
-                            setServerId(serverId).
-                            setTimestampUnix(System.currentTimeMillis() * 1000000).
-                            build();
-                    stub.alert(inpurt);
-                }
+            try {
+                send(event);
+            } catch (Exception e) {
+                //error when send info to ucore , try again
+                Channel channel = ManagedChannelBuilder.forAddress(grpcUrl, port).usePlaintext(true).build();
+                stub = UcoreGrpc.newBlockingStub(channel);
+                send(event);
             }
         }
 
+    }
+
+    public void send(LogEvent event) {
+        if (grpcLevel >= event.getLevel().intLevel()) {
+            String data = new String(getLayout().toByteArray(event));
+            String[] d = data.split("::");
+            if (d.length >= 2) {
+                String level = event.getLevel().intLevel() == 300 ? "WARN" : "CRITICAL";
+                UcoreInterface.AlertInput inpurt = UcoreInterface.AlertInput.newBuilder().
+                        setCode(d[0]).
+                        setDesc(d[1]).
+                        setLevel(level).
+                        setSourceComponentType(ushardCode).
+                        setSourceComponentId(alertComponentId).
+                        setAlertComponentId(alertComponentId).
+                        setAlertComponentType(ushardCode).
+                        setServerId(serverId).
+                        setTimestampUnix(System.currentTimeMillis() * 1000000).
+                        build();
+                stub.alert(inpurt);
+            }
+        }
     }
 
 

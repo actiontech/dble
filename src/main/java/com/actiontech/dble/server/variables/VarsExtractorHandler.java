@@ -56,7 +56,7 @@ public class VarsExtractorHandler {
     }
 
 
-    private void signalDone() {
+    public void signalDone() {
         lock.lock();
         try {
             extracting = true;

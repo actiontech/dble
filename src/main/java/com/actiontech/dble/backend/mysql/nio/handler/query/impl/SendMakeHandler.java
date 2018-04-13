@@ -14,6 +14,7 @@ import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.FieldTypes;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.util.StringUtil;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
@@ -64,6 +65,7 @@ public class SendMakeHandler extends BaseDMLHandler {
                 String selAlias = sel.getAlias();
                 if (selAlias != null || tableAlias != null) {
                     // remove the added tmp FNAF
+                    selAlias = StringUtil.removeApostropheOrBackQuote(selAlias);
                     if (StringUtils.indexOf(selAlias, Item.FNAF) == 0)
                         selAlias = StringUtils.substring(selAlias, Item.FNAF.length());
                 }

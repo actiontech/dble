@@ -63,7 +63,7 @@ public class SendMakeHandler extends BaseDMLHandler {
                 Item tmpItem = HandlerTool.createItem(sel, this.sourceFields, 0, isAllPushDown(), type());
                 tmpItem.setItemName(sel.getItemName());
                 String selAlias = sel.getAlias();
-                if (selAlias != null || tableAlias != null) {
+                if (selAlias != null) {
                     // remove the added tmp FNAF
                     selAlias = StringUtil.removeApostropheOrBackQuote(selAlias);
                     if (StringUtils.indexOf(selAlias, Item.FNAF) == 0)

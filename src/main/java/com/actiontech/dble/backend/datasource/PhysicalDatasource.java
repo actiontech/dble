@@ -271,7 +271,7 @@ public abstract class PhysicalDatasource {
                 this.createNewConnection(simpleHandler, null, schemas[i % schemas.length]);
                 simpleHandler.getBackConn().release();
             } catch (IOException e) {
-                LOGGER.info("create connection err " + e);
+                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "create connection err " + e);
             }
         }
     }

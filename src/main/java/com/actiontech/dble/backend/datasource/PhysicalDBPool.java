@@ -256,8 +256,7 @@ public class PhysicalDBPool {
                                 switchSource(nextId, true, reason);
                                 break;
                             } else {
-                                LOGGER.info("ignored  datasource ,slave is not " + "synchronized to master, slave " +
-                                        "behind master :" + theDsHb.getSlaveBehindMaster() + " " + theDs.getConfig());
+                                LOGGER.info("ignored  datasource ,slave is not synchronized to master, slave behind master :" + theDsHb.getSlaveBehindMaster() + " " + theDs.getConfig());
                             }
                         } else {
                             // normal switch
@@ -291,10 +290,10 @@ public class PhysicalDBPool {
                     // clear all connections
                     this.getSources()[current].clearCons("switch datasource");
                     // write log
-                    LOGGER.info(switchMessage(current, result, isAlarm, reason));
+                    LOGGER.warn(AlarmCode.CORE_BACKEND_SWITCH + switchMessage(current, result, isAlarm, reason));
                     return true;
                 } else {
-                    LOGGER.info(switchMessage(current, newIndex, true, reason) + ", but failed");
+                    LOGGER.warn(AlarmCode.CORE_BACKEND_SWITCH + switchMessage(current, newIndex, true, reason) + ", but failed");
                     return false;
                 }
             }
@@ -334,7 +333,7 @@ public class PhysicalDBPool {
         }
 
         initSuccess = false;
-        LOGGER.error(Alarms.DEFAULT + hostName + " init failure");
+        LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + Alarms.DEFAULT + hostName + " init failure");
         return -1;
     }
 
@@ -361,7 +360,7 @@ public class PhysicalDBPool {
             try {
                 ds.initMinConnection(this.schemas[i % schemas.length], true, getConHandler, null);
             } catch (Exception e) {
-                LOGGER.info(getMessage(index, " init connection error."), e);
+                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + getMessage(index, " init connection error."), e);
             }
         }
         long timeOut = System.currentTimeMillis() + 60 * 1000;
@@ -377,7 +376,7 @@ public class PhysicalDBPool {
                 LOGGER.info("initError", e);
             }
         }
-        LOGGER.info("init result :" + getConHandler.getStatusInfo());
+        LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "init result :" + getConHandler.getStatusInfo());
         return !list.isEmpty();
     }
 
@@ -398,7 +397,7 @@ public class PhysicalDBPool {
             if (source != null) {
                 source.doHeartbeat();
             } else {
-                LOGGER.info(Alarms.DEFAULT + hostName + " current dataSource is null!");
+                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + Alarms.DEFAULT + hostName + " current dataSource is null!");
             }
         }
     }

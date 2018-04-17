@@ -55,7 +55,7 @@ public final class PlanUtil {
      * <the column to be found must be  table's parent's column>
      *
      * @param column column
-     * @param node node
+     * @param node   node
      * @return the target table node and the column
      */
     public static Pair<TableNode, ItemField> findColumnInTableLeaf(ItemField column, PlanNode node) {
@@ -104,8 +104,8 @@ public final class PlanUtil {
     /**
      * the sel can be pushed down to child?
      *
-     * @param sel item
-     * @param child child
+     * @param sel    item
+     * @param child  child
      * @param parent parent
      * @return can push down
      */
@@ -193,7 +193,7 @@ public final class PlanUtil {
     /**
      * is bf can be the joinkey for node?make bf's left related to left to node
      *
-     * @param bf ItemFuncEqual
+     * @param bf   ItemFuncEqual
      * @param node node
      * @return is Join Key
      */
@@ -263,8 +263,8 @@ public final class PlanUtil {
     /**
      * push function in merge node to child node
      *
-     * @param mn MergeNode
-     * @param toPush Item toPush
+     * @param mn        MergeNode
+     * @param toPush    Item toPush
      * @param colIndexs colIndex
      * @return all child's pushdown sel
      */
@@ -300,8 +300,8 @@ public final class PlanUtil {
     /**
      * arg of merge node's function belong to child
      *
-     * @param toPush toPush
-     * @param colIndexs colIndexs
+     * @param toPush       toPush
+     * @param colIndexs    colIndexs
      * @param childSelects childSelects
      * @return ItemFunc
      */
@@ -328,7 +328,7 @@ public final class PlanUtil {
     /**
      * generate push orders from orders node
      *
-     * @param node node
+     * @param node   node
      * @param orders orders
      * @return List<Order>
      */
@@ -424,7 +424,11 @@ public final class PlanUtil {
         } else if (item instanceof ItemScalarSubQuery) {
             Item result = ((ItemScalarSubQuery) item).getValue();
             if (result == null || result.getResultItem() == null) {
-                return new ItemFuncEqual(new ItemInt(1), new ItemInt(0));
+                if (!((ItemScalarSubQuery) item).isOrderCondition()) {
+                    return new ItemFuncEqual(new ItemInt(1), new ItemInt(0));
+                } else {
+                    return  new ItemString("null");
+                }
             }
             return result.getResultItem();
         }

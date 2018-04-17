@@ -48,6 +48,7 @@ import com.alibaba.druid.sql.ast.statement.SQLCharacterDataType;
 import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlCharExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlExtractExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlIntervalExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlIntervalUnit;
@@ -85,6 +86,13 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 
     public void setItem(Item item) {
         this.item = item;
+    }
+
+    @Override
+    public void endVisit(MySqlCharExpr x) {
+        String value = x.toString();
+        item = new ItemString(value);
+        item.setItemName(value);
     }
 
     @Override

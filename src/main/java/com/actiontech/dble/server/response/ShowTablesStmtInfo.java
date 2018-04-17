@@ -33,7 +33,7 @@ public class ShowTablesStmtInfo {
     private final String where;
     private final SQLExpr whereExpr;
 
-    public ShowTablesStmtInfo(String sql) throws SQLSyntaxErrorException {
+    ShowTablesStmtInfo(String sql) throws SQLSyntaxErrorException {
         Matcher ma = PATTERN.matcher(sql);
         ma.matches(); //always RETURN TRUE
         isFull = ma.group(2) != null;
@@ -42,17 +42,23 @@ public class ShowTablesStmtInfo {
         cond = ma.group(8);
         like = ma.group(11);
         where = ma.group(15);
-        if (isAll) {
-            StringBuilder sb = new StringBuilder(ma.group(1));
+
+        StringBuilder sb = new StringBuilder(ma.group(1));
+        if (isFull) {
             sb.append(" full ");
-            sb.append(ma.group(4));
-            if (ma.group(5) != null) {
+        }
+        sb.append(ma.group(4));
+        if (ma.group(5) != null) {
+            if (ma.group(6).equalsIgnoreCase("in")) {
+                sb.append(" from ");
+                sb.append(schema);
+            } else {
                 sb.append(ma.group(5));
             }
-            if (cond != null)
-                sb.append(cond);
-            sql = sb.toString();
         }
+        if (cond != null)
+            sb.append(cond);
+        sql = sb.toString();
         SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(sql);
         whereExpr = ((SQLShowTablesStatement) statement).getWhere();
     }
@@ -69,7 +75,7 @@ public class ShowTablesStmtInfo {
         return schema;
     }
 
-    public String getCond() {
+    String getCond() {
         return cond;
     }
 

@@ -10,7 +10,10 @@ import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.field.Field;
+import com.actiontech.dble.plan.common.field.num.FieldLong;
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.common.item.ItemField;
+import com.actiontech.dble.plan.common.item.ItemVariables;
 import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
 
@@ -35,12 +38,17 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
             cmpFields = new ArrayList<>();
             cmpItems = new ArrayList<>();
             for (Order order : orders) {
-                if(order.getItem() instanceof ItemScalarSubQuery){
-                    if(((ItemScalarSubQuery)order.getItem()).getValue() == null){
+                if (order.getItem() instanceof ItemScalarSubQuery) {
+                    if (((ItemScalarSubQuery) order.getItem()).getValue() == null) {
                         continue;
                     }
                 }
-                Item cmpItem = HandlerTool.createItem(order.getItem(), sourceFields, 0, allPushDown, type);
+                //Item cmpItem = HandlerTool.createItem(order.getItem(), sourceFields, 0, allPushDown, type);
+                //Item cmpItem = HandlerTool.createItem(order.getItem(), sourceFields, 0, allPushDown, type);
+                Item cmpItem = this.createOrderItem(order.getItem(), sourceFields);
+                if (cmpItem == null) {
+                    continue;
+                }
                 cmpItems.add(cmpItem);
                 FieldPacket tmpFp = new FieldPacket();
                 cmpItem.makeField(tmpFp);
@@ -68,6 +76,34 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
             }
         }
     }
+
+
+    public static Item createOrderItem(Item sel, List<Field> fields) {
+        Item ret;
+        if (sel.basicConstItem())
+            return sel;
+        if (sel instanceof ItemScalarSubQuery) {
+            ItemScalarSubQuery scalarSubQuery = (ItemScalarSubQuery) sel;
+            if ((scalarSubQuery.getValue() instanceof ItemField)
+                    && (((ItemField) scalarSubQuery.getValue()).getField() instanceof FieldLong)) {
+                FieldLong returnValue = (FieldLong) ((ItemField) scalarSubQuery.getValue()).getField();
+                int fieldIndex = (int) returnValue.valDecimal().longValue() - 1;
+                ret = new ItemField(fields.get(fieldIndex));
+            } else {
+                int index = HandlerTool.findField(sel, fields, 0);
+                ret = new ItemField(fields.get(index));
+                ret.setItemName(sel.getPushDownName() == null ? sel.getItemName() : sel.getPushDownName());
+            }
+            return ret;
+        }
+
+        ret = HandlerTool.createFieldItem(sel, fields, 0);
+
+        ret.fixFields();
+
+        return ret;
+    }
+
 
     public void sort(List<RowDataPacket> rows) {
         Comparator<RowDataPacket> c = new Comparator<RowDataPacket>() {

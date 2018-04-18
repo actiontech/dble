@@ -50,9 +50,13 @@ public final class ShowTableStatus {
 
     private static void responseDirect(ServerConnection c, String cSchema) {
         ByteBuffer buffer = c.allocate();
+        if (cSchema == null) {
+            c.writeErrMessage("3D000", "No database selected", ErrorCode.ER_NO_DB_ERROR);
+            return;
+        }
         SchemaMeta schemata = DbleServer.getInstance().getTmManager().getCatalogs().get(cSchema);
         if (schemata == null) {
-            c.writeErrMessage("3D000", "No database selected", ErrorCode.ER_NO_DB_ERROR);
+            c.writeErrMessage("42000", "Unknown database " + schemata, ErrorCode.ER_BAD_DB_ERROR);
             return;
         }
         Map<String, StructureMeta.TableMeta> meta = schemata.getTableMetas();

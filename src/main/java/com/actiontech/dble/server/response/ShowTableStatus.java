@@ -55,7 +55,7 @@ public final class ShowTableStatus {
         }
         SchemaMeta schemata = DbleServer.getInstance().getTmManager().getCatalogs().get(cSchema);
         if (schemata == null) {
-            c.writeErrMessage("42000", "Unknown database " + schemata, ErrorCode.ER_BAD_DB_ERROR);
+            c.writeErrMessage("42000", "Unknown database " + cSchema, ErrorCode.ER_BAD_DB_ERROR);
             return;
         }
         ByteBuffer buffer = c.allocate();

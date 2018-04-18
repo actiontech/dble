@@ -136,9 +136,10 @@ public final class ShowHelp {
         HELPS.put("show @@binlog.status", "Report the current GTID of all backend nodes");
         HELPS.put("show @@help", "Report usage of manager port");
 
-        HELPS.put("show @@help", "Report usage of manager port");
-        HELPS.put("show @@help", "Report usage of manager port");
-        HELPS.put("show @@help", "Report usage of manager port");
+        HELPS.put("show @@cost_time", "Report cost time of query , contains back End ,front End and over all");
+        HELPS.put("show @@thread_used", "Report usage of threads, for optimize performance ");
+        HELPS.put("show @@dataNodes where schema=? and table=?", "Report the data nodes info of a table");
+        HELPS.put("show @@algorithm where schema=? and table=?", "Report the algorithm info of a table");
         // switch
         HELPS.put("switch @@datasource name:index", "Switch dataSource");
 

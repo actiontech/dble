@@ -15,6 +15,7 @@ import com.actiontech.dble.config.loader.xml.XMLSchemaLoader;
 import com.actiontech.dble.config.loader.xml.XMLServerLoader;
 import com.actiontech.dble.config.model.*;
 import com.actiontech.dble.config.util.ConfigException;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.route.sequence.handler.DistributedSequenceHandler;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceMySQLHandler;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceTimeHandler;
@@ -171,9 +172,7 @@ public class ConfigInitializer {
         for (SchemaConfig sc : schemas.values()) {
             // check dataNode / dataHost
             Set<String> dataNodeNames = sc.getAllDataNodes();
-            for (String dataNodeName : dataNodeNames) {
-                allUseDataNode.add(dataNodeName);
-            }
+            allUseDataNode.addAll(dataNodeNames);
         }
 
         // add global sequence node when it is some dedicated servers */
@@ -235,24 +234,33 @@ public class ConfigInitializer {
                             boolean isConnected = ds.testConnection(database);
                             map.put(key, isConnected);
                         } catch (IOException e) {
-                            LOGGER.info("test conn " + key + " error:", e);
+                            LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "test conn " + key + " error:", e);
                         }
                     }
                 }
             }
             boolean isConnectivity = true;
+            List<String> errKeys = new ArrayList<>();
             for (Map.Entry<String, Boolean> entry : map.entrySet()) {
                 String key = entry.getKey();
                 Boolean value = entry.getValue();
                 if (!value && isConnectivity) {
-                    LOGGER.info("SelfCheck### test " + key + " database connection failed ");
+                    LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "SelfCheck### test " + key + " database connection failed ");
+                    errKeys.add(key);
                     isConnectivity = false;
                 } else {
                     LOGGER.info("SelfCheck### test " + key + " database connection success ");
                 }
             }
             if (!isConnectivity) {
-                throw new ConfigException("SelfCheck### there are some datasource connection failed, pls check!");
+                StringBuilder sb = new StringBuilder("SelfCheck### there are some datasource connection failed, pls check these datasource:");
+                for (String key : errKeys) {
+                    sb.append("[");
+                    sb.append(key);
+                    sb.append("].");
+                }
+
+                throw new ConfigException(sb.toString());
             }
         }
     }

@@ -2,6 +2,7 @@ package com.actiontech.dble.server.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.manager.handler.PackageBufINf;
 import com.actiontech.dble.meta.SchemaMeta;
@@ -48,15 +49,20 @@ public final class ShowTableStatus {
 
 
     private static void responseDirect(ServerConnection c, String cSchema) {
-        ByteBuffer buffer = c.allocate();
+        if (cSchema == null) {
+            c.writeErrMessage("3D000", "No database selected", ErrorCode.ER_NO_DB_ERROR);
+            return;
+        }
         SchemaMeta schemata = DbleServer.getInstance().getTmManager().getCatalogs().get(cSchema);
         if (schemata == null) {
-            //error
+            c.writeErrMessage("42000", "Unknown database " + cSchema, ErrorCode.ER_BAD_DB_ERROR);
+            return;
         }
+        ByteBuffer buffer = c.allocate();
         Map<String, StructureMeta.TableMeta> meta = schemata.getTableMetas();
         PackageBufINf bufInf;
 
-        bufInf = writeTablesHeaderAndRows(buffer, c, meta, cSchema);
+        bufInf = writeTablesHeaderAndRows(buffer, c, meta);
 
         writeRowEof(bufInf.getBuffer(), c, bufInf.getPacketId());
     }
@@ -71,7 +77,7 @@ public final class ShowTableStatus {
         c.write(buffer);
     }
 
-    public static PackageBufINf writeTablesHeaderAndRows(ByteBuffer buffer, ServerConnection c, Map<String, StructureMeta.TableMeta> tableMap, String cSchema) {
+    private static PackageBufINf writeTablesHeaderAndRows(ByteBuffer buffer, ServerConnection c, Map<String, StructureMeta.TableMeta> tableMap) {
         int fieldCount = 18;
         ResultSetHeaderPacket header = PacketUtil.getHeader(fieldCount);
         FieldPacket[] fields = new FieldPacket[fieldCount];
@@ -122,7 +128,7 @@ public final class ShowTableStatus {
     }
 
 
-    public static byte getAllField(FieldPacket[] fields, byte packetId) {
+    private static byte getAllField(FieldPacket[] fields, byte packetId) {
         int i = 0;
         fields[i] = PacketUtil.getField("Name", Fields.FIELD_TYPE_VAR_STRING);
         fields[i++].setPacketId(++packetId);

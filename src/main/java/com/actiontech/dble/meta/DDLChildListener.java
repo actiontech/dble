@@ -10,6 +10,7 @@ import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo.DDLStatus;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.util.StringUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
@@ -34,7 +35,7 @@ public class DDLChildListener implements PathChildrenCacheListener {
                 try {
                     lockTableByNewNode(childData);
                 } catch (Exception e) {
-                    LOGGER.info("CHILD_ADDED error", e);
+                    LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "CHILD_ADDED error", e);
                 }
                 break;
             case CHILD_UPDATED:

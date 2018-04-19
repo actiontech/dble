@@ -107,7 +107,6 @@ public final class SubQueryPreProcessor {
             return buildSubQueryByFilter(node, qtn, filter, noTransform, childTransform);
         }
 
-        //need to build subquery depend on order
         return qtn;
     }
 

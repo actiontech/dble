@@ -244,10 +244,11 @@ public class ConfigInitializer {
             for (Map.Entry<String, Boolean> entry : map.entrySet()) {
                 String key = entry.getKey();
                 Boolean value = entry.getValue();
-                if (!value && isConnectivity) {
+                if (!value) {
                     LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "SelfCheck### test " + key + " database connection failed ");
                     errKeys.add(key);
                     isConnectivity = false;
+
                 } else {
                     LOGGER.info("SelfCheck### test " + key + " database connection success ");
                 }

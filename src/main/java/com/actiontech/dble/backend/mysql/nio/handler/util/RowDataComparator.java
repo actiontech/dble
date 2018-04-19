@@ -15,6 +15,7 @@ import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.ItemVariables;
 import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
+import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
 
 import java.util.ArrayList;
@@ -79,7 +80,7 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
 
 
     public static Item createOrderItem(Item sel, List<Field> fields) {
-        Item ret;
+        Item ret = null;
         if (sel.basicConstItem())
             return sel;
         if (sel instanceof ItemScalarSubQuery) {
@@ -89,20 +90,15 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
                 FieldLong returnValue = (FieldLong) ((ItemField) scalarSubQuery.getValue()).getField();
                 int fieldIndex = (int) returnValue.valDecimal().longValue() - 1;
                 ret = new ItemField(fields.get(fieldIndex));
-            } else {
-                int index = HandlerTool.findField(sel, fields, 0);
-                ret = new ItemField(fields.get(index));
-                ret.setItemName(sel.getPushDownName() == null ? sel.getItemName() : sel.getPushDownName());
             }
+            // in mysql even the subquery return a field name , the order would be ignored
             return ret;
         }
-
         ret = HandlerTool.createFieldItem(sel, fields, 0);
-
         ret.fixFields();
-
         return ret;
     }
+
 
 
     public void sort(List<RowDataPacket> rows) {

@@ -13,9 +13,7 @@ import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.field.num.FieldLong;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
-import com.actiontech.dble.plan.common.item.ItemVariables;
 import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
-import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
 
 import java.util.ArrayList;
@@ -44,8 +42,6 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
                         continue;
                     }
                 }
-                //Item cmpItem = HandlerTool.createItem(order.getItem(), sourceFields, 0, allPushDown, type);
-                //Item cmpItem = HandlerTool.createItem(order.getItem(), sourceFields, 0, allPushDown, type);
                 Item cmpItem = this.createOrderItem(order.getItem(), sourceFields);
                 if (cmpItem == null) {
                     continue;
@@ -85,8 +81,8 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
             return sel;
         if (sel instanceof ItemScalarSubQuery) {
             ItemScalarSubQuery scalarSubQuery = (ItemScalarSubQuery) sel;
-            if ((scalarSubQuery.getValue() instanceof ItemField)
-                    && (((ItemField) scalarSubQuery.getValue()).getField() instanceof FieldLong)) {
+            if ((scalarSubQuery.getValue() instanceof ItemField) &&
+                    (((ItemField) scalarSubQuery.getValue()).getField() instanceof FieldLong)) {
                 FieldLong returnValue = (FieldLong) ((ItemField) scalarSubQuery.getValue()).getField();
                 int fieldIndex = (int) returnValue.valDecimal().longValue() - 1;
                 ret = new ItemField(fields.get(fieldIndex));
@@ -98,7 +94,6 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
         ret.fixFields();
         return ret;
     }
-
 
 
     public void sort(List<RowDataPacket> rows) {

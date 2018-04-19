@@ -82,11 +82,11 @@ public final class SubQueryPreProcessor {
         }
     }
 
-    private static SubQueryFilter bulidOrderSubQuery(PlanNode node){
-        for (Order o:node.getOrderBys()) {
-            if(o.getItem() instanceof ItemScalarSubQuery) {
-                ((ItemScalarSubQuery)o.getItem()).setOrderCondition(true);
-                node.getSubQueries().add((ItemScalarSubQuery)o.getItem());
+    private static SubQueryFilter bulidOrderSubQuery(PlanNode node) {
+        for (Order o : node.getOrderBys()) {
+            if (o.getItem() instanceof ItemScalarSubQuery) {
+                ((ItemScalarSubQuery) o.getItem()).setOrderCondition(true);
+                node.getSubQueries().add((ItemScalarSubQuery) o.getItem());
             }
         }
         return null;

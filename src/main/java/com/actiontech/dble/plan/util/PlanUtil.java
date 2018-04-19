@@ -427,7 +427,7 @@ public final class PlanUtil {
                 if (!((ItemScalarSubQuery) item).isOrderCondition()) {
                     return new ItemFuncEqual(new ItemInt(1), new ItemInt(0));
                 } else {
-                    return  new ItemString("null");
+                    return new ItemString("null");
                 }
             }
             return result.getResultItem();

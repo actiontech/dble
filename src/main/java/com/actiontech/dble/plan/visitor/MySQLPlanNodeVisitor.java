@@ -350,7 +350,7 @@ public class MySQLPlanNodeVisitor {
             SQLExpr expr = p.getExpr();
             MySQLItemVisitor v = new MySQLItemVisitor(this.currentDb, this.charsetIndex, this.metaManager);
             expr.accept(v);
-            if(v.getItem() instanceof ItemScalarSubQuery){
+            if (v.getItem() instanceof ItemScalarSubQuery) {
                 tableNode.setSubQuery(true);
                 tableNode.setCorrelatedSubQuery(false);
             }

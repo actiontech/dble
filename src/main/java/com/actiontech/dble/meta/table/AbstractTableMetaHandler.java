@@ -5,8 +5,6 @@
 
 package com.actiontech.dble.meta.table;
 
-import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.meta.protocol.StructureMeta;
@@ -56,8 +54,7 @@ public abstract class AbstractTableMetaHandler {
                 return;
             }
             OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLTableStructureListener(dataNode, System.currentTimeMillis(), new ConcurrentHashMap<String, List<String>>()));
-            PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
-            SQLJob sqlJob = new SQLJob(SQL_PREFIX + tableName, dn.getDatabase(), resultHandler, dn.getDbPool().getSource());
+            SQLJob sqlJob = new SQLJob(SQL_PREFIX + tableName, dataNode, resultHandler, false);
             sqlJob.run();
         }
     }

@@ -370,7 +370,7 @@ public class PhysicalDBPool {
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
-                /**
+                /*
                  * hardly triggered no error is needed
                  */
                 LOGGER.info("initError", e);
@@ -507,12 +507,7 @@ public class PhysicalDBPool {
             case BALANCE_ALL_BACK: {
                 // all read nodes and the stand by masters
                 okSources = getAllActiveRWSources(true, false, checkSlaveSynStatus());
-                if (okSources.isEmpty()) {
-                    theNode = this.getSource();
-
-                } else {
-                    theNode = randomSelect(okSources);
-                }
+                theNode = randomSelect(okSources);
                 break;
             }
             case BALANCE_ALL: {
@@ -575,8 +570,6 @@ public class PhysicalDBPool {
                             if (canSelectAsReadNode(slave)) {
                                 theNode = slave;
                                 break;
-                            } else {
-                                continue;
                             }
                         } else {
                             theNode = slave;
@@ -674,7 +667,6 @@ public class PhysicalDBPool {
      */
     private ArrayList<PhysicalDatasource> getAllActiveRWSources(boolean includeWriteNode, boolean includeCurWriteNode,
                                                                 boolean filterWithSlaveThreshold) {
-        int curActive = activeIndex;
         Collection<PhysicalDatasource> all;
         Map<Integer, PhysicalDatasource[]> rs;
         adjustLock.readLock().lock();
@@ -689,27 +681,28 @@ public class PhysicalDBPool {
 
         for (int i = 0; i < this.writeSources.length; i++) {
             PhysicalDatasource theSource = writeSources[i];
-            if (isAlive(theSource)) { // write node is active
-                if (includeWriteNode) {
-                    boolean isCurWriteNode = (i == curActive);
-                    if (isCurWriteNode && !includeCurWriteNode) {
-                        // not include cur active source
-                    } else if (filterWithSlaveThreshold && theSource.isSalveOrRead()) {
-                        boolean selected = canSelectAsReadNode(theSource);
-                        if (selected) {
-                            okSources.add(theSource);
-                        } else {
-                            continue;
-                        }
-                    } else {
+            boolean isCurWriteNode = (i == activeIndex);
+            if (isAlive(theSource)) {
+                if (isCurWriteNode) { // write node is active node
+                    if (includeWriteNode && includeCurWriteNode) {
                         okSources.add(theSource);
                     }
-                }
-                addReadSource(filterWithSlaveThreshold, rs, okSources, i);
-            } else {
-                if (this.dataHostConfig.isTempReadHostAvailable()) {
+                    addReadSource(filterWithSlaveThreshold, rs, okSources, i);
+                } else {
+                    if (filterWithSlaveThreshold && theSource.isSalveOrRead()) {
+                        boolean selected = canSelectAsReadNode(theSource);
+                        if (!selected) {
+                            continue; //if standby write host delay, all standby write host's slave will not be included
+                        } else if (includeWriteNode) {
+                            okSources.add(theSource);
+                        }
+                    }
                     addReadSource(filterWithSlaveThreshold, rs, okSources, i);
                 }
+            } else {
+                if (isCurWriteNode && this.dataHostConfig.isTempReadHostAvailable()) {
+                    addReadSource(filterWithSlaveThreshold, rs, okSources, i);
+                } //if standby write host not alive ,all it's slave will not be included
             }
         }
         return okSources;

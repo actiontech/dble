@@ -232,6 +232,7 @@ public class ConfigInitializer {
                         map.put(key, false);
                         try {
                             boolean isConnected = ds.testConnection(database);
+                            ds.setTestConnSuccess(isConnected);
                             map.put(key, isConnected);
                         } catch (IOException e) {
                             LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "test conn " + key + " error:", e);

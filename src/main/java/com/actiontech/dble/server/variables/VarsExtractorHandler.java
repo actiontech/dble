@@ -5,7 +5,8 @@
 
 package com.actiontech.dble.server.variables;
 
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.datasource.PhysicalDBPool;
+import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import org.slf4j.Logger;
@@ -25,25 +26,55 @@ public class VarsExtractorHandler {
     private boolean extracting;
     private Lock lock;
     private Condition done;
-    private Map<String, PhysicalDBNode> dataNodes;
+    private Map<String, PhysicalDBPool> dataHosts;
     private volatile SystemVariables systemVariables = null;
-    public VarsExtractorHandler(Map<String, PhysicalDBNode> dataNodes) {
-        this.dataNodes = dataNodes;
+    public VarsExtractorHandler(Map<String, PhysicalDBPool> dataHosts) {
+        this.dataHosts = dataHosts;
         this.extracting = false;
         this.lock = new ReentrantLock();
         this.done = lock.newCondition();
     }
 
     public SystemVariables execute() {
-        Map.Entry<String, PhysicalDBNode> entry = dataNodes.entrySet().iterator().next();
-
         OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_VARIABLES_COLS, new MysqlVarsListener(this));
-        PhysicalDBNode dn = entry.getValue();
-        SQLJob sqlJob = new SQLJob(MYSQL_SHOW_VARIABLES, dn.getName(), resultHandler, false);
-        sqlJob.run();
-
-        waitDone();
+        PhysicalDatasource ds = getPhysicalDatasource();
+        if (ds != null) {
+            SQLJob sqlJob = new SQLJob(MYSQL_SHOW_VARIABLES, null, resultHandler, ds);
+            sqlJob.run();
+            waitDone();
+        }
         return systemVariables;
+    }
+
+    private PhysicalDatasource getPhysicalDatasource() {
+        PhysicalDatasource ds = null;
+        for (PhysicalDBPool dbPool : dataHosts.values()) {
+            for (PhysicalDatasource dsTest : dbPool.getSources()) {
+                if (dsTest.isTestConnSuccess()) {
+                    ds = dsTest;
+                    break;
+                }
+            }
+            if (ds != null) {
+                break;
+            }
+        }
+        if (ds == null) {
+            for (PhysicalDBPool dbPool : dataHosts.values()) {
+                for (PhysicalDatasource[] dsTests : dbPool.getrReadSources().values()) {
+                    for (PhysicalDatasource dsTest : dsTests) {
+                        if (dsTest.isTestConnSuccess()) {
+                            ds = dsTest;
+                            break;
+                        }
+                    }
+                }
+                if (ds != null) {
+                    break;
+                }
+            }
+        }
+        return ds;
     }
 
     public void handleVars(Map<String, String> vars) {

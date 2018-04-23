@@ -106,9 +106,14 @@ public class MySQLConnection extends BackendAIOConnection {
 
     private final AtomicBoolean isQuit;
 
-    public MySQLConnection(NetworkChannel channel, boolean fromSlaveDB) {
+    public MySQLConnection(NetworkChannel channel, boolean fromSlaveDB, boolean isNoSchema) {
         super(channel);
         this.clientFlags = CLIENT_FLAGS;
+        if (isNoSchema) {
+            this.clientFlags = (CLIENT_FLAGS >> 4) << 4 | (CLIENT_FLAGS & 7);
+        } else {
+            this.clientFlags = CLIENT_FLAGS;
+        }
         this.lastTime = TimeUtil.currentTimeMillis();
         this.isQuit = new AtomicBoolean(false);
         this.autocommit = true;
@@ -438,7 +443,7 @@ public class MySQLConnection extends BackendAIOConnection {
         Set<String> toResetSys = new HashSet<>();
         String setSql = getSetSQL(usrVariables, sysVariables, toResetSys);
         int setSqlFlag = setSql == null ? 0 : 1;
-        int schemaSyn = conSchema.equals(oldSchema) ? 0 : 1;
+        int schemaSyn = StringUtil.equals(conSchema, oldSchema) ? 0 : 1;
         int charsetSyn = (charsetName.equals(clientCharset)) ? 0 : 1;
         int txIsolationSyn = (txIsolation == clientTxIsolation) ? 0 : 1;
         int autoCommitSyn = (conAutoCommit == expectAutocommit) ? 0 : 1;

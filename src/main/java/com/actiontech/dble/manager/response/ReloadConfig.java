@@ -276,7 +276,7 @@ public final class ReloadConfig {
 
         SystemVariables newSystemVariables = DbleServer.getInstance().getSystemVariables();
         if (!loader.isDataHostWithoutWH()) {
-            VarsExtractorHandler handler = new VarsExtractorHandler(newDataNodes);
+            VarsExtractorHandler handler = new VarsExtractorHandler(newDataHosts);
             newSystemVariables = handler.execute();
             if (newSystemVariables == null) {
                 throw new Exception("Can't get variables from data node");

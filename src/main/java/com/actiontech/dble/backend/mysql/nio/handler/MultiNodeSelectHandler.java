@@ -65,6 +65,9 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
         lock.lock();
         try {
             if (isFail()) {
+                if (--nodeCount > 0) {
+                    return;
+                }
                 handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
             } else {
                 if (!fieldsReturned) {

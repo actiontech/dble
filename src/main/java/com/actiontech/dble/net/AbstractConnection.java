@@ -469,7 +469,7 @@ public abstract class AbstractConnection implements NIOConnection {
                 LOGGER.debug("close connection,reason:" + reason + " ," + this);
             }
             if (reason.contains("connection,reason:java.net.ConnectException")) {
-                throw new RuntimeException(" errr");
+                throw new RuntimeException(reason);
             }
         } else {
             // make sure buffer recycle again, avoid buffer leak

@@ -11,6 +11,7 @@ import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
@@ -135,15 +136,18 @@ public class BaseSelectHandler extends BaseDMLHandler {
     public void connectionError(Throwable e, BackendConnection conn) {
         if (terminate.get())
             return;
-        LOGGER.info(conn.toString() + "|connectionError()|" + e.getMessage());
-        session.onQueryError(e.getMessage().getBytes());
+        LOGGER.warn(AlarmCode.CORE_DATA_HOST_WARN + "Backend connect Error, Connection info:" + conn, e);
+        String errMsg = "Backend connect Error, Connection{DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
+        session.onQueryError(errMsg.getBytes());
     }
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
         if (terminate.get())
             return;
-        LOGGER.info(conn.toString() + "|connectionClose()|" + reason);
+        LOGGER.warn(conn.toString() + "|connectionClose()|" + reason);
+        reason = "Connection {DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
+                ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
         session.onQueryError(reason.getBytes());
     }
 

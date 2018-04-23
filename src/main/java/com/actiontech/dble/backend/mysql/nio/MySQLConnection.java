@@ -53,7 +53,6 @@ public class MySQLConnection extends BackendAIOConnection {
     private volatile boolean autocommit;
     private volatile boolean complexQuery;
     private volatile NonBlockingSession session;
-
     private static long initClientFlags() {
         int flag = 0;
         flag |= Capabilities.CLIENT_LONG_PASSWORD;

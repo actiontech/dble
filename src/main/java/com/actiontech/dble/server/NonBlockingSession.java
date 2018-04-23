@@ -625,7 +625,7 @@ public class NonBlockingSession implements Session {
                 iterator.remove();
                 con.release();
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("realse connection " + con);
+                    LOGGER.debug("release connection " + con);
                 }
                 break;
             }

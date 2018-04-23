@@ -67,9 +67,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
 
     public void heartbeat() {
         lastSendQryTime = System.currentTimeMillis();
-
         MySQLDataSource ds = heartbeat.getSource();
-        String databaseName = ds.getDbPool().getSchemas()[0];
 
         String[] fetchCols = {};
         if (heartbeat.getSource().getHostConfig().isShowSlaveSql()) {
@@ -80,7 +78,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         }
 
         OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(fetchCols, this);
-        sqlJob = new SQLJob(heartbeat.getHeartbeatSQL(), databaseName, resultHandler, ds);
+        sqlJob = new SQLJob(heartbeat.getHeartbeatSQL(), null, resultHandler, ds);
         sqlJob.run();
     }
 

@@ -352,8 +352,9 @@ public class PhysicalDBPool {
             return true;
         }
         int initSize = ds.getConfig().getMinCon();
-        if (initSize == 0) {
-            return true;
+        if (initSize < this.schemas.length) {
+            initSize = this.schemas.length;
+            LOGGER.info("minCon size is less than the count of schema, so dble will create at least 1 conn for every schema");
         }
 
         LOGGER.info("init backend mysql source ,create connections total " + initSize + " for " + ds.getName() +
@@ -384,7 +385,7 @@ public class PhysicalDBPool {
                 LOGGER.info("initError", e);
             }
         }
-        LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "init result :" + getConHandler.getStatusInfo());
+        LOGGER.info("init result :" + getConHandler.getStatusInfo());
         return !list.isEmpty();
     }
 

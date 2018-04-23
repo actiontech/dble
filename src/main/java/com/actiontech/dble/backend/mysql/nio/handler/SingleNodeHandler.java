@@ -9,9 +9,11 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.LoadDataUtil;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.RouteResultset;
@@ -45,7 +47,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     private long startTime;
     private long netInBytes;
     protected long netOutBytes;
-    protected long selectRows;
+    long selectRows;
 
     private String primaryKeyTable = null;
     private int primaryKeyIndex = -1;
@@ -53,10 +55,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     private boolean prepared;
     private int fieldCount;
     private List<FieldPacket> fieldPackets = new ArrayList<>();
-
-
     private volatile boolean waitingResponse;
-
     public SingleNodeHandler(RouteResultset rrs, NonBlockingSession session) {
         this.rrs = rrs;
         this.node = rrs.getNodes()[0];
@@ -116,8 +115,13 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
         session.handleSpecial(rrs, session.getSource().getSchema(), true);
-        recycleResources();
-        session.getSource().close(e.getMessage());
+        LOGGER.warn(AlarmCode.CORE_DATA_HOST_WARN + "Backend connect Error, Connection info:" + conn, e);
+        ErrorPacket errPacket = new ErrorPacket();
+        errPacket.setPacketId(++packetId);
+        errPacket.setErrNo(ErrorCode.ER_DATA_HOST_ABORTING_CONNECTION);
+        String errMsg = "Backend connect Error, Connection{DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
+        errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
+        backConnectionErr(errPacket, conn);
     }
 
     @Override
@@ -138,31 +142,24 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         LOGGER.info("execute sql err :" + errMsg + " con:" + conn +
                 " frontend host:" + errHost + "/" + errPort + "/" + errUser);
 
+        if (!waitingResponse) {
+            return;
+        }
         session.releaseConnectionIfSafe(conn, false);
 
         source.setTxInterrupt(errMsg);
         session.handleSpecial(rrs, session.getSource().getSchema(), false);
 
-        /**
-         *
-         * BUG:
-         * 1. MysqlClient:  SELECT 9223372036854775807 + 1;
-         * 2. MyCatServer:  ERROR 1690 (22003): BIGINT value is out of range in '(9223372036854775807 + 1)'
-         * 3. MysqlClient: ERROR 2013 (HY000): Lost connection to MySQL server during query
-         * because of  pakcetId != 1
-         * Fixed:
-         * 1. MysqlClient:  SELECT 9223372036854775807 + 1;
-         * 2. MyCatServer:  ERROR 1690 (22003): BIGINT value is out of range in '(9223372036854775807 + 1)'
-         * 3. MysqlClient: ERROR 1690 (22003): BIGINT value is out of range in '(9223372036854775807 + 1)'
-         *
-         */
-        //
-        if (waitingResponse) {
-            errPkg.setPacketId(1);
+
+        if (buffer != null) {
+            /* SELECT 9223372036854775807 + 1;    response: field_count, field, eof, err */
+            buffer = source.writeToBuffer(errPkg.toBytes(), allocBuffer());
+            session.setResponseTime();
+            source.write(buffer);
+        } else {
             errPkg.write(source);
-            waitingResponse = false;
         }
-        recycleResources();
+        waitingResponse = false;
     }
 
 
@@ -224,7 +221,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         session.setResponseTime();
         source.write(buffer);
         waitingResponse = false;
-
         if (DbleServer.getInstance().getConfig().getSystem().getUseSqlStat() == 1) {
             if (rrs.getStatement() != null) {
                 netInBytes += rrs.getStatement().getBytes().length;
@@ -235,20 +231,11 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         }
     }
 
-    private void recycleResources() {
-        ByteBuffer buf = buffer;
-        if (buf != null) {
-            session.getSource().recycle(buffer);
-            buffer = null;
-        }
-    }
-
     /**
      * lazy create ByteBuffer only when needed
      *
-     * @return
      */
-    protected ByteBuffer allocBuffer() {
+    ByteBuffer allocBuffer() {
         if (buffer == null) {
             buffer = session.getSource().allocate();
         }
@@ -352,12 +339,14 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
+        LOGGER.warn("Backend connect Closed, reason is [" + reason + "], Connection info:" + conn);
+        reason = "Connection {DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
+                ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
         ErrorPacket err = new ErrorPacket();
         err.setPacketId(++packetId);
         err.setErrNo(ErrorCode.ER_ERROR_ON_CLOSE);
         err.setMessage(StringUtil.encode(reason, session.getSource().getCharset().getResults()));
         this.backConnectionErr(err, conn);
-        session.getSource().close(reason);
     }
 
     @Override

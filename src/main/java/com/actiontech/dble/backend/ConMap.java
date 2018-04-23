@@ -22,7 +22,7 @@ public class ConMap {
     private final ConcurrentMap<String, ConQueue> items = new ConcurrentHashMap<>();
 
 
-    public ConQueue getSchemaConQueue(String schema) {
+    public ConQueue createAndGetSchemaConQueue(String schema) {
         ConQueue queue = items.get(schema);
         if (queue == null) {
             ConQueue newQueue = new ConQueue();
@@ -32,11 +32,18 @@ public class ConMap {
         return queue;
     }
 
+    public ConQueue getSchemaConQueue(String schema) {
+        return items.get(schema);
+    }
+
     public BackendConnection tryTakeCon(final String schema, boolean autoCommit) {
         if (schema == null) {
             return null;
         }
         final ConQueue queue = items.get(schema);
+        if (queue == null) {
+            return null;
+        }
         BackendConnection con = tryTakeCon(queue, autoCommit);
         if (con != null) {
             return con;
@@ -56,7 +63,7 @@ public class ConMap {
 
     private BackendConnection tryTakeCon(ConQueue queue, boolean autoCommit) {
 
-        BackendConnection con = null;
+        BackendConnection con;
         if (queue != null && ((con = queue.takeIdleCon(autoCommit)) != null)) {
             return con;
         } else {

@@ -54,7 +54,7 @@ public class GetConnectionHandler implements ResponseHandler {
     public void connectionError(Throwable e, BackendConnection conn) {
         finishedCount.addAndGet(1);
         LOGGER.info("connect error " + conn + e);
-        conn.release();
+        conn.close("connectionError");
     }
 
     @Override

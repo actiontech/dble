@@ -138,7 +138,8 @@ public abstract class PhysicalDatasource {
     }
 
     public long getExecuteCountForSchema(String schema) {
-        return conMap.getSchemaConQueue(schema).getExecuteCount();
+        ConQueue queue = conMap.getSchemaConQueue(schema);
+        return queue == null ? 0 : queue.getExecuteCount();
 
     }
 
@@ -148,9 +149,11 @@ public abstract class PhysicalDatasource {
 
     public int getIdleCountForSchema(String schema) {
         ConQueue queue = conMap.getSchemaConQueue(schema);
-        int total = 0;
-        total += queue.getAutoCommitCons().size() + queue.getManCommitCons().size();
-        return total;
+        if (queue == null) {
+            return 0;
+        } else {
+            return queue.getAutoCommitCons().size() + queue.getManCommitCons().size();
+        }
     }
 
     public DBHeartbeat getHeartbeat() {
@@ -326,7 +329,7 @@ public abstract class PhysicalDatasource {
             conn.setSchema(schema);
         }
         if (schema != null) {
-            ConQueue queue = conMap.getSchemaConQueue(schema);
+            ConQueue queue = conMap.createAndGetSchemaConQueue(schema);
             queue.incExecuteCount();
         }
         // update last time, the schedule job will not close it
@@ -425,15 +428,18 @@ public abstract class PhysicalDatasource {
             closeByDyingAll();
             return;
         }
-
+        if (c.isClosedOrQuit()) {
+            return;
+        }
         c.setAttachment(null);
         c.setBorrowed(false);
         c.setLastTime(TimeUtil.currentTimeMillis());
 
         String errMsg = null;
+
         if (c.getSchema() != null) {
             boolean ok;
-            ConQueue queue = this.conMap.getSchemaConQueue(c.getSchema());
+            ConQueue queue = this.conMap.createAndGetSchemaConQueue(c.getSchema());
             if (c.isAutocommit()) {
                 ok = queue.getAutoCommitCons().offer(c);
             } else {

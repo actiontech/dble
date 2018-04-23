@@ -110,19 +110,23 @@ public abstract class MultiNodeHandler implements ResponseHandler {
 
     protected void tryErrorFinished(boolean allEnd) {
         if (allEnd && !session.closed()) {
-            if (errorResponse.compareAndSet(false, true)) {
-                createErrPkg(this.error).write(session.getSource());
-            }
             // clear session resources,release all
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("error all end ,clear session resource ");
             }
-            if (session.getSource().isAutocommit()) {
-                session.closeAndClearResources(error);
-            } else {
-                session.getSource().setTxInterrupt(this.error);
-                this.clearResources();
+            clearSessionResources();
+            if (errorResponse.compareAndSet(false, true)) {
+                createErrPkg(this.error).write(session.getSource());
             }
+        }
+    }
+
+    protected void clearSessionResources() {
+        if (session.getSource().isAutocommit()) {
+            session.closeAndClearResources(error);
+        } else {
+            session.getSource().setTxInterrupt(this.error);
+            this.clearResources();
         }
     }
 

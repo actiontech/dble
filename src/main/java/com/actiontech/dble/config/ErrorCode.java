@@ -40,6 +40,7 @@ public final class ErrorCode {
     public static final int ER_FILE_DELETE = 5307;
     public static final int ER_IO_EXCEPTION = 5308;
     public static final int ER_FILE_CREATE = 5313;
+    public static final int ER_DATA_HOST_ABORTING_CONNECTION = 5314;
     // mysql error code
     public static final int ER_HASHCHK = 1000;
     public static final int ER_NISAMCHK = 1001;

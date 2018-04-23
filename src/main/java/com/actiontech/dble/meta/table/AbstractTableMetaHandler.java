@@ -34,7 +34,7 @@ public abstract class AbstractTableMetaHandler {
     private AtomicInteger nodesNumber;
     protected String schema;
     private Set<String> selfNode;
-
+    private ConcurrentMap<String, List<String>> dataNodeTableStructureSQLMap;
     public AbstractTableMetaHandler(String schema, TableConfig tbConfig, Set<String> selfNode) {
         this(schema, tbConfig.getName(), tbConfig.getDataNodes(), selfNode);
     }
@@ -45,6 +45,7 @@ public abstract class AbstractTableMetaHandler {
         this.schema = schema;
         this.selfNode = selfNode;
         this.tableName = tableName;
+        this.dataNodeTableStructureSQLMap = new ConcurrentHashMap<>();
     }
 
     public void execute() {
@@ -53,7 +54,7 @@ public abstract class AbstractTableMetaHandler {
                 this.countdown();
                 return;
             }
-            OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLTableStructureListener(dataNode, System.currentTimeMillis(), new ConcurrentHashMap<String, List<String>>()));
+            OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLTableStructureListener(dataNode, System.currentTimeMillis()));
             SQLJob sqlJob = new SQLJob(SQL_PREFIX + tableName, dataNode, resultHandler, false);
             sqlJob.run();
         }
@@ -66,12 +67,10 @@ public abstract class AbstractTableMetaHandler {
     private class MySQLTableStructureListener implements SQLQueryResultListener<SQLQueryResult<Map<String, String>>> {
         private String dataNode;
         private long version;
-        private ConcurrentMap<String, List<String>> dataNodeTableStructureSQLMap;
 
-        MySQLTableStructureListener(String dataNode, long version, ConcurrentMap<String, List<String>> dataNodeTableStructureSQLMap) {
+        MySQLTableStructureListener(String dataNode, long version) {
             this.dataNode = dataNode;
             this.version = version;
-            this.dataNodeTableStructureSQLMap = dataNodeTableStructureSQLMap;
         }
 
         @Override
@@ -80,6 +79,8 @@ public abstract class AbstractTableMetaHandler {
                 //not thread safe
                 LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "Can't get table " + tableName + "'s config from DataNode:" + dataNode + "! Maybe the table is not initialized!");
                 if (nodesNumber.decrementAndGet() == 0) {
+                    StructureMeta.TableMeta tableMeta = genTableMeta();
+                    handlerTable(tableMeta);
                     countdown();
                 }
                 return;
@@ -95,25 +96,30 @@ public abstract class AbstractTableMetaHandler {
             }
 
             if (nodesNumber.decrementAndGet() == 0) {
-                StructureMeta.TableMeta tableMeta = null;
-                if (dataNodeTableStructureSQLMap.size() > 1) {
-                    // Through the SQL is different, the table Structure may still same.
-                    // for example: autoIncrement number
-                    Set<StructureMeta.TableMeta> tableMetas = new HashSet<>();
-                    for (String sql : dataNodeTableStructureSQLMap.keySet()) {
-                        tableMeta = initTableMeta(tableName, sql, version);
-                        tableMetas.add(tableMeta);
-                    }
-                    if (tableMetas.size() > 1) {
-                        consistentWarning();
-                    }
-                    tableMetas.clear();
-                } else {
-                    tableMeta = initTableMeta(tableName, currentSql, version);
-                }
+                StructureMeta.TableMeta tableMeta = genTableMeta();
                 handlerTable(tableMeta);
                 countdown();
             }
+        }
+
+        private StructureMeta.TableMeta genTableMeta() {
+            StructureMeta.TableMeta tableMeta = null;
+            if (dataNodeTableStructureSQLMap.size() > 1) {
+                // Through the SQL is different, the table Structure may still same.
+                // for example: autoIncrement number
+                Set<StructureMeta.TableMeta> tableMetas = new HashSet<>();
+                for (String sql : dataNodeTableStructureSQLMap.keySet()) {
+                    tableMeta = initTableMeta(tableName, sql, version);
+                    tableMetas.add(tableMeta);
+                }
+                if (tableMetas.size() > 1) {
+                    consistentWarning();
+                }
+                tableMetas.clear();
+            } else if (dataNodeTableStructureSQLMap.size() == 1) {
+                tableMeta = initTableMeta(tableName, dataNodeTableStructureSQLMap.keySet().iterator().next(), version);
+            }
+            return tableMeta;
         }
 
         private void consistentWarning() {

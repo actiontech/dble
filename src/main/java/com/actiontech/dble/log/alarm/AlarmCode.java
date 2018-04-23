@@ -24,6 +24,7 @@ public final class AlarmCode {
     public static final String CORE_DDL_WARN = "DBLE_CORE_DDL_WARN" + ALARM_SPLITE;
     public static final String CORE_TABLE_CHECK_WARN = "DBLE_CORE_TABLE_CHECK_WARN" + ALARM_SPLITE;
     public static final String CORE_GENERAL_WARN = "DBLE_CORE_GENERAL_WARN" + ALARM_SPLITE;
+    public static final String CORE_DATA_HOST_WARN = "DBLE_CORE_DATA_HOST_WARN" + ALARM_SPLITE;
     public static final String CORE_ERROR = "DBLE_CORE_ERROR" + ALARM_SPLITE;
     public static final String CORE_BACKEND_SWITCH = "DBLE_CORE_BACKEND_SWITCH" + ALARM_SPLITE;
     public static final String CORE_XA_WARN = "DBLE_CORE_XA_WARN" + ALARM_SPLITE;

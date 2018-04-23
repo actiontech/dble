@@ -269,6 +269,13 @@ public class NonBlockingSession implements Session {
             StringBuilder s = new StringBuilder();
             LOGGER.debug(s.append(source).append(rrs).toString() + " rrs ");
         }
+
+        if (DbleServer.getInstance().getMiManager().getIsPausing().get() &&
+                !DbleServer.getInstance().getMiManager().checkTarget(target) &&
+                DbleServer.getInstance().getMiManager().checkRRS(rrs)) {
+            DbleServer.getInstance().getMiManager().waitForResume();
+        }
+
         RouteResultsetNode[] nodes = rrs.getNodes();
         if (nodes == null || nodes.length == 0 || nodes[0].getName() == null || nodes[0].getName().equals("")) {
             if (rrs.isNeedOptimizer()) {
@@ -388,6 +395,13 @@ public class NonBlockingSession implements Session {
         node.setUpFields();
         PlanUtil.checkTablesPrivilege(source, node, ast);
         node = MyOptimizer.optimize(node);
+
+        if (DbleServer.getInstance().getMiManager().getIsPausing().get() &&
+                !DbleServer.getInstance().getMiManager().checkTarget(target) &&
+                DbleServer.getInstance().getMiManager().checkReferedTableNodes(node.getReferedTableNodes())) {
+            DbleServer.getInstance().getMiManager().waitForResume();
+        }
+
         if (PlanUtil.containsSubQuery(node)) {
             final PlanNode finalNode = node;
             DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {

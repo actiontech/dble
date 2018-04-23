@@ -29,6 +29,7 @@ import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.log.transaction.TxnLogProcessor;
 import com.actiontech.dble.manager.ManagerConnectionFactory;
 import com.actiontech.dble.memory.unsafe.Platform;
+import com.actiontech.dble.meta.MigrateMetaManager;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.net.*;
 import com.actiontech.dble.net.handler.*;
@@ -85,6 +86,9 @@ public final class DbleServer {
     private CacheService cacheService;
     private Properties dnIndexProperties;
     private volatile ProxyMetaManager tmManager;
+
+
+    private volatile MigrateMetaManager miManager = new MigrateMetaManager();
     private volatile SystemVariables systemVariables = new SystemVariables();
     private TxnLogProcessor txnLogProcessor;
 
@@ -1046,6 +1050,15 @@ public final class DbleServer {
 
     public boolean isAIO() {
         return aio;
+    }
+
+
+    public MigrateMetaManager getMiManager() {
+        return miManager;
+    }
+
+    public void setMiManager(MigrateMetaManager miManager) {
+        this.miManager = miManager;
     }
 
 }

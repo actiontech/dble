@@ -109,7 +109,7 @@ public class SQLJob implements ResponseHandler, Runnable {
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        LOGGER.info("can't get connection for sql :" + sql);
+        LOGGER.info("can't get connection for sql :" + sql, e);
         doFinished(true);
     }
 

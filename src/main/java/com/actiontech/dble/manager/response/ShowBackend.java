@@ -132,7 +132,7 @@ public final class ShowBackend {
         row.add(c.isClosed() ? "true".getBytes() : "false".getBytes());
         row.add(c.isBorrowed() ? "true".getBytes() : "false".getBytes());
         row.add(IntegerUtil.toBytes(conn.getWriteQueue().size()));
-        row.add(conn.getSchema().getBytes());
+        row.add((conn.getSchema() == null ? "NULL" : conn.getSchema()).getBytes());
         row.add(conn.getCharset().getClient().getBytes());
         row.add(conn.getCharset().getCollation().getBytes());
         row.add(conn.getCharset().getResults().getBytes());

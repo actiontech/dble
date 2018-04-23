@@ -270,7 +270,7 @@ public final class DbleServer {
         tmManager = new ProxyMetaManager();
         if (!this.getConfig().isDataHostWithoutWR()) {
             //init for sys VAR
-            VarsExtractorHandler handler = new VarsExtractorHandler(config.getDataNodes());
+            VarsExtractorHandler handler = new VarsExtractorHandler(config.getDataHosts());
             systemVariables = handler.execute();
             reviseSchemas();
             initDataHost();

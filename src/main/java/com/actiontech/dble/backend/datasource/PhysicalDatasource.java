@@ -49,6 +49,11 @@ public abstract class PhysicalDatasource {
 
     private AtomicLong writeCount = new AtomicLong(0);
 
+    public void setTestConnSuccess(boolean testConnSuccess) {
+        this.testConnSuccess = testConnSuccess;
+    }
+
+    private volatile boolean testConnSuccess = false;
     public PhysicalDatasource(DBHostConfig config, DataHostConfig hostConfig, boolean isReadNode) {
         this.size = config.getMaxCon();
         this.config = config;
@@ -271,7 +276,7 @@ public abstract class PhysicalDatasource {
                 this.createNewConnection(simpleHandler, null, schemas[i % schemas.length]);
                 simpleHandler.getBackConn().release();
             } catch (IOException e) {
-                LOGGER.info("create connection err " + e);
+                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "create connection err " + e);
             }
         }
     }
@@ -464,6 +469,6 @@ public abstract class PhysicalDatasource {
     }
 
     public boolean isAlive() {
-        return (getHeartbeat().getStatus() == DBHeartbeat.OK_STATUS) && !getDying();
+        return ((getHeartbeat().getStatus() == DBHeartbeat.OK_STATUS) && !getDying()) || (getHeartbeat().isStop() && testConnSuccess);
     }
 }

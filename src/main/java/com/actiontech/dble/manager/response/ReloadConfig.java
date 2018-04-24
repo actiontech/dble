@@ -7,23 +7,20 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.cluster.ClusterParamCfg;
-import com.actiontech.dble.config.loader.ucoreprocess.*;
-import com.actiontech.dble.config.loader.ucoreprocess.loader.UConfigStatusResponse;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
-import com.actiontech.dble.net.FrontendConnection;
-import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.ConfigInitializer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
+import com.actiontech.dble.config.loader.ucoreprocess.*;
+import com.actiontech.dble.config.loader.ucoreprocess.loader.UConfigStatusResponse;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.xmltozk.XmltoZkMain;
 import com.actiontech.dble.config.loader.zkprocess.zktoxml.listen.ConfigStatusListener;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
 import com.actiontech.dble.config.model.ERTable;
 import com.actiontech.dble.config.model.FirewallConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
@@ -31,13 +28,16 @@ import com.actiontech.dble.config.model.UserConfig;
 import com.actiontech.dble.config.util.DnPropertyUtil;
 import com.actiontech.dble.log.AlarmAppender;
 import com.actiontech.dble.manager.ManagerConnection;
+import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.route.parser.ManagerParseConfig;
+import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.variables.VarsExtractorHandler;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
-import com.actiontech.dble.route.parser.ManagerParseConfig;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.utils.ZKPaths;
@@ -307,7 +307,7 @@ public final class ReloadConfig {
 
         /* 2.1 do nothing */
         boolean isReloadStatusOK = true;
-
+        String reasonMsg = null;
         /* 2.2 init the new dataSource */
         for (PhysicalDBPool dbPool : newDataHosts.values()) {
             String hostName = dbPool.getHostName();
@@ -329,6 +329,7 @@ public final class ReloadConfig {
             dbPool.init(Integer.parseInt(dnIndex));
             if (!dbPool.isInitSuccess()) {
                 isReloadStatusOK = false;
+                reasonMsg = "Init DbPool [" + dbPool.getHostName() + "] failed";
                 break;
             }
         }
@@ -347,7 +348,7 @@ public final class ReloadConfig {
                 dbPool.clearDataSources("reload config");
                 dbPool.stopHeartbeat();
             }
-            throw new Exception("Init DbPool failed");
+            throw new Exception(reasonMsg);
         }
     }
 

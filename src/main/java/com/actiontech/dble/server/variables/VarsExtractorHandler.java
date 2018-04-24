@@ -39,7 +39,7 @@ public class VarsExtractorHandler {
 
         OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_VARIABLES_COLS, new MysqlVarsListener(this));
         PhysicalDBNode dn = entry.getValue();
-        SQLJob sqlJob = new SQLJob(MYSQL_SHOW_VARIABLES, dn.getDatabase(), resultHandler, dn.getDbPool().getSource());
+        SQLJob sqlJob = new SQLJob(MYSQL_SHOW_VARIABLES, dn.getName(), resultHandler, false);
         sqlJob.run();
 
         waitDone();
@@ -56,7 +56,7 @@ public class VarsExtractorHandler {
     }
 
 
-    private void signalDone() {
+    public void signalDone() {
         lock.lock();
         try {
             extracting = true;

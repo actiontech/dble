@@ -40,6 +40,8 @@ public abstract class Field {
                                      int decimals, long flags) {
         FieldTypes fieldType = FieldTypes.valueOf(type);
         switch (fieldType) {
+            case MYSQL_TYPE_JSON:
+                return new FieldJson(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_NEWDECIMAL:  // mysql use newdecimal after some version
                 return new FieldNewdecimal(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_DECIMAL:

@@ -47,7 +47,7 @@
         <!ATTLIST dataNode dataHost CDATA #REQUIRED>
         <!ATTLIST dataNode database CDATA #REQUIRED>
         <!-- writeType ,dbDriver and dbType will be ignored,just for compatibility -->
-        <!ELEMENT dataHost (heartbeat,(writeHost)*)>
+        <!ELEMENT dataHost (heartbeat,((writeHost)*|(readHost)))>
         <!ATTLIST dataHost
                 balance CDATA #REQUIRED
                 maxCon CDATA #REQUIRED

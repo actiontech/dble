@@ -13,6 +13,7 @@ import com.actiontech.dble.plan.node.NoNameNode;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.util.PlanUtil;
+import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import org.apache.commons.lang.StringUtils;
@@ -363,7 +364,7 @@ public class PushDownVisitor extends MysqlVisitor {
             String aggName = ((ItemSum) item).funcName().toUpperCase();
             pushAlias = getMadeAggAlias(aggName) + getRandomAliasName();
         } else if (item.getAlias() != null) {
-            pushAlias = item.getAlias();
+            pushAlias = StringUtil.removeApostropheOrBackQuote(item.getAlias());
             if (pushAlias.startsWith(Item.FNAF))
                 pushAlias = getRandomAliasName();
         } else if (orgPushDownName.length() > MAX_COL_LENGTH) {

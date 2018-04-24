@@ -6,6 +6,7 @@
 package com.actiontech.dble.net;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,7 +119,7 @@ public final class NIOReactor {
                                 con.close("program err:" + e.toString());
                                 continue;
                             } catch (Exception e) {
-                                LOGGER.info("caught err:", e);
+                                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "caught err:", e);
                                 con.close("program err:" + e.toString());
                                 continue;
                             }
@@ -134,7 +135,7 @@ public final class NIOReactor {
                         LOGGER.debug(con + " socket key canceled");
                     }
                 } catch (Exception e) {
-                    LOGGER.info(con + " " + e);
+                    LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + con + " " + e);
                 } catch (final Throwable e) {
                     // Catch exceptions such as OOM and close connection if exists
                     //so that the reactor can keep running!
@@ -143,7 +144,7 @@ public final class NIOReactor {
                     if (con != null) {
                         con.close("Bad: " + e);
                     }
-                    LOGGER.info("caught err: ", e);
+                    LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "caught err: ", e);
                 }
             }
         }
@@ -159,7 +160,7 @@ public final class NIOReactor {
                     c.register();
                 } catch (Exception e) {
                     c.close("register err" + e.toString());
-                    LOGGER.info("register err", e);
+                    LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "register err", e);
                 }
             }
         }

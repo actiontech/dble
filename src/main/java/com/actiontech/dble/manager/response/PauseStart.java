@@ -19,7 +19,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class PauseStart {
-    public static final Pattern PATTERN_FOR_PAUSE = Pattern.compile("^\\s*pause\\s*@@dataNode\\s*'([a-zA-Z_0-9,]+)'$", 2);
+    public static final Pattern PATTERN_FOR_PAUSE = Pattern.compile("^\\s*pause\\s*@@dataNode\\s*=\\s*'([a-zA-Z_0-9,]+)'\\s*and\\s*timeout\\s*=\\s*([0-9]+)\\s*$", 2);
     private static final OkPacket OK = new OkPacket();
 
     private PauseStart() {
@@ -40,22 +40,30 @@ public final class PauseStart {
         }
         Matcher ma = PATTERN_FOR_PAUSE.matcher(sql);
         if (!ma.matches()) {
-            c.writeErrMessage(1105, "The sql did not match pause @@dataNode 'dn......'");
+            c.writeErrMessage(1105, "The sql did not match pause @@dataNode 'dn......' and timeout = ([0-9]+)");
             return;
         }
         String dataNode = ma.group(1);
+        long timeOut = Long.parseLong(ma.group(2)) * 1000;
         Set<String> dataNodes = new HashSet(Arrays.asList(dataNode.split(",")));
+        //check dataNodes
+        for (String singleDn : dataNodes) {
+            if (DbleServer.getInstance().getConfig().getDataNodes().get(singleDn) == null) {
+                c.writeErrMessage(1105, "DataNode " + singleDn + " did not exists");
+                return;
+            }
+        }
         DbleServer.getInstance().getMiManager().lockWithDataNodes(dataNodes);
 
         long beginTime = System.currentTimeMillis();
-        while (System.currentTimeMillis() - beginTime < 60000L) {
+        while (System.currentTimeMillis() - beginTime < timeOut) {
             boolean nextTurn = false;
             for (NIOProcessor processor : DbleServer.getInstance().getFrontProcessors()) {
                 for (Map.Entry<Long, FrontendConnection> entry : processor.getFrontends().entrySet()) {
                     if ((entry.getValue() instanceof ServerConnection)) {
                         ServerConnection sconnection = (ServerConnection) entry.getValue();
                         for (Map.Entry<RouteResultsetNode, BackendConnection> conEntry : sconnection.getSession2().getTargetMap().entrySet()) {
-                            if (dataNodes.contains(((RouteResultsetNode) conEntry.getKey()).getName())) {
+                            if (dataNodes.contains(conEntry.getKey().getName())) {
                                 nextTurn = true;
                                 break;
                             }
@@ -78,6 +86,7 @@ public final class PauseStart {
             }
         }
         if (!recycleFinish) {
+            DbleServer.getInstance().getMiManager().resume();
             c.writeErrMessage(1003, "The backend connection recycle failure,try it later");
         } else {
             OK.write(c);

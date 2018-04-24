@@ -218,14 +218,12 @@ public final class ManagerParse {
 
     //RESUME
     private static int resume(String stmt, int offset) {
-        if (stmt.length() > offset + 4) {
+        if (stmt.length() > offset + 3) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
-            char c4 = stmt.charAt(++offset);
             if ((c1 == 'U' || c1 == 'u') &&
-                    (c2 == 'm' || c2 == 'M') && (c3 == 'e' || c3 == 'E') &&
-                    (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n')) {
+                    (c2 == 'm' || c2 == 'M') && (c3 == 'e' || c3 == 'E')) {
                 return RESUME;
             }
         }

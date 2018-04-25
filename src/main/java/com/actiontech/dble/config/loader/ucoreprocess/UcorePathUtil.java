@@ -131,6 +131,27 @@ public final class UcorePathUtil {
         return BASE_PATH + "ddl" + SEPARATOR + fullName;
     }
 
+    public static String getPauseDataNodePath() {
+        return CONF_BASE_PATH + "migration";
+    }
+
+    public static String getPauseResultNodePath() {
+        return CONF_BASE_PATH + "migration" + SEPARATOR + "pause";
+    }
+
+    public static String getPauseResultNodePath(String id) {
+        return CONF_BASE_PATH + "migration" + SEPARATOR + "pause" + SEPARATOR + id;
+    }
+
+
+    public static String getPauseResumePath() {
+        return CONF_BASE_PATH + "migration" + SEPARATOR + "resume";
+    }
+
+    public static String getPauseResumePath(String id) {
+        return CONF_BASE_PATH + "migration" + SEPARATOR + "resume" + SEPARATOR + id;
+    }
+
     //depth:2,child node of base_path
     public static String getDDLInstancePath(String fullName) {
         return BASE_PATH + "ddl" + SEPARATOR + fullName + SEPARATOR + UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);

@@ -2,8 +2,16 @@ package com.actiontech.dble.meta;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
+import com.actiontech.dble.cluster.ClusterParamCfg;
+import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
+import com.actiontech.dble.config.loader.ucoreprocess.UDistributeLock;
+import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
+import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
+import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.PauseInfo;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.route.RouteResultset;
@@ -22,6 +30,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static com.actiontech.dble.config.loader.zkprocess.zookeeper.process.PauseInfo.PAUSE;
+
 public class MigrateMetaManager {
     protected static final Logger LOGGER = LoggerFactory.getLogger(MigrateMetaManager.class);
     private ReentrantLock metaLock = new ReentrantLock();
@@ -29,6 +39,7 @@ public class MigrateMetaManager {
     private Set<String> dataNodes = null;
     private Map<String, Set<String>> pauseMap = new ConcurrentHashMap();
     private AtomicBoolean isPausing = new AtomicBoolean(false);
+    private UDistributeLock uDistributeLock = null;
 
     public AtomicBoolean getIsPausing() {
         return this.isPausing;
@@ -136,5 +147,45 @@ public class MigrateMetaManager {
             }
         }
         return false;
+    }
+
+
+    public boolean clusterPauseNotic(String dataNode) {
+        if (DbleServer.getInstance().isUseUcore()) {
+            uDistributeLock = new UDistributeLock(UcorePathUtil.getPauseDataNodePath(),
+                    new PauseInfo(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), dataNode, PAUSE).toString());
+            if (!uDistributeLock.acquire()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+
+    public boolean waitForCluster(ManagerConnection c, long beginTime, long timeOut) {
+
+        LOGGER.info("DEBUG of sunzhengfang " + DbleServer.getInstance().isUseUcore());
+        if (DbleServer.getInstance().isUseUcore()) {
+            for (; ; ) {
+                List<UKvBean> reponseList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getPauseResultNodePath());
+                List<UKvBean> onlineList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getOnlinePath());
+                LOGGER.info("DEBUG of sunzhengfang " + reponseList.size() + "  " + onlineList.size());
+                if (reponseList.size() >= onlineList.size() - 1) {
+                    return true;
+                } else if (System.currentTimeMillis() - beginTime > timeOut) {
+                    c.writeErrMessage(1003, "There are some node in cluster can recycle backend");
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    public UDistributeLock getuDistributeLock() {
+        return uDistributeLock;
+    }
+
+    public void setuDistributeLock(UDistributeLock uDistributeLock) {
+        this.uDistributeLock = uDistributeLock;
     }
 }

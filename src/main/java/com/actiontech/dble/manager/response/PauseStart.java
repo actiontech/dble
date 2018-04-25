@@ -8,11 +8,10 @@ import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.ServerConnection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.regex.Matcher;
@@ -21,6 +20,7 @@ import java.util.regex.Pattern;
 public final class PauseStart {
     public static final Pattern PATTERN_FOR_PAUSE = Pattern.compile("^\\s*pause\\s*@@dataNode\\s*=\\s*'([a-zA-Z_0-9,]+)'\\s*and\\s*timeout\\s*=\\s*([0-9]+)\\s*$", 2);
     private static final OkPacket OK = new OkPacket();
+    private static final Logger LOGGER = LoggerFactory.getLogger(PauseStart.class);
 
     private PauseStart() {
     }
@@ -34,17 +34,18 @@ public final class PauseStart {
     public static void execute(ManagerConnection c, String sql) {
 
         boolean recycleFinish = false;
-        if (!DbleServer.getInstance().getMiManager().getIsPausing().compareAndSet(false, true)) {
-            c.writeErrMessage(1003, "Some dataNodes is paused, please resume first");
-            return;
-        }
+
         Matcher ma = PATTERN_FOR_PAUSE.matcher(sql);
         if (!ma.matches()) {
             c.writeErrMessage(1105, "The sql did not match pause @@dataNode 'dn......' and timeout = ([0-9]+)");
             return;
         }
+
         String dataNode = ma.group(1);
-        long timeOut = Long.parseLong(ma.group(2)) * 1000;
+        if (!DbleServer.getInstance().getMiManager().clusterPauseNotic(dataNode)) {
+            DbleServer.getInstance().getMiManager().resume();
+        }
+
         Set<String> dataNodes = new HashSet(Arrays.asList(dataNode.split(",")));
         //check dataNodes
         for (String singleDn : dataNodes) {
@@ -53,8 +54,18 @@ public final class PauseStart {
                 return;
             }
         }
+
+        if (!DbleServer.getInstance().getMiManager().getIsPausing().compareAndSet(false, true)) {
+            c.writeErrMessage(1003, "Some dataNodes is paused, please resume first");
+            return;
+        }
+
+
+        LOGGER.info("check finished ");
         DbleServer.getInstance().getMiManager().lockWithDataNodes(dataNodes);
 
+
+        long timeOut = Long.parseLong(ma.group(2)) * 1000;
         long beginTime = System.currentTimeMillis();
         while (System.currentTimeMillis() - beginTime < timeOut) {
             boolean nextTurn = false;
@@ -85,11 +96,16 @@ public final class PauseStart {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10L));
             }
         }
+
+        LOGGER.info("wait finished " + recycleFinish);
         if (!recycleFinish) {
             DbleServer.getInstance().getMiManager().resume();
             c.writeErrMessage(1003, "The backend connection recycle failure,try it later");
         } else {
-            OK.write(c);
+
+            if (DbleServer.getInstance().getMiManager().waitForCluster(c, beginTime, timeOut)) {
+                OK.write(c);
+            }
         }
     }
 }

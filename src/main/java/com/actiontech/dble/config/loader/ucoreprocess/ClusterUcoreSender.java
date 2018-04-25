@@ -98,6 +98,9 @@ public final class ClusterUcoreSender {
     }
 
     public static void deleteKVTree(String key) {
+        if (!(key.charAt(key.length() - 1) == '/')) {
+            key = key + "/";
+        }
         UcoreInterface.DeleteKvTreeInput input = UcoreInterface.DeleteKvTreeInput.newBuilder().setKey(key).build();
         if (stub == null) {
             init();

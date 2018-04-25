@@ -29,7 +29,7 @@ public final class ShowCommand {
     private ShowCommand() {
     }
 
-    private static final int FIELD_COUNT = 10;
+    private static final int FIELD_COUNT = 12;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
@@ -66,8 +66,14 @@ public final class ShowCommand {
         FIELDS[i] = PacketUtil.getField("QUIT", Fields.FIELD_TYPE_LONGLONG);
         FIELDS[i++].setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("OTHER", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i] = PacketUtil.getField("STMT_SEND_LONG_DATA", Fields.FIELD_TYPE_LONGLONG);
         FIELDS[i++].setPacketId(++packetId);
+
+        FIELDS[i] = PacketUtil.getField("STMT_RESET", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i++].setPacketId(++packetId);
+
+        FIELDS[i] = PacketUtil.getField("OTHER", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
     }
@@ -115,6 +121,8 @@ public final class ShowCommand {
         row.add(LongUtil.toBytes(cc.pingCount()));
         row.add(LongUtil.toBytes(cc.killCount()));
         row.add(LongUtil.toBytes(cc.quitCount()));
+        row.add(LongUtil.toBytes(cc.stmtSendLongDataCount()));
+        row.add(LongUtil.toBytes(cc.stmtResetCount()));
         row.add(LongUtil.toBytes(cc.otherCount()));
         return row;
     }

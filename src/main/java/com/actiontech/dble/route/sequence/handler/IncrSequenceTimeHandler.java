@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.route.sequence.handler;
 
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.route.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,7 +92,7 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
                     throw new Exception("Clock moved backwards.  Refusing to generate id for " +
                             (lastTimestamp - timestamp) + " milliseconds");
                 } catch (Exception e) {
-                    LOGGER.info("error", e);
+                    LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "error", e);
                 }
             }
 

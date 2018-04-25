@@ -45,7 +45,7 @@ public class ShowTablesHandler {
         String mysqlShowTableCol = "Tables_in_" + dn.getDatabase();
         String[] mysqlShowTableCols = new String[]{mysqlShowTableCol};
         MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(mysqlShowTableCols, new MySQLShowTablesListener(mysqlShowTableCol));
-        SQLJob sqlJob = new SQLJob(SQL, dn.getDatabase(), resultHandler, dn.getDbPool().getSource());
+        SQLJob sqlJob = new SQLJob(SQL, config.getDataNode(), resultHandler, false);
         sqlJob.run();
     }
 

@@ -169,7 +169,7 @@ public class ProxyMetaManager {
                 }
                 dropTable(schemaInfo.getSchema(), schemaInfo.getTable());
             } catch (Exception e) {
-                LOGGER.info("updateMetaData failed,sql is" + statement.toString(), e);
+                LOGGER.warn(AlarmCode.CORE_DDL_WARN + "updateMetaData failed,sql is" + statement.toString(), e);
             } finally {
                 try {
                     notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
@@ -557,7 +557,7 @@ public class ProxyMetaManager {
             StructureMeta.TableMeta tblMeta = MetaHelper.initTableMeta(schemaInfo.getTable(), statement, System.currentTimeMillis());
             addTable(schemaInfo.getSchema(), tblMeta);
         } catch (Exception e) {
-            LOGGER.info("updateMetaData failed,sql is" + statement.toString(), e);
+            LOGGER.warn(AlarmCode.CORE_DDL_WARN + "updateMetaData failed,sql is" + statement.toString(), e);
         } finally {
             try {
                 notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
@@ -627,7 +627,7 @@ public class ProxyMetaManager {
             StructureMeta.TableMeta newTblMeta = tmBuilder.build();
             addTable(schemaInfo.getSchema(), newTblMeta);
         } catch (Exception e) {
-            LOGGER.info("updateMetaData alterTable failed,sql is" + alterStatement.toString(), e);
+            LOGGER.warn(AlarmCode.CORE_DDL_WARN + "updateMetaData alterTable failed,sql is" + alterStatement.toString(), e);
         } finally {
             try {
                 notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
@@ -670,7 +670,7 @@ public class ProxyMetaManager {
                     addIndex(indexName, tmBuilder, IndexType.UNI, itemsToColumns(statement.getItems()));
                 }
             } catch (Exception e) {
-                LOGGER.info("updateMetaData failed,sql is" + statement.toString(), e);
+                LOGGER.warn(AlarmCode.CORE_DDL_WARN + "updateMetaData failed,sql is" + statement.toString(), e);
             } finally {
                 try {
                     notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
@@ -719,7 +719,7 @@ public class ProxyMetaManager {
                 dropIndex(tmBuilder, dropName);
             }
         } catch (Exception e) {
-            LOGGER.info("updateMetaData failed,sql is" + dropIndexStatement.toString(), e);
+            LOGGER.warn(AlarmCode.CORE_DDL_WARN + "updateMetaData failed,sql is" + dropIndexStatement.toString(), e);
         } finally {
             try {
                 notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);

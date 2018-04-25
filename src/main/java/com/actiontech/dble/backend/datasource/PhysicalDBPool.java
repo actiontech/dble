@@ -256,8 +256,7 @@ public class PhysicalDBPool {
                                 switchSource(nextId, true, reason);
                                 break;
                             } else {
-                                LOGGER.info("ignored  datasource ,slave is not " + "synchronized to master, slave " +
-                                        "behind master :" + theDsHb.getSlaveBehindMaster() + " " + theDs.getConfig());
+                                LOGGER.info("ignored  datasource ,slave is not synchronized to master, slave behind master :" + theDsHb.getSlaveBehindMaster() + " " + theDs.getConfig());
                             }
                         } else {
                             // normal switch
@@ -291,10 +290,10 @@ public class PhysicalDBPool {
                     // clear all connections
                     this.getSources()[current].clearCons("switch datasource");
                     // write log
-                    LOGGER.info(switchMessage(current, result, isAlarm, reason));
+                    LOGGER.warn(AlarmCode.CORE_BACKEND_SWITCH + switchMessage(current, result, isAlarm, reason));
                     return true;
                 } else {
-                    LOGGER.info(switchMessage(current, newIndex, true, reason) + ", but failed");
+                    LOGGER.warn(AlarmCode.CORE_BACKEND_SWITCH + switchMessage(current, newIndex, true, reason) + ", but failed");
                     return false;
                 }
             }
@@ -334,7 +333,7 @@ public class PhysicalDBPool {
         }
 
         initSuccess = false;
-        LOGGER.error(Alarms.DEFAULT + hostName + " init failure");
+        LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + Alarms.DEFAULT + hostName + " init failure");
         return -1;
     }
 
@@ -361,7 +360,7 @@ public class PhysicalDBPool {
             try {
                 ds.initMinConnection(this.schemas[i % schemas.length], true, getConHandler, null);
             } catch (Exception e) {
-                LOGGER.info(getMessage(index, " init connection error."), e);
+                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + getMessage(index, " init connection error."), e);
             }
         }
         long timeOut = System.currentTimeMillis() + 60 * 1000;
@@ -371,13 +370,13 @@ public class PhysicalDBPool {
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
-                /**
+                /*
                  * hardly triggered no error is needed
                  */
                 LOGGER.info("initError", e);
             }
         }
-        LOGGER.info("init result :" + getConHandler.getStatusInfo());
+        LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "init result :" + getConHandler.getStatusInfo());
         return !list.isEmpty();
     }
 
@@ -398,7 +397,7 @@ public class PhysicalDBPool {
             if (source != null) {
                 source.doHeartbeat();
             } else {
-                LOGGER.info(Alarms.DEFAULT + hostName + " current dataSource is null!");
+                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + Alarms.DEFAULT + hostName + " current dataSource is null!");
             }
         }
     }
@@ -508,12 +507,7 @@ public class PhysicalDBPool {
             case BALANCE_ALL_BACK: {
                 // all read nodes and the stand by masters
                 okSources = getAllActiveRWSources(true, false, checkSlaveSynStatus());
-                if (okSources.isEmpty()) {
-                    theNode = this.getSource();
-
-                } else {
-                    theNode = randomSelect(okSources);
-                }
+                theNode = randomSelect(okSources);
                 break;
             }
             case BALANCE_ALL: {
@@ -576,8 +570,6 @@ public class PhysicalDBPool {
                             if (canSelectAsReadNode(slave)) {
                                 theNode = slave;
                                 break;
-                            } else {
-                                continue;
                             }
                         } else {
                             theNode = slave;
@@ -675,7 +667,6 @@ public class PhysicalDBPool {
      */
     private ArrayList<PhysicalDatasource> getAllActiveRWSources(boolean includeWriteNode, boolean includeCurWriteNode,
                                                                 boolean filterWithSlaveThreshold) {
-        int curActive = activeIndex;
         Collection<PhysicalDatasource> all;
         Map<Integer, PhysicalDatasource[]> rs;
         adjustLock.readLock().lock();
@@ -690,27 +681,28 @@ public class PhysicalDBPool {
 
         for (int i = 0; i < this.writeSources.length; i++) {
             PhysicalDatasource theSource = writeSources[i];
-            if (isAlive(theSource)) { // write node is active
-                if (includeWriteNode) {
-                    boolean isCurWriteNode = (i == curActive);
-                    if (isCurWriteNode && !includeCurWriteNode) {
-                        // not include cur active source
-                    } else if (filterWithSlaveThreshold && theSource.isSalveOrRead()) {
-                        boolean selected = canSelectAsReadNode(theSource);
-                        if (selected) {
-                            okSources.add(theSource);
-                        } else {
-                            continue;
-                        }
-                    } else {
+            boolean isCurWriteNode = (i == activeIndex);
+            if (isAlive(theSource)) {
+                if (isCurWriteNode) { // write node is active node
+                    if (includeWriteNode && includeCurWriteNode) {
                         okSources.add(theSource);
                     }
-                }
-                addReadSource(filterWithSlaveThreshold, rs, okSources, i);
-            } else {
-                if (this.dataHostConfig.isTempReadHostAvailable()) {
+                    addReadSource(filterWithSlaveThreshold, rs, okSources, i);
+                } else {
+                    if (filterWithSlaveThreshold && theSource.isSalveOrRead()) {
+                        boolean selected = canSelectAsReadNode(theSource);
+                        if (!selected) {
+                            continue; //if standby write host delay, all standby write host's slave will not be included
+                        } else if (includeWriteNode) {
+                            okSources.add(theSource);
+                        }
+                    }
                     addReadSource(filterWithSlaveThreshold, rs, okSources, i);
                 }
+            } else {
+                if (isCurWriteNode && this.dataHostConfig.isTempReadHostAvailable()) {
+                    addReadSource(filterWithSlaveThreshold, rs, okSources, i);
+                } //if standby write host not alive ,all it's slave will not be included
             }
         }
         return okSources;

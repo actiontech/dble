@@ -10,6 +10,7 @@ import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.config.model.*;
+import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.server.variables.SystemVariables;
@@ -76,7 +77,11 @@ public class ServerConfig {
         this.status = RELOAD;
 
         this.lock = new ReentrantLock();
-        confInit.testConnection(true);
+        try {
+            confInit.testConnection(true);
+        } catch (ConfigException e) {
+            LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + e.getMessage());
+        }
     }
 
     private void waitIfChanging() {

@@ -49,7 +49,7 @@ public class OneRawSQLQueryResultHandler implements SQLJobHandler {
     }
 
     @Override
-    public boolean onRowData(String dataNode, byte[] rowData) {
+    public boolean onRowData(byte[] rowData) {
         RowDataPacket rowDataPkg = new RowDataPacket(fieldCount);
         rowDataPkg.read(rowData);
         String variableName = "";
@@ -59,14 +59,12 @@ public class OneRawSQLQueryResultHandler implements SQLJobHandler {
             Integer ind = fetchColPosMap.get("Variable_name");
             if (ind != null) {
                 byte[] columnData = rowDataPkg.fieldValues.get(ind);
-                String columnVal = columnData != null ? new String(columnData) : null;
-                variableName = columnVal;
+                variableName = columnData != null ? new String(columnData) : null;
             }
             ind = fetchColPosMap.get("Value");
             if (ind != null) {
                 byte[] columnData = rowDataPkg.fieldValues.get(ind);
-                String columnVal = columnData != null ? new String(columnData) : null;
-                variableValue = columnVal;
+                variableValue = columnData != null ? new String(columnData) : null;
             }
             result.put(variableName, variableValue);
         } else {

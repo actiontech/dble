@@ -172,7 +172,7 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
                 paraValMap.put(prefixName + KEY_MAX_NAME, (now + period) + "");
                 paraValMap.put(prefixName + KEY_CUR_NAME, (now) - 1 + "");
             } catch (Exception e) {
-                LOGGER.info("Error caught while updating period from ZK:" + e.getCause());
+                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "Error caught while updating period from ZK:" + e.getCause());
             } finally {
                 interProcessSemaphoreMutex.release();
             }

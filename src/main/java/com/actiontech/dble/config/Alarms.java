@@ -29,9 +29,5 @@ public final class Alarms {
      **/
     public static final String FIREWALL_ATTACK = "#!QT_ATTACK#";
 
-    /**
-     * DML
-     **/
-    public static final String DML_ATTACK = "#!DML_ATTACK#";
 
 }

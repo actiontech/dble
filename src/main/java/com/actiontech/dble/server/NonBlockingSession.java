@@ -23,6 +23,7 @@ import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.btrace.provider.CostTimeProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.node.PlanNode;
@@ -694,9 +695,7 @@ public class NonBlockingSession implements Session {
                 dn.getConnectionFromSameSource(en.getValue().getSchema(), true, en.getValue(),
                         kill, en.getKey());
             } catch (Exception e) {
-                LOGGER.info(
-                        "get killer connection failed for " + en.getKey(),
-                        e);
+                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "get killer connection failed for " + en.getKey(), e);
                 kill.connectionError(e, null);
             }
         }

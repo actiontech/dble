@@ -12,6 +12,8 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+
 public class PhysicalDBNode {
     protected static final Logger LOGGER = LoggerFactory.getLogger(PhysicalDBNode.class);
 
@@ -72,61 +74,53 @@ public class PhysicalDBNode {
 
     public void getConnection(String schema, boolean isMustWrite, boolean autoCommit, RouteResultsetNode rrs,
                               ResponseHandler handler, Object attachment) throws Exception {
-        checkRequest(schema);
-        if (dbPool.isInitSuccess()) {
-            if (isMustWrite) {
-                PhysicalDatasource writeSource = dbPool.getSource();
-                writeSource.setWriteCount();
-                writeSource.getConnection(schema, autoCommit, handler, attachment);
-                return;
+        if (isMustWrite) {
+            getWriteNodeConnection(schema, autoCommit, handler, attachment);
+            return;
+        }
+        if (rrs.getRunOnSlave() == null) {
+            if (rrs.canRunINReadDB(autoCommit)) {
+                dbPool.getRWBalanceCon(schema, autoCommit, handler, attachment);
+            } else {
+                getWriteNodeConnection(schema, autoCommit, handler, attachment);
             }
-            LOGGER.debug("rrs.getRunOnSlave() " + rrs.getRunOnSlave());
-            if (rrs.getRunOnSlave() != null) {  // hint like /*db_type=master/slave*/
-                // the hint is slave
-                if (rrs.getRunOnSlave()) {
-                    if (!dbPool.getReadCon(schema, autoCommit, handler, attachment)) {
-                        LOGGER.info("Do not have slave connection to use, " +
-                                "use master connection instead.");
-                        PhysicalDatasource writeSource = dbPool.getSource();
-                        writeSource.setWriteCount();
-                        writeSource.getConnection(schema, autoCommit, handler, attachment);
-                        rrs.setRunOnSlave(false);
-                        rrs.setCanRunInReadDB(false);
-                    }
-                } else {
-                    LOGGER.debug("rrs.getRunOnSlave() " + rrs.getRunOnSlave());
-                    PhysicalDatasource writeSource = dbPool.getSource();
-                    writeSource.setReadCount();
-                    writeSource.getConnection(schema, autoCommit, handler, attachment);
-                    rrs.setCanRunInReadDB(false);
-                }
-            } else {    // without hint like /*db_type=master/slave*/
-                LOGGER.debug("rrs.getRunOnSlave() " + rrs.getRunOnSlave());
-                if (rrs.canRunINReadDB(autoCommit)) {
-                    dbPool.getRWBalanceCon(schema, autoCommit, handler, attachment);
-                } else {
-                    PhysicalDatasource writeSource = dbPool.getSource();
-                    writeSource.setWriteCount();
-                    writeSource.getConnection(schema, autoCommit, handler, attachment);
-                }
-            }
-
         } else {
-            throw new IllegalArgumentException("Invalid DataSource:" + dbPool.getActiveIndex());
+            if (rrs.getRunOnSlave()) {
+                if (!dbPool.getReadCon(schema, autoCommit, handler, attachment)) {
+                    LOGGER.info("Do not have slave connection to use, use master connection instead.");
+                    rrs.setRunOnSlave(false);
+                    rrs.setCanRunInReadDB(false);
+                    getWriteNodeConnection(schema, autoCommit, handler, attachment);
+                }
+            } else {
+                rrs.setCanRunInReadDB(false);
+                getWriteNodeConnection(schema, autoCommit, handler, attachment);
+            }
         }
     }
 
     public BackendConnection getConnection(String schema, boolean autoCommit, boolean canRunINReadDB) throws Exception {
-        checkRequest(schema);
-        if (dbPool.isInitSuccess()) {
-            if (canRunINReadDB) {
-                PhysicalDatasource readSource = dbPool.getRWBalanceNode();
-                return readSource.getConnection(schema, autoCommit);
-            } else {
+        if (canRunINReadDB) {
+            PhysicalDatasource readSource = dbPool.getRWBalanceNode();
+            return readSource.getConnection(schema, autoCommit);
+        } else {
+            checkRequest(schema);
+            if (dbPool.isInitSuccess()) {
                 PhysicalDatasource writeSource = dbPool.getSource();
                 writeSource.setWriteCount();
                 return writeSource.getConnection(schema, autoCommit);
+            } else {
+                throw new IllegalArgumentException("Invalid DataSource:" + dbPool.getActiveIndex());
             }
+        }
+    }
+
+    private void getWriteNodeConnection(String schema, boolean autoCommit, ResponseHandler handler, Object attachment) throws IOException {
+        checkRequest(schema);
+        if (dbPool.isInitSuccess()) {
+            PhysicalDatasource writeSource = dbPool.getSource();
+            writeSource.setWriteCount();
+            writeSource.getConnection(schema, autoCommit, handler, attachment);
         } else {
             throw new IllegalArgumentException("Invalid DataSource:" + dbPool.getActiveIndex());
         }

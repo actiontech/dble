@@ -2,6 +2,7 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOProcessor;
@@ -40,12 +41,7 @@ public final class PauseStart {
             c.writeErrMessage(1105, "The sql did not match pause @@dataNode 'dn......' and timeout = ([0-9]+)");
             return;
         }
-
         String dataNode = ma.group(1);
-        if (!DbleServer.getInstance().getMiManager().clusterPauseNotic(dataNode)) {
-            DbleServer.getInstance().getMiManager().resume();
-        }
-
         Set<String> dataNodes = new HashSet(Arrays.asList(dataNode.split(",")));
         //check dataNodes
         for (String singleDn : dataNodes) {
@@ -54,6 +50,15 @@ public final class PauseStart {
                 return;
             }
         }
+
+
+        if (!DbleServer.getInstance().getMiManager().clusterPauseNotic(dataNode)) {
+            c.writeErrMessage(1105, "Other node in cluster is pausing");
+            return;
+        }
+
+
+
 
         if (!DbleServer.getInstance().getMiManager().getIsPausing().compareAndSet(false, true)) {
             c.writeErrMessage(1003, "Some dataNodes is paused, please resume first");
@@ -100,11 +105,19 @@ public final class PauseStart {
         LOGGER.info("wait finished " + recycleFinish);
         if (!recycleFinish) {
             DbleServer.getInstance().getMiManager().resume();
+            try {
+                DbleServer.getInstance().getMiManager().resumeCluster();
+            } catch (Exception e) {
+                LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + " " + e.getMessage());
+            }
             c.writeErrMessage(1003, "The backend connection recycle failure,try it later");
         } else {
-
-            if (DbleServer.getInstance().getMiManager().waitForCluster(c, beginTime, timeOut)) {
-                OK.write(c);
+            try {
+                if (DbleServer.getInstance().getMiManager().waitForCluster(c, beginTime, timeOut)) {
+                    OK.write(c);
+                }
+            } catch (Exception e) {
+                LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + " " + e.getMessage());
             }
         }
     }

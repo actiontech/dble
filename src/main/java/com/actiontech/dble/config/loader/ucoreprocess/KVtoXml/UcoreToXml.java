@@ -72,5 +72,7 @@ public final class UcoreToXml {
         }
     }
 
-
+    public static UcoreClearKeyListener getListener() {
+        return listener;
+    }
 }

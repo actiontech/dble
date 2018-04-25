@@ -13,7 +13,6 @@ import com.actiontech.dble.net.mysql.OkPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 
 public final class PauseEnd {
     private static final OkPacket OK = new OkPacket();
@@ -39,26 +38,20 @@ public final class PauseEnd {
                     return;
                 }
 
-                DbleServer.getInstance().getMiManager().resume();
-
-                DbleServer.getInstance().getMiManager().getuDistributeLock().release();
-                ClusterUcoreSender.deleteKVTree(UcorePathUtil.getPauseDataNodePath());
-                ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getPauseDataNodePath(),
-                        new PauseInfo(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), " ", PauseInfo.RESUME).toString());
-
-                while (true) {
-                    List<UKvBean> reponseList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getPauseResumePath());
-                    List<UKvBean> onlineList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getOnlinePath());
-                    if (reponseList.size() >= onlineList.size() - 1) {
-                        ClusterUcoreSender.deleteKVTree(UcorePathUtil.getPauseDataNodePath());
-                        break;
-                    }
+                if (!DbleServer.getInstance().getMiManager().tryResume()) {
+                    c.writeErrMessage(1003, "There is other connection is resume the dble");
+                    return;
                 }
+
+                DbleServer.getInstance().getMiManager().resumeCluster();
             } catch (Exception e) {
                 LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + " ");
             }
         } else {
-            DbleServer.getInstance().getMiManager().resume();
+            if (!DbleServer.getInstance().getMiManager().tryResume()) {
+                c.writeErrMessage(1003, "There is other connection is resume the dble");
+                return;
+            }
         }
 
         OK.write(c);

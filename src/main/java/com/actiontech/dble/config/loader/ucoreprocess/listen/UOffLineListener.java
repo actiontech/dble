@@ -3,11 +3,14 @@ package com.actiontech.dble.config.loader.ucoreprocess.listen;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
+import com.actiontech.dble.config.loader.ucoreprocess.KVtoXml.UcoreToXml;
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
 import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
+import com.actiontech.dble.config.loader.ucoreprocess.UcoreXmlLoader;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.config.loader.ucoreprocess.loader.UDdlChildResponse;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.BinlogPause;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.PauseInfo;
 import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.log.alarm.UcoreGrpc;
 import com.actiontech.dble.log.alarm.UcoreInterface;
@@ -71,6 +74,28 @@ public class UOffLineListener implements Runnable {
         }
     }
 
+    private void checkPauseStatusRelease(String serverId) {
+        try {
+            UKvBean lock = ClusterUcoreSender.getKey(UcorePathUtil.getPauseDataNodePath());
+            boolean needRelease = false;
+            if (!"".equals(lock.getValue())) {
+                PauseInfo pauseInfo = new PauseInfo(lock.getValue());
+                if (pauseInfo.getFrom().equals(serverId)) {
+                    needRelease = true;
+                }
+            } else if (DbleServer.getInstance().getMiManager().getIsPausing().get()) {
+                needRelease = true;
+            }
+            if (needRelease) {
+                UcoreXmlLoader loader = UcoreToXml.getListener().getReponse(UcorePathUtil.getPauseDataNodePath());
+                loader.notifyCluster();
+            }
+
+        } catch (Exception e) {
+            LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + " server offline binlog status check error");
+        }
+    }
+
 
     @Override
     public void run() {
@@ -91,6 +116,7 @@ public class UOffLineListener implements Runnable {
                     String serverId = en.getKey().split("/")[en.getKey().split("/").length - 1];
                     checkDDLAndRelease(serverId);
                     checkBinlogStatusRelease(serverId);
+                    checkPauseStatusRelease(serverId);
                 }
             }
             onlinMap = newMap;

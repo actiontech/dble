@@ -115,6 +115,22 @@ public class MigrateMetaManager {
         }
     }
 
+
+    public boolean tryResume() {
+        metaLock.lock();
+        try {
+            if (isPausing.compareAndSet(true, false)) {
+                dataNodes = null;
+                pauseMap = new ConcurrentHashMap();
+                condRelease.signalAll();
+                return true;
+            }
+            return false;
+        } finally {
+            metaLock.unlock();
+        }
+    }
+
     public boolean checkTarget(ConcurrentMap<RouteResultsetNode, BackendConnection> target) {
         for (Map.Entry<RouteResultsetNode, BackendConnection> entry : target.entrySet()) {
             if (this.dataNodes.contains(entry.getKey().getName())) {
@@ -158,11 +174,14 @@ public class MigrateMetaManager {
                 return false;
             }
         }
+
+        ClusterUcoreSender.deleteKVTree(UcorePathUtil.getPauseResumePath());
+        ClusterUcoreSender.deleteKVTree(UcorePathUtil.getPauseResultNodePath());
         return true;
     }
 
 
-    public boolean waitForCluster(ManagerConnection c, long beginTime, long timeOut) {
+    public boolean waitForCluster(ManagerConnection c, long beginTime, long timeOut) throws Exception {
 
         LOGGER.info("DEBUG of sunzhengfang " + DbleServer.getInstance().isUseUcore());
         if (DbleServer.getInstance().isUseUcore()) {
@@ -173,12 +192,35 @@ public class MigrateMetaManager {
                 if (reponseList.size() >= onlineList.size() - 1) {
                     return true;
                 } else if (System.currentTimeMillis() - beginTime > timeOut) {
+                    DbleServer.getInstance().getMiManager().resume();
+                    DbleServer.getInstance().getMiManager().resumeCluster();
                     c.writeErrMessage(1003, "There are some node in cluster can recycle backend");
                     return false;
                 }
             }
         }
         return true;
+    }
+
+
+    public void resumeCluster() throws Exception {
+
+        ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getPauseResumePath(),
+                new PauseInfo(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), " ", PauseInfo.RESUME).toString());
+
+        while (true) {
+            List<UKvBean> reponseList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getPauseResumePath());
+            List<UKvBean> onlineList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getOnlinePath());
+            if (reponseList.size() >= onlineList.size() - 1) {
+                ClusterUcoreSender.deleteKVTree(UcorePathUtil.getPauseDataNodePath());
+                break;
+            }
+        }
+
+
+        DbleServer.getInstance().getMiManager().getuDistributeLock().release();
+        ClusterUcoreSender.deleteKVTree(UcorePathUtil.getPauseDataNodePath());
+
     }
 
     public UDistributeLock getuDistributeLock() {

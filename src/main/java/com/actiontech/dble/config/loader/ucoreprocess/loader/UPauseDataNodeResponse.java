@@ -23,7 +23,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean.DELETE;
 
@@ -38,19 +40,24 @@ public class UPauseDataNodeResponse implements UcoreXmlLoader {
 
     private Thread waitThread;
 
+    private final Lock lock = new ReentrantLock();
+
     public UPauseDataNodeResponse(UcoreClearKeyListener confListener) {
         confListener.addChild(this, CONFIG_PATH);
+        confListener.addChild(this, UcorePathUtil.getPauseResumePath());
     }
 
     @Override
     public void notifyProcess(UKvBean configValue) throws Exception {
+        LOGGER.info("get key" + configValue.getKey() + "   " + configValue.getValue());
         if (!DELETE.equals(configValue.getChangeType())) {
-            if (CONFIG_PATH.split("/").length == configValue.getKey().split("/").length) {
+            if (configValue.getKey().equals(UcorePathUtil.getPauseDataNodePath()) || UcorePathUtil.getPauseResumePath().equals(configValue.getKey())) {
                 PauseInfo pauseInfo = new PauseInfo(configValue.getValue());
                 if (pauseInfo.getFrom().equals(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) {
                     return;
                 } else {
                     if (PauseInfo.PAUSE.equals(pauseInfo.getType())) {
+                        LOGGER.info("get key2" + configValue.getKey() + "   " + configValue.getValue());
                         final String dataNodes = pauseInfo.getDataNodes();
                         waitThread = new Thread(new Runnable() {
                             @Override
@@ -61,35 +68,39 @@ public class UPauseDataNodeResponse implements UcoreXmlLoader {
                                     DbleServer.getInstance().getMiManager().getIsPausing().set(true);
                                     DbleServer.getInstance().getMiManager().lockWithDataNodes(dataNodeSet);
 
-                                    while (true) {
-                                        boolean nextTurn = false;
-                                        for (NIOProcessor processor : DbleServer.getInstance().getFrontProcessors()) {
-                                            for (Map.Entry<Long, FrontendConnection> entry : processor.getFrontends().entrySet()) {
-                                                if (entry.getValue() instanceof ServerConnection) {
-                                                    ServerConnection sconnection = (ServerConnection) entry.getValue();
-                                                    for (Map.Entry<RouteResultsetNode, BackendConnection> conEntry : sconnection.getSession2().getTargetMap().entrySet()) {
-                                                        if (dataNodeSet.contains(conEntry.getKey().getName())) {
-                                                            nextTurn = true;
+                                    while (!Thread.interrupted()) {
+                                        lock.lock();
+                                        try {
+                                            boolean nextTurn = false;
+                                            for (NIOProcessor processor : DbleServer.getInstance().getFrontProcessors()) {
+                                                for (Map.Entry<Long, FrontendConnection> entry : processor.getFrontends().entrySet()) {
+                                                    if (entry.getValue() instanceof ServerConnection) {
+                                                        ServerConnection sconnection = (ServerConnection) entry.getValue();
+                                                        for (Map.Entry<RouteResultsetNode, BackendConnection> conEntry : sconnection.getSession2().getTargetMap().entrySet()) {
+                                                            if (dataNodeSet.contains(conEntry.getKey().getName())) {
+                                                                nextTurn = true;
+                                                                break;
+                                                            }
+                                                        }
+                                                        if (nextTurn) {
                                                             break;
                                                         }
                                                     }
-                                                    if (nextTurn) {
-                                                        break;
-                                                    }
+                                                }
+                                                if (nextTurn) {
+                                                    break;
                                                 }
                                             }
-                                            if (nextTurn) {
+                                            if (!nextTurn) {
+                                                ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getPauseResultNodePath(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID)),
+                                                        UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
                                                 break;
                                             }
+                                        } finally {
+                                            lock.unlock();
                                         }
-                                        if (!nextTurn) {
-                                            break;
-                                        }
-                                        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10L));
+                                        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100L));
                                     }
-
-                                    ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getPauseResultNodePath(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID)),
-                                            UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
 
                                 } catch (Exception e) {
                                     LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + " the ucore pause error " + e.getMessage());
@@ -99,9 +110,14 @@ public class UPauseDataNodeResponse implements UcoreXmlLoader {
                         });
                         waitThread.start();
                     } else {
-
-                        if (waitThread.isAlive()) {
-                            waitThread.interrupt();
+                        LOGGER.info("get key3" + configValue.getKey() + "   " + configValue.getValue());
+                        lock.lock();
+                        try {
+                            if (waitThread.isAlive()) {
+                                waitThread.interrupt();
+                            }
+                        } finally {
+                            lock.unlock();
                         }
                         DbleServer.getInstance().getMiManager().resume();
                         ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getPauseResumePath(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID)),
@@ -113,8 +129,21 @@ public class UPauseDataNodeResponse implements UcoreXmlLoader {
         }
     }
 
+    /**
+     * notify the cluster that the pause is over
+     *
+     * @throws Exception
+     */
     @Override
     public void notifyCluster() throws Exception {
-        return;
+        lock.lock();
+        try {
+            if (waitThread.isAlive()) {
+                waitThread.interrupt();
+            }
+        } finally {
+            lock.unlock();
+        }
+        DbleServer.getInstance().getMiManager().resume();
     }
 }

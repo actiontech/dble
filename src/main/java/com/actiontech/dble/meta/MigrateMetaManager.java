@@ -173,10 +173,10 @@ public class MigrateMetaManager {
             if (!uDistributeLock.acquire()) {
                 return false;
             }
-        }
 
-        ClusterUcoreSender.deleteKVTree(UcorePathUtil.getPauseResumePath());
-        ClusterUcoreSender.deleteKVTree(UcorePathUtil.getPauseResultNodePath());
+            ClusterUcoreSender.deleteKVTree(UcorePathUtil.getPauseResumePath());
+            ClusterUcoreSender.deleteKVTree(UcorePathUtil.getPauseResultNodePath());
+        }
         return true;
     }
 

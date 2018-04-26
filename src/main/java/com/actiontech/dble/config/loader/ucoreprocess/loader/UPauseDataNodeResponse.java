@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2018 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.config.loader.ucoreprocess.loader;
 
 import com.actiontech.dble.DbleServer;
@@ -29,9 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean.DELETE;
 
-/**
- * Created by szf on 2018/4/24.
- */
+
 public class UPauseDataNodeResponse implements UcoreXmlLoader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UPauseDataNodeResponse.class);
@@ -49,22 +51,19 @@ public class UPauseDataNodeResponse implements UcoreXmlLoader {
 
     @Override
     public void notifyProcess(UKvBean configValue) throws Exception {
-        LOGGER.info("get key" + configValue.getKey() + "   " + configValue.getValue());
+        LOGGER.info("get key in UPauseDataNodeResponse:" + configValue.getKey() + "   " + configValue.getValue());
         if (!DELETE.equals(configValue.getChangeType())) {
             if (configValue.getKey().equals(UcorePathUtil.getPauseDataNodePath()) || UcorePathUtil.getPauseResumePath().equals(configValue.getKey())) {
                 PauseInfo pauseInfo = new PauseInfo(configValue.getValue());
-                if (pauseInfo.getFrom().equals(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) {
-                    return;
-                } else {
+                if (!pauseInfo.getFrom().equals(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) {
                     if (PauseInfo.PAUSE.equals(pauseInfo.getType())) {
-                        LOGGER.info("get key2" + configValue.getKey() + "   " + configValue.getValue());
                         final String dataNodes = pauseInfo.getDataNodes();
                         waitThread = new Thread(new Runnable() {
                             @Override
                             public void run() {
 
                                 try {
-                                    Set<String> dataNodeSet = new HashSet(Arrays.asList(dataNodes.split(",")));
+                                    Set<String> dataNodeSet = new HashSet<>(Arrays.asList(dataNodes.split(",")));
                                     DbleServer.getInstance().getMiManager().getIsPausing().set(true);
                                     DbleServer.getInstance().getMiManager().lockWithDataNodes(dataNodeSet);
 
@@ -110,7 +109,6 @@ public class UPauseDataNodeResponse implements UcoreXmlLoader {
                         });
                         waitThread.start();
                     } else {
-                        LOGGER.info("get key3" + configValue.getKey() + "   " + configValue.getValue());
                         lock.lock();
                         try {
                             if (waitThread.isAlive()) {
@@ -131,8 +129,6 @@ public class UPauseDataNodeResponse implements UcoreXmlLoader {
 
     /**
      * notify the cluster that the pause is over
-     *
-     * @throws Exception
      */
     @Override
     public void notifyCluster() throws Exception {

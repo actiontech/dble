@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2016-2018 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.meta;
 
 import com.actiontech.dble.DbleServer;
@@ -37,7 +41,7 @@ public class MigrateMetaManager {
     private ReentrantLock metaLock = new ReentrantLock();
     private Condition condRelease = this.metaLock.newCondition();
     private Set<String> dataNodes = null;
-    private Map<String, Set<String>> pauseMap = new ConcurrentHashMap();
+    private Map<String, Set<String>> pauseMap = new ConcurrentHashMap<>();
     private AtomicBoolean isPausing = new AtomicBoolean(false);
     private UDistributeLock uDistributeLock = null;
 
@@ -80,9 +84,9 @@ public class MigrateMetaManager {
     }
 
     private void addToLockSet(String schema, String table) {
-        Set<String> tableSet = (Set) this.pauseMap.get(schema);
+        Set<String> tableSet = this.pauseMap.get(schema);
         if (tableSet == null) {
-            tableSet = new HashSet();
+            tableSet = new HashSet<>();
             this.pauseMap.put(schema, tableSet);
         }
         if (!tableSet.contains(table)) {
@@ -108,7 +112,7 @@ public class MigrateMetaManager {
         try {
             isPausing.set(false);
             dataNodes = null;
-            pauseMap = new ConcurrentHashMap();
+            pauseMap.clear();
             condRelease.signalAll();
         } finally {
             metaLock.unlock();
@@ -121,7 +125,7 @@ public class MigrateMetaManager {
         try {
             if (isPausing.compareAndSet(true, false)) {
                 dataNodes = null;
-                pauseMap = new ConcurrentHashMap();
+                pauseMap.clear();
                 condRelease.signalAll();
                 return true;
             }
@@ -154,9 +158,9 @@ public class MigrateMetaManager {
 
     public boolean checkReferedTableNodes(List<TableNode> list) {
         for (TableNode tableNode : list) {
-            Set<String> tableSet = (Set) this.pauseMap.get(tableNode.getSchema());
+            Set<String> tableSet = this.pauseMap.get(tableNode.getSchema());
             if (tableSet == null) {
-                break;
+                return false;
             }
             if (tableSet.contains(tableNode.getTableName())) {
                 return true;
@@ -183,12 +187,10 @@ public class MigrateMetaManager {
 
     public boolean waitForCluster(ManagerConnection c, long beginTime, long timeOut) throws Exception {
 
-        LOGGER.info("DEBUG of sunzhengfang " + DbleServer.getInstance().isUseUcore());
         if (DbleServer.getInstance().isUseUcore()) {
             for (; ; ) {
                 List<UKvBean> reponseList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getPauseResultNodePath());
                 List<UKvBean> onlineList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getOnlinePath());
-                LOGGER.info("DEBUG of sunzhengfang " + reponseList.size() + "  " + onlineList.size());
                 if (reponseList.size() >= onlineList.size() - 1) {
                     return true;
                 } else if (System.currentTimeMillis() - beginTime > timeOut) {
@@ -204,30 +206,28 @@ public class MigrateMetaManager {
 
 
     public void resumeCluster() throws Exception {
+        if (DbleServer.getInstance().isUseUcore()) {
+            ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getPauseResumePath(),
+                    new PauseInfo(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), " ", PauseInfo.RESUME).toString());
 
-        ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getPauseResumePath(),
-                new PauseInfo(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), " ", PauseInfo.RESUME).toString());
-
-        while (true) {
-            List<UKvBean> reponseList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getPauseResumePath());
-            List<UKvBean> onlineList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getOnlinePath());
-            if (reponseList.size() >= onlineList.size() - 1) {
-                ClusterUcoreSender.deleteKVTree(UcorePathUtil.getPauseDataNodePath());
-                break;
+            while (true) {
+                List<UKvBean> reponseList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getPauseResumePath());
+                List<UKvBean> onlineList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getOnlinePath());
+                if (reponseList.size() >= onlineList.size() - 1) {
+                    ClusterUcoreSender.deleteKVTree(UcorePathUtil.getPauseDataNodePath());
+                    break;
+                }
             }
+
+
+            DbleServer.getInstance().getMiManager().getuDistributeLock().release();
+            ClusterUcoreSender.deleteKVTree(UcorePathUtil.getPauseDataNodePath());
         }
-
-
-        DbleServer.getInstance().getMiManager().getuDistributeLock().release();
-        ClusterUcoreSender.deleteKVTree(UcorePathUtil.getPauseDataNodePath());
 
     }
 
-    public UDistributeLock getuDistributeLock() {
+    private UDistributeLock getuDistributeLock() {
         return uDistributeLock;
     }
 
-    public void setuDistributeLock(UDistributeLock uDistributeLock) {
-        this.uDistributeLock = uDistributeLock;
-    }
 }

@@ -1,15 +1,10 @@
 package com.actiontech.dble.config.loader.ucoreprocess.listen;
 
-import com.actiontech.dble.cluster.ClusterParamCfg;
-import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
 import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreXmlLoader;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.log.alarm.AlarmCode;
-import com.actiontech.dble.log.alarm.UcoreGrpc;
 import com.actiontech.dble.log.alarm.UcoreInterface;
-import io.grpc.Channel;
-import io.grpc.ManagedChannelBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,15 +24,10 @@ public class UcoreClearKeyListener implements Runnable {
 
     private Map<String, String> cache = new HashMap<>();
 
-    private UcoreGrpc.UcoreBlockingStub stub = null;
+    private UcoreListenerUtil ucoreListenerUtil = new UcoreListenerUtil();
 
     private long index = 0;
 
-    public void init() {
-        Channel channel = ManagedChannelBuilder.forAddress(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_IP),
-                Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
-        stub = UcoreGrpc.newBlockingStub(channel);
-    }
 
     @Override
     public void run() {
@@ -45,7 +35,7 @@ public class UcoreClearKeyListener implements Runnable {
             try {
                 UcoreInterface.SubscribeKvPrefixInput input
                         = UcoreInterface.SubscribeKvPrefixInput.newBuilder().setIndex(index).setDuration(60).setKeyPrefix(UcorePathUtil.CONF_BASE_PATH).build();
-                UcoreInterface.SubscribeKvPrefixOutput output = stub.subscribeKvPrefix(input);
+                UcoreInterface.SubscribeKvPrefixOutput output = ucoreListenerUtil.subscribeKvPrefix(input);
                 Map<String, UKvBean> diffMap = getDiffMap(output);
                 if (output.getIndex() != index) {
                     handle(diffMap);
@@ -88,15 +78,19 @@ public class UcoreClearKeyListener implements Runnable {
     }
 
     public void initForXml() {
-        UcoreInterface.SubscribeKvPrefixInput input
-                = UcoreInterface.SubscribeKvPrefixInput.newBuilder().setIndex(0).setDuration(60).setKeyPrefix(UcorePathUtil.BASE_PATH).build();
-        UcoreInterface.SubscribeKvPrefixOutput output = stub.subscribeKvPrefix(input);
+        try {
+            UcoreInterface.SubscribeKvPrefixInput input
+                    = UcoreInterface.SubscribeKvPrefixInput.newBuilder().setIndex(0).setDuration(60).setKeyPrefix(UcorePathUtil.BASE_PATH).build();
+            UcoreInterface.SubscribeKvPrefixOutput output = ucoreListenerUtil.subscribeKvPrefix(input);
 
-        Map<String, UKvBean> diffMap = new HashMap<String, UKvBean>();
-        for (int i = 0; i < output.getKeysCount(); i++) {
-            diffMap.put(output.getKeys(i), new UKvBean(output.getKeys(i), output.getValues(i), UKvBean.ADD));
+            Map<String, UKvBean> diffMap = new HashMap<String, UKvBean>();
+            for (int i = 0; i < output.getKeysCount(); i++) {
+                diffMap.put(output.getKeys(i), new UKvBean(output.getKeys(i), output.getValues(i), UKvBean.ADD));
+            }
+            handle(diffMap);
+        } catch (Exception e) {
+            LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "error when start up dble,ucore connect error");
         }
-        handle(diffMap);
     }
 
 

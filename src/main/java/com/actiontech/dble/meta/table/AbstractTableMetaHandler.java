@@ -29,7 +29,7 @@ public abstract class AbstractTableMetaHandler {
             "Create Table"};
     private static final String SQL_PREFIX = "show create table ";
 
-    private String tableName;
+    protected String tableName;
     private List<String> dataNodes;
     private AtomicInteger nodesNumber;
     protected String schema;
@@ -130,11 +130,15 @@ public abstract class AbstractTableMetaHandler {
         }
 
         private StructureMeta.TableMeta initTableMeta(String table, String sql, long timeStamp) {
-            SQLStatementParser parser = new CreateTableParserImp(sql);
-            SQLCreateTableStatement createStatement = parser.parseCreateTable();
-            return MetaHelper.initTableMeta(table, createStatement, timeStamp);
+            try {
+                SQLStatementParser parser = new CreateTableParserImp(sql);
+                SQLCreateTableStatement createStatement = parser.parseCreateTable();
+                return MetaHelper.initTableMeta(table, createStatement, timeStamp);
+
+            } catch (Exception e) {
+                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "sql[" + sql + "] parser error:", e);
+                return null;
+            }
         }
-
-
     }
 }

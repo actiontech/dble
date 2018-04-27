@@ -37,9 +37,12 @@ public class DDLNotifyTableMetaHandler extends AbstractTableMetaHandler {
 
     @Override
     public void handlerTable(StructureMeta.TableMeta tableMeta) {
-        DbleServer.getInstance().getTmManager().addTable(schema, tableMeta);
+        if (tableMeta != null) {
+            DbleServer.getInstance().getTmManager().addTable(schema, tableMeta);
+        }
         signalDone();
-        DbleServer.getInstance().getTmManager().removeMetaLock(schema, tableMeta.getTableName());
+        DbleServer.getInstance().getTmManager().removeMetaLock(schema, tableName);
+
     }
 
 
@@ -53,7 +56,7 @@ public class DDLNotifyTableMetaHandler extends AbstractTableMetaHandler {
         }
     }
 
-    public void waitDone() {
+    private void waitDone() {
         lock.lock();
         try {
             while (!extracting) {

@@ -6,7 +6,6 @@
 package com.actiontech.dble.config.loader.zkprocess.entity;
 
 import com.actiontech.dble.config.Versions;
-import com.actiontech.dble.config.loader.zkprocess.entity.server.Alarm;
 import com.actiontech.dble.config.loader.zkprocess.entity.server.FireWall;
 import com.actiontech.dble.config.loader.zkprocess.entity.server.System;
 import com.actiontech.dble.config.loader.zkprocess.entity.server.User;

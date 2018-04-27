@@ -591,6 +591,7 @@ public class XMLSchemaLoader implements SchemaLoader {
                 NodeList readNodes = element.getElementsByTagName("readHost");
                 DBHostConfig[] writeDbConfs = new DBHostConfig[1];
                 writeDbConfs[0] = new DBHostConfig("fakeHost", "-", 0, "-:0)", "-", "-");
+                writeDbConfs[0].setFake(true);
                 DBHostConfig[] readDbConfs = new DBHostConfig[1];
                 Element readNode = (Element) readNodes.item(0);
                 readDbConfs[0] = createDBHostConf(name, readNode, maxCon, minCon);

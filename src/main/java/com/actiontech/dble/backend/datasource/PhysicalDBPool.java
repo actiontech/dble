@@ -348,6 +348,9 @@ public class PhysicalDBPool {
 
     private boolean initSource(int index, PhysicalDatasource ds) {
         int initSize = ds.getConfig().getMinCon();
+        if (initSize == 0) {
+            return true;
+        }
 
         LOGGER.info("init backend mysql source ,create connections total " + initSize + " for " + ds.getName() +
                 " index :" + index);
@@ -498,6 +501,9 @@ public class PhysicalDBPool {
      */
     void getRWBalanceCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
         PhysicalDatasource theNode = getRWBalanceNode();
+        if (theNode.getConfig().isFake()) {
+            theNode = this.getReadSources().values().iterator().next()[0];
+        }
         if (!theNode.isAlive()) {
             String heartbeatError = "the data source[" + theNode.getConfig().getUrl() + "] can't reached, please check the dataHost";
             LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + heartbeatError);

@@ -295,7 +295,9 @@ public abstract class PhysicalDatasource {
     }
 
     public void startHeartbeat() {
-        heartbeat.start();
+        if(!this.getConfig().isFake()) {
+            heartbeat.start();
+        }
     }
 
     public void stopHeartbeat() {

@@ -119,6 +119,9 @@ public class PhysicalDBNode {
         checkRequest(schema);
         if (dbPool.isInitSuccess()) {
             PhysicalDatasource writeSource = dbPool.getSource();
+            if (writeSource.getConfig().isFake()) {
+                throw new IllegalArgumentException("No Write Host Alive");
+            }
             writeSource.setWriteCount();
             writeSource.getConnection(schema, autoCommit, handler, attachment);
         } else {

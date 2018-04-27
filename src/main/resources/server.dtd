@@ -51,8 +51,9 @@
                 >
         <!ATTLIST sqllist sql CDATA #REQUIRED>
 
-
-        <!ELEMENT alarm (level,serverId,componentId,componentType) >
+        <!ELEMENT alarm (url,port,level,serverId,componentId,componentType) >
+        <!ELEMENT url (#PCDATA) >
+        <!ELEMENT port (#PCDATA) >
         <!ELEMENT level (#PCDATA)>
         <!ELEMENT serverId (#PCDATA)>
         <!ELEMENT componentId (#PCDATA)>

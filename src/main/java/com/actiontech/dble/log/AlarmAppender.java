@@ -34,7 +34,7 @@ public class AlarmAppender extends AbstractAppender {
     private static String alertComponentId = "";
 
 
-    private static final String ushardCode = "ushard";
+    private static final String USHARD_CODE = "ushard";
     private static UcoreGrpc.UcoreBlockingStub stub = null;
 
     /**
@@ -57,10 +57,9 @@ public class AlarmAppender extends AbstractAppender {
                     grpcLevel = 300;
                     serverId = UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
                     alertComponentId = UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_CLUSTERID);
-                    ;
                     Channel channel = ManagedChannelBuilder.forAddress(UcoreConfig.getInstance().getIpList().get(0),
-                            Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT)))
-                            .usePlaintext(true).build();
+                            Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).
+                            usePlaintext(true).build();
                     stub = UcoreGrpc.newBlockingStub(channel);
                 }
             } catch (Exception e) {
@@ -84,10 +83,10 @@ public class AlarmAppender extends AbstractAppender {
                         setCode(d[0]).
                         setDesc(d[1]).
                         setLevel(level).
-                        setSourceComponentType(ushardCode).
+                        setSourceComponentType(USHARD_CODE).
                         setSourceComponentId(alertComponentId).
                         setAlertComponentId(alertComponentId).
-                        setAlertComponentType(ushardCode).
+                        setAlertComponentType(USHARD_CODE).
                         setServerId(serverId).
                         setTimestampUnix(System.currentTimeMillis() * 1000000).
                         build();

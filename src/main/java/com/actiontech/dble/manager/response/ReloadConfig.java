@@ -340,7 +340,6 @@ public final class ReloadConfig {
                     newSystemVariables, loader.isDataHostWithoutWH(), true);
 
             recycleOldBackendConnections(config, ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
-            AlarmAppender.refreshConfig();
         } else {
             // INIT FAILED
             LOGGER.info("reload failed, clear previously created data sources ");

@@ -24,7 +24,6 @@ public final class DbleStartup {
     }
 
     private static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
-    private static final Logger LOGGER = LoggerFactory.getLogger(DbleStartup.class);
     private static boolean initZKend = false;
 
     public static void main(String[] args) {
@@ -50,8 +49,6 @@ public final class DbleStartup {
 
         } catch (Exception e) {
             SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
-            LOGGER.error(AlarmCode.CORE_ERROR +
-                    sdf.format(new Date()) + " startup error", e);
             System.exit(-1);
         }
     }

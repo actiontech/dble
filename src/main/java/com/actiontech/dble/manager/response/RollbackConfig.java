@@ -221,7 +221,6 @@ public final class RollbackConfig {
                 dn.stopHeartbeat();
             }
 
-            AlarmAppender.rollbackConfig();
         } else {
             throw new Exception("there is no old version");
         }

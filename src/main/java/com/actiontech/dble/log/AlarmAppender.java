@@ -7,7 +7,8 @@ package com.actiontech.dble.log;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.DbleStartup;
-import com.actiontech.dble.config.model.AlarmConfig;
+import com.actiontech.dble.cluster.ClusterParamCfg;
+import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
 import com.actiontech.dble.log.alarm.UcoreGrpc;
 import com.actiontech.dble.log.alarm.UcoreInterface;
 import io.grpc.Channel;
@@ -28,20 +29,12 @@ import java.io.Serializable;
 @Plugin(name = "AlarmAppender", category = "Core", elementType = "appender", printObject = true)
 public class AlarmAppender extends AbstractAppender {
 
-    private static String grpcUrl = "";
-    private static int port = 0;
-    private static int grpcLevel = 0;
+    private static int grpcLevel = 300;
     private static String serverId = "";
     private static String alertComponentId = "";
 
-    private static String grpcUrlOld = "";
-    private static int portOld = 0;
-    private static int grpcLevelOld = 0;
-    private static String serverIdOld = "";
-    private static String alertComponentIdOld = "";
 
-
-    private static String ushardCode = "";
+    private static final String ushardCode = "ushard";
     private static UcoreGrpc.UcoreBlockingStub stub = null;
 
     /**
@@ -60,15 +53,14 @@ public class AlarmAppender extends AbstractAppender {
         if (stub == null && DbleStartup.isInitZKend()) {
             //only if the dbleserver init config file finished than the config can be use for alert
             try {
-                AlarmConfig config = DbleServer.getInstance().getConfig().getAlarm();
-                if (config != null && config.getUrl() != null) {
-                    grpcLevel = "error".equalsIgnoreCase(config.getLevel()) ? 200 : 300;
-                    serverId = config.getServerId();
-                    port = Integer.parseInt(config.getPort());
-                    grpcUrl = config.getUrl();
-                    alertComponentId = config.getComponentId();
-                    ushardCode = config.getComponentType();
-                    Channel channel = ManagedChannelBuilder.forAddress(grpcUrl, port).usePlaintext(true).build();
+                if (DbleServer.getInstance().isUseUcore()) {
+                    grpcLevel = 300;
+                    serverId = UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
+                    alertComponentId = UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_CLUSTERID);
+                    ;
+                    Channel channel = ManagedChannelBuilder.forAddress(UcoreConfig.getInstance().getIpList().get(0),
+                            Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT)))
+                            .usePlaintext(true).build();
                     stub = UcoreGrpc.newBlockingStub(channel);
                 }
             } catch (Exception e) {
@@ -77,14 +69,7 @@ public class AlarmAppender extends AbstractAppender {
             }
         }
         if (stub != null) {
-            try {
-                send(event);
-            } catch (Exception e) {
-                //error when send info to ucore , try again
-                Channel channel = ManagedChannelBuilder.forAddress(grpcUrl, port).usePlaintext(true).build();
-                stub = UcoreGrpc.newBlockingStub(channel);
-                send(event);
-            }
+            send(event);
         }
 
     }
@@ -106,7 +91,22 @@ public class AlarmAppender extends AbstractAppender {
                         setServerId(serverId).
                         setTimestampUnix(System.currentTimeMillis() * 1000000).
                         build();
-                stub.alert(inpurt);
+
+                try {
+                    stub.alert(inpurt);
+                } catch (Exception e1) {
+                    for (String ip : UcoreConfig.getInstance().getIpList()) {
+                        try {
+                            Channel channel = ManagedChannelBuilder.forAddress(ip,
+                                    Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
+                            stub = UcoreGrpc.newBlockingStub(channel);
+                            stub.alert(inpurt);
+                            return;
+                        } catch (Exception e2) {
+                            LOGGER.info("connect to ucore error ");
+                        }
+                    }
+                }
             }
         }
     }
@@ -124,64 +124,4 @@ public class AlarmAppender extends AbstractAppender {
     }
 
 
-    /**
-     * refresh config of alarm address and re create the stub
-     */
-    public static void refreshConfig() {
-        try {
-            AlarmConfig config = DbleServer.getInstance().getConfig().getAlarm();
-            if (config != null) {
-                //put the old config into  _old
-                grpcUrlOld = grpcUrl;
-                serverIdOld = serverId;
-                alertComponentIdOld = alertComponentId;
-                portOld = port;
-                grpcUrlOld = grpcUrl;
-                grpcLevelOld = grpcLevel;
-
-                grpcLevel = "error".equalsIgnoreCase(config.getLevel()) ? 200 : 300;
-                serverId = config.getServerId();
-                port = Integer.parseInt(config.getPort());
-                grpcUrl = config.getUrl();
-                alertComponentId = config.getComponentId();
-                if (port != portOld || !grpcUrlOld.equals(grpcUrl)) {
-                    Channel channel = ManagedChannelBuilder.forAddress(grpcUrl, port).usePlaintext(true).build();
-                    stub = UcoreGrpc.newBlockingStub(channel);
-                }
-            } else {
-                stub = null;
-            }
-        } catch (Exception e) {
-            //config not ready yeat
-            return;
-        }
-    }
-
-
-    /**
-     * if the config is rollback the config of dbleAppender should be rollback too
-     */
-    public static void rollbackConfig() {
-        if (stub == null && (grpcUrlOld == null && "".equals(grpcUrlOld))) {
-            grpcUrl = grpcUrlOld;
-            serverId = serverIdOld;
-            alertComponentId = alertComponentIdOld;
-            port = portOld;
-            grpcUrl = grpcUrlOld;
-            grpcLevel = grpcLevelOld;
-            return;
-        } else {
-            grpcUrl = grpcUrlOld;
-            serverId = serverIdOld;
-            alertComponentId = alertComponentIdOld;
-            port = portOld;
-            grpcUrl = grpcUrlOld;
-            try {
-                Channel channel = ManagedChannelBuilder.forAddress(grpcUrl, port).usePlaintext(true).build();
-                stub = UcoreGrpc.newBlockingStub(channel);
-            } catch (Exception e) {
-                return;
-            }
-        }
-    }
 }

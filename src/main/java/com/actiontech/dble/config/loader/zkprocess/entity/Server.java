@@ -27,8 +27,6 @@ public class Server {
     protected FireWall firewall;
     @XmlElement(required = true)
     protected List<User> user;
-    @XmlElement
-    protected Alarm alarm;
 
     public System getSystem() {
         return system;
@@ -53,14 +51,6 @@ public class Server {
 
     public void setFirewall(FireWall firewall) {
         this.firewall = firewall;
-    }
-
-    public Alarm getAlarm() {
-        return alarm;
-    }
-
-    public void setAlarm(Alarm alarm) {
-        this.alarm = alarm;
     }
 
     @Override

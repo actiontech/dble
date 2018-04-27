@@ -375,8 +375,9 @@ public abstract class PhysicalDatasource {
         } else {
             int activeCons = this.getActiveCount();
             if (activeCons + 1 > size) {
-                LOGGER.warn(AlarmCode.CORE_PERFORMANCE_WARN + "the max activeConnnections size can not be max than maxconnections");
-                throw new IOException("the max activeConnnections size can not be max than maxconnections");
+                String maxConError = "the max active Connections size can not be max than maxCon in schema.xml";
+                LOGGER.warn(AlarmCode.CORE_PERFORMANCE_WARN + maxConError);
+                throw new IOException(maxConError);
             } else { // create connection
                 LOGGER.info("no idle connection in pool,create new connection for " +
                         this.name + " of schema " + schema);
@@ -390,8 +391,9 @@ public abstract class PhysicalDatasource {
         if (con == null) {
             int activeCons = this.getActiveCount(); // the max active
             if (activeCons + 1 > size) {
-                LOGGER.warn(AlarmCode.CORE_PERFORMANCE_WARN + "the max activeConnnections size can not be max than maxconnections");
-                throw new IOException("the max activeConnnections size can not be max than maxconnections");
+                String maxConError = "the max active Connections size can not be max than maxCon in schema.xml";
+                LOGGER.warn(AlarmCode.CORE_PERFORMANCE_WARN + maxConError);
+                throw new IOException(maxConError);
             } else { // create connection
                 LOGGER.info(
                         "no ilde connection in pool,create new connection for " + this.name + " of schema " + schema);

@@ -16,6 +16,7 @@ import com.actiontech.dble.log.alarm.AlarmCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.ReentrantLock;
@@ -497,6 +498,11 @@ public class PhysicalDBPool {
      */
     void getRWBalanceCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
         PhysicalDatasource theNode = getRWBalanceNode();
+        if (!theNode.isAlive()) {
+            String heartbeatError = "the data source[" + theNode.getConfig().getUrl() + "] can't reached, please check the dataHost";
+            LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + heartbeatError);
+            throw new IOException(heartbeatError);
+        }
         theNode.getConnection(schema, autocommit, handler, attachment);
     }
 

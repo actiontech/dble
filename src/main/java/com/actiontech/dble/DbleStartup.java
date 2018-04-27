@@ -10,8 +10,6 @@ import com.actiontech.dble.cluster.ClusterController;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.manager.handler.ShowServerLog;
 
-import java.text.SimpleDateFormat;
-
 /**
  * @author mycat
  */

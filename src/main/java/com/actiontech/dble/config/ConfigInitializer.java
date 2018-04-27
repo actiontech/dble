@@ -35,7 +35,6 @@ public class ConfigInitializer {
     private volatile SystemConfig system;
     private volatile FirewallConfig firewall;
     private volatile Map<String, UserConfig> users;
-    private volatile AlarmConfig alarm;
     private volatile Map<String, SchemaConfig> schemas;
     private volatile Map<String, PhysicalDBNode> dataNodes;
     private volatile Map<String, PhysicalDBPool> dataHosts;
@@ -53,7 +52,6 @@ public class ConfigInitializer {
         this.schemas = schemaLoader.getSchemas();
         this.system = serverLoader.getSystem();
         this.users = serverLoader.getUsers();
-        this.alarm = serverLoader.getAlarm();
         this.erRelations = schemaLoader.getErRelations();
         // need reload DataHost and DataNode?
         if (loadDataHost) {
@@ -352,7 +350,4 @@ public class ConfigInitializer {
         return dataHostWithoutWH;
     }
 
-    public AlarmConfig getAlarm() {
-        return alarm;
-    }
 }

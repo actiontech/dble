@@ -26,7 +26,6 @@ import com.actiontech.dble.config.model.FirewallConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.UserConfig;
 import com.actiontech.dble.config.util.DnPropertyUtil;
-import com.actiontech.dble.log.AlarmAppender;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOProcessor;
@@ -340,7 +339,6 @@ public final class ReloadConfig {
                     newSystemVariables, loader.isDataHostWithoutWH(), true);
 
             recycleOldBackendConnections(config, ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
-            AlarmAppender.refreshConfig();
         } else {
             // INIT FAILED
             LOGGER.info("reload failed, clear previously created data sources ");

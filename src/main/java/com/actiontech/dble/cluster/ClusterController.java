@@ -8,8 +8,7 @@ import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.Properties;
 
 /**
@@ -19,7 +18,7 @@ public final class ClusterController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClusterController.class);
 
-    private static final String CONFIG_FILE_NAME = "/myid.properties";
+    public static final String CONFIG_FILE_NAME = "/myid.properties";
     private static final String CONFIG_MODE_UCORE = "ucore";
     private static final String CONFIG_MODE_ZK = "zk";
     private static final String CONFIG_MODE_SINGLE = "false";
@@ -51,6 +50,11 @@ public final class ClusterController {
         properties = loadMyidPropersites();
         UcoreConfig.setUcoreProperties(properties);
         ZkConfig.setZkProperties(properties);
+        if (CONFIG_MODE_UCORE.equalsIgnoreCase(properties.getProperty(ClusterParamCfg.CLUSTER_FLAG.getKey()))) {
+            UcoreConfig.initUcore(properties);
+        } else if (CONFIG_MODE_ZK.equalsIgnoreCase(properties.getProperty(ClusterParamCfg.CLUSTER_FLAG.getKey()))) {
+            ZkConfig.initZk(properties);
+        }
     }
 
 
@@ -74,10 +78,6 @@ public final class ClusterController {
                     Strings.isNullOrEmpty(pros.getProperty(ClusterParamCfg.CLUSTER_CFG_MYID.getKey()))) {
                 throw new RuntimeException("Cluster Config is not completely set");
             }
-        }
-
-        if (pros.getProperty(ClusterParamCfg.CLUSTER_PLUGINS_IP.getKey()).indexOf(",") != -1) {
-            pros.setProperty(ClusterParamCfg.CLUSTER_PLUGINS_IP.getKey(), pros.getProperty(ClusterParamCfg.CLUSTER_PLUGINS_IP.getKey()).split(",")[0]);
         }
         return pros;
 

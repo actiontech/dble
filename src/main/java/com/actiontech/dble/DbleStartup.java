@@ -44,7 +44,6 @@ public final class DbleStartup {
             System.out.println("Server startup successfully. see logs in logs/" + ShowServerLog.DEFAULT_LOGFILE);
 
         } catch (Exception e) {
-            SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
             System.exit(-1);
         }
     }

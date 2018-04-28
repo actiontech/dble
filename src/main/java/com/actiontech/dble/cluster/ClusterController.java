@@ -46,15 +46,14 @@ public final class ClusterController {
 
     }
 
-    public static void initFromShell() {
+    public static void initFromShellUcore() {
         properties = loadMyidPropersites();
-        UcoreConfig.setUcoreProperties(properties);
+        UcoreConfig.initUcoreFromShell(properties);
+    }
+
+    public static void initFromShellZK() {
+        properties = loadMyidPropersites();
         ZkConfig.setZkProperties(properties);
-        if (CONFIG_MODE_UCORE.equalsIgnoreCase(properties.getProperty(ClusterParamCfg.CLUSTER_FLAG.getKey()))) {
-            UcoreConfig.initUcore(properties);
-        } else if (CONFIG_MODE_ZK.equalsIgnoreCase(properties.getProperty(ClusterParamCfg.CLUSTER_FLAG.getKey()))) {
-            ZkConfig.initZk(properties);
-        }
     }
 
 

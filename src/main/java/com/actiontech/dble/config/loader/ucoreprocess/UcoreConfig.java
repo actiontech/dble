@@ -61,6 +61,23 @@ public final class UcoreConfig {
         }
     }
 
+
+    /**
+     * init the ucore and set keys
+     *
+     * @param cluterProperties
+     */
+    public static void initUcoreFromShell(Properties cluterProperties) {
+        try {
+            getInstance().ucoreProperties = cluterProperties;
+            for (String ip : cluterProperties.getProperty(ClusterParamCfg.CLUSTER_PLUGINS_IP.getKey()).split(",")) {
+                getInstance().ipList.add(ip);
+            }
+        } catch (Exception e) {
+            LOGGER.error(AlarmCode.CORE_ZK_ERROR + "error:", e);
+        }
+    }
+
     public static void setUcoreProperties(Properties ucoreProperties) {
         getInstance().ucoreProperties = ucoreProperties;
     }

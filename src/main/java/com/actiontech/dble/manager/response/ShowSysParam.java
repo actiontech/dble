@@ -229,7 +229,7 @@ public final class ShowSysParam {
             "mappedFileSize",
             "joinQueueSize",
             "mergeQueueSize",
-            "orderByQueueSize"
+            "orderByQueueSize",
     };
 
     private static final String[] PARAM_DESCRIPTION = {

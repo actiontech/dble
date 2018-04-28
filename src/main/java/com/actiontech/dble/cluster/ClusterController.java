@@ -51,10 +51,9 @@ public final class ClusterController {
         UcoreConfig.setUcoreProperties(properties);
         ZkConfig.setZkProperties(properties);
         if (CONFIG_MODE_UCORE.equalsIgnoreCase(properties.getProperty(ClusterParamCfg.CLUSTER_FLAG.getKey()))) {
-            UcoreConfig.initUcore(properties);
-        } else if (CONFIG_MODE_ZK.equalsIgnoreCase(properties.getProperty(ClusterParamCfg.CLUSTER_FLAG.getKey()))) {
-            ZkConfig.initZk(properties);
+            UcoreConfig.initUcoreFromShell(properties);
         }
+
     }
 
 

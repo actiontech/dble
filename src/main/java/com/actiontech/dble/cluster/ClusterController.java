@@ -46,10 +46,14 @@ public final class ClusterController {
 
     }
 
-    public static void initFromShell() {
+    public static void initFromShellUcore() {
+        properties = loadMyidPropersites();
+        UcoreConfig.initUcoreFromShell(properties);
+    }
+
+    public static void initFromShellZK() {
         properties = loadMyidPropersites();
         ZkConfig.setZkProperties(properties);
-        UcoreConfig.initUcoreFromShell(properties);
     }
 
 

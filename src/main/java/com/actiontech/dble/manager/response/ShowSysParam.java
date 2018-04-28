@@ -136,6 +136,10 @@ public final class ShowSysParam {
         paramValues.add(sysConfig.getCostSamplePercent() + "");
         paramValues.add(sysConfig.getUseThreadUsageStat() + "");
         paramValues.add(sysConfig.getUsePerformanceMode() + "");
+        paramValues.add(sysConfig.getMappedFileSize() + "");
+        paramValues.add(sysConfig.getJoinQueueSize() + "");
+        paramValues.add(sysConfig.getMergeQueueSize() + "");
+        paramValues.add(sysConfig.getOrderByQueueSize() + "");
 
 
         for (int i = 0; i < PARAM_NAMES.length; i++) {
@@ -222,6 +226,10 @@ public final class ShowSysParam {
             "costSamplePercent",
             "useThreadUsageStat",
             "usePerformanceMode",
+            "mappedFileSize",
+            "joinQueueSize",
+            "mergeQueueSize",
+            "orderByQueueSize",
     };
 
     private static final String[] PARAM_DESCRIPTION = {
@@ -290,6 +298,10 @@ public final class ShowSysParam {
             "The percentage of cost sample.The default value is 1",
             "Whether the thread usage statistics function is enabled.The default value is 0",
             "Whether use the performance mode is enabled.The default value is 0",
+            "The Memory linked file size,whan complex query resultSet is too large the Memory will be turned to file temporary",
+            "Size of join queue,Avoid using too much memory",
+            "Size of merge queue,Avoid using too much memory",
+            "Size of order by queue,Avoid using too much memory",
     };
 
     private static final String[] ISOLATION_LEVELS = {"", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ", "SERIALIZABLE"};

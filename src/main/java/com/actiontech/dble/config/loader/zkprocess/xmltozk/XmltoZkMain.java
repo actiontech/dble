@@ -23,7 +23,7 @@ public final class XmltoZkMain {
     }
 
     public static void main(String[] args) throws Exception {
-        ClusterController.initFromShell();
+        ClusterController.initFromShellZK();
         initFileToZK();
         System.out.println("XmltoZkMain Finished");
     }

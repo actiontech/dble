@@ -25,7 +25,9 @@ public class TableMetaInitHandler extends AbstractTableMetaHandler {
 
     @Override
     protected void handlerTable(StructureMeta.TableMeta tableMeta) {
-        multiTableMetaHandler.getTmManager().addTable(schema, tableMeta);
+        if (tableMeta != null) {
+            multiTableMetaHandler.getTmManager().addTable(schema, tableMeta);
+        }
     }
 
 }

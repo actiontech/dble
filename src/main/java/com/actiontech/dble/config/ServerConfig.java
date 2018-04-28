@@ -35,7 +35,6 @@ public class ServerConfig {
     private static final int ROLLBACK = 2;
     private static final int RELOAD_ALL = 3;
 
-    private volatile AlarmConfig alarm;
     private volatile SystemConfig system;
     private volatile FirewallConfig firewall;
     private volatile FirewallConfig firewall2;
@@ -60,7 +59,6 @@ public class ServerConfig {
     public ServerConfig() {
         //read schema.xml,rule.xml and server.xml
         ConfigInitializer confInit = new ConfigInitializer(true, false);
-        this.alarm = confInit.getAlarm();
         this.system = confInit.getSystem();
         this.users = confInit.getUsers();
         this.schemas = confInit.getSchemas();
@@ -125,10 +123,6 @@ public class ServerConfig {
         return dataNodes;
     }
 
-    public AlarmConfig getAlarm() {
-        waitIfChanging();
-        return alarm;
-    }
 
     public Map<String, PhysicalDBNode> getBackupDataNodes() {
         waitIfChanging();

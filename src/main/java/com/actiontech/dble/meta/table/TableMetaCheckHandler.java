@@ -26,10 +26,12 @@ public class TableMetaCheckHandler extends AbstractTableMetaHandler {
 
     @Override
     protected void handlerTable(StructureMeta.TableMeta tableMeta) {
-        if (isTableModify(schema, tableMeta)) {
-            LOGGER.warn(AlarmCode.CORE_TABLE_CHECK_WARN + "Table [" + tableMeta.getTableName() + "] are modified by other,Please Check IT!");
+        if (tableMeta != null) {
+            if (isTableModify(schema, tableMeta)) {
+                LOGGER.warn(AlarmCode.CORE_TABLE_CHECK_WARN + "Table [" + tableMeta.getTableName() + "] are modified by other,Please Check IT!");
+            }
+            LOGGER.debug("checking table Table [" + tableMeta.getTableName() + "]");
         }
-        LOGGER.debug("checking table Table [" + tableMeta.getTableName() + "]");
     }
 
     private boolean isTableModify(String schema, StructureMeta.TableMeta tm) {

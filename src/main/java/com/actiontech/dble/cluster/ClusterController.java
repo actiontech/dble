@@ -48,8 +48,6 @@ public final class ClusterController {
 
     public static void initFromShell() {
         properties = loadMyidPropersites();
-        UcoreConfig.setUcoreProperties(properties);
-        ZkConfig.setZkProperties(properties);
         if (CONFIG_MODE_UCORE.equalsIgnoreCase(properties.getProperty(ClusterParamCfg.CLUSTER_FLAG.getKey()))) {
             UcoreConfig.initUcoreFromShell(properties);
         }  else if (CONFIG_MODE_ZK.equalsIgnoreCase(properties.getProperty(ClusterParamCfg.CLUSTER_FLAG.getKey()))) {

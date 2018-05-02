@@ -560,6 +560,10 @@
                                             <name>wrapper.logfile</name>
                                             <value>logs/wrapper.log</value>
                                         </property>
+                                        <property>
+                                            <name>wrapper.pidfile</name> <!-- in fact, it means PIDDIR in bin/dble-->
+                                            <value>$BASEDIR</value>
+                                        </property>
                                     </configuration>
 
                                 </generatorConfiguration>

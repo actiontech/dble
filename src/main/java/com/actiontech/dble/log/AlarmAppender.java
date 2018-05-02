@@ -12,6 +12,7 @@ import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
 import com.actiontech.dble.log.alarm.UcoreGrpc;
 import com.actiontech.dble.log.alarm.UcoreInterface;
 import io.grpc.Channel;
+import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LogEvent;
@@ -95,14 +96,18 @@ public class AlarmAppender extends AbstractAppender {
                     stub.alert(inpurt);
                 } catch (Exception e1) {
                     for (String ip : UcoreConfig.getInstance().getIpList()) {
+                        ManagedChannel channel = null;
                         try {
-                            Channel channel = ManagedChannelBuilder.forAddress(ip,
+                            channel = ManagedChannelBuilder.forAddress(ip,
                                     Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
                             stub = UcoreGrpc.newBlockingStub(channel);
                             stub.alert(inpurt);
                             return;
                         } catch (Exception e2) {
-                            LOGGER.info("connect to ucore error ");
+                            LOGGER.info("connect to ucore error ", e2);
+                            if (channel != null) {
+                                channel.shutdownNow();
+                            }
                         }
                     }
                 }

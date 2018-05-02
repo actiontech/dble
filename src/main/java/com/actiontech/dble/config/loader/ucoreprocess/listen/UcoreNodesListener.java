@@ -7,6 +7,7 @@ import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.log.alarm.UcoreGrpc;
 import com.actiontech.dble.log.alarm.UcoreInterface;
 import io.grpc.Channel;
+import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,14 +45,18 @@ public class UcoreNodesListener implements Runnable {
                 } catch (Exception e) {
                     //the first try failure ,try for all the other ucore ip
                     for (String ip : UcoreConfig.getInstance().getIpList()) {
+                        ManagedChannel channel = null;
                         try {
-                            Channel channel = ManagedChannelBuilder.forAddress(ip,
+                            channel = ManagedChannelBuilder.forAddress(ip,
                                     Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
                             stub = UcoreGrpc.newBlockingStub(channel);
                             output = stub.subscribeNodes(subscribeNodesInput);
                             break;
                         } catch (Exception e2) {
-                            LOGGER.info("try connection IP " + ip + " failure ");
+                            LOGGER.info("try connection IP " + ip + " failure ", e2);
+                            if (channel != null) {
+                                channel.shutdownNow();
+                            }
                         }
                     }
                     if (output == null) {

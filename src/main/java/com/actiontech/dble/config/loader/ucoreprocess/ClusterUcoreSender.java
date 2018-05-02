@@ -5,6 +5,7 @@ import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.log.alarm.UcoreGrpc;
 import com.actiontech.dble.log.alarm.UcoreInterface;
 import io.grpc.Channel;
+import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,14 +39,18 @@ public final class ClusterUcoreSender {
             stub.putKv(input);
         } catch (Exception e1) {
             for (String ip : UcoreConfig.getInstance().getIpList()) {
+                ManagedChannel channel = null;
                 try {
-                    Channel channel = ManagedChannelBuilder.forAddress(ip,
+                    channel = ManagedChannelBuilder.forAddress(ip,
                             Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
                     stub = UcoreGrpc.newBlockingStub(channel);
                     stub.putKv(input);
                     return;
                 } catch (Exception e2) {
-                    LOGGER.info("connect to ucore error ");
+                    LOGGER.info("connect to ucore error ", e2);
+                    if (channel != null) {
+                        channel.shutdownNow();
+                    }
                 }
             }
             throw new IOException("ALL the ucore connect failure");
@@ -62,23 +67,47 @@ public final class ClusterUcoreSender {
             return output.getSessionId();
         } catch (Exception e1) {
             for (String ip : UcoreConfig.getInstance().getIpList()) {
+                ManagedChannel channel = null;
                 try {
-                    Channel channel = ManagedChannelBuilder.forAddress(ip,
+                    channel = ManagedChannelBuilder.forAddress(ip,
                             Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
                     stub = UcoreGrpc.newBlockingStub(channel);
                     output = stub.lockOnSession(input);
                     return output.getSessionId();
                 } catch (Exception e2) {
-                    LOGGER.info("connect to ucore error ");
+                    LOGGER.info("connect to ucore error ", e2);
+                    if (channel != null) {
+                        channel.shutdownNow();
+                    }
                 }
             }
         }
         throw new IOException("ALL the ucore connect failure");
     }
 
-    public static void renewLock(String sessionId) throws Exception {
+    public static boolean renewLock(String sessionId) throws Exception {
         UcoreInterface.RenewSessionInput input = UcoreInterface.RenewSessionInput.newBuilder().setSessionId(sessionId).build();
-        stub.renewSession(input);
+        try {
+            stub.renewSession(input);
+            return true;
+        } catch (Exception e1) {
+            for (String ip : UcoreConfig.getInstance().getIpList()) {
+                ManagedChannel channel = null;
+                try {
+                    channel = ManagedChannelBuilder.forAddress(ip,
+                            Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
+                    stub = UcoreGrpc.newBlockingStub(channel);
+                    stub.renewSession(input);
+                    return true;
+                } catch (Exception e2) {
+                    LOGGER.info("connect to ucore renew error ", e2);
+                    if (channel != null) {
+                        channel.shutdownNow();
+                    }
+                }
+            }
+            return false;
+        }
     }
 
     public static void unlockKey(String key, String sessionId) {
@@ -99,13 +128,17 @@ public final class ClusterUcoreSender {
             output = stub.getKvTree(input);
         } catch (Exception e1) {
             for (String ip : UcoreConfig.getInstance().getIpList()) {
+                ManagedChannel channel = null;
                 try {
-                    Channel channel = ManagedChannelBuilder.forAddress(ip,
+                    channel = ManagedChannelBuilder.forAddress(ip,
                             Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
                     stub = UcoreGrpc.newBlockingStub(channel);
                     output = stub.getKvTree(input);
                 } catch (Exception e2) {
-                    LOGGER.info("connect to ucore error ");
+                    LOGGER.info("connect to ucore error ", e2);
+                    if (channel != null) {
+                        channel.shutdownNow();
+                    }
                 }
             }
             if (output == null) {
@@ -128,13 +161,17 @@ public final class ClusterUcoreSender {
             output = stub.getKv(input);
         } catch (Exception e1) {
             for (String ip : UcoreConfig.getInstance().getIpList()) {
+                ManagedChannel channel = null;
                 try {
-                    Channel channel = ManagedChannelBuilder.forAddress(ip,
+                    channel = ManagedChannelBuilder.forAddress(ip,
                             Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
                     stub = UcoreGrpc.newBlockingStub(channel);
                     output = stub.getKv(input);
                 } catch (Exception e2) {
-                    LOGGER.info("connect to ucore error ");
+                    LOGGER.info("connect to ucore error ", e2);
+                    if (channel != null) {
+                        channel.shutdownNow();
+                    }
                 }
             }
             if (output == null) {
@@ -155,13 +192,17 @@ public final class ClusterUcoreSender {
             output = stub.getKvTree(input);
         } catch (Exception e1) {
             for (String ip : UcoreConfig.getInstance().getIpList()) {
+                ManagedChannel channel = null;
                 try {
-                    Channel channel = ManagedChannelBuilder.forAddress(ip,
+                    channel = ManagedChannelBuilder.forAddress(ip,
                             Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
                     stub = UcoreGrpc.newBlockingStub(channel);
                     output = stub.getKvTree(input);
                 } catch (Exception e2) {
-                    LOGGER.info("connect to ucore error ");
+                    LOGGER.info("connect to ucore error ", e2);
+                    if (channel != null) {
+                        channel.shutdownNow();
+                    }
                 }
             }
             if (output == null) {
@@ -181,14 +222,18 @@ public final class ClusterUcoreSender {
         } catch (Exception e1) {
             boolean flag = false;
             for (String ip : UcoreConfig.getInstance().getIpList()) {
+                ManagedChannel channel = null;
                 try {
-                    Channel channel = ManagedChannelBuilder.forAddress(ip,
+                    channel = ManagedChannelBuilder.forAddress(ip,
                             Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
                     stub = UcoreGrpc.newBlockingStub(channel);
                     stub.deleteKvTree(input);
                     flag = true;
                 } catch (Exception e2) {
-                    LOGGER.info("connect to ucore error ");
+                    LOGGER.info("connect to ucore error ", e2);
+                    if (channel != null) {
+                        channel.shutdownNow();
+                    }
                 }
             }
             if (!flag) {
@@ -204,17 +249,22 @@ public final class ClusterUcoreSender {
             stub.deleteKv(input);
         } catch (Exception e1) {
             for (String ip : UcoreConfig.getInstance().getIpList()) {
+                ManagedChannel channel = null;
                 try {
-                    Channel channel = ManagedChannelBuilder.forAddress(ip,
+                    channel = ManagedChannelBuilder.forAddress(ip,
                             Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
                     stub = UcoreGrpc.newBlockingStub(channel);
                     stub.deleteKv(input);
                     return;
                 } catch (Exception e2) {
-                    LOGGER.info("connect to ucore error ");
+                    LOGGER.info("connect to ucore error ", e2);
+                    if (channel != null) {
+                        channel.shutdownNow();
+                    }
                 }
             }
             throw new RuntimeException("ALL the ucore connect failure");
         }
     }
+
 }

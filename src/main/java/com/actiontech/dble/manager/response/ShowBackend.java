@@ -20,8 +20,6 @@ import com.actiontech.dble.util.IntegerUtil;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 
@@ -33,7 +31,6 @@ import java.nio.ByteBuffer;
 public final class ShowBackend {
     private ShowBackend() {
     }
-    private static final Logger LOGGER = LoggerFactory.getLogger(ReloadMetaData.class);
     private static final int FIELD_COUNT = 21;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];

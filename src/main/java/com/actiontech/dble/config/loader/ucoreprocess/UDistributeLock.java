@@ -55,7 +55,7 @@ public class UDistributeLock {
                             LOGGER.info("renew lock of session  start:" + sessionId + " " + path);
                             boolean flag = ClusterUcoreSender.renewLock(sessionId);
                             if (path.equals(UcorePathUtil.getOnlinePath(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) &&
-                                    !flag) {
+                                    !flag && "".equals(ClusterUcoreSender.getKey(path))) {
                                 sessionId = ClusterUcoreSender.lockKey(path, value);
                             }
                             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10000));

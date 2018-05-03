@@ -59,7 +59,7 @@ public class AlarmAppender extends AbstractAppender {
                 if (DbleServer.getInstance().isUseUcore()) {
                     grpcLevel = 300;
                     serverId = UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + getLocalIPs();
-                    alertComponentId = UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_CLUSTERID);
+                    alertComponentId = UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
                     Channel channel = ManagedChannelBuilder.forAddress(UcoreConfig.getInstance().getIpList().get(0),
                             Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).
                             usePlaintext(true).build();

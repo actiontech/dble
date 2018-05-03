@@ -14,6 +14,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import static com.actiontech.dble.cluster.ClusterController.GRPC_SUBTIMEOUT;
 
 
 /**
@@ -29,7 +32,7 @@ public class UcoreNodesListener implements Runnable {
     public void init() {
         Channel channel = ManagedChannelBuilder.forAddress(UcoreConfig.getInstance().getIpList().get(0),
                 Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
-        stub = UcoreGrpc.newBlockingStub(channel);
+        stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS);
     }
 
 
@@ -41,7 +44,7 @@ public class UcoreNodesListener implements Runnable {
                         setDuration(60).setIndex(index).build();
                 UcoreInterface.SubscribeNodesOutput output = null;
                 try {
-                    output = stub.subscribeNodes(subscribeNodesInput);
+                    output = stub.withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS).subscribeNodes(subscribeNodesInput);
                 } catch (Exception e) {
                     //the first try failure ,try for all the other ucore ip
                     for (String ip : UcoreConfig.getInstance().getIpList()) {
@@ -49,8 +52,8 @@ public class UcoreNodesListener implements Runnable {
                         try {
                             channel = ManagedChannelBuilder.forAddress(ip,
                                     Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
-                            stub = UcoreGrpc.newBlockingStub(channel);
-                            output = stub.subscribeNodes(subscribeNodesInput);
+                            stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS);
+                            output = stub.withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS).subscribeNodes(subscribeNodesInput);
                             break;
                         } catch (Exception e2) {
                             LOGGER.info("try connection IP " + ip + " failure ", e2);

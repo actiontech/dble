@@ -23,6 +23,10 @@ public final class ClusterController {
     private static final String CONFIG_MODE_ZK = "zk";
     private static final String CONFIG_MODE_SINGLE = "false";
 
+    public static final int GRPC_SUBTIMEOUT = 70;
+    public static final int GENERAL_GRPC_TIMEOUT = 10;
+
+
     private static Properties properties = null;
 
     private ClusterController() {

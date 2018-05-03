@@ -23,6 +23,9 @@ import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 import org.apache.logging.log4j.core.layout.PatternLayout;
 
 import java.io.Serializable;
+import java.util.concurrent.TimeUnit;
+
+import static com.actiontech.dble.cluster.ClusterController.GENERAL_GRPC_TIMEOUT;
 
 /**
  * Created by szf on 2017/12/4.
@@ -61,7 +64,7 @@ public class AlarmAppender extends AbstractAppender {
                     Channel channel = ManagedChannelBuilder.forAddress(UcoreConfig.getInstance().getIpList().get(0),
                             Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).
                             usePlaintext(true).build();
-                    stub = UcoreGrpc.newBlockingStub(channel);
+                    stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
                 }
             } catch (Exception e) {
                 //config not ready yeat
@@ -93,15 +96,15 @@ public class AlarmAppender extends AbstractAppender {
                         build();
 
                 try {
-                    stub.alert(inpurt);
+                    stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).alert(inpurt);
                 } catch (Exception e1) {
                     for (String ip : UcoreConfig.getInstance().getIpList()) {
                         ManagedChannel channel = null;
                         try {
                             channel = ManagedChannelBuilder.forAddress(ip,
                                     Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
-                            stub = UcoreGrpc.newBlockingStub(channel);
-                            stub.alert(inpurt);
+                            stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
+                            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).alert(inpurt);
                             return;
                         } catch (Exception e2) {
                             LOGGER.info("connect to ucore error ", e2);

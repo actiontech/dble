@@ -11,6 +11,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+
+import static com.actiontech.dble.cluster.ClusterController.GRPC_SUBTIMEOUT;
 
 /**
  * Created by szf on 2018/4/27.
@@ -23,13 +26,13 @@ public class UcoreListenerUtil {
     public UcoreListenerUtil() {
         Channel channel = ManagedChannelBuilder.forAddress(UcoreConfig.getInstance().getIpList().get(0),
                 Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
-        stub = UcoreGrpc.newBlockingStub(channel);
+        stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS);
     }
 
 
     public UcoreInterface.SubscribeKvPrefixOutput subscribeKvPrefix(UcoreInterface.SubscribeKvPrefixInput input) throws IOException {
         try {
-            UcoreInterface.SubscribeKvPrefixOutput output = stub.subscribeKvPrefix(input);
+            UcoreInterface.SubscribeKvPrefixOutput output = stub.withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS).subscribeKvPrefix(input);
             return output;
         } catch (Exception e1) {
             for (String ip : UcoreConfig.getInstance().getIpList()) {
@@ -37,8 +40,8 @@ public class UcoreListenerUtil {
                 try {
                     channel = ManagedChannelBuilder.forAddress(ip,
                             Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
-                    stub = UcoreGrpc.newBlockingStub(channel);
-                    UcoreInterface.SubscribeKvPrefixOutput output = stub.subscribeKvPrefix(input);
+                    stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS);
+                    UcoreInterface.SubscribeKvPrefixOutput output = stub.withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS).subscribeKvPrefix(input);
                     return output;
 
                 } catch (Exception e2) {

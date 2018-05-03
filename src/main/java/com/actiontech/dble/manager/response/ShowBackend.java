@@ -10,7 +10,6 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.mysql.EOFPacket;
@@ -41,7 +40,6 @@ public final class ShowBackend {
     private static final EOFPacket EOF = new EOFPacket();
 
     static {
-        LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN+"ASDFASDFASDF");
         int i = 0;
         byte packetId = 0;
         HEADER.setPacketId(++packetId);

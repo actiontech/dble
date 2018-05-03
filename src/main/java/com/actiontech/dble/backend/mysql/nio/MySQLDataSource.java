@@ -17,6 +17,7 @@ import com.actiontech.dble.net.mysql.*;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 
 /**
@@ -101,6 +102,11 @@ public class MySQLDataSource extends PhysicalDatasource {
             BinaryPacket bin1 = new BinaryPacket();
             bin1.read(in);
 
+            if (bin1.getData()[0] == ErrorPacket.FIELD_COUNT) {
+                ErrorPacket err = new ErrorPacket();
+                err.read(bin1);
+                throw new RuntimeException(new String(err.getMessage(), StandardCharsets.UTF_8));
+            }
             HandshakeV10Packet handshake = new HandshakeV10Packet();
             handshake.read(bin1);
 

@@ -26,6 +26,8 @@ import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 
 import static com.actiontech.dble.cluster.ClusterController.GENERAL_GRPC_TIMEOUT;
+import java.net.*;
+import java.util.*;
 
 /**
  * Created by szf on 2017/12/4.
@@ -59,15 +61,15 @@ public class AlarmAppender extends AbstractAppender {
             try {
                 if (DbleServer.getInstance().isUseUcore()) {
                     grpcLevel = 300;
-                    serverId = UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
-                    alertComponentId = UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_CLUSTERID);
+                    serverId = UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + getLocalIPs();
+                    alertComponentId = UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
                     Channel channel = ManagedChannelBuilder.forAddress(UcoreConfig.getInstance().getIpList().get(0),
                             Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).
                             usePlaintext(true).build();
                     stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
                 }
             } catch (Exception e) {
-                //config not ready yeat
+                //config not ready yet
                 return;
             }
         }
@@ -130,5 +132,52 @@ public class AlarmAppender extends AbstractAppender {
         return new AlarmAppender(name, layout);
     }
 
+    private String getLocalIPs() {
+        Set<String> ipList = new HashSet<>();
+        Enumeration<?> network;
+        List<NetworkInterface> netList = new ArrayList<>();
+        try {
+            network = NetworkInterface.getNetworkInterfaces();
+
+            while (network.hasMoreElements()) {
+                NetworkInterface ni = (NetworkInterface) network.nextElement();
+
+                if (ni.isLoopback()) {
+                    continue;
+                }
+                netList.add(ni);
+            }
+            for (NetworkInterface list : netList) {
+                Enumeration<?> card = list.getInetAddresses();
+                while (card.hasMoreElements()) {
+                    InetAddress ip = (InetAddress) card.nextElement();
+                    if (!ip.isLoopbackAddress()) {
+                        if (ip.getHostAddress().equalsIgnoreCase("127.0.0.1")) {
+                            continue;
+                        }
+                    }
+                    if (ip instanceof Inet6Address) {
+                        continue;
+                    }
+                    if (ip instanceof Inet4Address) {
+                        ipList.add(ip.getHostAddress());
+                    }
+                }
+            }
+        } catch (SocketException e) {
+            System.out.println(e.getMessage());
+        }
+        StringBuilder sbIps = new StringBuilder("(");
+        int i = 0;
+        for (String ip : ipList) {
+            if (i > 0) {
+                sbIps.append(",");
+            }
+            sbIps.append(ip);
+            i++;
+        }
+        sbIps.append(")");
+        return sbIps.toString();
+    }
 
 }

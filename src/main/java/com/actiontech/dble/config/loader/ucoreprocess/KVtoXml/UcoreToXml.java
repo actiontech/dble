@@ -68,7 +68,6 @@ public final class UcoreToXml {
             Thread thread4 = new Thread(onlineListener);
             thread4.start();
 
-            ucoreNodesListener.init();
             Thread thread5 = new Thread(ucoreNodesListener);
             thread5.start();
         } catch (Exception e) {

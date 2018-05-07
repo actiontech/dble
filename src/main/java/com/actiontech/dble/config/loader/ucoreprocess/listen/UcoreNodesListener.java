@@ -1,22 +1,14 @@
 package com.actiontech.dble.config.loader.ucoreprocess.listen;
 
 
-import com.actiontech.dble.cluster.ClusterParamCfg;
+import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
-import com.actiontech.dble.log.alarm.AlarmCode;
-import com.actiontech.dble.log.alarm.UcoreGrpc;
 import com.actiontech.dble.log.alarm.UcoreInterface;
-import io.grpc.Channel;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import static com.actiontech.dble.cluster.ClusterController.GRPC_SUBTIMEOUT;
 
 
 /**
@@ -26,15 +18,7 @@ public class UcoreNodesListener implements Runnable {
 
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UcoreNodesListener.class);
-    private UcoreGrpc.UcoreBlockingStub stub = null;
     private long index = 0;
-
-    public void init() {
-        Channel channel = ManagedChannelBuilder.forAddress(UcoreConfig.getInstance().getIpList().get(0),
-                Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
-        stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS);
-    }
-
 
     @Override
     public void run() {
@@ -42,30 +26,7 @@ public class UcoreNodesListener implements Runnable {
             try {
                 UcoreInterface.SubscribeNodesInput subscribeNodesInput = UcoreInterface.SubscribeNodesInput.newBuilder().
                         setDuration(60).setIndex(index).build();
-                UcoreInterface.SubscribeNodesOutput output = null;
-                try {
-                    output = stub.withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS).subscribeNodes(subscribeNodesInput);
-                } catch (Exception e) {
-                    //the first try failure ,try for all the other ucore ip
-                    for (String ip : UcoreConfig.getInstance().getIpList()) {
-                        ManagedChannel channel = null;
-                        try {
-                            channel = ManagedChannelBuilder.forAddress(ip,
-                                    Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
-                            stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS);
-                            output = stub.withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS).subscribeNodes(subscribeNodesInput);
-                            break;
-                        } catch (Exception e2) {
-                            LOGGER.info("try connection IP " + ip + " failure ", e2);
-                            if (channel != null) {
-                                channel.shutdownNow();
-                            }
-                        }
-                    }
-                    if (output == null) {
-                        LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + " subscribeNodes error all ucore nodes connect failure");
-                    }
-                }
+                UcoreInterface.SubscribeNodesOutput output = ClusterUcoreSender.subscribeNodes(subscribeNodesInput);
                 if (index != output.getIndex()) {
                     index = output.getIndex();
                     List<String> ips = new ArrayList<>();

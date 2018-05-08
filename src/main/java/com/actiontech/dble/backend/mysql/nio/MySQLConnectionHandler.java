@@ -81,7 +81,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
         switch (resultStatus) {
             case RESULT_STATUS_INIT:
                 if (session != null) {
-                    session.startExecuteBackend();
+                    session.startExecuteBackend(source.getId());
                 }
                 switch (data[4]) {
                     case OkPacket.FIELD_COUNT:

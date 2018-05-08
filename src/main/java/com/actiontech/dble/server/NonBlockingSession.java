@@ -182,22 +182,23 @@ public class NonBlockingSession implements Session {
                 provider.resFromBack(source.getId());
                 firstBackConRes.set(false);
             }
-            if (queryTimeCost.getBackendReserveCount().decrementAndGet() == 0) {
-                provider.resLastBack(source.getId());
+            long index = queryTimeCost.getBackendReserveCount().decrementAndGet();
+            if (index >= 0 && ((index % 10 == 0) || index < 10)) {
+                provider.resLastBack(source.getId(), queryTimeCost.getBackendSize() - index);
             }
         }
     }
 
-    public void startExecuteBackend() {
+    public void startExecuteBackend(long backendID) {
         if (!timeCost) {
             return;
         }
         if (firstBackConRes.compareAndSet(false, true)) {
             provider.startExecuteBackend(source.getId());
         }
-
-        if (queryTimeCost.getBackendExecuteCount().decrementAndGet() == 0) {
-            provider.execLastBack(source.getId());
+        long index = queryTimeCost.getBackendExecuteCount().decrementAndGet();
+        if (index >= 0 && ((index % 10 == 0) || index < 10)) {
+            provider.execLastBack(source.getId(), queryTimeCost.getBackendSize() - index);
         }
     }
 

@@ -276,6 +276,9 @@ public final class DbleServer {
             //init for sys VAR
             VarsExtractorHandler handler = new VarsExtractorHandler(config.getDataNodes());
             systemVariables = handler.execute();
+            if (systemVariables == null) {
+                throw new IOException("Can't get variables from data node");
+            }
             reviseSchemas();
             initDataHost();
             //init tmManager

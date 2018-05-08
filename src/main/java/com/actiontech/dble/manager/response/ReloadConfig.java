@@ -43,6 +43,7 @@ import org.apache.curator.utils.ZKPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -278,6 +279,9 @@ public final class ReloadConfig {
         if (!loader.isDataHostWithoutWH()) {
             VarsExtractorHandler handler = new VarsExtractorHandler(newDataNodes);
             newSystemVariables = handler.execute();
+            if (newSystemVariables == null) {
+                throw new Exception("Can't get variables from data node");
+            }
             ConfigInitializer confInit = new ConfigInitializer(newSystemVariables.isLowerCaseTableNames());
             newUsers = confInit.getUsers();
             newSchemas = confInit.getSchemas();

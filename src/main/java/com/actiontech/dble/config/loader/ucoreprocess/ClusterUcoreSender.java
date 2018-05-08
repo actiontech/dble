@@ -322,10 +322,10 @@ public final class ClusterUcoreSender {
     }
 
 
-    public static void alert(UcoreInterface.AlertInput inpurt) throws IOException{
-        try{
+    public static void alert(UcoreInterface.AlertInput inpurt) throws IOException {
+        try {
             stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).alert(inpurt);
-        }catch (Exception e){
+        } catch (Exception e) {
             for (String ip : UcoreConfig.getInstance().getIpList()) {
                 ManagedChannel channel = null;
                 try {

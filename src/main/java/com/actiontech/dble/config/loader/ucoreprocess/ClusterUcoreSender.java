@@ -13,6 +13,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import static com.actiontech.dble.cluster.ClusterController.GENERAL_GRPC_TIMEOUT;
 
 /**
  * Created by szf on 2018/1/26.
@@ -24,27 +27,27 @@ public final class ClusterUcoreSender {
 
     }
 
-    private static UcoreGrpc.UcoreBlockingStub stub = null;
+    private static volatile UcoreGrpc.UcoreBlockingStub stub = null;
 
     {
         Channel channel = ManagedChannelBuilder.forAddress(UcoreConfig.getInstance().getIpList().get(0),
                 Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
-        stub = UcoreGrpc.newBlockingStub(channel);
+        stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
     }
 
 
     public static void sendDataToUcore(String key, String value) throws Exception {
         UcoreInterface.PutKvInput input = UcoreInterface.PutKvInput.newBuilder().setKey(key).setValue(value).build();
         try {
-            stub.putKv(input);
+            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).putKv(input);
         } catch (Exception e1) {
             for (String ip : UcoreConfig.getInstance().getIpList()) {
                 ManagedChannel channel = null;
                 try {
                     channel = ManagedChannelBuilder.forAddress(ip,
                             Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
-                    stub = UcoreGrpc.newBlockingStub(channel);
-                    stub.putKv(input);
+                    stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
+                    stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).putKv(input);
                     return;
                 } catch (Exception e2) {
                     LOGGER.info("connect to ucore error ", e2);
@@ -63,7 +66,7 @@ public final class ClusterUcoreSender {
         UcoreInterface.LockOnSessionOutput output = null;
 
         try {
-            output = stub.lockOnSession(input);
+            output = stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).lockOnSession(input);
             return output.getSessionId();
         } catch (Exception e1) {
             for (String ip : UcoreConfig.getInstance().getIpList()) {
@@ -71,8 +74,8 @@ public final class ClusterUcoreSender {
                 try {
                     channel = ManagedChannelBuilder.forAddress(ip,
                             Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
-                    stub = UcoreGrpc.newBlockingStub(channel);
-                    output = stub.lockOnSession(input);
+                    stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
+                    output = stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).lockOnSession(input);
                     return output.getSessionId();
                 } catch (Exception e2) {
                     LOGGER.info("connect to ucore error ", e2);
@@ -88,7 +91,7 @@ public final class ClusterUcoreSender {
     public static boolean renewLock(String sessionId) throws Exception {
         UcoreInterface.RenewSessionInput input = UcoreInterface.RenewSessionInput.newBuilder().setSessionId(sessionId).build();
         try {
-            stub.renewSession(input);
+            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).renewSession(input);
             return true;
         } catch (Exception e1) {
             for (String ip : UcoreConfig.getInstance().getIpList()) {
@@ -96,11 +99,11 @@ public final class ClusterUcoreSender {
                 try {
                     channel = ManagedChannelBuilder.forAddress(ip,
                             Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
-                    stub = UcoreGrpc.newBlockingStub(channel);
-                    stub.renewSession(input);
+                    stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
+                    stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).renewSession(input);
                     return true;
                 } catch (Exception e2) {
-                    LOGGER.info("connect to ucore renew error ", e2);
+                    LOGGER.info("connect to ucore renew error " + stub, e2);
                     if (channel != null) {
                         channel.shutdownNow();
                     }
@@ -112,7 +115,7 @@ public final class ClusterUcoreSender {
 
     public static void unlockKey(String key, String sessionId) {
         UcoreInterface.UnlockOnSessionInput put = UcoreInterface.UnlockOnSessionInput.newBuilder().setKey(key).setSessionId(sessionId).build();
-        stub.unlockOnSession(put);
+        stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).unlockOnSession(put);
     }
 
     public static List<UKvBean> getKeyTree(String key) {
@@ -125,15 +128,15 @@ public final class ClusterUcoreSender {
         UcoreInterface.GetKvTreeOutput output = null;
 
         try {
-            output = stub.getKvTree(input);
+            output = stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).getKvTree(input);
         } catch (Exception e1) {
             for (String ip : UcoreConfig.getInstance().getIpList()) {
                 ManagedChannel channel = null;
                 try {
                     channel = ManagedChannelBuilder.forAddress(ip,
                             Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
-                    stub = UcoreGrpc.newBlockingStub(channel);
-                    output = stub.getKvTree(input);
+                    stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
+                    output = stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).getKvTree(input);
                 } catch (Exception e2) {
                     LOGGER.info("connect to ucore error ", e2);
                     if (channel != null) {
@@ -158,15 +161,15 @@ public final class ClusterUcoreSender {
         UcoreInterface.GetKvOutput output = null;
 
         try {
-            output = stub.getKv(input);
+            output = stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).getKv(input);
         } catch (Exception e1) {
             for (String ip : UcoreConfig.getInstance().getIpList()) {
                 ManagedChannel channel = null;
                 try {
                     channel = ManagedChannelBuilder.forAddress(ip,
                             Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
-                    stub = UcoreGrpc.newBlockingStub(channel);
-                    output = stub.getKv(input);
+                    stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
+                    output = stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).getKv(input);
                 } catch (Exception e2) {
                     LOGGER.info("connect to ucore error ", e2);
                     if (channel != null) {
@@ -189,15 +192,15 @@ public final class ClusterUcoreSender {
         UcoreInterface.GetKvTreeOutput output = null;
 
         try {
-            output = stub.getKvTree(input);
+            output = stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).getKvTree(input);
         } catch (Exception e1) {
             for (String ip : UcoreConfig.getInstance().getIpList()) {
                 ManagedChannel channel = null;
                 try {
                     channel = ManagedChannelBuilder.forAddress(ip,
                             Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
-                    stub = UcoreGrpc.newBlockingStub(channel);
-                    output = stub.getKvTree(input);
+                    stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
+                    output = stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).getKvTree(input);
                 } catch (Exception e2) {
                     LOGGER.info("connect to ucore error ", e2);
                     if (channel != null) {
@@ -218,7 +221,7 @@ public final class ClusterUcoreSender {
         }
         UcoreInterface.DeleteKvTreeInput input = UcoreInterface.DeleteKvTreeInput.newBuilder().setKey(key).build();
         try {
-            stub.deleteKvTree(input);
+            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).deleteKvTree(input);
         } catch (Exception e1) {
             boolean flag = false;
             for (String ip : UcoreConfig.getInstance().getIpList()) {
@@ -226,8 +229,8 @@ public final class ClusterUcoreSender {
                 try {
                     channel = ManagedChannelBuilder.forAddress(ip,
                             Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
-                    stub = UcoreGrpc.newBlockingStub(channel);
-                    stub.deleteKvTree(input);
+                    stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
+                    stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).deleteKvTree(input);
                     flag = true;
                 } catch (Exception e2) {
                     LOGGER.info("connect to ucore error ", e2);
@@ -246,15 +249,15 @@ public final class ClusterUcoreSender {
     public static void deleteKV(String key) {
         UcoreInterface.DeleteKvInput input = UcoreInterface.DeleteKvInput.newBuilder().setKey(key).build();
         try {
-            stub.deleteKv(input);
+            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).deleteKv(input);
         } catch (Exception e1) {
             for (String ip : UcoreConfig.getInstance().getIpList()) {
                 ManagedChannel channel = null;
                 try {
                     channel = ManagedChannelBuilder.forAddress(ip,
                             Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
-                    stub = UcoreGrpc.newBlockingStub(channel);
-                    stub.deleteKv(input);
+                    stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
+                    stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).deleteKv(input);
                     return;
                 } catch (Exception e2) {
                     LOGGER.info("connect to ucore error ", e2);

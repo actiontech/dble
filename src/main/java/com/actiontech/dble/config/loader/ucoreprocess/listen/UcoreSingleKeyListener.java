@@ -1,5 +1,6 @@
 package com.actiontech.dble.config.loader.ucoreprocess.listen;
 
+import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreXmlLoader;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.log.alarm.AlarmCode;
@@ -22,8 +23,6 @@ public class UcoreSingleKeyListener implements Runnable {
     UcoreXmlLoader child;
     String path;
 
-    private UcoreListenerUtil ucoreListenerUtil = new UcoreListenerUtil();
-
     private Map<String, String> cache = new HashMap<>();
 
 
@@ -33,7 +32,7 @@ public class UcoreSingleKeyListener implements Runnable {
             try {
                 UcoreInterface.SubscribeKvPrefixInput input
                         = UcoreInterface.SubscribeKvPrefixInput.newBuilder().setIndex(index).setDuration(60).setKeyPrefix(path).build();
-                UcoreInterface.SubscribeKvPrefixOutput output = ucoreListenerUtil.subscribeKvPrefix(input);
+                UcoreInterface.SubscribeKvPrefixOutput output = ClusterUcoreSender.subscribeKvPrefix(input);
                 Map<String, UKvBean> diffMap = getDiffMap(output);
                 if (output.getIndex() != index) {
                     handle(diffMap);

@@ -24,7 +24,6 @@ public class UOffLineListener implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(UOffLineListener.class);
     private Map<String, String> onlinMap = new HashMap<String, String>();
     private long index = 0;
-    private UcoreListenerUtil ucoreListenerUtil = new UcoreListenerUtil();
 
 
     private void checkDDLAndRelease(String serverId) {
@@ -69,7 +68,7 @@ public class UOffLineListener implements Runnable {
                         = UcoreInterface.SubscribeKvPrefixInput.newBuilder().
                         setIndex(index).setDuration(60).
                         setKeyPrefix(UcorePathUtil.getOnlinePath() + SEPARATOR).build();
-                UcoreInterface.SubscribeKvPrefixOutput output = ucoreListenerUtil.subscribeKvPrefix(input);
+                UcoreInterface.SubscribeKvPrefixOutput output = ClusterUcoreSender.subscribeKvPrefix(input);
                 //LOGGER.debug("the index of the single key "+path+" is "+index);
                 Map<String, String> newMap = new HashMap<String, String>();
                 for (int i = 0; i < output.getKeysCount(); i++) {

@@ -8,11 +8,11 @@ package com.actiontech.dble.log;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.DbleStartup;
 import com.actiontech.dble.cluster.ClusterParamCfg;
+import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
 import com.actiontech.dble.log.alarm.UcoreGrpc;
 import com.actiontech.dble.log.alarm.UcoreInterface;
 import io.grpc.Channel;
-import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LogEvent;
@@ -98,23 +98,9 @@ public class AlarmAppender extends AbstractAppender {
                         build();
 
                 try {
-                    stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).alert(inpurt);
+                    ClusterUcoreSender.alert(inpurt);
                 } catch (Exception e1) {
-                    for (String ip : UcoreConfig.getInstance().getIpList()) {
-                        ManagedChannel channel = null;
-                        try {
-                            channel = ManagedChannelBuilder.forAddress(ip,
-                                    Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
-                            stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
-                            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).alert(inpurt);
-                            return;
-                        } catch (Exception e2) {
-                            LOGGER.info("connect to ucore error ", e2);
-                            if (channel != null) {
-                                channel.shutdownNow();
-                            }
-                        }
-                    }
+                    LOGGER.info("connect to ucore error ", e1);
                 }
             }
         }

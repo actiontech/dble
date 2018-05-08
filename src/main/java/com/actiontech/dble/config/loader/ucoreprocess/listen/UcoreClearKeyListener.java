@@ -1,5 +1,6 @@
 package com.actiontech.dble.config.loader.ucoreprocess.listen;
 
+import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
 import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreXmlLoader;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
@@ -24,8 +25,6 @@ public class UcoreClearKeyListener implements Runnable {
 
     private Map<String, String> cache = new HashMap<>();
 
-    private UcoreListenerUtil ucoreListenerUtil = new UcoreListenerUtil();
-
     private long index = 0;
 
 
@@ -35,7 +34,7 @@ public class UcoreClearKeyListener implements Runnable {
             try {
                 UcoreInterface.SubscribeKvPrefixInput input
                         = UcoreInterface.SubscribeKvPrefixInput.newBuilder().setIndex(index).setDuration(60).setKeyPrefix(UcorePathUtil.CONF_BASE_PATH).build();
-                UcoreInterface.SubscribeKvPrefixOutput output = ucoreListenerUtil.subscribeKvPrefix(input);
+                UcoreInterface.SubscribeKvPrefixOutput output = ClusterUcoreSender.subscribeKvPrefix(input);
                 Map<String, UKvBean> diffMap = getDiffMap(output);
                 if (output.getIndex() != index) {
                     handle(diffMap);
@@ -81,7 +80,7 @@ public class UcoreClearKeyListener implements Runnable {
         try {
             UcoreInterface.SubscribeKvPrefixInput input
                     = UcoreInterface.SubscribeKvPrefixInput.newBuilder().setIndex(0).setDuration(60).setKeyPrefix(UcorePathUtil.BASE_PATH).build();
-            UcoreInterface.SubscribeKvPrefixOutput output = ucoreListenerUtil.subscribeKvPrefix(input);
+            UcoreInterface.SubscribeKvPrefixOutput output = ClusterUcoreSender.subscribeKvPrefix(input);
 
             Map<String, UKvBean> diffMap = new HashMap<String, UKvBean>();
             for (int i = 0; i < output.getKeysCount(); i++) {

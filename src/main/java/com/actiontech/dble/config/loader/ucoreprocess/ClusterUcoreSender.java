@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static com.actiontech.dble.cluster.ClusterController.GENERAL_GRPC_TIMEOUT;
+import static com.actiontech.dble.cluster.ClusterController.GRPC_SUBTIMEOUT;
 
 /**
  * Created by szf on 2018/1/26.
@@ -267,6 +268,79 @@ public final class ClusterUcoreSender {
                 }
             }
             throw new RuntimeException("ALL the ucore connect failure");
+        }
+    }
+
+
+    public static UcoreInterface.SubscribeKvPrefixOutput subscribeKvPrefix(UcoreInterface.SubscribeKvPrefixInput input) throws IOException {
+        try {
+            UcoreInterface.SubscribeKvPrefixOutput output = stub.withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS).subscribeKvPrefix(input);
+            return output;
+        } catch (Exception e1) {
+            for (String ip : UcoreConfig.getInstance().getIpList()) {
+                ManagedChannel channel = null;
+                try {
+                    channel = ManagedChannelBuilder.forAddress(ip,
+                            Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
+                    stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS);
+                    UcoreInterface.SubscribeKvPrefixOutput output = stub.withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS).subscribeKvPrefix(input);
+                    return output;
+
+                } catch (Exception e2) {
+                    LOGGER.info("connect to ucore at " + ip + " failure", e2);
+                    if (channel != null) {
+                        channel.shutdownNow();
+                    }
+                }
+            }
+        }
+        throw new IOException("ALL the ucore connect failure");
+    }
+
+
+    public static UcoreInterface.SubscribeNodesOutput subscribeNodes(UcoreInterface.SubscribeNodesInput subscribeNodesInput) throws IOException {
+        try {
+            return stub.withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS).subscribeNodes(subscribeNodesInput);
+        } catch (Exception e) {
+            //the first try failure ,try for all the other ucore ip
+            for (String ip : UcoreConfig.getInstance().getIpList()) {
+                ManagedChannel channel = null;
+                try {
+                    channel = ManagedChannelBuilder.forAddress(ip,
+                            Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
+                    stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS);
+                    return stub.withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS).subscribeNodes(subscribeNodesInput);
+                } catch (Exception e2) {
+                    LOGGER.info("try connection IP " + ip + " failure ", e2);
+                    if (channel != null) {
+                        channel.shutdownNow();
+                    }
+                }
+            }
+        }
+        throw new IOException("ALL the ucore connect failure");
+    }
+
+
+    public static void alert(UcoreInterface.AlertInput inpurt) throws IOException {
+        try {
+            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).alert(inpurt);
+        } catch (Exception e) {
+            for (String ip : UcoreConfig.getInstance().getIpList()) {
+                ManagedChannel channel = null;
+                try {
+                    channel = ManagedChannelBuilder.forAddress(ip,
+                            Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
+                    stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
+                    stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).alert(inpurt);
+                    return;
+                } catch (Exception e2) {
+                    LOGGER.info("connect to ucore error ", e2);
+                    if (channel != null) {
+                        channel.shutdownNow();
+                    }
+                }
+            }
         }
     }
 

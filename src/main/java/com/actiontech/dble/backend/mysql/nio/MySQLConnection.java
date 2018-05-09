@@ -824,6 +824,9 @@ public class MySQLConnection extends BackendAIOConnection {
 
         boolean synAndExecuted(MySQLConnection conn) {
             int remains = synCmdCount.decrementAndGet();
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("synAndExecuted " + remains + ",conn info:" + conn);
+            }
             if (remains == 0) { // syn command finished
                 this.updateConnectionInfo(conn);
                 conn.metaDataSynced = true;

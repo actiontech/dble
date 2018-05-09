@@ -105,7 +105,7 @@ public class MySQLDataSource extends PhysicalDatasource {
             if (bin1.getData()[0] == ErrorPacket.FIELD_COUNT) {
                 ErrorPacket err = new ErrorPacket();
                 err.read(bin1);
-                throw new RuntimeException(new String(err.getMessage(), StandardCharsets.UTF_8));
+                throw new IOException(new String(err.getMessage(), StandardCharsets.UTF_8));
             }
             HandshakeV10Packet handshake = new HandshakeV10Packet();
             handshake.read(bin1);
@@ -122,7 +122,7 @@ public class MySQLDataSource extends PhysicalDatasource {
             try {
                 authPacket.setPassword(passwd(this.getConfig().getPassword(), handshake));
             } catch (NoSuchAlgorithmException e) {
-                throw new RuntimeException(e.getMessage());
+                throw new IOException(e.getMessage());
             }
             authPacket.setDatabase(schema);
             authPacket.write(out);

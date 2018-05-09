@@ -155,8 +155,6 @@ public class MySQLDataSource extends PhysicalDatasource {
                     break;
             }
 
-        } catch (IOException e) {
-            isConnected = false;
         } finally {
             try {
                 if (in != null) {

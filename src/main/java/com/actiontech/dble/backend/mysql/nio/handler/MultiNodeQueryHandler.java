@@ -340,6 +340,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     return false;
                 }
             }
+            row[3] = ++packetId;
             RowDataPacket rowDataPkg = null;
             // cache primaryKey-> dataNode
             if (primaryKeyIndex != -1) {
@@ -351,7 +352,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     pool.putIfAbsent(primaryKeyTable, primaryKey, dataNode);
                 }
             }
-            row[3] = ++packetId;
             if (prepared) {
                 if (rowDataPkg == null) {
                     rowDataPkg = new RowDataPacket(fieldCount);
@@ -359,6 +359,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
                 BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
                 binRowDataPk.read(fieldPackets, rowDataPkg);
+                binRowDataPk.setPacketId(rowDataPkg.getPacketId());
                 binRowDataPk.write(byteBuffer, session.getSource(), true);
             } else {
                 byteBuffer = session.getSource().writeToBuffer(row, byteBuffer);

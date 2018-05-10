@@ -17,6 +17,7 @@ public class DBHostConfig {
     private int maxCon;
     private int minCon;
     private int weight;
+    private boolean fake = false;
 
     public DBHostConfig(String hostName, String ip, int port, String url,
                         String user, String password) {
@@ -83,6 +84,14 @@ public class DBHostConfig {
 
     public void setWeight(int weight) {
         this.weight = weight;
+    }
+
+    public boolean isFake() {
+        return fake;
+    }
+
+    public void setFake(boolean fake) {
+        this.fake = fake;
     }
 
     @Override

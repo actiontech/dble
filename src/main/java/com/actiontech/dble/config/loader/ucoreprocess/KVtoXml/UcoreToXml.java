@@ -3,6 +3,7 @@ package com.actiontech.dble.config.loader.ucoreprocess.KVtoXml;
 import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
 import com.actiontech.dble.config.loader.ucoreprocess.listen.UOffLineListener;
 import com.actiontech.dble.config.loader.ucoreprocess.listen.UcoreClearKeyListener;
+import com.actiontech.dble.config.loader.ucoreprocess.listen.UcoreNodesListener;
 import com.actiontech.dble.config.loader.ucoreprocess.listen.UcoreSingleKeyListener;
 import com.actiontech.dble.config.loader.ucoreprocess.loader.*;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
@@ -22,6 +23,8 @@ public final class UcoreToXml {
 
     private static UOffLineListener onlineListener = null;
 
+    private static UcoreNodesListener ucoreNodesListener = null;
+
     private UcoreToXml() {
 
     }
@@ -31,7 +34,6 @@ public final class UcoreToXml {
             //create a new listener to the ucore config change
             listener = new UcoreClearKeyListener();
             XmlProcessBase xmlProcess = new XmlProcessBase();
-            listener.init();
             //add all loader into listener map list
             new UXmlRuleLoader(xmlProcess, listener);
             new UXmlSchemaLoader(xmlProcess, listener);
@@ -51,21 +53,23 @@ public final class UcoreToXml {
 
             onlineListener = new UOffLineListener();
 
+            ucoreNodesListener = new UcoreNodesListener();
+
             listener.initForXml();
             Thread thread = new Thread(listener);
             thread.start();
 
-            ddlListener.init();
             Thread thread2 = new Thread(ddlListener);
             thread2.start();
 
-            viewListener.init();
             Thread thread3 = new Thread(viewListener);
             thread3.start();
 
-            onlineListener.init();
             Thread thread4 = new Thread(onlineListener);
             thread4.start();
+
+            Thread thread5 = new Thread(ucoreNodesListener);
+            thread5.start();
         } catch (Exception e) {
             e.printStackTrace();
         }

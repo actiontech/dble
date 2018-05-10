@@ -17,6 +17,7 @@ import com.actiontech.dble.net.mysql.*;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 
 /**
@@ -101,6 +102,11 @@ public class MySQLDataSource extends PhysicalDatasource {
             BinaryPacket bin1 = new BinaryPacket();
             bin1.read(in);
 
+            if (bin1.getData()[0] == ErrorPacket.FIELD_COUNT) {
+                ErrorPacket err = new ErrorPacket();
+                err.read(bin1);
+                throw new IOException(new String(err.getMessage(), StandardCharsets.UTF_8));
+            }
             HandshakeV10Packet handshake = new HandshakeV10Packet();
             handshake.read(bin1);
 
@@ -116,7 +122,7 @@ public class MySQLDataSource extends PhysicalDatasource {
             try {
                 authPacket.setPassword(passwd(this.getConfig().getPassword(), handshake));
             } catch (NoSuchAlgorithmException e) {
-                throw new RuntimeException(e.getMessage());
+                throw new IOException(e.getMessage());
             }
             authPacket.setDatabase(schema);
             authPacket.write(out);
@@ -149,8 +155,6 @@ public class MySQLDataSource extends PhysicalDatasource {
                     break;
             }
 
-        } catch (IOException e) {
-            isConnected = false;
         } finally {
             try {
                 if (in != null) {

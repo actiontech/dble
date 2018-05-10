@@ -1,14 +1,10 @@
 package com.actiontech.dble.config.loader.ucoreprocess.listen;
 
-import com.actiontech.dble.cluster.ClusterParamCfg;
-import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
+import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreXmlLoader;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.log.alarm.AlarmCode;
-import com.actiontech.dble.log.alarm.UcoreGrpc;
 import com.actiontech.dble.log.alarm.UcoreInterface;
-import io.grpc.Channel;
-import io.grpc.ManagedChannelBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +19,6 @@ import java.util.concurrent.locks.LockSupport;
 public class UcoreSingleKeyListener implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UcoreSingleKeyListener.class);
-    private UcoreGrpc.UcoreBlockingStub stub = null;
     private long index = 0;
     UcoreXmlLoader child;
     String path;
@@ -31,19 +26,13 @@ public class UcoreSingleKeyListener implements Runnable {
     private Map<String, String> cache = new HashMap<>();
 
 
-    public void init() {
-        Channel channel = ManagedChannelBuilder.forAddress(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_IP),
-                Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
-        stub = UcoreGrpc.newBlockingStub(channel);
-    }
-
     @Override
     public void run() {
         for (; ; ) {
             try {
                 UcoreInterface.SubscribeKvPrefixInput input
                         = UcoreInterface.SubscribeKvPrefixInput.newBuilder().setIndex(index).setDuration(60).setKeyPrefix(path).build();
-                UcoreInterface.SubscribeKvPrefixOutput output = stub.subscribeKvPrefix(input);
+                UcoreInterface.SubscribeKvPrefixOutput output = ClusterUcoreSender.subscribeKvPrefix(input);
                 Map<String, UKvBean> diffMap = getDiffMap(output);
                 if (output.getIndex() != index) {
                     handle(diffMap);

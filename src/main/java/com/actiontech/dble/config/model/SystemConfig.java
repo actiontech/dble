@@ -76,6 +76,16 @@ public final class SystemConfig {
     private int backendProcessors;
     private int processorExecutor;
     private int backendProcessorExecutor;
+
+    public int getWriteToBackendExecutor() {
+        return writeToBackendExecutor;
+    }
+
+    public void setWriteToBackendExecutor(int writeToBackendExecutor) {
+        this.writeToBackendExecutor = writeToBackendExecutor;
+    }
+
+    private int writeToBackendExecutor;
     private int complexExecutor;
     private long idleTimeout;
     // sql execute timeout (second)
@@ -158,6 +168,7 @@ public final class SystemConfig {
 
         this.processorExecutor = (DEFAULT_PROCESSORS != 1) ? DEFAULT_PROCESSORS : 2;
         this.backendProcessorExecutor = processorExecutor;
+        this.writeToBackendExecutor = processorExecutor;
         this.complexExecutor = processorExecutor > 8 ? 8 : processorExecutor;
         this.idleTimeout = DEFAULT_IDLE_TIMEOUT;
         this.processorCheckPeriod = DEFAULT_PROCESSOR_CHECK_PERIOD;

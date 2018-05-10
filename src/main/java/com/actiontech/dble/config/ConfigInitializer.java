@@ -35,7 +35,6 @@ public class ConfigInitializer {
     private volatile SystemConfig system;
     private volatile FirewallConfig firewall;
     private volatile Map<String, UserConfig> users;
-    private volatile AlarmConfig alarm;
     private volatile Map<String, SchemaConfig> schemas;
     private volatile Map<String, PhysicalDBNode> dataNodes;
     private volatile Map<String, PhysicalDBPool> dataHosts;
@@ -53,7 +52,6 @@ public class ConfigInitializer {
         this.schemas = schemaLoader.getSchemas();
         this.system = serverLoader.getSystem();
         this.users = serverLoader.getUsers();
-        this.alarm = serverLoader.getAlarm();
         this.erRelations = schemaLoader.getErRelations();
         // need reload DataHost and DataNode?
         if (loadDataHost) {
@@ -232,8 +230,11 @@ public class ConfigInitializer {
                         map.put(key, false);
                         try {
                             boolean isConnected = ds.testConnection(database);
+                            ds.setTestConnSuccess(isConnected);
                             map.put(key, isConnected);
                         } catch (IOException e) {
+                            ds.setTestConnSuccess(false);
+                            map.put(key, false);
                             LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "test conn " + key + " error:", e);
                         }
                     }
@@ -244,10 +245,11 @@ public class ConfigInitializer {
             for (Map.Entry<String, Boolean> entry : map.entrySet()) {
                 String key = entry.getKey();
                 Boolean value = entry.getValue();
-                if (!value && isConnectivity) {
+                if (!value) {
                     LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "SelfCheck### test " + key + " database connection failed ");
                     errKeys.add(key);
                     isConnectivity = false;
+
                 } else {
                     LOGGER.info("SelfCheck### test " + key + " database connection success ");
                 }
@@ -350,7 +352,4 @@ public class ConfigInitializer {
         return dataHostWithoutWH;
     }
 
-    public AlarmConfig getAlarm() {
-        return alarm;
-    }
 }

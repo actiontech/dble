@@ -83,6 +83,9 @@ public final class NIOConnector extends Thread implements SocketConnector {
             } catch (Exception e) {
                 LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "error:", e);
                 c.close(e.toString());
+                if (c instanceof BackendAIOConnection) {
+                    ((BackendAIOConnection) c).onConnectFailed(e);
+                }
             }
         }
     }

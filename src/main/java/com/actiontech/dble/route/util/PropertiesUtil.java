@@ -29,7 +29,7 @@ public final class PropertiesUtil {
         InputStream inp = ResourceUtil.getResourceAsStreamForCurrentThread(propsFile);
 
         if (inp == null) {
-            throw new java.lang.RuntimeException("time sequnce properties not found " + propsFile);
+            throw new java.lang.RuntimeException("sequence properties not found " + propsFile);
         }
         try {
             props.load(inp);

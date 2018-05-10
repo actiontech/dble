@@ -17,7 +17,7 @@ public final class XmltoUcore {
     }
 
     public static void main(String[] args) throws Exception {
-        ClusterController.initFromShell();
+        ClusterController.initFromShellUcore();
         initFileToUcore();
         System.out.println("XmltoZkMain Finished");
     }

@@ -107,12 +107,12 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             } else if (switchType == DataHostConfig.CLUSTER_STATUS_SWITCH_DS && source.getHostConfig().isShowClusterSql()) {
                 setStatusByCluster(switchType, resultResult);
             } else {
-                heartbeat.setResult(MySQLHeartbeat.OK_STATUS, null);
+                heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
                 //monitor sync status,even switchType=-1 or 1
                 heartbeat.getAsyncRecorder().set(resultResult, switchType);
             }
         } else {
-            heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, null);
+            heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS);
         }
         lastReceivedQryTime = System.currentTimeMillis();
         heartbeat.getRecorder().set((lastReceivedQryTime - lastSendQryTime));
@@ -125,14 +125,14 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         String wsrepReady = resultResult != null ? resultResult.get("wsrep_ready") : null; // ON
         if ("ON".equals(wsrepConnected) && "ON".equals(wsrepReady) && "Primary".equals(wsrepClusterStatus)) {
             heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_NORMAL);
-            heartbeat.setResult(MySQLHeartbeat.OK_STATUS, null);
+            heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
         } else {
             MySQLHeartbeat.LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "found MySQL  cluster status err !!! " +
                     heartbeat.getSource().getConfig() + " wsrep_cluster_status: " + wsrepClusterStatus +
                     " wsrep_connected: " + wsrepConnected + " wsrep_ready: " + wsrepReady
             );
             heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_ERROR);
-            heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, null);
+            heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS);
         }
         heartbeat.getAsyncRecorder().set(resultResult, switchType);
     }
@@ -159,7 +159,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_ERROR);
         }
         heartbeat.getAsyncRecorder().set(resultResult, switchType);
-        heartbeat.setResult(MySQLHeartbeat.OK_STATUS, null);
+        heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
     }
 
     public void close(String msg) {

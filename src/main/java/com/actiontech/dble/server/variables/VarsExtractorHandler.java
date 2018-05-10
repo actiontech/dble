@@ -26,7 +26,7 @@ public class VarsExtractorHandler {
     private Lock lock;
     private Condition done;
     private Map<String, PhysicalDBNode> dataNodes;
-    private SystemVariables systemVariables = new SystemVariables();
+    private volatile SystemVariables systemVariables = null;
     public VarsExtractorHandler(Map<String, PhysicalDBNode> dataNodes) {
         this.dataNodes = dataNodes;
         this.extracting = false;
@@ -39,7 +39,7 @@ public class VarsExtractorHandler {
 
         OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_VARIABLES_COLS, new MysqlVarsListener(this));
         PhysicalDBNode dn = entry.getValue();
-        SQLJob sqlJob = new SQLJob(MYSQL_SHOW_VARIABLES, dn.getDatabase(), resultHandler, dn.getDbPool().getSource());
+        SQLJob sqlJob = new SQLJob(MYSQL_SHOW_VARIABLES, dn.getName(), resultHandler, false);
         sqlJob.run();
 
         waitDone();
@@ -47,6 +47,7 @@ public class VarsExtractorHandler {
     }
 
     public void handleVars(Map<String, String> vars) {
+        systemVariables = new SystemVariables();
         for (Map.Entry<String, String> entry : vars.entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();

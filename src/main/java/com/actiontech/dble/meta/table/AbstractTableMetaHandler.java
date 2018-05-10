@@ -5,8 +5,6 @@
 
 package com.actiontech.dble.meta.table;
 
-import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.meta.protocol.StructureMeta;
@@ -31,7 +29,7 @@ public abstract class AbstractTableMetaHandler {
             "Create Table"};
     private static final String SQL_PREFIX = "show create table ";
 
-    private String tableName;
+    protected String tableName;
     private List<String> dataNodes;
     private AtomicInteger nodesNumber;
     protected String schema;
@@ -56,8 +54,7 @@ public abstract class AbstractTableMetaHandler {
                 return;
             }
             OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLTableStructureListener(dataNode, System.currentTimeMillis(), new ConcurrentHashMap<String, List<String>>()));
-            PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
-            SQLJob sqlJob = new SQLJob(SQL_PREFIX + tableName, dn.getDatabase(), resultHandler, dn.getDbPool().getSource());
+            SQLJob sqlJob = new SQLJob(SQL_PREFIX + tableName, dataNode, resultHandler, false);
             sqlJob.run();
         }
     }
@@ -133,11 +130,15 @@ public abstract class AbstractTableMetaHandler {
         }
 
         private StructureMeta.TableMeta initTableMeta(String table, String sql, long timeStamp) {
-            SQLStatementParser parser = new CreateTableParserImp(sql);
-            SQLCreateTableStatement createStatement = parser.parseCreateTable();
-            return MetaHelper.initTableMeta(table, createStatement, timeStamp);
+            try {
+                SQLStatementParser parser = new CreateTableParserImp(sql);
+                SQLCreateTableStatement createStatement = parser.parseCreateTable();
+                return MetaHelper.initTableMeta(table, createStatement, timeStamp);
+
+            } catch (Exception e) {
+                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "sql[" + sql + "] parser error:", e);
+                return null;
+            }
         }
-
-
     }
 }

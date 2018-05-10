@@ -31,7 +31,6 @@ import java.nio.ByteBuffer;
 public final class ShowBackend {
     private ShowBackend() {
     }
-
     private static final int FIELD_COUNT = 21;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];

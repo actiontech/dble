@@ -362,17 +362,17 @@ public class NonBlockingSession implements Session {
             source.writeErrMessage(ErrorCode.ER_YES, "optimizer build error");
         } catch (NoSuchElementException e) {
             LOGGER.info(String.valueOf(source) + " execute plan is : " + node, e);
-            this.terminate();
+            this.closeAndClearResources("Exception");
             source.writeErrMessage(ErrorCode.ER_NO_VALID_CONNECTION, "no valid connection");
         } catch (MySQLOutPutException e) {
             if (LOGGER.isInfoEnabled()) {
                 LOGGER.info(String.valueOf(source) + " execute plan is : " + node, e);
             }
-            this.terminate();
+            this.closeAndClearResources("Exception");
             source.writeErrMessage(e.getSqlState(), e.getMessage(), e.getErrorCode());
         } catch (Exception e) {
             LOGGER.info(String.valueOf(source) + " execute plan is : " + node, e);
-            this.terminate();
+            this.closeAndClearResources("Exception");
             source.writeErrMessage(ErrorCode.ER_HANDLE_DATA, e.toString());
         }
     }
@@ -534,7 +534,15 @@ public class NonBlockingSession implements Session {
      * {@link ServerConnection#isClosed()} must be true before invoking this
      */
     public void terminate() {
-        closeAndClearResources("client closed ");
+        // XA MUST BE FINISHED
+        if (source.isTxStart() && this.getXaState() != null && this.getXaState() != TxState.TX_INITIALIZE_STATE) {
+            return;
+        }
+        for (BackendConnection node : target.values()) {
+            node.close("client closed or timeout killed");
+        }
+        target.clear();
+        clearHandlesResources();
     }
 
     /**

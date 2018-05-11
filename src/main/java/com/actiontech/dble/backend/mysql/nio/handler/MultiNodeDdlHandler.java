@@ -9,7 +9,6 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoTxOperation;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
@@ -43,7 +42,6 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     private final boolean sessionAutocommit;
     private final MultiNodeQueryHandler handler;
     private ErrorPacket err;
-    private volatile boolean errConn = false;
     private Set<BackendConnection> closedConnSet;
 
     public MultiNodeDdlHandler(RouteResultset rrs, NonBlockingSession session) {
@@ -63,12 +61,10 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         this.oriRrs = rrs;
         this.handler = new MultiNodeQueryHandler(rrs, session);
 
-        this.errConn = false;
     }
 
     protected void reset(int initCount) {
         super.reset(initCount);
-        this.errConn = false;
     }
 
     public NonBlockingSession getSession() {
@@ -157,12 +153,9 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
             if (!isFail()) {
                 setFail(new String(err.getMessage()));
             }
-            errConn = true;
-            if (!conn.syncAndExecute()) {
-                return;
-            }
-            if (--nodeCount <= 0) {
-                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
+            if (--nodeCount <= 0 && errorResponse.compareAndSet(false, true)) {
+                session.handleSpecial(oriRrs, session.getSource().getSchema(), false);
+                handleRollbackPacket(err.toBytes());
             }
         } finally {
             lock.unlock();
@@ -205,7 +198,8 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
             }
             if (--nodeCount > 0)
                 return;
-            handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
+            session.handleSpecial(oriRrs, session.getSource().getSchema(), false);
+            handleRollbackPacket(err.toBytes());
         } finally {
             lock.unlock();
         }
@@ -225,10 +219,6 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
             LOGGER.debug("on row end response " + conn);
         }
 
-        if (errorResponse.get()) {
-            return;
-        }
-
         final ServerConnection source = session.getSource();
         if (clearIfSessionClosed(session)) {
             return;
@@ -236,16 +226,12 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 
         lock.lock();
         try {
-            if (this.isFail() || session.closed()) {
-                tryErrorFinished(true);
-                return;
-            }
-
             if (--nodeCount > 0)
                 return;
 
-            if (errConn) {
-                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
+            if (this.isFail()) {
+                session.handleSpecial(oriRrs, source.getSchema(), false);
+                handleRollbackPacket(err.toBytes());
             } else {
                 try {
                     if (session.isPrepared()) {
@@ -274,7 +260,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     @Override
     public boolean rowResponse(final byte[] row, RowDataPacket rowPacketNull, boolean isLeft, BackendConnection conn) {
         /* It is impossible arriving here, because we set limit to 0 */
-        return errorResponse.get();
+        return false;
     }
 
     @Override
@@ -289,19 +275,17 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     }
 
 
-    private void handleEndPacket(byte[] data, AutoTxOperation txOperation, BackendConnection conn) {
+    private void handleRollbackPacket(byte[] data) {
         ServerConnection source = session.getSource();
         boolean inTransaction = !source.isAutocommit() || source.isTxStart();
         if (!inTransaction) {
             // normal query
-            session.releaseConnection(conn);
+            session.closeAndClearResources("DDL prepared failed");
         }
         // Explicit distributed transaction
-        if (inTransaction && (AutoTxOperation.ROLLBACK == txOperation)) {
+        if (inTransaction) {
             source.setTxInterrupt("ROLLBACK");
         }
-        if (nodeCount == 0) {
-            session.getSource().write(data);
-        }
+        session.getSource().write(data);
     }
 }

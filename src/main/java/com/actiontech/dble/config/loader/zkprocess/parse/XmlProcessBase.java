@@ -8,10 +8,8 @@ package com.actiontech.dble.config.loader.zkprocess.parse;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.util.ResourceUtil;
-import com.alibaba.fastjson.util.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.nio.ch.IOUtil;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;

@@ -26,12 +26,10 @@ public final class PropertiesUtil {
 
     public static Properties loadProps(String propsFile) {
         Properties props = new Properties();
-        InputStream inp = ResourceUtil.getResourceAsStreamForCurrentThread(propsFile);
-
-        if (inp == null) {
-            throw new java.lang.RuntimeException("sequence properties not found " + propsFile);
-        }
-        try {
+        try (InputStream inp = ResourceUtil.getResourceAsStreamForCurrentThread(propsFile)) {
+            if (inp == null) {
+                throw new java.lang.RuntimeException("sequence properties not found " + propsFile);
+            }
             props.load(inp);
         } catch (IOException e) {
             throw new java.lang.RuntimeException(e);

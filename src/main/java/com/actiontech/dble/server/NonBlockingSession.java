@@ -781,11 +781,18 @@ public class NonBlockingSession implements Session {
     }
 
     public void handleSpecial(RouteResultset rrs, String schema, boolean isSuccess) {
+        handleSpecial(rrs, schema, isSuccess, null);
+    }
+    public void handleSpecial(RouteResultset rrs, String schema, boolean isSuccess, String errInfo) {
         if (rrs.getSqlType() == ServerParse.DDL) {
             String sql = rrs.getSrcStatement();
             if (source.isTxStart()) {
                 source.setTxStart(false);
                 source.getAndIncrementXid();
+            }
+            if (!isSuccess) {
+                LOGGER.warn(AlarmCode.CORE_DDL_WARN + "DDL execute failed or Session closed," +
+                        "Schema[" + schema + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
             }
             DbleServer.getInstance().getTmManager().updateMetaData(schema, sql, isSuccess, true);
         }

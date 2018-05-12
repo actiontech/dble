@@ -17,7 +17,6 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XAAutoCommit
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XAAutoRollbackNodesHandler;
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.RouteResultset;
@@ -190,8 +189,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 return;
             }
             if (--nodeCount <= 0) {
-                handleDdl();
-                session.handleSpecial(rrs, session.getSource().getSchema(), false);
+                session.handleSpecial(rrs, session.getSource().getSchema(), false, getDDLErrorInfo());
                 recycleResources();
                 handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
             }
@@ -388,15 +386,13 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         LoadDataUtil.requestFileDataResponse(data, conn);
     }
 
-    private void handleDdl() {
+    private String getDDLErrorInfo() {
         if (rrs.getSqlType() != ServerParse.DDL || errConnection == null) {
-            return;
+            return "";
         }
 
         StringBuilder s = new StringBuilder();
-        s.append(rrs.toString());
-
-        s.append(", failed={");
+        s.append("{");
         for (int i = 0; i < errConnection.size(); i++) {
             BackendConnection conn = errConnection.get(i);
             s.append("\n ").append(FormatUtil.format(i + 1, 3));
@@ -404,7 +400,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
         s.append("\n}");
 
-        LOGGER.warn(AlarmCode.CORE_DDL_WARN + s.toString());
+        return s.toString();
     }
 
     private void executeError(BackendConnection conn) {
@@ -418,8 +414,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             }
             errConnection.add(conn);
             if (--nodeCount <= 0) {
-                handleDdl();
-                session.handleSpecial(rrs, session.getSource().getSchema(), false);
+                session.handleSpecial(rrs, session.getSource().getSchema(), false, getDDLErrorInfo());
                 recycleResources();
                 handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
             }

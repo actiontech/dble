@@ -94,7 +94,7 @@ public class ProxyMetaManager {
         try {
             String lockKey = genLockKey(schema, tbName);
             if (lockTables.contains(lockKey)) {
-                String msg = "schema:" + schema + ", table:" + tbName + " is doing DDL";
+                String msg = "SCHEMA[" + schema + "], TABLE[" + tbName + "] is doing DDL";
                 LOGGER.warn(AlarmCode.CORE_DDL_WARN + msg);
                 throw new SQLNonTransientException(msg, "HY000", ErrorCode.ER_DOING_DDL);
             } else {
@@ -195,7 +195,7 @@ public class ProxyMetaManager {
                 metaLock.lock();
                 try {
                     if (lockTables.contains(genLockKey(schema, tbName))) {
-                        String msg = "schema:" + schema + ", table:" + tbName + " is doing DDL";
+                        String msg = "SCHEMA[" + schema + "], TABLE[" + tbName + "] is doing DDL";
                         LOGGER.info(msg);
                         throw new SQLNonTransientException(msg, "HY000", ErrorCode.ER_DOING_DDL);
                     } else {
@@ -221,7 +221,7 @@ public class ProxyMetaManager {
                 metaLock.lock();
                 try {
                     if (lockTables.contains(genLockKey(schema, vName))) {
-                        String msg = "schema:" + schema + ", TABLE:" + vName + " is doing DDL";
+                        String msg = "SCHEMA[" + schema + "], TABLE[" + vName + "] is doing DDL";
                         LOGGER.info(msg);
                         throw new SQLNonTransientException(msg, "HY000", ErrorCode.ER_DOING_DDL);
                     } else {

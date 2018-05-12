@@ -111,7 +111,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
         return schema;
     }
 
-    private String convertUpdateSQL(SchemaInfo schemaInfo, MySqlUpdateStatement update, String originSQL) {
+    private String convertUpdateSQL(SchemaInfo schemaInfo, MySqlUpdateStatement update, String originSQL) throws SQLNonTransientException {
         long opTimestamp = new Date().getTime();
         StructureMeta.TableMeta orgTbMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
                 schemaInfo.getTable());

@@ -28,6 +28,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUnionQuery;
 
+import java.sql.SQLNonTransientException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -148,7 +149,11 @@ public class MySQLPlanNodeVisitor {
         SQLExpr expr = tableSource.getExpr();
         if (expr instanceof SQLPropertyExpr) {
             SQLPropertyExpr propertyExpr = (SQLPropertyExpr) expr;
-            table = new TableNode(StringUtil.removeBackQuote(propertyExpr.getOwner().toString()), StringUtil.removeBackQuote(propertyExpr.getName()), this.metaManager);
+            try {
+                table = new TableNode(StringUtil.removeBackQuote(propertyExpr.getOwner().toString()), StringUtil.removeBackQuote(propertyExpr.getName()), this.metaManager);
+            } catch (SQLNonTransientException e) {
+                throw new MySQLOutPutException(e.getErrorCode(), e.getSQLState(), e.getMessage());
+            }
             containSchema = true;
         } else if (expr instanceof SQLIdentifierExpr) {
             SQLIdentifierExpr identifierExpr = (SQLIdentifierExpr) expr;
@@ -157,7 +162,12 @@ public class MySQLPlanNodeVisitor {
                 return true;
             }
             //here to check if the table name is a view in metaManager
-            QueryNode viewNode = metaManager.getSyncView(currentDb, identifierExpr.getName());
+            QueryNode viewNode = null;
+            try {
+                viewNode = metaManager.getSyncView(currentDb, identifierExpr.getName());
+            } catch (SQLNonTransientException e) {
+                throw new MySQLOutPutException(e.getErrorCode(), e.getSQLState(), e.getMessage());
+            }
             if (viewNode != null) {
                 //consider if the table with other name
                 viewNode.setAlias(tableSource.getAlias() == null ? identifierExpr.getName() : tableSource.getAlias());
@@ -166,7 +176,11 @@ public class MySQLPlanNodeVisitor {
                 this.tableNode.setExistView(true);
                 return true;
             } else {
-                table = new TableNode(this.currentDb, StringUtil.removeBackQuote(identifierExpr.getName()), this.metaManager);
+                try {
+                    table = new TableNode(this.currentDb, StringUtil.removeBackQuote(identifierExpr.getName()), this.metaManager);
+                } catch (SQLNonTransientException e) {
+                    throw new MySQLOutPutException(e.getErrorCode(), e.getSQLState(), e.getMessage());
+                }
             }
         } else {
             throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "42000", "table is " + tableSource.toString());

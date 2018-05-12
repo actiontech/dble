@@ -14,6 +14,7 @@ import com.actiontech.dble.backend.mysql.view.KVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.Repository;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterParamCfg;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.ucoreprocess.*;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
@@ -52,10 +53,10 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
+import java.sql.SQLNonTransientException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -65,7 +66,6 @@ public class ProxyMetaManager {
     private final Map<String, SchemaMeta> catalogs;
     private final Set<String> lockTables;
     private ReentrantLock metaLock = new ReentrantLock();
-    private Condition condRelease = metaLock.newCondition();
     private ScheduledExecutorService scheduler;
     private ScheduledFuture<?> checkTaskHandler;
     private AtomicInteger metaCount = new AtomicInteger(0);
@@ -89,16 +89,19 @@ public class ProxyMetaManager {
         return metaLock;
     }
 
-    public void addMetaLock(String schema, String tbName) throws InterruptedException {
+    public void addMetaLock(String schema, String tbName) throws SQLNonTransientException {
         metaLock.lock();
         try {
-            metaCount.incrementAndGet();
-            version.incrementAndGet();
             String lockKey = genLockKey(schema, tbName);
-            while (lockTables.contains(lockKey)) {
-                condRelease.await();
+            if (lockTables.contains(lockKey)) {
+                String msg = "schema:" + schema + ", table:" + tbName + " is doing DDL";
+                LOGGER.warn(AlarmCode.CORE_DDL_WARN + msg);
+                throw new SQLNonTransientException(msg, "HY000", ErrorCode.ER_DOING_DDL);
+            } else {
+                metaCount.incrementAndGet();
+                version.incrementAndGet();
+                lockTables.add(lockKey);
             }
-            lockTables.add(lockKey);
         } finally {
             metaLock.unlock();
         }
@@ -109,7 +112,6 @@ public class ProxyMetaManager {
         try {
             lockTables.remove(genLockKey(schema, tbName));
             metaCount.decrementAndGet();
-            condRelease.signalAll();
         } finally {
             metaLock.unlock();
         }
@@ -181,7 +183,7 @@ public class ProxyMetaManager {
         }
     }
 
-    public StructureMeta.TableMeta getSyncTableMeta(String schema, String tbName) {
+    public StructureMeta.TableMeta getSyncTableMeta(String schema, String tbName) throws SQLNonTransientException {
         while (true) {
             int oldVersion = version.get();
             if (metaCount.get() == 0) {
@@ -193,13 +195,12 @@ public class ProxyMetaManager {
                 metaLock.lock();
                 try {
                     if (lockTables.contains(genLockKey(schema, tbName))) {
-                        LOGGER.info("schema:" + schema + ", table:" + tbName + " is doing ddl,Waiting for table metadata lock");
-                        condRelease.await();
+                        String msg = "schema:" + schema + ", table:" + tbName + " is doing DDL";
+                        LOGGER.info(msg);
+                        throw new SQLNonTransientException(msg, "HY000", ErrorCode.ER_DOING_DDL);
                     } else {
                         return getTableMeta(schema, tbName);
                     }
-                } catch (InterruptedException e) {
-                    return null;
                 } finally {
                     metaLock.unlock();
                 }
@@ -208,7 +209,7 @@ public class ProxyMetaManager {
     }
 
 
-    public QueryNode getSyncView(String schema, String vName) {
+    public QueryNode getSyncView(String schema, String vName) throws SQLNonTransientException {
         while (true) {
             int oldVersion = version.get();
             if (metaCount.get() == 0) {
@@ -220,13 +221,12 @@ public class ProxyMetaManager {
                 metaLock.lock();
                 try {
                     if (lockTables.contains(genLockKey(schema, vName))) {
-                        LOGGER.info("schema:" + schema + ", view:" + vName + " is doing ddl,Waiting for table metadata lock");
-                        condRelease.await();
+                        String msg = "schema:" + schema + ", TABLE:" + vName + " is doing DDL";
+                        LOGGER.info(msg);
+                        throw new SQLNonTransientException(msg, "HY000", ErrorCode.ER_DOING_DDL);
                     } else {
                         return catalogs.get(schema).getView(vName);
                     }
-                } catch (InterruptedException e) {
-                    return null;
                 } finally {
                     metaLock.unlock();
                 }
@@ -458,10 +458,13 @@ public class ProxyMetaManager {
         } else if (DbleServer.getInstance().isUseUcore()) {
             DDLInfo ddlInfo = new DDLInfo(schema, sql, UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ddlStatus);
             String nodeName = StringUtil.getUFullName(schema, table);
-            UDistributeLock lock = new UDistributeLock(UcorePathUtil.getDDLPath(nodeName), ddlInfo.toString());
+            String ddlPath = UcorePathUtil.getDDLPath(nodeName);
+            UDistributeLock lock = new UDistributeLock(ddlPath, ddlInfo.toString());
             //ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLPath(nodeName), ddlInfo.toString());
-            while (!lock.acquire()) {
-                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
+            if (!lock.acquire()) {
+                String msg = "The syncMeta.lock or metaLock about " + nodeName + " in " + ddlPath + "is Exists";
+                LOGGER.info(msg);
+                throw new Exception(msg);
             }
             ClusterDelayProvider.delayAfterDdlLockMeta();
             UDistrbtLockManager.addLock(lock);

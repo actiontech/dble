@@ -18,6 +18,7 @@ import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.util.ToStringUtil;
 import com.alibaba.druid.sql.ast.SQLHint;
 
+import java.sql.SQLNonTransientException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -35,7 +36,9 @@ public class TableNode extends PlanNode {
     private List<SQLHint> hintList;
     private ProxyMetaManager metaManager;
 
-    public TableNode(String catalog, String tableName, ProxyMetaManager metaManager) {
+    private TableNode() {
+    }
+    public TableNode(String catalog, String tableName, ProxyMetaManager metaManager) throws SQLNonTransientException {
         if (catalog == null || tableName == null)
             throw new RuntimeException("Table db or name is null error!");
         this.schema = catalog;
@@ -112,7 +115,14 @@ public class TableNode extends PlanNode {
     }
 
     public TableNode copy() {
-        TableNode newTableNode = new TableNode(schema, tableName, metaManager);
+        TableNode newTableNode = new TableNode();
+        newTableNode.schema = this.schema;
+        newTableNode.tableName = this.tableName;
+        newTableNode.metaManager = this.metaManager;
+        newTableNode.tableMeta = this.tableMeta.toBuilder().build();
+        newTableNode.referedTableNodes.add(newTableNode);
+        newTableNode.setNoshardNode(this.getNoshardNode());
+
         this.copySelfTo(newTableNode);
         newTableNode.setHintList(this.hintList);
         return newTableNode;

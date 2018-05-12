@@ -126,7 +126,7 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
         }
     }
 
-    protected int getShardingColIndex(SchemaInfo schemaInfo, List<SQLExpr> columnExprList, String partitionColumn) {
+    protected int getShardingColIndex(SchemaInfo schemaInfo, List<SQLExpr> columnExprList, String partitionColumn) throws SQLNonTransientException {
         int shardingColIndex = -1;
         if (columnExprList == null || columnExprList.size() == 0) {
             StructureMeta.TableMeta tbMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());

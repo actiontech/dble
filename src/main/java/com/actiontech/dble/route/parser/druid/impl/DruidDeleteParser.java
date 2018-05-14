@@ -76,13 +76,15 @@ public class DruidDeleteParser extends DefaultDruidParser {
                 RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
                 return schema;
             }
+            String tableName = schemaInfo.getTable();
+            TableConfig tc = schema.getTables().get(tableName);
+            checkTableExists(tc, schema.getName(), tableName, CheckType.DELETE);
             super.visitorParse(schema, rrs, stmt, visitor, sc);
             if (visitor.isHasSubQuery()) {
                 String msg = "DELETE query with sub-query  is not supported, sql:" + stmt;
                 throw new SQLNonTransientException(msg);
             }
-            TableConfig tc = schema.getTables().get(schemaInfo.getTable());
-            if (tc != null && tc.isGlobalTable()) {
+            if (tc.isGlobalTable()) {
                 RouterUtil.routeToMultiNode(false, rrs, tc.getDataNodes(), tc.isGlobalTable());
                 rrs.setFinishedRoute(true);
                 return schema;
@@ -90,4 +92,5 @@ public class DruidDeleteParser extends DefaultDruidParser {
         }
         return schema;
     }
+
 }

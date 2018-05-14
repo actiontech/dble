@@ -79,12 +79,14 @@ public class DruidUpdateParser extends DefaultDruidParser {
                 rrs.setFinishedRoute(true);
                 return schema;
             }
+            TableConfig tc = schema.getTables().get(tableName);
+            checkTableExists(tc, schema.getName(), tableName, ServerPrivileges.CheckType.UPDATE);
             super.visitorParse(schema, rrs, stmt, visitor, sc);
             if (visitor.isHasSubQuery()) {
                 String msg = "UPDATE query with sub-query  is not supported, sql:" + stmt;
                 throw new SQLNonTransientException(msg);
             }
-            TableConfig tc = schema.getTables().get(tableName);
+
             if (tc.isGlobalTable()) {
                 if (GlobalTableUtil.useGlobalTableCheck()) {
                     String sql = convertUpdateSQL(schemaInfo, update, rrs.getStatement());

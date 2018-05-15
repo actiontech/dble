@@ -277,6 +277,7 @@ public class ServerConfig {
             this.firewall = newFirewall;
             this.erRelations = newErRelations;
             DbleServer.getInstance().getCacheService().clearCache();
+            this.changing = false;
             if (!newDataHostWithoutWR) {
                 DbleServer.getInstance().reloadMetaData(this);
             }

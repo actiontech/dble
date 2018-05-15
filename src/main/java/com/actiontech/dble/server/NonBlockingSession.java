@@ -670,13 +670,9 @@ public class NonBlockingSession implements Session {
 
         for (Map.Entry<RouteResultsetNode, BackendConnection> entry : target.entrySet()) {
             BackendConnection c = entry.getValue();
-            if (c != null && !c.isDDL()) {
+            if (c != null) {
                 toKilled.put(entry.getKey(), c);
                 count.incrementAndGet();
-            } else if (c != null && c.isDDL()) {
-                //if the sql executing is a ddl,do not kill the query,just close the connection
-                this.terminate();
-                return;
             }
         }
 

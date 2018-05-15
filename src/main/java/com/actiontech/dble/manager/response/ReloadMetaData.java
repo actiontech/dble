@@ -6,10 +6,14 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.locks.ReentrantLock;
 
 public final class ReloadMetaData {
     private ReloadMetaData() {
@@ -19,18 +23,39 @@ public final class ReloadMetaData {
 
     public static void execute(ManagerConnection c) {
         String msg = "data host has no write_host";
-        if (!DbleServer.getInstance().getConfig().isDataHostWithoutWR()) {
-            DbleServer.getInstance().setMetaChanging(true);
-            DbleServer.getInstance().reloadMetaData(DbleServer.getInstance().getConfig());
-            DbleServer.getInstance().setMetaChanging(false);
-            msg = "reload metadata success";
+        boolean isOK = true;
+        final ReentrantLock lock = DbleServer.getInstance().getTmManager().getMetaLock();
+        lock.lock();
+        try {
+            if (DbleServer.getInstance().getTmManager().getMetaCount() != 0) {
+                msg = "Reload metadata failed,There is other session is doing DDL";
+                LOGGER.warn(AlarmCode.CORE_DDL_WARN + msg);
+                c.writeErrMessage("HY000", msg, ErrorCode.ER_DOING_DDL);
+                return;
+            }
+            try {
+                if (!DbleServer.getInstance().getConfig().isDataHostWithoutWR()) {
+                    DbleServer.getInstance().reloadMetaData(DbleServer.getInstance().getConfig());
+                    msg = "reload metadata success";
+                }
+            } catch (Exception e) {
+                isOK = false;
+                msg = "reload metadata failed," + e.toString();
+            }
+        } finally {
+            lock.unlock();
         }
-        LOGGER.info(msg);
-        OkPacket ok = new OkPacket();
-        ok.setPacketId(1);
-        ok.setAffectedRows(1);
-        ok.setServerStatus(2);
-        ok.setMessage(msg.getBytes());
-        ok.write(c);
+        if (isOK) {
+            LOGGER.info(msg);
+            OkPacket ok = new OkPacket();
+            ok.setPacketId(1);
+            ok.setAffectedRows(1);
+            ok.setServerStatus(2);
+            ok.setMessage(msg.getBytes());
+            ok.write(c);
+        } else {
+            LOGGER.warn(msg);
+            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, msg);
+        }
     }
 }

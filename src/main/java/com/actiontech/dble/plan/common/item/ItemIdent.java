@@ -23,7 +23,7 @@ public abstract class ItemIdent extends Item {
         this.dbName = dbNameArg;
         String tempTableName;
         if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
-            tempTableName = tableNameArg == null ? tableNameArg : tableNameArg.toLowerCase();
+            tempTableName = tableNameArg == null ? null : tableNameArg.toLowerCase();
         } else {
             tempTableName = tableNameArg;
         }

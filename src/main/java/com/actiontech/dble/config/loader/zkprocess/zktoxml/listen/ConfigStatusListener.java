@@ -10,10 +10,7 @@ import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.NotifyService;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.DirectoryInf;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkDataImpl;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkDirectoryImpl;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
 import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.manager.response.ReloadConfig;
@@ -50,10 +47,8 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
     @Override
     public boolean notifyProcess() throws Exception {
         if (DbleServer.getInstance().getFrontProcessors() != null) {
-            DirectoryInf statusDirectory = new ZkDirectoryImpl(currZkPath, null);
-            this.getTreeDirectory(currZkPath, KVPathUtil.CONF_STATUS, statusDirectory);
-            ZkDataImpl zkData = (ZkDataImpl) statusDirectory.getSubordinateInfo().get(0);
-            ConfStatus status = new ConfStatus(zkData.getValue());
+            String value = this.getDataToString(currZkPath);
+            ConfStatus status = new ConfStatus(value);
             if (status.getFrom().equals(ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) {
                 return true; //self node
             }
@@ -62,11 +57,11 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
                 try {
                     RollbackConfig.rollback();
                     ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
-                                           SUCCESS.getBytes(StandardCharsets.UTF_8));
+                            SUCCESS.getBytes(StandardCharsets.UTF_8));
                 } catch (Exception e) {
                     String errorinfo = e.getMessage() == null ? e.toString() : e.getMessage();
                     ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
-                                           errorinfo.getBytes(StandardCharsets.UTF_8));
+                            errorinfo.getBytes(StandardCharsets.UTF_8));
                 }
 
                 return true;

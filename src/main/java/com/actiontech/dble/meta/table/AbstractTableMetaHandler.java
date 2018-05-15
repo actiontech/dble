@@ -78,7 +78,7 @@ public abstract class AbstractTableMetaHandler {
         public void onResult(SQLQueryResult<Map<String, String>> result) {
             if (!result.isSuccess()) {
                 //not thread safe
-                LOGGER.info("Can't get table " + tableName + "'s config from DataNode:" + dataNode + "! Maybe the table is not initialized!");
+                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "Can't get table " + tableName + "'s config from DataNode:" + dataNode + "! Maybe the table is not initialized!");
                 if (nodesNumber.decrementAndGet() == 0) {
                     countdown();
                 }

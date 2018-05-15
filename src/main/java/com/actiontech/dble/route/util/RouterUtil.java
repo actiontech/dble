@@ -755,15 +755,11 @@ public final class RouterUtil {
      * @param tableName
      * @return
      */
-    public static boolean isNoSharding(SchemaConfig schemaConfig, String tableName) {
-        if (schemaConfig == null) {
+    public static boolean isNoSharding(SchemaConfig schemaConfig, String tableName) throws SQLNonTransientException {
+        if (schemaConfig == null || DbleServer.getInstance().getTmManager().getSyncView(schemaConfig.getName(), tableName) != null) {
             return false;
         }
-        if (schemaConfig.isNoSharding()) {
-            return true;
-        }
-        return schemaConfig.getDataNode() != null && !schemaConfig.getTables().containsKey(tableName) &&
-                !DbleServer.getInstance().getTmManager().getCatalogs().get(schemaConfig.getName()).getViewMetas().containsKey(tableName);
+        return schemaConfig.isNoSharding() || (schemaConfig.getDataNode() != null && !schemaConfig.getTables().containsKey(tableName));
     }
 
     /**

@@ -63,7 +63,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author mycat
@@ -503,25 +502,15 @@ public final class DbleServer {
     }
 
     public void reloadMetaData(ServerConfig conf) {
-        ProxyMetaManager tmpManager = tmManager;
-        for (; ; ) {
-            if (tmpManager.getMetaCount() > 0) {
-                continue;
-            }
-            ReentrantLock lock = tmpManager.getMetaLock();
-            lock.lock();
-            try {
-                if (tmpManager.getMetaCount() > 0) {
-                    continue;
-                }
-                ProxyMetaManager newManager = new ProxyMetaManager();
-                newManager.initMeta(conf);
-                tmManager = newManager;
-                tmpManager.terminate();
-                break;
-            } finally {
-                lock.unlock();
-            }
+        DbleServer.getInstance().setMetaChanging(true);
+        try {
+            ProxyMetaManager tmpManager = tmManager;
+            ProxyMetaManager newManager = new ProxyMetaManager();
+            newManager.initMeta(conf);
+            tmManager = newManager;
+            tmpManager.terminate();
+        } finally {
+            DbleServer.getInstance().setMetaChanging(false);
         }
     }
 

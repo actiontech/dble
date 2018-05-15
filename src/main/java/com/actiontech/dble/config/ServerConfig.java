@@ -18,6 +18,7 @@ import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.SQLNonTransientException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -181,7 +182,7 @@ public class ServerConfig {
     public void reload(Map<String, UserConfig> newUsers, Map<String, SchemaConfig> newSchemas,
                        Map<String, PhysicalDBNode> newDataNodes, Map<String, PhysicalDBPool> newDataHosts,
                        Map<ERTable, Set<ERTable>> newErRelations, FirewallConfig newFirewall,
-                       SystemVariables newSystemVariables, boolean newDataHostWithoutWR, boolean reloadAll) {
+                       SystemVariables newSystemVariables, boolean newDataHostWithoutWR, boolean reloadAll) throws SQLNonTransientException {
 
         apply(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall,
                 newSystemVariables, newDataHostWithoutWR, reloadAll);
@@ -199,7 +200,7 @@ public class ServerConfig {
 
     public void rollback(Map<String, UserConfig> backupUsers, Map<String, SchemaConfig> backupSchemas,
                          Map<String, PhysicalDBNode> backupDataNodes, Map<String, PhysicalDBPool> backupDataHosts,
-                         Map<ERTable, Set<ERTable>> backupErRelations, FirewallConfig backFirewall, boolean backDataHostWithoutWR) {
+                         Map<ERTable, Set<ERTable>> backupErRelations, FirewallConfig backFirewall, boolean backDataHostWithoutWR) throws SQLNonTransientException {
 
         apply(backupUsers, backupSchemas, backupDataNodes, backupDataHosts, backupErRelations, backFirewall,
                 DbleServer.getInstance().getSystemVariables(), backDataHostWithoutWR, status == RELOAD_ALL);
@@ -213,9 +214,16 @@ public class ServerConfig {
                        Map<String, PhysicalDBPool> newDataHosts,
                        Map<ERTable, Set<ERTable>> newErRelations,
                        FirewallConfig newFirewall, SystemVariables newSystemVariables,
-                       boolean newDataHostWithoutWR, boolean isLoadAll) {
+                       boolean newDataHostWithoutWR, boolean isLoadAll) throws SQLNonTransientException {
+        final ReentrantLock metaLock = DbleServer.getInstance().getTmManager().getMetaLock();
+        metaLock.lock();
         this.changing = true;
         try {
+            if (DbleServer.getInstance().getTmManager().getMetaCount() != 0) {
+                String msg = "There is other session is doing DDL";
+                LOGGER.warn(AlarmCode.CORE_DDL_WARN + msg);
+                throw new SQLNonTransientException(msg, "HY000", ErrorCode.ER_DOING_DDL);
+            }
             // old data host
             // 1 stop heartbeat
             // 2 backup
@@ -270,17 +278,11 @@ public class ServerConfig {
             this.erRelations = newErRelations;
             DbleServer.getInstance().getCacheService().clearCache();
             if (!newDataHostWithoutWR) {
-                DbleServer.getInstance().setMetaChanging(true);
+                DbleServer.getInstance().reloadMetaData(this);
             }
         } finally {
             this.changing = false;
-        }
-        if (!newDataHostWithoutWR) {
-            try {
-                DbleServer.getInstance().reloadMetaData(this);
-            } finally {
-                DbleServer.getInstance().setMetaChanging(false);
-            }
+            metaLock.unlock();
         }
     }
 

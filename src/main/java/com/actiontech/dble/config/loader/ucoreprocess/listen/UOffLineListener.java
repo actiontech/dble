@@ -101,15 +101,16 @@ public class UOffLineListener implements Runnable {
                     newMap.put(output.getKeys(i), output.getValues(i));
                 }
 
-            for (Map.Entry<String, String> en : onlinMap.entrySet()) {
-                if (!newMap.containsKey(en.getKey())) {
-                    String serverId = en.getKey().split("/")[en.getKey().split("/").length - 1];
-                    checkDDLAndRelease(serverId);
-                    checkBinlogStatusRelease(serverId);
-                    checkPauseStatusRelease(serverId);
+                for (Map.Entry<String, String> en : onlinMap.entrySet()) {
+                    if (!newMap.containsKey(en.getKey())) {
+                        String serverId = en.getKey().split("/")[en.getKey().split("/").length - 1];
+                        checkDDLAndRelease(serverId);
+                        checkBinlogStatusRelease(serverId);
+                        checkPauseStatusRelease(serverId);
+                    }
+                    onlinMap = newMap;
+                    index = output.getIndex();
                 }
-                onlinMap = newMap;
-                index = output.getIndex();
             } catch (Exception e) {
                 LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + " error in offline listener ,all ucore connection failure");
             }

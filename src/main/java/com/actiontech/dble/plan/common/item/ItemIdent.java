@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.plan.common.item;
 
+import com.actiontech.dble.DbleServer;
 import org.apache.commons.lang.StringUtils;
 
 public abstract class ItemIdent extends Item {
@@ -20,7 +21,13 @@ public abstract class ItemIdent extends Item {
 
     public ItemIdent(final String dbNameArg, final String tableNameArg, final String fieldNameArg) {
         this.dbName = dbNameArg;
-        this.tableName = tableNameArg;
+        String tempTableName;
+        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+            tempTableName = tableNameArg == null ? null : tableNameArg.toLowerCase();
+        } else {
+            tempTableName = tableNameArg;
+        }
+        this.tableName = tempTableName;
         this.itemName = fieldNameArg;
         this.withUnValAble = true;
     }

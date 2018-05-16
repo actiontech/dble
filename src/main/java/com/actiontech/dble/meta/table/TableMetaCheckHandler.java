@@ -10,6 +10,7 @@ import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 
+import java.sql.SQLNonTransientException;
 import java.util.Set;
 
 public class TableMetaCheckHandler extends AbstractTableMetaHandler {
@@ -26,15 +27,23 @@ public class TableMetaCheckHandler extends AbstractTableMetaHandler {
 
     @Override
     protected void handlerTable(StructureMeta.TableMeta tableMeta) {
-        if (isTableModify(schema, tableMeta)) {
-            LOGGER.warn(AlarmCode.CORE_TABLE_CHECK_WARN + "Table [" + tableMeta.getTableName() + "] are modified by other,Please Check IT!");
+        if (tableMeta != null) {
+            if (isTableModify(schema, tableMeta)) {
+                LOGGER.warn(AlarmCode.CORE_TABLE_CHECK_WARN + "Table [" + tableMeta.getTableName() + "] are modified by other,Please Check IT!");
+            }
+            LOGGER.debug("checking table Table [" + tableMeta.getTableName() + "]");
         }
-        LOGGER.debug("checking table Table [" + tableMeta.getTableName() + "]");
     }
 
     private boolean isTableModify(String schema, StructureMeta.TableMeta tm) {
         String tbName = tm.getTableName();
-        StructureMeta.TableMeta oldTm = tmManager.getSyncTableMeta(schema, tbName);
+        StructureMeta.TableMeta oldTm;
+        try {
+            oldTm = tmManager.getSyncTableMeta(schema, tbName);
+        } catch (SQLNonTransientException e) {
+            //someone ddl, skip.
+            return true;
+        }
         if (oldTm == null) {
             //the DDL may drop table;
             return false;
@@ -45,6 +54,15 @@ public class TableMetaCheckHandler extends AbstractTableMetaHandler {
         }
         StructureMeta.TableMeta tblMetaTmp = tm.toBuilder().setVersion(oldTm.getVersion()).build();
         //TODO: thread not safe
-        return !oldTm.equals(tblMetaTmp) && oldTm.equals(tmManager.getSyncTableMeta(schema, tbName));
+        if (oldTm.equals(tblMetaTmp)) {
+            try {
+                StructureMeta.TableMeta test = tmManager.getSyncTableMeta(schema, tbName);
+                return oldTm.equals(test);
+            } catch (SQLNonTransientException e) {
+                //someone ddl, skip.
+                return true;
+            }
+        }
+        return false;
     }
 }

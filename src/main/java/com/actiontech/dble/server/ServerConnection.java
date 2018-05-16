@@ -36,9 +36,7 @@ import java.sql.SQLNonTransientException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
 
 
 /**
@@ -345,19 +343,17 @@ public class ServerConnection extends FrontendConnection {
                 String ddlPath = KVPathUtil.getDDLPath();
                 String nodePth = ZKPaths.makePath(ddlPath, nodeName);
                 CuratorFramework zkConn = ZKUtils.getConnection();
-                int times = 0;
-                while (zkConn.checkExists().forPath(KVPathUtil.getSyncMetaLockPath()) != null || zkConn.checkExists().forPath(nodePth) != null) {
-                    LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-                    if (times % 60 == 0) {
-                        LOGGER.info("waiting for syncMeta.lock or metaLock about " + nodeName + " in " + ddlPath);
-                        times = 0;
-                    }
-                    times++;
+                if (zkConn.checkExists().forPath(KVPathUtil.getSyncMetaLockPath()) != null || zkConn.checkExists().forPath(nodePth) != null) {
+                    String msg = "The syncMeta.lock or metaLock about " + nodeName + " in " + ddlPath + "is Exists";
+                    LOGGER.info(msg);
+                    throw new Exception(msg);
                 }
                 DbleServer.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement(), DDLInfo.DDLStatus.INIT);
             } else if (DbleServer.getInstance().isUseUcore()) {
                 DbleServer.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement(), DDLInfo.DDLStatus.INIT);
             }
+        } catch (SQLNonTransientException e) {
+            throw e;
         } catch (Exception e) {
             DbleServer.getInstance().getTmManager().removeMetaLock(schema, table);
             throw new SQLNonTransientException(e.toString() + ",sql:" + rrs.getStatement());

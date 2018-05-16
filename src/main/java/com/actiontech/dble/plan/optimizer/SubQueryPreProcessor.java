@@ -59,6 +59,7 @@ public final class SubQueryPreProcessor {
         }
         //having contains sub query
         buildSubQuery(qtn, new SubQueryFilter(), qtn.getHavingFilter(), false, childTransform);
+        bulidOrderSubQuery(qtn);
 
         SubQueryFilter find = new SubQueryFilter();
         find.query = qtn;
@@ -81,6 +82,16 @@ public final class SubQueryPreProcessor {
         }
     }
 
+    private static SubQueryFilter bulidOrderSubQuery(PlanNode node) {
+        for (Order o : node.getOrderBys()) {
+            if (o.getItem() instanceof ItemScalarSubQuery) {
+                ((ItemScalarSubQuery) o.getItem()).setOrderCondition(true);
+                node.getSubQueries().add((ItemScalarSubQuery) o.getItem());
+            }
+        }
+        return null;
+    }
+
     private static SubQueryFilter buildSubQuery(PlanNode node, SubQueryFilter qtn, Item filter, boolean noTransform, BoolPtr childTransform) {
         if (filter == null)
             return qtn;
@@ -95,6 +106,7 @@ public final class SubQueryPreProcessor {
         } else {
             return buildSubQueryByFilter(node, qtn, filter, noTransform, childTransform);
         }
+
         return qtn;
     }
 

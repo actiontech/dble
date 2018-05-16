@@ -29,6 +29,7 @@ public final class ErrorCode {
     public static final int ER_HANDLE_DATA = 4002;
     public static final int ER_OPTIMIZER = 4004;
     public static final int ER_QUERYHANDLER = 4005;
+    public static final int ER_DOING_DDL = 4006;
     public static final int ER_NO_VALID_CONNECTION = 5004;
     public static final int ER_FILE_INIT = 5301;
     public static final int ER_FILE_FORCE = 5302;

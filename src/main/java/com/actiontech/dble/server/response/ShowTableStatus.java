@@ -99,8 +99,10 @@ public final class ShowTableStatus {
 
         for (String name : tableMap.keySet()) {
             RowDataPacket row = new RowDataPacket(fieldCount);
-
-            row.add(StringUtil.encode(name.toLowerCase(), c.getCharset().getResults()));
+            if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+                name = name.toLowerCase();
+            }
+            row.add(StringUtil.encode(name, c.getCharset().getResults()));
             row.add(StringUtil.encode("InnoDB", c.getCharset().getResults()));
             row.add(StringUtil.encode("10", c.getCharset().getResults()));
             row.add(StringUtil.encode("Compact", c.getCharset().getResults()));

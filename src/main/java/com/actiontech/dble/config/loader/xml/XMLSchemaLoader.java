@@ -587,10 +587,11 @@ public class XMLSchemaLoader implements SchemaLoader {
                 hostConf.setBalance(balance);
                 hostConf.setHearbeatSQL(heartbeatSQL);
                 dataHosts.put(hostConf.getName(), hostConf);
-            } else {
+            } else { //read host only
                 NodeList readNodes = element.getElementsByTagName("readHost");
                 DBHostConfig[] writeDbConfs = new DBHostConfig[1];
                 writeDbConfs[0] = new DBHostConfig("fakeHost", "-", 0, "-:0)", "-", "-");
+                writeDbConfs[0].setFake(true);
                 DBHostConfig[] readDbConfs = new DBHostConfig[1];
                 Element readNode = (Element) readNodes.item(0);
                 readDbConfs[0] = createDBHostConf(name, readNode, maxCon, minCon);
@@ -598,12 +599,12 @@ public class XMLSchemaLoader implements SchemaLoader {
                 readHostsMap.put(0, readDbConfs);
 
                 DataHostConfig hostConf = new DataHostConfig(name,
-                        writeDbConfs, readHostsMap, switchType, slaveThreshold, tempReadHostAvailable);
+                        writeDbConfs, readHostsMap, -1, slaveThreshold, true); // switchType =-1 and tempReadHostAvailable =true
 
                 hostConf.setMaxCon(maxCon);
                 hostConf.setMinCon(minCon);
-                hostConf.setBalance(balance);
-                hostConf.setHearbeatSQL(heartbeatSQL);
+                hostConf.setBalance(3); // all read host
+                hostConf.setHearbeatSQL("select 1"); //for heartbeat
                 dataHosts.put(hostConf.getName(), hostConf);
             }
         }

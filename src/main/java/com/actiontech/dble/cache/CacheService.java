@@ -49,15 +49,14 @@ public class CacheService {
     }
 
     private void init(boolean isLowerCaseTableNames) throws Exception {
-        InputStream stream = ResourceUtil.getResourceAsStream("/cacheservice.properties");
-        if (stream == null) {
-            LOGGER.info("cache don't be used currently! if use, please configure cacheservice.properties");
-            return;
-        }
-
         Properties props = new Properties();
-        props.load(stream);
-
+        try (InputStream stream = ResourceUtil.getResourceAsStream("/cacheservice.properties")) {
+            if (stream == null) {
+                LOGGER.info("cache don't be used currently! if use, please configure cacheservice.properties");
+                return;
+            }
+            props.load(stream);
+        }
         boolean on = isSwitchOn(props);
         if (on) {
             createRootLayedCachePool(props);

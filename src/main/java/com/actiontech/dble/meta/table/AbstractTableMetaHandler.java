@@ -29,7 +29,7 @@ public abstract class AbstractTableMetaHandler {
             "Create Table"};
     private static final String SQL_PREFIX = "show create table ";
 
-    private String tableName;
+    protected String tableName;
     private List<String> dataNodes;
     private AtomicInteger nodesNumber;
     protected String schema;
@@ -78,7 +78,7 @@ public abstract class AbstractTableMetaHandler {
         public void onResult(SQLQueryResult<Map<String, String>> result) {
             if (!result.isSuccess()) {
                 //not thread safe
-                LOGGER.info("Can't get table " + tableName + "'s config from DataNode:" + dataNode + "! Maybe the table is not initialized!");
+                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "Can't get table " + tableName + "'s config from DataNode:" + dataNode + "! Maybe the table is not initialized!");
                 if (nodesNumber.decrementAndGet() == 0) {
                     countdown();
                 }
@@ -130,11 +130,15 @@ public abstract class AbstractTableMetaHandler {
         }
 
         private StructureMeta.TableMeta initTableMeta(String table, String sql, long timeStamp) {
-            SQLStatementParser parser = new CreateTableParserImp(sql);
-            SQLCreateTableStatement createStatement = parser.parseCreateTable();
-            return MetaHelper.initTableMeta(table, createStatement, timeStamp);
+            try {
+                SQLStatementParser parser = new CreateTableParserImp(sql);
+                SQLCreateTableStatement createStatement = parser.parseCreateTable();
+                return MetaHelper.initTableMeta(table, createStatement, timeStamp);
+
+            } catch (Exception e) {
+                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "sql[" + sql + "] parser error:", e);
+                return null;
+            }
         }
-
-
     }
 }

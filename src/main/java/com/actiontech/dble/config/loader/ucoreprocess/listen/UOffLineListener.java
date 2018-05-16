@@ -1,7 +1,6 @@
 package com.actiontech.dble.config.loader.ucoreprocess.listen;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
 import com.actiontech.dble.config.loader.ucoreprocess.KVtoXml.UcoreToXml;
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
@@ -12,10 +11,7 @@ import com.actiontech.dble.config.loader.ucoreprocess.loader.UDdlChildResponse;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.BinlogPause;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.PauseInfo;
 import com.actiontech.dble.log.alarm.AlarmCode;
-import com.actiontech.dble.log.alarm.UcoreGrpc;
 import com.actiontech.dble.log.alarm.UcoreInterface;
-import io.grpc.Channel;
-import io.grpc.ManagedChannelBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,15 +27,8 @@ public class UOffLineListener implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UOffLineListener.class);
     private Map<String, String> onlinMap = new HashMap<String, String>();
-    private UcoreGrpc.UcoreBlockingStub stub = null;
     private long index = 0;
 
-
-    public void init() {
-        Channel channel = ManagedChannelBuilder.forAddress(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_IP),
-                Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
-        stub = UcoreGrpc.newBlockingStub(channel);
-    }
 
     private void checkDDLAndRelease(String serverId) {
         //deal with the status whan the ddl is init notified
@@ -100,16 +89,17 @@ public class UOffLineListener implements Runnable {
     @Override
     public void run() {
         for (; ; ) {
-            UcoreInterface.SubscribeKvPrefixInput input
-                    = UcoreInterface.SubscribeKvPrefixInput.newBuilder().
-                    setIndex(index).setDuration(60).
-                    setKeyPrefix(UcorePathUtil.getOnlinePath() + SEPARATOR).build();
-            UcoreInterface.SubscribeKvPrefixOutput output = stub.subscribeKvPrefix(input);
-            //LOGGER.debug("the index of the single key "+path+" is "+index);
-            Map<String, String> newMap = new HashMap<String, String>();
-            for (int i = 0; i < output.getKeysCount(); i++) {
-                newMap.put(output.getKeys(i), output.getValues(i));
-            }
+            try {
+                UcoreInterface.SubscribeKvPrefixInput input
+                        = UcoreInterface.SubscribeKvPrefixInput.newBuilder().
+                        setIndex(index).setDuration(60).
+                        setKeyPrefix(UcorePathUtil.getOnlinePath() + SEPARATOR).build();
+                UcoreInterface.SubscribeKvPrefixOutput output = ClusterUcoreSender.subscribeKvPrefix(input);
+                //LOGGER.debug("the index of the single key "+path+" is "+index);
+                Map<String, String> newMap = new HashMap<String, String>();
+                for (int i = 0; i < output.getKeysCount(); i++) {
+                    newMap.put(output.getKeys(i), output.getValues(i));
+                }
 
             for (Map.Entry<String, String> en : onlinMap.entrySet()) {
                 if (!newMap.containsKey(en.getKey())) {
@@ -118,9 +108,11 @@ public class UOffLineListener implements Runnable {
                     checkBinlogStatusRelease(serverId);
                     checkPauseStatusRelease(serverId);
                 }
+                onlinMap = newMap;
+                index = output.getIndex();
+            } catch (Exception e) {
+                LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + " error in offline listener ,all ucore connection failure");
             }
-            onlinMap = newMap;
-            index = output.getIndex();
         }
     }
 }

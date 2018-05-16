@@ -53,6 +53,7 @@ public class MySQLConnection extends BackendAIOConnection {
     private volatile boolean autocommit;
     private volatile boolean complexQuery;
     private volatile NonBlockingSession session;
+
     private static long initClientFlags() {
         int flag = 0;
         flag |= Capabilities.CLIENT_LONG_PASSWORD;
@@ -257,6 +258,19 @@ public class MySQLConnection extends BackendAIOConnection {
         packet.write(this);
     }
 
+    private WriteToBackendTask sendQueryCmdTask(String query, CharsetNames clientCharset) {
+        CommandPacket packet = new CommandPacket();
+        packet.setPacketId(0);
+        packet.setCommand(MySQLPacket.COM_QUERY);
+        try {
+            packet.setArg(query.getBytes(CharsetUtil.getJavaCharset(clientCharset.getClient())));
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+        lastTime = TimeUtil.currentTimeMillis();
+        return new WriteToBackendTask(this, packet);
+    }
+
     private static void getCharsetCommand(StringBuilder sb, CharsetNames clientCharset) {
         sb.append("SET CHARACTER_SET_CLIENT = ");
         sb.append(clientCharset.getClient());
@@ -292,6 +306,96 @@ public class MySQLConnection extends BackendAIOConnection {
         } else {
             sb.append("SET autocommit=0;");
         }
+    }
+
+    public void executeMultiNode(RouteResultsetNode rrn, ServerConnection sc,
+                                 boolean isAutoCommit) {
+        if (!modifiedSQLExecuted && rrn.isModifySQL()) {
+            modifiedSQLExecuted = true;
+        }
+        if (rrn.getSqlType() == ServerParse.DDL) {
+            isDDL = true;
+        }
+        String xaTxId = getConnXID(session);
+        if (!sc.isAutocommit() && !sc.isTxStart() && modifiedSQLExecuted) {
+            sc.setTxStart(true);
+        }
+        synAndDoExecuteMultiNode(xaTxId, rrn, sc.getCharset(), sc.getTxIsolation(), isAutoCommit, sc.getUsrVariables(), sc.getSysVariables());
+    }
+
+    private void synAndDoExecuteMultiNode(String xaTxID, RouteResultsetNode rrn,
+                                          CharsetNames clientCharset, int clientTxIsolation,
+                                          boolean expectAutocommit, Map<String, String> usrVariables, Map<String, String> sysVariables) {
+        String xaCmd = null;
+        boolean conAutoCommit = this.autocommit;
+        String conSchema = this.schema;
+        int xaSyn = 0;
+        if (!expectAutocommit && xaTxID != null && xaStatus == TxState.TX_INITIALIZE_STATE) {
+            // clientTxIsolation = Isolation.SERIALIZABLE;TODO:NEEDED?
+            xaCmd = "XA START " + xaTxID + ';';
+            this.xaStatus = TxState.TX_STARTED_STATE;
+            xaSyn = 1;
+        }
+        Set<String> toResetSys = new HashSet<>();
+        String setSql = getSetSQL(usrVariables, sysVariables, toResetSys);
+        int setSqlFlag = setSql == null ? 0 : 1;
+        int schemaSyn = conSchema.equals(oldSchema) ? 0 : 1;
+        int charsetSyn = (charsetName.equals(clientCharset)) ? 0 : 1;
+        int txIsolationSyn = (txIsolation == clientTxIsolation) ? 0 : 1;
+        int autoCommitSyn = (conAutoCommit == expectAutocommit) ? 0 : 1;
+        int synCount = schemaSyn + charsetSyn + txIsolationSyn + autoCommitSyn + xaSyn + setSqlFlag;
+        if (synCount == 0) {
+            // not need syn connection
+            if (session != null) {
+                session.setBackendRequestTime(this.id);
+            }
+            DbleServer.getInstance().getWriteToBackendQueue().add(Collections.singletonList(sendQueryCmdTask(rrn.getStatement(), clientCharset)));
+            return;
+        }
+        CommandPacket schemaCmd = null;
+        StringBuilder sb = new StringBuilder();
+        if (schemaSyn == 1) {
+            schemaCmd = getChangeSchemaCommand(conSchema);
+        }
+        if (charsetSyn == 1) {
+            getCharsetCommand(sb, clientCharset);
+        }
+        if (txIsolationSyn == 1) {
+            getTxIsolationCommand(sb, clientTxIsolation);
+        }
+        if (autoCommitSyn == 1) {
+            getAutocommitCommand(sb, expectAutocommit);
+        }
+        if (setSqlFlag == 1) {
+            sb.append(setSql);
+        }
+        if (xaCmd != null) {
+            sb.append(xaCmd);
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("con need syn ,total syn cmd " + synCount +
+                    " commands " + sb.toString() + "schema change:" +
+                    (schemaCmd != null) + " con:" + this);
+        }
+        metaDataSynced = false;
+        statusSync = new StatusSync(conSchema,
+                clientCharset, clientTxIsolation, expectAutocommit,
+                synCount, usrVariables, sysVariables, toResetSys);
+        // syn schema
+        List<WriteToBackendTask> taskList = new ArrayList<>(2);
+        if (schemaCmd != null) {
+            taskList.add(new WriteToBackendTask(this, schemaCmd));
+        }
+        // and our query sql to multi command at last
+        sb.append(rrn.getStatement()).append(";");
+        // syn and execute others
+        if (session != null) {
+            session.setBackendRequestTime(this.id);
+        }
+        taskList.add(sendQueryCmdTask(sb.toString(), clientCharset));
+        DbleServer.getInstance().getWriteToBackendQueue().add(taskList);
+        // waiting syn result...
+
     }
 
     public void execute(RouteResultsetNode rrn, ServerConnection sc,
@@ -495,25 +599,30 @@ public class MySQLConnection extends BackendAIOConnection {
 
     @Override
     public void close(String reason) {
-        this.terminate(reason);
-        if (this.respHandler != null) {
-            this.respHandler.connectionClose(this, reason);
-            respHandler = null;
+        if (!isClosed.get()) {
+            innerTerminate(reason);
+            if (this.respHandler != null) {
+                this.respHandler.connectionClose(this, reason);
+                respHandler = null;
+            }
         }
     }
 
     @Override
     public void terminate(String reason) {
         if (!isClosed.get()) {
-            isQuit.set(true);
-            super.close(reason);
-            pool.connectionClosed(this);
+            innerTerminate(reason);
         }
+    }
+
+    private void innerTerminate(String reason) {
+        isQuit.set(true);
+        super.close(reason);
+        pool.connectionClosed(this);
     }
 
     public void commit() {
         COMMIT.write(this);
-
     }
 
     public void execCmd(String cmd) {
@@ -720,6 +829,9 @@ public class MySQLConnection extends BackendAIOConnection {
 
         boolean synAndExecuted(MySQLConnection conn) {
             int remains = synCmdCount.decrementAndGet();
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("synAndExecuted " + remains + ",conn info:" + conn);
+            }
             if (remains == 0) { // syn command finished
                 this.updateConnectionInfo(conn);
                 conn.metaDataSynced = true;

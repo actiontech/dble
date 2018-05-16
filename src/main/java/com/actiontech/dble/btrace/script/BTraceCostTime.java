@@ -87,13 +87,14 @@ public class BTraceCostTime {
             clazz = "com.actiontech.dble.btrace.provider.CostTimeProvider",
             method = "resLastBack"
     )
-    public static void resLastBack(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod, long arg) {
+    public static void resLastBack(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod, long arg, long arg2) {
         Long ts = BTraceUtils.Collections.get(records, arg);
         if (ts == null) {
             return;
         }
         long duration = timeNanos() - ts;
-        Profiling.recordExit(profiler, "request->4L.resLastBack", duration);
+        String blockName = BTraceUtils.strcat(BTraceUtils.strcat("request->4.",BTraceUtils.str(arg2)),".resFromBack");
+        Profiling.recordExit(profiler, blockName, duration);
     }
 
 
@@ -101,13 +102,14 @@ public class BTraceCostTime {
             clazz = "com.actiontech.dble.btrace.provider.CostTimeProvider",
             method = "execLastBack"
     )
-    public static void execLastBack(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod, long arg) {
+    public static void execLastBack(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod, long arg, long arg2) {
         Long ts = BTraceUtils.Collections.get(records, arg);
         if (ts == null) {
             return;
         }
         long duration = timeNanos() - ts;
-        Profiling.recordExit(profiler, "request->5L.execLastBack", duration);
+        String blockName = BTraceUtils.strcat(BTraceUtils.strcat("request->5.",BTraceUtils.str(arg2)),".execFromBack");
+        Profiling.recordExit(profiler, blockName, duration);
     }
 
 

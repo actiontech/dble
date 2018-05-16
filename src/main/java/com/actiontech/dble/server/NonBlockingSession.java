@@ -182,22 +182,23 @@ public class NonBlockingSession implements Session {
                 provider.resFromBack(source.getId());
                 firstBackConRes.set(false);
             }
-            if (queryTimeCost.getBackendReserveCount().decrementAndGet() == 0) {
-                provider.resLastBack(source.getId());
+            long index = queryTimeCost.getBackendReserveCount().decrementAndGet();
+            if (index >= 0 && ((index % 10 == 0) || index < 10)) {
+                provider.resLastBack(source.getId(), queryTimeCost.getBackendSize() - index);
             }
         }
     }
 
-    public void startExecuteBackend() {
+    public void startExecuteBackend(long backendID) {
         if (!timeCost) {
             return;
         }
         if (firstBackConRes.compareAndSet(false, true)) {
             provider.startExecuteBackend(source.getId());
         }
-
-        if (queryTimeCost.getBackendExecuteCount().decrementAndGet() == 0) {
-            provider.execLastBack(source.getId());
+        long index = queryTimeCost.getBackendExecuteCount().decrementAndGet();
+        if (index >= 0 && ((index % 10 == 0) || index < 10)) {
+            provider.execLastBack(source.getId(), queryTimeCost.getBackendSize() - index);
         }
     }
 
@@ -369,17 +370,17 @@ public class NonBlockingSession implements Session {
             source.writeErrMessage(ErrorCode.ER_YES, "optimizer build error");
         } catch (NoSuchElementException e) {
             LOGGER.info(String.valueOf(source) + " execute plan is : " + node, e);
-            this.terminate();
+            this.closeAndClearResources("Exception");
             source.writeErrMessage(ErrorCode.ER_NO_VALID_CONNECTION, "no valid connection");
         } catch (MySQLOutPutException e) {
             if (LOGGER.isInfoEnabled()) {
                 LOGGER.info(String.valueOf(source) + " execute plan is : " + node, e);
             }
-            this.terminate();
+            this.closeAndClearResources("Exception");
             source.writeErrMessage(e.getSqlState(), e.getMessage(), e.getErrorCode());
         } catch (Exception e) {
             LOGGER.info(String.valueOf(source) + " execute plan is : " + node, e);
-            this.terminate();
+            this.closeAndClearResources("Exception");
             source.writeErrMessage(ErrorCode.ER_HANDLE_DATA, e.toString());
         }
     }
@@ -548,7 +549,15 @@ public class NonBlockingSession implements Session {
      * {@link ServerConnection#isClosed()} must be true before invoking this
      */
     public void terminate() {
-        closeAndClearResources("client closed ");
+        // XA MUST BE FINISHED
+        if (source.isTxStart() && this.getXaState() != null && this.getXaState() != TxState.TX_INITIALIZE_STATE) {
+            return;
+        }
+        for (BackendConnection node : target.values()) {
+            node.close("client closed or timeout killed");
+        }
+        target.clear();
+        clearHandlesResources();
     }
 
     /**
@@ -675,13 +684,9 @@ public class NonBlockingSession implements Session {
 
         for (Map.Entry<RouteResultsetNode, BackendConnection> entry : target.entrySet()) {
             BackendConnection c = entry.getValue();
-            if (c != null && !c.isDDL()) {
+            if (c != null) {
                 toKilled.put(entry.getKey(), c);
                 count.incrementAndGet();
-            } else if (c != null && c.isDDL()) {
-                //if the sql executing is a ddl,do not kill the query,just close the connection
-                this.terminate();
-                return;
             }
         }
 
@@ -786,11 +791,18 @@ public class NonBlockingSession implements Session {
     }
 
     public void handleSpecial(RouteResultset rrs, String schema, boolean isSuccess) {
+        handleSpecial(rrs, schema, isSuccess, null);
+    }
+    public void handleSpecial(RouteResultset rrs, String schema, boolean isSuccess, String errInfo) {
         if (rrs.getSqlType() == ServerParse.DDL) {
             String sql = rrs.getSrcStatement();
             if (source.isTxStart()) {
                 source.setTxStart(false);
                 source.getAndIncrementXid();
+            }
+            if (!isSuccess) {
+                LOGGER.warn(AlarmCode.CORE_DDL_WARN + "DDL execute failed or Session closed," +
+                        "Schema[" + schema + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
             }
             DbleServer.getInstance().getTmManager().updateMetaData(schema, sql, isSuccess, true);
         }

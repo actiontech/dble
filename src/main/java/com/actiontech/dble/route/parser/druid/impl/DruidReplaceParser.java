@@ -72,10 +72,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
 
         //check the config of target table
         TableConfig tc = schema.getTables().get(tableName);
-        if (tc == null) {
-            String msg = "Table '" + schema.getName() + "." + tableName + "' doesn't exist";
-            throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
-        }
+        checkTableExists(tc, schema.getName(), tableName, ServerPrivileges.CheckType.INSERT);
 
         //if the target table is global table than
         if (tc.isGlobalTable()) {

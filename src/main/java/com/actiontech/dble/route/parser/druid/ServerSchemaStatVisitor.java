@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.route.parser.druid;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.route.parser.druid.sql.visitor.ActionSQLEvalVisitorUtils;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
@@ -124,10 +125,10 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         //                    isSelf = StringUtil.equals(alias, itemName);
         //                }
         //                if (!isSelf) {
-        //                    putAliasMap(aliasMap, alias, x.getExpr().toString());
+        //                    putAliasToMap(aliasMap, alias, x.getExpr().toString());
         //                }
         //            } else {
-        //                putAliasMap(aliasMap, alias, null);
+        //                putAliasToMap(aliasMap, alias, null);
         //            }
         //        }
         return false;
@@ -308,11 +309,11 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             if (aliasMap != null) {
                 String alias = x.getAlias();
                 if (alias != null && !aliasMap.containsKey(alias)) {
-                    putAliasMap(aliasMap, alias, ident);
+                    putAliasToMap(aliasMap, alias, ident);
                 }
 
                 if (!aliasMap.containsKey(ident)) {
-                    putAliasMap(aliasMap, ident, ident);
+                    putAliasToMap(aliasMap, ident, ident);
                 }
             }
         } else {
@@ -320,6 +321,8 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         }
         return false;
     }
+
+
 
     @Override
     public boolean visit(SQLSelect x) {
@@ -785,6 +788,15 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             }
         }
         return false;
+    }
+
+    private void putAliasToMap(Map<String, String> aliasMap, String name, String value) {
+        if (aliasMap != null && name != null) {
+            if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+                name = name.toLowerCase();
+            }
+            aliasMap.put(name, value);
+        }
     }
 
 }

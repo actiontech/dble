@@ -140,6 +140,14 @@ public class BaseSelectHandler extends BaseDMLHandler {
     }
 
     @Override
+    public void connectionClose(BackendConnection conn, String reason) {
+        if (terminate.get())
+            return;
+        LOGGER.info(conn.toString() + "|connectionClose()|" + reason);
+        session.onQueryError(reason.getBytes());
+    }
+
+    @Override
     public void errorResponse(byte[] err, BackendConnection conn) {
         ((MySQLConnection) conn).setRunning(false);
         ErrorPacket errPacket = new ErrorPacket();

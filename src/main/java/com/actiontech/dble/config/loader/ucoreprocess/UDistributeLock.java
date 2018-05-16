@@ -53,15 +53,15 @@ public class UDistributeLock {
                     while (!Thread.currentThread().isInterrupted()) {
                         try {
                             LOGGER.info("renew lock of session  start:" + sessionId + " " + path);
-                            ClusterUcoreSender.renewLock(sessionId);
+                            boolean flag = ClusterUcoreSender.renewLock(sessionId);
                             if (path.equals(UcorePathUtil.getOnlinePath(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) &&
-                                    "".equals(ClusterUcoreSender.getKey(path).getValue())) {
+                                    !flag && "".equals(ClusterUcoreSender.getKey(path).getValue())) {
                                 sessionId = ClusterUcoreSender.lockKey(path, value);
                             }
                             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10000));
                             LOGGER.info("renew lock of session  success:" + sessionId + " " + path);
                         } catch (Exception e) {
-                            LOGGER.info("renew lock of session  failure:" + sessionId + " " + path);
+                            LOGGER.info("renew lock of session  failure:" + sessionId + " " + path, e);
                             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(5000));
                         }
                     }

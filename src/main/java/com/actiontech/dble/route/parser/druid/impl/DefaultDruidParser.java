@@ -7,7 +7,11 @@ package com.actiontech.dble.route.parser.druid.impl;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cache.LayerCachePool;
+import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.DruidParser;
 import com.actiontech.dble.route.parser.druid.DruidShardingParseInfo;
@@ -168,5 +172,24 @@ public class DefaultDruidParser implements DruidParser {
 
     public DruidShardingParseInfo getCtx() {
         return ctx;
+    }
+
+
+    void checkTableExists(TableConfig tc, String schemaName, String tableName, ServerPrivileges.CheckType chekcType) throws SQLException {
+        if (tc == null) {
+            if (DbleServer.getInstance().getTmManager().getSyncView(schemaName, tableName) != null) {
+                String msg = "View '" + schemaName + "." + tableName + "' Not Support " + chekcType;
+                throw new SQLException(msg, "HY000", ErrorCode.ERR_NOT_SUPPORTED);
+            }
+            String msg = "Table '" + schemaName + "." + tableName + "' doesn't exist";
+            throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
+        } else {
+            //it is strict
+            if (DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaName, tableName) == null) {
+                String msg = "Table meta '" + schemaName + "." + tableName + "' is lost,PLEASE reload @@metadata";
+                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + msg);
+                throw new SQLException(msg, "HY000", ErrorCode.ERR_HANDLE_DATA);
+            }
+        }
     }
 }

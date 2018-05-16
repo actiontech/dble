@@ -35,7 +35,7 @@ public class UBinlogPauseStatusResponse implements UcoreXmlLoader {
         }
 
         //step 2 if the flag is on than try to lock all the commit
-        if (pauseInfo.getStatus() == BinlogPause.BinlogPauseStatus.ON && configValue.getChangeType() != UKvBean.DELETE) {
+        if (pauseInfo.getStatus() == BinlogPause.BinlogPauseStatus.ON && !UKvBean.DELETE.equals(configValue.getChangeType())) {
             DbleServer.getInstance().getBackupLocked().compareAndSet(false, true);
             boolean isPaused = ShowBinlogStatus.waitAllSession();
             if (!isPaused) {

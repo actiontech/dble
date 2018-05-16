@@ -75,6 +75,7 @@ public class ProxyMetaManager {
     public ProxyMetaManager() {
         this.catalogs = new ConcurrentHashMap<>();
         this.lockTables = new HashSet<>();
+        DbleServer.getInstance().terminateViewRepository();
     }
 
     private String genLockKey(String schema, String tbName) {

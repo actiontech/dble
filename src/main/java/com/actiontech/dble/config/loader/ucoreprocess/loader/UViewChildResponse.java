@@ -39,7 +39,7 @@ public class UViewChildResponse implements UcoreXmlLoader {
         String serverId = configValue.getValue().split(Repository.SCHEMA_VIEW_SPLIT)[0];
         String optionType = configValue.getValue().split(Repository.SCHEMA_VIEW_SPLIT)[1];
         String myId = UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
-        if (myId.equals(serverId) || configValue.getChangeType() == UKvBean.DELETE) {
+        if (myId.equals(serverId) || UKvBean.DELETE.equals(configValue.getChangeType())) {
             // self node do noting
             return;
         } else {

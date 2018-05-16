@@ -60,6 +60,11 @@ public class CKVStoreRepository implements Repository {
 
     }
 
+    @Override
+    public void terminate() {
+
+    }
+
 
     @Override
     public void put(String schemaName, String viewName, String createSql) {

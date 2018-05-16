@@ -58,6 +58,11 @@ public class KVStoreRepository implements Repository {
     }
 
     @Override
+    public void terminate() {
+
+    }
+
+    @Override
     public Map<String, Map<String, String>> getViewCreateSqlMap() {
         return viewCreateSqlMap;
     }

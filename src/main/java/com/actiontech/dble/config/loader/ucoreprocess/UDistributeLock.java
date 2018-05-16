@@ -67,6 +67,7 @@ public class UDistributeLock {
                     }
                 }
             });
+            renewThread.setName("UCORE_RENEW_" + path);
             renewThread.start();
         } catch (Exception e) {
             LOGGER.warn(CORE_CLUSTER_WARN + " get lock from ucore error", e);

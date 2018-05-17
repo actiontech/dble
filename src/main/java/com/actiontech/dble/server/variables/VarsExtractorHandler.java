@@ -27,7 +27,7 @@ public class VarsExtractorHandler {
     private Lock lock;
     private Condition done;
     private Map<String, PhysicalDBPool> dataHosts;
-    private SystemVariables systemVariables = new SystemVariables();
+    private volatile SystemVariables systemVariables = null;
     public VarsExtractorHandler(Map<String, PhysicalDBPool> dataHosts) {
         this.dataHosts = dataHosts;
         this.extracting = false;
@@ -77,7 +77,8 @@ public class VarsExtractorHandler {
         return ds;
     }
 
-    public void handleVars(Map<String, String> vars) {
+    void handleVars(Map<String, String> vars) {
+        systemVariables = new SystemVariables();
         for (Map.Entry<String, String> entry : vars.entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();

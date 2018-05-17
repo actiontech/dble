@@ -347,6 +347,10 @@ public class PhysicalDBPool {
     }
 
     private boolean initSource(int index, PhysicalDatasource ds) {
+        if (ds.getConfig().isFake()) {
+            LOGGER.info(ds.getConfig().getHostName() + " has not real url, skipped");
+            return true;
+        }
         int initSize = ds.getConfig().getMinCon();
         if (initSize == 0) {
             return true;

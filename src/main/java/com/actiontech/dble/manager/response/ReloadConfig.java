@@ -264,32 +264,35 @@ public final class ReloadConfig {
          */
         ConfigInitializer loader;
         try {
-            loader = new ConfigInitializer(true, DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
+            loader = new ConfigInitializer(true, false);
         } catch (Exception e) {
             throw new Exception(e);
         }
-        Map<String, UserConfig> newUsers = loader.getUsers();
-        Map<String, SchemaConfig> newSchemas = loader.getSchemas();
-        Map<String, PhysicalDBNode> newDataNodes = loader.getDataNodes();
-        Map<String, PhysicalDBPool> newDataHosts = loader.getDataHosts();
-        Map<ERTable, Set<ERTable>> newErRelations = loader.getErRelations();
-        FirewallConfig newFirewall = loader.getFirewall();
 
         SystemVariables newSystemVariables = null;
-        if (!loader.isDataHostWithoutWH()) {
-            VarsExtractorHandler handler = new VarsExtractorHandler(newDataHosts);
-            newSystemVariables = handler.execute();
-            if (newSystemVariables == null) {
-                throw new IOException("Can't get variables from data node");
+        try {
+            loader.testConnection(false);
+        } catch (Exception e) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("just test ,not stop reload, catch exception", e);
             }
-            ConfigInitializer confInit = new ConfigInitializer(newSystemVariables.isLowerCaseTableNames());
-            newUsers = confInit.getUsers();
-            newSchemas = confInit.getSchemas();
-            newDataNodes = confInit.getDataNodes();
-            newErRelations = confInit.getErRelations();
-            newFirewall = confInit.getFirewall();
-            newDataHosts = confInit.getDataHosts();
         }
+        VarsExtractorHandler handler = new VarsExtractorHandler(loader.getDataHosts());
+        newSystemVariables = handler.execute();
+        if (newSystemVariables == null) {
+            if (!loader.isDataHostWithoutWH()) {
+                throw new IOException("Can't get variables from data node");
+            } else {
+                newSystemVariables = DbleServer.getInstance().getSystemVariables();
+            }
+        }
+        ConfigInitializer confInit = new ConfigInitializer(newSystemVariables.isLowerCaseTableNames());
+        Map<String, UserConfig> newUsers = confInit.getUsers();
+        Map<String, SchemaConfig> newSchemas = confInit.getSchemas();
+        Map<String, PhysicalDBNode> newDataNodes = confInit.getDataNodes();
+        Map<ERTable, Set<ERTable>> newErRelations = confInit.getErRelations();
+        FirewallConfig newFirewall = confInit.getFirewall();
+        Map<String, PhysicalDBPool> newDataHosts = confInit.getDataHosts();
 
         if ((loadAllMode & ManagerParseConfig.OPTT_MODE) != 0) {
             try {

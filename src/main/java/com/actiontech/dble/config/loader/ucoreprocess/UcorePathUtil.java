@@ -68,6 +68,10 @@ public final class UcorePathUtil {
         return getCachePath() + SEPARATOR + EHCACHE_NAME;
     }
 
+    public static String getEhcacheProPath() {
+        return getCachePath() + SEPARATOR + "cacheservice";
+    }
+
     //cache path base_path/cache
     public static String getCachePath() {
         return BASE_PATH + CACHE;

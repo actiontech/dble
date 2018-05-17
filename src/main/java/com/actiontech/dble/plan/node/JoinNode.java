@@ -94,6 +94,43 @@ public class JoinNode extends PlanNode {
         buildOtherJoinOn();
         buildJoinKeys(false);
     }
+
+    @Override
+    protected void setUpSelects() {
+        if (columnsSelected.isEmpty()) {
+            columnsSelected.add(new ItemField(null, null, "*"));
+        }
+        boolean withWild = false;
+        for (Item sel : columnsSelected) {
+            if (sel.isWild())
+                withWild = true;
+        }
+        if (withWild)
+            dealStarColumn();
+        outerFields.clear();
+        nameContext.setFindInSelect(false);
+        nameContext.setSelectFirst(false);
+        for (Item sel : columnsSelected) {
+            setUpItem(sel);
+            NamedField field = makeOutNamedField(sel);
+            if (outerFields.containsKey(field) && getParent() != null)
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "duplicate field");
+            outerFields.put(field, sel);
+        }
+    }
+
+    private NamedField makeOutNamedField(Item sel) {
+        String tmpFieldTable = sel.getTableName();
+        String tmpFieldName = sel.getItemName();
+        if (alias != null)
+            tmpFieldTable = alias;
+        if (tmpFieldTable == null)// maybe function
+            tmpFieldTable = getPureName();
+        if (sel.getAlias() != null)
+            tmpFieldName = sel.getAlias();
+        return new NamedField(tmpFieldTable, tmpFieldName, this);
+    }
+
     @Override
     protected void setUpInnerFields() {
         super.setUpInnerFields();

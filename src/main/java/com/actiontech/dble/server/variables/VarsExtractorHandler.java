@@ -77,7 +77,7 @@ public class VarsExtractorHandler {
         return ds;
     }
 
-    public void handleVars(Map<String, String> vars) {
+    void handleVars(Map<String, String> vars) {
         systemVariables = new SystemVariables();
         for (Map.Entry<String, String> entry : vars.entrySet()) {
             String key = entry.getKey();

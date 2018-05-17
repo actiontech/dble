@@ -274,7 +274,7 @@ public final class ReloadConfig {
         Map<ERTable, Set<ERTable>> newErRelations = loader.getErRelations();
         FirewallConfig newFirewall = loader.getFirewall();
 
-        SystemVariables newSystemVariables = DbleServer.getInstance().getSystemVariables();
+        SystemVariables newSystemVariables = null;
         if (!loader.isDataHostWithoutWH()) {
             VarsExtractorHandler handler = new VarsExtractorHandler(newDataHosts);
             newSystemVariables = handler.execute();

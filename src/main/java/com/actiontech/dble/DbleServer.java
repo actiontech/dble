@@ -274,9 +274,11 @@ public final class DbleServer {
         if (!this.getConfig().isDataHostWithoutWR()) {
             //init for sys VAR
             VarsExtractorHandler handler = new VarsExtractorHandler(config.getDataHosts());
-            systemVariables = handler.execute();
-            if (systemVariables == null) {
+            SystemVariables newSystemVariables = handler.execute();
+            if (newSystemVariables == null) {
                 throw new IOException("Can't get variables from data node");
+            } else {
+                systemVariables = newSystemVariables;
             }
             reviseSchemas();
             initDataHost();

@@ -36,8 +36,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static com.actiontech.dble.config.loader.zkprocess.zookeeper.process.PauseInfo.PAUSE;
 
-public class MigrateMetaManager {
-    protected static final Logger LOGGER = LoggerFactory.getLogger(MigrateMetaManager.class);
+public class PuaseDatanodeManager {
+    protected static final Logger LOGGER = LoggerFactory.getLogger(PuaseDatanodeManager.class);
     private ReentrantLock metaLock = new ReentrantLock();
     private Condition condRelease = this.metaLock.newCondition();
     private Set<String> dataNodes = null;

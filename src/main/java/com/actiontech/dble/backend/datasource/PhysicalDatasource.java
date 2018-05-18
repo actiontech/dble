@@ -19,6 +19,7 @@ import com.actiontech.dble.config.Alarms;
 import com.actiontech.dble.config.model.DBHostConfig;
 import com.actiontech.dble.config.model.DataHostConfig;
 import com.actiontech.dble.log.alarm.AlarmCode;
+import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +52,10 @@ public abstract class PhysicalDatasource {
 
     public void setTestConnSuccess(boolean testConnSuccess) {
         this.testConnSuccess = testConnSuccess;
+    }
+
+    public boolean isTestConnSuccess() {
+        return testConnSuccess;
     }
 
     private volatile boolean testConnSuccess = false;
@@ -316,24 +321,25 @@ public abstract class PhysicalDatasource {
 
     private BackendConnection takeCon(BackendConnection conn, String schema) {
         conn.setBorrowed(true);
-        if (!conn.getSchema().equals(schema)) {
+        if (!StringUtil.equals(conn.getSchema(), schema)) {
             // need do schema syn in before sql send
             conn.setSchema(schema);
         }
-        ConQueue queue = conMap.getSchemaConQueue(schema);
-        queue.incExecuteCount();
+        if (schema != null) {
+            ConQueue queue = conMap.getSchemaConQueue(schema);
+            queue.incExecuteCount();
+        }
         // update last time, the schedule job will not close it
         conn.setLastTime(System.currentTimeMillis());
         return conn;
     }
 
-    private BackendConnection takeCon(BackendConnection conn,
+    private void takeCon(BackendConnection conn,
                                       final ResponseHandler handler, final Object attachment,
                                       String schema) {
         takeCon(conn, schema);
         conn.setAttachment(attachment);
         handler.connectionAcquired(conn);
-        return conn;
     }
 
     private void createNewConnection(final ResponseHandler handler, final Object attachment,
@@ -373,7 +379,6 @@ public abstract class PhysicalDatasource {
         BackendConnection con = this.conMap.tryTakeCon(schema, autocommit);
         if (con != null) {
             takeCon(con, handler, attachment, schema);
-            return;
         } else {
             int activeCons = this.getActiveCount();
             if (activeCons + 1 > size) {
@@ -424,19 +429,25 @@ public abstract class PhysicalDatasource {
         c.setAttachment(null);
         c.setBorrowed(false);
         c.setLastTime(TimeUtil.currentTimeMillis());
-        ConQueue queue = this.conMap.getSchemaConQueue(c.getSchema());
 
-        boolean ok = false;
-        if (c.isAutocommit()) {
-            ok = queue.getAutoCommitCons().offer(c);
+        String errMsg = null;
+        if (c.getSchema() != null) {
+            boolean ok;
+            ConQueue queue = this.conMap.getSchemaConQueue(c.getSchema());
+            if (c.isAutocommit()) {
+                ok = queue.getAutoCommitCons().offer(c);
+            } else {
+                ok = queue.getManCommitCons().offer(c);
+            }
+            if (!ok) {
+                errMsg = "can't return to pool ,so close con " + c;
+            }
         } else {
-            ok = queue.getManCommitCons().offer(c);
+            errMsg = "no need to return to pool ,so close con " + c;
         }
-
-        if (!ok) {
-
-            LOGGER.info("can't return to pool ,so close con " + c);
-            c.close("can't return to pool ");
+        if (errMsg != null) {
+            LOGGER.info(errMsg);
+            c.close(errMsg);
         }
     }
 
@@ -449,9 +460,11 @@ public abstract class PhysicalDatasource {
     }
 
     public void connectionClosed(BackendConnection conn) {
-        ConQueue queue = this.conMap.getSchemaConQueue(conn.getSchema());
-        if (queue != null) {
-            queue.removeCon(conn);
+        if (conn.getSchema() != null) {
+            ConQueue queue = this.conMap.getSchemaConQueue(conn.getSchema());
+            if (queue != null) {
+                queue.removeCon(conn);
+            }
         }
     }
 

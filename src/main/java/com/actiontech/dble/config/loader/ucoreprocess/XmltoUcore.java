@@ -35,6 +35,8 @@ public final class XmltoUcore {
 
         new UXmlEhcachesLoader(xmlProcess, ucoreListen);
 
+        new UCacheserviceResponse(ucoreListen);
+
         new UPropertySequenceLoader(ucoreListen);
 
         xmlProcess.initJaxbClass();

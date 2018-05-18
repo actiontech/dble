@@ -277,10 +277,12 @@ public final class DbleServer {
         tmManager = new ProxyMetaManager();
         if (!this.getConfig().isDataHostWithoutWR()) {
             //init for sys VAR
-            VarsExtractorHandler handler = new VarsExtractorHandler(config.getDataNodes());
-            systemVariables = handler.execute();
-            if (systemVariables == null) {
+            VarsExtractorHandler handler = new VarsExtractorHandler(config.getDataHosts());
+            SystemVariables newSystemVariables = handler.execute();
+            if (newSystemVariables == null) {
                 throw new IOException("Can't get variables from data node");
+            } else {
+                systemVariables = newSystemVariables;
             }
             reviseSchemas();
             initDataHost();
@@ -781,6 +783,12 @@ public final class DbleServer {
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
         }
         return tmManager;
+    }
+
+    public void terminateViewRepository() {
+        if (tmManager != null && metaChanging) {
+            tmManager.getRepository().terminate();
+        }
     }
 
     private Runnable threadStatRenew() {

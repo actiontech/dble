@@ -19,9 +19,6 @@ public class UPropertySequenceLoader implements UcoreXmlLoader {
 
     private static final String PROPERTIES_SEQUENCE_DB_CONF = "sequence_db_conf";
 
-    private static final String PROPERTIES_CACHESERVER_NAME = "cacheservice";
-
-    private static final String PROPERTIES_SEQUENCE_DISTRIBUTED_CONF = "sequence_distributed_conf";
 
 
     private static final String CONFIG_PATH = UcorePathUtil.getSequencesPath();
@@ -49,26 +46,12 @@ public class UPropertySequenceLoader implements UcoreXmlLoader {
                 String sequenceConf = jsonObj.getString(PROPERTIES_SEQUENCE_DB_CONF);
                 ConfFileRWUtils.writeFile(PROPERTIES_SEQUENCE_DB_CONF + PROPERTIES_SUFFIX, sequenceConf);
             }
-
-            if (jsonObj.get(PROPERTIES_SEQUENCE_DISTRIBUTED_CONF) != null) {
-                String sequenceConf = jsonObj.getString(PROPERTIES_SEQUENCE_DISTRIBUTED_CONF);
-                ConfFileRWUtils.writeFile(PROPERTIES_SEQUENCE_DISTRIBUTED_CONF + PROPERTIES_SUFFIX, sequenceConf);
-            }
-
-            if (jsonObj.get(PROPERTIES_CACHESERVER_NAME) != null) {
-                String sequenceConf = jsonObj.getString(PROPERTIES_CACHESERVER_NAME);
-                ConfFileRWUtils.writeFile(PROPERTIES_CACHESERVER_NAME + PROPERTIES_SUFFIX, sequenceConf);
-            }
         }
     }
 
     @Override
     public void notifyCluster() throws Exception {
         JSONObject jsonObject = new JSONObject();
-        String cacheService = ConfFileRWUtils.readFileWithOutError(PROPERTIES_CACHESERVER_NAME + PROPERTIES_SUFFIX);
-        if (cacheService != null && !"".equals(cacheService)) {
-            jsonObject.put(PROPERTIES_CACHESERVER_NAME, cacheService);
-        }
         String sequenceConf = ConfFileRWUtils.readFileWithOutError(PROPERTIES_SEQUENCE_CONF + PROPERTIES_SUFFIX);
         if (sequenceConf != null && !"".equals(sequenceConf)) {
             jsonObject.put(PROPERTIES_SEQUENCE_CONF, sequenceConf);
@@ -76,10 +59,6 @@ public class UPropertySequenceLoader implements UcoreXmlLoader {
         String sequenceDbConf = ConfFileRWUtils.readFileWithOutError(PROPERTIES_SEQUENCE_DB_CONF + PROPERTIES_SUFFIX);
         if (sequenceDbConf != null && !"".equals(sequenceDbConf)) {
             jsonObject.put(PROPERTIES_SEQUENCE_DB_CONF, sequenceDbConf);
-        }
-        String sequenceDistributedConf = ConfFileRWUtils.readFileWithOutError(PROPERTIES_SEQUENCE_DISTRIBUTED_CONF + PROPERTIES_SUFFIX);
-        if (sequenceDistributedConf != null && !"".equals(sequenceDistributedConf)) {
-            jsonObject.put(PROPERTIES_SEQUENCE_DISTRIBUTED_CONF, sequenceDistributedConf);
         }
         ClusterUcoreSender.sendDataToUcore(CONFIG_PATH, jsonObject.toJSONString());
     }

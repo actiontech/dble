@@ -61,7 +61,7 @@ public class UDdlChildResponse implements UcoreXmlLoader {
                     throw t;
                 }
 
-            } else if (ddlInfo.getStatus() == DDLInfo.DDLStatus.SUCCESS && configValue.getChangeType() != UKvBean.DELETE &&
+            } else if (ddlInfo.getStatus() == DDLInfo.DDLStatus.SUCCESS && !UKvBean.DELETE.equals(configValue.getChangeType()) &&
                     lockMap.containsKey(fullName)) {
                 // if the start node is done the ddl execute
                 lockMap.remove(fullName);
@@ -80,7 +80,7 @@ public class UDdlChildResponse implements UcoreXmlLoader {
 
                 ClusterDelayProvider.delayBeforeDdlResponse();
                 ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLInstancePath(fullName), "SUCCESS");
-            } else if (ddlInfo.getStatus() == DDLInfo.DDLStatus.FAILED && configValue.getChangeType() != UKvBean.DELETE) {
+            } else if (ddlInfo.getStatus() == DDLInfo.DDLStatus.FAILED && !UKvBean.DELETE.equals(configValue.getChangeType())) {
                 //if the start node executing ddl with error,just release the lock
                 lockMap.remove(fullName);
                 DbleServer.getInstance().getTmManager().removeMetaLock(schema, table);

@@ -25,4 +25,6 @@ public interface Repository {
     void delete(String schemaName, String[] viewName);
 
     void init();
+
+    void terminate();
 }

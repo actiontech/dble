@@ -39,6 +39,7 @@ public final class UcoreToXml {
             new UXmlSchemaLoader(xmlProcess, listener);
             new UXmlServerLoader(xmlProcess, listener);
             new UXmlEhcachesLoader(xmlProcess, listener);
+            new UCacheserviceResponse(listener);
             new UPropertySequenceLoader(listener);
             xmlProcess.initJaxbClass();
 
@@ -58,18 +59,23 @@ public final class UcoreToXml {
 
             listener.initForXml();
             Thread thread = new Thread(listener);
+            thread.setName("UCORE_KEY_LISTENER");
             thread.start();
 
             Thread thread2 = new Thread(ddlListener);
+            thread.setName("DDL_UCORE_LISTENER");
             thread2.start();
 
             Thread thread3 = new Thread(viewListener);
+            thread.setName("VIEW_UCORE_LISTENER");
             thread3.start();
 
             Thread thread4 = new Thread(onlineListener);
+            thread.setName("ONLINE_UCORE_LISTENER");
             thread4.start();
 
             Thread thread5 = new Thread(ucoreNodesListener);
+            thread.setName("NODES_UCORE_LISTENER");
             thread5.start();
         } catch (Exception e) {
             e.printStackTrace();

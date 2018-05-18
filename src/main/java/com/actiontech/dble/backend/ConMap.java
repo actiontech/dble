@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.net.NIOProcessor;
+import com.actiontech.dble.util.StringUtil;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -19,6 +20,7 @@ import java.util.concurrent.ConcurrentMap;
 public class ConMap {
     // key--schema
     private final ConcurrentMap<String, ConQueue> items = new ConcurrentHashMap<>();
+
 
     public ConQueue getSchemaConQueue(String schema) {
         ConQueue queue = items.get(schema);
@@ -31,6 +33,9 @@ public class ConMap {
     }
 
     public BackendConnection tryTakeCon(final String schema, boolean autoCommit) {
+        if (schema == null) {
+            return null;
+        }
         final ConQueue queue = items.get(schema);
         BackendConnection con = tryTakeCon(queue, autoCommit);
         if (con != null) {
@@ -70,7 +75,7 @@ public class ConMap {
                 if (con instanceof MySQLConnection) {
                     MySQLConnection mysqlCon = (MySQLConnection) con;
 
-                    if (mysqlCon.getSchema().equals(schema) &&
+                    if (StringUtil.equals(mysqlCon.getSchema(), schema) &&
                             mysqlCon.getPool() == dataSource &&
                             mysqlCon.isBorrowed()) {
                         total++;

@@ -28,6 +28,8 @@ public final class ManagerParse {
     public static final int ONLINE = 10;
     public static final int CONFIGFILE = 12;
     public static final int LOGFILE = 13;
+    public static final int PAUSE = 14;
+    public static final int RESUME = 15;
 
     public static int parse(String stmt) {
         for (int i = 0; i < stmt.length(); i++) {
@@ -56,6 +58,9 @@ public final class ManagerParse {
                 case 'R':
                 case 'r':
                     return rCheck(stmt, i);
+                case 'P':
+                case 'p':
+                    return pCheck(stmt, i);
                 default:
                     return OTHER;
             }
@@ -183,7 +188,7 @@ public final class ManagerParse {
             switch (stmt.charAt(offset)) {
                 case 'E':
                 case 'e':
-                    return reload(stmt, offset);
+                    return reCheck(stmt, offset);
                 case 'O':
                 case 'o':
                     return rollback(stmt, offset);
@@ -194,15 +199,45 @@ public final class ManagerParse {
         return OTHER;
     }
 
+    private static int reCheck(String stmt, int offset) {
+        if (stmt.length() > ++offset) {
+            switch (stmt.charAt(offset)) {
+                case 'S':
+                case 's':
+                    return resume(stmt, offset);
+                case 'L':
+                case 'l':
+                    return reload(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+
+    //RESUME
+    private static int resume(String stmt, int offset) {
+        if (stmt.length() > offset + 3) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            if ((c1 == 'U' || c1 == 'u') &&
+                    (c2 == 'm' || c2 == 'M') && (c3 == 'e' || c3 == 'E')) {
+                return RESUME;
+            }
+        }
+        return OTHER;
+    }
+
     // RELOAD' '
     private static int reload(String stmt, int offset) {
-        if (stmt.length() > offset + 5) {
-            char c1 = stmt.charAt(++offset);
+        if (stmt.length() > offset + 4) {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
-            if ((c1 == 'L' || c1 == 'l') && (c2 == 'O' || c2 == 'o') &&
+            if ((c2 == 'O' || c2 == 'o') &&
                     (c3 == 'A' || c3 == 'a') && (c4 == 'D' || c4 == 'd') &&
                     (c5 == ' ' || c5 == '\t' || c5 == '\r' || c5 == '\n')) {
                 return (offset << 8) | RELOAD;
@@ -226,6 +261,36 @@ public final class ManagerParse {
                     (c5 == 'C' || c5 == 'c') && (c6 == 'K' || c6 == 'k') &&
                     (c7 == ' ' || c7 == '\t' || c7 == '\r' || c7 == '\n')) {
                 return (offset << 8) | ROLLBACK;
+            }
+        }
+        return OTHER;
+    }
+
+
+    private static int pCheck(String stmt, int offset) {
+        if (stmt.length() > ++offset) {
+            switch (stmt.charAt(offset)) {
+                case 'A':
+                case 'a':
+                    return pause(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+
+    private static int pause(String stmt, int offset) {
+        if (stmt.length() > offset + 4) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            if ((c1 == 'u' || c1 == 'U') && (c2 == 'S' || c2 == 's') &&
+                    (c3 == 'E' || c3 == 'e') &&
+                    (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n')) {
+                return PAUSE;
             }
         }
         return OTHER;

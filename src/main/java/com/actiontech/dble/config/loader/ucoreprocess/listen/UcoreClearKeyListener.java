@@ -124,6 +124,10 @@ public class UcoreClearKeyListener implements Runnable {
         this.childService.put(path, loader);
     }
 
+    public UcoreXmlLoader getReponse(String key) {
+        return this.childService.get(key);
+    }
+
     public void initAllNode() {
         for (Map.Entry<String, UcoreXmlLoader> service : childService.entrySet()) {
             try {

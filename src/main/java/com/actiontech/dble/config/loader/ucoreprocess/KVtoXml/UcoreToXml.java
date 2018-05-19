@@ -46,6 +46,7 @@ public final class UcoreToXml {
             //add listener to watch the Prefix of the keys
             new UConfigStatusResponse(listener);
             new UBinlogPauseStatusResponse(listener);
+            new UPauseDataNodeResponse(listener);
 
 
             ddlListener = new UcoreSingleKeyListener(UcorePathUtil.getDDLPath() + SEPARATOR, new UDdlChildResponse());
@@ -81,5 +82,7 @@ public final class UcoreToXml {
         }
     }
 
-
+    public static UcoreClearKeyListener getListener() {
+        return listener;
+    }
 }

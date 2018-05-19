@@ -7,9 +7,7 @@ package com.actiontech.dble.manager;
 
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.handler.*;
-import com.actiontech.dble.manager.response.KillConnection;
-import com.actiontech.dble.manager.response.Offline;
-import com.actiontech.dble.manager.response.Online;
+import com.actiontech.dble.manager.response.*;
 import com.actiontech.dble.net.handler.FrontendQueryHandler;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.parser.ManagerParse;
@@ -64,6 +62,12 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
                 break;
             case ManagerParse.ONLINE:
                 Online.execute(c);
+                break;
+            case ManagerParse.PAUSE:
+                PauseStart.execute(c, sql);
+                break;
+            case ManagerParse.RESUME:
+                PauseEnd.execute(c);
                 break;
             case ManagerParse.STOP:
                 StopHandler.handle(sql, c, rs >>> SHIFT);

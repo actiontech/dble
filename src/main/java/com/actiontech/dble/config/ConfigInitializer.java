@@ -207,7 +207,8 @@ public class ConfigInitializer {
 
     public void testConnection(boolean isStart) {
         if (this.dataNodes != null && this.dataHosts != null) {
-            Map<String, Boolean> map = new HashMap<>();
+            Set<String> errKeys = new HashSet<>();
+            boolean isConnectivity = true;
             for (PhysicalDBNode dataNode : dataNodes.values()) {
                 String database = dataNode.getDatabase();
                 PhysicalDBPool pool = dataNode.getDbPool();
@@ -225,32 +226,26 @@ public class ConfigInitializer {
                 }
                 for (PhysicalDatasource ds : pool.getAllDataSources()) {
                     String key = ds.getName() + "_" + database;
-                    if (map.get(key) == null) {
-                        map.put(key, false);
-                        try {
-                            boolean isConnected = ds.testConnection(database);
-                            ds.setTestConnSuccess(isConnected);
-                            map.put(key, isConnected);
-                        } catch (IOException e) {
-                            ds.setTestConnSuccess(false);
-                            map.put(key, false);
-                            LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "test conn " + key + " error:", e);
-                        }
+                    if (ds.getConfig().isFake()) {
+                        LOGGER.info(key + " is an empty and faked config,just mark testing failed and skip it");
+                        ds.setTestConnSuccess(false);
+                        continue;
                     }
-                }
-            }
-            boolean isConnectivity = true;
-            List<String> errKeys = new ArrayList<>();
-            for (Map.Entry<String, Boolean> entry : map.entrySet()) {
-                String key = entry.getKey();
-                Boolean value = entry.getValue();
-                if (!value) {
-                    LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "SelfCheck### test " + key + " database connection failed ");
-                    errKeys.add(key);
-                    isConnectivity = false;
-
-                } else {
-                    LOGGER.info("SelfCheck### test " + key + " database connection success ");
+                    try {
+                        boolean isConnected = ds.testConnection(database);
+                        ds.setTestConnSuccess(isConnected);
+                        if (isConnected) {
+                            LOGGER.info("SelfCheck### test " + key + " database connection success ");
+                        } else {
+                            isConnectivity = false;
+                            errKeys.add(key);
+                            LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "SelfCheck### test " + key + " database connection failed ");
+                        }
+                    } catch (IOException e) {
+                        isConnectivity = false;
+                        errKeys.add(key);
+                        LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "test conn " + key + " error:", e);
+                    }
                 }
             }
             if (!isConnectivity) {

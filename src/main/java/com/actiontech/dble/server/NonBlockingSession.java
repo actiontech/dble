@@ -305,7 +305,7 @@ public class NonBlockingSession implements Session {
             } catch (Exception e) {
                 handleSpecial(rrs, source.getSchema(), false);
                 LOGGER.info(String.valueOf(source) + rrs, e);
-                source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
+                source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.getMessage() == null ? e.toString() : e.getMessage());
             }
             if (this.isPrepared()) {
                 this.setPrepared(false);

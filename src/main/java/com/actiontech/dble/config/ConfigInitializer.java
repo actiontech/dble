@@ -156,7 +156,10 @@ public class ConfigInitializer {
     private void checkWriteHost() {
         for (Map.Entry<String, PhysicalDBPool> pool : this.dataHosts.entrySet()) {
             PhysicalDatasource[] writeSource = pool.getValue().getSources();
-            if (writeSource != null && writeSource.length != 0 && !writeSource[0].getConfig().isFake()) {
+            if (writeSource != null && writeSource.length != 0) {
+                if (writeSource[0].getConfig().isFake() && pool.getValue().getReadSources().isEmpty()) {
+                    continue;
+                }
                 this.dataHostWithoutWH = false;
                 break;
             }

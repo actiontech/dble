@@ -506,7 +506,12 @@ public class PhysicalDBPool {
     void getRWBalanceCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
         PhysicalDatasource theNode = getRWBalanceNode();
         if (theNode.getConfig().isFake()) {
-            theNode = this.getReadSources().values().iterator().next()[0];
+            if (this.getReadSources().values().size() > 0) {
+                theNode = this.getReadSources().values().iterator().next()[0];
+            } else {
+                String errorMsg = "the dataHost[" + theNode.getHostConfig().getName() + "] is empty, please check it";
+                throw new IOException(errorMsg);
+            }
         }
         if (!theNode.isAlive()) {
             String heartbeatError = "the data source[" + theNode.getConfig().getUrl() + "] can't reached, please check the dataHost";

@@ -95,32 +95,24 @@ public class CKVStoreRepository implements Repository {
             ClusterDelayProvider.delayAfterViewSetKey();
             ClusterUcoreSender.sendDataToUcore(nsb.toString(), UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + UPDATE);
             ClusterDelayProvider.delayAfterViewNotic();
+            //self reponse set
+            ClusterUcoreSender.sendDataToUcore(nsb.toString() + UcorePathUtil.SEPARATOR + UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), UcorePathUtil.SUCCESS);
 
-            //check if the online node number is equals to the reponse number
-            List<UKvBean> onlineList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getOnlinePath() + SEPARATOR);
-            List<UKvBean> reponseList = ClusterUcoreSender.getKeyTree(nsb.toString() + SEPARATOR);
+            String errorMsg = ClusterUcoreSender.waitingForAllTheNode(UcorePathUtil.SUCCESS, nsb.toString() + SEPARATOR);
 
-            while (reponseList.size() < onlineList.size() - 1) {
-                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-                onlineList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getOnlinePath());
-                reponseList = ClusterUcoreSender.getKeyTree(nsb.toString());
+            if (errorMsg != null) {
+                throw new RuntimeException(errorMsg);
             }
-
-            //check all the node status is success
-            for (UKvBean kv : reponseList) {
-                if (!kv.getValue().equals(UcorePathUtil.SUCCESS)) {
-                    LOGGER.info("view mate change error on key " + kv.getKey());
-                }
-            }
-            ClusterDelayProvider.beforeDeleteViewNotic();
-            ClusterUcoreSender.deleteKVTree(nsb.toString() + SEPARATOR);
-            ClusterDelayProvider.beforeReleaseViewLock();
-            distributeLock.release();
         } catch (RuntimeException e) {
             LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "set to ucore node error :　" + e.getMessage());
             throw e;
         } catch (Exception e) {
             LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "set to ucore node error :　" + e.getMessage());
+        } finally {
+            ClusterDelayProvider.beforeDeleteViewNotic();
+            ClusterUcoreSender.deleteKVTree(nsb.toString() + SEPARATOR);
+            ClusterDelayProvider.beforeReleaseViewLock();
+            distributeLock.release();
         }
 
     }
@@ -162,33 +154,24 @@ public class CKVStoreRepository implements Repository {
                 ClusterUcoreSender.sendDataToUcore(nsb.toString(), UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + DELETE);
                 ClusterDelayProvider.delayAfterViewNotic();
 
-                //check if the online node number is equals to the reponse number
-                List<UKvBean> onlineList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getOnlinePath());
-                List<UKvBean> reponseList = ClusterUcoreSender.getKeyTree(nsb.toString());
+                //self reponse set
+                ClusterUcoreSender.sendDataToUcore(nsb.toString() + UcorePathUtil.SEPARATOR + UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), UcorePathUtil.SUCCESS);
 
-                while (reponseList.size() < onlineList.size() - 1) {
-                    LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-                    onlineList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getOnlinePath());
-                    reponseList = ClusterUcoreSender.getKeyTree(nsb.toString());
-                }
+                String errorMsg = ClusterUcoreSender.waitingForAllTheNode(UcorePathUtil.SUCCESS, nsb.toString() + SEPARATOR);
 
-                //check all the node status is success
-                if (reponseList != null) {
-                    for (UKvBean kv : reponseList) {
-                        if (!kv.getValue().equals(UcorePathUtil.SUCCESS)) {
-                            LOGGER.info(AlarmCode.CORE_CLUSTER_WARN + "view mate change error on key " + kv.getKey());
-                        }
-                    }
+                if (errorMsg != null) {
+                    throw new RuntimeException(errorMsg);
                 }
-                ClusterDelayProvider.beforeDeleteViewNotic();
-                ClusterUcoreSender.deleteKVTree(nsb.toString() + SEPARATOR);
-                ClusterDelayProvider.beforeReleaseViewLock();
-                distributeLock.release();
             } catch (RuntimeException e) {
                 LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "delete ucore node error :　" + e.getMessage());
                 throw e;
             } catch (Exception e) {
                 LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "delete ucore node error :　" + e.getMessage());
+            } finally {
+                ClusterDelayProvider.beforeDeleteViewNotic();
+                ClusterUcoreSender.deleteKVTree(nsb.toString() + SEPARATOR);
+                ClusterDelayProvider.beforeReleaseViewLock();
+                distributeLock.release();
             }
         }
     }

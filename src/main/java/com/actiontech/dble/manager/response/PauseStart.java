@@ -56,6 +56,7 @@ public final class PauseStart {
         }
 
 
+        //clusterPauseNotic
         if (!DbleServer.getInstance().getMiManager().clusterPauseNotic(dataNode)) {
             c.writeErrMessage(1105, "Other node in cluster is pausing");
             return;
@@ -71,6 +72,7 @@ public final class PauseStart {
         DbleServer.getInstance().getMiManager().lockWithDataNodes(dataNodes);
 
 
+        //self pause the dataNode
         long timeOut = Long.parseLong(ma.group(2)) * 1000;
         long beginTime = System.currentTimeMillis();
         while (System.currentTimeMillis() - beginTime < timeOut) {

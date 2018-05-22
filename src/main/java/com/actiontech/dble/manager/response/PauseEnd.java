@@ -38,7 +38,7 @@ public final class PauseEnd {
                 UKvBean value = ClusterUcoreSender.getKey(UcorePathUtil.getPauseDataNodePath());
                 PauseInfo pauseInfo = new PauseInfo(value.getValue());
                 if (!pauseInfo.getFrom().equals(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) {
-                    c.writeErrMessage(1003, "This node is node the node which start pause");
+                    c.writeErrMessage(1003, "This node is not the node which start pause");
                     return;
                 }
 

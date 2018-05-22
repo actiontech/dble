@@ -164,14 +164,20 @@ public final class ReloadConfig {
             ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getSelfConfStatusPath(), UConfigStatusResponse.SUCCESS);
 
             //step 5 start a loop to check if all the dble in cluster is reload finished
-            while (ClusterUcoreSender.getKeyTreeSize(UcorePathUtil.getConfStatusPath() + SEPARATOR) <
+
+            /*while (ClusterUcoreSender.getKeyTreeSize(UcorePathUtil.getConfStatusPath() + SEPARATOR) <
                     ClusterUcoreSender.getKeyTreeSize(UcorePathUtil.getOnlinePath() + SEPARATOR)) {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-            }
+            }*/
+            String errorMsg = ClusterUcoreSender.waitingForAllTheNode(UConfigStatusResponse.SUCCESS, UcorePathUtil.getConfStatusPath() + SEPARATOR);
 
             //step 6 delete the reload flag
             ClusterUcoreSender.deleteKVTree(UcorePathUtil.getConfStatusPath() + SEPARATOR);
 
+            if (errorMsg != null) {
+                writeErrorResult(c, errorMsg);
+                return;
+            }
             writeOKResult(c);
         } catch (Exception e) {
             LOGGER.warn("reload config failure", e);

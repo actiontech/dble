@@ -37,6 +37,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil.SEPARATOR;
+
 
 /**
  * @author mycat
@@ -75,6 +77,7 @@ public final class RollbackConfig {
                 }
                 try {
                     rollbackWithUcore(c);
+                    writeOKResult(c);
                 } finally {
                     distributeLock.release();
                 }
@@ -112,14 +115,19 @@ public final class RollbackConfig {
             //step 4 set self status success
             ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getSelfConfStatusPath(), UConfigStatusResponse.SUCCESS);
 
-            //step 5 start a loop to check if all the dble in cluster is reload finished
+            /*//step 5 start a loop to check if all the dble in cluster is reload finished
             while (ClusterUcoreSender.getKeyTreeSize(UcorePathUtil.getConfStatusPath()) <
                     ClusterUcoreSender.getKeyTreeSize(UcorePathUtil.getOnlinePath())) {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-            }
+            }*/
+            String errorMsg = ClusterUcoreSender.waitingForAllTheNode(UConfigStatusResponse.SUCCESS, UcorePathUtil.getConfStatusPath() + SEPARATOR);
 
             //step 6 delete the reload flag
             ClusterUcoreSender.deleteKVTree(UcorePathUtil.getConfStatusPath());
+
+            if (errorMsg != null) {
+                throw new RuntimeException(errorMsg);
+            }
         } catch (Exception e) {
             LOGGER.warn("reload config failure", e);
             writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());

@@ -162,7 +162,11 @@ public final class ShowTables {
     public static PackageBufINf writeFullTablesRow(ByteBuffer buffer, ServerConnection c, Map<String, String> tableMap, byte packetId, Item whereItem, List<Field> sourceFields) {
         for (Map.Entry<String, String> entry : tableMap.entrySet()) {
             RowDataPacket row = new RowDataPacket(2);
-            row.add(StringUtil.encode(entry.getKey().toLowerCase(), c.getCharset().getResults()));
+            String name = entry.getKey();
+            if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+                name = name.toLowerCase();
+            }
+            row.add(StringUtil.encode(name, c.getCharset().getResults()));
             row.add(StringUtil.encode(entry.getValue(), c.getCharset().getResults()));
             if (whereItem != null) {
                 HandlerTool.initFields(sourceFields, row.fieldValues);

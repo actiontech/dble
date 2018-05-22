@@ -310,7 +310,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
                 @Override
                 public void run() {
                     // route by sql query root parent's data node
-                    String findRootTBSql = tc.getLocateRTableKeySql().toLowerCase() + joinKeyVal;
+                    String findRootTBSql = tc.getLocateRTableKeySql() + joinKeyVal;
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("to find root parent's node sql :" + findRootTBSql);
                     }

@@ -44,7 +44,7 @@ public class UBinlogPauseStatusResponse implements UcoreXmlLoader {
                 return;
             }
             try {
-                ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getBinlogPauseStatusSelf(), "true");
+                ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getBinlogPauseStatusSelf(), UcorePathUtil.SUCCESS);
             } catch (Exception e) {
                 cleanResource();
                 LOGGER.warn(AlarmCode.CORE_ZK_WARN + "create binlogPause instance failed", e);

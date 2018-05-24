@@ -517,14 +517,14 @@ public class ProxyMetaManager {
     public void notifyReponseUcoreDDL(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, boolean needNotifyOther) throws Exception {
         String nodeName = StringUtil.getUFullName(schema, table);
         DDLInfo ddlInfo = new DDLInfo(schema, sql, UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ddlStatus);
-        ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLInstancePath(nodeName), "SUCCESS");
+        ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLInstancePath(nodeName), UcorePathUtil.SUCCESS);
         if (needNotifyOther) {
             try {
                 ClusterDelayProvider.delayBeforeDdlNotice();
                 ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLPath(nodeName), ddlInfo.toString());
                 ClusterDelayProvider.delayAfterDdlNotice();
 
-                String errorMsg = ClusterUcoreSender.waitingForAllTheNode("SUCCESS", UcorePathUtil.getDDLPath(nodeName));
+                String errorMsg = ClusterUcoreSender.waitingForAllTheNode(UcorePathUtil.SUCCESS, UcorePathUtil.getDDLPath(nodeName));
 
                 if (errorMsg != null) {
                     throw new RuntimeException(errorMsg);

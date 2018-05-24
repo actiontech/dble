@@ -131,12 +131,12 @@ public final class ShowBinlogStatus {
                         return;
                     }
                     ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getBinlogPauseStatus(), pauseOnInfo.toString());
-                    ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getBinlogPauseStatusSelf(), String.valueOf(isPaused));
+                    ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getBinlogPauseStatusSelf(), UcorePathUtil.SUCCESS);
 
                     Map<String, String> expectedMap = UcoreToXml.getOnlineMap();
                     while (true) {
                         StringBuffer errorStringBuf = new StringBuffer();
-                        if (ClusterUcoreSender.checkResponseForOneTime("true", UcorePathUtil.getBinlogPauseStatus(), expectedMap, errorStringBuf)) {
+                        if (ClusterUcoreSender.checkResponseForOneTime(UcorePathUtil.SUCCESS, UcorePathUtil.getBinlogPauseStatus(), expectedMap, errorStringBuf)) {
                             errMsg = errorStringBuf.length() <= 0 ? null : errorStringBuf.toString();
                             break;
                         } else if (TimeUtil.currentTimeMillis() > beginTime + 2 * timeout) {

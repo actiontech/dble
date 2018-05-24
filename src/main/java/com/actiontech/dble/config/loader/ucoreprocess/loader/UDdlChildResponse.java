@@ -79,13 +79,13 @@ public class UDdlChildResponse implements UcoreXmlLoader {
                 }
 
                 ClusterDelayProvider.delayBeforeDdlResponse();
-                ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLInstancePath(fullName), "SUCCESS");
+                ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLInstancePath(fullName), UcorePathUtil.SUCCESS);
             } else if (ddlInfo.getStatus() == DDLInfo.DDLStatus.FAILED && !UKvBean.DELETE.equals(configValue.getChangeType())) {
                 //if the start node executing ddl with error,just release the lock
                 lockMap.remove(fullName);
                 DbleServer.getInstance().getTmManager().removeMetaLock(schema, table);
                 ClusterDelayProvider.delayBeforeDdlResponse();
-                ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLInstancePath(fullName), "FAILED");
+                ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLInstancePath(fullName), UcorePathUtil.SUCCESS);
             }
         }
     }

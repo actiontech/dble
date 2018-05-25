@@ -70,7 +70,7 @@ public class ConfigInitializer {
         checkWriteHost();
     }
 
-    public ConfigInitializer(boolean lowerCaseNames) {
+    /*public ConfigInitializer(boolean lowerCaseNames) {
         XMLServerLoader serverLoader = new XMLServerLoader(lowerCaseNames);
         this.system = serverLoader.getSystem();
         this.users = serverLoader.getUsers();
@@ -82,9 +82,9 @@ public class ConfigInitializer {
         this.dataHosts = initDataHosts(schemaLoader);
         this.dataNodes = initDataNodes(schemaLoader);
         loadSequence();
-        /* check config */
+        *//* check config *//*
         this.selfChecking0();
-    }
+    }*/
 
     private void loadSequence() {
         //load global sequence
@@ -348,5 +348,7 @@ public class ConfigInitializer {
     public boolean isDataHostWithoutWH() {
         return dataHostWithoutWH;
     }
+
+
 
 }

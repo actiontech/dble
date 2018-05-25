@@ -83,6 +83,32 @@ public class ServerConfig {
         }
     }
 
+
+    public ServerConfig(ConfigInitializer confInit) {
+        //read schema.xml,rule.xml and server.xml
+        this.system = confInit.getSystem();
+        this.users = confInit.getUsers();
+        this.schemas = confInit.getSchemas();
+        this.dataHosts = confInit.getDataHosts();
+        this.dataNodes = confInit.getDataNodes();
+        this.erRelations = confInit.getErRelations();
+        this.dataHostWithoutWR = confInit.isDataHostWithoutWH();
+        ConfigUtil.setSchemasForPool(dataHosts, dataNodes);
+
+        this.firewall = confInit.getFirewall();
+
+        this.reloadTime = TimeUtil.currentTimeMillis();
+        this.rollbackTime = -1L;
+        this.status = RELOAD;
+
+        this.lock = new ReentrantLock();
+        try {
+            confInit.testConnection(true);
+        } catch (ConfigException e) {
+            LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + e.getMessage());
+        }
+    }
+
     private void waitIfChanging() {
         while (changing) {
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
@@ -397,6 +423,27 @@ public class ServerConfig {
         }
         return false;
     }
+
+
+    /**
+     * turned all the config into lowerCase config
+     */
+    public void reviseLowerCase() {
+
+
+        //user schema
+        for (UserConfig uc : users.values()) {
+            if(uc.getPrivilegesConfig() != null){
+                uc.getPrivilegesConfig().changeMapToLowerCase();
+            }
+        }
+
+
+
+
+
+    }
+
 
     private static class DsDiff {
         private Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> deled;

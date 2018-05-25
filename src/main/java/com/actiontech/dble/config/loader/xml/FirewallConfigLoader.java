@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 public class FirewallConfigLoader implements Loader<FirewallConfig, XMLServerLoader> {
-    public void load(Element root, XMLServerLoader xsl, boolean isLowerCaseTableNames) throws IllegalAccessException, InvocationTargetException {
+    public void load(Element root, XMLServerLoader xsl) throws IllegalAccessException, InvocationTargetException {
         FirewallConfig firewall = xsl.getFirewall();
         Map<String, UserConfig> users = xsl.getUsers();
         NodeList list = root.getElementsByTagName("host");

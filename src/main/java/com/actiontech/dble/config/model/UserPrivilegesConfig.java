@@ -18,7 +18,7 @@ public class UserPrivilegesConfig {
 
     private boolean check = false;
 
-    private Map<String, SchemaPrivilege> schemaPrivileges = new HashMap<>();
+    private volatile Map<String, SchemaPrivilege> schemaPrivileges = new HashMap<>();
 
     public boolean isCheck() {
         return check;
@@ -35,6 +35,13 @@ public class UserPrivilegesConfig {
     public SchemaPrivilege getSchemaPrivilege(String schemaName) {
         SchemaPrivilege schemaPrivilege = schemaPrivileges.get(schemaName);
         return schemaPrivilege;
+    }
+
+
+    public void changeMapToLowerCase(){
+
+
+
     }
 
     public static class SchemaPrivilege {

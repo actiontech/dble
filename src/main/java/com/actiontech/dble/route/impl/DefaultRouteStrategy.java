@@ -33,14 +33,19 @@ public class DefaultRouteStrategy extends AbstractRouteStrategy {
 
         try {
             List<SQLStatement> list = parser.parseStatementList();
-            int execIndex = c.getSession2().getSqlIndex().incrementAndGet();
             if (list.size() > 1) {
                 c.getSession2().getIsMultiStatement().set(true);
+                StringBuffer sb = new StringBuffer();
+                for (int i = 1; i < list.size(); i++) {
+                    sb.append(list.get(i).toString());
+                    sb.append(";");
+                }
+                c.getSession2().setRemingSql(sb.toString());
+            } else {
+                c.getSession2().resetMultiStatementStatus();
             }
-            if (c.getSession2().getSqlIndex().get() == list.size() - 1) {
-                c.getSession2().getSqlIndex().set(-1);
-            }
-            return list.get(execIndex);
+
+            return list.get(0);
         } catch (Exception t) {
             LOGGER.info("routeNormalSqlWithAST", t);
             if (t.getMessage() != null) {

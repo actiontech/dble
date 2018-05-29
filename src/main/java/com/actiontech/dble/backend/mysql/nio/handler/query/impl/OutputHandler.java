@@ -55,6 +55,7 @@ public class OutputHandler extends BaseDMLHandler {
         lock.lock();
         try {
             ok[3] = ++packetId;
+            session.multiStatementNext(okPacket);
             if ((okPacket.getServerStatus() & StatusFlags.SERVER_MORE_RESULTS_EXISTS) > 0) {
                 buffer = source.writeToBuffer(ok, buffer);
             } else {
@@ -85,6 +86,7 @@ public class OutputHandler extends BaseDMLHandler {
         try {
             buffer = session.getSource().writeToBuffer(err, buffer);
             //session.getSource().executeNext(packetId, true);
+            session.resetMultiStatementStatus();
             session.getSource().write(buffer);
         } finally {
             lock.unlock();
@@ -166,6 +168,7 @@ public class OutputHandler extends BaseDMLHandler {
                 eofPacket.setStatus(eofPacket.getStatus() | StatusFlags.SERVER_MORE_RESULTS_EXISTS);
             }
             HandlerTool.terminateHandlerTree(this);
+            session.multiStatementNext(eofPacket);
             byte[] eof = eofPacket.toBytes();
             buffer = source.writeToBuffer(eof, buffer);
             session.setResponseTime();
@@ -217,6 +220,7 @@ public class OutputHandler extends BaseDMLHandler {
                 buffer = null;
             }
         }
+        session.resetMultiStatementStatus();
     }
 
     @Override

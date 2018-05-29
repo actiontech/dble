@@ -89,8 +89,7 @@ public class NonBlockingSession implements Session {
 
 
     private AtomicBoolean isMultiStatement = new AtomicBoolean(false);
-
-
+    private AtomicInteger remingSqlNum = new AtomicInteger(0);
     private volatile String remingSql = null;
 
     public NonBlockingSession(ServerConnection source) {
@@ -810,7 +809,7 @@ public class NonBlockingSession implements Session {
      * @param packet
      */
     public void multiStatementNext(MySQLPacket packet) {
-        if (this.isMultiStatement.get()) {
+        if (this.isMultiStatement.get() && remingSqlNum.decrementAndGet() > 0) {
             if (packet instanceof OkPacket) {
                 ((OkPacket) packet).changeServerStatus();
             } else if (packet instanceof EOFPacket) {
@@ -828,7 +827,7 @@ public class NonBlockingSession implements Session {
      * @param eof
      */
     public void multiStatementNext(byte[] eof) {
-        if (this.getIsMultiStatement().get()) {
+        if (this.getIsMultiStatement().get() && remingSqlNum.decrementAndGet() > 0) {
             //if there is another statement is need to be executed ,start another round
             eof[7] = (byte) (eof[7] | 0x08);
             this.setRequestTime();
@@ -845,6 +844,7 @@ public class NonBlockingSession implements Session {
             //clear the record
             this.isMultiStatement.set(false);
             this.remingSql = null;
+            this.remingSqlNum.set(0);
         }
     }
 
@@ -876,5 +876,13 @@ public class NonBlockingSession implements Session {
 
     public void setRemingSql(String remingSql) {
         this.remingSql = remingSql;
+    }
+
+    public AtomicInteger getRemingSqlNum() {
+        return remingSqlNum;
+    }
+
+    public void setRemingSqlNum(AtomicInteger remingSqlNum) {
+        this.remingSqlNum = remingSqlNum;
     }
 }

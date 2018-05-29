@@ -111,7 +111,8 @@ public class RouteService {
             rrs = RouteStrategyFactory.getRouteStrategy().route(schema, sqlType, stmt, sc, tableId2DataNodeCache);
         }
 
-        if (rrs != null && sqlType == ServerParse.SELECT && rrs.isCacheAble() && !LOGGER.isDebugEnabled() && sqlRouteCache != null) {
+        if (rrs != null && sqlType == ServerParse.SELECT && rrs.isCacheAble() && !LOGGER.isDebugEnabled() && sqlRouteCache != null &&
+                !sc.getSession2().getIsMultiStatement().get()) {
             sqlRouteCache.putIfAbsent(cacheKey, rrs);
         }
         return rrs;

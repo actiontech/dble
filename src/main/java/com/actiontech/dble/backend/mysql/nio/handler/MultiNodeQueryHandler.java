@@ -151,6 +151,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         errPacket.setErrNo(ErrorCode.ER_ABORTING_CONNECTION);
         errPacket.setMessage(StringUtil.encode(reason, session.getSource().getCharset().getResults()));
         err = errPacket;
+        session.resetMultiStatementStatus();
         executeError(conn);
     }
 
@@ -162,6 +163,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         errPacket.setErrNo(ErrorCode.ER_ABORTING_CONNECTION);
         errPacket.setMessage(StringUtil.encode(e.toString(), session.getSource().getCharset().getResults()));
         err = errPacket;
+        session.resetMultiStatementStatus();
         executeError(conn);
     }
 
@@ -178,6 +180,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         errPacket.read(data);
         errPacket.setPacketId(1); //TODO :CONFIRM ?++packetId??
         err = errPacket;
+        session.resetMultiStatementStatus();
         lock.lock();
         try {
             if (!isFail()) {
@@ -242,6 +245,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     ok.setInsertId(insertId);
                     source.setLastInsertId(insertId);
                 }
+                session.multiStatementNext(ok);
                 handleEndPacket(ok.toBytes(), AutoTxOperation.COMMIT, conn);
             } finally {
                 lock.unlock();
@@ -307,6 +311,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
             }
             session.setResponseTime();
+            session.multiStatementNext(eof);
             writeEofResult(eof, source);
             doSqlStat(source);
         }

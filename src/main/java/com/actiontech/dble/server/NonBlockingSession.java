@@ -24,6 +24,9 @@ import com.actiontech.dble.btrace.provider.CostTimeProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.log.alarm.AlarmCode;
+import com.actiontech.dble.net.handler.FrontendCommandHandler;
+import com.actiontech.dble.net.mysql.EOFPacket;
+import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.node.PlanNode;
@@ -83,6 +86,13 @@ public class NonBlockingSession implements Session {
     private CostTimeProvider provider;
     private volatile boolean timeCost = false;
     private AtomicBoolean firstBackConRes = new AtomicBoolean(false);
+
+
+    //executed sql statement index
+    private AtomicInteger sqlIndex = new AtomicInteger(-1);
+
+
+    private AtomicBoolean isMultiStatement = new AtomicBoolean(false);
 
     public NonBlockingSession(ServerConnection source) {
         this.source = source;
@@ -778,6 +788,7 @@ public class NonBlockingSession implements Session {
     public void handleSpecial(RouteResultset rrs, String schema, boolean isSuccess) {
         handleSpecial(rrs, schema, isSuccess, null);
     }
+
     public void handleSpecial(RouteResultset rrs, String schema, boolean isSuccess, String errInfo) {
         if (rrs.getSqlType() == ServerParse.DDL) {
             String sql = rrs.getSrcStatement();
@@ -793,6 +804,55 @@ public class NonBlockingSession implements Session {
         }
     }
 
+
+    /**
+     * backend packet server_status change and next round start
+     *
+     * @param packet
+     */
+    public void multiStatementNext(MySQLPacket packet) {
+        if (source.getSession2().getSqlIndex().get() != -1) {
+            if (packet instanceof OkPacket) {
+                ((OkPacket) packet).changeServerStatus();
+            } else if (packet instanceof EOFPacket) {
+                ((EOFPacket) packet).changeServerStatus();
+            }
+            DbleServer.getInstance().getFrontHandlerQueue().offer((FrontendCommandHandler) source.getHandler());
+        } else if (source.getSession2().getIsMultiStatement().get()) {
+            //clear the record
+            source.getSession2().getIsMultiStatement().set(false);
+        }
+    }
+
+
+    /**
+     * backend row eof packet server_status change and next round start
+     *
+     * @param eof
+     */
+    public void multiStatementNext(byte[] eof) {
+        if (this.getSqlIndex().get() != -1) {
+            //if there is another statement is need to be executed ,start another round
+            eof[7] = (byte) (eof[7] | 0x08);
+            DbleServer.getInstance().getFrontHandlerQueue().offer((FrontendCommandHandler) source.getHandler());
+        } else if (this.getIsMultiStatement().get()) {
+            //clear the record
+            this.getIsMultiStatement().set(false);
+        }
+    }
+
+
+    /**
+     * reset the session multiStatementStatus
+     */
+    public void resetMultiStatementStatus() {
+        if (this.isMultiStatement.get()) {
+            //clear the record
+            this.isMultiStatement.set(false);
+            this.sqlIndex.set(-1);
+        }
+    }
+
     public MemSizeController getJoinBufferMC() {
         return joinBufferMC;
     }
@@ -803,5 +863,21 @@ public class NonBlockingSession implements Session {
 
     public MemSizeController getOtherBufferMC() {
         return otherBufferMC;
+    }
+
+    public AtomicInteger getSqlIndex() {
+        return sqlIndex;
+    }
+
+    public void setSqlIndex(AtomicInteger sqlIndex) {
+        this.sqlIndex = sqlIndex;
+    }
+
+    public AtomicBoolean getIsMultiStatement() {
+        return isMultiStatement;
+    }
+
+    public void setIsMultiStatement(AtomicBoolean isMultiStatement) {
+        this.isMultiStatement = isMultiStatement;
     }
 }

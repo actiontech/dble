@@ -27,6 +27,30 @@ public class DefaultRouteStrategy extends AbstractRouteStrategy {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(DefaultRouteStrategy.class);
 
+
+    public SQLStatement parserSQL(String originSql, ServerConnection c) throws SQLSyntaxErrorException {
+        SQLStatementParser parser = new MySqlStatementParser(originSql);
+
+        try {
+            List<SQLStatement> list = parser.parseStatementList();
+            int execIndex = c.getSession2().getSqlIndex().incrementAndGet();
+            if (list.size() > 1) {
+                c.getSession2().getIsMultiStatement().set(true);
+            }
+            if (c.getSession2().getSqlIndex().get() == list.size() - 1) {
+                c.getSession2().getSqlIndex().set(-1);
+            }
+            return list.get(execIndex);
+        } catch (Exception t) {
+            LOGGER.info("routeNormalSqlWithAST", t);
+            if (t.getMessage() != null) {
+                throw new SQLSyntaxErrorException(t.getMessage());
+            } else {
+                throw new SQLSyntaxErrorException(t);
+            }
+        }
+    }
+
     @Override
     public SQLStatement parserSQL(String originSql) throws SQLSyntaxErrorException {
         SQLStatementParser parser = new MySqlStatementParser(originSql);
@@ -54,7 +78,12 @@ public class DefaultRouteStrategy extends AbstractRouteStrategy {
     public RouteResultset routeNormalSqlWithAST(SchemaConfig schema,
                                                 String originSql, RouteResultset rrs,
                                                 LayerCachePool cachePool, ServerConnection sc) throws SQLException {
-        SQLStatement statement = parserSQL(originSql);
+        SQLStatement statement = parserSQL(originSql, sc);
+        if (sc.getSession2().getIsMultiStatement().get()) {
+            originSql = statement.toString();
+            rrs.setStatement(originSql);
+            rrs.setSrcStatement(originSql);
+        }
         sc.getSession2().endParse();
         DruidParser druidParser = DruidParserFactory.create(statement, rrs.getSqlType());
         return RouterUtil.routeFromParser(druidParser, schema, rrs, statement, originSql, cachePool, new ServerSchemaStatVisitor(), sc);

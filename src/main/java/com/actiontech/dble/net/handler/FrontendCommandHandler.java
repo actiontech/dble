@@ -11,6 +11,7 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOHandler;
 import com.actiontech.dble.net.mysql.MySQLPacket;
+import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.statistic.CommandCount;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
@@ -26,6 +27,7 @@ public class FrontendCommandHandler implements NIOHandler {
     protected final FrontendConnection source;
     protected final CommandCount commands;
     private byte[] dataTodo;
+
     public FrontendCommandHandler(FrontendConnection source) {
         this.source = source;
         this.commands = source.getProcessor().getCommands();
@@ -42,6 +44,9 @@ public class FrontendCommandHandler implements NIOHandler {
             return;
         }
         dataTodo = data;
+        if (source instanceof ServerConnection) {
+            ((ServerConnection) source).getSession2().resetMultiStatementStatus();
+        }
         DbleServer.getInstance().getFrontHandlerQueue().offer(this);
     }
 
@@ -59,6 +64,7 @@ public class FrontendCommandHandler implements NIOHandler {
             source.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, msg);
         }
     }
+
     protected void handleData(byte[] data) {
         source.startProcess();
         switch (data[4]) {

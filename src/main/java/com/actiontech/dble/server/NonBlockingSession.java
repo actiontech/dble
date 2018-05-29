@@ -88,11 +88,10 @@ public class NonBlockingSession implements Session {
     private AtomicBoolean firstBackConRes = new AtomicBoolean(false);
 
 
-    //executed sql statement index
-    private AtomicInteger sqlIndex = new AtomicInteger(-1);
-
-
     private AtomicBoolean isMultiStatement = new AtomicBoolean(false);
+
+
+    private volatile String remingSql = null;
 
     public NonBlockingSession(ServerConnection source) {
         this.source = source;
@@ -811,16 +810,14 @@ public class NonBlockingSession implements Session {
      * @param packet
      */
     public void multiStatementNext(MySQLPacket packet) {
-        if (source.getSession2().getSqlIndex().get() != -1) {
+        if (this.isMultiStatement.get()) {
             if (packet instanceof OkPacket) {
                 ((OkPacket) packet).changeServerStatus();
             } else if (packet instanceof EOFPacket) {
                 ((EOFPacket) packet).changeServerStatus();
             }
+            this.setRequestTime();
             DbleServer.getInstance().getFrontHandlerQueue().offer((FrontendCommandHandler) source.getHandler());
-        } else if (source.getSession2().getIsMultiStatement().get()) {
-            //clear the record
-            source.getSession2().getIsMultiStatement().set(false);
         }
     }
 
@@ -831,13 +828,11 @@ public class NonBlockingSession implements Session {
      * @param eof
      */
     public void multiStatementNext(byte[] eof) {
-        if (this.getSqlIndex().get() != -1) {
+        if (this.getIsMultiStatement().get()) {
             //if there is another statement is need to be executed ,start another round
             eof[7] = (byte) (eof[7] | 0x08);
+            this.setRequestTime();
             DbleServer.getInstance().getFrontHandlerQueue().offer((FrontendCommandHandler) source.getHandler());
-        } else if (this.getIsMultiStatement().get()) {
-            //clear the record
-            this.getIsMultiStatement().set(false);
         }
     }
 
@@ -849,7 +844,7 @@ public class NonBlockingSession implements Session {
         if (this.isMultiStatement.get()) {
             //clear the record
             this.isMultiStatement.set(false);
-            this.sqlIndex.set(-1);
+            this.remingSql = null;
         }
     }
 
@@ -865,13 +860,6 @@ public class NonBlockingSession implements Session {
         return otherBufferMC;
     }
 
-    public AtomicInteger getSqlIndex() {
-        return sqlIndex;
-    }
-
-    public void setSqlIndex(AtomicInteger sqlIndex) {
-        this.sqlIndex = sqlIndex;
-    }
 
     public AtomicBoolean getIsMultiStatement() {
         return isMultiStatement;
@@ -879,5 +867,14 @@ public class NonBlockingSession implements Session {
 
     public void setIsMultiStatement(AtomicBoolean isMultiStatement) {
         this.isMultiStatement = isMultiStatement;
+    }
+
+
+    public String getRemingSql() {
+        return remingSql;
+    }
+
+    public void setRemingSql(String remingSql) {
+        this.remingSql = remingSql;
     }
 }

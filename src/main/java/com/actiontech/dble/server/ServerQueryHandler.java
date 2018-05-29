@@ -22,6 +22,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
     private final ServerConnection source;
     private Boolean readOnly = true;
     private boolean sessionReadOnly = true;
+
     @Override
     public void setReadOnly(Boolean readOnly) {
         this.readOnly = readOnly;
@@ -43,7 +44,11 @@ public class ServerQueryHandler implements FrontendQueryHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(String.valueOf(c) + sql);
         }
-        //
+
+        if (source.getSession2().getRemingSql() != null) {
+            sql = source.getSession2().getRemingSql();
+        }
+
         int rs = ServerParse.parse(sql);
         int sqlType = rs & 0xff;
         switch (sqlType) {

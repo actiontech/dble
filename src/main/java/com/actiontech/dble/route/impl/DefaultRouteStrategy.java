@@ -41,6 +41,7 @@ public class DefaultRouteStrategy extends AbstractRouteStrategy {
                     sb.append(";");
                 }
                 c.getSession2().setRemingSql(sb.toString());
+                c.getSession2().getRemingSqlNum().set(list.size());
             } else {
                 c.getSession2().resetMultiStatementStatus();
             }

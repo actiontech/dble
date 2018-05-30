@@ -8,6 +8,7 @@ package com.actiontech.dble.server;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.*;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.HandlerBuilder;
@@ -35,6 +36,7 @@ import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.statistic.stat.QueryTimeCost;
 import com.actiontech.dble.statistic.stat.QueryTimeCostContainer;
@@ -89,7 +91,6 @@ public class NonBlockingSession implements Session {
 
 
     private AtomicBoolean isMultiStatement = new AtomicBoolean(false);
-    private AtomicInteger remingSqlNum = new AtomicInteger(0);
     private volatile String remingSql = null;
 
     public NonBlockingSession(ServerConnection source) {
@@ -809,7 +810,7 @@ public class NonBlockingSession implements Session {
      * @param packet
      */
     public void multiStatementNext(MySQLPacket packet) {
-        if (this.isMultiStatement.get() && remingSqlNum.decrementAndGet() > 0) {
+        if (this.isMultiStatement.get()) {
             if (packet instanceof OkPacket) {
                 ((OkPacket) packet).changeServerStatus();
             } else if (packet instanceof EOFPacket) {
@@ -820,19 +821,25 @@ public class NonBlockingSession implements Session {
         }
     }
 
-
     /**
      * backend row eof packet server_status change and next round start
      *
      * @param eof
      */
     public void multiStatementNext(byte[] eof) {
-        if (this.getIsMultiStatement().get() && remingSqlNum.decrementAndGet() > 0) {
+        if (this.getIsMultiStatement().get()) {
             //if there is another statement is need to be executed ,start another round
             eof[7] = (byte) (eof[7] | 0x08);
             this.setRequestTime();
             DbleServer.getInstance().getFrontHandlerQueue().offer((FrontendCommandHandler) source.getHandler());
         }
+    }
+
+    public byte[] getOkByteArray() {
+        OkPacket ok = new OkPacket();
+        ok.read(OkPacket.OK);
+        this.multiStatementNext(ok);
+        return ok.toBytes();
     }
 
 
@@ -844,9 +851,22 @@ public class NonBlockingSession implements Session {
             //clear the record
             this.isMultiStatement.set(false);
             this.remingSql = null;
-            this.remingSqlNum.set(0);
         }
     }
+
+    public boolean generalNextStatement(String sql) {
+        int index = ParseUtil.findNextBreak(sql);
+        if (index + 1 < sql.length()) {
+            this.remingSql = sql.substring(index + 1, sql.length());
+            this.isMultiStatement.set(true);
+            return true;
+        } else {
+            this.remingSql = null;
+            this.isMultiStatement.set(false);
+            return false;
+        }
+    }
+
 
     public MemSizeController getJoinBufferMC() {
         return joinBufferMC;
@@ -878,11 +898,5 @@ public class NonBlockingSession implements Session {
         this.remingSql = remingSql;
     }
 
-    public AtomicInteger getRemingSqlNum() {
-        return remingSqlNum;
-    }
 
-    public void setRemingSqlNum(AtomicInteger remingSqlNum) {
-        this.remingSqlNum = remingSqlNum;
-    }
 }

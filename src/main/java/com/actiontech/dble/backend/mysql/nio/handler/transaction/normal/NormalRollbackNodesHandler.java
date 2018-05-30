@@ -65,7 +65,7 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
     public void okResponse(byte[] ok, BackendConnection conn) {
         if (decrementCountBy(1)) {
             if (sendData == null) {
-                sendData = ok;
+                sendData = session.getOkByteArray();
             }
             cleanAndFeedback();
         }

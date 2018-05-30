@@ -13,6 +13,7 @@ import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.server.ServerConnection;
 
 import java.nio.ByteBuffer;
 
@@ -61,6 +62,9 @@ public final class SelectVersionComment {
         // write last eof
         EOFPacket lastEof = new EOFPacket();
         lastEof.setPacketId(++packetId);
+        if (c instanceof ServerConnection) {
+            ((ServerConnection) c).getSession2().multiStatementNext(lastEof);
+        }
         buffer = lastEof.write(buffer, c, true);
 
         // post write

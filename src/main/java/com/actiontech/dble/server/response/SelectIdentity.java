@@ -63,6 +63,7 @@ public final class SelectIdentity {
         // write last eof
         EOFPacket lastEof = new EOFPacket();
         lastEof.setPacketId(++packetId);
+        c.getSession2().multiStatementNext(lastEof);
         buffer = lastEof.write(buffer, c, true);
 
         // post write

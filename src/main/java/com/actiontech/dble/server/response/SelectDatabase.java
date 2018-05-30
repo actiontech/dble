@@ -51,6 +51,7 @@ public final class SelectDatabase {
         buffer = row.write(buffer, c, true);
         EOFPacket lastEof = new EOFPacket();
         lastEof.setPacketId(++packetId);
+        c.getSession2().multiStatementNext(lastEof);
         buffer = lastEof.write(buffer, c, true);
         c.write(buffer);
     }

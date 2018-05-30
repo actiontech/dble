@@ -25,6 +25,20 @@ public final class ParseUtil {
         return true;
     }
 
+    public static boolean isMultiEof(String stmt, int offset) {
+        for (; offset < stmt.length(); offset++) {
+            char c = stmt.charAt(offset);
+            if (c == ';') {
+                return true;
+            } else if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+                continue;
+            } else {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public static boolean isSpace(char space) {
         return space == ' ' || space == '\r' || space == '\n' || space == '\t';
     }
@@ -44,6 +58,7 @@ public final class ParseUtil {
         }
         return false;
     }
+
     //FIXME SIZE CHECK
     public static String parseString(String stmt) {
         int offset = stmt.indexOf('=');
@@ -292,6 +307,29 @@ public final class ParseUtil {
             return true;
         }
         return false;
+    }
+
+
+    public static int findNextBreak(String sql) {
+        boolean breakFlag = false;
+        for (int i = 0; i < sql.length(); i++) {
+
+            switch (sql.charAt(i)) {
+                case '\\':
+                    i++;
+                    break;
+                case '\'':
+                    breakFlag = !breakFlag;
+                    break;
+                case ';':
+                    if (!breakFlag) {
+                        return i;
+                    }
+                    break;
+                default:
+            }
+        }
+        return sql.length();
     }
 
 }

@@ -11,7 +11,9 @@ import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.DruidParser;
 import com.actiontech.dble.route.parser.druid.DruidParserFactory;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
+import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.route.util.RouterUtil;
+import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
@@ -29,22 +31,14 @@ public class DefaultRouteStrategy extends AbstractRouteStrategy {
 
 
     public SQLStatement parserSQL(String originSql, ServerConnection c) throws SQLSyntaxErrorException {
-        SQLStatementParser parser = new MySqlStatementParser(originSql);
-
+        SQLStatementParser parser;
+        if (c.getSession2().generalNextStatement(originSql)) {
+            parser = new MySqlStatementParser(originSql.substring(0, ParseUtil.findNextBreak(originSql)));
+        } else {
+            parser = new MySqlStatementParser(originSql);
+        }
         try {
             List<SQLStatement> list = parser.parseStatementList();
-            if (list.size() > 1) {
-                c.getSession2().getIsMultiStatement().set(true);
-                StringBuffer sb = new StringBuffer();
-                for (int i = 1; i < list.size(); i++) {
-                    sb.append(list.get(i).toString());
-                    sb.append(";");
-                }
-                c.getSession2().setRemingSql(sb.toString());
-                c.getSession2().getRemingSqlNum().set(list.size());
-            } else {
-                c.getSession2().resetMultiStatementStatus();
-            }
 
             return list.get(0);
         } catch (Exception t) {

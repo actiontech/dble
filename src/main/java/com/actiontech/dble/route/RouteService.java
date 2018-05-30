@@ -112,7 +112,7 @@ public class RouteService {
         }
 
         if (rrs != null && sqlType == ServerParse.SELECT && rrs.isCacheAble() && !LOGGER.isDebugEnabled() && sqlRouteCache != null &&
-                !sc.getSession2().getIsMultiStatement().get()) {
+                sc.getSession2().getRemingSql() == null) {
             sqlRouteCache.putIfAbsent(cacheKey, rrs);
         }
         return rrs;

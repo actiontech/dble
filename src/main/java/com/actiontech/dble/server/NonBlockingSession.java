@@ -8,7 +8,6 @@ package com.actiontech.dble.server;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.*;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.HandlerBuilder;

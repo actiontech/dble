@@ -16,7 +16,6 @@ import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.buffer.DirectByteBufferPool;
 import com.actiontech.dble.cache.CacheService;
 import com.actiontech.dble.cluster.ClusterParamCfg;
-import com.actiontech.dble.config.ConfigInitializer;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;

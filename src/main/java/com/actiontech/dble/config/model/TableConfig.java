@@ -158,10 +158,10 @@ public class TableConfig {
     }
 
 
-    public TableConfig lowerCaseCopy(TableConfig parentTC) {
+    public TableConfig lowerCaseCopy(TableConfig parent) {
 
-        return new TableConfig(this.name, this.primaryKey, this.autoIncrement, this.needAddLimit,
-                this.tableType, this.dataNodes, this.rule, this.ruleRequired, parentTC, this.joinKey, this.parentKey);
+        return new TableConfig(this.name.toLowerCase(), this.primaryKey, this.autoIncrement, this.needAddLimit,
+                this.tableType, this.dataNodes, this.rule, this.ruleRequired, parent, this.joinKey, this.parentKey);
 
     }
 

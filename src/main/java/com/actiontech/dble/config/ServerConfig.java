@@ -434,6 +434,7 @@ public class ServerConfig {
         for (UserConfig uc : users.values()) {
             if (uc.getPrivilegesConfig() != null) {
                 uc.getPrivilegesConfig().changeMapToLowerCase();
+                uc.changeMapToLowerCase();
             }
         }
 
@@ -446,8 +447,9 @@ public class ServerConfig {
         Map<String, SchemaConfig> newSchemas = new HashMap<>();
         for (Map.Entry<String, SchemaConfig> entry : schemas.entrySet()) {
             SchemaConfig newSchema = new SchemaConfig(entry.getValue());
-            newSchemas.put(entry.getKey().toLowerCase(),newSchema);
+            newSchemas.put(entry.getKey().toLowerCase(), newSchema);
         }
+        this.schemas = newSchemas;
 
     }
 

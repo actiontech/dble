@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.config.model;
 
-import com.google.protobuf.MapEntry;
 
 import java.util.HashMap;
 import java.util.Map;

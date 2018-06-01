@@ -154,19 +154,23 @@ public class SchemaConfig {
         Map<String, TableConfig> newTables = new HashMap<>();
 
         //first round is only get the top tables
-        List<TableConfig> valueList = new LinkedList<>(tables.values());
-        for (TableConfig tc : valueList) {
+        List<TableConfig> valueList = new ArrayList<>(tables.values());
+        Iterator<TableConfig> it = valueList.iterator();
+        while (it.hasNext()) {
+            TableConfig tc = it.next();
             if (tc.getParentTC() == null) {
                 newTables.put(tc.getName().toLowerCase(), tc.lowerCaseCopy(null));
-                valueList.remove(tc);
+                it.remove();
             }
         }
 
         while (valueList.size() > 0) {
-            for (TableConfig tc : valueList) {
+            Iterator<TableConfig> its = valueList.iterator();
+            while (its.hasNext()) {
+                TableConfig tc = its.next();
                 if (newTables.containsKey(tc.getParentTC().getName().toLowerCase())) {
                     newTables.put(tc.getName().toLowerCase(), tc.lowerCaseCopy(newTables.get(tc.getParentTC().getName().toLowerCase())));
-                    valueList.remove(tc);
+                    its.remove();
                 }
             }
         }

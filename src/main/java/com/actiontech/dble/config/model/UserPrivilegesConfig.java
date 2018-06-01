@@ -5,6 +5,8 @@
 
 package com.actiontech.dble.config.model;
 
+import com.google.protobuf.MapEntry;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,10 +40,14 @@ public class UserPrivilegesConfig {
     }
 
 
-    public void changeMapToLowerCase(){
+    public void changeMapToLowerCase() {
+        Map<String, SchemaPrivilege> newSchemaPrivileges = new HashMap<>();
 
-
-
+        for (Map.Entry<String, SchemaPrivilege> entry : schemaPrivileges.entrySet()) {
+            entry.getValue().changeMapToLowerCase();
+            newSchemaPrivileges.put(entry.getKey().toLowerCase(), entry.getValue());
+        }
+        schemaPrivileges = newSchemaPrivileges;
     }
 
     public static class SchemaPrivilege {
@@ -61,6 +67,14 @@ public class UserPrivilegesConfig {
 
         public void addTablePrivilege(String tableName, TablePrivilege privilege) {
             this.tablePrivileges.put(tableName, privilege);
+        }
+
+        public void changeMapToLowerCase() {
+            Map<String, TablePrivilege> newTablePrivileges = new HashMap<>();
+            for (Map.Entry<String, TablePrivilege> entry : tablePrivileges.entrySet()) {
+                newTablePrivileges.put(entry.getKey().toLowerCase(), entry.getValue());
+            }
+            tablePrivileges = newTablePrivileges;
         }
 
         public TablePrivilege getTablePrivilege(String tableName) {

@@ -430,17 +430,24 @@ public class ServerConfig {
      */
     public void reviseLowerCase() {
 
-
         //user schema
         for (UserConfig uc : users.values()) {
-            if(uc.getPrivilegesConfig() != null){
+            if (uc.getPrivilegesConfig() != null) {
                 uc.getPrivilegesConfig().changeMapToLowerCase();
             }
         }
 
+        //dataNode
+        for (PhysicalDBNode physicalDBNode : dataNodes.values()) {
+            physicalDBNode.toLowerCase();
+        }
 
-
-
+        //schemas
+        Map<String, SchemaConfig> newSchemas = new HashMap<>();
+        for (Map.Entry<String, SchemaConfig> entry : schemas.entrySet()) {
+            SchemaConfig newSchema = new SchemaConfig(entry.getValue());
+            newSchemas.put(entry.getKey().toLowerCase(),newSchema);
+        }
 
     }
 

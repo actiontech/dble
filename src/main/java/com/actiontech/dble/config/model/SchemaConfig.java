@@ -49,6 +49,28 @@ public class SchemaConfig {
         }
     }
 
+    public SchemaConfig(SchemaConfig oldSchemaConfig) {
+        this.name = oldSchemaConfig.getName().toLowerCase();
+        this.dataNode = oldSchemaConfig.getDataNode().toLowerCase();
+        this.tables = oldSchemaConfig.getLowerCaseTables();
+        this.defaultMaxLimit = oldSchemaConfig.getDefaultMaxLimit();
+        buildERMap();
+        this.noSharding = (tables == null || tables.isEmpty());
+        if (noSharding && dataNode == null) {
+            throw new RuntimeException(name + " in noSharding mode schema must have default dataNode ");
+        }
+        this.metaDataNode = buildMetaDataNodes();
+        this.allDataNodes = buildAllDataNodes();
+        if (this.allDataNodes != null && !this.allDataNodes.isEmpty()) {
+            String[] dnArr = new String[this.allDataNodes.size()];
+            dnArr = this.allDataNodes.toArray(dnArr);
+            this.allDataNodeStrArr = dnArr;
+        } else {
+            this.allDataNodeStrArr = null;
+        }
+    }
+
+
     public int getDefaultMaxLimit() {
         return defaultMaxLimit;
     }
@@ -126,6 +148,30 @@ public class SchemaConfig {
 
     public Map<String, TableConfig> getTables() {
         return tables;
+    }
+
+    public Map<String, TableConfig> getLowerCaseTables() {
+        Map<String, TableConfig> newTables = new HashMap<>();
+
+        //first round is only get the top tables
+        List<TableConfig> valueList = new LinkedList<>(tables.values());
+        for (TableConfig tc : valueList) {
+            if (tc.getParentTC() == null) {
+                newTables.put(tc.getName().toLowerCase(), tc.lowerCaseCopy(null));
+                valueList.remove(tc);
+            }
+        }
+
+        while (valueList.size() > 0) {
+            for (TableConfig tc : valueList) {
+                if (newTables.containsKey(tc.getParentTC().getName().toLowerCase())) {
+                    newTables.put(tc.getName().toLowerCase(), tc.lowerCaseCopy(newTables.get(tc.getParentTC().getName().toLowerCase())));
+                    valueList.remove(tc);
+                }
+            }
+        }
+
+        return newTables;
     }
 
     public boolean isNoSharding() {

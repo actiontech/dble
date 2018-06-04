@@ -95,8 +95,8 @@ public class OkPacket extends MySQLPacket {
     }
 
 
-    public void changeServerStatus() {
-        serverStatus = serverStatus | 0x08;
+    public void markMoreResultsExists() {
+        serverStatus = serverStatus | StatusFlags.SERVER_MORE_RESULTS_EXISTS;
     }
 
     @Override

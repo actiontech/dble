@@ -166,6 +166,7 @@ public class OutputHandler extends BaseDMLHandler {
 
     public void backendConnError(byte[] errMsg) {
         if (terminate.compareAndSet(false, true)) {
+            session.resetMultiStatementStatus();
             ErrorPacket err = new ErrorPacket();
             err.setErrNo(ErrorCode.ER_YES);
             err.setMessage(errMsg);

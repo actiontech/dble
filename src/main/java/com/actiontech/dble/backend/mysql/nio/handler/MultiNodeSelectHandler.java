@@ -40,7 +40,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
         super(rrs, session);
         this.queueSize = DbleServer.getInstance().getConfig().getSystem().getMergeQueueSize();
         this.queues = new ConcurrentHashMap<>();
-        outputHandler = new OutputHandler(BaseHandlerBuilder.getSequenceId(), session, false);
+        outputHandler = new OutputHandler(BaseHandlerBuilder.getSequenceId(), session);
     }
 
     @Override

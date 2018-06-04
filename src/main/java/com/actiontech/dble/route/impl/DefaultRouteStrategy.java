@@ -37,9 +37,7 @@ public class DefaultRouteStrategy extends AbstractRouteStrategy {
             parser = new MySqlStatementParser(originSql);
         }
         try {
-            List<SQLStatement> list = parser.parseStatementList();
-
-            return list.get(0);
+            return parser.parseStatement();
         } catch (Exception t) {
             LOGGER.info("routeNormalSqlWithAST", t);
             if (t.getMessage() != null) {

@@ -28,6 +28,7 @@ import com.actiontech.dble.net.handler.FrontendCommandHandler;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.net.mysql.StatusFlags;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.optimizer.MyOptimizer;
@@ -372,7 +373,7 @@ public class NonBlockingSession implements Session {
         init();
         HandlerBuilder builder = new HandlerBuilder(node, this);
         try {
-            builder.build(false); //no next
+            builder.build();
         } catch (SQLSyntaxErrorException e) {
             LOGGER.info(String.valueOf(source) + " execute plan is : " + node, e);
             source.writeErrMessage(ErrorCode.ER_YES, "optimizer build error");
@@ -826,9 +827,9 @@ public class NonBlockingSession implements Session {
     public void multiStatementNext(MySQLPacket packet) {
         if (this.isMultiStatement.get()) {
             if (packet instanceof OkPacket) {
-                ((OkPacket) packet).changeServerStatus();
+                ((OkPacket) packet).markMoreResultsExists();
             } else if (packet instanceof EOFPacket) {
-                ((EOFPacket) packet).changeServerStatus();
+                ((EOFPacket) packet).markMoreResultsExists();
             }
             this.setRequestTime();
             DbleServer.getInstance().getFrontHandlerQueue().offer((FrontendCommandHandler) source.getHandler());
@@ -843,7 +844,7 @@ public class NonBlockingSession implements Session {
     public void multiStatementNext(byte[] eof) {
         if (this.getIsMultiStatement().get()) {
             //if there is another statement is need to be executed ,start another round
-            eof[7] = (byte) (eof[7] | 0x08);
+            eof[7] = (byte) (eof[7] | StatusFlags.SERVER_MORE_RESULTS_EXISTS);
             this.setRequestTime();
             DbleServer.getInstance().getFrontHandlerQueue().offer((FrontendCommandHandler) source.getHandler());
         }

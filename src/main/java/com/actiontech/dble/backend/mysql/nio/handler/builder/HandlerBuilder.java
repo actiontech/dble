@@ -65,10 +65,10 @@ public class HandlerBuilder {
         return builder;
     }
 
-    public void build(boolean hasNext) throws Exception {
+    public void build() throws Exception {
         final long startTime = System.nanoTime();
         DMLResponseHandler endHandler = buildNode(session, node, false);
-        OutputHandler fh = new OutputHandler(BaseHandlerBuilder.getSequenceId(), session, hasNext);
+        OutputHandler fh = new OutputHandler(BaseHandlerBuilder.getSequenceId(), session);
         endHandler.setNextHandler(fh);
         HandlerBuilder.startHandler(fh);
         long endTime = System.nanoTime();

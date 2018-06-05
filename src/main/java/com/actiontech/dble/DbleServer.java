@@ -30,7 +30,6 @@ import com.actiontech.dble.manager.ManagerConnectionFactory;
 import com.actiontech.dble.memory.unsafe.Platform;
 import com.actiontech.dble.meta.PauseDatanodeManager;
 import com.actiontech.dble.meta.ProxyMetaManager;
-import com.actiontech.dble.meta.PuaseDatanodeManager;
 import com.actiontech.dble.net.*;
 import com.actiontech.dble.net.handler.*;
 import com.actiontech.dble.net.mysql.WriteToBackendTask;

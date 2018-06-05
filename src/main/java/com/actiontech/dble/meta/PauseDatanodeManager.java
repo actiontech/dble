@@ -8,10 +8,10 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
+import com.actiontech.dble.config.loader.ucoreprocess.KVtoXml.UcoreToXml;
 import com.actiontech.dble.config.loader.ucoreprocess.UDistributeLock;
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
 import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
-import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.PauseInfo;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
@@ -36,8 +36,8 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static com.actiontech.dble.config.loader.zkprocess.zookeeper.process.PauseInfo.PAUSE;
 
-public class PuaseDatanodeManager {
-    protected static final Logger LOGGER = LoggerFactory.getLogger(PuaseDatanodeManager.class);
+public class PauseDatanodeManager {
+    protected static final Logger LOGGER = LoggerFactory.getLogger(PauseDatanodeManager.class);
     private ReentrantLock metaLock = new ReentrantLock();
     private Condition condRelease = this.metaLock.newCondition();
     private Set<String> dataNodes = null;
@@ -172,14 +172,19 @@ public class PuaseDatanodeManager {
 
     public boolean clusterPauseNotic(String dataNode) {
         if (DbleServer.getInstance().isUseUcore()) {
-            uDistributeLock = new UDistributeLock(UcorePathUtil.getPauseDataNodePath(),
-                    new PauseInfo(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), dataNode, PAUSE).toString());
-            if (!uDistributeLock.acquire()) {
+            try {
+                uDistributeLock = new UDistributeLock(UcorePathUtil.getPauseDataNodePath(),
+                        new PauseInfo(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), dataNode, PAUSE).toString());
+                if (!uDistributeLock.acquire()) {
+                    return false;
+                }
+
+                ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getPauseResultNodePath(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID)),
+                        UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+            } catch (Exception e) {
+                LOGGER.info("ucore connecction error", e);
                 return false;
             }
-
-            ClusterUcoreSender.deleteKVTree(UcorePathUtil.getPauseResumePath());
-            ClusterUcoreSender.deleteKVTree(UcorePathUtil.getPauseResultNodePath());
         }
         return true;
     }
@@ -188,15 +193,14 @@ public class PuaseDatanodeManager {
     public boolean waitForCluster(ManagerConnection c, long beginTime, long timeOut) throws Exception {
 
         if (DbleServer.getInstance().isUseUcore()) {
+            Map<String, String> expectedMap = UcoreToXml.getOnlineMap();
             for (; ; ) {
-                List<UKvBean> reponseList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getPauseResultNodePath());
-                List<UKvBean> onlineList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getOnlinePath());
-                if (reponseList.size() >= onlineList.size() - 1) {
+                if (ClusterUcoreSender.checkResponseForOneTime(null, UcorePathUtil.getPauseResultNodePath(), expectedMap, null)) {
                     return true;
                 } else if (System.currentTimeMillis() - beginTime > timeOut) {
                     DbleServer.getInstance().getMiManager().resume();
                     DbleServer.getInstance().getMiManager().resumeCluster();
-                    c.writeErrMessage(1003, "There are some node in cluster can recycle backend");
+                    c.writeErrMessage(1003, "There are some node in cluster can't recycle backend");
                     return false;
                 }
             }
@@ -210,14 +214,11 @@ public class PuaseDatanodeManager {
             ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getPauseResumePath(),
                     new PauseInfo(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), " ", PauseInfo.RESUME).toString());
 
-            while (true) {
-                List<UKvBean> reponseList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getPauseResumePath());
-                List<UKvBean> onlineList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getOnlinePath());
-                if (reponseList.size() >= onlineList.size() - 1) {
-                    ClusterUcoreSender.deleteKVTree(UcorePathUtil.getPauseDataNodePath());
-                    break;
-                }
-            }
+            //send self reponse
+            ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getPauseResumePath(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID)),
+                    UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+
+            ClusterUcoreSender.waitingForAllTheNode(null, UcorePathUtil.getPauseResumePath());
 
 
             DbleServer.getInstance().getMiManager().getuDistributeLock().release();

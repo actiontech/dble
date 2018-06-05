@@ -29,7 +29,7 @@ import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.log.transaction.TxnLogProcessor;
 import com.actiontech.dble.manager.ManagerConnectionFactory;
 import com.actiontech.dble.memory.unsafe.Platform;
-import com.actiontech.dble.meta.PuaseDatanodeManager;
+import com.actiontech.dble.meta.PauseDatanodeManager;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.net.*;
 import com.actiontech.dble.net.handler.*;
@@ -88,7 +88,7 @@ public final class DbleServer {
     private volatile ProxyMetaManager tmManager;
 
 
-    private volatile PuaseDatanodeManager miManager = new PuaseDatanodeManager();
+    private volatile PauseDatanodeManager miManager = new PauseDatanodeManager();
     private volatile SystemVariables systemVariables = new SystemVariables();
     private TxnLogProcessor txnLogProcessor;
 
@@ -1064,11 +1064,11 @@ public final class DbleServer {
     }
 
 
-    public PuaseDatanodeManager getMiManager() {
+    public PauseDatanodeManager getMiManager() {
         return miManager;
     }
 
-    public void setMiManager(PuaseDatanodeManager miManager) {
+    public void setMiManager(PauseDatanodeManager miManager) {
         this.miManager = miManager;
     }
 

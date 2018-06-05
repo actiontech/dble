@@ -25,9 +25,13 @@ import static com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil.SEPAR
 public class UOffLineListener implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UOffLineListener.class);
-    private Map<String, String> onlinMap = new HashMap<String, String>();
+    private volatile Map<String, String> onlinMap = new HashMap<String, String>();
     private long index = 0;
 
+
+    public Map<String, String> copyOnlineMap() {
+        return new HashMap<String, String>(onlinMap);
+    }
 
     private void checkDDLAndRelease(String serverId) {
         //deal with the status whan the ddl is init notified
@@ -107,9 +111,9 @@ public class UOffLineListener implements Runnable {
                         checkBinlogStatusRelease(serverId);
                         checkPauseStatusRelease(serverId);
                     }
-                    onlinMap = newMap;
-                    index = output.getIndex();
                 }
+                onlinMap = newMap;
+                index = output.getIndex();
             } catch (Exception e) {
                 LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + " error in offline listener ,all ucore connection failure");
             }

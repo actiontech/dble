@@ -1,7 +1,9 @@
 package com.actiontech.dble.config.loader.ucoreprocess;
 
 import com.actiontech.dble.cluster.ClusterParamCfg;
+import com.actiontech.dble.config.loader.ucoreprocess.KVtoXml.UcoreToXml;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.log.alarm.UcoreGrpc;
 import com.actiontech.dble.log.alarm.UcoreInterface;
 import io.grpc.Channel;
@@ -13,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static com.actiontech.dble.cluster.ClusterController.GENERAL_GRPC_TIMEOUT;
@@ -343,5 +346,68 @@ public final class ClusterUcoreSender {
             }
         }
     }
+
+
+    public static String waitingForAllTheNode(String checkString, String path) {
+        Map<String, String> expectedMap = UcoreToXml.getOnlineMap();
+        StringBuffer errorMsg = new StringBuffer();
+        for (; ; ) {
+            if (checkResponseForOneTime(checkString, path, expectedMap, errorMsg)) {
+                break;
+            }
+        }
+        return errorMsg.length() <= 0 ? null : errorMsg.toString();
+    }
+
+
+    public static boolean checkResponseForOneTime(String checkString, String path, Map<String, String> expectedMap, StringBuffer errorMsg) {
+        Map<String, String> currentMap = UcoreToXml.getOnlineMap();
+        checkOnline(expectedMap, currentMap);
+        List<UKvBean> responseList = ClusterUcoreSender.getKeyTree(path);
+        boolean flag = false;
+        for (Map.Entry<String, String> entry : expectedMap.entrySet()) {
+            flag = false;
+            for (UKvBean uKvBean : responseList) {
+                if (last(entry.getKey().split("/")).
+                        equals(last(uKvBean.getKey().split("/")))) {
+                    if (checkString != null) {
+                        if (!checkString.equals(uKvBean.getValue())) {
+                            if (errorMsg != null) {
+                                errorMsg.setLength(0);
+                                errorMsg.append(new StringBuffer(last(uKvBean.getKey().split("/")) + " " + uKvBean.getValue()));
+                            }
+                        }
+                    }
+                    flag = true;
+                    break;
+                }
+            }
+            if (!flag) {
+                break;
+            }
+        }
+
+        return flag;
+    }
+
+
+    public static void checkOnline(Map<String, String> expectedMap, Map<String, String> currentMap) {
+        for (Map.Entry<String, String> entry : expectedMap.entrySet()) {
+            if (!currentMap.containsKey(entry.getKey())) {
+                expectedMap.remove(entry.getKey());
+            }
+        }
+
+        for (Map.Entry<String, String> entry : currentMap.entrySet()) {
+            if (!expectedMap.containsKey(entry.getKey())) {
+                LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "NODE " + entry.getKey() + " IS NOT EXPECTED TO BE ONLINE,PLEASE CHECK IT ");
+            }
+        }
+    }
+
+    public static <T> T last(T[] array) {
+        return array[array.length - 1];
+    }
+
 
 }

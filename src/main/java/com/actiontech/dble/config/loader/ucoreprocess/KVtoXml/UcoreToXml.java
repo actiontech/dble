@@ -8,6 +8,8 @@ import com.actiontech.dble.config.loader.ucoreprocess.listen.UcoreSingleKeyListe
 import com.actiontech.dble.config.loader.ucoreprocess.loader.*;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
 
+import java.util.Map;
+
 import static com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil.SEPARATOR;
 
 /**
@@ -84,5 +86,9 @@ public final class UcoreToXml {
 
     public static UcoreClearKeyListener getListener() {
         return listener;
+    }
+
+    public static Map<String, String> getOnlineMap() {
+        return onlineListener.copyOnlineMap();
     }
 }

@@ -18,8 +18,6 @@ public class UConfigStatusResponse implements UcoreXmlLoader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UBinlogPauseStatusResponse.class);
 
-    public static final String SUCCESS = "SUCCESS";
-
     private static final String CONFIG_PATH = UcorePathUtil.getConfStatusPath();
 
     public UConfigStatusResponse(UcoreClearKeyListener confListener) {
@@ -49,7 +47,7 @@ public class UConfigStatusResponse implements UcoreXmlLoader {
                 LOGGER.debug("rollback " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
                 try {
                     RollbackConfig.rollback();
-                    ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getSelfConfStatusPath(), UConfigStatusResponse.SUCCESS);
+                    ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getSelfConfStatusPath(), UcorePathUtil.SUCCESS);
                 } catch (Exception e) {
                     String errorinfo = e.getMessage() == null ? e.toString() : e.getMessage();
                     ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getSelfConfStatusPath(), errorinfo);
@@ -66,7 +64,7 @@ public class UConfigStatusResponse implements UcoreXmlLoader {
                     LOGGER.debug("reload " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
                     ReloadConfig.reload();
                 }
-                ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getSelfConfStatusPath(), UConfigStatusResponse.SUCCESS);
+                ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getSelfConfStatusPath(), UcorePathUtil.SUCCESS);
             } catch (Exception e) {
                 String errorinfo = e.getMessage() == null ? e.toString() : e.getMessage();
                 ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getSelfConfStatusPath(), errorinfo);

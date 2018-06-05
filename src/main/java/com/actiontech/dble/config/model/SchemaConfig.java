@@ -51,7 +51,11 @@ public class SchemaConfig {
 
     public SchemaConfig(SchemaConfig oldSchemaConfig) {
         this.name = oldSchemaConfig.getName().toLowerCase();
-        this.dataNode = oldSchemaConfig.getDataNode().toLowerCase();
+        if (oldSchemaConfig.getDataNode() != null) {
+            this.dataNode = oldSchemaConfig.getDataNode().toLowerCase();
+        } else {
+            this.dataNode = null;
+        }
         this.tables = oldSchemaConfig.getLowerCaseTables();
         this.defaultMaxLimit = oldSchemaConfig.getDefaultMaxLimit();
         buildERMap();
@@ -150,7 +154,7 @@ public class SchemaConfig {
         return tables;
     }
 
-    public Map<String, TableConfig> getLowerCaseTables() {
+    private Map<String, TableConfig> getLowerCaseTables() {
         Map<String, TableConfig> newTables = new HashMap<>();
 
         //first round is only get the top tables

@@ -12,7 +12,6 @@ import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.ucoreprocess.*;
-import com.actiontech.dble.config.loader.ucoreprocess.loader.UConfigStatusResponse;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.xmltozk.XmltoZkMain;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
@@ -36,6 +35,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil.SEPARATOR;
 
 
 /**
@@ -75,6 +76,7 @@ public final class RollbackConfig {
                 }
                 try {
                     rollbackWithUcore(c);
+                    writeOKResult(c);
                 } finally {
                     distributeLock.release();
                 }
@@ -110,16 +112,17 @@ public final class RollbackConfig {
             ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getConfStatusPath(), status.toString());
 
             //step 4 set self status success
-            ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getSelfConfStatusPath(), UConfigStatusResponse.SUCCESS);
+            ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getSelfConfStatusPath(), UcorePathUtil.SUCCESS);
 
-            //step 5 start a loop to check if all the dble in cluster is reload finished
-            while (ClusterUcoreSender.getKeyTreeSize(UcorePathUtil.getConfStatusPath()) <
-                    ClusterUcoreSender.getKeyTreeSize(UcorePathUtil.getOnlinePath())) {
-                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-            }
+
+            String errorMsg = ClusterUcoreSender.waitingForAllTheNode(UcorePathUtil.SUCCESS, UcorePathUtil.getConfStatusPath() + SEPARATOR);
 
             //step 6 delete the reload flag
             ClusterUcoreSender.deleteKVTree(UcorePathUtil.getConfStatusPath());
+
+            if (errorMsg != null) {
+                throw new RuntimeException(errorMsg);
+            }
         } catch (Exception e) {
             LOGGER.warn("reload config failure", e);
             writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());

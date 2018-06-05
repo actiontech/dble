@@ -85,6 +85,7 @@ public class LockTablesHandler extends MultiNodeHandler {
                 }
                 OkPacket ok = new OkPacket();
                 ok.read(data);
+                session.multiStatementNext(ok);
                 lock.lock();
                 try {
                     ok.setPacketId(++packetId);

@@ -13,10 +13,10 @@ import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
+import com.actiontech.dble.config.loader.ucoreprocess.KVtoXml.UcoreToXml;
 import com.actiontech.dble.config.loader.ucoreprocess.UDistributeLock;
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
 import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
-import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.BinlogPause;
 import com.actiontech.dble.manager.ManagerConnection;
@@ -122,38 +122,32 @@ public final class ShowBinlogStatus {
                 } else {
                     //step 3 notify other dble to stop the commit & set self status
                     BinlogPause pauseOnInfo = new BinlogPause(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), BinlogPauseStatus.ON);
-                    ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getBinlogPauseStatus(), pauseOnInfo.toString());
-                    ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getBinlogPauseStatusSelf(), "true");
 
                     //step 4 wait til other dbles to feedback the ucore flag
                     long beginTime = TimeUtil.currentTimeMillis();
-                    boolean isAllSuccess = true;
-                    List<UKvBean> responseList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getBinlogPauseStatus());
-                    List<UKvBean> onlineList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getOnlinePath());
-                    while (responseList.size() < onlineList.size()) {
-                        //if it is time out
-                        if (TimeUtil.currentTimeMillis() > beginTime + 2 * timeout) {
-                            isAllSuccess = false;
+                    boolean isPaused = waitAllSession(c, timeout, beginTime);
+                    if (!isPaused) {
+                        writeResponse(c);
+                        return;
+                    }
+                    ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getBinlogPauseStatus(), pauseOnInfo.toString());
+                    ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getBinlogPauseStatusSelf(), UcorePathUtil.SUCCESS);
+
+                    Map<String, String> expectedMap = UcoreToXml.getOnlineMap();
+                    while (true) {
+                        StringBuffer errorStringBuf = new StringBuffer();
+                        if (ClusterUcoreSender.checkResponseForOneTime(UcorePathUtil.SUCCESS, UcorePathUtil.getBinlogPauseStatus(), expectedMap, errorStringBuf)) {
+                            errMsg = errorStringBuf.length() <= 0 ? null : errorStringBuf.toString();
+                            break;
+                        } else if (TimeUtil.currentTimeMillis() > beginTime + 2 * timeout) {
                             errMsg = "timeout while waiting for unfinished distributed transactions.";
                             logger.info(errMsg);
                             break;
                         }
-                        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-                        responseList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getBinlogPauseStatus());
-                        onlineList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getOnlinePath());
-                    }
-
-                    // step 5 check the result if the all the dbles return sucess
-                    if (isAllSuccess) {
-                        for (UKvBean reponseBean : responseList) {
-                            if (!Boolean.parseBoolean(reponseBean.getValue())) {
-                                isAllSuccess = false;
-                            }
-                        }
                     }
 
                     // step 6 query for the GTID and write back to frontend connections
-                    if (isAllSuccess) {
+                    if (errMsg == null) {
                         getQueryResult(c.getCharset().getResults());
                     }
                     writeResponse(c);

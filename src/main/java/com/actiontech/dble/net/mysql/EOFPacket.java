@@ -45,6 +45,10 @@ public class EOFPacket extends MySQLPacket {
         status = mm.readUB2();
     }
 
+    public void markMoreResultsExists() {
+        status = status | StatusFlags.SERVER_MORE_RESULTS_EXISTS;
+    }
+
     @Override
     public ByteBuffer write(ByteBuffer buffer, FrontendConnection c, boolean writeSocketIfFull) {
         int size = calcPacketSize();

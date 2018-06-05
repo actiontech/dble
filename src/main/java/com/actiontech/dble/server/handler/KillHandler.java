@@ -36,7 +36,7 @@ public final class KillHandler {
 
             // kill myself
             if (value == c.getId()) {
-                getOkPacket().write(c);
+                getOkPacket(c).write(c);
                 c.write(c.allocate());
                 return;
             }
@@ -55,18 +55,19 @@ public final class KillHandler {
                     return;
                 }
                 fc.killAndClose("killed");
-                getOkPacket().write(c);
+                getOkPacket(c).write(c);
             } else {
                 c.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "Unknown connection id:" + id);
             }
         }
     }
 
-    private static OkPacket getOkPacket() {
+    private static OkPacket getOkPacket(ServerConnection c) {
         OkPacket packet = new OkPacket();
         packet.setPacketId(1);
         packet.setAffectedRows(0);
         packet.setServerStatus(2);
+        c.getSession2().multiStatementNext(packet);
         return packet;
     }
 

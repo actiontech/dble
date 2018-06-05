@@ -148,6 +148,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
         errPacket.setMessage(StringUtil.encode(reason, session.getSource().getCharset().getResults()));
         err = errPacket;
+        session.resetMultiStatementStatus();
         executeError(conn);
     }
 
@@ -160,6 +161,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         String errMsg = "Backend connect Error, Connection{DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
         errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
         err = errPacket;
+        session.resetMultiStatementStatus();
         executeError(conn);
     }
 
@@ -176,6 +178,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         errPacket.read(data);
         errPacket.setPacketId(1); //just for normal error
         err = errPacket;
+        session.resetMultiStatementStatus();
         lock.lock();
         try {
             if (!isFail()) {
@@ -228,6 +231,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     return;
                 if (isFail()) {
                     session.handleSpecial(rrs, source.getSchema(), false);
+                    session.resetMultiStatementStatus();
                     handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
                     return;
                 }
@@ -247,6 +251,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     ok.setInsertId(insertId);
                     source.setLastInsertId(insertId);
                 }
+                session.multiStatementNext(ok);
                 handleEndPacket(ok.toBytes(), AutoTxOperation.COMMIT, conn);
             } finally {
                 lock.unlock();
@@ -307,12 +312,16 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
 
                 if (this.isFail()) {
+                    session.setResponseTime();
+                    session.resetMultiStatementStatus();
                     source.write(byteBuffer);
                     ErrorPacket errorPacket = createErrPkg(this.error);
                     handleEndPacket(errorPacket.toBytes(), AutoTxOperation.ROLLBACK, conn); //todo :optimized
                     return;
                 }
             }
+            session.setResponseTime();
+            session.multiStatementNext(eof);
             writeEofResult(eof, source);
             doSqlStat(source);
         }

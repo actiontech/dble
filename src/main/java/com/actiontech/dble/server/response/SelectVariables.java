@@ -82,6 +82,7 @@ public final class SelectVariables {
         // write lastEof
         EOFPacket lastEof = new EOFPacket();
         lastEof.setPacketId(++packetId);
+        c.getSession2().multiStatementNext(lastEof);
         buffer = lastEof.write(buffer, c, true);
 
         // write buffer

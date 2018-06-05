@@ -226,6 +226,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     return;
                 if (isFail()) {
                     session.handleSpecial(rrs, source.getSchema(), false);
+                    session.resetMultiStatementStatus();
                     handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
                     return;
                 }

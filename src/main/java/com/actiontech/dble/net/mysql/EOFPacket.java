@@ -45,8 +45,8 @@ public class EOFPacket extends MySQLPacket {
         status = mm.readUB2();
     }
 
-    public void changeServerStatus() {
-        status = status | 0x08;
+    public void markMoreResultsExists() {
+        status = status | StatusFlags.SERVER_MORE_RESULTS_EXISTS;
     }
 
     @Override

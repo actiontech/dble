@@ -16,10 +16,7 @@ import com.actiontech.dble.config.loader.xml.XMLServerLoader;
 import com.actiontech.dble.config.model.*;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.log.alarm.AlarmCode;
-import com.actiontech.dble.route.sequence.handler.DistributedSequenceHandler;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceMySQLHandler;
-import com.actiontech.dble.route.sequence.handler.IncrSequenceTimeHandler;
-import com.actiontech.dble.route.sequence.handler.IncrSequenceZKHandler;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
@@ -68,89 +65,6 @@ public class ConfigInitializer {
 
         deleteRedundancyConf();
         checkWriteHost();
-    }
-
-    /*public ConfigInitializer(boolean lowerCaseNames) {
-        XMLServerLoader serverLoader = new XMLServerLoader(lowerCaseNames);
-        this.system = serverLoader.getSystem();
-        this.users = serverLoader.getUsers();
-        this.firewall = serverLoader.getFirewall();
-
-        SchemaLoader schemaLoader = new XMLSchemaLoader(lowerCaseNames);
-        this.schemas = schemaLoader.getSchemas();
-        this.erRelations = schemaLoader.getErRelations();
-        this.dataHosts = initDataHosts(schemaLoader);
-        this.dataNodes = initDataNodes(schemaLoader);
-        loadSequence();
-        *//* check config *//*
-        this.selfChecking0();
-    }*/
-
-    private void loadSequence() {
-        //load global sequence
-        if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_MYSQL) {
-            IncrSequenceMySQLHandler.getInstance().load(DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
-        }
-
-        if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_LOCAL_TIME) {
-            IncrSequenceTimeHandler.getInstance().load();
-        }
-
-        if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_ZK_DISTRIBUTED) {
-            DistributedSequenceHandler.getInstance().load();
-        }
-
-        if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT) {
-            IncrSequenceZKHandler.getInstance().load(DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
-        }
-    }
-
-    private void selfChecking0() throws ConfigException {
-        // check 1.user's schemas are all existed in schema's conf
-        // 2.schema's conf is not empty
-        if (users == null || users.isEmpty()) {
-            throw new ConfigException("SelfCheck### user all node is empty!");
-        } else {
-            for (UserConfig uc : users.values()) {
-                if (uc == null) {
-                    throw new ConfigException("SelfCheck### users node within the item is empty!");
-                }
-                if (!uc.isManager()) {
-                    Set<String> authSchemas = uc.getSchemas();
-                    if (authSchemas == null) {
-                        throw new ConfigException("SelfCheck### user " + uc.getName() + "referred schemas is empty!");
-                    }
-                    for (String schema : authSchemas) {
-                        if (!schemas.containsKey(schema)) {
-                            String errMsg = "SelfCheck###  schema " + schema + " referred by user " + uc.getName() + " is not exist!";
-                            throw new ConfigException(errMsg);
-                        }
-                    }
-                }
-            }
-        }
-
-        // check schema
-        for (SchemaConfig sc : schemas.values()) {
-            if (null == sc) {
-                throw new ConfigException("SelfCheck### schema all node is empty!");
-            } else {
-                // check dataNode / dataHost
-                if (this.dataNodes != null && this.dataHosts != null) {
-                    Set<String> dataNodeNames = sc.getAllDataNodes();
-                    for (String dataNodeName : dataNodeNames) {
-                        PhysicalDBNode node = this.dataNodes.get(dataNodeName);
-                        if (node == null) {
-                            throw new ConfigException("SelfCheck### schema dataNode is empty!");
-                        }
-                    }
-                }
-            }
-        }
-
-        deleteRedundancyConf();
-        checkWriteHost();
-
     }
 
     private void checkWriteHost() {

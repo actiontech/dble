@@ -130,6 +130,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         err.read(data);
         err.setPacketId(++packetId);
         backConnectionErr(err, conn);
+        session.resetMultiStatementStatus();
     }
 
     private void backConnectionErr(ErrorPacket errPkg, BackendConnection conn) {
@@ -192,6 +193,8 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             //handleSpecial
             session.releaseConnectionIfSafe(conn, false);
             session.setResponseTime();
+
+            session.multiStatementNext(ok);
             ok.write(source);
             waitingResponse = false;
         }
@@ -208,13 +211,17 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
         this.netOutBytes += eof.length;
 
-        ServerConnection source = session.getSource();
+
         // if it's call statement,it will not release connection
         if (!rrs.isCallStatement() || rrs.getProcedure().isResultSimpleValue()) {
             session.releaseConnectionIfSafe(conn, false);
         }
 
+        session.multiStatementNext(eof);
+
         eof[3] = ++packetId;
+
+        ServerConnection source = session.getSource();
         buffer = source.writeToBuffer(eof, allocBuffer());
         int resultSize = source.getWriteQueue().size() * DbleServer.getInstance().getConfig().getSystem().getBufferPoolPageSize();
         resultSize = resultSize + buffer.position();

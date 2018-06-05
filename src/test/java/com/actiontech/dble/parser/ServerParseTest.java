@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.parser;
 
+import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.parser.ServerParse;
 import org.junit.Assert;
 import org.junit.Test;
@@ -33,7 +34,7 @@ public class ServerParseTest {
      * public static final int MYSQL_COMMENT = 19;
      * public static final int CALL = 20;
      * public static final int DESCRIBE = 21;
-     *
+     * <p>
      * public static final int SCRIPT_PREPARE = 101;
      */
 
@@ -292,5 +293,26 @@ public class ServerParseTest {
         String sql = "COMMIT 'nihao'";
         int result = ServerParse.parse(sql);
         Assert.assertEquals(ServerParse.OTHER, result);
+    }
+
+
+    @Test
+    public void testDivide() {
+        String sql = "insert into tablex where name = '''sdfsd;f''';";
+
+        Assert.assertEquals(45, ParseUtil.findNextBreak(sql));
+
+        sql = "insert into tablex where name = '''sdfsd;f''';commit;";
+
+        Assert.assertEquals(45, ParseUtil.findNextBreak(sql));
+
+        sql = "commit;insert into tablex where name = '''sdfsd;f''';";
+
+        Assert.assertEquals(6, ParseUtil.findNextBreak(sql));
+
+        sql = "sdfsdf\\' ;insert into tablex where name = '''sdfsd;f''';";
+
+        Assert.assertEquals(9, ParseUtil.findNextBreak(sql));
+
     }
 }

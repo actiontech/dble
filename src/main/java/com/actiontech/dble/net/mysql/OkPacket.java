@@ -94,6 +94,11 @@ public class OkPacket extends MySQLPacket {
         c.write(buffer);
     }
 
+
+    public void markMoreResultsExists() {
+        serverStatus = serverStatus | StatusFlags.SERVER_MORE_RESULTS_EXISTS;
+    }
+
     @Override
     public int calcPacketSize() {
         int i = 1;

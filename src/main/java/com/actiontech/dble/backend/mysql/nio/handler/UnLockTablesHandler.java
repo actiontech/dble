@@ -96,6 +96,7 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
                 }
                 OkPacket ok = new OkPacket();
                 ok.read(data);
+                session.multiStatementNext(ok);
                 lock.lock();
                 try {
                     ok.setPacketId(++packetId);

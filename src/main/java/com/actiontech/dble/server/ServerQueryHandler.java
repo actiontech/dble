@@ -7,7 +7,6 @@ package com.actiontech.dble.server;
 
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.handler.FrontendQueryHandler;
-import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.server.handler.*;
 import com.actiontech.dble.server.parser.ServerParse;
 import org.slf4j.Logger;
@@ -22,6 +21,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
     private final ServerConnection source;
     private Boolean readOnly = true;
     private boolean sessionReadOnly = true;
+
     @Override
     public void setReadOnly(Boolean readOnly) {
         this.readOnly = readOnly;
@@ -43,7 +43,13 @@ public class ServerQueryHandler implements FrontendQueryHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(String.valueOf(c) + sql);
         }
-        //
+
+        if (source.getSession2().getRemingSql() != null) {
+            sql = source.getSession2().getRemingSql();
+        }
+        //Preliminary judgment of multi statement
+        source.getSession2().generalNextStatement(sql);
+
         int rs = ServerParse.parse(sql);
         int sqlType = rs & 0xff;
         switch (sqlType) {
@@ -100,10 +106,10 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                 c.writeErrMessage(ErrorCode.ER_SYNTAX_ERROR, "Unsupported command");
                 break;
             case ServerParse.MYSQL_CMD_COMMENT:
-                c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+                c.write(c.writeToBuffer(source.getSession2().getOkByteArray(), c.allocate()));
                 break;
             case ServerParse.MYSQL_COMMENT:
-                c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+                c.write(c.writeToBuffer(source.getSession2().getOkByteArray(), c.allocate()));
                 break;
             case ServerParse.LOAD_DATA_INFILE_SQL:
                 c.loadDataInfileStart(sql);

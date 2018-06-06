@@ -34,7 +34,7 @@ public class OutputHandler extends BaseDMLHandler {
         super(id, session);
         session.setOutputHandler(this);
         this.lock = new ReentrantLock();
-        this.packetId = 0;
+        this.packetId = (byte) session.getPacketId().get();
         this.session = session;
         this.isBinary = session.isPrepared();
         this.buffer = session.getSource().allocate();
@@ -53,7 +53,7 @@ public class OutputHandler extends BaseDMLHandler {
         lock.lock();
         try {
             ok[3] = ++packetId;
-            session.multiStatementNext(okPacket);
+            session.multiStatementNext(okPacket, packetId);
             if ((okPacket.getServerStatus() & StatusFlags.SERVER_MORE_RESULTS_EXISTS) > 0) {
                 buffer = source.writeToBuffer(ok, buffer);
             } else {
@@ -153,7 +153,7 @@ public class OutputHandler extends BaseDMLHandler {
             }
             eofPacket.setPacketId(++packetId);
             HandlerTool.terminateHandlerTree(this);
-            session.multiStatementNext(eofPacket);
+            session.multiStatementNext(eofPacket, packetId);
             byte[] eof = eofPacket.toBytes();
             buffer = source.writeToBuffer(eof, buffer);
             session.setResponseTime();

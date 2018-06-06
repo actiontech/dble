@@ -29,16 +29,14 @@ public final class SelectVersionComment {
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
 
-    static {
-        int i = 0;
-        byte packetId = 0;
-        HEADER.setPacketId(++packetId);
-        FIELDS[i] = PacketUtil.getField("@@VERSION_COMMENT", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i].setPacketId(++packetId);
-        EOF.setPacketId(++packetId);
-    }
-
     public static void response(FrontendConnection c) {
+
+        byte packetId = setCurrentPacket(c);
+        HEADER.setPacketId(++packetId);
+        FIELDS[0] = PacketUtil.getField("@@VERSION_COMMENT", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[1].setPacketId(++packetId);
+        EOF.setPacketId(++packetId);
+
         ByteBuffer buffer = c.allocate();
 
         // write header
@@ -53,7 +51,7 @@ public final class SelectVersionComment {
         buffer = EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = EOF.getPacketId();
+
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(Versions.VERSION_COMMENT);
         row.setPacketId(++packetId);
@@ -63,12 +61,21 @@ public final class SelectVersionComment {
         EOFPacket lastEof = new EOFPacket();
         lastEof.setPacketId(++packetId);
         if (c instanceof ServerConnection) {
-            ((ServerConnection) c).getSession2().multiStatementNext(lastEof);
+            ((ServerConnection) c).getSession2().multiStatementNext(lastEof, packetId);
         }
         buffer = lastEof.write(buffer, c, true);
 
         // post write
         c.write(buffer);
+    }
+
+
+    public static byte setCurrentPacket(FrontendConnection c) {
+        if (c instanceof ServerConnection) {
+            byte packetId = (byte) ((ServerConnection) c).getSession2().getPacketId().get();
+            return packetId;
+        }
+        return 0;
     }
 
 }

@@ -41,7 +41,7 @@ public final class SelectTxReadOnly {
 
         HEADER.setPacketId(++packetId);
         FIELDS[0] = PacketUtil.getField("@@session.tx_read_only", Fields.FIELD_TYPE_LONG);
-        FIELDS[1].setPacketId(++packetId);
+        FIELDS[0].setPacketId(++packetId);
         EOF.setPacketId(++packetId);
 
         ByteBuffer buffer = c.allocate();

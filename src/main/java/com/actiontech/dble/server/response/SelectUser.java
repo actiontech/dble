@@ -33,7 +33,7 @@ public final class SelectUser {
             byte packetId = setCurrentPacket(c);
             HEADER.setPacketId(++packetId);
             FIELDS[0] = PacketUtil.getField("USER()", Fields.FIELD_TYPE_VAR_STRING);
-            FIELDS[1].setPacketId(++packetId);
+            FIELDS[0].setPacketId(++packetId);
             EOF.setPacketId(++packetId);
 
             ByteBuffer buffer = c.allocate();

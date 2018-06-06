@@ -322,12 +322,11 @@ public final class ParseUtil {
                 case '\'':
                 case '\"':
                     if (!breakFlag) {
-                        if (beginChar == 0) {
-                            beginChar = c;
-                        }
                         breakFlag = true;
+                        beginChar = c;
                     } else if (c == beginChar) {
                         breakFlag = false;
+                        beginChar = 0;
                     }
                     break;
                 case ';':

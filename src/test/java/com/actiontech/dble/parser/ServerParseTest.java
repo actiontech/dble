@@ -336,5 +336,12 @@ public class ServerParseTest {
         sql = "delete from tablex where name = \"sdfsd\\\\\\\";'f\";";
         Assert.assertEquals(46, ParseUtil.findNextBreak(sql));
 
+        sql = "update char_columns set c_char ='1',c_char2=\"2\";";
+        Assert.assertEquals(47, ParseUtil.findNextBreak(sql));
+
+        sql = "update char_columns set c_char ='1;',c_char2=\";2\";";
+        Assert.assertEquals(49, ParseUtil.findNextBreak(sql));
+
+
     }
 }

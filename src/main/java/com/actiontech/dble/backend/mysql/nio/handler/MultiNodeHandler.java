@@ -92,7 +92,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         nodeCount = initCount;
         isFailed.set(false);
         error = null;
-        packetId = 0;
+        packetId = (byte) session.getPacketId().get();
     }
 
     protected ErrorPacket createErrPkg(String errMsg) {

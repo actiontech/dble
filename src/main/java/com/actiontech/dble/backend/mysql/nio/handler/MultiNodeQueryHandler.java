@@ -251,7 +251,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     ok.setInsertId(insertId);
                     source.setLastInsertId(insertId);
                 }
-                session.multiStatementNext(ok);
+                session.multiStatementNext(ok, packetId);
                 handleEndPacket(ok.toBytes(), AutoTxOperation.COMMIT, conn);
             } finally {
                 lock.unlock();
@@ -321,7 +321,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
             }
             session.setResponseTime();
-            session.multiStatementNext(eof);
+            session.multiStatementNext(eof, packetId);
             writeEofResult(eof, source);
             doSqlStat(source);
         }

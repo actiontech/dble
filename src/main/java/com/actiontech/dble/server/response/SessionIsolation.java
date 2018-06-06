@@ -34,7 +34,7 @@ public final class SessionIsolation {
         byte packetId = setCurrentPacket(c);
         HEADER.setPacketId(++packetId);
         FIELDS[0] = PacketUtil.getField("@@session.tx_isolation", Fields.FIELD_TYPE_STRING);
-        FIELDS[1].setPacketId(++packetId);
+        FIELDS[0].setPacketId(++packetId);
         EOF.setPacketId(++packetId);
 
         ByteBuffer buffer = c.allocate();

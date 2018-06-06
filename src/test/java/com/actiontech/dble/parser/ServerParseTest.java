@@ -298,21 +298,43 @@ public class ServerParseTest {
 
     @Test
     public void testDivide() {
-        String sql = "insert into tablex where name = '''sdfsd;f''';";
-
+        String sql = "delete from tablex where name = '''sdfsd;f''';";
         Assert.assertEquals(45, ParseUtil.findNextBreak(sql));
 
-        sql = "insert into tablex where name = '''sdfsd;f''';commit;";
-
+        sql = "delete from tablex where name = '\\'sdfsd;f\\'';";
         Assert.assertEquals(45, ParseUtil.findNextBreak(sql));
 
-        sql = "commit;insert into tablex where name = '''sdfsd;f''';";
+        sql = "delete from tablex where name = \"sdfsd;f\";";
+        Assert.assertEquals(41, ParseUtil.findNextBreak(sql));
 
+        sql = "delete from tablex where name = \"sdfsd';'f\";";
+        Assert.assertEquals(43, ParseUtil.findNextBreak(sql));
+
+        sql = "delete from tablex where name = \"sdfsd\\\";'f\";";
+        Assert.assertEquals(44, ParseUtil.findNextBreak(sql));
+
+        sql = "delete from tablex where name = 'sdfsd\";\"f';";
+        Assert.assertEquals(43, ParseUtil.findNextBreak(sql));
+
+        sql = "delete from tablex where name = 'sdfsd\";f';";
+        Assert.assertEquals(42, ParseUtil.findNextBreak(sql));
+
+        sql = "delete from tablex where name = '''sdfsd;f''';commit;";
+        Assert.assertEquals(45, ParseUtil.findNextBreak(sql));
+
+        sql = "commit;delete from tablex where name = '''sdfsd;f''';";
         Assert.assertEquals(6, ParseUtil.findNextBreak(sql));
 
-        sql = "sdfsdf\\' ;insert into tablex where name = '''sdfsd;f''';";
-
+        sql = "sdfsdf\\' ;delete from tablex where name = '''sdfsd;f''';";
         Assert.assertEquals(9, ParseUtil.findNextBreak(sql));
+
+        sql = "delete from tablex where name = 'sdfsd;f';";
+        Assert.assertEquals(41, ParseUtil.findNextBreak(sql));
+        sql = "delete from tablex where name = 'sdfsdf';";
+        Assert.assertEquals(40, ParseUtil.findNextBreak(sql));
+
+        sql = "delete from tablex where name = \"sdfsd\\\\\\\";'f\";";
+        Assert.assertEquals(46, ParseUtil.findNextBreak(sql));
 
     }
 }

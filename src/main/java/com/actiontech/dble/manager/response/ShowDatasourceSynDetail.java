@@ -12,6 +12,7 @@ import com.actiontech.dble.backend.heartbeat.DBHeartbeat;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.ServerConfig;
+import com.actiontech.dble.config.loader.xml.XMLSchemaLoader;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -115,6 +116,9 @@ public final class ShowDatasourceSynDetail {
         Map<String, PhysicalDBPool> dataHosts = conf.getDataHosts();
         for (PhysicalDBPool pool : dataHosts.values()) {
             for (PhysicalDatasource ds : pool.getAllDataSources()) {
+                if (ds.getName().equals(XMLSchemaLoader.FAKE_HOST)) {
+                    continue;
+                }
                 DBHeartbeat hb = ds.getHeartbeat();
                 DataSourceSyncRecorder record = hb.getAsyncRecorder();
                 Map<String, String> states = record.getRecords();

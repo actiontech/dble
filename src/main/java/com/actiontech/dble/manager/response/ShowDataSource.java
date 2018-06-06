@@ -12,6 +12,7 @@ import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.ServerConfig;
+import com.actiontech.dble.config.loader.xml.XMLSchemaLoader;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -72,7 +73,7 @@ public final class ShowDataSource {
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("WRITE_LOAD", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
     }
@@ -98,6 +99,9 @@ public final class ShowDataSource {
         if (null != name) {
             PhysicalDBNode dn = conf.getDataNodes().get(name);
             for (PhysicalDatasource w : dn.getDbPool().getAllDataSources()) {
+                if (w.getName().equals(XMLSchemaLoader.FAKE_HOST)) {
+                    continue;
+                }
                 RowDataPacket row = getRow(w, c.getCharset().getResults());
                 row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
@@ -110,9 +114,11 @@ public final class ShowDataSource {
                 PhysicalDBPool dataHost = entry.getValue();
 
                 for (int i = 0; i < dataHost.getSources().length; i++) {
-                    RowDataPacket row = getRow(dataHost.getSources()[i], c.getCharset().getResults());
-                    row.setPacketId(++packetId);
-                    buffer = row.write(buffer, c, true);
+                    if (!dataHost.getSources()[i].getName().equals(XMLSchemaLoader.FAKE_HOST)) {
+                        RowDataPacket row = getRow(dataHost.getSources()[i], c.getCharset().getResults());
+                        row.setPacketId(++packetId);
+                        buffer = row.write(buffer, c, true);
+                    }
                     if (dataHost.getrReadSources().get(i) != null) {
                         for (PhysicalDatasource w : dataHost.getrReadSources().get(i)) {
                             RowDataPacket sRow = getRow(w, c.getCharset().getResults());

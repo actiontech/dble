@@ -34,7 +34,7 @@ public final class SelectVersionComment {
         byte packetId = setCurrentPacket(c);
         HEADER.setPacketId(++packetId);
         FIELDS[0] = PacketUtil.getField("@@VERSION_COMMENT", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[1].setPacketId(++packetId);
+        FIELDS[0].setPacketId(++packetId);
         EOF.setPacketId(++packetId);
 
         ByteBuffer buffer = c.allocate();

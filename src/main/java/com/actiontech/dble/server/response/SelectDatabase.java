@@ -33,7 +33,7 @@ public final class SelectDatabase {
 
         HEADER.setPacketId(++packetId);
         FIELDS[0] = PacketUtil.getField("DATABASE()", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[1].setPacketId(++packetId);
+        FIELDS[0].setPacketId(++packetId);
         EOF.setPacketId(++packetId);
         ByteBuffer buffer = c.allocate();
         buffer = HEADER.write(buffer, c, true);

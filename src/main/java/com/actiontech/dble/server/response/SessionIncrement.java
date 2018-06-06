@@ -32,7 +32,7 @@ public final class SessionIncrement {
         byte packetId = setCurrentPacket(c);
         HEADER.setPacketId(++packetId);
         FIELDS[0] = PacketUtil.getField("@@session.auto_increment_increment", Fields.FIELD_TYPE_LONG);
-        FIELDS[1].setPacketId(++packetId);
+        FIELDS[0].setPacketId(++packetId);
         EOF.setPacketId(++packetId);
 
 

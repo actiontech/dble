@@ -31,21 +31,26 @@ public final class SelectTxReadOnly {
     static {
         int i = 0;
         byte packetId = 0;
-        HEADER.setPacketId(++packetId);
-        FIELDS[i] = PacketUtil.getField("@@session.tx_read_only", Fields.FIELD_TYPE_LONG);
-        FIELDS[i].setPacketId(++packetId);
-        EOF.setPacketId(++packetId);
+
 
     }
 
     public static void response(ServerConnection c) {
+
+        byte packetId = setCurrentPacket(c);
+
+        HEADER.setPacketId(++packetId);
+        FIELDS[0] = PacketUtil.getField("@@session.tx_read_only", Fields.FIELD_TYPE_LONG);
+        FIELDS[1].setPacketId(++packetId);
+        EOF.setPacketId(++packetId);
+
         ByteBuffer buffer = c.allocate();
         buffer = HEADER.write(buffer, c, true);
         for (FieldPacket field : FIELDS) {
             buffer = field.write(buffer, c, true);
         }
         buffer = EOF.write(buffer, c, true);
-        byte packetId = EOF.getPacketId();
+
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         int result = c.isReadOnly() ? 1 : 0;
         row.add(LongUtil.toBytes(result));
@@ -53,9 +58,15 @@ public final class SelectTxReadOnly {
         buffer = row.write(buffer, c, true);
         EOFPacket lastEof = new EOFPacket();
         lastEof.setPacketId(++packetId);
-        c.getSession2().multiStatementNext(lastEof);
+        c.getSession2().multiStatementNext(lastEof, packetId);
         buffer = lastEof.write(buffer, c, true);
         c.write(buffer);
+    }
+
+
+    public static byte setCurrentPacket(ServerConnection c) {
+        byte packetId = (byte) c.getSession2().getPacketId().get();
+        return packetId;
     }
 
 }

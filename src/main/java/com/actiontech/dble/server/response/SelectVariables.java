@@ -41,7 +41,7 @@ public final class SelectVariables {
         FieldPacket[] fields = new FieldPacket[fieldCount];
 
         int i = 0;
-        byte packetId = 0;
+        byte packetId = setCurrentPacket(c);
         header.setPacketId(++packetId);
         for (String s : splitVar) {
             fields[i] = PacketUtil.getField(s, Fields.FIELD_TYPE_VAR_STRING);
@@ -82,7 +82,7 @@ public final class SelectVariables {
         // write lastEof
         EOFPacket lastEof = new EOFPacket();
         lastEof.setPacketId(++packetId);
-        c.getSession2().multiStatementNext(lastEof);
+        c.getSession2().multiStatementNext(lastEof, packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // write buffer
@@ -149,6 +149,12 @@ public final class SelectVariables {
         VARIABLES.put("tx_isolation", "REPEATABLE-READ");
         VARIABLES.put("wait_timeout", "172800");
         VARIABLES.put("auto_increment_increment", "1");
+    }
+
+
+    public static byte setCurrentPacket(ServerConnection c) {
+        byte packetId = (byte) c.getSession2().getPacketId().get();
+        return packetId;
     }
 
 

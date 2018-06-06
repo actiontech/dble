@@ -63,11 +63,12 @@ public final class KillHandler {
     }
 
     private static OkPacket getOkPacket(ServerConnection c) {
+        byte packetId = (byte) c.getSession2().getPacketId().get();
         OkPacket packet = new OkPacket();
-        packet.setPacketId(1);
+        packet.setPacketId(packetId);
         packet.setAffectedRows(0);
         packet.setServerStatus(2);
-        c.getSession2().multiStatementNext(packet);
+        c.getSession2().multiStatementNext(packet, packetId);
         return packet;
     }
 

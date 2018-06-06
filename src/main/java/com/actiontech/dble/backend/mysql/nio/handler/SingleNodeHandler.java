@@ -74,7 +74,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         startTime = System.currentTimeMillis();
         ServerConnection sc = session.getSource();
         waitingResponse = true;
-        this.packetId = 0;
+        this.packetId = (byte) session.getPacketId().get();
         final BackendConnection conn = session.getTarget(node);
         node.setRunOnSlave(rrs.getRunOnSlave());
 
@@ -197,7 +197,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             session.releaseConnectionIfSafe(conn, false);
             session.setResponseTime();
 
-            session.multiStatementNext(ok);
+            session.multiStatementNext(ok, packetId);
             ok.write(source);
             waitingResponse = false;
         }
@@ -220,10 +220,9 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             session.releaseConnectionIfSafe(conn, false);
         }
 
-        session.multiStatementNext(eof);
 
         eof[3] = ++packetId;
-
+        session.multiStatementNext(eof, packetId);
         ServerConnection source = session.getSource();
         buffer = source.writeToBuffer(eof, allocBuffer());
         int resultSize = source.getWriteQueue().size() * DbleServer.getInstance().getConfig().getSystem().getBufferPoolPageSize();

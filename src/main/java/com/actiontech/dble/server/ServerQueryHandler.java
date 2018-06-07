@@ -7,6 +7,7 @@ package com.actiontech.dble.server;
 
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.handler.FrontendQueryHandler;
+import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.handler.*;
 import com.actiontech.dble.server.parser.ServerParse;
 import org.slf4j.Logger;
@@ -48,7 +49,9 @@ public class ServerQueryHandler implements FrontendQueryHandler {
             sql = source.getSession2().getRemingSql();
         }
         //Preliminary judgment of multi statement
-        source.getSession2().generalNextStatement(sql);
+        if (source.getSession2().generalNextStatement(sql)) {
+            sql = sql.substring(0, ParseUtil.findNextBreak(sql));
+        }
 
         int rs = ServerParse.parse(sql);
         int sqlType = rs & 0xff;

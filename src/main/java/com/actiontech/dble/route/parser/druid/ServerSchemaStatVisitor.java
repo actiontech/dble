@@ -32,10 +32,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     private String notSupportMsg = null;
-    private boolean hasSubQuery = false;
     private boolean hasOrCondition = false;
     private List<WhereUnit> whereUnits = new CopyOnWriteArrayList<>();
     private List<WhereUnit> storedWhereUnits = new CopyOnWriteArrayList<>();
+    private boolean notInWhere = false;
+    private List<SQLSelect> subQueryList = new ArrayList<>();
 
     private void reset() {
         this.conditions.clear();
@@ -43,8 +44,8 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         this.hasOrCondition = false;
     }
 
-    public boolean isHasSubQuery() {
-        return hasSubQuery;
+    public List<SQLSelect> getSubQueryList() {
+        return subQueryList;
     }
 
     public String getNotSupportMsg() {
@@ -58,14 +59,14 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     @Override
     public boolean visit(SQLInSubQueryExpr x) {
         super.visit(x);
-        hasSubQuery = true;
+        subQueryList.add(x.getSubQuery());
         return true;
     }
 
     @Override
     public boolean visit(SQLQueryExpr x) {
         super.visit(x);
-        hasSubQuery = true;
+        subQueryList.add(x.getSubQuery());
         return true;
     }
 
@@ -79,36 +80,38 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     @Override
     public boolean visit(SQLExistsExpr x) {
         super.visit(x);
-        hasSubQuery = true;
+        subQueryList.add(x.getSubQuery());
         return true;
     }
 
     @Override
     public boolean visit(SQLAllExpr x) {
         super.visit(x);
-        hasSubQuery = true;
+        subQueryList.add(x.getSubQuery());
         return true;
     }
 
     @Override
     public boolean visit(SQLSomeExpr x) {
         super.visit(x);
-        hasSubQuery = true;
+        subQueryList.add(x.getSubQuery());
         return true;
     }
 
     @Override
     public boolean visit(SQLAnyExpr x) {
         super.visit(x);
-        hasSubQuery = true;
+        subQueryList.add(x.getSubQuery());
         return true;
     }
 
     @Override
     public boolean visit(SQLSelectItem x) {
-        //no need to parser SQLSelectItem, or SQLBinaryOpExpr may add to whereUnit
+        //need to protect parser SQLSelectItem, or SQLBinaryOpExpr may add to whereUnit
         // eg:id =1 will add to whereUnit
-        //x.getExpr().accept(this);
+        notInWhere = true;
+        x.getExpr().accept(this);
+        notInWhere = false;
 
         //alias for select item is useless
         //        String alias = x.getAlias();
@@ -198,13 +201,15 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             case LessThanOrEqualOrGreaterThan:
             case Is:
             case IsNot:
-                handleCondition(x.getLeft(), x.getOperator().name, x.getRight());
-                handleCondition(x.getRight(), x.getOperator().name, x.getLeft());
-                handleRelationship(x.getLeft(), x.getOperator().name, x.getRight());
+                if (!notInWhere) {
+                    handleCondition(x.getLeft(), x.getOperator().name, x.getRight());
+                    handleCondition(x.getRight(), x.getOperator().name, x.getLeft());
+                    handleRelationship(x.getLeft(), x.getOperator().name, x.getRight());
+                }
                 break;
             case BooleanOr:
                 //remove always true
-                if (!RouterUtil.isConditionAlwaysTrue(x)) {
+                if (!RouterUtil.isConditionAlwaysTrue(x) && !notInWhere) {
                     hasOrCondition = true;
 
                     WhereUnit whereUnit;

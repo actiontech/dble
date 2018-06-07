@@ -114,7 +114,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             if (insert.getQuery() != null) {
                 SQLSelectStatement selectStmt = new SQLSelectStatement(insert.getQuery());
                 StringPtr sqlSchema = new StringPtr(schemaInfo.getSchema());
-                if (!SchemaUtil.isNoSharding(sc, insert.getQuery().getQuery(), selectStmt, contextSchema, sqlSchema)) {
+                if (!SchemaUtil.isNoSharding(sc, insert.getQuery().getQuery(), insert, selectStmt, contextSchema, sqlSchema)) {
                     return false;
                 }
             }

@@ -50,16 +50,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
                 String msg = "UPDATE query with multiple tables is not supported, sql:" + stmt;
                 throw new SQLNonTransientException(msg);
             } else {
-                if (update.getWhere() != null && !SchemaUtil.isNoSharding(sc, update.getWhere(), schemaName, sqlSchema)) {
-                    String msg = "UPDATE query with sub-query is not supported, sql:" + stmt;
-                    throw new SQLNonTransientException(msg);
-                }
-                String realSchema = sqlSchema.get() == null ? schemaName : sqlSchema.get();
-                SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(realSchema);
-                rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), realSchema));
-                RouterUtil.routeToSingleNode(rrs, schemaConfig.getDataNode());
-                rrs.setFinishedRoute(true);
-                return schema;
+                return routeToNoSharding(schema, rrs, schemaName, sqlSchema);
             }
         } else {
             SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, (SQLExprTableSource) tableSource);
@@ -68,24 +59,27 @@ public class DruidUpdateParser extends DefaultDruidParser {
                 throw new SQLNonTransientException(msg);
             }
             schema = schemaInfo.getSchemaConfig();
-            String tableName = schemaInfo.getTable();
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
-            if (RouterUtil.isNoSharding(schema, tableName)) {
-                if (update.getWhere() != null && !SchemaUtil.isNoSharding(sc, update.getWhere(), schemaName, new StringPtr(schemaInfo.getSchema()))) {
-                    String msg = "UPDATE query with sub-query is not supported, sql:" + stmt;
+            super.visitorParse(schema, rrs, stmt, visitor, sc);
+            if (visitor.getSubQueryList().size() > 0) {
+                StringPtr sqlSchema = new StringPtr(null);
+                if (!SchemaUtil.isNoSharding(sc, tableSource, stmt, stmt, schemaInfo.getSchema(), sqlSchema)) {
+                    String msg = "UPDATE query with sub-query  is not supported, sql:" + stmt;
                     throw new SQLNonTransientException(msg);
+                } else {
+                    return routeToNoSharding(schema, rrs, schemaName, sqlSchema);
                 }
+            }
+
+            String tableName = schemaInfo.getTable();
+            if (RouterUtil.isNoSharding(schema, tableName)) {
                 RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
                 rrs.setFinishedRoute(true);
                 return schema;
             }
             TableConfig tc = schema.getTables().get(tableName);
             checkTableExists(tc, schema.getName(), tableName, ServerPrivileges.CheckType.UPDATE);
-            super.visitorParse(schema, rrs, stmt, visitor, sc);
-            if (visitor.isHasSubQuery()) {
-                String msg = "UPDATE query with sub-query  is not supported, sql:" + stmt;
-                throw new SQLNonTransientException(msg);
-            }
+
 
             if (tc.isGlobalTable()) {
                 if (GlobalTableUtil.useGlobalTableCheck()) {

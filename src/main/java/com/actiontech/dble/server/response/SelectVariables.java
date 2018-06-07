@@ -82,11 +82,12 @@ public final class SelectVariables {
         // write lastEof
         EOFPacket lastEof = new EOFPacket();
         lastEof.setPacketId(++packetId);
-        c.getSession2().multiStatementNext(lastEof, packetId);
+        c.getSession2().multiStatementPacket(lastEof, packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // write buffer
         c.write(buffer);
+        c.getSession2().multiStatementNextSql();
     }
 
     private static List<String> convert(List<String> in) {

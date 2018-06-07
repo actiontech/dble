@@ -52,6 +52,7 @@ public final class UseHandler {
             c.setSchema(schema);
             ByteBuffer buffer = c.allocate();
             c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), buffer));
+            c.getSession2().multiStatementNextSql();
         } else {
             String msg = "Access denied for user '" + c.getUser() + "' to database '" + schema + "'";
             c.writeErrMessage(ErrorCode.ER_DBACCESS_DENIED_ERROR, msg);

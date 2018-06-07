@@ -61,12 +61,16 @@ public final class SelectVersionComment {
         EOFPacket lastEof = new EOFPacket();
         lastEof.setPacketId(++packetId);
         if (c instanceof ServerConnection) {
-            ((ServerConnection) c).getSession2().multiStatementNext(lastEof, packetId);
+            ((ServerConnection) c).getSession2().multiStatementPacket(lastEof, packetId);
         }
         buffer = lastEof.write(buffer, c, true);
 
         // post write
         c.write(buffer);
+        if (c instanceof ServerConnection) {
+            ((ServerConnection) c).getSession2().multiStatementNextSql();
+        }
+
     }
 
 

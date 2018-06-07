@@ -8,6 +8,7 @@ package com.actiontech.dble.backend.datasource;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
+import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.route.RouteResultsetNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +52,7 @@ public class PhysicalDBNode {
 
         PhysicalDatasource ds = this.dbPool.findDatasource(exitsCon);
         if (ds == null) {
-            throw new RuntimeException("can't find exits connection, maybe fininshed " + exitsCon);
+            throw new RuntimeException("can't find exits connection, maybe finished " + exitsCon);
         } else {
             ds.getConnection(schema, autocommit, handler, attachment);
         }
@@ -103,6 +104,11 @@ public class PhysicalDBNode {
     public BackendConnection getConnection(String schema, boolean autoCommit, boolean canRunINReadDB) throws Exception {
         if (canRunINReadDB) {
             PhysicalDatasource readSource = dbPool.getRWBalanceNode();
+            if (!readSource.isAlive()) {
+                String heartbeatError = "the data source[" + readSource.getConfig().getUrl() + "] can't reached, please check the dataHost";
+                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + heartbeatError);
+                throw new IOException(heartbeatError);
+            }
             return readSource.getConnection(schema, autoCommit);
         } else {
             checkRequest(schema);

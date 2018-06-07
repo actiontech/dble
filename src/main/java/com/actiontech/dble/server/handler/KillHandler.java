@@ -56,6 +56,7 @@ public final class KillHandler {
                 }
                 fc.killAndClose("killed");
                 getOkPacket(c).write(c);
+                c.getSession2().multiStatementNextSql();
             } else {
                 c.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "Unknown connection id:" + id);
             }
@@ -68,7 +69,7 @@ public final class KillHandler {
         packet.setPacketId(packetId);
         packet.setAffectedRows(0);
         packet.setServerStatus(2);
-        c.getSession2().multiStatementNext(packet, packetId);
+        c.getSession2().multiStatementPacket(packet, packetId);
         return packet;
     }
 

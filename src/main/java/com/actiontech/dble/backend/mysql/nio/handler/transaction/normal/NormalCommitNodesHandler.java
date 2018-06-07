@@ -92,6 +92,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
             createErrPkg(error).write(session.getSource());
         } else {
             session.getSource().write(send);
+            session.multiStatementNextSql();
         }
     }
 

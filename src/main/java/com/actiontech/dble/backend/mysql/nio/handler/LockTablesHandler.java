@@ -85,7 +85,6 @@ public class LockTablesHandler extends MultiNodeHandler {
                 }
                 OkPacket ok = new OkPacket();
                 ok.read(data);
-                session.multiStatementNext(ok, packetId);
                 lock.lock();
                 try {
                     ok.setPacketId(++packetId);
@@ -93,7 +92,9 @@ public class LockTablesHandler extends MultiNodeHandler {
                 } finally {
                     lock.unlock();
                 }
+                session.multiStatementPacket(ok, packetId);
                 ok.write(session.getSource());
+                session.multiStatementNextSql();
             }
         }
     }

@@ -399,7 +399,6 @@ public class ServerConnection extends FrontendConnection {
             writeErrMessage(ErrorCode.ER_YES, txInterruptMsg);
         } else {
             TxnLogHelper.putTxnLog(this, logReason);
-            session.generalNextStatement(logReason);
             session.commit();
         }
     }

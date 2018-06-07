@@ -342,6 +342,5 @@ public class ServerParseTest {
         sql = "update char_columns set c_char ='1;',c_char2=\";2\";";
         Assert.assertEquals(49, ParseUtil.findNextBreak(sql));
 
-
     }
 }

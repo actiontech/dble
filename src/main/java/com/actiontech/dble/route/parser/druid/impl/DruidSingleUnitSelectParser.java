@@ -40,7 +40,7 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
             }
             if (mysqlFrom instanceof SQLSubqueryTableSource || mysqlFrom instanceof SQLJoinTableSource || mysqlFrom instanceof SQLUnionQueryTableSource) {
                 StringPtr sqlSchema = new StringPtr(null);
-                if (SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, schemaName, sqlSchema)) {
+                if (SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, sqlSchema)) {
                     String realSchema = sqlSchema.get() == null ? schemaName : sqlSchema.get();
                     SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(realSchema);
                     rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), realSchema));
@@ -65,7 +65,7 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
             schema = schemaInfo.getSchemaConfig();
             super.visitorParse(schema, rrs, stmt, visitor, sc);
-            if (visitor.isHasSubQuery()) {
+            if (visitor.getSubQueryList().size() > 0) {
                 this.getCtx().getRouteCalculateUnits().clear();
             }
             // change canRunInReadDB
@@ -74,7 +74,7 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
             }
         } else if (sqlSelectQuery instanceof MySqlUnionQuery) {
             StringPtr sqlSchema = new StringPtr(null);
-            if (SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, schemaName, sqlSchema)) {
+            if (SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, sqlSchema)) {
                 String realSchema = sqlSchema.get() == null ? schemaName : sqlSchema.get();
                 SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(realSchema);
                 rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), realSchema));

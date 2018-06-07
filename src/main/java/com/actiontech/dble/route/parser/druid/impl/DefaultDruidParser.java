@@ -12,11 +12,13 @@ import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.log.alarm.AlarmCode;
+import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.DruidParser;
 import com.actiontech.dble.route.parser.druid.DruidShardingParseInfo;
 import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
+import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.sqlengine.mpp.RangeValue;
 import com.actiontech.dble.util.StringUtil;
@@ -191,5 +193,13 @@ public class DefaultDruidParser implements DruidParser {
                 throw new SQLException(msg, "HY000", ErrorCode.ERR_HANDLE_DATA);
             }
         }
+    }
+    SchemaConfig routeToNoSharding(SchemaConfig schema, RouteResultset rrs, String schemaName, StringPtr sqlSchema) {
+        String realSchema = sqlSchema.get() == null ? schemaName : sqlSchema.get();
+        SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(realSchema);
+        rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), realSchema));
+        RouterUtil.routeToSingleNode(rrs, schemaConfig.getDataNode());
+        rrs.setFinishedRoute(true);
+        return schema;
     }
 }

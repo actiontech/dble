@@ -21,7 +21,7 @@ public class NewConnectionRespHandler implements ResponseHandler {
     private BackendConnection backConn;
     private ReentrantLock lock = new ReentrantLock();
     private Condition initiated = lock.newCondition();
-
+    private String errMsg;
     public BackendConnection getBackConn() throws IOException {
         lock.lock();
         try {
@@ -29,7 +29,7 @@ public class NewConnectionRespHandler implements ResponseHandler {
                 initiated.await();
             }
             if (backConn == null) {
-                throw new IOException("get backend connection error ");
+                throw new IOException(errMsg);
             }
             return backConn;
         } catch (InterruptedException e) {
@@ -43,6 +43,7 @@ public class NewConnectionRespHandler implements ResponseHandler {
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
         LOGGER.info(conn + " connectionError " + e);
+        errMsg = "Backend connect Error, Connection{DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
         lock.lock();
         try {
             initiated.signal();

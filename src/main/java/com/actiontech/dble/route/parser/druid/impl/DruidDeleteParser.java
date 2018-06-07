@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.route.parser.druid.impl;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.ServerPrivileges.CheckType;
 import com.actiontech.dble.config.model.SchemaConfig;
@@ -48,16 +47,7 @@ public class DruidDeleteParser extends DefaultDruidParser {
                 String msg = "DELETE query with multiple tables is not supported, sql:" + stmt;
                 throw new SQLNonTransientException(msg);
             } else {
-                if (delete.getWhere() != null && !SchemaUtil.isNoSharding(sc, delete.getWhere(), schemaName, sqlSchema)) {
-                    String msg = "DELETE query with sub-query is not supported, sql:" + stmt;
-                    throw new SQLNonTransientException(msg);
-                }
-                String realSchema = sqlSchema.get() == null ? schemaName : sqlSchema.get();
-                SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(realSchema);
-                rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), realSchema));
-                RouterUtil.routeToSingleNode(rrs, schemaConfig.getDataNode());
-                rrs.setFinishedRoute(true);
-                return schema;
+                return routeToNoSharding(schema, rrs, schemaName, sqlSchema);
             }
         } else {
             SQLExprTableSource deleteTableSource = (SQLExprTableSource) tableSource;
@@ -68,22 +58,24 @@ public class DruidDeleteParser extends DefaultDruidParser {
             }
             schema = schemaInfo.getSchemaConfig();
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
-            if (RouterUtil.isNoSharding(schema, schemaInfo.getTable())) {
-                if (delete.getWhere() != null && !SchemaUtil.isNoSharding(sc, delete.getWhere(), schemaName, new StringPtr(schemaInfo.getSchema()))) {
-                    String msg = "DELETE query with sub-query is not supported, sql:" + stmt;
+            super.visitorParse(schema, rrs, stmt, visitor, sc);
+            if (visitor.getSubQueryList().size() > 0) {
+                StringPtr sqlSchema = new StringPtr(null);
+                if (!SchemaUtil.isNoSharding(sc, deleteTableSource, stmt, stmt, schemaInfo.getSchema(), sqlSchema)) {
+                    String msg = "DELETE query with sub-query  is not supported, sql:" + stmt;
                     throw new SQLNonTransientException(msg);
+                } else {
+                    return routeToNoSharding(schema, rrs, schemaName, sqlSchema);
                 }
+            }
+            String tableName = schemaInfo.getTable();
+            if (RouterUtil.isNoSharding(schema, tableName)) {
                 RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
                 return schema;
             }
-            String tableName = schemaInfo.getTable();
             TableConfig tc = schema.getTables().get(tableName);
             checkTableExists(tc, schema.getName(), tableName, CheckType.DELETE);
-            super.visitorParse(schema, rrs, stmt, visitor, sc);
-            if (visitor.isHasSubQuery()) {
-                String msg = "DELETE query with sub-query  is not supported, sql:" + stmt;
-                throw new SQLNonTransientException(msg);
-            }
+
             if (tc.isGlobalTable()) {
                 RouterUtil.routeToMultiNode(false, rrs, tc.getDataNodes(), tc.isGlobalTable());
                 rrs.setFinishedRoute(true);
@@ -92,5 +84,7 @@ public class DruidDeleteParser extends DefaultDruidParser {
         }
         return schema;
     }
+
+
 
 }

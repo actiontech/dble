@@ -29,6 +29,8 @@ import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
+import com.alibaba.druid.sql.ast.statement.SQLSelect;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlReplaceStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
@@ -134,7 +136,9 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             if (replace.getQuery() != null) {
                 StringPtr sqlSchema = new StringPtr(schemaInfo.getSchema());
                 //replace into ...select  if the both table is nosharding table
-                if (!SchemaUtil.isNoSharding(sc, replace.getQuery(), contextSchema, sqlSchema)) {
+                SQLSelect select = replace.getQuery().getSubQuery();
+                SQLSelectStatement selectStmt = new SQLSelectStatement(select);
+                if (!SchemaUtil.isNoSharding(sc, select.getQuery(), replace, selectStmt, contextSchema, sqlSchema)) {
                     return false;
                 }
             }

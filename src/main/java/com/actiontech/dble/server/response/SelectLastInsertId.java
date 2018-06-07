@@ -61,11 +61,12 @@ public final class SelectLastInsertId {
         // write last eof
         EOFPacket lastEof = new EOFPacket();
         lastEof.setPacketId(++packetId);
-        c.getSession2().multiStatementNext(lastEof, packetId);
+        c.getSession2().multiStatementPacket(lastEof, packetId);
         buffer = lastEof.write(buffer, c, true);
 
         // post write
         c.write(buffer);
+        c.getSession2().multiStatementNextSql();
     }
 
     public static byte setCurrentPacket(ServerConnection c) {

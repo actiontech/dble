@@ -19,6 +19,7 @@ public final class BeginHandler {
             c.setTxStart(true);
             TxnLogHelper.putTxnLog(c, stmt);
             c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+            c.getSession2().multiStatementNextSql();
         }
     }
 }

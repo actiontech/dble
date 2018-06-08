@@ -68,13 +68,12 @@ public class ProxyMetaManager {
     private ScheduledExecutorService scheduler;
     private ScheduledFuture<?> checkTaskHandler;
     private AtomicInteger metaCount = new AtomicInteger(0);
-    private Repository repository = null;
+    private volatile Repository repository = null;
     private AtomicInteger version = new AtomicInteger(0);
 
     public ProxyMetaManager() {
         this.catalogs = new ConcurrentHashMap<>();
         this.lockTables = new HashSet<>();
-        DbleServer.getInstance().terminateViewRepository();
     }
 
     private String genLockKey(String schema, String tbName) {
@@ -400,6 +399,9 @@ public class ProxyMetaManager {
         if (checkTaskHandler != null) {
             checkTaskHandler.cancel(false);
             scheduler.shutdown();
+        }
+        if (repository != null) {
+            repository.terminate();
         }
     }
     //Check the Consistency of table Structure
@@ -879,10 +881,6 @@ public class ProxyMetaManager {
 
     public Repository getRepository() {
         return repository;
-    }
-
-    public void setRepository(Repository repository) {
-        this.repository = repository;
     }
 
 }

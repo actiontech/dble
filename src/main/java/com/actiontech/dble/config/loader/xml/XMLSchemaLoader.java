@@ -571,7 +571,7 @@ public class XMLSchemaLoader implements SchemaLoader {
                     writeDbConfs[w] = createDBHostConf(name, writeNode, maxCon, minCon);
                     NodeList readNodes = writeNode.getElementsByTagName("readHost");
                     //for every readHost
-                    if (readNodes.getLength() != 0) {
+                    if (readNodes.getLength() != 0 && balance != 0) {
                         DBHostConfig[] readDbConfs = new DBHostConfig[readNodes.getLength()];
                         for (int r = 0; r < readDbConfs.length; r++) {
                             Element readNode = (Element) readNodes.item(r);

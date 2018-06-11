@@ -837,8 +837,8 @@ public class NonBlockingSession implements Session {
     }
 
 
-    public void multiStatementNextSql() {
-        if (this.getIsMultiStatement().get()) {
+    public void multiStatementNextSql(boolean flag) {
+        if (flag) {
             this.setRequestTime();
             DbleServer.getInstance().getFrontHandlerQueue().offer((FrontendCommandHandler) source.getHandler());
         }

@@ -62,7 +62,7 @@ public final class SelectVersionComment {
         lastEof.setPacketId(++packetId);
         boolean multiStatementFlag = false;
         if (c instanceof ServerConnection) {
-             multiStatementFlag = ((ServerConnection) c).getSession2().getIsMultiStatement().get();
+            multiStatementFlag = ((ServerConnection) c).getSession2().getIsMultiStatement().get();
             ((ServerConnection) c).getSession2().multiStatementPacket(lastEof, packetId);
         }
         buffer = lastEof.write(buffer, c, true);

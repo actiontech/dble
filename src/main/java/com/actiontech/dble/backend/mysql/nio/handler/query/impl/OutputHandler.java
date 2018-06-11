@@ -29,15 +29,13 @@ public class OutputHandler extends BaseDMLHandler {
     private NonBlockingSession session;
     private ByteBuffer buffer;
     private boolean isBinary;
-    private boolean hasNext;
 
-    public OutputHandler(long id, NonBlockingSession session, boolean hasNext) {
+    public OutputHandler(long id, NonBlockingSession session) {
         super(id, session);
         session.setOutputHandler(this);
         this.lock = new ReentrantLock();
-        this.packetId = 0;
+        this.packetId = (byte) session.getPacketId().get();
         this.session = session;
-        this.hasNext = hasNext;
         this.isBinary = session.isPrepared();
         this.buffer = session.getSource().allocate();
     }
@@ -55,22 +53,16 @@ public class OutputHandler extends BaseDMLHandler {
         lock.lock();
         try {
             ok[3] = ++packetId;
+            session.multiStatementPacket(okPacket, packetId);
+            boolean multiStatementFlag = session.getIsMultiStatement().get();
             if ((okPacket.getServerStatus() & StatusFlags.SERVER_MORE_RESULTS_EXISTS) > 0) {
                 buffer = source.writeToBuffer(ok, buffer);
             } else {
                 HandlerTool.terminateHandlerTree(this);
-                if (hasNext) {
-                    okPacket.setServerStatus(okPacket.getServerStatus() | StatusFlags.SERVER_MORE_RESULTS_EXISTS);
-                }
                 buffer = source.writeToBuffer(ok, buffer);
-                if (hasNext) {
-                    source.write(buffer);
-                    //source.executeNext(packetId, false);
-                } else {
-                    //source.executeNext(packetId, false);
-                    source.write(buffer);
-                }
+                source.write(buffer);
             }
+            session.multiStatementNextSql(multiStatementFlag);
         } finally {
             lock.unlock();
         }
@@ -84,7 +76,7 @@ public class OutputHandler extends BaseDMLHandler {
         lock.lock();
         try {
             buffer = session.getSource().writeToBuffer(err, buffer);
-            //session.getSource().executeNext(packetId, true);
+            session.resetMultiStatementStatus();
             session.getSource().write(buffer);
         } finally {
             lock.unlock();
@@ -162,20 +154,14 @@ public class OutputHandler extends BaseDMLHandler {
                 eofPacket.read(data);
             }
             eofPacket.setPacketId(++packetId);
-            if (hasNext) {
-                eofPacket.setStatus(eofPacket.getStatus() | StatusFlags.SERVER_MORE_RESULTS_EXISTS);
-            }
             HandlerTool.terminateHandlerTree(this);
+            session.multiStatementPacket(eofPacket, packetId);
             byte[] eof = eofPacket.toBytes();
             buffer = source.writeToBuffer(eof, buffer);
             session.setResponseTime();
-            if (hasNext) {
-                source.write(buffer);
-                //source.executeNext(packetId, false);
-            } else {
-                //source.executeNext(packetId, false);
-                source.write(buffer);
-            }
+            boolean multiStatementFlag = session.getIsMultiStatement().get();
+            source.write(buffer);
+            session.multiStatementNextSql(multiStatementFlag);
         } finally {
             lock.unlock();
         }
@@ -183,6 +169,7 @@ public class OutputHandler extends BaseDMLHandler {
 
     public void backendConnError(byte[] errMsg) {
         if (terminate.compareAndSet(false, true)) {
+            session.resetMultiStatementStatus();
             ErrorPacket err = new ErrorPacket();
             err.setErrNo(ErrorCode.ER_YES);
             err.setMessage(errMsg);
@@ -201,7 +188,6 @@ public class OutputHandler extends BaseDMLHandler {
                 error.setMessage("unknown error".getBytes());
             }
             error.setPacketId(++packetId);
-            //session.getSource().executeNext(packetId, true);
             session.getSource().write(error.toBytes());
         } finally {
             lock.unlock();
@@ -217,6 +203,7 @@ public class OutputHandler extends BaseDMLHandler {
                 buffer = null;
             }
         }
+        session.resetMultiStatementStatus();
     }
 
     @Override

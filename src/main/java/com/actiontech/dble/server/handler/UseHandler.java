@@ -8,7 +8,6 @@ package com.actiontech.dble.server.handler;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.handler.FrontendPrivileges;
-import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.StringUtil;
 
@@ -52,7 +51,9 @@ public final class UseHandler {
         if (schemas == null || schemas.size() == 0 || schemas.contains(schema)) {
             c.setSchema(schema);
             ByteBuffer buffer = c.allocate();
-            c.write(c.writeToBuffer(OkPacket.OK, buffer));
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), buffer));
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
         } else {
             String msg = "Access denied for user '" + c.getUser() + "' to database '" + schema + "'";
             c.writeErrMessage(ErrorCode.ER_DBACCESS_DENIED_ERROR, msg);

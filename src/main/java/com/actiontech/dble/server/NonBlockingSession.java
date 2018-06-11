@@ -24,7 +24,11 @@ import com.actiontech.dble.btrace.provider.CostTimeProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.log.alarm.AlarmCode;
+import com.actiontech.dble.net.handler.FrontendCommandHandler;
+import com.actiontech.dble.net.mysql.EOFPacket;
+import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.net.mysql.StatusFlags;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.optimizer.MyOptimizer;
@@ -32,6 +36,7 @@ import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.statistic.stat.QueryTimeCost;
 import com.actiontech.dble.statistic.stat.QueryTimeCostContainer;
@@ -83,6 +88,12 @@ public class NonBlockingSession implements Session {
     private CostTimeProvider provider;
     private volatile boolean timeCost = false;
     private AtomicBoolean firstBackConRes = new AtomicBoolean(false);
+
+
+    private AtomicBoolean isMultiStatement = new AtomicBoolean(false);
+    private volatile String remingSql = null;
+    private AtomicInteger packetId = new AtomicInteger(0);
+
 
     public NonBlockingSession(ServerConnection source) {
         this.source = source;
@@ -356,7 +367,7 @@ public class NonBlockingSession implements Session {
         init();
         HandlerBuilder builder = new HandlerBuilder(node, this);
         try {
-            builder.build(false); //no next
+            builder.build();
         } catch (SQLSyntaxErrorException e) {
             LOGGER.info(String.valueOf(source) + " execute plan is : " + node, e);
             source.writeErrMessage(ErrorCode.ER_YES, "optimizer build error");
@@ -778,6 +789,7 @@ public class NonBlockingSession implements Session {
     public void handleSpecial(RouteResultset rrs, String schema, boolean isSuccess) {
         handleSpecial(rrs, schema, isSuccess, null);
     }
+
     public void handleSpecial(RouteResultset rrs, String schema, boolean isSuccess, String errInfo) {
         if (rrs.getSqlType() == ServerParse.DDL) {
             String sql = rrs.getSrcStatement();
@@ -793,6 +805,80 @@ public class NonBlockingSession implements Session {
         }
     }
 
+
+    /**
+     * backend packet server_status change and next round start
+     *
+     * @param packet
+     */
+    public void multiStatementPacket(MySQLPacket packet, byte packetNum) {
+        if (this.isMultiStatement.get()) {
+            if (packet instanceof OkPacket) {
+                ((OkPacket) packet).markMoreResultsExists();
+            } else if (packet instanceof EOFPacket) {
+                ((EOFPacket) packet).markMoreResultsExists();
+            }
+            this.packetId.set(packetNum);
+        }
+    }
+
+    /**
+     * backend row eof packet server_status change and next round start
+     *
+     * @param eof
+     */
+    public void multiStatementPacket(byte[] eof, byte packetNum) {
+        if (this.getIsMultiStatement().get()) {
+            //if there is another statement is need to be executed ,start another round
+            eof[7] = (byte) (eof[7] | StatusFlags.SERVER_MORE_RESULTS_EXISTS);
+
+            this.packetId.set(packetNum);
+        }
+    }
+
+
+    public void multiStatementNextSql(boolean flag) {
+        if (flag) {
+            this.setRequestTime();
+            DbleServer.getInstance().getFrontHandlerQueue().offer((FrontendCommandHandler) source.getHandler());
+        }
+    }
+
+
+    public byte[] getOkByteArray() {
+        OkPacket ok = new OkPacket();
+        byte packet = (byte) this.getPacketId().incrementAndGet();
+        ok.read(OkPacket.OK);
+        ok.setPacketId(packet);
+        this.multiStatementPacket(ok, packet);
+        return ok.toBytes();
+    }
+
+
+    /**
+     * reset the session multiStatementStatus
+     */
+    public void resetMultiStatementStatus() {
+        //clear the record
+        this.isMultiStatement.set(false);
+        this.remingSql = null;
+        this.packetId.set(0);
+    }
+
+    public boolean generalNextStatement(String sql) {
+        int index = ParseUtil.findNextBreak(sql);
+        if (index + 1 < sql.length() && !ParseUtil.isEOF(sql, index)) {
+            this.remingSql = sql.substring(index + 1, sql.length());
+            this.isMultiStatement.set(true);
+            return true;
+        } else {
+            this.remingSql = null;
+            this.isMultiStatement.set(false);
+            return false;
+        }
+    }
+
+
     public MemSizeController getJoinBufferMC() {
         return joinBufferMC;
     }
@@ -803,5 +889,27 @@ public class NonBlockingSession implements Session {
 
     public MemSizeController getOtherBufferMC() {
         return otherBufferMC;
+    }
+
+
+    public AtomicBoolean getIsMultiStatement() {
+        return isMultiStatement;
+    }
+
+    public void setIsMultiStatement(AtomicBoolean isMultiStatement) {
+        this.isMultiStatement = isMultiStatement;
+    }
+
+
+    public String getRemingSql() {
+        return remingSql;
+    }
+
+    public void setRemingSql(String remingSql) {
+        this.remingSql = remingSql;
+    }
+
+    public AtomicInteger getPacketId() {
+        return packetId;
     }
 }

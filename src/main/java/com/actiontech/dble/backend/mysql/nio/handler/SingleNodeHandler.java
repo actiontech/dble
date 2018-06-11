@@ -74,7 +74,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         startTime = System.currentTimeMillis();
         ServerConnection sc = session.getSource();
         waitingResponse = true;
-        this.packetId = 0;
+        this.packetId = (byte) session.getPacketId().get();
         final BackendConnection conn = session.getTarget(node);
         node.setRunOnSlave(rrs.getRunOnSlave());
 
@@ -126,6 +126,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         err.read(data);
         err.setPacketId(++packetId);
         backConnectionErr(err, conn);
+        session.resetMultiStatementStatus();
     }
 
     private void backConnectionErr(ErrorPacket errPkg, BackendConnection conn) {
@@ -195,7 +196,11 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             //handleSpecial
             session.releaseConnectionIfSafe(conn, false);
             session.setResponseTime();
+
+            session.multiStatementPacket(ok, packetId);
+            boolean multiStatementFlag = session.getIsMultiStatement().get();
             ok.write(source);
+            session.multiStatementNextSql(multiStatementFlag);
             waitingResponse = false;
         }
     }
@@ -211,18 +216,23 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
         this.netOutBytes += eof.length;
 
-        ServerConnection source = session.getSource();
+
         // if it's call statement,it will not release connection
         if (!rrs.isCallStatement() || rrs.getProcedure().isResultSimpleValue()) {
             session.releaseConnectionIfSafe(conn, false);
         }
 
+
         eof[3] = ++packetId;
+        session.multiStatementPacket(eof, packetId);
+        ServerConnection source = session.getSource();
         buffer = source.writeToBuffer(eof, allocBuffer());
         int resultSize = source.getWriteQueue().size() * DbleServer.getInstance().getConfig().getSystem().getBufferPoolPageSize();
         resultSize = resultSize + buffer.position();
         session.setResponseTime();
+        boolean multiStatementFlag = session.getIsMultiStatement().get();
         source.write(buffer);
+        session.multiStatementNextSql(multiStatementFlag);
         waitingResponse = false;
 
         if (DbleServer.getInstance().getConfig().getSystem().getUseSqlStat() == 1) {

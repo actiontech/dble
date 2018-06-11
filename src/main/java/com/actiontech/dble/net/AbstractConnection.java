@@ -231,6 +231,9 @@ public abstract class AbstractConnection implements NIOConnection {
         this.processor.getBufferPool().recycle(buffer);
     }
 
+    public NIOHandler getHandler() {
+        return handler;
+    }
     public void setHandler(NIOHandler handler) {
         this.handler = handler;
     }

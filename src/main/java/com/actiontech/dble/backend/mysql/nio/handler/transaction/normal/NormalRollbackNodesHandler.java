@@ -65,7 +65,7 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
     public void okResponse(byte[] ok, BackendConnection conn) {
         if (decrementCountBy(1)) {
             if (sendData == null) {
-                sendData = ok;
+                sendData = session.getOkByteArray();
             }
             cleanAndFeedback();
         }
@@ -114,7 +114,9 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
         if (this.isFail()) {
             createErrPkg(error).write(session.getSource());
         } else {
+            boolean multiStatementFlag = session.getIsMultiStatement().get();
             session.getSource().write(send);
+            session.multiStatementNextSql(multiStatementFlag);
         }
     }
 

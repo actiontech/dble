@@ -28,11 +28,6 @@ public final class SelectLastInsertId {
     private static final int FIELD_COUNT = 1;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
 
-    static {
-        byte packetId = 0;
-        HEADER.setPacketId(++packetId);
-    }
-
     public static void response(ServerConnection c, String stmt, int aliasIndex) {
         String alias = ParseUtil.parseAlias(stmt, aliasIndex);
         if (alias == null) {
@@ -41,11 +36,13 @@ public final class SelectLastInsertId {
 
         ByteBuffer buffer = c.allocate();
 
+        byte packetId = setCurrentPacket(c);
+        HEADER.setPacketId(++packetId);
         // write header
         buffer = HEADER.write(buffer, c, true);
 
         // write fields
-        byte packetId = HEADER.getPacketId();
+
         FieldPacket field = PacketUtil.getField(alias, ORG_NAME, Fields.FIELD_TYPE_LONGLONG);
         field.setPacketId(++packetId);
         buffer = field.write(buffer, c, true);
@@ -64,10 +61,18 @@ public final class SelectLastInsertId {
         // write last eof
         EOFPacket lastEof = new EOFPacket();
         lastEof.setPacketId(++packetId);
+        c.getSession2().multiStatementPacket(lastEof, packetId);
         buffer = lastEof.write(buffer, c, true);
-
+        boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
         // post write
         c.write(buffer);
+        c.getSession2().multiStatementNextSql(multiStatementFlag);
+    }
+
+    public static byte setCurrentPacket(ServerConnection c) {
+        byte packetId = (byte) c.getSession2().getPacketId().get();
+
+        return packetId;
     }
 
 }

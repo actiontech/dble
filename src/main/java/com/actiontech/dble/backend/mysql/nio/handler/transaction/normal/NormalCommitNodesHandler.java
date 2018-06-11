@@ -13,6 +13,7 @@ import com.actiontech.dble.server.NonBlockingSession;
 
 public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     protected byte[] sendData;
+
     @Override
     public void clearResources() {
         sendData = null;
@@ -36,7 +37,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
         this.waitUntilSendFinish();
         if (decrementCountBy(1)) {
             if (sendData == null) {
-                sendData = ok;
+                sendData = session.getOkByteArray();
             }
             cleanAndFeedback();
         }
@@ -90,7 +91,9 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
         if (this.isFail()) {
             createErrPkg(error).write(session.getSource());
         } else {
+            boolean multiStatementFlag = session.getIsMultiStatement().get();
             session.getSource().write(send);
+            session.multiStatementNextSql(multiStatementFlag);
         }
     }
 

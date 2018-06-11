@@ -55,8 +55,9 @@ public final class KillHandler {
                     return;
                 }
                 fc.killAndClose("killed");
+                boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
                 getOkPacket(c).write(c);
-                c.getSession2().multiStatementNextSql();
+                c.getSession2().multiStatementNextSql(multiStatementFlag);
             } else {
                 c.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "Unknown connection id:" + id);
             }

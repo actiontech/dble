@@ -64,10 +64,10 @@ public final class SelectIdentity {
         lastEof.setPacketId(++packetId);
         c.getSession2().multiStatementPacket(lastEof, packetId);
         buffer = lastEof.write(buffer, c, true);
-
+        boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
         // post write
         c.write(buffer);
-        c.getSession2().multiStatementNextSql();
+        c.getSession2().multiStatementNextSql(multiStatementFlag);
     }
 
 

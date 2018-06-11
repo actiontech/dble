@@ -114,8 +114,9 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
         if (this.isFail()) {
             createErrPkg(error).write(session.getSource());
         } else {
+            boolean multiStatementFlag = session.getIsMultiStatement().get();
             session.getSource().write(send);
-            session.multiStatementNextSql();
+            session.multiStatementNextSql(multiStatementFlag);
         }
     }
 

@@ -195,8 +195,9 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             session.setResponseTime();
 
             session.multiStatementPacket(ok, packetId);
+            boolean multiStatementFlag = session.getIsMultiStatement().get();
             ok.write(source);
-            session.multiStatementNextSql();
+            session.multiStatementNextSql(multiStatementFlag);
             waitingResponse = false;
         }
     }
@@ -226,8 +227,9 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         int resultSize = source.getWriteQueue().size() * DbleServer.getInstance().getConfig().getSystem().getBufferPoolPageSize();
         resultSize = resultSize + buffer.position();
         session.setResponseTime();
+        boolean multiStatementFlag = session.getIsMultiStatement().get();
         source.write(buffer);
-        session.multiStatementNextSql();
+        session.multiStatementNextSql(multiStatementFlag);
         waitingResponse = false;
         if (DbleServer.getInstance().getConfig().getSystem().getUseSqlStat() == 1) {
             if (rrs.getStatement() != null) {

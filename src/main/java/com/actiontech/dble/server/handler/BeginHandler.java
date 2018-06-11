@@ -18,8 +18,9 @@ public final class BeginHandler {
         } else {
             c.setTxStart(true);
             TxnLogHelper.putTxnLog(c, stmt);
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
             c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
-            c.getSession2().multiStatementNextSql();
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
         }
     }
 }

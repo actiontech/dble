@@ -859,17 +859,15 @@ public class NonBlockingSession implements Session {
      * reset the session multiStatementStatus
      */
     public void resetMultiStatementStatus() {
-        if (this.isMultiStatement.get()) {
-            //clear the record
-            this.isMultiStatement.set(false);
-            this.remingSql = null;
-            this.packetId.set(0);
-        }
+        //clear the record
+        this.isMultiStatement.set(false);
+        this.remingSql = null;
+        this.packetId.set(0);
     }
 
     public boolean generalNextStatement(String sql) {
         int index = ParseUtil.findNextBreak(sql);
-        if (index + 1 < sql.length()) {
+        if (index + 1 < sql.length() && !ParseUtil.isEOF(sql, index)) {
             this.remingSql = sql.substring(index + 1, sql.length());
             this.isMultiStatement.set(true);
             return true;

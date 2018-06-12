@@ -1,16 +1,16 @@
 #!/bin/sh
-
-#check JAVA_HOME & java
+CORE_JAVA_HOME=$JAVA_HOME
+#check CORE_JAVA_HOME & java
 noJavaHome=false
-if [ -z "$JAVA_HOME" ] ; then
+if [ -z "$CORE_JAVA_HOME" ] ; then
     noJavaHome=true
 fi
-if [ ! -e "$JAVA_HOME/bin/java" ] ; then
+if [ ! -e "$CORE_JAVA_HOME/bin/java" ] ; then
     noJavaHome=true
 fi
 if $noJavaHome ; then
     echo
-    echo "Error: JAVA_HOME environment variable is not set."
+    echo "Error: CORE_JAVA_HOME environment variable is not set."
     echo
     exit 1
 fi
@@ -28,7 +28,7 @@ if [ -z "$APP_HOME" ] ; then
 fi 
 
 #============run encrypt
-RUN_CMD="$JAVA_HOME/bin/java -cp $APP_HOME/lib/dble*.jar com.actiontech.dble.util.DecryptUtil $@" 
+RUN_CMD="$CORE_JAVA_HOME/bin/java -cp $APP_HOME/lib/dble*.jar com.actiontech.dble.util.DecryptUtil $@" 
 echo $RUN_CMD
 eval $RUN_CMD
 #==============================================================================

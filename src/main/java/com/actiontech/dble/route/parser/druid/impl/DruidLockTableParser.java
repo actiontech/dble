@@ -5,19 +5,21 @@
 
 package com.actiontech.dble.route.parser.druid.impl;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
+import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.util.SplitUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlLockTableStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlLockTableStatement.LockType;
 
+import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.List;
 
@@ -29,7 +31,7 @@ import java.util.List;
 public class DruidLockTableParser extends DefaultDruidParser {
     @Override
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc)
-            throws SQLNonTransientException {
+            throws SQLException {
         // for lock tables table1 write, table2
         // DruidParser can only parser table1,
         // use "," to judge
@@ -57,9 +59,14 @@ public class DruidLockTableParser extends DefaultDruidParser {
             throw new SQLNonTransientException("can't lock multi-table");
         }
         MySqlLockTableStatement lockTableStat = (MySqlLockTableStatement) stmt;
-        String table = lockTableStat.getTableSource().toString();
-        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
-            table = table.toLowerCase();
+        String schemaName = schema == null ? null : schema.getName();
+        SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, lockTableStat.getTableSource());
+        schema = schemaInfo.getSchemaConfig();
+        String table = schemaInfo.getTable();
+        if (RouterUtil.isNoSharding(schema, table)) {
+            RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
+            rrs.setFinishedRoute(true);
+            return schema;
         }
         TableConfig tableConfig = schema.getTables().get(table);
         if (tableConfig == null) {

@@ -28,7 +28,9 @@ if [ -z "$APP_HOME" ] ; then
 fi 
 
 #============run encrypt
-RUN_CMD="$CORE_JAVA_HOME/bin/java -cp $APP_HOME/lib/dble*.jar com.actiontech.dble.util.DecryptUtil $@" 
-echo $RUN_CMD
+input=$1
+PASSWORD=${input/password=/""}
+RUN_CMD="$CORE_JAVA_HOME/bin/java -cp $APP_HOME/lib/dble*.jar com.actiontech.dble.util.DecryptUtil $PASSWORD"
+echo "$CORE_JAVA_HOME/bin/java -cp $APP_HOME/lib/dble*.jar com.actiontech.dble.util.DecryptUtil password=******"
 eval $RUN_CMD
 #==============================================================================

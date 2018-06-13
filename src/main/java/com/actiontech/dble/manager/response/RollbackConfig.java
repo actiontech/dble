@@ -8,6 +8,7 @@ package com.actiontech.dble.manager.response;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
+import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
@@ -70,6 +71,7 @@ public final class RollbackConfig {
             UDistributeLock distributeLock = new UDistributeLock(UcorePathUtil.getConfChangeLockPath(),
                     UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
             try {
+                ClusterDelayProvider.delayAfterReloadLock();
                 if (!distributeLock.acquire()) {
                     c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rollbacking, please try again later.");
                     return;
@@ -106,6 +108,7 @@ public final class RollbackConfig {
         try {
             // step 2 rollback self config
             rollback();
+            ClusterDelayProvider.delayAfterMasterRollback();
 
             //step 3 tail the ucore & notify the other dble
             ConfStatus status = new ConfStatus(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ConfStatus.Status.ROLLBACK, null);
@@ -117,6 +120,7 @@ public final class RollbackConfig {
 
             String errorMsg = ClusterUcoreSender.waitingForAllTheNode(UcorePathUtil.SUCCESS, UcorePathUtil.getConfStatusPath() + SEPARATOR);
 
+            ClusterDelayProvider.delayBeforeDeleterollbackLock();
             //step 6 delete the reload flag
             ClusterUcoreSender.deleteKVTree(UcorePathUtil.getConfStatusPath());
 

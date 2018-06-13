@@ -77,4 +77,45 @@ public final class ClusterDelayProvider {
 
     }
 
+    public static void delayAfterReloadLock() {
+
+    }
+
+    public static void delayAfterGetNotice() {
+
+    }
+
+    public static void delayAfterMasterLoad() {
+
+    }
+
+    public static void delayBeforeSlaveReload() {
+
+    }
+
+    public static void delayAfterSlaveReload() {
+
+    }
+
+    public static void delayBeforeDeleteReloadLock() {
+
+    }
+
+    public static void delayAfterMasterRollback() {
+
+    }
+
+    public static void delayBeforeSlaveRollback() {
+
+    }
+
+    public static void delayAfterSlaveRollback() {
+
+    }
+
+
+    public static void delayBeforeDeleterollbackLock() {
+
+    }
+
 }

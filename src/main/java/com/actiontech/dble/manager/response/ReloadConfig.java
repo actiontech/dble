@@ -11,6 +11,7 @@ import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.ConfigInitializer;
 import com.actiontech.dble.config.ErrorCode;
@@ -105,6 +106,7 @@ public final class ReloadConfig {
         } else if (DbleServer.getInstance().isUseUcore()) {
             UDistributeLock distributeLock = new UDistributeLock(UcorePathUtil.getConfChangeLockPath(),
                     UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+            ClusterDelayProvider.delayAfterReloadLock();
             try {
                 if (!distributeLock.acquire()) {
                     c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rolling back, please try again later.");
@@ -151,6 +153,7 @@ public final class ReloadConfig {
         try {
             //step 2 reload the local config file
             load(loadAll, loadAllMode);
+            ClusterDelayProvider.delayAfterMasterLoad();
 
             //step 3 if the reload with no error ,than write the config file into ucore remote
             XmltoUcore.initFileToUcore();
@@ -166,6 +169,7 @@ public final class ReloadConfig {
 
             String errorMsg = ClusterUcoreSender.waitingForAllTheNode(UcorePathUtil.SUCCESS, UcorePathUtil.getConfStatusPath() + SEPARATOR);
 
+            ClusterDelayProvider.delayBeforeDeleteReloadLock();
             //step 6 delete the reload flag
             ClusterUcoreSender.deleteKVTree(UcorePathUtil.getConfStatusPath() + SEPARATOR);
 

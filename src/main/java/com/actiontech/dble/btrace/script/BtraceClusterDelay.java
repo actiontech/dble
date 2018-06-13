@@ -157,4 +157,103 @@ public final class BtraceClusterDelay {
     }
 
 
+    @OnMethod(
+            clazz = "com.actiontech.dble.btrace.provider.ClusterDelayProvider",
+            method = "delayAfterReloadLock"
+    )
+    public static void delayAfterReloadLock(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod) throws Exception {
+        BTraceUtils.print("get into delayAfterReloadLock ");
+        BTraceUtils.print(" for order __________________________ ");
+        Thread.sleep(10000L);
+    }
+
+    @OnMethod(
+            clazz = "com.actiontech.dble.btrace.provider.ClusterDelayProvider",
+            method = "delayAfterGetNotice"
+    )
+    public static void delayAfterGetNotice(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod) throws Exception {
+        BTraceUtils.print("get into delayAfterGetNotice ");
+        BTraceUtils.print(" for order __________________________ ");
+        Thread.sleep(10000L);
+    }
+
+    @OnMethod(
+            clazz = "com.actiontech.dble.btrace.provider.ClusterDelayProvider",
+            method = "delayAfterMasterLoad"
+    )
+    public static void delayAfterMasterLoad(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod) throws Exception {
+        BTraceUtils.print("get into delayAfterMasterLoad ");
+        BTraceUtils.print(" for order __________________________ ");
+        Thread.sleep(10000L);
+    }
+
+    @OnMethod(
+            clazz = "com.actiontech.dble.btrace.provider.ClusterDelayProvider",
+            method = "delayBeforeSlaveReload"
+    )
+    public static void delayBeforeSlaveReload(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod) throws Exception {
+        BTraceUtils.print("get into delayBeforeSlaveReload ");
+        BTraceUtils.print(" for order __________________________ ");
+        Thread.sleep(10000L);
+    }
+
+    @OnMethod(
+            clazz = "com.actiontech.dble.btrace.provider.ClusterDelayProvider",
+            method = "delayAfterSlaveReload"
+    )
+    public static void delayAfterSlaveReload(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod) throws Exception {
+        BTraceUtils.print("get into delayAfterSlaveReload ");
+        BTraceUtils.print(" for order __________________________ ");
+        Thread.sleep(10000L);
+    }
+
+    @OnMethod(
+            clazz = "com.actiontech.dble.btrace.provider.ClusterDelayProvider",
+            method = "delayBeforeDeleteReloadLock"
+    )
+    public static void delayBeforeDeleteReloadLock(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod) throws Exception {
+        BTraceUtils.print("get into delayBeforeDeleteReloadLock ");
+        BTraceUtils.print(" for order __________________________ ");
+        Thread.sleep(10000L);
+    }
+
+    @OnMethod(
+            clazz = "com.actiontech.dble.btrace.provider.ClusterDelayProvider",
+            method = "delayAfterMasterRollback"
+    )
+    public static void delayAfterMasterRollback(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod) throws Exception {
+        BTraceUtils.print("get into delayAfterMasterRollback ");
+        BTraceUtils.print(" for order __________________________ ");
+        Thread.sleep(10000L);
+    }
+
+    @OnMethod(
+            clazz = "com.actiontech.dble.btrace.provider.ClusterDelayProvider",
+            method = "delayBeforeSlaveRollback"
+    )
+    public static void delayBeforeSlaveRollback(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod) throws Exception {
+        BTraceUtils.print("get into delayBeforeSlaveRollback ");
+        BTraceUtils.print(" for order __________________________ ");
+        Thread.sleep(10000L);
+    }
+
+    @OnMethod(
+            clazz = "com.actiontech.dble.btrace.provider.ClusterDelayProvider",
+            method = "delayAfterSlaveRollback"
+    )
+    public static void delayAfterSlaveRollback(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod) throws Exception {
+        BTraceUtils.print("get into delayAfterSlaveRollback ");
+        BTraceUtils.print(" for order __________________________ ");
+        Thread.sleep(10000L);
+    }
+
+    @OnMethod(
+            clazz = "com.actiontech.dble.btrace.provider.ClusterDelayProvider",
+            method = "delayBeforeDeleterollbackLock"
+    )
+    public static void delayBeforeDeleterollbackLock(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod) throws Exception {
+        BTraceUtils.print("get into delayBeforeDeleterollbackLock ");
+        BTraceUtils.print(" for order __________________________ ");
+        Thread.sleep(10000L);
+    }
 }

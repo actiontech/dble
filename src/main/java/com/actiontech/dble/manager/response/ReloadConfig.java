@@ -106,12 +106,12 @@ public final class ReloadConfig {
         } else if (DbleServer.getInstance().isUseUcore()) {
             UDistributeLock distributeLock = new UDistributeLock(UcorePathUtil.getConfChangeLockPath(),
                     UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
-            ClusterDelayProvider.delayAfterReloadLock();
             try {
                 if (!distributeLock.acquire()) {
                     c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rolling back, please try again later.");
                     return;
                 }
+                ClusterDelayProvider.delayAfterReloadLock();
                 try {
                     reloadWithUcore(loadAll, loadAllMode, c);
                 } finally {

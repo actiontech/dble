@@ -27,7 +27,12 @@ public enum ClusterParamCfg {
     /**
      * node id
      */
-    CLUSTER_CFG_MYID("myid"),;
+    CLUSTER_CFG_MYID("myid"),
+
+    /**
+     * serverID
+     */
+    CLUSTER_CFG_SERVER_ID("serverID"),;
 
 
     ClusterParamCfg(String key) {

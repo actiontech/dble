@@ -21,21 +21,20 @@ import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 import org.apache.logging.log4j.core.layout.PatternLayout;
+import org.apache.logging.log4j.spi.StandardLevel;
 
 import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 
 import static com.actiontech.dble.cluster.ClusterController.GENERAL_GRPC_TIMEOUT;
-import java.net.*;
-import java.util.*;
 
 /**
  * Created by szf on 2017/12/4.
  */
 @Plugin(name = "AlarmAppender", category = "Core", elementType = "appender", printObject = true)
-public class AlarmAppender extends AbstractAppender {
+public final class AlarmAppender extends AbstractAppender {
 
-    private static int grpcLevel = 300;
+    private static int grpcLevel = StandardLevel.WARN.intLevel();
     private static String serverId = "";
     private static String alertComponentId = "";
 
@@ -46,10 +45,10 @@ public class AlarmAppender extends AbstractAppender {
     /**
      * method to init the whole appender
      *
-     * @param name
-     * @param layout
+     * @param name name
+     * @param layout layout
      */
-    protected AlarmAppender(String name,
+    private AlarmAppender(String name,
                             Layout<? extends Serializable> layout) {
         super(name, null, layout, true);
     }
@@ -60,8 +59,8 @@ public class AlarmAppender extends AbstractAppender {
             //only if the dbleserver init config file finished than the config can be use for alert
             try {
                 if (DbleServer.getInstance().isUseUcore()) {
-                    grpcLevel = 300;
-                    serverId = UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + getLocalIPs();
+                    grpcLevel = StandardLevel.WARN.intLevel();
+                    serverId = UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_SERVER_ID);
                     alertComponentId = UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
                     Channel channel = ManagedChannelBuilder.forAddress(UcoreConfig.getInstance().getIpList().get(0),
                             Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).
@@ -84,7 +83,7 @@ public class AlarmAppender extends AbstractAppender {
             String data = new String(getLayout().toByteArray(event));
             String[] d = data.split("::");
             if (d.length >= 2) {
-                String level = event.getLevel().intLevel() == 300 ? "WARN" : "CRITICAL";
+                String level = event.getLevel().intLevel() == StandardLevel.WARN.intLevel() ? "WARN" : "CRITICAL";
                 UcoreInterface.AlertInput inpurt = UcoreInterface.AlertInput.newBuilder().
                         setCode(d[0]).
                         setDesc(d[1]).
@@ -116,54 +115,6 @@ public class AlarmAppender extends AbstractAppender {
         }
         Layout<? extends Serializable> layout = PatternLayout.createDefaultLayout();
         return new AlarmAppender(name, layout);
-    }
-
-    private String getLocalIPs() {
-        Set<String> ipList = new HashSet<>();
-        Enumeration<?> network;
-        List<NetworkInterface> netList = new ArrayList<>();
-        try {
-            network = NetworkInterface.getNetworkInterfaces();
-
-            while (network.hasMoreElements()) {
-                NetworkInterface ni = (NetworkInterface) network.nextElement();
-
-                if (ni.isLoopback()) {
-                    continue;
-                }
-                netList.add(ni);
-            }
-            for (NetworkInterface list : netList) {
-                Enumeration<?> card = list.getInetAddresses();
-                while (card.hasMoreElements()) {
-                    InetAddress ip = (InetAddress) card.nextElement();
-                    if (!ip.isLoopbackAddress()) {
-                        if (ip.getHostAddress().equalsIgnoreCase("127.0.0.1")) {
-                            continue;
-                        }
-                    }
-                    if (ip instanceof Inet6Address) {
-                        continue;
-                    }
-                    if (ip instanceof Inet4Address) {
-                        ipList.add(ip.getHostAddress());
-                    }
-                }
-            }
-        } catch (SocketException e) {
-            System.out.println(e.getMessage());
-        }
-        StringBuilder sbIps = new StringBuilder("(");
-        int i = 0;
-        for (String ip : ipList) {
-            if (i > 0) {
-                sbIps.append(",");
-            }
-            sbIps.append(ip);
-            i++;
-        }
-        sbIps.append(")");
-        return sbIps.toString();
     }
 
 }

@@ -60,7 +60,9 @@ public final class SelectVersionComment {
         // write last eof
         EOFPacket lastEof = new EOFPacket();
         lastEof.setPacketId(++packetId);
+        boolean multiStatementFlag = false;
         if (c instanceof ServerConnection) {
+            multiStatementFlag = ((ServerConnection) c).getSession2().getIsMultiStatement().get();
             ((ServerConnection) c).getSession2().multiStatementPacket(lastEof, packetId);
         }
         buffer = lastEof.write(buffer, c, true);
@@ -68,7 +70,7 @@ public final class SelectVersionComment {
         // post write
         c.write(buffer);
         if (c instanceof ServerConnection) {
-            ((ServerConnection) c).getSession2().multiStatementNextSql();
+            ((ServerConnection) c).getSession2().multiStatementNextSql(multiStatementFlag);
         }
 
     }

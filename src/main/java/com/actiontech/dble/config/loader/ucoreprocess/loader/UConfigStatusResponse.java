@@ -1,6 +1,7 @@
 package com.actiontech.dble.config.loader.ucoreprocess.loader;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.*;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
@@ -27,6 +28,7 @@ public class UConfigStatusResponse implements UcoreXmlLoader {
     @Override
     public void notifyProcess(UKvBean pathValue) throws Exception {
 
+        ClusterDelayProvider.delayAfterGetNotice();
         if (DbleServer.getInstance().getFrontProcessors() != null) {
             //step 1 check if the change is from itself
             LOGGER.debug("notify " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
@@ -46,7 +48,9 @@ public class UConfigStatusResponse implements UcoreXmlLoader {
             if (status.getStatus() == ConfStatus.Status.ROLLBACK) {
                 LOGGER.debug("rollback " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
                 try {
+                    ClusterDelayProvider.delayBeforeSlaveRollback();
                     RollbackConfig.rollback();
+                    ClusterDelayProvider.delayAfterSlaveRollback();
                     ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getSelfConfStatusPath(), UcorePathUtil.SUCCESS);
                 } catch (Exception e) {
                     String errorinfo = e.getMessage() == null ? e.toString() : e.getMessage();
@@ -57,6 +61,7 @@ public class UConfigStatusResponse implements UcoreXmlLoader {
 
             //step 3 reload the config and set the self config status
             try {
+                ClusterDelayProvider.delayBeforeSlaveReload();
                 if (status.getStatus() == ConfStatus.Status.RELOAD_ALL) {
                     LOGGER.debug("reload_all " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
                     ReloadConfig.reloadAll(Integer.parseInt(status.getParams()));
@@ -64,6 +69,7 @@ public class UConfigStatusResponse implements UcoreXmlLoader {
                     LOGGER.debug("reload " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
                     ReloadConfig.reload();
                 }
+                ClusterDelayProvider.delayAfterSlaveReload();
                 ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getSelfConfStatusPath(), UcorePathUtil.SUCCESS);
             } catch (Exception e) {
                 String errorinfo = e.getMessage() == null ? e.toString() : e.getMessage();

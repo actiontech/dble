@@ -47,6 +47,7 @@ public class DataHost implements Named {
     protected String heartbeat;
 
     protected List<WriteHost> writeHost;
+    protected ReadHost readHost;
 
     public String getHeartbeat() {
         return heartbeat;
@@ -131,6 +132,15 @@ public class DataHost implements Named {
 
     public void setKeepOrig(Integer keepOrig) {
         this.keepOrig = keepOrig;
+    }
+
+
+    public ReadHost getReadHost() {
+        return readHost;
+    }
+
+    public void setReadHost(ReadHost readHost) {
+        this.readHost = readHost;
     }
 
 

@@ -183,6 +183,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         try {
             if (!isFail()) {
                 setFail(new String(err.getMessage()));
+                if (errConnection == null) {
+                    errConnection = new ArrayList<>();
+                }
+                errConnection.add(conn);
             }
             if (!conn.syncAndExecute()) {
                 return;

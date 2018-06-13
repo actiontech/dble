@@ -123,11 +123,11 @@ public final class SchemaUtil {
         if (tables == null) {
             return true;
         } else if (tables instanceof SQLExprTableSource) {
-            if (!isNoSharding(source, (SQLExprTableSource) tables, stmt, contextSchema, sqlSchema)) {
+            if (!isNoSharding(source, (SQLExprTableSource) tables, stmt, childSelectStmt, contextSchema, sqlSchema)) {
                 return false;
             }
         } else if (tables instanceof SQLJoinTableSource) {
-            if (!isNoSharding(source, (SQLJoinTableSource) tables, stmt, contextSchema, sqlSchema)) {
+            if (!isNoSharding(source, (SQLJoinTableSource) tables, stmt, childSelectStmt, contextSchema, sqlSchema)) {
                 return false;
             }
         } else if (tables instanceof SQLSubqueryTableSource) {
@@ -148,15 +148,15 @@ public final class SchemaUtil {
         return true;
     }
 
-    private static boolean isNoSharding(ServerConnection source, SQLExprTableSource table, SQLStatement stmt, String contextSchema, StringPtr sqlSchema)
+    private static boolean isNoSharding(ServerConnection source, SQLExprTableSource table, SQLStatement stmt, SQLStatement childSelectStmt, String contextSchema, StringPtr sqlSchema)
             throws SQLException {
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(source.getUser(), contextSchema, table);
         ServerPrivileges.CheckType checkType = ServerPrivileges.CheckType.SELECT;
-        if (stmt instanceof MySqlUpdateStatement) {
+        if (childSelectStmt instanceof MySqlUpdateStatement) {
             checkType = ServerPrivileges.CheckType.UPDATE;
-        } else if (stmt instanceof SQLSelectStatement) {
+        } else if (childSelectStmt instanceof SQLSelectStatement) {
             checkType = ServerPrivileges.CheckType.SELECT;
-        } else if (stmt instanceof MySqlDeleteStatement) {
+        } else if (childSelectStmt instanceof MySqlDeleteStatement) {
             checkType = ServerPrivileges.CheckType.DELETE;
         }
 
@@ -174,11 +174,11 @@ public final class SchemaUtil {
         }
     }
 
-    public static boolean isNoSharding(ServerConnection source, SQLJoinTableSource tables, SQLStatement stmt, String contextSchema, StringPtr sqlSchema)
+    public static boolean isNoSharding(ServerConnection source, SQLJoinTableSource tables, SQLStatement stmt, SQLStatement childSelectStmt, String contextSchema, StringPtr sqlSchema)
             throws SQLException {
         SQLTableSource left = tables.getLeft();
         SQLTableSource right = tables.getRight();
-        return isNoSharding(source, left, stmt, stmt, contextSchema, sqlSchema) && isNoSharding(source, right, stmt, stmt, contextSchema, sqlSchema);
+        return isNoSharding(source, left, stmt, childSelectStmt, contextSchema, sqlSchema) && isNoSharding(source, right, stmt, childSelectStmt, contextSchema, sqlSchema);
     }
 
     public static class SchemaInfo {

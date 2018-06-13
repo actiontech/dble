@@ -41,7 +41,7 @@ public final class DbleStartup {
             server.startup();
             System.out.println("Server startup successfully. see logs in logs/" + ShowServerLog.DEFAULT_LOGFILE);
 
-        } catch (Exception e) {
+        } catch (Throwable e) {
             System.out.println(e.toString());
             System.exit(-1);
         }

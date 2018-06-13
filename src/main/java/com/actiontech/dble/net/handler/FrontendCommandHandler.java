@@ -53,7 +53,7 @@ public class FrontendCommandHandler implements NIOHandler {
     public void handle() {
         try {
             handleData(dataTodo);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             String msg = e.getMessage();
             if (StringUtil.isEmpty(msg)) {
                 LOGGER.info("Maybe occur a bug, please check it.", e);

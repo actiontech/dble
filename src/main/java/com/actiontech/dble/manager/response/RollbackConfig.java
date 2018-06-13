@@ -71,11 +71,12 @@ public final class RollbackConfig {
             UDistributeLock distributeLock = new UDistributeLock(UcorePathUtil.getConfChangeLockPath(),
                     UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
             try {
-                ClusterDelayProvider.delayAfterReloadLock();
+
                 if (!distributeLock.acquire()) {
                     c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rollbacking, please try again later.");
                     return;
                 }
+                ClusterDelayProvider.delayAfterReloadLock();
                 try {
                     rollbackWithUcore(c);
                     writeOKResult(c);

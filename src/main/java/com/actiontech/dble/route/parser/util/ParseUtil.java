@@ -312,14 +312,22 @@ public final class ParseUtil {
 
     public static int findNextBreak(String sql) {
         boolean breakFlag = false;
+        char beginChar = 0;
         for (int i = 0; i < sql.length(); i++) {
-
-            switch (sql.charAt(i)) {
+            char c = sql.charAt(i);
+            switch (c) {
                 case '\\':
                     i++;
                     break;
                 case '\'':
-                    breakFlag = !breakFlag;
+                case '\"':
+                    if (!breakFlag) {
+                        breakFlag = true;
+                        beginChar = c;
+                    } else if (c == beginChar) {
+                        breakFlag = false;
+                        beginChar = 0;
+                    }
                     break;
                 case ';':
                     if (!breakFlag) {

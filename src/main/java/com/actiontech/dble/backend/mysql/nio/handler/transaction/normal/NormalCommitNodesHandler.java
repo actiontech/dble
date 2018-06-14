@@ -91,7 +91,9 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
         if (this.isFail()) {
             createErrPkg(error).write(session.getSource());
         } else {
+            boolean multiStatementFlag = session.getIsMultiStatement().get();
             session.getSource().write(send);
+            session.multiStatementNextSql(multiStatementFlag);
         }
     }
 

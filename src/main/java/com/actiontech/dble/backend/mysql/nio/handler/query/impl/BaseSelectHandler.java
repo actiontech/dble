@@ -15,6 +15,7 @@ import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import org.apache.log4j.Logger;
@@ -136,8 +137,13 @@ public class BaseSelectHandler extends BaseDMLHandler {
     public void connectionError(Throwable e, BackendConnection conn) {
         if (terminate.get())
             return;
-        LOGGER.warn(AlarmCode.CORE_DATA_HOST_WARN + "Backend connect Error, Connection info:" + conn, e);
-        String errMsg = "Backend connect Error, Connection{DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
+        String errMsg;
+        if (e instanceof MySQLOutPutException) {
+            errMsg = e.getMessage() == null ? e.toString() : e.getMessage();
+        } else {
+            LOGGER.warn(AlarmCode.CORE_DATA_HOST_WARN + "Backend connect Error, Connection info:" + conn, e);
+            errMsg = "Backend connect Error, Connection{DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
+        }
         session.onQueryError(errMsg.getBytes());
     }
 

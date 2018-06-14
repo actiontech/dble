@@ -111,6 +111,11 @@ public class DruidSelectParser extends DefaultDruidParser {
                     return schema;
                 }
 
+                super.visitorParse(schema, rrs, stmt, visitor, sc);
+                if (visitor.getSubQueryList().size() > 0) {
+                    return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc);
+                }
+
                 if (RouterUtil.isNoSharding(schema, schemaInfo.getTable())) {
                     RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
                     return schema;
@@ -120,14 +125,6 @@ public class DruidSelectParser extends DefaultDruidParser {
                 if (tc == null) {
                     String msg = "Table '" + schema.getName() + "." + schemaInfo.getTable() + "' doesn't exist";
                     throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
-                }
-
-
-                super.visitorParse(schema, rrs, stmt, visitor, sc);
-                if (visitor.isHasSubQuery()) {
-                    rrs.setSqlStatement(selectStmt);
-                    rrs.setNeedOptimizer(true);
-                    return schema;
                 }
 
                 parseOrderAggGroupMysql(schema, stmt, rrs, mysqlSelectQuery, tc);
@@ -437,16 +434,12 @@ public class DruidSelectParser extends DefaultDruidParser {
     private SchemaConfig executeComplexSQL(String schemaName, SchemaConfig schema, RouteResultset rrs, SQLSelectStatement selectStmt, ServerConnection sc)
             throws SQLException {
         StringPtr sqlSchema = new StringPtr(null);
-        if (!SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, schemaName, sqlSchema)) {
+        if (!SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, sqlSchema)) {
             rrs.setSqlStatement(selectStmt);
             rrs.setNeedOptimizer(true);
             return schema;
         } else {
-            String realSchema = sqlSchema.get() == null ? schemaName : sqlSchema.get();
-            SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(realSchema);
-            rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), realSchema));
-            RouterUtil.routeToSingleNode(rrs, schemaConfig.getDataNode());
-            return schemaConfig;
+            return routeToNoSharding(schema, rrs, schemaName, sqlSchema);
         }
     }
 

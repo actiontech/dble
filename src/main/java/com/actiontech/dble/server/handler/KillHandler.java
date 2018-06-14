@@ -55,7 +55,9 @@ public final class KillHandler {
                     return;
                 }
                 fc.killAndClose("killed");
+                boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
                 getOkPacket(c).write(c);
+                c.getSession2().multiStatementNextSql(multiStatementFlag);
             } else {
                 c.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "Unknown connection id:" + id);
             }
@@ -63,11 +65,12 @@ public final class KillHandler {
     }
 
     private static OkPacket getOkPacket(ServerConnection c) {
+        byte packetId = (byte) c.getSession2().getPacketId().get();
         OkPacket packet = new OkPacket();
-        packet.setPacketId(1);
+        packet.setPacketId(packetId);
         packet.setAffectedRows(0);
         packet.setServerStatus(2);
-        c.getSession2().multiStatementNext(packet);
+        c.getSession2().multiStatementPacket(packet, packetId);
         return packet;
     }
 

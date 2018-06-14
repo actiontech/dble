@@ -31,8 +31,9 @@ public class WriteHost {
     protected String password;
     @XmlAttribute(required = true)
     protected String user;
+
     @XmlAttribute
-    protected Boolean usingDecrypt;
+    protected String usingDecrypt;
 
     private List<ReadHost> readHost;
 
@@ -68,14 +69,13 @@ public class WriteHost {
         this.user = user;
     }
 
-    public Boolean isUsingDecrypt() {
+    public String getUsingDecrypt() {
         return usingDecrypt;
     }
 
-    public void setUsingDecrypt(Boolean usingDecrypt) {
+    public void setUsingDecrypt(String usingDecrypt) {
         this.usingDecrypt = usingDecrypt;
     }
-
     public List<ReadHost> getReadHost() {
         if (this.readHost == null) {
             readHost = new ArrayList<>();

@@ -92,6 +92,8 @@ public class NonBlockingSession implements Session {
 
     private AtomicBoolean isMultiStatement = new AtomicBoolean(false);
     private volatile String remingSql = null;
+    private AtomicInteger packetId = new AtomicInteger(0);
+
 
     public NonBlockingSession(ServerConnection source) {
         this.source = source;
@@ -824,15 +826,14 @@ public class NonBlockingSession implements Session {
      *
      * @param packet
      */
-    public void multiStatementNext(MySQLPacket packet) {
+    public void multiStatementPacket(MySQLPacket packet, byte packetNum) {
         if (this.isMultiStatement.get()) {
             if (packet instanceof OkPacket) {
                 ((OkPacket) packet).markMoreResultsExists();
             } else if (packet instanceof EOFPacket) {
                 ((EOFPacket) packet).markMoreResultsExists();
             }
-            this.setRequestTime();
-            DbleServer.getInstance().getFrontHandlerQueue().offer((FrontendCommandHandler) source.getHandler());
+            this.packetId.set(packetNum);
         }
     }
 
@@ -841,19 +842,30 @@ public class NonBlockingSession implements Session {
      *
      * @param eof
      */
-    public void multiStatementNext(byte[] eof) {
+    public void multiStatementPacket(byte[] eof, byte packetNum) {
         if (this.getIsMultiStatement().get()) {
             //if there is another statement is need to be executed ,start another round
             eof[7] = (byte) (eof[7] | StatusFlags.SERVER_MORE_RESULTS_EXISTS);
+
+            this.packetId.set(packetNum);
+        }
+    }
+
+
+    public void multiStatementNextSql(boolean flag) {
+        if (flag) {
             this.setRequestTime();
             DbleServer.getInstance().getFrontHandlerQueue().offer((FrontendCommandHandler) source.getHandler());
         }
     }
 
+
     public byte[] getOkByteArray() {
         OkPacket ok = new OkPacket();
+        byte packet = (byte) this.getPacketId().incrementAndGet();
         ok.read(OkPacket.OK);
-        this.multiStatementNext(ok);
+        ok.setPacketId(packet);
+        this.multiStatementPacket(ok, packet);
         return ok.toBytes();
     }
 
@@ -862,16 +874,15 @@ public class NonBlockingSession implements Session {
      * reset the session multiStatementStatus
      */
     public void resetMultiStatementStatus() {
-        if (this.isMultiStatement.get()) {
-            //clear the record
-            this.isMultiStatement.set(false);
-            this.remingSql = null;
-        }
+        //clear the record
+        this.isMultiStatement.set(false);
+        this.remingSql = null;
+        this.packetId.set(0);
     }
 
     public boolean generalNextStatement(String sql) {
         int index = ParseUtil.findNextBreak(sql);
-        if (index + 1 < sql.length()) {
+        if (index + 1 < sql.length() && !ParseUtil.isEOF(sql, index)) {
             this.remingSql = sql.substring(index + 1, sql.length());
             this.isMultiStatement.set(true);
             return true;
@@ -913,5 +924,7 @@ public class NonBlockingSession implements Session {
         this.remingSql = remingSql;
     }
 
-
+    public AtomicInteger getPacketId() {
+        return packetId;
+    }
 }

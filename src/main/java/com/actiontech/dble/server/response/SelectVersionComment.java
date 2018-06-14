@@ -29,16 +29,14 @@ public final class SelectVersionComment {
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
 
-    static {
-        int i = 0;
-        byte packetId = 0;
-        HEADER.setPacketId(++packetId);
-        FIELDS[i] = PacketUtil.getField("@@VERSION_COMMENT", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i].setPacketId(++packetId);
-        EOF.setPacketId(++packetId);
-    }
-
     public static void response(FrontendConnection c) {
+
+        byte packetId = setCurrentPacket(c);
+        HEADER.setPacketId(++packetId);
+        FIELDS[0] = PacketUtil.getField("@@VERSION_COMMENT", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[0].setPacketId(++packetId);
+        EOF.setPacketId(++packetId);
+
         ByteBuffer buffer = c.allocate();
 
         // write header
@@ -53,7 +51,7 @@ public final class SelectVersionComment {
         buffer = EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = EOF.getPacketId();
+
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(Versions.VERSION_COMMENT);
         row.setPacketId(++packetId);
@@ -62,13 +60,28 @@ public final class SelectVersionComment {
         // write last eof
         EOFPacket lastEof = new EOFPacket();
         lastEof.setPacketId(++packetId);
+        boolean multiStatementFlag = false;
         if (c instanceof ServerConnection) {
-            ((ServerConnection) c).getSession2().multiStatementNext(lastEof);
+            multiStatementFlag = ((ServerConnection) c).getSession2().getIsMultiStatement().get();
+            ((ServerConnection) c).getSession2().multiStatementPacket(lastEof, packetId);
         }
         buffer = lastEof.write(buffer, c, true);
 
         // post write
         c.write(buffer);
+        if (c instanceof ServerConnection) {
+            ((ServerConnection) c).getSession2().multiStatementNextSql(multiStatementFlag);
+        }
+
+    }
+
+
+    public static byte setCurrentPacket(FrontendConnection c) {
+        if (c instanceof ServerConnection) {
+            byte packetId = (byte) ((ServerConnection) c).getSession2().getPacketId().get();
+            return packetId;
+        }
+        return 0;
     }
 
 }

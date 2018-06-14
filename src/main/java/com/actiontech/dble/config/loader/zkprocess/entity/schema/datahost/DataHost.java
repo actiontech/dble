@@ -41,10 +41,13 @@ public class DataHost implements Named {
     protected Integer slaveThreshold;
     @XmlAttribute
     protected Integer tempReadHostAvailable;
+    @XmlAttribute
+    protected Integer keepOrig;
 
     protected String heartbeat;
 
     protected List<WriteHost> writeHost;
+    protected ReadHost readHost;
 
     public String getHeartbeat() {
         return heartbeat;
@@ -123,6 +126,24 @@ public class DataHost implements Named {
         this.tempReadHostAvailable = tempReadHostAvailable;
     }
 
+    public Integer getKeepOrig() {
+        return keepOrig;
+    }
+
+    public void setKeepOrig(Integer keepOrig) {
+        this.keepOrig = keepOrig;
+    }
+
+
+    public ReadHost getReadHost() {
+        return readHost;
+    }
+
+    public void setReadHost(ReadHost readHost) {
+        this.readHost = readHost;
+    }
+
+
     @Override
     public String toString() {
         String builder = "DataHost [balance=" +
@@ -139,6 +160,8 @@ public class DataHost implements Named {
                 slaveThreshold +
                 ", tempReadHostAvailable=" +
                 tempReadHostAvailable +
+                ", keepOrig=" +
+                keepOrig +
                 ", heartbeat=" +
                 heartbeat +
                 ", writeHost=" +

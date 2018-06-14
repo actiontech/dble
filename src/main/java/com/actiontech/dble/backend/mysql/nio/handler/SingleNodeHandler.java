@@ -73,7 +73,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         startTime = System.currentTimeMillis();
         ServerConnection sc = session.getSource();
         waitingResponse = true;
-        this.packetId = 0;
+        this.packetId = (byte) session.getPacketId().get();
         final BackendConnection conn = session.getTarget(node);
         node.setRunOnSlave(rrs.getRunOnSlave());
 
@@ -194,8 +194,10 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             session.releaseConnectionIfSafe(conn, false);
             session.setResponseTime();
 
-            session.multiStatementNext(ok);
+            session.multiStatementPacket(ok, packetId);
+            boolean multiStatementFlag = session.getIsMultiStatement().get();
             ok.write(source);
+            session.multiStatementNextSql(multiStatementFlag);
             waitingResponse = false;
         }
     }
@@ -217,16 +219,17 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             session.releaseConnectionIfSafe(conn, false);
         }
 
-        session.multiStatementNext(eof);
 
         eof[3] = ++packetId;
-
+        session.multiStatementPacket(eof, packetId);
         ServerConnection source = session.getSource();
         buffer = source.writeToBuffer(eof, allocBuffer());
         int resultSize = source.getWriteQueue().size() * DbleServer.getInstance().getConfig().getSystem().getBufferPoolPageSize();
         resultSize = resultSize + buffer.position();
         session.setResponseTime();
+        boolean multiStatementFlag = session.getIsMultiStatement().get();
         source.write(buffer);
+        session.multiStatementNextSql(multiStatementFlag);
         waitingResponse = false;
         if (DbleServer.getInstance().getConfig().getSystem().getUseSqlStat() == 1) {
             if (rrs.getStatement() != null) {

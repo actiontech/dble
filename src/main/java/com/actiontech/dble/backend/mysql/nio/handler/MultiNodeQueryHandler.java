@@ -183,6 +183,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         try {
             if (!isFail()) {
                 setFail(new String(err.getMessage()));
+                if (errConnection == null) {
+                    errConnection = new ArrayList<>();
+                }
+                errConnection.add(conn);
             }
             if (!conn.syncAndExecute()) {
                 return;
@@ -251,8 +255,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     ok.setInsertId(insertId);
                     source.setLastInsertId(insertId);
                 }
-                session.multiStatementNext(ok);
+                session.multiStatementPacket(ok, packetId);
+                boolean multiStatementFlag = session.getIsMultiStatement().get();
                 handleEndPacket(ok.toBytes(), AutoTxOperation.COMMIT, conn);
+                session.multiStatementNextSql(multiStatementFlag);
             } finally {
                 lock.unlock();
             }
@@ -321,8 +327,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
             }
             session.setResponseTime();
-            session.multiStatementNext(eof);
+            session.multiStatementPacket(eof, packetId);
+            boolean multiStatementFlag = session.getIsMultiStatement().get();
             writeEofResult(eof, source);
+            session.multiStatementNextSql(multiStatementFlag);
             doSqlStat(source);
         }
     }

@@ -11,7 +11,6 @@ import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.DruidParser;
 import com.actiontech.dble.route.parser.druid.DruidParserFactory;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
-import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -31,11 +30,7 @@ public class DefaultRouteStrategy extends AbstractRouteStrategy {
 
     public SQLStatement parserSQL(String originSql, ServerConnection c) throws SQLSyntaxErrorException {
         SQLStatementParser parser;
-        if (c.getSession2().generalNextStatement(originSql)) {
-            parser = new MySqlStatementParser(originSql.substring(0, ParseUtil.findNextBreak(originSql)));
-        } else {
-            parser = new MySqlStatementParser(originSql);
-        }
+        parser = new MySqlStatementParser(originSql);
         try {
             return parser.parseStatement();
         } catch (Exception t) {

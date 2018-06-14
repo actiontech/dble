@@ -787,12 +787,6 @@ public final class DbleServer {
         return tmManager;
     }
 
-    public void terminateViewRepository() {
-        if (tmManager != null && metaChanging) {
-            tmManager.getRepository().terminate();
-        }
-    }
-
     private Runnable threadStatRenew() {
         return new Runnable() {
             @Override

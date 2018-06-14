@@ -21,7 +21,7 @@ import java.util.HashSet;
 import java.util.Map;
 
 public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
-    public void load(Element root, XMLServerLoader xsl, boolean isLowerCaseTableNames) throws IllegalAccessException, InvocationTargetException {
+    public void load(Element root, XMLServerLoader xsl) throws IllegalAccessException, InvocationTargetException {
         Map<String, UserConfig> users = xsl.getUsers();
         NodeList list = root.getElementsByTagName("user");
 
@@ -59,14 +59,11 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
                     throw new ConfigException("manager user can't set any schema!");
                 } else if (!user.isManager()) {
                     if (schemas != null) {
-                        if (isLowerCaseTableNames) {
-                            schemas = schemas.toLowerCase();
-                        }
                         String[] strArray = SplitUtil.split(schemas, ',', true);
                         user.setSchemas(new HashSet<>(Arrays.asList(strArray)));
                     }
                     // load DML
-                    loadPrivileges(user, isLowerCaseTableNames, e);
+                    loadPrivileges(user, false, e);
                 }
                 if (users.containsKey(name)) {
                     throw new ConfigException("user " + name + " duplicated!");

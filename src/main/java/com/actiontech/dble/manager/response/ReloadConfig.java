@@ -290,13 +290,16 @@ public final class ReloadConfig {
                 newSystemVariables = DbleServer.getInstance().getSystemVariables();
             }
         }
-        ConfigInitializer confInit = new ConfigInitializer(newSystemVariables.isLowerCaseTableNames());
-        Map<String, UserConfig> newUsers = confInit.getUsers();
-        Map<String, SchemaConfig> newSchemas = confInit.getSchemas();
-        Map<String, PhysicalDBNode> newDataNodes = confInit.getDataNodes();
-        Map<ERTable, Set<ERTable>> newErRelations = confInit.getErRelations();
-        FirewallConfig newFirewall = confInit.getFirewall();
-        Map<String, PhysicalDBPool> newDataHosts = confInit.getDataHosts();
+        ServerConfig serverConfig = new ServerConfig(loader);
+        if (newSystemVariables.isLowerCaseTableNames()) {
+            serverConfig.reviseLowerCase();
+        }
+        Map<String, UserConfig> newUsers = serverConfig.getUsers();
+        Map<String, SchemaConfig> newSchemas = serverConfig.getSchemas();
+        Map<String, PhysicalDBNode> newDataNodes = serverConfig.getDataNodes();
+        Map<ERTable, Set<ERTable>> newErRelations = serverConfig.getErRelations();
+        FirewallConfig newFirewall = serverConfig.getFirewall();
+        Map<String, PhysicalDBPool> newDataHosts = serverConfig.getDataHosts();
 
         if ((loadAllMode & ManagerParseConfig.OPTT_MODE) != 0) {
             try {

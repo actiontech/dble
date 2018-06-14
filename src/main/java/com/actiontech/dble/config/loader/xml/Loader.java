@@ -10,5 +10,5 @@ import org.w3c.dom.Element;
 import java.lang.reflect.InvocationTargetException;
 
 public interface Loader<P, T> {
-    void load(Element root, T t, boolean isLowerCaseTableNames) throws IllegalAccessException, InvocationTargetException;
+    void load(Element root, T t) throws IllegalAccessException, InvocationTargetException;
 }

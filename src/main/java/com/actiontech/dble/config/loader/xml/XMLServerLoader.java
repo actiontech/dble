@@ -59,7 +59,7 @@ public class XMLServerLoader {
             dtd = ResourceUtil.getResourceAsStream("/server.dtd");
             xml = ResourceUtil.getResourceAsStream("/server.xml");
             Element root = ConfigUtil.getDocument(dtd, xml).getDocumentElement();
-            loader.load(root, this, isLowerCaseTableNames);
+            loader.load(root, this);
         } catch (ConfigException e) {
             throw e;
         } catch (Exception e) {

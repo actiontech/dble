@@ -16,7 +16,6 @@ import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.buffer.DirectByteBufferPool;
 import com.actiontech.dble.cache.CacheService;
 import com.actiontech.dble.cluster.ClusterParamCfg;
-import com.actiontech.dble.config.ConfigInitializer;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
@@ -267,10 +266,13 @@ public final class DbleServer {
     }
 
     private void reviseSchemas() {
-        ConfigInitializer confInit = new ConfigInitializer(systemVariables.isLowerCaseTableNames());
-        ConfigUtil.setSchemasForPool(confInit.getDataHosts(), confInit.getDataNodes());
-        this.config.simplyApply(confInit.getUsers(), confInit.getSchemas(), confInit.getDataNodes(),
-                confInit.getDataHosts(), confInit.getErRelations(), confInit.getFirewall());
+        if (systemVariables.isLowerCaseTableNames()) {
+            config.reviseLowerCase();
+            ConfigUtil.setSchemasForPool(config.getDataHosts(), config.getDataNodes());
+        } else {
+            config.loadSequence();
+            config.selfChecking0();
+        }
     }
 
     private void pullVarAndMeta() throws IOException {

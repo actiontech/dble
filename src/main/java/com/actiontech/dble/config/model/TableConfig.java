@@ -112,6 +112,59 @@ public class TableConfig {
         }
     }
 
+
+    public TableConfig(String name, String primaryKey, boolean autoIncrement, boolean needAddLimit,
+                       TableTypeEnum tableType, ArrayList<String> dataNode, RuleConfig rule, boolean ruleRequired, TableConfig parentTC,
+                       String joinKey, String parentKey) {
+        this.primaryKey = primaryKey;
+        this.autoIncrement = autoIncrement;
+        this.needAddLimit = needAddLimit;
+        this.tableType = tableType;
+        this.name = name;
+        this.dataNodes = dataNode;
+        this.rule = rule;
+        this.partitionColumn = (rule == null) ? null : rule.getColumn();
+        partionKeyIsPrimaryKey = (partitionColumn == null) ? primaryKey == null : partitionColumn.equals(primaryKey);
+        this.ruleRequired = ruleRequired;
+        this.parentTC = parentTC;
+        this.joinKey = joinKey;
+        this.parentKey = parentKey;
+        if (parentTC != null) {
+            if (parentTC.getParentTC() == null) {
+                if (parentKey.equalsIgnoreCase(parentTC.partitionColumn)) {
+                    // secondLevel ,parentKey==parent.partitionColumn
+                    directRouteTC = parentTC;
+                    locateRTableKeySql = null;
+                } else {
+                    directRouteTC = null;
+                    locateRTableKeySql = genLocateRootParentSQL();
+                }
+            } else if (parentTC.getDirectRouteTC() != null) {
+                if (parentKey.equals(parentTC.joinKey)) {
+                    directRouteTC = parentTC.getDirectRouteTC();
+                    locateRTableKeySql = null;
+                } else {
+                    directRouteTC = null;
+                    locateRTableKeySql = genLocateRootParentSQL();
+                }
+            } else {
+                directRouteTC = null;
+                locateRTableKeySql = genLocateRootParentSQL();
+            }
+        } else {
+            locateRTableKeySql = null;
+            directRouteTC = this;
+        }
+    }
+
+
+    public TableConfig lowerCaseCopy(TableConfig parent) {
+
+        return new TableConfig(this.name.toLowerCase(), this.primaryKey, this.autoIncrement, this.needAddLimit,
+                this.tableType, this.dataNodes, this.rule, this.ruleRequired, parent, this.joinKey, this.parentKey);
+
+    }
+
     public String getPrimaryKey() {
         return primaryKey;
     }

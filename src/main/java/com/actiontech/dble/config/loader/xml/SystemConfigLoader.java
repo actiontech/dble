@@ -18,7 +18,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
 public class SystemConfigLoader implements Loader<SystemConfig, XMLServerLoader> {
-    public void load(Element root, XMLServerLoader xsl, boolean isLowerCaseTableNames) throws IllegalAccessException, InvocationTargetException {
+    public void load(Element root, XMLServerLoader xsl) throws IllegalAccessException, InvocationTargetException {
         SystemConfig system = xsl.getSystem();
         NodeList list = root.getElementsByTagName("system");
 

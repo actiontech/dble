@@ -19,7 +19,7 @@ public class PhysicalDBNode {
     protected static final Logger LOGGER = LoggerFactory.getLogger(PhysicalDBNode.class);
 
     protected final String name;
-    protected final String database;
+    protected String database;
     protected final PhysicalDBPool dbPool;
 
     public PhysicalDBNode(String hostName, String database, PhysicalDBPool dbPool) {
@@ -38,6 +38,10 @@ public class PhysicalDBNode {
 
     public String getDatabase() {
         return database;
+    }
+
+    public void toLowerCase() {
+        this.database = database.toLowerCase();
     }
 
     /**

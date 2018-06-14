@@ -49,6 +49,32 @@ public class SchemaConfig {
         }
     }
 
+    public SchemaConfig(SchemaConfig oldSchemaConfig) {
+        this.name = oldSchemaConfig.getName().toLowerCase();
+        if (oldSchemaConfig.getDataNode() != null) {
+            this.dataNode = oldSchemaConfig.getDataNode().toLowerCase();
+        } else {
+            this.dataNode = null;
+        }
+        this.tables = oldSchemaConfig.getLowerCaseTables();
+        this.defaultMaxLimit = oldSchemaConfig.getDefaultMaxLimit();
+        buildERMap();
+        this.noSharding = (tables == null || tables.isEmpty());
+        if (noSharding && dataNode == null) {
+            throw new RuntimeException(name + " in noSharding mode schema must have default dataNode ");
+        }
+        this.metaDataNode = buildMetaDataNodes();
+        this.allDataNodes = buildAllDataNodes();
+        if (this.allDataNodes != null && !this.allDataNodes.isEmpty()) {
+            String[] dnArr = new String[this.allDataNodes.size()];
+            dnArr = this.allDataNodes.toArray(dnArr);
+            this.allDataNodeStrArr = dnArr;
+        } else {
+            this.allDataNodeStrArr = null;
+        }
+    }
+
+
     public int getDefaultMaxLimit() {
         return defaultMaxLimit;
     }
@@ -126,6 +152,34 @@ public class SchemaConfig {
 
     public Map<String, TableConfig> getTables() {
         return tables;
+    }
+
+    private Map<String, TableConfig> getLowerCaseTables() {
+        Map<String, TableConfig> newTables = new HashMap<>();
+
+        //first round is only get the top tables
+        List<TableConfig> valueList = new ArrayList<>(tables.values());
+        Iterator<TableConfig> it = valueList.iterator();
+        while (it.hasNext()) {
+            TableConfig tc = it.next();
+            if (tc.getParentTC() == null) {
+                newTables.put(tc.getName().toLowerCase(), tc.lowerCaseCopy(null));
+                it.remove();
+            }
+        }
+
+        while (valueList.size() > 0) {
+            Iterator<TableConfig> its = valueList.iterator();
+            while (its.hasNext()) {
+                TableConfig tc = its.next();
+                if (newTables.containsKey(tc.getParentTC().getName().toLowerCase())) {
+                    newTables.put(tc.getName().toLowerCase(), tc.lowerCaseCopy(newTables.get(tc.getParentTC().getName().toLowerCase())));
+                    its.remove();
+                }
+            }
+        }
+
+        return newTables;
     }
 
     public boolean isNoSharding() {

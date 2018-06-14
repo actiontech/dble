@@ -5,6 +5,7 @@
 */
 package com.actiontech.dble.config.model;
 
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -88,6 +89,14 @@ public class UserConfig {
         return "UserConfig [name=" + this.name + ", password=" + this.password + ", encryptPassword=" +
                 this.encryptPassword + ", benchmark=" + this.benchmark + ", manager=" + this.manager +
                 ", readOnly=" + this.readOnly + ", schemas=" + this.schemas + "]";
+    }
+
+    public void changeMapToLowerCase() {
+        Set<String> newSchemas = new HashSet<>();
+        for (String schemaName : schemas) {
+            newSchemas.add(schemaName.toLowerCase());
+        }
+        schemas = newSchemas;
     }
 
 

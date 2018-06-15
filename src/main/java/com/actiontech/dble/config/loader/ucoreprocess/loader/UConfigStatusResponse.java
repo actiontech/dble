@@ -31,7 +31,7 @@ public class UConfigStatusResponse implements UcoreXmlLoader {
         ClusterDelayProvider.delayAfterGetNotice();
         if (DbleServer.getInstance().getFrontProcessors() != null) {
             //step 1 check if the change is from itself
-            LOGGER.debug("notify " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
+            LOGGER.info("notify " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
             ConfStatus status = new ConfStatus(pathValue.getValue());
             if (status.getFrom().equals(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) {
                 //self node
@@ -46,7 +46,7 @@ public class UConfigStatusResponse implements UcoreXmlLoader {
 
             //step 2 check the change type /rollback /reload
             if (status.getStatus() == ConfStatus.Status.ROLLBACK) {
-                LOGGER.debug("rollback " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
+                LOGGER.info("rollback " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
                 try {
                     ClusterDelayProvider.delayBeforeSlaveRollback();
                     RollbackConfig.rollback();
@@ -63,10 +63,10 @@ public class UConfigStatusResponse implements UcoreXmlLoader {
             try {
                 ClusterDelayProvider.delayBeforeSlaveReload();
                 if (status.getStatus() == ConfStatus.Status.RELOAD_ALL) {
-                    LOGGER.debug("reload_all " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
+                    LOGGER.info("reload_all " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
                     ReloadConfig.reloadAll(Integer.parseInt(status.getParams()));
                 } else {
-                    LOGGER.debug("reload " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
+                    LOGGER.info("reload " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
                     ReloadConfig.reload();
                 }
                 ClusterDelayProvider.delayAfterSlaveReload();

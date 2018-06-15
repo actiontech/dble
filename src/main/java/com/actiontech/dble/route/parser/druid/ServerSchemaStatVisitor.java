@@ -153,7 +153,11 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             begin = (String) ((SQLCharExpr) x.beginExpr).getValue();
         } else {
             Object value = ActionSQLEvalVisitorUtils.eval(this.getDbType(), x.beginExpr, this.getParameters(), false);
-            begin = value.toString();
+            if (value != null) {
+                begin = value.toString();
+            } else {
+                begin = x.beginExpr.toString();
+            }
 
         }
         String end;
@@ -161,7 +165,11 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             end = (String) ((SQLCharExpr) x.endExpr).getValue();
         } else {
             Object value = ActionSQLEvalVisitorUtils.eval(this.getDbType(), x.endExpr, this.getParameters(), false);
-            end = value.toString();
+            if (value != null) {
+                end = value.toString();
+            } else {
+                end = x.endExpr.toString();
+            }
         }
         Column column = getColumn(x);
         if (column == null) {

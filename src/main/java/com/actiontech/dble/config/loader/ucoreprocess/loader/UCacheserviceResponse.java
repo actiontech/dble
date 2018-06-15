@@ -9,11 +9,14 @@ import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.config.loader.ucoreprocess.listen.UcoreClearKeyListener;
 import com.actiontech.dble.config.loader.zkprocess.comm.ConfFileRWUtils;
 import com.alibaba.fastjson.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created by szf on 2018/5/16.
  */
 public class UCacheserviceResponse implements UcoreXmlLoader {
+    private static final Logger LOGGER = LoggerFactory.getLogger(UCacheserviceResponse.class);
 
     private static final String PROPERTIES_SUFFIX = ".properties";
 
@@ -27,7 +30,7 @@ public class UCacheserviceResponse implements UcoreXmlLoader {
 
     @Override
     public void notifyProcess(UKvBean configValue) throws Exception {
-
+        LOGGER.info("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
         UKvBean lock = ClusterUcoreSender.getKey(UcorePathUtil.getConfChangeLockPath());
         if (UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID).equals(lock.getValue())) {
             return;

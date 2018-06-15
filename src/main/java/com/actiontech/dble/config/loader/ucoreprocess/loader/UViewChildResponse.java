@@ -23,7 +23,7 @@ public class UViewChildResponse implements UcoreXmlLoader {
 
     @Override
     public void notifyProcess(UKvBean configValue) throws Exception {
-        LOGGER.debug("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
+        LOGGER.info("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
         if (configValue.getKey().split("/").length != UcorePathUtil.getViewChangePath().split("/").length + 1) {
             //only with the type u.../d.../clu.../view/update(delete)/schema.table
             return;
@@ -46,7 +46,7 @@ public class UViewChildResponse implements UcoreXmlLoader {
             ClusterDelayProvider.delayWhenReponseViewNotic();
             try {
                 if (Repository.DELETE.equals(optionType)) {
-                    LOGGER.debug("delete view " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
+                    LOGGER.info("delete view " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
                     if (!DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().containsKey(viewName)) {
                         return;
                     }
@@ -55,7 +55,7 @@ public class UViewChildResponse implements UcoreXmlLoader {
                     ClusterDelayProvider.delayBeforeReponseView();
                     ClusterUcoreSender.sendDataToUcore(configValue.getKey() + SEPARATOR + myId, UcorePathUtil.SUCCESS);
                 } else if (Repository.UPDATE.equals(optionType)) {
-                    LOGGER.debug("update view " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
+                    LOGGER.info("update view " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
                     ClusterDelayProvider.delayBeforeReponseGetView();
                     String stmt = ClusterUcoreSender.getKey(UcorePathUtil.getViewPath() + SEPARATOR + schema + Repository.SCHEMA_VIEW_SPLIT + viewName).getValue();
                     if (DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().get(viewName) != null &&
@@ -69,7 +69,7 @@ public class UViewChildResponse implements UcoreXmlLoader {
                     Map<String, String> schemaMap = viewCreateSqlMap.get(schema);
                     schemaMap.put(viewName, stmt);
 
-                    LOGGER.debug("update view result == " + error);
+                    LOGGER.info("update view result == " + error);
                     if (error != null) {
                         ClusterDelayProvider.delayBeforeReponseView();
                         ClusterUcoreSender.sendDataToUcore(configValue.getKey() + SEPARATOR + myId, new String(error.getMessage()));

@@ -32,7 +32,7 @@ public class UDdlChildResponse implements UcoreXmlLoader {
             //only response for the key /un.../d.../clu.../ddl/schema.table
             return;
         } else {
-            LOGGER.debug("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
+            LOGGER.info("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
             ClusterDelayProvider.delayAfterGetDdlNotice();
             String nodeName = configValue.getKey().split("/")[4];
             String[] tableInfo = nodeName.split("\\.");
@@ -52,7 +52,7 @@ public class UDdlChildResponse implements UcoreXmlLoader {
             String fullName = schema + "." + table;
             //if the start node is preparing to do the ddl
             if (ddlInfo.getStatus() == DDLInfo.DDLStatus.INIT) {
-                LOGGER.debug("init of ddl " + schema + " " + table);
+                LOGGER.info("init of ddl " + schema + " " + table);
                 try {
                     lockMap.put(fullName, ddlInfo.getFrom());
                     DbleServer.getInstance().getTmManager().addMetaLock(schema, table);
@@ -63,6 +63,7 @@ public class UDdlChildResponse implements UcoreXmlLoader {
 
             } else if (ddlInfo.getStatus() == DDLInfo.DDLStatus.SUCCESS && !UKvBean.DELETE.equals(configValue.getChangeType()) &&
                     lockMap.containsKey(fullName)) {
+                LOGGER.info("ddl execute success notice");
                 // if the start node is done the ddl execute
                 lockMap.remove(fullName);
 
@@ -81,6 +82,7 @@ public class UDdlChildResponse implements UcoreXmlLoader {
                 ClusterDelayProvider.delayBeforeDdlResponse();
                 ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLInstancePath(fullName), UcorePathUtil.SUCCESS);
             } else if (ddlInfo.getStatus() == DDLInfo.DDLStatus.FAILED && !UKvBean.DELETE.equals(configValue.getChangeType())) {
+                LOGGER.info("ddl execute failed notice");
                 //if the start node executing ddl with error,just release the lock
                 lockMap.remove(fullName);
                 DbleServer.getInstance().getTmManager().removeMetaLock(schema, table);

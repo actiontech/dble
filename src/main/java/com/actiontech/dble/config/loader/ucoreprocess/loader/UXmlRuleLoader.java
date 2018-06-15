@@ -51,7 +51,7 @@ public class UXmlRuleLoader implements UcoreXmlLoader {
 
     @Override
     public void notifyProcess(UKvBean configValue) throws Exception {
-
+        LOGGER.info("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
         UKvBean lock = ClusterUcoreSender.getKey(UcorePathUtil.getConfChangeLockPath());
         if (UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID).equals(lock.getValue())) {
             return;

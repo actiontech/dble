@@ -30,13 +30,16 @@ public class UBinlogPauseStatusResponse implements UcoreXmlLoader {
 
         //step 1 check if the block is from the server itself
         BinlogPause pauseInfo = new BinlogPause(configValue.getValue());
+        LOGGER.info("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
         if (pauseInfo.getFrom().equals(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) {
+            LOGGER.info("Self Notice,Do nothing return");
             return;
         }
 
         //step 2 if the flag is on than try to lock all the commit
         if (pauseInfo.getStatus() == BinlogPause.BinlogPauseStatus.ON && !UKvBean.DELETE.equals(configValue.getChangeType())) {
             DbleServer.getInstance().getBackupLocked().compareAndSet(false, true);
+            LOGGER.info("start pause for binlog status");
             boolean isPaused = ShowBinlogStatus.waitAllSession();
             if (!isPaused) {
                 cleanResource();
@@ -50,6 +53,7 @@ public class UBinlogPauseStatusResponse implements UcoreXmlLoader {
                 LOGGER.warn(AlarmCode.CORE_ZK_WARN + "create binlogPause instance failed", e);
             }
         } else if (pauseInfo.getStatus() == BinlogPause.BinlogPauseStatus.OFF) {
+            LOGGER.info("clean resource for binlog status finish");
             //step 3 if the flag is off than try to unlock the commit
             cleanResource();
         }

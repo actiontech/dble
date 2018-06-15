@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
@@ -35,7 +36,7 @@ public class UcoreClearKeyListener implements Runnable {
                 UcoreInterface.SubscribeKvPrefixInput input
                         = UcoreInterface.SubscribeKvPrefixInput.newBuilder().setIndex(index).setDuration(60).setKeyPrefix(UcorePathUtil.CONF_BASE_PATH).build();
                 UcoreInterface.SubscribeKvPrefixOutput output = ClusterUcoreSender.subscribeKvPrefix(input);
-                Map<String, UKvBean> diffMap = getDiffMap(output);
+                Map<String, UKvBean> diffMap = getDiffMapWithOrder(output);
                 if (output.getIndex() != index) {
                     handle(diffMap);
                     index = output.getIndex();
@@ -48,27 +49,45 @@ public class UcoreClearKeyListener implements Runnable {
     }
 
 
-    private Map<String, UKvBean> getDiffMap(UcoreInterface.SubscribeKvPrefixOutput output) {
-        Map<String, UKvBean> diffMap = new HashMap<String, UKvBean>();
-        Map<String, String> newKeyMap = new HashMap<String, String>();
+    private Map<String, UKvBean> getDiffMapWithOrder(UcoreInterface.SubscribeKvPrefixOutput output) {
+        Map<String, UKvBean> diffMap = new LinkedHashMap<String, UKvBean>();
+        Map<String, String> newKeyMap = new LinkedHashMap<String, String>();
+
+        UKvBean reloadKv = null;
 
         //find out the new key & changed key
         for (int i = 0; i < output.getKeysCount(); i++) {
             newKeyMap.put(output.getKeys(i), output.getValues(i));
             if (cache.get(output.getKeys(i)) != null) {
                 if (!cache.get(output.getKeys(i)).equals(output.getValues(i))) {
-                    diffMap.put(output.getKeys(i), new UKvBean(output.getKeys(i), output.getValues(i), UKvBean.UPDATE));
+                    if (output.getKeys(i).equalsIgnoreCase(UcorePathUtil.getConfStatusPath())) {
+                        reloadKv = new UKvBean(output.getKeys(i), output.getValues(i), UKvBean.UPDATE);
+                    } else {
+                        diffMap.put(output.getKeys(i), new UKvBean(output.getKeys(i), output.getValues(i), UKvBean.UPDATE));
+                    }
                 }
             } else {
-                diffMap.put(output.getKeys(i), new UKvBean(output.getKeys(i), output.getValues(i), UKvBean.ADD));
+                if (output.getKeys(i).equalsIgnoreCase(UcorePathUtil.getConfStatusPath())) {
+                    reloadKv = new UKvBean(output.getKeys(i), output.getValues(i), UKvBean.ADD);
+                } else {
+                    diffMap.put(output.getKeys(i), new UKvBean(output.getKeys(i), output.getValues(i), UKvBean.ADD));
+                }
             }
         }
 
         //find out the deleted Key
         for (Map.Entry<String, String> entry : cache.entrySet()) {
             if (!newKeyMap.containsKey(entry.getKey())) {
-                diffMap.put(entry.getKey(), new UKvBean(entry.getKey(), entry.getValue(), UKvBean.DELETE));
+                if (entry.getKey().equalsIgnoreCase(UcorePathUtil.getConfStatusPath())) {
+                    reloadKv = new UKvBean(entry.getKey(), entry.getValue(), UKvBean.DELETE);
+                } else {
+                    diffMap.put(entry.getKey(), new UKvBean(entry.getKey(), entry.getValue(), UKvBean.DELETE));
+                }
             }
+        }
+
+        if (reloadKv != null) {
+            diffMap.put(reloadKv.getKey(), reloadKv);
         }
 
         cache = newKeyMap;

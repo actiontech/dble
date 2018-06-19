@@ -424,12 +424,20 @@ public final class ReloadConfig {
         } catch (Exception e) {
             throw new Exception(e);
         }
-        Map<String, UserConfig> users = loader.getUsers();
-        Map<String, SchemaConfig> schemas = loader.getSchemas();
-        Map<String, PhysicalDBNode> dataNodes = loader.getDataNodes();
-        Map<String, PhysicalDBPool> dataHosts = loader.getDataHosts();
-        Map<ERTable, Set<ERTable>> erRelations = loader.getErRelations();
-        FirewallConfig firewall = loader.getFirewall();
+
+        ServerConfig serverConfig = new ServerConfig(loader);
+        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+            serverConfig.reviseLowerCase();
+        }
+
+        Map<String, UserConfig> users = serverConfig.getUsers();
+        Map<String, SchemaConfig> schemas = serverConfig.getSchemas();
+        Map<String, PhysicalDBNode> dataNodes = serverConfig.getDataNodes();
+        Map<String, PhysicalDBPool> dataHosts = serverConfig.getDataHosts();
+        Map<ERTable, Set<ERTable>> erRelations = serverConfig.getErRelations();
+        FirewallConfig firewall = serverConfig.getFirewall();
+
+
 
         /* 2 apply the new conf */
         DbleServer.getInstance().getConfig().reload(users, schemas, dataNodes, dataHosts, erRelations, firewall,

@@ -37,7 +37,7 @@ public class ConfigTest {
         String ruleFile = "/config/rule.xml";
 
         XMLSchemaLoader schemaLoader = new XMLSchemaLoader(schemaFile, ruleFile);
-        XMLConfigLoader configLoader = new XMLConfigLoader( false);
+        XMLConfigLoader configLoader = new XMLConfigLoader();
 
         this.system = configLoader.getSystemConfig();
         this.users = configLoader.getUserConfigs();

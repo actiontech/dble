@@ -27,14 +27,14 @@ public class XMLServerLoader {
     private final Map<String, UserConfig> users;
     private final FirewallConfig firewall;
 
-    public XMLServerLoader(boolean isLowerCaseTableNames) {
+    public XMLServerLoader() {
         this.system = new SystemConfig();
         this.users = new HashMap<>();
         this.firewall = new FirewallConfig();
 
-        this.load(new SystemConfigLoader(), isLowerCaseTableNames);
-        this.load(new UserConfigLoader(), isLowerCaseTableNames);
-        this.load(new FirewallConfigLoader(), isLowerCaseTableNames);
+        this.load(new SystemConfigLoader());
+        this.load(new UserConfigLoader());
+        this.load(new FirewallConfigLoader());
     }
 
     public SystemConfig getSystem() {
@@ -51,7 +51,7 @@ public class XMLServerLoader {
         return firewall;
     }
 
-    public void load(Loader loader, boolean isLowerCaseTableNames) {
+    public void load(Loader loader) {
         //read server.xml
         InputStream dtd = null;
         InputStream xml = null;

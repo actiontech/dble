@@ -42,7 +42,7 @@ public class ConfigInitializer {
 
     public ConfigInitializer(boolean loadDataHost, boolean lowerCaseNames) {
         //load server.xml
-        XMLServerLoader serverLoader = new XMLServerLoader(lowerCaseNames);
+        XMLServerLoader serverLoader = new XMLServerLoader();
 
         //load rule.xml and schema.xml
         SchemaLoader schemaLoader = new XMLSchemaLoader(lowerCaseNames);

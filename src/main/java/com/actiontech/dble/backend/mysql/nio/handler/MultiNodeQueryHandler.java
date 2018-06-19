@@ -191,7 +191,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             if (!conn.syncAndExecute()) {
                 return;
             }
-            if (--nodeCount <= 0) {
+            if (--nodeCount == 0) {
                 session.handleSpecial(rrs, session.getSource().getSchema(), false, getDDLErrorInfo());
 
                 if (byteBuffer == null) {
@@ -433,7 +433,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 errConnection = new ArrayList<>();
             }
             errConnection.add(conn);
-            if (--nodeCount <= 0) {
+            if (--nodeCount == 0) {
                 session.handleSpecial(rrs, session.getSource().getSchema(), false);
                 if (byteBuffer == null) {
                     handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);

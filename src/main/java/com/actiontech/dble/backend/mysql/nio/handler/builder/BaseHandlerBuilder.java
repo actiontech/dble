@@ -99,7 +99,7 @@ public abstract class BaseHandlerBuilder {
         } else if (!node.isExistView() && PlanUtil.isGlobal(node) && !node.isSubQuery()) {
             // the query can be send to a certain node
             noShardBuild();
-        } else if (canDoAsMerge()) {
+        } else if (canDoAsMerge() && !node.isSubQuery()) {
             // the query can be send to some certain nodes .eg: ER tables,  GLOBAL*NORMAL GLOBAL*ER
             mergeBuild();
         } else {

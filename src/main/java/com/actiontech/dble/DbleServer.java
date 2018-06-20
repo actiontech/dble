@@ -617,7 +617,7 @@ public final class DbleServer {
      * @param dataHost dataHost
      * @param curIndex curIndex
      */
-    public synchronized void saveDataHostIndex(String dataHost, int curIndex) {
+    public synchronized void saveDataHostIndex(String dataHost, int curIndex, boolean useZkSwitch) {
         File file = new File(SystemConfig.getHomePath(), "conf" + File.separator + "dnindex.properties");
         FileOutputStream fileOut = null;
         try {
@@ -640,7 +640,7 @@ public final class DbleServer {
             fileOut = new FileOutputStream(file);
             dnIndexProperties.store(fileOut, "update");
 
-            if (isUseZkSwitch()) {
+            if (useZkSwitch || isUseZkSwitch()) {
                 // save to  zk
                 if (dnIndexLock.acquire(30, TimeUnit.SECONDS)) {
                     try {

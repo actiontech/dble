@@ -287,7 +287,7 @@ public class PhysicalDBPool {
                 // init again
                 int result = this.init(activeIndex);
                 if (result >= 0) {
-                    DbleServer.getInstance().saveDataHostIndex(hostName, result);
+                    DbleServer.getInstance().saveDataHostIndex(hostName, result, false);
                     // clear all connections
                     this.getSources()[current].clearCons("switch datasource");
                     // write log

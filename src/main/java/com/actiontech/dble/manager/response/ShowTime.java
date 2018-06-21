@@ -37,7 +37,7 @@ public final class ShowTime {
         byte packetId = 0;
         HEADER.setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("TIMESTAMP", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i] = PacketUtil.getField("TIMESTAMP", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);

@@ -56,7 +56,7 @@ public final class ShowServer {
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("RELOAD_TIME",
-                Fields.FIELD_TYPE_LONGLONG);
+                Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("ROLLBACK_TIME",

@@ -363,7 +363,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
 
         if (isDistinct) {
-            rrs.changeNodeSqlAfterAddLimit(stmt.toString(), 0, -1);
+            rrs.changeNodeSqlAfterAddLimit(statementToString(stmt), 0, -1);
         }
         return aliaColumns;
     }
@@ -567,7 +567,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 
     protected String getSql(RouteResultset rrs, SQLStatement stmt, boolean isNeedAddLimit, String schema) {
         if ((isNeedChangeLimit(rrs) || isNeedAddLimit)) {
-            return RouterUtil.removeSchema(stmt.toString(), schema);
+            return RouterUtil.removeSchema(statementToString(stmt), schema);
         }
         return rrs.getStatement();
     }

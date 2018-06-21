@@ -22,6 +22,7 @@ import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.sqlengine.mpp.RangeValue;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
 import com.alibaba.druid.stat.TableStat.Condition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -200,5 +201,14 @@ public class DefaultDruidParser implements DruidParser {
         RouterUtil.routeToSingleNode(rrs, schemaConfig.getDataNode());
         rrs.setFinishedRoute(true);
         return schema;
+    }
+    // avoid druid error ,default shardingSupport is true and table name like testTable_number will be parser to testTable
+    //eg: testDb.testTb_1->testDb.testTb ,testDb.testTb_1_2->testDb.testTb
+    String statementToString(SQLStatement statement) {
+        StringBuffer buf = new StringBuffer();
+        MySqlOutputVisitor visitor = new MySqlOutputVisitor(buf);
+        visitor.setShardingSupport(false);
+        statement.accept(visitor);
+        return buf.toString();
     }
 }

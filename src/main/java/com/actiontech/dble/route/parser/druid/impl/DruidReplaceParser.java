@@ -301,7 +301,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         int joinKeyIndex = getJoinKeyIndex(schemaInfo, replace, joinKey);
         final String joinKeyVal = replace.getValuesList().get(0).getValues().get(joinKeyIndex).toString();
         String realVal = StringUtil.removeApostrophe(joinKeyVal);
-        final String sql = RouterUtil.removeSchema(replace.toString(), schemaInfo.getSchema());
+        final String sql = RouterUtil.removeSchema(statementToString(replace), schemaInfo.getSchema());
         rrs.setStatement(sql);
         // try to route by ER parent partition key
         RouteResultset theRrs = routeByERParentKey(rrs, tc, realVal);
@@ -416,7 +416,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             ReplaceTemp temp = new ReplaceTemp(replace);
             temp.setValuesList(valuesList);
             nodes[count] = new RouteResultsetNode(tableConfig.getDataNodes().get(nodeIndex), rrs.getSqlType(),
-                    RouterUtil.removeSchema(temp.toString(), schemaInfo.getSchema()));
+                    RouterUtil.removeSchema(statementToString(temp), schemaInfo.getSchema()));
             count++;
         }
         rrs.setNodes(nodes);
@@ -448,7 +448,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         }
         RouteResultsetNode[] nodes = new RouteResultsetNode[1];
         nodes[0] = new RouteResultsetNode(tableConfig.getDataNodes().get(nodeIndex),
-                rrs.getSqlType(), RouterUtil.removeSchema(replaceStatement.toString(), schemaInfo.getSchema()));
+                rrs.getSqlType(), RouterUtil.removeSchema(statementToString(replaceStatement), schemaInfo.getSchema()));
 
         rrs.setNodes(nodes);
         rrs.setFinishedRoute(true);

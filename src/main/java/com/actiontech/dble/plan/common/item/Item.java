@@ -937,6 +937,7 @@ public abstract class Item {
             SQLExpr expr = toExpression();
             StringBuilder sb = new StringBuilder();
             MySqlOutputVisitor ov = new MySqlOutputVisitor(sb);
+            ov.setShardingSupport(false);
             expr.accept(ov);
             itemName = sb.toString();
         }

@@ -63,7 +63,7 @@ public class UViewChildResponse implements UcoreXmlLoader {
                         return;
                     }
                     ViewMeta vm = new ViewMeta(stmt, schema, DbleServer.getInstance().getTmManager());
-                    ErrorPacket error = vm.initAndSet(true);
+                    ErrorPacket error = vm.initAndSet(true, false);
 
                     Map<String, Map<String, String>> viewCreateSqlMap = DbleServer.getInstance().getTmManager().getRepository().getViewCreateSqlMap();
                     Map<String, String> schemaMap = viewCreateSqlMap.get(schema);

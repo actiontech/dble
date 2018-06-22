@@ -75,16 +75,14 @@ public class FileSystemRepository implements Repository {
      * @param schemaName
      * @param viewName
      */
-    public void delete(String schemaName, String[] viewName) {
+    public void delete(String schemaName, String viewName) {
         try {
-            for (String singleName : viewName) {
-                Map<String, String> schemaMap = viewCreateSqlMap.get(schemaName);
-                if (schemaMap == null) {
-                    schemaMap = new HashMap<String, String>();
-                    viewCreateSqlMap.put(schemaName, schemaMap);
-                }
-                schemaMap.remove(singleName.trim());
+            Map<String, String> schemaMap = viewCreateSqlMap.get(schemaName);
+            if (schemaMap == null) {
+                schemaMap = new HashMap<String, String>();
+                viewCreateSqlMap.put(schemaName, schemaMap);
             }
+            schemaMap.remove(viewName.trim());
             this.writeToFile(mapToJsonString());
         } catch (Exception e) {
             LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "delete view from file error make sure the file is correct :" + e.getMessage());
@@ -110,6 +108,7 @@ public class FileSystemRepository implements Repository {
             this.writeToFile(mapToJsonString());
         } catch (Exception e) {
             LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "add view from file error make sure the file is correct :" + e.getMessage());
+            throw new RuntimeException("put view data to file error", e);
         }
 
     }

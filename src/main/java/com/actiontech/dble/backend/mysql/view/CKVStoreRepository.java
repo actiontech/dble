@@ -124,55 +124,53 @@ public class CKVStoreRepository implements Repository {
      * then create a delete view node ,wait for all the online node response
      * check all the response data send the alarm if not success
      * @param schemaName
-     * @param viewName
+     * @param view
      */
     @Override
-    public void delete(String schemaName, String[] viewName) {
-        for (String view : viewName) {
-            StringBuffer sb = new StringBuffer().append(UcorePathUtil.getViewPath()).
-                    append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(view);
-            StringBuffer nsb = new StringBuffer().append(UcorePathUtil.getViewPath()).
-                    append(SEPARATOR).append(UPDATE).append(SEPARATOR).
-                    append(schemaName).append(SCHEMA_VIEW_SPLIT).append(view);
-            StringBuffer lsb = new StringBuffer().append(UcorePathUtil.getViewPath()).
-                    append(SEPARATOR).append(LOCK).append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(view);
-            UDistributeLock distributeLock = new UDistributeLock(lsb.toString(),
-                    UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + DELETE);
+    public void delete(String schemaName, String view) {
+        StringBuffer sb = new StringBuffer().append(UcorePathUtil.getViewPath()).
+                append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(view);
+        StringBuffer nsb = new StringBuffer().append(UcorePathUtil.getViewPath()).
+                append(SEPARATOR).append(UPDATE).append(SEPARATOR).
+                append(schemaName).append(SCHEMA_VIEW_SPLIT).append(view);
+        StringBuffer lsb = new StringBuffer().append(UcorePathUtil.getViewPath()).
+                append(SEPARATOR).append(LOCK).append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(view);
+        UDistributeLock distributeLock = new UDistributeLock(lsb.toString(),
+                UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + DELETE);
 
-            try {
-                viewCreateSqlMap.get(schemaName).remove(view);
-                int time = 0;
-                while (!distributeLock.acquire()) {
-                    LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
-                    if (time++ % 10 == 0) {
-                        LOGGER.warn(" view meta waiting for the lock " + schemaName + " " + view);
-                    }
+        try {
+            viewCreateSqlMap.get(schemaName).remove(view);
+            int time = 0;
+            while (!distributeLock.acquire()) {
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
+                if (time++ % 10 == 0) {
+                    LOGGER.warn(" view meta waiting for the lock " + schemaName + " " + view);
                 }
-                ClusterDelayProvider.delayAfterGetLock();
-                ClusterUcoreSender.deleteKV(sb.toString());
-                ClusterDelayProvider.delayAfterViewSetKey();
-                ClusterUcoreSender.sendDataToUcore(nsb.toString(), UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + DELETE);
-                ClusterDelayProvider.delayAfterViewNotic();
-
-                //self reponse set
-                ClusterUcoreSender.sendDataToUcore(nsb.toString() + UcorePathUtil.SEPARATOR + UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), UcorePathUtil.SUCCESS);
-
-                String errorMsg = ClusterUcoreSender.waitingForAllTheNode(UcorePathUtil.SUCCESS, nsb.toString() + SEPARATOR);
-
-                if (errorMsg != null) {
-                    throw new RuntimeException(errorMsg);
-                }
-            } catch (RuntimeException e) {
-                LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "delete ucore node error :　" + e.getMessage());
-                throw e;
-            } catch (Exception e) {
-                LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "delete ucore node error :　" + e.getMessage());
-            } finally {
-                ClusterDelayProvider.beforeDeleteViewNotic();
-                ClusterUcoreSender.deleteKVTree(nsb.toString() + SEPARATOR);
-                ClusterDelayProvider.beforeReleaseViewLock();
-                distributeLock.release();
             }
+            ClusterDelayProvider.delayAfterGetLock();
+            ClusterUcoreSender.deleteKV(sb.toString());
+            ClusterDelayProvider.delayAfterViewSetKey();
+            ClusterUcoreSender.sendDataToUcore(nsb.toString(), UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + DELETE);
+            ClusterDelayProvider.delayAfterViewNotic();
+
+            //self reponse set
+            ClusterUcoreSender.sendDataToUcore(nsb.toString() + UcorePathUtil.SEPARATOR + UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), UcorePathUtil.SUCCESS);
+
+            String errorMsg = ClusterUcoreSender.waitingForAllTheNode(UcorePathUtil.SUCCESS, nsb.toString() + SEPARATOR);
+
+            if (errorMsg != null) {
+                throw new RuntimeException(errorMsg);
+            }
+        } catch (RuntimeException e) {
+            LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "delete ucore node error :　" + e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "delete ucore node error :　" + e.getMessage());
+        } finally {
+            ClusterDelayProvider.beforeDeleteViewNotic();
+            ClusterUcoreSender.deleteKVTree(nsb.toString() + SEPARATOR);
+            ClusterDelayProvider.beforeReleaseViewLock();
+            distributeLock.release();
         }
     }
 

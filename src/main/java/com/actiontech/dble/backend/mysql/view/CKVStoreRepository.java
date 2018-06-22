@@ -108,6 +108,7 @@ public class CKVStoreRepository implements Repository {
             throw e;
         } catch (Exception e) {
             LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "set to ucore node error :　" + e.getMessage());
+            throw new RuntimeException(e);
         } finally {
             ClusterDelayProvider.beforeDeleteViewNotic();
             ClusterUcoreSender.deleteKVTree(nsb.toString() + SEPARATOR);
@@ -166,6 +167,7 @@ public class CKVStoreRepository implements Repository {
             throw e;
         } catch (Exception e) {
             LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "delete ucore node error :　" + e.getMessage());
+            throw new RuntimeException(e);
         } finally {
             ClusterDelayProvider.beforeDeleteViewNotic();
             ClusterUcoreSender.deleteKVTree(nsb.toString() + SEPARATOR);

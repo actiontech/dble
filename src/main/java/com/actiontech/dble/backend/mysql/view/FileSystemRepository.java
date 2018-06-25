@@ -86,7 +86,7 @@ public class FileSystemRepository implements Repository {
             this.writeToFile(mapToJsonString());
         } catch (Exception e) {
             LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "delete view from file error make sure the file is correct :" + e.getMessage());
-            throw  new RuntimeException(e);
+            throw new RuntimeException(e);
         }
     }
 

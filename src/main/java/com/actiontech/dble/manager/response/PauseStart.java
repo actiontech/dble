@@ -6,7 +6,6 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOProcessor;
@@ -16,7 +15,10 @@ import com.actiontech.dble.server.ServerConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.regex.Matcher;
@@ -111,7 +113,7 @@ public final class PauseStart {
             try {
                 DbleServer.getInstance().getMiManager().resumeCluster();
             } catch (Exception e) {
-                LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + " " + e.getMessage());
+                LOGGER.warn(e.getMessage());
             }
             c.writeErrMessage(1003, "The backend connection recycle failure,try it later");
         } else {
@@ -120,7 +122,7 @@ public final class PauseStart {
                     OK.write(c);
                 }
             } catch (Exception e) {
-                LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + " " + e.getMessage());
+                LOGGER.warn(e.getMessage());
             }
         }
     }

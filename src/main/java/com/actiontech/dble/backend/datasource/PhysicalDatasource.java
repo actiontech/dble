@@ -15,7 +15,6 @@ import com.actiontech.dble.backend.mysql.nio.handler.ConnectionHeartBeatHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.DelegateResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.NewConnectionRespHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
-import com.actiontech.dble.config.Alarms;
 import com.actiontech.dble.config.model.DBHostConfig;
 import com.actiontech.dble.config.model.DataHostConfig;
 import com.actiontech.dble.log.alarm.AlarmCode;
@@ -199,7 +198,7 @@ public abstract class PhysicalDatasource {
         } else {
             int activeCount = this.getActiveCount();
             if (activeCount > size) {
-                String s = Alarms.DEFAULT + "DATASOURCE EXCEED [name=" + name +
+                String s = "DATASOURCE EXCEED [name=" + name +
                         ",active=" + activeCount +
                         ",size=" + size + ']';
                 LOGGER.info(s);
@@ -284,7 +283,7 @@ public abstract class PhysicalDatasource {
                 this.createNewConnection(simpleHandler, null, schemas[i % schemas.length]);
                 simpleHandler.getBackConn().release();
             } catch (IOException e) {
-                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "create connection err " + e);
+                LOGGER.warn(AlarmCode.DBLE_CREATE_CONN_FAIL + "create connection err ", e);
             }
         }
     }
@@ -385,8 +384,8 @@ public abstract class PhysicalDatasource {
         } else {
             int activeCons = this.getActiveCount();
             if (activeCons + 1 > size) {
-                String maxConError = "the max active Connections size can not be max than maxCon in schema.xml";
-                LOGGER.warn(AlarmCode.CORE_PERFORMANCE_WARN + maxConError);
+                String maxConError = "the max active Connections size can not be max than maxCon for data host[" + this.getHostConfig().getName() + "." + this.getName() + "]";
+                LOGGER.warn(AlarmCode.DBLE_REACH_MAX_CON + maxConError);
                 throw new IOException(maxConError);
             } else { // create connection
                 LOGGER.info("no idle connection in pool,create new connection for " +
@@ -401,8 +400,8 @@ public abstract class PhysicalDatasource {
         if (con == null) {
             int activeCons = this.getActiveCount(); // the max active
             if (activeCons + 1 > size) {
-                String maxConError = "the max active Connections size can not be max than maxCon in schema.xml";
-                LOGGER.warn(AlarmCode.CORE_PERFORMANCE_WARN + maxConError);
+                String maxConError = "the max active Connections size can not be max than maxCon data host[" + this.getHostConfig().getName() + "." + this.getName() + "]";
+                LOGGER.warn(AlarmCode.DBLE_REACH_MAX_CON + maxConError);
                 throw new IOException(maxConError);
             } else { // create connection
                 LOGGER.info(

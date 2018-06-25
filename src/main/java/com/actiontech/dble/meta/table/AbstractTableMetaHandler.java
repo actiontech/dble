@@ -77,7 +77,7 @@ public abstract class AbstractTableMetaHandler {
         public void onResult(SQLQueryResult<Map<String, String>> result) {
             if (!result.isSuccess()) {
                 //not thread safe
-                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "Can't get table " + tableName + "'s config from DataNode:" + dataNode + "! Maybe the table is not initialized!");
+                LOGGER.warn(AlarmCode.DBLE_TABLE_LACK + "Can't get table " + tableName + "'s config from DataNode:" + dataNode + "! Maybe the table is not initialized!");
                 if (nodesNumber.decrementAndGet() == 0) {
                     StructureMeta.TableMeta tableMeta = genTableMeta();
                     handlerTable(tableMeta);
@@ -123,7 +123,7 @@ public abstract class AbstractTableMetaHandler {
         }
 
         private void consistentWarning() {
-            LOGGER.warn(AlarmCode.CORE_TABLE_CHECK_WARN + "Table [" + tableName + "] structure are not consistent!");
+            LOGGER.warn(AlarmCode.DBLE_TABLE_NOT_CONSISTENT_IN_DATAHOSTS + "Table [" + tableName + "] structure are not consistent!");
             LOGGER.info("Currently detected: ");
             for (Map.Entry<String, List<String>> entry : dataNodeTableStructureSQLMap.entrySet()) {
                 StringBuilder stringBuilder = new StringBuilder();
@@ -142,7 +142,7 @@ public abstract class AbstractTableMetaHandler {
                 return MetaHelper.initTableMeta(table, createStatement, timeStamp);
 
             } catch (Exception e) {
-                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "sql[" + sql + "] parser error:", e);
+                LOGGER.warn(AlarmCode.DBLE_GET_TABLE_META_FAIL + "sql[" + sql + "] parser error:", e);
                 return null;
             }
         }

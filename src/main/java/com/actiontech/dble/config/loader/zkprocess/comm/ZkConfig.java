@@ -7,7 +7,6 @@ package com.actiontech.dble.config.loader.zkprocess.comm;
 
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.zktoxml.ZktoXmlMain;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +42,7 @@ public final class ZkConfig {
             zkProperties = cluterProperties;
             ZktoXmlMain.loadZktoFile();
         } catch (Exception e) {
-            LOGGER.error(AlarmCode.CORE_ZK_ERROR + "error:", e);
+            LOGGER.error("error:", e);
         }
     }
 

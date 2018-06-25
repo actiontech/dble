@@ -14,7 +14,6 @@ import com.actiontech.dble.backend.mysql.xa.ParticipantLogEntry;
 import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.backend.mysql.xa.XAStateLog;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -85,7 +84,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             commitPhase(mysqlCon);
         } else if (state == TxState.TX_PREPARE_UNCONNECT_STATE) {
             final String errorMsg = this.error;
-            LOGGER.warn(AlarmCode.CORE_XA_WARN + "commit error and rollback the xa");
+            LOGGER.warn("commit error and rollback the xa");
             if (decrementCountBy(1)) {
                 DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
                     @Override

@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.backend.mysql.xa;
 
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.sqlengine.SQLQueryResultListener;
 import org.slf4j.Logger;
@@ -39,7 +38,7 @@ public class XARecoverCallback implements SQLQueryResultListener<SQLQueryResult<
             XAStateLog.updateXARecoveryLog(logEntry.getCoordinatorId(), logEntry.getHost(), logEntry.getPort(), logEntry.getSchema(), txState);
             XAStateLog.writeCheckpoint(logEntry.getCoordinatorId());
         } else {
-            LOGGER.warn(AlarmCode.CORE_XA_WARN + "[CALLBACK][XA " + operator + "] when server start,but failed");
+            LOGGER.warn("[CALLBACK][XA " + operator + "] when server start,but failed");
         }
     }
 }

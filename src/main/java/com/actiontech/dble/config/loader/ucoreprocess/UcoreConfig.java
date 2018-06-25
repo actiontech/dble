@@ -3,7 +3,6 @@ package com.actiontech.dble.config.loader.ucoreprocess;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.KVtoXml.UcoreToXml;
 import com.actiontech.dble.config.loader.ucoreprocess.listen.UcoreNodesListener;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +56,7 @@ public final class UcoreConfig {
             }
             UcoreToXml.loadKVtoFile();
         } catch (Exception e) {
-            LOGGER.error(AlarmCode.CORE_ZK_ERROR + "error:", e);
+            LOGGER.error("error:", e);
         }
     }
 
@@ -74,7 +73,7 @@ public final class UcoreConfig {
                 getInstance().ipList.add(ip);
             }
         } catch (Exception e) {
-            LOGGER.error(AlarmCode.CORE_ZK_ERROR + "error:", e);
+            LOGGER.error("error:", e);
         }
     }
 

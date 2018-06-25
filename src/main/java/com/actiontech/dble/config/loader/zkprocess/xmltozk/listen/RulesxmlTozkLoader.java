@@ -22,7 +22,6 @@ import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.rule.json.Fu
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.rule.json.TableRuleJsonParse;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.rule.xml.RuleParseXmlImpl;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.util.KVPathUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
@@ -113,7 +112,7 @@ public class RulesxmlTozkLoader extends ZkMultiLoader implements NotifyService {
                             mapFilePro.setValue(ConfFileRWUtils.readFile(property.getValue()));
                             tempData.add(mapFilePro);
                         } catch (IOException e) {
-                            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "RulesxmlTozkLoader readMapFile IOException", e);
+                            LOGGER.warn("RulesxmlTozkLoader readMapFile IOException", e);
                         }
                     }
                 }

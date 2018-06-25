@@ -1,7 +1,10 @@
 package com.actiontech.dble.config.loader.ucoreprocess.loader;
 
 import com.actiontech.dble.cluster.ClusterParamCfg;
-import com.actiontech.dble.config.loader.ucoreprocess.*;
+import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
+import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
+import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
+import com.actiontech.dble.config.loader.ucoreprocess.UcoreXmlLoader;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.config.loader.ucoreprocess.listen.UcoreClearKeyListener;
 import com.actiontech.dble.config.loader.zkprocess.comm.ConfFileRWUtils;
@@ -16,7 +19,6 @@ import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.rule.json.FunctionJsonParse;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.rule.json.TableRuleJsonParse;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.rule.xml.RuleParseXmlImpl;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.util.ResourceUtil;
 import com.alibaba.fastjson.JSONObject;
 import org.slf4j.Logger;
@@ -113,7 +115,7 @@ public class UXmlRuleLoader implements UcoreXmlLoader {
                             mapFilePro.setValue(ConfFileRWUtils.readFile(property.getValue()));
                             tempData.add(mapFilePro);
                         } catch (IOException e) {
-                            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "RulesxmlTozkLoader readMapFile IOException", e);
+                            LOGGER.warn("RulesxmlTozkLoader readMapFile IOException", e);
                         }
                     }
                 }
@@ -159,7 +161,7 @@ public class UXmlRuleLoader implements UcoreXmlLoader {
                         try {
                             ConfFileRWUtils.writeFile(writeMsg.getName(), writeMsg.getValue());
                         } catch (IOException e) {
-                            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "RuleszkToxmlLoader write File IOException", e);
+                            LOGGER.warn("RuleszkToxmlLoader write File IOException", e);
                         }
                     }
                 }

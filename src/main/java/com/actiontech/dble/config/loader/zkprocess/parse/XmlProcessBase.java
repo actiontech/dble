@@ -6,7 +6,6 @@
 package com.actiontech.dble.config.loader.zkprocess.parse;
 
 import com.actiontech.dble.config.Versions;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.util.ResourceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,7 +109,7 @@ public class XmlProcessBase {
             marshaller.marshal(user, out);
 
         } catch (JAXBException | IOException e) {
-            LOGGER.error(AlarmCode.CORE_ERROR + "ZookeeperProcessListen parseToXml  error:Exception info:", e);
+            LOGGER.error("ZookeeperProcessListen parseToXml  error:Exception info:", e);
         } finally {
             if (out != null) {
                 out.close();
@@ -154,8 +153,7 @@ public class XmlProcessBase {
             marshaller.marshal(user, out);
 
         } catch (JAXBException | IOException e) {
-            LOGGER.error(AlarmCode.CORE_ERROR +
-                    "ZookeeperProcessListen parseToXml  error:Exception info:", e);
+            LOGGER.error("ZookeeperProcessListen parseToXml  error:Exception info:", e);
         } finally {
             if (out != null) {
                 out.close();

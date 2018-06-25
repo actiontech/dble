@@ -25,7 +25,7 @@ import java.util.Set;
 public class ServerPrivileges implements FrontendPrivileges {
     private static ServerPrivileges instance = new ServerPrivileges();
 
-    private static final Logger ALARM = LoggerFactory.getLogger("alarm");
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerPrivileges.class);
 
     public static ServerPrivileges instance() {
         return instance;
@@ -125,8 +125,7 @@ public class ServerPrivileges implements FrontendPrivileges {
         }
 
         if (!isPassed) {
-            ALARM.error(Alarms.FIREWALL_ATTACK + "[host=" + host +
-                    ",user=" + user + ']');
+            LOGGER.warn("checkFirewallWhiteHostPolicy for [host=" + host + ",user=" + user + "],but not passed");
             return false;
         }
         return true;
@@ -149,7 +148,7 @@ public class ServerPrivileges implements FrontendPrivileges {
             WallCheckResult result = firewallConfig.getProvider().check(sql);
             if (!result.getViolations().isEmpty()) {
                 isPassed = false;
-                ALARM.warn("Firewall to intercept the '" + user + "' unsafe SQL , errMsg:" +
+                LOGGER.warn("Firewall to intercept the '" + user + "' unsafe SQL , errMsg:" +
                         result.getViolations().get(0).getMessage() + " \r\n " + sql);
             }
         }

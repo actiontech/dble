@@ -711,7 +711,7 @@ public class NonBlockingSession implements Session {
                 dn.getConnectionFromSameSource(en.getValue().getSchema(), true, en.getValue(),
                         kill, en.getKey());
             } catch (Exception e) {
-                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "get killer connection failed for " + en.getKey(), e);
+                LOGGER.info(AlarmCode.DBLE_KILL_BACKEND_CONN_FAIL + "get killer connection failed for " + en.getKey(), e);
                 kill.connectionError(e, null);
             }
         }
@@ -813,7 +813,7 @@ public class NonBlockingSession implements Session {
                 source.getAndIncrementXid();
             }
             if (!isSuccess) {
-                LOGGER.warn(AlarmCode.CORE_DDL_WARN + "DDL execute failed or Session closed," +
+                LOGGER.warn("DDL execute failed or Session closed," +
                         "Schema[" + schema + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
             }
             DbleServer.getInstance().getTmManager().updateMetaData(schema, sql, isSuccess, true);

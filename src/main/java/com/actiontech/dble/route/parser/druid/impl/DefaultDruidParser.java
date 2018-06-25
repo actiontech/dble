@@ -11,7 +11,6 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.DruidParser;
@@ -189,7 +188,7 @@ public class DefaultDruidParser implements DruidParser {
             //it is strict
             if (DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaName, tableName) == null) {
                 String msg = "Table meta '" + schemaName + "." + tableName + "' is lost,PLEASE reload @@metadata";
-                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + msg);
+                LOGGER.warn(msg);
                 throw new SQLException(msg, "HY000", ErrorCode.ERR_HANDLE_DATA);
             }
         }

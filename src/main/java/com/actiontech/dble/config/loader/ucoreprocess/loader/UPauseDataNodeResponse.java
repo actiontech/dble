@@ -14,7 +14,6 @@ import com.actiontech.dble.config.loader.ucoreprocess.UcoreXmlLoader;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.config.loader.ucoreprocess.listen.UcoreClearKeyListener;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.PauseInfo;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -103,7 +102,7 @@ public class UPauseDataNodeResponse implements UcoreXmlLoader {
                                     }
 
                                 } catch (Exception e) {
-                                    LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + " the ucore pause error " + e.getMessage());
+                                    LOGGER.warn(" the ucore pause error " + e.getMessage());
                                 }
 
                             }

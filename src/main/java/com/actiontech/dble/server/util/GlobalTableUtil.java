@@ -77,7 +77,7 @@ public final class GlobalTableUtil {
             if (column.equalsIgnoreCase(GLOBAL_TABLE_CHECK_COLUMN))
                 return true;
         }
-        String warnStr = AlarmCode.CORE_TABLE_CHECK_WARN + schemaInfo.getSchema() + "." + schemaInfo.getTable() +
+        String warnStr = AlarmCode.DBLE_GLOBAL_TABLE_COLUMN_LOST + schemaInfo.getSchema() + "." + schemaInfo.getTable() +
                 " inner column: " + GLOBAL_TABLE_CHECK_COLUMN + " is not exist.";
         LOGGER.warn(warnStr);
         return false; // tableName witout inner column
@@ -203,7 +203,7 @@ public final class GlobalTableUtil {
                         } finally {
                             if (columnsList == null ||
                                     !columnsList.contains(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
-                                LOGGER.warn(AlarmCode.CORE_TABLE_CHECK_WARN + map.getDataNode() + "." + map.getTableName() +
+                                LOGGER.warn(AlarmCode.DBLE_GLOBAL_TABLE_COLUMN_LOST + map.getDataNode() + "." + map.getTableName() +
                                         " inner column: " + GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN + " is not exist.");
                             } else {
                                 LOGGER.debug("columnsList: " + columnsList);

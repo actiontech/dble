@@ -15,7 +15,6 @@ import com.actiontech.dble.config.loader.xml.XMLSchemaLoader;
 import com.actiontech.dble.config.loader.xml.XMLServerLoader;
 import com.actiontech.dble.config.model.*;
 import com.actiontech.dble.config.util.ConfigException;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceMySQLHandler;
 import org.apache.log4j.Logger;
 
@@ -156,12 +155,12 @@ public class ConfigInitializer {
                         } else {
                             isConnectivity = false;
                             errKeys.add(key);
-                            LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "SelfCheck### test " + key + " database connection failed ");
+                            LOGGER.warn("SelfCheck### test " + key + " database connection failed ");
                         }
                     } catch (IOException e) {
                         isConnectivity = false;
                         errKeys.add(key);
-                        LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "test conn " + key + " error:", e);
+                        LOGGER.warn("test conn " + key + " error:", e);
                     }
                 }
             }

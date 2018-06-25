@@ -11,7 +11,6 @@ import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
 import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.PauseInfo;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
 import org.slf4j.Logger;
@@ -49,7 +48,7 @@ public final class PauseEnd {
 
                 DbleServer.getInstance().getMiManager().resumeCluster();
             } catch (Exception e) {
-                LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + " ");
+                LOGGER.warn(e.getMessage());
             }
         } else {
             if (!DbleServer.getInstance().getMiManager().tryResume()) {

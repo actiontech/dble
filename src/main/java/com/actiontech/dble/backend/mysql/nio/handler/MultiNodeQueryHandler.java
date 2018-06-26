@@ -247,6 +247,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     source.getLoadDataInfileHandler().clear();
                 } else {
                     ok.setPacketId(++packetId); // OK_PACKET
+                    ok.setMessage(null);
                 }
 
                 ok.setAffectedRows(affectedRows);

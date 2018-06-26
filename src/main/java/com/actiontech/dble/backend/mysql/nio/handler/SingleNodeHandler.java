@@ -188,6 +188,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             } else {
                 ok.setPacketId(++packetId); // OK_PACKET
             }
+            ok.setMessage(null);
             ok.setServerStatus(source.isAutocommit() ? 2 : 1);
             source.setLastInsertId(ok.getInsertId());
             //handleSpecial

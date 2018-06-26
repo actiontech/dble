@@ -80,7 +80,14 @@ public class FileSystemRepository implements Repository {
             Map<String, Map<String, String>> tmp = new HashMap<String, Map<String, String>>();
             for (Map.Entry<String, Map<String, String>> entry : viewCreateSqlMap.entrySet()) {
                 if (entry.getKey().equals(schemaName)) {
-                    entry.getValue().remove(viewName.trim());
+                    Map<String, String> tmpSchemaMap = new HashMap<String, String>();
+                    for (Map.Entry<String, String> schemaEntry : entry.getValue().entrySet()) {
+                        if (!schemaEntry.getKey().equals(viewName.trim())) {
+                            tmpSchemaMap.put(schemaEntry.getKey(), schemaEntry.getValue());
+                        }
+                    }
+                    tmp.put(entry.getKey(), tmpSchemaMap);
+                    break;
                 }
                 tmp.put(entry.getKey(), entry.getValue());
             }
@@ -111,7 +118,13 @@ public class FileSystemRepository implements Repository {
             Map<String, Map<String, String>> tmp = new HashMap<String, Map<String, String>>();
             for (Map.Entry<String, Map<String, String>> entry : viewCreateSqlMap.entrySet()) {
                 if (entry.getKey().equals(schemaName)) {
-                    entry.getValue().put(viewName, createSql);
+                    Map<String, String> tmpSchemaMap = new HashMap<String, String>();
+                    for (Map.Entry<String, String> schemaEntry : entry.getValue().entrySet()) {
+                        tmpSchemaMap.put(schemaEntry.getKey(), schemaEntry.getValue());
+                    }
+                    tmpSchemaMap.put(viewName, createSql);
+                    tmp.put(entry.getKey(), tmpSchemaMap);
+                    break;
                 }
                 tmp.put(entry.getKey(), entry.getValue());
             }

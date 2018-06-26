@@ -135,7 +135,7 @@ public final class NIOReactor {
                         LOGGER.debug(con + " socket key canceled");
                     }
                 } catch (Exception e) {
-                    LOGGER.warn(AlarmCode.DBLE_NIOREACTOR_UNKNOWN_EXCEPTION + con, e);
+                    LOGGER.warn(AlarmCode.NIOREACTOR_UNKNOWN_EXCEPTION + con, e);
                 } catch (final Throwable e) {
                     // Catch exceptions such as OOM and close connection if exists
                     //so that the reactor can keep running!
@@ -144,7 +144,7 @@ public final class NIOReactor {
                     if (con != null) {
                         con.close("Bad: " + e);
                     }
-                    LOGGER.warn(AlarmCode.DBLE_NIOREACTOR_UNKNOWN_THROWABLE + "caught err: ", e);
+                    LOGGER.warn(AlarmCode.NIOREACTOR_UNKNOWN_THROWABLE + "caught err: ", e);
                 }
             }
         }

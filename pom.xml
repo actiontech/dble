@@ -24,9 +24,14 @@
     </properties>
     <repositories>
         <repository>
-            <id>aliyun</id>
-            <name>aliyun Central</name>
-            <url>http://maven.aliyun.com/nexus/content/groups/public/</url>
+            <id>repo1</id>
+            <name>Maven Repository Switchboard</name>
+            <url>http://repo1.maven.org/maven2/</url>
+        </repository>
+        <repository>
+            <id>repo2</id>
+            <name>Human Readable Name for this Mirror.</name>
+            <url>http://repo2.maven.org/maven2/</url>
         </repository>
         <repository>
             <id>UK</id>
@@ -41,9 +46,14 @@
     </repositories>
     <pluginRepositories>
         <pluginRepository>
-            <id>aliyun</id>
-            <name>aliyun Central</name>
-            <url>http://maven.aliyun.com/nexus/content/groups/public/</url>
+            <id>repo1</id>
+            <name>Maven Repository Switchboard</name>
+            <url>http://repo1.maven.org/maven2/</url>
+        </pluginRepository>
+        <pluginRepository>
+            <id>repo2</id>
+            <name>Human Readable Name for this Mirror.</name>
+            <url>http://repo2.maven.org/maven2/</url>
         </pluginRepository>
         <pluginRepository>
             <id>UK</id>

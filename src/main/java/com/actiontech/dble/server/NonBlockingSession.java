@@ -711,7 +711,7 @@ public class NonBlockingSession implements Session {
                 dn.getConnectionFromSameSource(en.getValue().getSchema(), true, en.getValue(),
                         kill, en.getKey());
             } catch (Exception e) {
-                LOGGER.info(AlarmCode.DBLE_KILL_BACKEND_CONN_FAIL + "get killer connection failed for " + en.getKey(), e);
+                LOGGER.info(AlarmCode.KILL_BACKEND_CONN_FAIL + "get killer connection failed for " + en.getKey(), e);
                 kill.connectionError(e, null);
             }
         }

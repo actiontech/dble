@@ -110,7 +110,7 @@ public class PhysicalDBNode {
             PhysicalDatasource readSource = dbPool.getRWBalanceNode();
             if (!readSource.isAlive()) {
                 String heartbeatError = "the data source[" + readSource.getConfig().getUrl() + "] can't reached, please check the dataHost";
-                LOGGER.warn(AlarmCode.DBLE_DATA_HOST_CAN_NOT_REACH + heartbeatError);
+                LOGGER.warn(AlarmCode.DATA_HOST_CAN_NOT_REACH + heartbeatError);
                 throw new IOException(heartbeatError);
             }
             return readSource.getConnection(schema, autoCommit);

@@ -29,7 +29,7 @@ public class TableMetaCheckHandler extends AbstractTableMetaHandler {
     protected void handlerTable(StructureMeta.TableMeta tableMeta) {
         if (tableMeta != null) {
             if (isTableModify(schema, tableMeta)) {
-                LOGGER.warn(AlarmCode.DBLE_TABLE_NOT_CONSISTENT_IN_MEMORY + "Table [" + tableMeta.getTableName() + "] are modified by other,Please Check IT!");
+                LOGGER.warn(AlarmCode.TABLE_NOT_CONSISTENT_IN_MEMORY + "Table [" + tableMeta.getTableName() + "] are modified by other,Please Check IT!");
             }
             LOGGER.debug("checking table Table [" + tableMeta.getTableName() + "]");
         }

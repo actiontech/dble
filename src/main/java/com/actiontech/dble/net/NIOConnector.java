@@ -67,7 +67,7 @@ public final class NIOConnector extends Thread implements SocketConnector {
                     keys.clear();
                 }
             } catch (Exception e) {
-                LOGGER.warn(AlarmCode.DBLE_NIOCONNECTOR_UNKNOWN_EXCEPTION + name, e);
+                LOGGER.warn(AlarmCode.NIOCONNECTOR_UNKNOWN_EXCEPTION + name, e);
             }
         }
     }

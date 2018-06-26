@@ -283,7 +283,7 @@ public abstract class PhysicalDatasource {
                 this.createNewConnection(simpleHandler, null, schemas[i % schemas.length]);
                 simpleHandler.getBackConn().release();
             } catch (IOException e) {
-                LOGGER.warn(AlarmCode.DBLE_CREATE_CONN_FAIL + "create connection err ", e);
+                LOGGER.warn(AlarmCode.CREATE_CONN_FAIL + "create connection err ", e);
             }
         }
     }
@@ -385,7 +385,7 @@ public abstract class PhysicalDatasource {
             int activeCons = this.getActiveCount();
             if (activeCons + 1 > size) {
                 String maxConError = "the max active Connections size can not be max than maxCon for data host[" + this.getHostConfig().getName() + "." + this.getName() + "]";
-                LOGGER.warn(AlarmCode.DBLE_REACH_MAX_CON + maxConError);
+                LOGGER.warn(AlarmCode.REACH_MAX_CON + maxConError);
                 throw new IOException(maxConError);
             } else { // create connection
                 LOGGER.info("no idle connection in pool,create new connection for " +
@@ -401,7 +401,7 @@ public abstract class PhysicalDatasource {
             int activeCons = this.getActiveCount(); // the max active
             if (activeCons + 1 > size) {
                 String maxConError = "the max active Connections size can not be max than maxCon data host[" + this.getHostConfig().getName() + "." + this.getName() + "]";
-                LOGGER.warn(AlarmCode.DBLE_REACH_MAX_CON + maxConError);
+                LOGGER.warn(AlarmCode.REACH_MAX_CON + maxConError);
                 throw new IOException(maxConError);
             } else { // create connection
                 LOGGER.info(

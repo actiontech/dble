@@ -83,7 +83,7 @@ public class ServerConfig {
         try {
             confInit.testConnection(true);
         } catch (ConfigException e) {
-            LOGGER.warn(AlarmCode.DBLE_TEST_CONN_FAIL, e);
+            LOGGER.warn(AlarmCode.TEST_CONN_FAIL, e);
         }
     }
 
@@ -109,7 +109,7 @@ public class ServerConfig {
         try {
             confInit.testConnection(true);
         } catch (ConfigException e) {
-            LOGGER.warn(AlarmCode.DBLE_TEST_CONN_FAIL, e);
+            LOGGER.warn(AlarmCode.TEST_CONN_FAIL, e);
         }
     }
 

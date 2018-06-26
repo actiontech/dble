@@ -512,7 +512,7 @@ public class PhysicalDBPool {
         }
         if (!theNode.isAlive()) {
             String heartbeatError = "the data source[" + theNode.getConfig().getUrl() + "] can't reached, please check the dataHost";
-            LOGGER.warn(AlarmCode.DBLE_DATA_HOST_CAN_NOT_REACH + heartbeatError);
+            LOGGER.warn(AlarmCode.DATA_HOST_CAN_NOT_REACH + heartbeatError);
             throw new IOException(heartbeatError);
         }
         theNode.getConnection(schema, autocommit, handler, attachment);

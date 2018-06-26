@@ -116,7 +116,7 @@ public class FileSystemRepository implements Repository {
             br = new BufferedReader(isr);
             coordinatorLogEntries = readContent(br);
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.DBLE_XA_READ_IO_FAIL + "Error in recover", e);
+            LOGGER.warn(AlarmCode.XA_READ_IO_FAIL + "Error in recover", e);
         } finally {
             closeSilently(br);
         }
@@ -141,12 +141,12 @@ public class FileSystemRepository implements Repository {
                     unexpectedEOF);
             // merely return what was read so far...
         } catch (ObjectStreamException unexpectedEOF) {
-            LOGGER.warn(AlarmCode.DBLE_XA_READ_XA_STREAM_FAIL +
+            LOGGER.warn(AlarmCode.XA_READ_XA_STREAM_FAIL +
                             "Unexpected EOF - logfile not closed properly last time?",
                     unexpectedEOF);
             // merely return what was read so far...
         } catch (DeserializationException unexpectedEOF) {
-            LOGGER.warn(AlarmCode.DBLE_XA_READ_DECODE_FAIL + "Unexpected EOF - logfile not closed properly last time? " + unexpectedEOF);
+            LOGGER.warn(AlarmCode.XA_READ_DECODE_FAIL + "Unexpected EOF - logfile not closed properly last time? " + unexpectedEOF);
         }
         return coordinatorLogEntries;
     }
@@ -198,7 +198,7 @@ public class FileSystemRepository implements Repository {
             file.discardBackupVersion();
             return true;
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.DBLE_XA_WRITE_CHECK_POINT_FAIL + "Failed to write checkpoint", e);
+            LOGGER.warn(AlarmCode.XA_WRITE_CHECK_POINT_FAIL + "Failed to write checkpoint", e);
             return false;
         }
     }

@@ -24,6 +24,11 @@
     </properties>
     <repositories>
         <repository>
+            <id>aliyun</id>
+            <name>aliyun Central</name>
+            <url>http://maven.aliyun.com/nexus/content/groups/public/</url>
+        </repository>
+        <repository>
             <id>UK</id>
             <name>UK Central</name>
             <url>http://uk.maven.org/maven2</url>
@@ -35,6 +40,11 @@
         </repository>
     </repositories>
     <pluginRepositories>
+        <pluginRepository>
+            <id>aliyun</id>
+            <name>aliyun Central</name>
+            <url>http://maven.aliyun.com/nexus/content/groups/public/</url>
+        </pluginRepository>
         <pluginRepository>
             <id>UK</id>
             <name>UK Central</name>

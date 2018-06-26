@@ -24,6 +24,16 @@
     </properties>
     <repositories>
         <repository>
+            <id>repo1</id>
+            <name>Maven Repository Switchboard</name>
+            <url>http://repo1.maven.org/maven2/</url>
+        </repository>
+        <repository>
+            <id>repo2</id>
+            <name>Human Readable Name for this Mirror.</name>
+            <url>http://repo2.maven.org/maven2/</url>
+        </repository>
+        <repository>
             <id>UK</id>
             <name>UK Central</name>
             <url>http://uk.maven.org/maven2</url>
@@ -35,6 +45,16 @@
         </repository>
     </repositories>
     <pluginRepositories>
+        <pluginRepository>
+            <id>repo1</id>
+            <name>Maven Repository Switchboard</name>
+            <url>http://repo1.maven.org/maven2/</url>
+        </pluginRepository>
+        <pluginRepository>
+            <id>repo2</id>
+            <name>Human Readable Name for this Mirror.</name>
+            <url>http://repo2.maven.org/maven2/</url>
+        </pluginRepository>
         <pluginRepository>
             <id>UK</id>
             <name>UK Central</name>

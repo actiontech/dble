@@ -3,7 +3,6 @@ package com.actiontech.dble.config.loader.ucoreprocess;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.KVtoXml.UcoreToXml;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.log.alarm.UcoreGrpc;
 import com.actiontech.dble.log.alarm.UcoreInterface;
 import io.grpc.Channel;
@@ -400,7 +399,7 @@ public final class ClusterUcoreSender {
 
         for (Map.Entry<String, String> entry : currentMap.entrySet()) {
             if (!expectedMap.containsKey(entry.getKey())) {
-                LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "NODE " + entry.getKey() + " IS NOT EXPECTED TO BE ONLINE,PLEASE CHECK IT ");
+                LOGGER.warn("NODE " + entry.getKey() + " IS NOT EXPECTED TO BE ONLINE,PLEASE CHECK IT ");
             }
         }
     }

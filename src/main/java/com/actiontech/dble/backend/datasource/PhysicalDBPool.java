@@ -10,7 +10,6 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.heartbeat.DBHeartbeat;
 import com.actiontech.dble.backend.mysql.nio.handler.GetConnectionHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
-import com.actiontech.dble.config.Alarms;
 import com.actiontech.dble.config.model.DataHostConfig;
 import com.actiontech.dble.log.alarm.AlarmCode;
 import org.slf4j.Logger;
@@ -253,17 +252,17 @@ public class PhysicalDBPool {
                     if (theDsHb.getStatus() == DBHeartbeat.OK_STATUS) {
                         if (switchType == DataHostConfig.SYN_STATUS_SWITCH_DS) {
                             if (Integer.valueOf(0).equals(theDsHb.getSlaveBehindMaster())) {
-                                LOGGER.warn(AlarmCode.CORE_BACKEND_SWITCH + "try to switch datasource, slave is " + "synchronized to master " + theDs.getConfig());
-                                switchSource(nextId, true, reason);
+                                LOGGER.warn("try to switch datasource, slave is " + "synchronized to master " + theDs.getConfig());
+                                switchSource(nextId, reason);
                                 break;
                             } else {
                                 LOGGER.info("ignored  datasource ,slave is not synchronized to master, slave behind master :" + theDsHb.getSlaveBehindMaster() + " " + theDs.getConfig());
                             }
                         } else {
                             // normal switch
-                            LOGGER.warn(AlarmCode.CORE_BACKEND_SWITCH + "try to switch datasource ,not checked slave" + "synchronize status " +
+                            LOGGER.warn("try to switch datasource ,not checked slave" + "synchronize status " +
                                     theDs.getConfig());
-                            switchSource(nextId, true, reason);
+                            switchSource(nextId, reason);
                             break;
                         }
                     }
@@ -273,7 +272,7 @@ public class PhysicalDBPool {
         }
     }
 
-    public boolean switchSource(int newIndex, boolean isAlarm, String reason) {
+    public boolean switchSource(int newIndex, String reason) {
         if (!checkIndex(newIndex)) {
             return false;
         }
@@ -291,10 +290,10 @@ public class PhysicalDBPool {
                     // clear all connections
                     this.getSources()[current].clearCons("switch datasource");
                     // write log
-                    LOGGER.warn(AlarmCode.CORE_BACKEND_SWITCH + switchMessage(current, result, isAlarm, reason));
+                    LOGGER.warn(switchMessage(current, result, reason));
                     return true;
                 } else {
-                    LOGGER.warn(AlarmCode.CORE_BACKEND_SWITCH + switchMessage(current, newIndex, true, reason) + ", but failed");
+                    LOGGER.warn(switchMessage(current, newIndex, reason) + ", but failed");
                     return false;
                 }
             }
@@ -304,11 +303,8 @@ public class PhysicalDBPool {
         return false;
     }
 
-    private String switchMessage(int current, int newIndex, boolean alarm, String reason) {
+    private String switchMessage(int current, int newIndex, String reason) {
         StringBuilder s = new StringBuilder();
-        if (alarm) {
-            s.append(Alarms.DATANODE_SWITCH);
-        }
         s.append("[Host=").append(hostName).append(",result=[").append(current).append("->");
         s.append(newIndex).append("],reason=").append(reason).append(']');
         return s.toString();
@@ -334,7 +330,7 @@ public class PhysicalDBPool {
         }
 
         initSuccess = false;
-        LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + Alarms.DEFAULT + hostName + " init failure");
+        LOGGER.warn(hostName + " init failure");
         return -1;
     }
 
@@ -369,7 +365,7 @@ public class PhysicalDBPool {
             try {
                 ds.initMinConnection(this.schemas[i % schemas.length], true, getConHandler, null);
             } catch (Exception e) {
-                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + getMessage(index, " init connection error."), e);
+                LOGGER.warn(getMessage(index, " init connection error."), e);
             }
         }
         long timeOut = System.currentTimeMillis() + 60 * 1000;
@@ -406,7 +402,7 @@ public class PhysicalDBPool {
             if (source != null) {
                 source.doHeartbeat();
             } else {
-                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + Alarms.DEFAULT + hostName + " current dataSource is null!");
+                LOGGER.warn(hostName + " current dataSource is null!");
             }
         }
     }
@@ -516,7 +512,7 @@ public class PhysicalDBPool {
         }
         if (!theNode.isAlive()) {
             String heartbeatError = "the data source[" + theNode.getConfig().getUrl() + "] can't reached, please check the dataHost";
-            LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + heartbeatError);
+            LOGGER.warn(AlarmCode.DATA_HOST_CAN_NOT_REACH + heartbeatError);
             throw new IOException(heartbeatError);
         }
         theNode.getConnection(schema, autocommit, handler, attachment);

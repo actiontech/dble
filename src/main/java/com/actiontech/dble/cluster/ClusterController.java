@@ -2,13 +2,13 @@ package com.actiontech.dble.cluster;
 
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.util.ResourceUtil;
 import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
 
 /**
@@ -45,7 +45,7 @@ public final class ClusterController {
                 LOGGER.info("No Cluster Config .......start in single mode");
             }
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "error:", e);
+            LOGGER.warn("error:", e);
         }
 
     }
@@ -70,7 +70,7 @@ public final class ClusterController {
             }
             pros.load(configIS);
         } catch (IOException e) {
-            LOGGER.error(AlarmCode.CORE_ERROR + "ClusterController LoadMyidPropersites error:", e);
+            LOGGER.error("ClusterController LoadMyidPropersites error:", e);
         }
 
         //check if the

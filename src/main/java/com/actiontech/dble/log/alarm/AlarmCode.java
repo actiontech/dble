@@ -15,20 +15,28 @@ public final class AlarmCode {
 
     }
 
-    public static final String ALARM_SPLITE = "::";
-    public static final String CORE_CLUSTER_WARN = "DBLE_CORE_CLUSTER_WARN" + ALARM_SPLITE;
-    public static final String CORE_FILE_WRITE_WARN = "DBLE_CORE_FILE_WRITE_WARN" + ALARM_SPLITE;
-    public static final String CORE_ZK_WARN = "DBLE_CORE_ZK_WARN" + ALARM_SPLITE;
-    public static final String CORE_ZK_ERROR = "DBLE_CORE_ZK_ERROR" + ALARM_SPLITE;
-    public static final String CORE_PERFORMANCE_WARN = "DBLE_CORE_PERFORMANCE_WARN" + ALARM_SPLITE;
-    public static final String CORE_DDL_WARN = "DBLE_CORE_DDL_WARN" + ALARM_SPLITE;
-    public static final String CORE_TABLE_CHECK_WARN = "DBLE_CORE_TABLE_CHECK_WARN" + ALARM_SPLITE;
-    public static final String CORE_GENERAL_WARN = "DBLE_CORE_GENERAL_WARN" + ALARM_SPLITE;
-    public static final String CORE_DATA_HOST_WARN = "DBLE_CORE_DATA_HOST_WARN" + ALARM_SPLITE;
-    public static final String CORE_ERROR = "DBLE_CORE_ERROR" + ALARM_SPLITE;
-    public static final String CORE_BACKEND_SWITCH = "DBLE_CORE_BACKEND_SWITCH" + ALARM_SPLITE;
-    public static final String CORE_XA_WARN = "DBLE_CORE_XA_WARN" + ALARM_SPLITE;
-    public static final String CORE_SEQUENCE_WARN = "DBLE_CORE_SEQUENCE_WARN" + ALARM_SPLITE;
+    public static final String ALARM_SPLIT = "::";
+    public static final String WRITE_NODE_INDEX_FAIL = "DBLE_WRITE_NODE_INDEX_FAIL" + ALARM_SPLIT;
+    public static final String WRITE_TEMP_RESULT_FAIL = "DBLE_WRITE_TEMP_RESULT_FAIL" + ALARM_SPLIT;
+    public static final String XA_READ_IO_FAIL = "DBLE_XA_READ_IO_FAIL" + ALARM_SPLIT;
+    public static final String XA_READ_XA_STREAM_FAIL = "DBLE_XA_READ_XA_STREAM_FAIL" + ALARM_SPLIT;
+    public static final String XA_READ_DECODE_FAIL = "DBLE_XA_READ_DECODE_FAIL" + ALARM_SPLIT;
+    public static final String XA_WRITE_CHECK_POINT_FAIL = "DBLE_XA_WRITE_CHECK_POINT_FAIL" + ALARM_SPLIT;
+    public static final String REACH_MAX_CON = "DBLE_REACH_MAX_CON" + ALARM_SPLIT;
+    public static final String TABLE_NOT_CONSISTENT_IN_DATAHOSTS = "DBLE_TABLE_NOT_CONSISTENT_IN_DATAHOSTS" + ALARM_SPLIT;
+    public static final String TABLE_NOT_CONSISTENT_IN_MEMORY = "DBLE_TABLE_NOT_CONSISTENT_IN_MEMORY" + ALARM_SPLIT;
+    public static final String GLOBAL_TABLE_COLUMN_LOST = "DBLE_GLOBAL_TABLE_COLUMN_LOST" + ALARM_SPLIT;
+    public static final String CREATE_CONN_FAIL = "DBLE_CREATE_CONN_FAIL" + ALARM_SPLIT;
+    public static final String DATA_HOST_CAN_NOT_REACH = "DBLE_DATA_HOST_CAN_NOT_REACH" + ALARM_SPLIT;
+    public static final String TABLE_LACK = "DBLE_TABLE_LACK" + ALARM_SPLIT;
+    public static final String GET_TABLE_META_FAIL = "DBLE_GET_TABLE_META_FAIL" + ALARM_SPLIT;
+    public static final String NIOREACTOR_UNKNOWN_EXCEPTION = "DBLE_NIOREACTOR_UNKNOWN_EXCEPTION" + ALARM_SPLIT;
+    public static final String NIOREACTOR_UNKNOWN_THROWABLE = "DBLE_NIOREACTOR_UNKNOWN_THROWABLE" + ALARM_SPLIT;
+    public static final String NIOCONNECTOR_UNKNOWN_EXCEPTION = "DBLE_NIOCONNECTOR_UNKNOWN_EXCEPTION" + ALARM_SPLIT;
+    public static final String TEST_CONN_FAIL = "DBLE_TEST_CONN_FAIL" + ALARM_SPLIT;
+    public static final String KILL_BACKEND_CONN_FAIL = "DBLE_KILL_BACKEND_CONN_FAIL" + ALARM_SPLIT;
+
+
 
 
 }

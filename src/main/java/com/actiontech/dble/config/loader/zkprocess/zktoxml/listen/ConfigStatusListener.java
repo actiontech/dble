@@ -12,7 +12,6 @@ import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.manager.response.ReloadConfig;
 import com.actiontech.dble.manager.response.RollbackConfig;
 import com.actiontech.dble.util.KVPathUtil;
@@ -70,7 +69,7 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
                 try {
                     service.notifyProcess();
                 } catch (Exception e) {
-                    LOGGER.warn(AlarmCode.CORE_ZK_WARN + "ConfigStatusListener notify  error :" + service + " ,Exception info:", e);
+                    LOGGER.warn("ConfigStatusListener notify  error :" + service + " ,Exception info:", e);
                 }
             }
             try {

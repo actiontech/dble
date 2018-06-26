@@ -545,7 +545,7 @@ public final class DbleServer {
             if (!"0".equals(index)) {
                 LOGGER.info("reinit datahost: " + node.getHostName() + "  to use datasource index:" + index);
             }
-            node.switchSource(Integer.parseInt(index), true, "reload dnindex");
+            node.switchSource(Integer.parseInt(index), "reload dnindex");
 
         }
     }
@@ -667,7 +667,7 @@ public final class DbleServer {
                 }
             }
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "saveDataNodeIndex err:", e);
+            LOGGER.warn(AlarmCode.WRITE_NODE_INDEX_FAIL + "saveDataNodeIndex err:", e);
         } finally {
             if (fileOut != null) {
                 try {

@@ -11,7 +11,6 @@ import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.InMemoryRepository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.KVStoreRepository;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,7 +98,7 @@ public final class XAStateLog {
                 waitWriting.await();
             }
         } catch (InterruptedException e) {
-            LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "writeCheckpoint error, waiter XID is " + xaTxId, e);
+            LOGGER.warn("writeCheckpoint error, waiter XID is " + xaTxId, e);
         } finally {
             lock.unlock();
         }
@@ -133,7 +132,7 @@ public final class XAStateLog {
                         }
                     }
                 } catch (Exception e) {
-                    LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "logCollection deep copy error, leader Xid is:" + xaTxId, e);
+                    LOGGER.warn("logCollection deep copy error, leader Xid is:" + xaTxId, e);
                     logs.clear();
                 } finally {
                     lockMap.unlock();
@@ -175,7 +174,7 @@ public final class XAStateLog {
                 mapResult.remove(Thread.currentThread().getId());
                 return result;
             } catch (InterruptedException e) {
-                LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "writeCheckpoint error, follower Xid is:" + xaTxId, e);
+                LOGGER.warn("writeCheckpoint error, follower Xid is:" + xaTxId, e);
                 return false;
             } finally {
                 lock.unlock();

@@ -24,7 +24,6 @@ import com.actiontech.dble.config.loader.zkprocess.zookeeper.DataInf;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.DirectoryInf;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkDirectoryImpl;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import org.apache.curator.framework.CuratorFramework;
@@ -153,7 +152,7 @@ public class RuleszkToxmlLoader extends ZkMultiLoader implements NotifyService {
                         try {
                             ConfFileRWUtils.writeFile(writeMsg.getName(), writeMsg.getValue());
                         } catch (IOException e) {
-                            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "RuleszkToxmlLoader write File IOException", e);
+                            LOGGER.warn("RuleszkToxmlLoader write File IOException", e);
                         }
                     }
                 }

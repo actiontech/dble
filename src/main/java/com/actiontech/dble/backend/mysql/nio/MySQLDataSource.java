@@ -39,12 +39,14 @@ public class MySQLDataSource extends PhysicalDatasource {
         factory.make(this, handler, schema);
     }
 
-    private long getClientFlags() {
+    private long getClientFlags(boolean isConnectWithDB) {
         int flag = 0;
         flag |= Capabilities.CLIENT_LONG_PASSWORD;
         flag |= Capabilities.CLIENT_FOUND_ROWS;
         flag |= Capabilities.CLIENT_LONG_FLAG;
-        flag |= Capabilities.CLIENT_CONNECT_WITH_DB;
+        if (isConnectWithDB) {
+            flag |= Capabilities.CLIENT_CONNECT_WITH_DB;
+        }
         // flag |= Capabilities.CLIENT_NO_SCHEMA;
         // flag |= Capabilities.CLIENT_COMPRESS;
         flag |= Capabilities.CLIENT_ODBC;
@@ -115,7 +117,7 @@ public class MySQLDataSource extends PhysicalDatasource {
              */
             AuthPacket authPacket = new AuthPacket();
             authPacket.setPacketId(1);
-            authPacket.setClientFlags(getClientFlags());
+            authPacket.setClientFlags(getClientFlags(schema == null));
             authPacket.setMaxPacketSize(1024 * 1024 * 16);
             authPacket.setCharsetIndex(handshake.getServerCharsetIndex() & 0xff);
             authPacket.setUser(this.getConfig().getUser());

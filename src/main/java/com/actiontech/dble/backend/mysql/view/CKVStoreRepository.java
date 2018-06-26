@@ -3,10 +3,12 @@ package com.actiontech.dble.backend.mysql.view;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterParamCfg;
-import com.actiontech.dble.config.loader.ucoreprocess.*;
+import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
+import com.actiontech.dble.config.loader.ucoreprocess.UDistributeLock;
+import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
+import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,10 +106,10 @@ public class CKVStoreRepository implements Repository {
                 throw new RuntimeException(errorMsg);
             }
         } catch (RuntimeException e) {
-            LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "set to ucore node error :　" + e.getMessage());
+            LOGGER.warn("set to ucore node error :　" + e.getMessage());
             throw e;
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "set to ucore node error :　" + e.getMessage());
+            LOGGER.warn("set to ucore node error :　" + e.getMessage());
         } finally {
             ClusterDelayProvider.beforeDeleteViewNotic();
             ClusterUcoreSender.deleteKVTree(nsb.toString() + SEPARATOR);
@@ -163,10 +165,10 @@ public class CKVStoreRepository implements Repository {
                     throw new RuntimeException(errorMsg);
                 }
             } catch (RuntimeException e) {
-                LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "delete ucore node error :　" + e.getMessage());
+                LOGGER.warn("delete ucore node error :　" + e.getMessage());
                 throw e;
             } catch (Exception e) {
-                LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "delete ucore node error :　" + e.getMessage());
+                LOGGER.warn("delete ucore node error :　" + e.getMessage());
             } finally {
                 ClusterDelayProvider.beforeDeleteViewNotic();
                 ClusterUcoreSender.deleteKVTree(nsb.toString() + SEPARATOR);

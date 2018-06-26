@@ -4,7 +4,6 @@ import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
 import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreXmlLoader;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.log.alarm.UcoreInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,7 +106,7 @@ public class UcoreClearKeyListener implements Runnable {
             }
             handle(diffMap);
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + "error when start up dble,ucore connect error");
+            LOGGER.warn("error when start up dble,ucore connect error");
         }
     }
 
@@ -126,7 +125,7 @@ public class UcoreClearKeyListener implements Runnable {
                 }
             }
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + " ucore data parse to xml error ");
+            LOGGER.warn(" ucore data parse to xml error ");
             e.printStackTrace();
         }
     }
@@ -152,7 +151,7 @@ public class UcoreClearKeyListener implements Runnable {
             try {
                 service.getValue().notifyCluster();
             } catch (Exception e) {
-                LOGGER.warn(AlarmCode.CORE_ZK_WARN + " UcoreClearKeyListener init all node error:", e);
+                LOGGER.warn(" UcoreClearKeyListener init all node error:", e);
             }
         }
     }

@@ -2,11 +2,13 @@ package com.actiontech.dble.config.loader.ucoreprocess.loader;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.ClusterParamCfg;
-import com.actiontech.dble.config.loader.ucoreprocess.*;
+import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
+import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
+import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
+import com.actiontech.dble.config.loader.ucoreprocess.UcoreXmlLoader;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.config.loader.ucoreprocess.listen.UcoreClearKeyListener;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.BinlogPause;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.manager.response.ShowBinlogStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +52,7 @@ public class UBinlogPauseStatusResponse implements UcoreXmlLoader {
                 ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getBinlogPauseStatusSelf(), UcorePathUtil.SUCCESS);
             } catch (Exception e) {
                 cleanResource();
-                LOGGER.warn(AlarmCode.CORE_ZK_WARN + "create binlogPause instance failed", e);
+                LOGGER.warn("create binlogPause instance failed", e);
             }
         } else if (pauseInfo.getStatus() == BinlogPause.BinlogPauseStatus.OFF) {
             LOGGER.info("clean resource for binlog status finish");

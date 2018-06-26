@@ -315,7 +315,7 @@ public class ConfigInitializer {
         return dataHostWithoutWH;
     }
 
-    private class TestTask extends Thread {
+    private static class TestTask extends Thread {
         private PhysicalDatasource ds;
         private String schema;
         private BoolPtr boolPtr;

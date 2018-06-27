@@ -120,6 +120,8 @@ public final class SystemConfig {
     private int useCompression = 0;
     private int useSqlStat = 1;
 
+    private int maxCon = 1024;
+
     private int checkTableConsistency = 0;
     private long checkTableConsistencyPeriod = CHECK_TABLE_CONSISTENCY_PERIOD;
     private int useGlobleTableCheck = 1;
@@ -905,5 +907,13 @@ public final class SystemConfig {
                 ", useThreadUsageStat=" + useThreadUsageStat +
                 ", usePerformanceMode=" + usePerformanceMode +
                 "]";
+    }
+
+    public int getMaxCon() {
+        return maxCon;
+    }
+
+    public void setMaxCon(int maxCon) {
+        this.maxCon = maxCon;
     }
 }

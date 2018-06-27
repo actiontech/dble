@@ -83,11 +83,11 @@ public class ServerPrivileges implements FrontendPrivileges {
     }
 
     @Override
-    public int getBenchmark(String user) {
+    public int getMaxCon(String user) {
         ServerConfig conf = DbleServer.getInstance().getConfig();
         UserConfig uc = conf.getUsers().get(user);
         if (uc != null) {
-            return uc.getBenchmark();
+            return uc.getMaxCon();
         } else {
             return 0;
         }

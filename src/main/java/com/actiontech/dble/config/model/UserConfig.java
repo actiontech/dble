@@ -16,7 +16,7 @@ public class UserConfig {
     private String name;
     private String password;
     private String encryptPassword;
-    private int benchmark = 0;                        // default 0 means not check
+    private int maxCon = 0;                        // default 0 means not check
     private UserPrivilegesConfig privilegesConfig;    //privileges for tables
 
     private boolean readOnly = false;
@@ -56,12 +56,12 @@ public class UserConfig {
         this.password = password;
     }
 
-    public int getBenchmark() {
-        return benchmark;
+    public int getMaxCon() {
+        return maxCon;
     }
 
-    public void setBenchmark(int benchmark) {
-        this.benchmark = benchmark;
+    public void setMaxCon(int maxCon) {
+        this.maxCon = maxCon;
     }
 
     public Set<String> getSchemas() {
@@ -87,7 +87,7 @@ public class UserConfig {
     @Override
     public String toString() {
         return "UserConfig [name=" + this.name + ", password=" + this.password + ", encryptPassword=" +
-                this.encryptPassword + ", benchmark=" + this.benchmark + ", manager=" + this.manager +
+                this.encryptPassword + ", maxCon=" + this.maxCon + ", manager=" + this.manager +
                 ", readOnly=" + this.readOnly + ", schemas=" + this.schemas + "]";
     }
 

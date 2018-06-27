@@ -351,6 +351,7 @@ public final class ReloadConfig {
             /* 2.3 apply new conf */
             config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall,
                     newSystemVariables, loader.isDataHostWithoutWH(), true);
+            DbleServer.getInstance().getUserManager().initForLatest(newUsers, loader.getSystem().getMaxCon());
 
             recycleOldBackendConnections(config, ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
         } else {
@@ -442,6 +443,7 @@ public final class ReloadConfig {
         /* 2 apply the new conf */
         DbleServer.getInstance().getConfig().reload(users, schemas, dataNodes, dataHosts, erRelations, firewall,
                 DbleServer.getInstance().getSystemVariables(), loader.isDataHostWithoutWH(), false);
+        DbleServer.getInstance().getUserManager().initForLatest(users, loader.getSystem().getMaxCon());
     }
 
 }

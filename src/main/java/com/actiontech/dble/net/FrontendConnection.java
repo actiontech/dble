@@ -511,6 +511,9 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     @Override
     public void close(String reason) {
+        if (this.isAuthenticated) {
+            DbleServer.getInstance().getUserManager().countDown(user);
+        }
         super.close(isAuthenticated ? reason : "");
     }
 

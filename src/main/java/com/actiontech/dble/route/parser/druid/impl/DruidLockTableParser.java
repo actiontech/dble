@@ -83,11 +83,10 @@ public class DruidLockTableParser extends DefaultDruidParser {
         List<String> dataNodes = tableConfig.getDataNodes();
         RouteResultsetNode[] nodes = new RouteResultsetNode[dataNodes.size()];
         for (int i = 0; i < dataNodes.size(); i++) {
-            nodes[i] = new RouteResultsetNode(dataNodes.get(i), ServerParse.LOCK, stmt.toString());
+            nodes[i] = new RouteResultsetNode(dataNodes.get(i), ServerParse.LOCK, statementToString(stmt));
         }
         rrs.setNodes(nodes);
         rrs.setFinishedRoute(true);
         return schema;
     }
-
 }

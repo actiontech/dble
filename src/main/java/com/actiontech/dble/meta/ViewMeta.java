@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.meta;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.plan.node.PlanNode;
@@ -65,7 +66,7 @@ public class ViewMeta {
     }
 
 
-    public ErrorPacket initAndSet(boolean isReplace) {
+    public ErrorPacket initAndSet(boolean isReplace, boolean isNewCreate) {
 
         //check the create sql is legal
         //parse sql into three parts
@@ -94,6 +95,10 @@ public class ViewMeta {
             this.setFieldsAlias(selNode);
 
             viewQuery = new QueryNode(selNode);
+
+            if (isNewCreate) {
+                DbleServer.getInstance().getTmManager().getRepository().put(schema, viewName, this.createSql);
+            }
 
             tmManager.getCatalogs().get(schema).getViewMetas().put(viewName, this);
         } catch (Exception e) {

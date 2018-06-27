@@ -57,7 +57,7 @@ public class SchemaMeta {
             if (view.getViewQuery() != null) {
                 queryNode = view.getViewQuery().copy();
             } else {
-                ErrorPacket error = view.initAndSet(true);
+                ErrorPacket error = view.initAndSet(true, false);
                 if (error != null) {
                     throw new RuntimeException(" View '" + view.getViewName() +
                             "' references invalid table(s) or column(s) or function(s) or definer/invoker of view lack rights to use them");

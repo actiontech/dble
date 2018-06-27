@@ -22,7 +22,7 @@ public interface Repository {
 
     void put(String schemaName, String viewName, String createSql);
 
-    void delete(String schemaName, String[] viewName);
+    void delete(String schemaName, String viewName);
 
     void init();
 

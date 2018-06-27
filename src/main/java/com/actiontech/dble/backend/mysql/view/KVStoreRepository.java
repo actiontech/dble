@@ -86,17 +86,15 @@ public class KVStoreRepository implements Repository {
 
     /**
      * @param schemaName
-     * @param viewName
+     * @param view
      */
     @Override
-    public void delete(String schemaName, String[] viewName) {
-        for (String view : viewName) {
-            StringBuffer sb = new StringBuffer(KVPathUtil.getViewPath()).append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(view);
-            try {
-                zkConn.delete().forPath(sb.toString());
-            } catch (Exception e) {
-                LOGGER.warn("delete zk node error :　" + e.getMessage());
-            }
+    public void delete(String schemaName, String view) {
+        StringBuffer sb = new StringBuffer(KVPathUtil.getViewPath()).append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(view);
+        try {
+            zkConn.delete().forPath(sb.toString());
+        } catch (Exception e) {
+            LOGGER.warn("delete zk node error :　" + e.getMessage());
         }
     }
 }

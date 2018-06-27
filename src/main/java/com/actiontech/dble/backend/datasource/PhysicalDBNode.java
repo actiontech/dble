@@ -70,7 +70,7 @@ public class PhysicalDBNode {
         if (!dbPool.isInitSuccess()) {
             int activeIndex = dbPool.init(dbPool.activeIndex);
             if (activeIndex >= 0) {
-                DbleServer.getInstance().saveDataHostIndex(dbPool.getHostName(), activeIndex);
+                DbleServer.getInstance().saveDataHostIndex(dbPool.getHostName(), activeIndex, false);
             } else {
                 throw new RuntimeException("DataNode[" + dbPool.getHostName() + "]'s init error, please check it can be connected." +
                         "The current Node is {DataHost[" + dbPool.getSource().getConfig().getUrl() + ",Schema[" + schema + "]}");
@@ -110,7 +110,7 @@ public class PhysicalDBNode {
             PhysicalDatasource readSource = dbPool.getRWBalanceNode();
             if (!readSource.isAlive()) {
                 String heartbeatError = "the data source[" + readSource.getConfig().getUrl() + "] can't reached, please check the dataHost";
-                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + heartbeatError);
+                LOGGER.warn(AlarmCode.DATA_HOST_CAN_NOT_REACH + heartbeatError);
                 throw new IOException(heartbeatError);
             }
             return readSource.getConnection(schema, autoCommit);

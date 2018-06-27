@@ -67,7 +67,7 @@ public final class NIOConnector extends Thread implements SocketConnector {
                     keys.clear();
                 }
             } catch (Exception e) {
-                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + name, e);
+                LOGGER.warn(AlarmCode.NIOCONNECTOR_UNKNOWN_EXCEPTION + name, e);
             }
         }
     }
@@ -81,7 +81,7 @@ public final class NIOConnector extends Thread implements SocketConnector {
                 channel.connect(new InetSocketAddress(c.host, c.port));
 
             } catch (Exception e) {
-                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "error:", e);
+                LOGGER.warn("error:", e);
                 c.close(e.toString());
                 if (c instanceof BackendAIOConnection) {
                     ((BackendAIOConnection) c).onConnectFailed(e);
@@ -104,7 +104,7 @@ public final class NIOConnector extends Thread implements SocketConnector {
             }
         } catch (Exception e) {
             clearSelectionKey(key);
-            LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "error:", e);
+            LOGGER.warn("error:", e);
             c.close(e.toString());
             c.onConnectFailed(e);
 

@@ -8,7 +8,6 @@ package com.actiontech.dble.config.loader.zkprocess.parse.entryparse.schema.xml;
 import com.actiontech.dble.config.loader.zkprocess.entity.Schemas;
 import com.actiontech.dble.config.loader.zkprocess.parse.ParseXmlServiceInf;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,9 +40,9 @@ public class SchemasParseXmlImpl implements ParseXmlServiceInf<Schemas> {
         try {
             schema = (Schemas) this.parseBean.baseParseXmlToBean(path);
         } catch (JAXBException e) {
-            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "SchemasParseXmlImpl parseXmlToBean JAXBException", e);
+            LOGGER.warn("SchemasParseXmlImpl parseXmlToBean JAXBException", e);
         } catch (XMLStreamException e) {
-            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "SchemasParseXmlImpl parseXmlToBean XMLStreamException", e);
+            LOGGER.warn("SchemasParseXmlImpl parseXmlToBean XMLStreamException", e);
         }
 
         return schema;
@@ -54,8 +53,7 @@ public class SchemasParseXmlImpl implements ParseXmlServiceInf<Schemas> {
         try {
             this.parseBean.baseParseAndWriteToXml(data, outputFile, dataName);
         } catch (IOException e) {
-            LOGGER.warn(AlarmCode.CORE_ZK_WARN +
-                    "SchemasParseXmlImpl parseToXmlWrite IOException", e);
+            LOGGER.warn("SchemasParseXmlImpl parseToXmlWrite IOException", e);
         }
     }
 

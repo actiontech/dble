@@ -7,7 +7,6 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
 import org.slf4j.Logger;
@@ -29,7 +28,7 @@ public final class ReloadMetaData {
         try {
             if (DbleServer.getInstance().getTmManager().getMetaCount() != 0) {
                 msg = "Reload metadata failed,There is other session is doing DDL";
-                LOGGER.warn(AlarmCode.CORE_DDL_WARN + msg);
+                LOGGER.warn(msg);
                 c.writeErrMessage("HY000", msg, ErrorCode.ER_DOING_DDL);
                 return;
             }

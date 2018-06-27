@@ -8,7 +8,6 @@ package com.actiontech.dble.backend.mysql.view;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import org.slf4j.Logger;
@@ -101,7 +100,7 @@ public class FileSystemRepository implements Repository {
             }
             schemaMap.remove(viewName.trim());
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "delete view from file error make sure the file is correct :" + e.getMessage());
+            LOGGER.warn("delete view from file error make sure the file is correct :" + e.getMessage());
             throw new RuntimeException(e);
         }
     }
@@ -148,7 +147,7 @@ public class FileSystemRepository implements Repository {
 
 
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "add view from file error make sure the file is correct :" + e.getMessage());
+            LOGGER.warn("add view from file error make sure the file is correct :" + e.getMessage());
             throw new RuntimeException("put view data to file error", e);
         }
 

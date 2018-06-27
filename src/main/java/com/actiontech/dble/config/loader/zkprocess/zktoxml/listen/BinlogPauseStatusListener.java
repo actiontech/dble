@@ -15,7 +15,6 @@ import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.BinlogPause
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkDataImpl;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkDirectoryImpl;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.manager.response.ShowBinlogStatus;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
@@ -63,7 +62,7 @@ public class BinlogPauseStatusListener extends ZkMultiLoader implements NotifySe
                 ZKUtils.createTempNode(KVPathUtil.getBinlogPauseInstance(), myID, String.valueOf(isPaused).getBytes(StandardCharsets.UTF_8));
             } catch (Exception e) {
                 cleanResource(instancePath);
-                LOGGER.warn(AlarmCode.CORE_ZK_WARN + "create binlogPause instance failed", e);
+                LOGGER.warn("create binlogPause instance failed", e);
             }
         } else if (pauseInfo.getStatus() == BinlogPause.BinlogPauseStatus.OFF) {
             cleanResource(instancePath);
@@ -78,7 +77,7 @@ public class BinlogPauseStatusListener extends ZkMultiLoader implements NotifySe
                 this.getCurator().delete().forPath(instancePath);
             }
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "delete binlogPause instance failed", e);
+            LOGGER.warn("delete binlogPause instance failed", e);
         } finally {
             DbleServer.getInstance().getBackupLocked().compareAndSet(true, false);
         }

@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
-import static com.actiontech.dble.log.alarm.AlarmCode.CORE_CLUSTER_WARN;
 
 /**
  * Created by szf on 2018/1/31.
@@ -70,7 +69,7 @@ public class UDistributeLock {
             renewThread.setName("UCORE_RENEW_" + path);
             renewThread.start();
         } catch (Exception e) {
-            LOGGER.warn(CORE_CLUSTER_WARN + " get lock from ucore error", e);
+            LOGGER.warn(" get lock from ucore error", e);
             errorCount++;
             if (errorCount == UCORE_ERROR_RETURN_COUNT) {
                 throw new RuntimeException(" get lock from ucore error,ucore maybe offline ");

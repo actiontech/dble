@@ -6,7 +6,7 @@
 package com.actiontech.dble.plan.common.ptr;
 
 public class BoolPtr {
-    private boolean b;
+    private volatile boolean b;
 
     public BoolPtr(boolean b) {
         this.b = b;

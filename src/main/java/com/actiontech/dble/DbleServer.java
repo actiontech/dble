@@ -545,7 +545,7 @@ public final class DbleServer {
             if (!"0".equals(index)) {
                 LOGGER.info("reinit datahost: " + node.getHostName() + "  to use datasource index:" + index);
             }
-            node.switchSource(Integer.parseInt(index), true, "reload dnindex");
+            node.switchSource(Integer.parseInt(index), "reload dnindex");
 
         }
     }
@@ -619,7 +619,7 @@ public final class DbleServer {
      * @param dataHost dataHost
      * @param curIndex curIndex
      */
-    public synchronized void saveDataHostIndex(String dataHost, int curIndex) {
+    public synchronized void saveDataHostIndex(String dataHost, int curIndex, boolean useZkSwitch) {
         File file = new File(SystemConfig.getHomePath(), "conf" + File.separator + "dnindex.properties");
         FileOutputStream fileOut = null;
         try {
@@ -642,7 +642,7 @@ public final class DbleServer {
             fileOut = new FileOutputStream(file);
             dnIndexProperties.store(fileOut, "update");
 
-            if (isUseZkSwitch()) {
+            if (useZkSwitch || isUseZkSwitch()) {
                 // save to  zk
                 if (dnIndexLock.acquire(30, TimeUnit.SECONDS)) {
                     try {
@@ -667,7 +667,7 @@ public final class DbleServer {
                 }
             }
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "saveDataNodeIndex err:", e);
+            LOGGER.warn(AlarmCode.WRITE_NODE_INDEX_FAIL + "saveDataNodeIndex err:", e);
         } finally {
             if (fileOut != null) {
                 try {

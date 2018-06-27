@@ -50,9 +50,9 @@ public final class ShowCache {
         FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("PUT", Fields.FIELD_TYPE_LONG);
         FIELDS[i++].setPacketId(++packetId);
-        FIELDS[i] = PacketUtil.getField("LAST_ACCESS", Fields.FIELD_TYPE_LONG);
+        FIELDS[i] = PacketUtil.getField("LAST_ACCESS", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
-        FIELDS[i] = PacketUtil.getField("LAST_PUT", Fields.FIELD_TYPE_LONG);
+        FIELDS[i] = PacketUtil.getField("LAST_PUT", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
         EOF.setPacketId(++packetId);
     }

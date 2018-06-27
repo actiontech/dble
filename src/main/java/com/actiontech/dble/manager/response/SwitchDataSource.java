@@ -33,7 +33,7 @@ public final class SwitchDataSource {
             if (dn != null) {
                 int m = dn.getActiveIndex();
                 int n = (idx == null) ? dn.next(m) : idx;
-                if (dn.switchSource(n, false, "MANAGER")) {
+                if (dn.switchSource(n, "MANAGER")) {
                     ++count;
                 }
                 //TODO:ELSE?

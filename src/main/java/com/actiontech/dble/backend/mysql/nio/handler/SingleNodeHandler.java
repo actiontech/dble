@@ -13,7 +13,6 @@ import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.RouteResultset;
@@ -115,7 +114,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
         session.handleSpecial(rrs, session.getSource().getSchema(), true);
-        LOGGER.warn(AlarmCode.CORE_DATA_HOST_WARN + "Backend connect Error, Connection info:" + conn, e);
+        LOGGER.warn("Backend connect Error, Connection info:" + conn, e);
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
         errPacket.setErrNo(ErrorCode.ER_DATA_HOST_ABORTING_CONNECTION);
@@ -188,6 +187,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             } else {
                 ok.setPacketId(++packetId); // OK_PACKET
             }
+            ok.setMessage(null);
             ok.setServerStatus(source.isAutocommit() ? 2 : 1);
             source.setLastInsertId(ok.getInsertId());
             //handleSpecial

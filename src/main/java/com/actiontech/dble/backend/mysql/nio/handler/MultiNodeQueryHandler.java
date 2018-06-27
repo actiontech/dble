@@ -17,7 +17,6 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XAAutoCommit
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XAAutoRollbackNodesHandler;
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.RouteResultset;
@@ -154,7 +153,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        LOGGER.warn(AlarmCode.CORE_DATA_HOST_WARN + "Backend connect Error, Connection info:" + conn, e);
+        LOGGER.warn("Backend connect Error, Connection info:" + conn, e);
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(1);
         errPacket.setErrNo(ErrorCode.ER_DATA_HOST_ABORTING_CONNECTION);
@@ -247,6 +246,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     source.getLoadDataInfileHandler().clear();
                 } else {
                     ok.setPacketId(++packetId); // OK_PACKET
+                    ok.setMessage(null);
                 }
 
                 ok.setAffectedRows(affectedRows);

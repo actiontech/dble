@@ -11,7 +11,6 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.DruidParser;
@@ -23,6 +22,7 @@ import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.sqlengine.mpp.RangeValue;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
 import com.alibaba.druid.stat.TableStat.Condition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -189,7 +189,7 @@ public class DefaultDruidParser implements DruidParser {
             //it is strict
             if (DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaName, tableName) == null) {
                 String msg = "Table meta '" + schemaName + "." + tableName + "' is lost,PLEASE reload @@metadata";
-                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + msg);
+                LOGGER.warn(msg);
                 throw new SQLException(msg, "HY000", ErrorCode.ERR_HANDLE_DATA);
             }
         }
@@ -201,5 +201,14 @@ public class DefaultDruidParser implements DruidParser {
         RouterUtil.routeToSingleNode(rrs, schemaConfig.getDataNode());
         rrs.setFinishedRoute(true);
         return schema;
+    }
+    // avoid druid error ,default shardingSupport is true and table name like testTable_number will be parser to testTable
+    //eg: testDb.testTb_1->testDb.testTb ,testDb.testTb_1_2->testDb.testTb
+    String statementToString(SQLStatement statement) {
+        StringBuffer buf = new StringBuffer();
+        MySqlOutputVisitor visitor = new MySqlOutputVisitor(buf);
+        visitor.setShardingSupport(false);
+        statement.accept(visitor);
+        return buf.toString();
     }
 }

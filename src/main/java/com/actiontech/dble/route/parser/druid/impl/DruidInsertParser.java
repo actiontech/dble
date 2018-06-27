@@ -150,7 +150,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         int joinKeyIndex = getJoinKeyIndex(schemaInfo, insertStmt, joinKey);
         final String joinKeyVal = insertStmt.getValues().getValues().get(joinKeyIndex).toString();
         String realVal = StringUtil.removeApostrophe(joinKeyVal);
-        final String sql = RouterUtil.removeSchema(insertStmt.toString(), schemaInfo.getSchema());
+        final String sql = RouterUtil.removeSchema(statementToString(insertStmt), schemaInfo.getSchema());
         rrs.setStatement(sql);
         // try to route by ER parent partion key
         RouteResultset theRrs = routeByERParentKey(rrs, tc, realVal);
@@ -208,7 +208,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
 
         RouteResultsetNode[] nodes = new RouteResultsetNode[1];
         nodes[0] = new RouteResultsetNode(tableConfig.getDataNodes().get(nodeIndex), rrs.getSqlType(),
-                                          RouterUtil.removeSchema(insertStmt.toString(), schemaInfo.getSchema()));
+                                          RouterUtil.removeSchema(statementToString(insertStmt), schemaInfo.getSchema()));
 
         // insert into .... on duplicateKey
         //such as :INSERT INTO TABLEName (a,b,c) VALUES (1,2,3) ON DUPLICATE KEY UPDATE b=VALUES(b);
@@ -278,7 +278,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             List<ValuesClause> valuesList = node.getValue();
             insertStmt.setValuesList(valuesList);
             nodes[count] = new RouteResultsetNode(tableConfig.getDataNodes().get(nodeIndex), rrs.getSqlType(),
-                    RouterUtil.removeSchema(insertStmt.toString(), schemaInfo.getSchema()));
+                    RouterUtil.removeSchema(statementToString(insertStmt), schemaInfo.getSchema()));
             count++;
 
         }
@@ -481,5 +481,4 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         }
         return sb.append(")");
     }
-
 }

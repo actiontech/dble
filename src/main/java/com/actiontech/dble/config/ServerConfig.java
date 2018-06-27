@@ -83,7 +83,7 @@ public class ServerConfig {
         try {
             confInit.testConnection(true);
         } catch (ConfigException e) {
-            LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + e.getMessage());
+            LOGGER.warn(AlarmCode.TEST_CONN_FAIL, e);
         }
     }
 
@@ -109,7 +109,7 @@ public class ServerConfig {
         try {
             confInit.testConnection(true);
         } catch (ConfigException e) {
-            LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + e.getMessage());
+            LOGGER.warn(AlarmCode.TEST_CONN_FAIL, e);
         }
     }
 
@@ -251,7 +251,7 @@ public class ServerConfig {
         try {
             if (DbleServer.getInstance().getTmManager().getMetaCount() != 0) {
                 String msg = "There is other session is doing DDL";
-                LOGGER.warn(AlarmCode.CORE_DDL_WARN + msg);
+                LOGGER.warn(msg);
                 throw new SQLNonTransientException(msg, "HY000", ErrorCode.ER_DOING_DDL);
             }
             // old data host
@@ -290,7 +290,8 @@ public class ServerConfig {
                 if (newDataHosts != null) {
                     for (PhysicalDBPool newDbPool : newDataHosts.values()) {
                         if (newDbPool != null && !newDataHostWithoutWR) {
-                            DbleServer.getInstance().saveDataHostIndex(newDbPool.getHostName(), newDbPool.getActiveIndex());
+                            DbleServer.getInstance().saveDataHostIndex(newDbPool.getHostName(), newDbPool.getActiveIndex(),
+                                    this.system.isUseZKSwitch() && DbleServer.getInstance().isUseZK());
                             newDbPool.startHeartbeat();
                         }
                     }
@@ -386,7 +387,7 @@ public class ServerConfig {
         for (PhysicalDBPool npool : newDataHosts.values()) {
             PhysicalDBPool opool = dataHosts.get(npool.getHostName());
             if (opool == null) {
-                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "reload -add- failed, use old datasources ");
+                LOGGER.warn("reload -add- failed, use old datasources ");
                 return true;
             }
 

@@ -10,7 +10,6 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -239,7 +238,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                     }
                     handler.execute();
                 } catch (Exception e) {
-                    LOGGER.warn(AlarmCode.CORE_DDL_WARN + String.valueOf(source) + oriRrs, e);
+                    LOGGER.warn(String.valueOf(source) + oriRrs, e);
                     session.handleSpecial(oriRrs, source.getSchema(), false);
                     source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
                 }

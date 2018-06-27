@@ -9,7 +9,6 @@ import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.config.loader.ucoreprocess.loader.UDdlChildResponse;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.BinlogPause;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.PauseInfo;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.log.alarm.UcoreInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +61,7 @@ public class UOffLineListener implements Runnable {
                 }
             }
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + " server offline binlog status check error");
+            LOGGER.warn(" server offline binlog status check error");
         }
     }
 
@@ -84,7 +83,7 @@ public class UOffLineListener implements Runnable {
             }
 
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + " server offline binlog status check error");
+            LOGGER.warn(" server offline binlog status check error");
         }
     }
 
@@ -115,7 +114,7 @@ public class UOffLineListener implements Runnable {
                 onlinMap = newMap;
                 index = output.getIndex();
             } catch (Exception e) {
-                LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + " error in offline listener ,all ucore connection failure");
+                LOGGER.warn(" error in offline listener ,all ucore connection failure");
             }
         }
     }

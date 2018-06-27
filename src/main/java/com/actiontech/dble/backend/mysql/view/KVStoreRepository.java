@@ -7,7 +7,6 @@ package com.actiontech.dble.backend.mysql.view;
 
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
 import com.alibaba.fastjson.JSONObject;
@@ -80,7 +79,7 @@ public class KVStoreRepository implements Repository {
                 zkConn.setData().forPath(sb.toString(), m.toJSONString().getBytes());
             }
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "create zk node error :　" + e.getMessage());
+            LOGGER.warn("create zk node error :　" + e.getMessage());
         }
 
     }
@@ -95,7 +94,7 @@ public class KVStoreRepository implements Repository {
         try {
             zkConn.delete().forPath(sb.toString());
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "delete zk node error :　" + e.getMessage());
+            LOGGER.warn("delete zk node error :　" + e.getMessage());
         }
     }
 }

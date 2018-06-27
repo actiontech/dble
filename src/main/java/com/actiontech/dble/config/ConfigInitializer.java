@@ -15,7 +15,7 @@ import com.actiontech.dble.config.loader.xml.XMLSchemaLoader;
 import com.actiontech.dble.config.loader.xml.XMLServerLoader;
 import com.actiontech.dble.config.model.*;
 import com.actiontech.dble.config.util.ConfigException;
-import com.actiontech.dble.log.alarm.AlarmCode;
+import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceMySQLHandler;
 import org.apache.log4j.Logger;
 
@@ -123,59 +123,111 @@ public class ConfigInitializer {
     }
 
     public void testConnection(boolean isStart) {
-        if (this.dataNodes != null && this.dataHosts != null) {
-            Set<String> errKeys = new HashSet<>();
-            boolean isConnectivity = true;
-            for (PhysicalDBNode dataNode : dataNodes.values()) {
-                String database = dataNode.getDatabase();
-                PhysicalDBPool pool = dataNode.getDbPool();
-                if (isStart) {
-                    // start for first time, 1.you can set write host as empty
-                    if (pool.getSources() == null || pool.getSources().length == 0) {
-                        continue;
-                    }
-                    DBHostConfig wHost = pool.getSource().getConfig();
-                    // start for first time, 2.you can set write host as yourself
-                    if (("localhost".equalsIgnoreCase(wHost.getIp()) || "127.0.0.1".equalsIgnoreCase(wHost.getIp())) &&
-                            wHost.getPort() == this.system.getServerPort()) {
-                        continue;
-                    }
+        Map<String, List<String>> hostSchemaMap = genHostSchemaMap();
+        Set<String> errKeys = new HashSet<>();
+        boolean isConnectivity = true;
+        for (Map.Entry<String, List<String>> entry : hostSchemaMap.entrySet()) {
+            String hostName = entry.getKey();
+            List<String> schemaList = entry.getValue();
+            PhysicalDBPool pool = dataHosts.get(hostName);
+            if (isStart) {
+                // start for first time, 1.you can set write host as empty
+                if (pool.getSources() == null || pool.getSources().length == 0) {
+                    continue;
                 }
-                for (PhysicalDatasource ds : pool.getAllDataSources()) {
-                    String key = ds.getName() + "_" + database;
-                    if (ds.getConfig().isFake()) {
-                        LOGGER.info(key + " is an empty and faked config,just mark testing failed and skip it");
-                        ds.setTestConnSuccess(false);
-                        continue;
-                    }
-                    try {
-                        boolean isConnected = ds.testConnection(database);
-                        ds.setTestConnSuccess(isConnected);
-                        if (isConnected) {
-                            LOGGER.info("SelfCheck### test " + key + " database connection success ");
-                        } else {
-                            isConnectivity = false;
-                            errKeys.add(key);
-                            LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "SelfCheck### test " + key + " database connection failed ");
-                        }
-                    } catch (IOException e) {
-                        isConnectivity = false;
-                        errKeys.add(key);
-                        LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "test conn " + key + " error:", e);
-                    }
+                DBHostConfig wHost = pool.getSource().getConfig();
+                // start for first time, 2.you can set write host as yourself
+                if (("localhost".equalsIgnoreCase(wHost.getIp()) || "127.0.0.1".equalsIgnoreCase(wHost.getIp())) &&
+                        wHost.getPort() == this.system.getServerPort()) {
+                    continue;
                 }
             }
-            if (!isConnectivity) {
-                StringBuilder sb = new StringBuilder("SelfCheck### there are some datasource connection failed, pls check these datasource:");
-                for (String key : errKeys) {
-                    sb.append("[");
-                    sb.append(key);
-                    sb.append("].");
+            for (PhysicalDatasource ds : pool.getAllDataSources()) {
+                if (ds.getConfig().isFake()) {
+                    LOGGER.info(ds.getName() + " is an empty and faked config,just mark testing failed and skip it");
+                    ds.setTestConnSuccess(false);
+                    continue;
+                }
+                String dataSourceName = ds.getName();
+                try {
+                    BoolPtr isDSConnectedPtr = new BoolPtr(false);
+                    TestTask testDsTask = new TestTask(ds, null, errKeys, isDSConnectedPtr);
+                    testDsTask.start();
+                    testDsTask.join(3000);
+                    boolean isDataSourceConnected = isDSConnectedPtr.get();
+                    ds.setTestConnSuccess(isDataSourceConnected);
+                    if (!isDataSourceConnected) {
+                        isConnectivity = false;
+                        markDataSourceSchemaFail(errKeys, schemaList, dataSourceName);
+                    } else {
+                        for (String schema : schemaList) {
+                            String key = dataSourceName + "_" + schema;
+                            try {
+                                BoolPtr isSchemaConnectedPtr = new BoolPtr(false);
+                                TestTask testSchemaTask = new TestTask(ds, schema, errKeys, isSchemaConnectedPtr);
+                                testSchemaTask.start();
+                                testSchemaTask.join(3000);
+                                boolean isConnected = isSchemaConnectedPtr.get();
+                                if (isConnected) {
+                                    LOGGER.info("SelfCheck### test " + key + " database connection success ");
+                                } else {
+                                    isConnectivity = false;
+                                    errKeys.add(key);
+                                    LOGGER.warn("SelfCheck### test " + key + " database connection failed ");
+                                }
+                            } catch (InterruptedException e) {
+                                isConnectivity = false;
+                                errKeys.add(key);
+                                LOGGER.warn("test conn " + key + " error:", e);
+                            }
+                        }
+                    }
+                } catch (InterruptedException e) {
+                    isConnectivity = false;
+                    markDataSourceSchemaFail(errKeys, schemaList, dataSourceName);
                 }
 
-                throw new ConfigException(sb.toString());
             }
         }
+        if (!isConnectivity) {
+            StringBuilder sb = new StringBuilder("SelfCheck### there are some datasource connection failed, pls check these datasource:");
+            for (String key : errKeys) {
+                sb.append("[");
+                sb.append(key);
+                sb.append("],");
+            }
+
+            throw new ConfigException(sb.toString());
+        }
+    }
+
+    private void markDataSourceSchemaFail(Set<String> errKeys, List<String> schemaList, String dataSourceName) {
+        for (String schema : schemaList) {
+            String key = dataSourceName + "_" + schema;
+            errKeys.add(key);
+            LOGGER.warn("SelfCheck### test " + key + " database connection failed ");
+        }
+    }
+
+    private Map<String, List<String>> genHostSchemaMap() {
+        Map<String, List<String>> hostSchemaMap = new HashMap<>();
+        if (this.dataNodes != null && this.dataHosts != null) {
+            for (Map.Entry<String, PhysicalDBPool> entry : dataHosts.entrySet()) {
+                String hostName = entry.getKey();
+                PhysicalDBPool pool = entry.getValue();
+                for (PhysicalDBNode dataNode : dataNodes.values()) {
+                    if (pool.equals(dataNode.getDbPool())) {
+                        List<String> nodes = hostSchemaMap.get(hostName);
+                        if (nodes == null) {
+                            nodes = new ArrayList<>();
+                            hostSchemaMap.put(hostName, nodes);
+                        }
+                        nodes.add(dataNode.getDatabase());
+                    }
+                }
+            }
+        }
+        return hostSchemaMap;
     }
 
     public SystemConfig getSystem() {
@@ -263,6 +315,32 @@ public class ConfigInitializer {
         return dataHostWithoutWH;
     }
 
+    private static class TestTask extends Thread {
+        private PhysicalDatasource ds;
+        private String schema;
+        private BoolPtr boolPtr;
+        private Set<String> errKeys;
 
+        TestTask(PhysicalDatasource ds, String schema, Set<String> errKeys, BoolPtr boolPtr) {
+            this.ds = ds;
+            this.schema = schema;
+            this.errKeys = errKeys;
+            this.boolPtr = boolPtr;
+        }
+
+        @Override
+        public void run() {
+            try {
+                boolean isConnected = ds.testConnection(schema);
+                boolPtr.set(isConnected);
+            } catch (IOException e) {
+                if (schema != null) {
+                    String key = ds.getName() + "_" + schema;
+                    errKeys.add(key);
+                    LOGGER.warn("test conn " + key + " error:", e);
+                }
+            }
+        }
+    }
 
 }

@@ -74,19 +74,34 @@ public class FileSystemRepository implements Repository {
      * @param schemaName
      * @param viewName
      */
-    public void delete(String schemaName, String[] viewName) {
+    public void delete(String schemaName, String viewName) {
         try {
-            for (String singleName : viewName) {
-                Map<String, String> schemaMap = viewCreateSqlMap.get(schemaName);
-                if (schemaMap == null) {
-                    schemaMap = new HashMap<String, String>();
-                    viewCreateSqlMap.put(schemaName, schemaMap);
+            Map<String, Map<String, String>> tmp = new HashMap<String, Map<String, String>>();
+            for (Map.Entry<String, Map<String, String>> entry : viewCreateSqlMap.entrySet()) {
+                if (entry.getKey().equals(schemaName)) {
+                    Map<String, String> tmpSchemaMap = new HashMap<String, String>();
+                    for (Map.Entry<String, String> schemaEntry : entry.getValue().entrySet()) {
+                        if (!schemaEntry.getKey().equals(viewName.trim())) {
+                            tmpSchemaMap.put(schemaEntry.getKey(), schemaEntry.getValue());
+                        }
+                    }
+                    tmp.put(entry.getKey(), tmpSchemaMap);
+                    break;
                 }
-                schemaMap.remove(singleName.trim());
+                tmp.put(entry.getKey(), entry.getValue());
             }
-            this.writeToFile(mapToJsonString());
+
+            this.writeToFile(mapToJsonString(tmp));
+
+            Map<String, String> schemaMap = viewCreateSqlMap.get(schemaName);
+            if (schemaMap == null) {
+                schemaMap = new HashMap<String, String>();
+                viewCreateSqlMap.put(schemaName, schemaMap);
+            }
+            schemaMap.remove(viewName.trim());
         } catch (Exception e) {
             LOGGER.warn("delete view from file error make sure the file is correct :" + e.getMessage());
+            throw new RuntimeException(e);
         }
     }
 
@@ -99,6 +114,30 @@ public class FileSystemRepository implements Repository {
      */
     public void put(String schemaName, String viewName, String createSql) {
         try {
+            Map<String, Map<String, String>> tmp = new HashMap<String, Map<String, String>>();
+            for (Map.Entry<String, Map<String, String>> entry : viewCreateSqlMap.entrySet()) {
+                if (entry.getKey().equals(schemaName)) {
+                    Map<String, String> tmpSchemaMap = new HashMap<String, String>();
+                    for (Map.Entry<String, String> schemaEntry : entry.getValue().entrySet()) {
+                        tmpSchemaMap.put(schemaEntry.getKey(), schemaEntry.getValue());
+                    }
+                    tmpSchemaMap.put(viewName, createSql);
+                    tmp.put(entry.getKey(), tmpSchemaMap);
+                    break;
+                }
+                tmp.put(entry.getKey(), entry.getValue());
+            }
+
+            Map<String, String> temSchemaMap = tmp.get(schemaName);
+            if (temSchemaMap == null) {
+                temSchemaMap = new HashMap<String, String>();
+                tmp.put(schemaName, temSchemaMap);
+                temSchemaMap.put(viewName, createSql);
+
+            }
+
+
+            this.writeToFile(mapToJsonString(tmp));
             Map<String, String> schemaMap = viewCreateSqlMap.get(schemaName);
             if (schemaMap == null) {
                 schemaMap = new HashMap<String, String>();
@@ -106,9 +145,10 @@ public class FileSystemRepository implements Repository {
             }
             schemaMap.put(viewName, createSql);
 
-            this.writeToFile(mapToJsonString());
+
         } catch (Exception e) {
             LOGGER.warn("add view from file error make sure the file is correct :" + e.getMessage());
+            throw new RuntimeException("put view data to file error", e);
         }
 
     }
@@ -205,9 +245,9 @@ public class FileSystemRepository implements Repository {
      *
      * @return
      */
-    public String mapToJsonString() {
+    public String mapToJsonString(Map<String, Map<String, String>> map) {
         StringBuilder sb = new StringBuilder("[");
-        for (Map.Entry<String, Map<String, String>> schema : viewCreateSqlMap.entrySet()) {
+        for (Map.Entry<String, Map<String, String>> schema : map.entrySet()) {
             Map<String, String> schemaSet = schema.getValue();
             sb.append("{\"schema\":\"").append(schema.getKey()).append("\",\"list\":[");
             for (Map.Entry<String, String> view : schemaSet.entrySet()) {

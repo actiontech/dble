@@ -136,7 +136,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
             newItem.setValue(new SQLIntegerExpr(opTimestamp));
             items.add(newItem);
         }
-        return RouterUtil.removeSchema(update.toString(), schemaInfo.getSchema());
+        return RouterUtil.removeSchema(statementToString(update), schemaInfo.getSchema());
     }
 
     private static boolean columnInExpr(SQLExpr sqlExpr, String colName) throws SQLNonTransientException {

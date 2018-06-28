@@ -161,7 +161,7 @@ public class ViewMeta {
             List<Item> selectList = selNode.getColumnsSelected();
             Set<String> tempMap = new HashSet<String>();
             for (Item t : selectList) {
-                if (t.getAlias() != null) {
+                if (t.getAlias() != null && !"autoalias_scalar".equals(t.getAlias())) {
                     if (tempMap.contains(t.getAlias())) {
                         throw new Exception("Duplicate column name '" + t.getItemName() + "'");
                     }

@@ -39,9 +39,9 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
                 user.setPassword(passwordDecrypt);
                 user.setEncryptPassword(password);
 
-                String benchmark = (String) props.get("benchmark");
-                if (null != benchmark) {
-                    user.setBenchmark(Integer.parseInt(benchmark));
+                String maxCon = (String) props.get("maxCon");
+                if (null != maxCon) {
+                    user.setMaxCon(Integer.parseInt(maxCon));
                 }
 
                 String readOnly = (String) props.get("readOnly");

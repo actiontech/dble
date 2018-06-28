@@ -141,15 +141,7 @@ public class ConfigTest {
         Assert.assertTrue(hostConfig.isTempReadHostAvailable() == true);
     }
 
-    /**
-     * testReadUserBenchmark
-     */
-    @Test
-    public void testReadUserBenchmark() {
-        UserConfig userConfig = this.users.get("test");
-        int benchmark = userConfig.getBenchmark();
-        Assert.assertTrue(benchmark == 11111);
-    }
+    
 
 
     /**

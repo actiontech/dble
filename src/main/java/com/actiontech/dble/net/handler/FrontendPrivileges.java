@@ -38,12 +38,12 @@ public interface FrontendPrivileges {
     Boolean isReadOnly(String user);
 
     /**
-     * get user Benchmark
+     * get user maxCon
      *
      * @param user
      * @return
      */
-    int getBenchmark(String user);
+    int getMaxCon(String user);
 
 
     /**

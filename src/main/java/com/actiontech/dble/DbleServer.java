@@ -129,6 +129,9 @@ public final class DbleServer {
     private Queue<FrontendCommandHandler> concurrentFrontHandlerQueue;
     private Queue<BackendAsyncHandler> concurrentBackHandlerQueue;
 
+
+    private FrontendUserManager userManager = new FrontendUserManager();
+
     private DbleServer() {
         this.config = new ServerConfig();
         scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("TimerScheduler-%d").build());
@@ -429,6 +432,8 @@ public final class DbleServer {
         }
 
         pullVarAndMeta();
+
+        userManager.initForLatest(config.getUsers(), system.getMaxCon());
 
         if (isUseUcore()) {
             tmManager.metaUcoreinit();
@@ -1066,6 +1071,14 @@ public final class DbleServer {
 
     public void setMiManager(PauseDatanodeManager miManager) {
         this.miManager = miManager;
+    }
+
+    public FrontendUserManager getUserManager() {
+        return userManager;
+    }
+
+    public void setUserManager(FrontendUserManager userManager) {
+        this.userManager = userManager;
     }
 
 }

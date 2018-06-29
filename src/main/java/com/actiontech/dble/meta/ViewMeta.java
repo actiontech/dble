@@ -8,15 +8,17 @@ package com.actiontech.dble.meta;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.net.mysql.ErrorPacket;
-import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static com.actiontech.dble.config.ErrorCode.CREATE_VIEW_ERROR;
 
@@ -45,7 +47,7 @@ public class ViewMeta {
 
             SQLSelectStatement selectStatement = (SQLSelectStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(selectSql);
 
-            MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(this.schema, 63, tmManager, true);
+            MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(this.schema, 63, tmManager, false);
             msv.visit(selectStatement.getSelect().getQuery());
             PlanNode selNode = msv.getTableNode();
             selNode.setUpFields();
@@ -85,7 +87,7 @@ public class ViewMeta {
 
             SQLSelectStatement selectStatement = (SQLSelectStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(selectSql);
 
-            MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(this.schema, 63, tmManager, true);
+            MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(this.schema, 63, tmManager, false);
 
             msv.visit(selectStatement.getSelect().getQuery());
             PlanNode selNode = msv.getTableNode();
@@ -166,7 +168,7 @@ public class ViewMeta {
             List<Item> selectList = selNode.getColumnsSelected();
             Set<String> tempMap = new HashSet<String>();
             for (Item t : selectList) {
-                if (t.getAlias() != null && !"autoalias_scalar".equals(t.getAlias())) {
+                if (t.getAlias() != null) {
                     if (tempMap.contains(t.getAlias())) {
                         throw new Exception("Duplicate column name '" + t.getItemName() + "'");
                     }

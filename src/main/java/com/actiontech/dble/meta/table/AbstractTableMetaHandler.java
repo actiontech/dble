@@ -5,8 +5,11 @@
 
 package com.actiontech.dble.meta.table;
 
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
@@ -75,15 +78,22 @@ public abstract class AbstractTableMetaHandler {
 
         @Override
         public void onResult(SQLQueryResult<Map<String, String>> result) {
+            String alertComponentId = "DataNode[" + dataNode + "]:Table[" + tableName + "]";
             if (!result.isSuccess()) {
                 //not thread safe
-                LOGGER.warn(AlarmCode.TABLE_LACK + "Can't get table " + tableName + "'s config from DataNode:" + dataNode + "! Maybe the table is not initialized!");
+                String warnMsg = "Can't get table " + tableName + "'s config from DataNode:" + dataNode + "! Maybe the table is not initialized!";
+                LOGGER.warn(warnMsg);
+                AlertUtil.alertSelfWithTarget(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, warnMsg, alertComponentId, null);
+                ToResolveContainer.TABLE_LACK.add(alertComponentId);
                 if (nodesNumber.decrementAndGet() == 0) {
                     StructureMeta.TableMeta tableMeta = genTableMeta();
                     handlerTable(tableMeta);
                     countdown();
                 }
                 return;
+            } else if (ToResolveContainer.TABLE_LACK.contains(alertComponentId) &&
+                    AlertUtil.alertSelfWithTargetResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, alertComponentId, null)) {
+                ToResolveContainer.TABLE_LACK.remove(alertComponentId);
             }
             String currentSql = result.getResult().get(MYSQL_SHOW_CREATE_TABLE_COLS[1]);
             if (dataNodeTableStructureSQLMap.containsKey(currentSql)) {
@@ -112,8 +122,12 @@ public abstract class AbstractTableMetaHandler {
                     tableMeta = initTableMeta(tableName, sql, version);
                     tableMetas.add(tableMeta);
                 }
+                String alertComponentId = schema + "." + tableName;
                 if (tableMetas.size() > 1) {
                     consistentWarning();
+                } else if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(alertComponentId) &&
+                        AlertUtil.alertSelfWithTargetResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, alertComponentId, null)) {
+                    ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.remove(alertComponentId);
                 }
                 tableMetas.clear();
             } else if (dataNodeTableStructureSQLMap.size() == 1) {
@@ -123,7 +137,10 @@ public abstract class AbstractTableMetaHandler {
         }
 
         private void consistentWarning() {
-            LOGGER.warn(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS + "Table [" + tableName + "] structure are not consistent!");
+            String errorMsg = "Table [" + tableName + "] structure are not consistent in different data node!";
+            LOGGER.warn(errorMsg);
+            AlertUtil.alertSelfWithTarget(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, errorMsg, schema + "." + tableName, null);
+            ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.add(schema + "." + tableName);
             LOGGER.info("Currently detected: ");
             for (Map.Entry<String, List<String>> entry : dataNodeTableStructureSQLMap.entrySet()) {
                 StringBuilder stringBuilder = new StringBuilder();
@@ -142,7 +159,8 @@ public abstract class AbstractTableMetaHandler {
                 return MetaHelper.initTableMeta(table, createStatement, timeStamp);
 
             } catch (Exception e) {
-                LOGGER.warn(AlarmCode.GET_TABLE_META_FAIL + "sql[" + sql + "] parser error:", e);
+                LOGGER.warn("sql[" + sql + "] parser error:", e);
+                AlertUtil.alertSelf(AlarmCode.GET_TABLE_META_FAIL, Alert.AlertLevel.WARN, "sql[" + sql + "] parser error:" + e.getMessage(), null);
                 return null;
             }
         }

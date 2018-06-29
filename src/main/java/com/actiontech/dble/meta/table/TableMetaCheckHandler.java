@@ -5,8 +5,11 @@
 
 package com.actiontech.dble.meta.table;
 
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 
@@ -28,8 +31,15 @@ public class TableMetaCheckHandler extends AbstractTableMetaHandler {
     @Override
     protected void handlerTable(StructureMeta.TableMeta tableMeta) {
         if (tableMeta != null) {
+            String alertComponentId = schema + "." + tableMeta.getTableName();
             if (isTableModify(schema, tableMeta)) {
-                LOGGER.warn(AlarmCode.TABLE_NOT_CONSISTENT_IN_MEMORY + "Table [" + tableMeta.getTableName() + "] are modified by other,Please Check IT!");
+                String errorMsg = "Table [" + tableMeta.getTableName() + "] are modified by other,Please Check IT!";
+                LOGGER.warn(errorMsg);
+                AlertUtil.alertSelfWithTarget(AlarmCode.TABLE_NOT_CONSISTENT_IN_MEMORY, Alert.AlertLevel.WARN, errorMsg, alertComponentId, null);
+                ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY.add(alertComponentId);
+            } else if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY.contains(alertComponentId) &&
+                    AlertUtil.alertSelfWithTargetResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_MEMORY, Alert.AlertLevel.WARN, alertComponentId, null)) {
+                ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY.remove(alertComponentId);
             }
             LOGGER.debug("checking table Table [" + tableMeta.getTableName() + "]");
         }

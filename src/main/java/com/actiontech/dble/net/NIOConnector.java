@@ -6,7 +6,9 @@
 package com.actiontech.dble.net;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.log.alarm.AlarmCode;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +69,8 @@ public final class NIOConnector extends Thread implements SocketConnector {
                     keys.clear();
                 }
             } catch (Exception e) {
-                LOGGER.warn(AlarmCode.NIOCONNECTOR_UNKNOWN_EXCEPTION + name, e);
+                LOGGER.warn(name, e);
+                AlertUtil.alertSelf(AlarmCode.NIOCONNECTOR_UNKNOWN_EXCEPTION, Alert.AlertLevel.WARN, name + e.getMessage(), null);
             }
         }
     }

@@ -24,7 +24,9 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.config.util.DnPropertyUtil;
-import com.actiontech.dble.log.alarm.AlarmCode;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.log.transaction.TxnLogProcessor;
 import com.actiontech.dble.manager.ManagerConnectionFactory;
 import com.actiontech.dble.memory.unsafe.Platform;
@@ -672,7 +674,8 @@ public final class DbleServer {
                 }
             }
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.WRITE_NODE_INDEX_FAIL + "saveDataNodeIndex err:", e);
+            LOGGER.warn("saveDataNodeIndex err:", e);
+            AlertUtil.alertSelf(AlarmCode.WRITE_NODE_INDEX_FAIL, Alert.AlertLevel.WARN, "saveDataNodeIndex err:" + e.getMessage(), null);
         } finally {
             if (fileOut != null) {
                 try {

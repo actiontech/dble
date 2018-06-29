@@ -6,7 +6,9 @@
 package com.actiontech.dble.net;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.log.alarm.AlarmCode;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,7 +137,8 @@ public final class NIOReactor {
                         LOGGER.debug(con + " socket key canceled");
                     }
                 } catch (Exception e) {
-                    LOGGER.warn(AlarmCode.NIOREACTOR_UNKNOWN_EXCEPTION + con, e);
+                    LOGGER.warn("caught err:" + con, e);
+                    AlertUtil.alertSelf(AlarmCode.NIOREACTOR_UNKNOWN_EXCEPTION, Alert.AlertLevel.WARN, "caught err:" + con + e.getMessage(), null);
                 } catch (final Throwable e) {
                     // Catch exceptions such as OOM and close connection if exists
                     //so that the reactor can keep running!
@@ -144,7 +147,8 @@ public final class NIOReactor {
                     if (con != null) {
                         con.close("Bad: " + e);
                     }
-                    LOGGER.warn(AlarmCode.NIOREACTOR_UNKNOWN_THROWABLE + "caught err: ", e);
+                    LOGGER.warn("caught err: ", e);
+                    AlertUtil.alertSelf(AlarmCode.NIOREACTOR_UNKNOWN_THROWABLE, Alert.AlertLevel.WARN, "caught err:" + e.getMessage(), null);
                 }
             }
         }

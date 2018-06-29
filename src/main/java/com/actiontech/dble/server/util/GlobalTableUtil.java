@@ -6,6 +6,7 @@
 package com.actiontech.dble.server.util;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
@@ -15,7 +16,9 @@ import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.log.alarm.AlarmCode;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.util.StringUtil;
@@ -72,15 +75,22 @@ public final class GlobalTableUtil {
     }
 
     public static boolean isInnerColExist(SchemaUtil.SchemaInfo schemaInfo, StructureMeta.TableMeta orgTbMeta) {
+        String alertComponentId = schemaInfo.getSchema() + "." + schemaInfo.getTable();
         for (int i = 0; i < orgTbMeta.getColumnsList().size(); i++) {
             String column = orgTbMeta.getColumnsList().get(i).getName();
-            if (column.equalsIgnoreCase(GLOBAL_TABLE_CHECK_COLUMN))
+            if (column.equalsIgnoreCase(GLOBAL_TABLE_CHECK_COLUMN)) {
+                if (ToResolveContainer.GLOBAL_TABLE_COLUMN_LOST.contains(alertComponentId) &&
+                        AlertUtil.alertSelfWithTargetResolve(AlarmCode.GLOBAL_TABLE_COLUMN_LOST, Alert.AlertLevel.WARN, alertComponentId, null)) {
+                    ToResolveContainer.GLOBAL_TABLE_COLUMN_LOST.remove(alertComponentId);
+                }
                 return true;
+            }
         }
-        String warnStr = AlarmCode.GLOBAL_TABLE_COLUMN_LOST + schemaInfo.getSchema() + "." + schemaInfo.getTable() +
-                " inner column: " + GLOBAL_TABLE_CHECK_COLUMN + " is not exist.";
+        String warnStr = alertComponentId + " inner column: " + GLOBAL_TABLE_CHECK_COLUMN + " is not exist.";
         LOGGER.warn(warnStr);
-        return false; // tableName witout inner column
+        AlertUtil.alertSelfWithTarget(AlarmCode.GLOBAL_TABLE_COLUMN_LOST, Alert.AlertLevel.WARN, warnStr, alertComponentId, null);
+        ToResolveContainer.GLOBAL_TABLE_COLUMN_LOST.add(alertComponentId);
+        return false; // tableName without inner column
     }
 
     private static void getGlobalTable() {
@@ -201,11 +211,16 @@ public final class GlobalTableUtil {
                         } catch (Exception e) {
                             LOGGER.info(row.get(GlobalTableUtil.INNER_COLUMN) + ", " + e.getMessage());
                         } finally {
-                            if (columnsList == null ||
-                                    !columnsList.contains(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
-                                LOGGER.warn(AlarmCode.GLOBAL_TABLE_COLUMN_LOST + map.getDataNode() + "." + map.getTableName() +
-                                        " inner column: " + GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN + " is not exist.");
+                            String alertComponentId = map.getDataNode() + "." + map.getTableName();
+                            if (columnsList == null || !columnsList.contains(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
+                                String warnMsg = alertComponentId + " inner column: " + GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN + " is not exist.";
+                                LOGGER.warn(warnMsg);
+                                AlertUtil.alertSelfWithTarget(AlarmCode.GLOBAL_TABLE_COLUMN_LOST, Alert.AlertLevel.WARN, warnMsg, alertComponentId, null);
                             } else {
+                                if (ToResolveContainer.GLOBAL_TABLE_COLUMN_LOST.contains(alertComponentId) &&
+                                        AlertUtil.alertSelfWithTargetResolve(AlarmCode.GLOBAL_TABLE_COLUMN_LOST, Alert.AlertLevel.WARN, alertComponentId, null)) {
+                                    ToResolveContainer.GLOBAL_TABLE_COLUMN_LOST.remove(alertComponentId);
+                                }
                                 LOGGER.debug("columnsList: " + columnsList);
                             }
                         }

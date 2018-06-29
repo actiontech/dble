@@ -497,8 +497,6 @@ public class XMLSchemaLoader implements SchemaLoader {
         String nodeUrl = node.getAttribute("url");
         String user = node.getAttribute("user");
         String password = node.getAttribute("password");
-        String usingDecrypt = node.getAttribute("usingDecrypt");
-        String weightStr = node.getAttribute("weight");
 
         if (empty(nodeHost) || empty(nodeUrl) || empty(user)) {
             throw new ConfigException(
@@ -506,19 +504,24 @@ public class XMLSchemaLoader implements SchemaLoader {
                             " define error,some attributes of this element is empty: " +
                             nodeHost);
         }
-
         int colonIndex = nodeUrl.indexOf(':');
         String ip = nodeUrl.substring(0, colonIndex).trim();
         int port = Integer.parseInt(nodeUrl.substring(colonIndex + 1).trim());
-
+        String usingDecrypt = node.getAttribute("usingDecrypt");
         String passwordEncryty = DecryptUtil.dbHostDecrypt(usingDecrypt, nodeHost, user, password);
-
+        String weightStr = node.getAttribute("weight");
         int weight = "".equals(weightStr) ? PhysicalDBPool.WEIGHT : Integer.parseInt(weightStr);
 
         DBHostConfig conf = new DBHostConfig(nodeHost, ip, port, nodeUrl, user, passwordEncryty);
         conf.setMaxCon(maxCon);
         conf.setMinCon(minCon);
         conf.setWeight(weight);
+        String id = node.getAttribute("id");
+        if (!"".equals(id)) {
+            conf.setId(id);
+        } else {
+            conf.setId(nodeHost);
+        }
 
         return conf;
     }

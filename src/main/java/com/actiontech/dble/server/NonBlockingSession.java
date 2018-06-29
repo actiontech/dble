@@ -23,7 +23,9 @@ import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.btrace.provider.CostTimeProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.log.alarm.AlarmCode;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.net.handler.FrontendCommandHandler;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
@@ -711,7 +713,8 @@ public class NonBlockingSession implements Session {
                 dn.getConnectionFromSameSource(en.getValue().getSchema(), true, en.getValue(),
                         kill, en.getKey());
             } catch (Exception e) {
-                LOGGER.info(AlarmCode.KILL_BACKEND_CONN_FAIL + "get killer connection failed for " + en.getKey(), e);
+                LOGGER.info("get killer connection failed for " + en.getKey(), e);
+                AlertUtil.alertSelf(AlarmCode.KILL_BACKEND_CONN_FAIL, Alert.AlertLevel.NOTICE, "get killer connection " + en.getKey() + " failed:" + e.getMessage(), null);
                 kill.connectionError(e, null);
             }
         }

@@ -38,10 +38,7 @@ public class ReadHost extends WriteHost {
 
     @Override
     public String toString() {
-        String builder = "ReadHost [weight=" +
-                weight +
-                "]";
-        return builder;
+        return "ReadHost [host=" + host + ", url=" + url + ", password=" + password + ", user=" + user + ", usingDecrypt=" + usingDecrypt + ", weight=" + weight + "]";
     }
 
 }

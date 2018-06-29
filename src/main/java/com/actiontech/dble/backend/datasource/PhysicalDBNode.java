@@ -8,12 +8,16 @@ package com.actiontech.dble.backend.datasource;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
-import com.actiontech.dble.log.alarm.AlarmCode;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.route.RouteResultsetNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class PhysicalDBNode {
     protected static final Logger LOGGER = LoggerFactory.getLogger(PhysicalDBNode.class);
@@ -110,7 +114,10 @@ public class PhysicalDBNode {
             PhysicalDatasource readSource = dbPool.getRWBalanceNode();
             if (!readSource.isAlive()) {
                 String heartbeatError = "the data source[" + readSource.getConfig().getUrl() + "] can't reached, please check the dataHost";
-                LOGGER.warn(AlarmCode.DATA_HOST_CAN_NOT_REACH + heartbeatError);
+                LOGGER.warn(heartbeatError);
+                Map<String, String> labels = new HashMap<>(1);
+                labels.put("data_host", readSource.getHostConfig().getName() + "-" + readSource.getConfig().getHostName());
+                AlertUtil.alert(AlarmCode.DATA_HOST_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", readSource.getConfig().getId(), labels);
                 throw new IOException(heartbeatError);
             }
             return readSource.getConnection(schema, autoCommit);

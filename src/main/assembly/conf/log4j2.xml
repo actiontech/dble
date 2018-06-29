@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="WARN" monitorInterval="30" packages="com.actiontech.dble.log">
+<Configuration status="WARN" monitorInterval="30">
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout pattern="%d [%-5p][%t] %m %throwable{full} (%C:%F:%L) %n"/>
@@ -28,13 +28,11 @@
                 </Delete>
             </DefaultRolloverStrategy>
         </RollingRandomAccessFile>
-		<AlarmAppender name="grpcAppender" />
     </Appenders>
     <Loggers>
         <asyncRoot level="info" includeLocation="true">
             <!--<AppenderRef ref="Console" />-->
             <AppenderRef ref="RollingFile"/>
-			<AppenderRef ref="grpcAppender"/>
         </asyncRoot>
     </Loggers>
 </Configuration>

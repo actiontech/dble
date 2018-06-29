@@ -17,6 +17,7 @@ public class DBHostConfig {
     private int maxCon;
     private int minCon;
     private int weight;
+    private String id;
     private boolean fake = false;
 
     public DBHostConfig(String hostName, String ip, int port, String url,
@@ -92,6 +93,14 @@ public class DBHostConfig {
 
     public void setFake(boolean fake) {
         this.fake = fake;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     @Override

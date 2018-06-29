@@ -51,8 +51,8 @@
                 maxCon CDATA #REQUIRED
                 minCon CDATA #REQUIRED
                 name NMTOKEN #REQUIRED
-                switchType  CDATA #IMPLIED
-                slaveThreshold  CDATA #IMPLIED
+                switchType CDATA #IMPLIED
+                slaveThreshold CDATA #IMPLIED
                 tempReadHostAvailable CDATA #IMPLIED
                 keepOrig CDATA #IMPLIED>
 
@@ -62,6 +62,7 @@
                 host NMTOKEN #REQUIRED
                 password CDATA #REQUIRED
                 user CDATA #REQUIRED
+                id CDATA #IMPLIED
                 usingDecrypt CDATA #IMPLIED>
 
         <!ELEMENT heartbeat (#PCDATA)>
@@ -73,6 +74,7 @@
                 password CDATA #REQUIRED
                 user NMTOKEN #REQUIRED
                 weight CDATA #IMPLIED
+                id CDATA #IMPLIED
                 usingDecrypt CDATA #IMPLIED>
 
 

@@ -3,8 +3,8 @@ package com.actiontech.dble.config.loader.ucoreprocess;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.KVtoXml.UcoreToXml;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
-import com.actiontech.dble.log.alarm.UcoreGrpc;
-import com.actiontech.dble.log.alarm.UcoreInterface;
+import com.actiontech.dble.alarm.UcoreGrpc;
+import com.actiontech.dble.alarm.UcoreInterface;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -324,20 +324,19 @@ public final class ClusterUcoreSender {
     }
 
 
-    public static void alert(UcoreInterface.AlertInput inpurt) throws IOException {
+    public static void alert(UcoreInterface.AlertInput input) {
         try {
-            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).alert(inpurt);
+            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).alert(input);
         } catch (Exception e) {
             for (String ip : UcoreConfig.getInstance().getIpList()) {
                 ManagedChannel channel = null;
                 try {
-                    channel = ManagedChannelBuilder.forAddress(ip,
-                            Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
+                    channel = ManagedChannelBuilder.forAddress(ip, Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
                     stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
-                    stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).alert(inpurt);
+                    stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).alert(input);
                     return;
                 } catch (Exception e2) {
-                    LOGGER.info("connect to ucore error ", e2);
+                    LOGGER.info("alert to ucore error ", e2);
                     if (channel != null) {
                         channel.shutdownNow();
                     }
@@ -346,6 +345,29 @@ public final class ClusterUcoreSender {
         }
     }
 
+    public static boolean alertResolve(UcoreInterface.AlertInput input) {
+        try {
+            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).alertResolve(input);
+            return true;
+        } catch (Exception e) {
+            for (String ip : UcoreConfig.getInstance().getIpList()) {
+                ManagedChannel channel = null;
+                try {
+                    channel = ManagedChannelBuilder.forAddress(ip, Integer.parseInt(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
+                    stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
+                    stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).alertResolve(input);
+                    return true;
+                } catch (Exception e2) {
+                    LOGGER.info("alertResolve to ucore error ", e2);
+                    if (channel != null) {
+                        channel.shutdownNow();
+                    }
+                    return false;
+                }
+            }
+            return false;
+        }
+    }
 
     public static String waitingForAllTheNode(String checkString, String path) {
         Map<String, String> expectedMap = UcoreToXml.getOnlineMap();

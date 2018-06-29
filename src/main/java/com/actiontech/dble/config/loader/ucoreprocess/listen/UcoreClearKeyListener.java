@@ -4,7 +4,7 @@ import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
 import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreXmlLoader;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
-import com.actiontech.dble.log.alarm.UcoreInterface;
+import com.actiontech.dble.alarm.UcoreInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

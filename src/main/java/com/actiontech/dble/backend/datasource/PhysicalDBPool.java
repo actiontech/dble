@@ -11,7 +11,9 @@ import com.actiontech.dble.backend.heartbeat.DBHeartbeat;
 import com.actiontech.dble.backend.mysql.nio.handler.GetConnectionHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.model.DataHostConfig;
-import com.actiontech.dble.log.alarm.AlarmCode;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -512,7 +514,10 @@ public class PhysicalDBPool {
         }
         if (!theNode.isAlive()) {
             String heartbeatError = "the data source[" + theNode.getConfig().getUrl() + "] can't reached, please check the dataHost";
-            LOGGER.warn(AlarmCode.DATA_HOST_CAN_NOT_REACH + heartbeatError);
+            LOGGER.warn(heartbeatError);
+            Map<String, String> labels = new HashMap<>(1);
+            labels.put("data_host", theNode.getHostConfig().getName() + "-" + theNode.getConfig().getHostName());
+            AlertUtil.alert(AlarmCode.DATA_HOST_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", theNode.getConfig().getId(), labels);
             throw new IOException(heartbeatError);
         }
         theNode.getConnection(schema, autocommit, handler, attachment);

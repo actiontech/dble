@@ -6,14 +6,13 @@
 package com.actiontech.dble.backend.mysql.xa.recovery.impl;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.mysql.xa.CoordinatorLogEntry;
-import com.actiontech.dble.backend.mysql.xa.Deserializer;
-import com.actiontech.dble.backend.mysql.xa.Serializer;
-import com.actiontech.dble.backend.mysql.xa.VersionedFile;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.backend.mysql.xa.*;
 import com.actiontech.dble.backend.mysql.xa.recovery.DeserializationException;
 import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,7 +115,9 @@ public class FileSystemRepository implements Repository {
             br = new BufferedReader(isr);
             coordinatorLogEntries = readContent(br);
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.XA_READ_IO_FAIL + "Error in recover", e);
+            LOGGER.warn("Error in recover", e);
+            AlertUtil.alertSelf(AlarmCode.XA_READ_IO_FAIL, Alert.AlertLevel.WARN, "Error in recover:" + e.getMessage(), null);
+
         } finally {
             closeSilently(br);
         }
@@ -141,12 +142,14 @@ public class FileSystemRepository implements Repository {
                     unexpectedEOF);
             // merely return what was read so far...
         } catch (ObjectStreamException unexpectedEOF) {
-            LOGGER.warn(AlarmCode.XA_READ_XA_STREAM_FAIL +
-                            "Unexpected EOF - logfile not closed properly last time?",
-                    unexpectedEOF);
+            LOGGER.warn("Unexpected EOF - logfile not closed properly last time?", unexpectedEOF);
+            AlertUtil.alertSelf(AlarmCode.XA_READ_XA_STREAM_FAIL, Alert.AlertLevel.WARN,
+                    "Unexpected EOF - logfile not closed properly last time?" + unexpectedEOF.getMessage(), null);
             // merely return what was read so far...
         } catch (DeserializationException unexpectedEOF) {
-            LOGGER.warn(AlarmCode.XA_READ_DECODE_FAIL + "Unexpected EOF - logfile not closed properly last time? " + unexpectedEOF);
+            LOGGER.warn("DeserializationException - logfile not closed properly last time? ", unexpectedEOF);
+            AlertUtil.alertSelf(AlarmCode.XA_READ_DECODE_FAIL, Alert.AlertLevel.WARN,
+                    "DeserializationException - logfile not closed properly last time? " + unexpectedEOF.getMessage(), null);
         }
         return coordinatorLogEntries;
     }
@@ -196,9 +199,15 @@ public class FileSystemRepository implements Repository {
             }
             rwChannel.force(false);
             file.discardBackupVersion();
+            if (XAStateLog.isWriteAlert()) {
+                boolean resolved = AlertUtil.alertSelfResolve(AlarmCode.XA_WRITE_CHECK_POINT_FAIL, Alert.AlertLevel.WARN, null);
+                XAStateLog.setWriteAlert(resolved);
+            }
             return true;
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.XA_WRITE_CHECK_POINT_FAIL + "Failed to write checkpoint", e);
+            LOGGER.warn("Failed to write checkpoint", e);
+            AlertUtil.alertSelf(AlarmCode.XA_WRITE_CHECK_POINT_FAIL, Alert.AlertLevel.WARN, "Failed to write checkpoint" + e.getMessage(), null);
+            XAStateLog.setWriteAlert(true);
             return false;
         }
     }

@@ -12,7 +12,9 @@ import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.config.model.*;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
-import com.actiontech.dble.log.alarm.AlarmCode;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.route.sequence.handler.DistributedSequenceHandler;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceMySQLHandler;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceTimeHandler;
@@ -83,7 +85,8 @@ public class ServerConfig {
         try {
             confInit.testConnection(true);
         } catch (ConfigException e) {
-            LOGGER.warn(AlarmCode.TEST_CONN_FAIL, e);
+            LOGGER.warn("TestConnection fail", e);
+            AlertUtil.alertSelf(AlarmCode.TEST_CONN_FAIL, Alert.AlertLevel.WARN, "TestConnection fail:" + e.getMessage(), null);
         }
     }
 
@@ -109,7 +112,8 @@ public class ServerConfig {
         try {
             confInit.testConnection(true);
         } catch (ConfigException e) {
-            LOGGER.warn(AlarmCode.TEST_CONN_FAIL, e);
+            LOGGER.warn("TestConnection fail", e);
+            AlertUtil.alertSelf(AlarmCode.TEST_CONN_FAIL, Alert.AlertLevel.WARN, "TestConnection fail:" + e.getMessage(), null);
         }
     }
 

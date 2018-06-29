@@ -23,7 +23,7 @@
         <Class name="com.actiontech.dble.meta.protocol.StructureMeta$TableMeta$Builder"/>
     </Match>
     <Match>
-        <Package name="com.actiontech.dble.log.alarm"/>
+        <Package name="com.actiontech.dble.alarm"/>
     </Match>
     <Match>
         <Class name="com.actiontech.dble.log.AlarmAppender"/>

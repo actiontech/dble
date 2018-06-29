@@ -31,9 +31,10 @@ public class WriteHost {
     protected String password;
     @XmlAttribute(required = true)
     protected String user;
-
     @XmlAttribute
     protected String usingDecrypt;
+    @XmlAttribute
+    protected String id;
 
     private List<ReadHost> readHost;
 
@@ -76,6 +77,15 @@ public class WriteHost {
     public void setUsingDecrypt(String usingDecrypt) {
         this.usingDecrypt = usingDecrypt;
     }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
     public List<ReadHost> getReadHost() {
         if (this.readHost == null) {
             readHost = new ArrayList<>();
@@ -89,7 +99,7 @@ public class WriteHost {
 
     @Override
     public String toString() {
-        String builder = "WriteHost [host=" +
+        return "WriteHost [host=" +
                 host +
                 ", url=" +
                 url +
@@ -102,7 +112,6 @@ public class WriteHost {
                 ", readHost=" +
                 readHost +
                 "]";
-        return builder;
     }
 
 }

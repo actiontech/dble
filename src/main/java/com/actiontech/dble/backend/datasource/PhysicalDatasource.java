@@ -6,6 +6,9 @@
 package com.actiontech.dble.backend.datasource;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.ConMap;
 import com.actiontech.dble.backend.ConQueue;
@@ -17,7 +20,6 @@ import com.actiontech.dble.backend.mysql.nio.handler.NewConnectionRespHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.model.DBHostConfig;
 import com.actiontech.dble.config.model.DataHostConfig;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
@@ -25,7 +27,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -43,6 +47,8 @@ public abstract class PhysicalDatasource {
     private volatile long heartbeatRecoveryTime;
     private final DataHostConfig hostConfig;
     private PhysicalDBPool dbPool;
+    private volatile boolean maxConnAlert = false;
+    private volatile boolean createConnAlert = false;
     private AtomicBoolean dying = new AtomicBoolean(false);
 
     private AtomicLong readCount = new AtomicLong(0);
@@ -282,8 +288,18 @@ public abstract class PhysicalDatasource {
                 // creat new connection
                 this.createNewConnection(simpleHandler, null, schemas[i % schemas.length]);
                 simpleHandler.getBackConn().release();
+                if (createConnAlert) {
+                    Map<String, String> labels = new HashMap<>(1);
+                    labels.put("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                    createConnAlert = !AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", this.getConfig().getId(), labels);
+                }
             } catch (IOException e) {
-                LOGGER.warn(AlarmCode.CREATE_CONN_FAIL + "create connection err ", e);
+                String errMsg = "create connection err ";
+                LOGGER.warn(errMsg, e);
+                Map<String, String> labels = new HashMap<>(1);
+                labels.put("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                AlertUtil.alert(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, errMsg + e.getMessage(), "mysql", this.getConfig().getId(), labels);
+                createConnAlert = true;
             }
         }
     }
@@ -385,11 +401,19 @@ public abstract class PhysicalDatasource {
             int activeCons = this.getActiveCount();
             if (activeCons + 1 > size) {
                 String maxConError = "the max active Connections size can not be max than maxCon for data host[" + this.getHostConfig().getName() + "." + this.getName() + "]";
-                LOGGER.warn(AlarmCode.REACH_MAX_CON + maxConError);
+                LOGGER.warn(maxConError);
+                Map<String, String> labels = new HashMap<>(1);
+                labels.put("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                AlertUtil.alert(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, maxConError, "dble", this.getConfig().getId(), labels);
+                maxConnAlert = true;
                 throw new IOException(maxConError);
             } else { // create connection
-                LOGGER.info("no idle connection in pool,create new connection for " +
-                        this.name + " of schema " + schema);
+                if (maxConnAlert) {
+                    Map<String, String> labels = new HashMap<>(1);
+                    labels.put("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                    maxConnAlert = !AlertUtil.alertResolve(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, "dble", this.getConfig().getId(), labels);
+                }
+                LOGGER.info("no idle connection in pool,create new connection for " + this.name + " of schema " + schema);
                 createNewConnection(handler, attachment, schema);
             }
         }
@@ -401,14 +425,35 @@ public abstract class PhysicalDatasource {
             int activeCons = this.getActiveCount(); // the max active
             if (activeCons + 1 > size) {
                 String maxConError = "the max active Connections size can not be max than maxCon data host[" + this.getHostConfig().getName() + "." + this.getName() + "]";
-                LOGGER.warn(AlarmCode.REACH_MAX_CON + maxConError);
+                LOGGER.warn(maxConError);
+                Map<String, String> labels = new HashMap<>(1);
+                labels.put("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                AlertUtil.alert(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, maxConError, "dble", this.getConfig().getId(), labels);
+                maxConnAlert = true;
                 throw new IOException(maxConError);
             } else { // create connection
-                LOGGER.info(
-                        "no ilde connection in pool,create new connection for " + this.name + " of schema " + schema);
-                NewConnectionRespHandler simpleHandler = new NewConnectionRespHandler();
-                this.createNewConnection(simpleHandler, schema);
-                con = simpleHandler.getBackConn();
+                if (maxConnAlert) {
+                    Map<String, String> labels = new HashMap<>(1);
+                    labels.put("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                    maxConnAlert = !AlertUtil.alertResolve(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, "dble", this.getConfig().getId(), labels);
+                }
+                LOGGER.info("no ilde connection in pool,create new connection for " + this.name + " of schema " + schema);
+                try {
+                    NewConnectionRespHandler simpleHandler = new NewConnectionRespHandler();
+                    this.createNewConnection(simpleHandler, schema);
+                    con = simpleHandler.getBackConn();
+                    if (createConnAlert) {
+                        Map<String, String> labels = new HashMap<>(1);
+                        labels.put("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                        createConnAlert = !AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", this.getConfig().getId(), labels);
+                    }
+                } catch (IOException e) {
+                    Map<String, String> labels = new HashMap<>(1);
+                    labels.put("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                    AlertUtil.alert(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "createNewConn Error" + e.getMessage(), "mysql", this.getConfig().getId(), labels);
+                    createConnAlert = true;
+                    throw e;
+                }
             }
         }
         return takeCon(con, schema);

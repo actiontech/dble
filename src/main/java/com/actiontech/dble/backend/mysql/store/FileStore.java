@@ -9,7 +9,9 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.store.fs.FilePath;
 import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.log.alarm.AlarmCode;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.util.exception.TmpFileException;
 import org.apache.log4j.Logger;
 
@@ -238,7 +240,8 @@ public class FileStore {
                 this.files.add(path.open(mode));
                 this.fileNames.add(path.toString());
             } else {
-                logger.warn(AlarmCode.WRITE_TEMP_RESULT_FAIL + "create file error :", e);
+                logger.warn("create file error :", e);
+                AlertUtil.alertSelf(AlarmCode.WRITE_TEMP_RESULT_FAIL, Alert.AlertLevel.WARN, "create file error:" + e.getMessage(), null);
                 throw e;
             }
         }

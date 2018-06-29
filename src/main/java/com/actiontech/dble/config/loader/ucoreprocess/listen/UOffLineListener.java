@@ -9,7 +9,7 @@ import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.config.loader.ucoreprocess.loader.UDdlChildResponse;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.BinlogPause;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.PauseInfo;
-import com.actiontech.dble.log.alarm.UcoreInterface;
+import com.actiontech.dble.alarm.UcoreInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

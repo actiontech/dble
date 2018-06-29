@@ -50,6 +50,7 @@ public final class XAStateLog {
     private static AtomicInteger batchNum = new AtomicInteger(0);
     private static Set<Long> waitSet = new CopyOnWriteArraySet<>();
     private static ConcurrentMap<Long, Boolean> mapResult = new ConcurrentHashMap<>();
+    private static volatile boolean writeAlert = false;
 
     public static boolean saveXARecoveryLog(String xaTxId, TxState sessionState) {
         CoordinatorLogEntry coordinatorLogEntry = IN_MEMORY_REPOSITORY.get(xaTxId);
@@ -200,4 +201,13 @@ public final class XAStateLog {
             }
         }
     }
+
+    public static void setWriteAlert(boolean writeAlert) {
+        XAStateLog.writeAlert = writeAlert;
+    }
+
+    public static boolean isWriteAlert() {
+        return writeAlert;
+    }
+
 }

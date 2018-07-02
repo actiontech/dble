@@ -43,7 +43,7 @@ public final class ManagerParse {
                     continue;
                 case 'C':
                 case 'c':
-                    return CCheck(stmt,i);
+                    return cCheck(stmt, i);
                 case 'F':
                 case 'f':
                     return fCheck(stmt, i);
@@ -91,7 +91,7 @@ public final class ManagerParse {
         return OTHER;
     }
 
-    private static int CCheck(String stmt, int offset) {
+    private static int cCheck(String stmt, int offset) {
         String thePart = stmt.substring(offset).toUpperCase();
         if (thePart.startsWith("CREATE")) {
             return CREATE_DB;

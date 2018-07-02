@@ -54,9 +54,9 @@ public final class CreateDatabaseHandler {
         }
         Set<String> dataNodes = schema.getAllDataNodes();
 
-        List<String> errMsg = new ArrayList<>();
-        AtomicInteger numberCount = new AtomicInteger(dataNodes.size());
-        for (String dataNode : dataNodes) {
+        final List<String> errMsg = new ArrayList<>();
+        final AtomicInteger numberCount = new AtomicInteger(dataNodes.size());
+        for (final String dataNode : dataNodes) {
             PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
 
             OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(new String[0], new SQLQueryResultListener<SQLQueryResult<Map<String, String>>>() {

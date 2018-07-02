@@ -42,6 +42,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     private final MultiNodeQueryHandler handler;
     private ErrorPacket err;
     private Set<BackendConnection> closedConnSet;
+    private volatile boolean finishedTest = false;
 
     public MultiNodeDdlHandler(RouteResultset rrs, NonBlockingSession session) {
         super(session);
@@ -131,6 +132,9 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     private boolean checkClosedConn(BackendConnection conn) {
         lock.lock();
         try {
+            if (finishedTest) {
+                return true;
+            }
             if (closedConnSet == null) {
                 closedConnSet = new HashSet<>(1);
                 closedConnSet.add(conn);
@@ -236,6 +240,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                     if (session.isPrepared()) {
                         handler.setPrepared(true);
                     }
+                    finishedTest = true;
                     handler.execute();
                 } catch (Exception e) {
                     LOGGER.warn(String.valueOf(source) + oriRrs, e);

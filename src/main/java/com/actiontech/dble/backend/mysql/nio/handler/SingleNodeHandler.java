@@ -54,7 +54,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     private boolean prepared;
     private int fieldCount;
     private List<FieldPacket> fieldPackets = new ArrayList<>();
-    private volatile boolean waitingResponse;
+    private volatile boolean connClosed = false;
     public SingleNodeHandler(RouteResultset rrs, NonBlockingSession session) {
         this.rrs = rrs;
         this.node = rrs.getNodes()[0];
@@ -71,7 +71,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     public void execute() throws Exception {
         startTime = System.currentTimeMillis();
         ServerConnection sc = session.getSource();
-        waitingResponse = true;
+        connClosed = false;
         this.packetId = (byte) session.getPacketId().get();
         final BackendConnection conn = session.getTarget(node);
         node.setRunOnSlave(rrs.getRunOnSlave());
@@ -91,7 +91,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
     private void execute(BackendConnection conn) {
         if (session.closed()) {
-            waitingResponse = false;
             session.clearResources(true);
             return;
         }
@@ -142,9 +141,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         LOGGER.info("execute sql err :" + errMsg + " con:" + conn +
                 " frontend host:" + errHost + "/" + errPort + "/" + errUser);
 
-        if (!waitingResponse) {
-            return;
-        }
         session.releaseConnectionIfSafe(conn, false);
 
         source.setTxInterrupt(errMsg);
@@ -159,7 +155,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         } else {
             errPkg.write(source);
         }
-        waitingResponse = false;
     }
 
 
@@ -198,7 +193,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             boolean multiStatementFlag = session.getIsMultiStatement().get();
             ok.write(source);
             session.multiStatementNextSql(multiStatementFlag);
-            waitingResponse = false;
         }
     }
 
@@ -230,7 +224,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         boolean multiStatementFlag = session.getIsMultiStatement().get();
         source.write(buffer);
         session.multiStatementNextSql(multiStatementFlag);
-        waitingResponse = false;
         if (DbleServer.getInstance().getConfig().getSystem().getUseSqlStat() == 1) {
             if (rrs.getStatement() != null) {
                 netInBytes += rrs.getStatement().getBytes().length;
@@ -349,6 +342,10 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
+        if (connClosed) {
+            return;
+        }
+        connClosed = true;
         LOGGER.warn("Backend connect Closed, reason is [" + reason + "], Connection info:" + conn);
         reason = "Connection {DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
                 ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";

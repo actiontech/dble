@@ -42,6 +42,8 @@ public class VarsExtractorHandler {
             SQLJob sqlJob = new SQLJob(MYSQL_SHOW_VARIABLES, null, resultHandler, ds);
             sqlJob.run();
             waitDone();
+        } else {
+            LOGGER.warn("No Data host is alive, server can not get 'show variables' result");
         }
         return systemVariables;
     }

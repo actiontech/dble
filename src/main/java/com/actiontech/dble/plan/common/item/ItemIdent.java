@@ -20,13 +20,17 @@ public abstract class ItemIdent extends Item {
     protected String tableName;
 
     public ItemIdent(final String dbNameArg, final String tableNameArg, final String fieldNameArg) {
-        this.dbName = dbNameArg;
         String tempTableName;
+        String tempDbName;
         if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             tempTableName = tableNameArg == null ? null : tableNameArg.toLowerCase();
+            tempDbName = dbNameArg == null ? null : dbNameArg.toLowerCase();
         } else {
             tempTableName = tableNameArg;
+            tempDbName = dbNameArg;
         }
+
+        this.dbName = tempDbName;
         this.tableName = tempTableName;
         this.itemName = fieldNameArg;
         this.withUnValAble = true;

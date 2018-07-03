@@ -89,7 +89,7 @@ public class UnionHandler extends BaseDMLHandler {
             Item sel = selects.get(i);
             fp.setName(sel.getItemName().getBytes());
             fp.setDb(null);
-            fp.setTable(sel.getTableName().getBytes());
+            fp.setTable(sel.getTableName() == null ? null : sel.getTableName().getBytes());
             fp.setOrgTable(null);
         }
     }

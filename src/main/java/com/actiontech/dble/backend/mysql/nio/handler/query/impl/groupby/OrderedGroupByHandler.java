@@ -23,7 +23,8 @@ import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.sumfunc.Aggregator.AggregatorType;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.server.NonBlockingSession;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 1.executed the ordered result of group by 2. group by of Aggregator_distinct
  */
 public class OrderedGroupByHandler extends BaseDMLHandler {
-    private static final Logger LOGGER = Logger.getLogger(OrderedGroupByHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(OrderedGroupByHandler.class);
     private List<Order> groupBys;
     private List<ItemSum> referredSumFunctions;
 

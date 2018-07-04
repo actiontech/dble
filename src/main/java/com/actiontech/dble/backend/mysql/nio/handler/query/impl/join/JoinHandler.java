@@ -23,7 +23,8 @@ import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.util.FairLinkedBlockingDeque;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -37,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author ActionTech
  */
 public class JoinHandler extends OwnThreadDMLHandler {
-    protected Logger logger = Logger.getLogger(JoinHandler.class);
+    protected Logger logger = LoggerFactory.getLogger(JoinHandler.class);
 
     protected boolean isLeftJoin = false;
     protected FairLinkedBlockingDeque<LocalResult> leftQueue;

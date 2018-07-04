@@ -13,7 +13,8 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.server.NonBlockingSession;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
@@ -24,7 +25,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author ActionTech
  */
 public class HavingHandler extends BaseDMLHandler {
-    private static final Logger LOGGER = Logger.getLogger(HavingHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(HavingHandler.class);
 
     public HavingHandler(long id, NonBlockingSession session, Item having) {
         super(id, session);

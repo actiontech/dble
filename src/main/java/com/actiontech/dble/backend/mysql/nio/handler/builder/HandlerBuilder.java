@@ -8,17 +8,17 @@ package com.actiontech.dble.backend.mysql.nio.handler.builder;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeMergeHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandler;
-import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Set;
 
 public class HandlerBuilder {
-    private static Logger logger = Logger.getLogger(HandlerBuilder.class);
+    private static Logger logger = LoggerFactory.getLogger(HandlerBuilder.class);
 
     private PlanNode node;
     private NonBlockingSession session;

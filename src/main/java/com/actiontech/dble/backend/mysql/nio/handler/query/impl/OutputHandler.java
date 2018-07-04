@@ -12,7 +12,8 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -22,7 +23,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * send back to client handler
  */
 public class OutputHandler extends BaseDMLHandler {
-    private static Logger logger = Logger.getLogger(OutputHandler.class);
+    private static Logger logger = LoggerFactory.getLogger(OutputHandler.class);
     protected final ReentrantLock lock;
 
     private byte packetId;
@@ -72,7 +73,7 @@ public class OutputHandler extends BaseDMLHandler {
     public void errorResponse(byte[] err, BackendConnection conn) {
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);
-        logger.info(new StringBuilder().append(conn.toString()).append("|errorResponse()|").append(new String(errPacket.getMessage())));
+        logger.info(conn.toString()+"|errorResponse()|"+new String(errPacket.getMessage()));
         lock.lock();
         try {
             buffer = session.getSource().writeToBuffer(err, buffer);

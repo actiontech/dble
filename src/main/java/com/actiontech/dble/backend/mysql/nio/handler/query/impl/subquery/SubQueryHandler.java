@@ -12,13 +12,14 @@ import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.server.NonBlockingSession;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class SubQueryHandler extends BaseDMLHandler {
-    protected static final Logger LOGGER = Logger.getLogger(SubQueryHandler.class);
+    protected static final Logger LOGGER = LoggerFactory.getLogger(SubQueryHandler.class);
     protected final ReentrantLock lock;
     protected CallBackHandler tempDoneCallBack;
     protected ErrorPacket errorPacket;

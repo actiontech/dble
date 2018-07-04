@@ -17,7 +17,8 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -27,7 +28,7 @@ import java.util.List;
  * for execute Sql,transform the response data to next handler
  */
 public class BaseSelectHandler extends BaseDMLHandler {
-    private static final Logger LOGGER = Logger.getLogger(BaseSelectHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BaseSelectHandler.class);
 
     private final boolean autocommit;
     private volatile int fieldCounts = -1;

@@ -12,8 +12,9 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.DailyRotateLogStore;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.TimeUtil;
-import org.apache.log4j.Logger;
 import org.apache.log4j.helpers.ISO8601DateFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -24,7 +25,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class TxnLogProcessor extends Thread {
-    private static final Logger LOGGER = Logger.getLogger(TxnLogProcessor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TxnLogProcessor.class);
     private final DateFormat dateFormat;
     private BlockingQueue<TxnBinaryLog> queue;
     private DailyRotateLogStore store;

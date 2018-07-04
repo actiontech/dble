@@ -38,7 +38,8 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -50,7 +51,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class BaseHandlerBuilder {
-    private static final Logger LOGGER = Logger.getLogger(BaseHandlerBuilder.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BaseHandlerBuilder.class);
     private static AtomicLong sequenceId = new AtomicLong(0);
     protected NonBlockingSession session;
     protected HandlerBuilder hBuilder;

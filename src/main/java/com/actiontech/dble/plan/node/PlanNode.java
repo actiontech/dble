@@ -20,13 +20,14 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 public abstract class PlanNode {
-    private static final Logger LOGGER = Logger.getLogger(PlanNode.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PlanNode.class);
 
 
     /**

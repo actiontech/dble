@@ -7,13 +7,14 @@ package com.actiontech.dble.backend.mysql.store;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.memory.environment.Hardware;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public final class FileCounter {
-    private static final Logger LOGGER = Logger.getLogger(FileCounter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FileCounter.class);
     private static FileCounter fileCounter = new FileCounter();
 
     private final Lock lock;

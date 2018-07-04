@@ -20,7 +20,8 @@ import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.meta.TempTable;
 import com.actiontech.dble.server.NonBlockingSession;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.List;
@@ -31,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * get the tmp table's result
  */
 public class TempTableHandler extends BaseDMLHandler {
-    private static final Logger LOGGER = Logger.getLogger(TempTableHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TempTableHandler.class);
 
     private final ReentrantLock lock;
     private final TempTable tempTable;

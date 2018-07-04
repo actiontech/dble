@@ -26,7 +26,8 @@ import com.actiontech.dble.plan.common.item.function.sumfunc.Aggregator;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.util.TimeUtil;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author ActionTech
  */
 public class DirectGroupByHandler extends OwnThreadDMLHandler {
-    private static final Logger LOGGER = Logger.getLogger(DirectGroupByHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DirectGroupByHandler.class);
 
     private BlockingQueue<RowDataPacket> queue;
 

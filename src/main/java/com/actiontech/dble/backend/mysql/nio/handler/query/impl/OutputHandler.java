@@ -73,7 +73,7 @@ public class OutputHandler extends BaseDMLHandler {
     public void errorResponse(byte[] err, BackendConnection conn) {
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);
-        logger.info(conn.toString()+"|errorResponse()|"+new String(errPacket.getMessage()));
+        logger.info(conn.toString() + "|errorResponse()|" + new String(errPacket.getMessage()));
         lock.lock();
         try {
             buffer = session.getSource().writeToBuffer(err, buffer);

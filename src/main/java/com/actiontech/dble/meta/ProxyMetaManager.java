@@ -569,9 +569,9 @@ public class ProxyMetaManager {
             TableConfig tbConfig = schemaInfo.getSchemaConfig().getTables().get(tableName);
             if (tbConfig != null) {
                 for (String dataNode : tbConfig.getDataNodes()) {
-                    String alertComponentId = "DataNode[" + dataNode + "]:Table[" + tableName + "]";
-                    if (ToResolveContainer.TABLE_LACK.contains(alertComponentId) && AlertUtil.alertSelfWithTargetResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, alertComponentId, null)) {
-                        ToResolveContainer.TABLE_LACK.remove(alertComponentId);
+                    String tableId = "DataNode[" + dataNode + "]:Table[" + tableName + "]";
+                    if (ToResolveContainer.TABLE_LACK.contains(tableId) && AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
+                        ToResolveContainer.TABLE_LACK.remove(tableId);
                     }
                 }
             }

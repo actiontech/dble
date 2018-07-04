@@ -31,15 +31,15 @@ public class TableMetaCheckHandler extends AbstractTableMetaHandler {
     @Override
     protected void handlerTable(StructureMeta.TableMeta tableMeta) {
         if (tableMeta != null) {
-            String alertComponentId = schema + "." + tableMeta.getTableName();
+            String tableId = schema + "." + tableMeta.getTableName();
             if (isTableModify(schema, tableMeta)) {
                 String errorMsg = "Table [" + tableMeta.getTableName() + "] are modified by other,Please Check IT!";
                 LOGGER.warn(errorMsg);
-                AlertUtil.alertSelfWithTarget(AlarmCode.TABLE_NOT_CONSISTENT_IN_MEMORY, Alert.AlertLevel.WARN, errorMsg, alertComponentId, null);
-                ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY.add(alertComponentId);
-            } else if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY.contains(alertComponentId) &&
-                    AlertUtil.alertSelfWithTargetResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_MEMORY, Alert.AlertLevel.WARN, alertComponentId, null)) {
-                ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY.remove(alertComponentId);
+                AlertUtil.alertSelf(AlarmCode.TABLE_NOT_CONSISTENT_IN_MEMORY, Alert.AlertLevel.WARN, errorMsg, AlertUtil.genSingleLabel("TABLE", tableId));
+                ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY.add(tableId);
+            } else if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY.contains(tableId) &&
+                    AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_MEMORY, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
+                ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY.remove(tableId);
             }
             LOGGER.debug("checking table Table [" + tableMeta.getTableName() + "]");
         }

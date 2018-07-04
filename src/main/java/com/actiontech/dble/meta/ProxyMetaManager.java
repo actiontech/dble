@@ -6,6 +6,10 @@
 package com.actiontech.dble.meta;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.mysql.view.CKVStoreRepository;
@@ -561,7 +565,17 @@ public class ProxyMetaManager {
             if (!isSuccess) {
                 return;
             }
-            StructureMeta.TableMeta tblMeta = MetaHelper.initTableMeta(schemaInfo.getTable(), statement, System.currentTimeMillis());
+            String tableName = schemaInfo.getTable();
+            TableConfig tbConfig = schemaInfo.getSchemaConfig().getTables().get(tableName);
+            if (tbConfig != null) {
+                for (String dataNode : tbConfig.getDataNodes()) {
+                    String alertComponentId = "DataNode[" + dataNode + "]:Table[" + tableName + "]";
+                    if (ToResolveContainer.TABLE_LACK.contains(alertComponentId) && AlertUtil.alertSelfWithTargetResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, alertComponentId, null)) {
+                        ToResolveContainer.TABLE_LACK.remove(alertComponentId);
+                    }
+                }
+            }
+            StructureMeta.TableMeta tblMeta = MetaHelper.initTableMeta(tableName, statement, System.currentTimeMillis());
             addTable(schemaInfo.getSchema(), tblMeta);
         } catch (Exception e) {
             LOGGER.warn("updateMetaData failed,sql is" + statement.toString(), e);

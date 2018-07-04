@@ -6,14 +6,15 @@
 package com.actiontech.dble.backend.mysql.store;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.mysql.store.fs.FilePath;
-import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
-import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.backend.mysql.store.fs.FilePath;
+import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.util.exception.TmpFileException;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -24,7 +25,7 @@ import java.util.List;
 
 public class FileStore {
     private static final String SUFFIX_TEMP_FILE = ".temp.db";
-    private static Logger logger = Logger.getLogger(FileStore.class);
+    private static Logger logger = LoggerFactory.getLogger(FileStore.class);
 
     /**
      * The file path name.

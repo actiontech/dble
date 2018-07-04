@@ -7,13 +7,13 @@ package com.actiontech.dble.plan.optimizer;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.util.SchemaUtil;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -63,7 +63,7 @@ public final class MyOptimizer {
             }
             return node;
         } catch (MySQLOutPutException e) {
-            Logger.getLogger(MyOptimizer.class).error(node.toString(), e);
+            LoggerFactory.getLogger(MyOptimizer.class).error(node.toString(), e);
             throw e;
         }
     }

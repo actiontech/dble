@@ -15,7 +15,8 @@ import com.actiontech.dble.plan.common.item.FieldTypes;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.time.MySQLTime;
 import com.actiontech.dble.plan.common.time.MyTime;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
@@ -96,7 +97,7 @@ public abstract class Field {
         }
     }
 
-    protected static final Logger LOGGER = Logger.getLogger(Field.class);
+    protected static final Logger LOGGER = LoggerFactory.getLogger(Field.class);
 
     protected String name;
     protected String table;

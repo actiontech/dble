@@ -25,7 +25,7 @@ import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,7 +53,7 @@ public final class HandlerTool {
             }
             node.terminate();
         } catch (Exception e) {
-            Logger.getLogger(HandlerTool.class).error("terminate node exception:", e);
+            LoggerFactory.getLogger(HandlerTool.class).error("terminate node exception:", e);
         }
     }
 

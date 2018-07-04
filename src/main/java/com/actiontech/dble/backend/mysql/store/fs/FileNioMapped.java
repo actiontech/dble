@@ -6,7 +6,8 @@
 package com.actiontech.dble.backend.mysql.store.fs;
 
 import com.actiontech.dble.DbleServer;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sun.nio.ch.DirectBuffer;
 
 import java.io.EOFException;
@@ -25,7 +26,7 @@ import java.nio.channels.FileLock;
  */
 class FileNioMapped extends FileBase {
 
-    private static Logger logger = Logger.getLogger(FileNioMapped.class);
+    private static Logger logger = LoggerFactory.getLogger(FileNioMapped.class);
     private static final long GC_TIMEOUT_MS = 10000;
     private final String name;
     private final MapMode mode;

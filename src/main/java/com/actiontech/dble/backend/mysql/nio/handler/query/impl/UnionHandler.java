@@ -13,7 +13,8 @@ import com.actiontech.dble.plan.common.field.FieldUtil;
 import com.actiontech.dble.plan.common.item.FieldTypes;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.server.NonBlockingSession;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author ActionTech
  */
 public class UnionHandler extends BaseDMLHandler {
-    private static final Logger LOGGER = Logger.getLogger(UnionHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(UnionHandler.class);
 
     public UnionHandler(long id, NonBlockingSession session, List<Item> selects, int nodeCount) {
         super(id, session);

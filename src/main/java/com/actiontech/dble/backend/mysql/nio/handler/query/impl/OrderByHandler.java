@@ -19,14 +19,15 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.util.TimeUtil;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
 public class OrderByHandler extends OwnThreadDMLHandler {
-    private static final Logger LOGGER = Logger.getLogger(OrderByHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(OrderByHandler.class);
 
     private List<Order> orders;
     private BlockingQueue<RowDataPacket> queue;

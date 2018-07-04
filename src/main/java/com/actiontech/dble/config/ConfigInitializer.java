@@ -17,7 +17,8 @@ import com.actiontech.dble.config.model.*;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceMySQLHandler;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
@@ -27,7 +28,7 @@ import java.util.*;
  */
 public class ConfigInitializer {
 
-    private static final Logger LOGGER = Logger.getLogger(ConfigInitializer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConfigInitializer.class);
 
     private volatile SystemConfig system;
     private volatile FirewallConfig firewall;

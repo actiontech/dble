@@ -174,7 +174,7 @@ public final class ReloadConfig {
             ClusterUcoreSender.deleteKVTree(UcorePathUtil.getConfStatusPath() + SEPARATOR);
 
             if (errorMsg != null) {
-                writeErrorResult(c, errorMsg);
+                writeErrorResultForCluster(c, errorMsg);
                 return;
             }
             writeOKResult(c);
@@ -222,7 +222,7 @@ public final class ReloadConfig {
             if (sbErrorInfo.length() == 0) {
                 writeOKResult(c);
             } else {
-                writeErrorResult(c, sbErrorInfo.toString());
+                writeErrorResultForCluster(c, sbErrorInfo.toString());
             }
         } catch (Exception e) {
             LOGGER.warn("reload config failure", e);
@@ -254,9 +254,14 @@ public final class ReloadConfig {
         ok.write(c);
     }
 
+    private static void writeErrorResultForCluster(ManagerConnection c, String errorMsg) {
+        String sb = "Reload config failure partially. This failed node reasons:[" + errorMsg + "]";
+        LOGGER.warn(sb);
+        c.writeErrMessage(ErrorCode.ER_YES, sb);
+    }
     private static void writeErrorResult(ManagerConnection c, String errorMsg) {
         String sb = "Reload config failure.The reason is " + errorMsg;
-        LOGGER.info(sb + "." + String.valueOf(c));
+        LOGGER.warn(sb);
         c.writeErrMessage(ErrorCode.ER_YES, sb);
     }
 

@@ -1,10 +1,10 @@
 package com.actiontech.dble.config.loader.ucoreprocess;
 
+import com.actiontech.dble.alarm.UcoreGrpc;
+import com.actiontech.dble.alarm.UcoreInterface;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.KVtoXml.UcoreToXml;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
-import com.actiontech.dble.alarm.UcoreGrpc;
-import com.actiontech.dble.alarm.UcoreInterface;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -389,13 +389,13 @@ public final class ClusterUcoreSender {
         for (Map.Entry<String, String> entry : expectedMap.entrySet()) {
             flag = false;
             for (UKvBean uKvBean : responseList) {
+                String responseNode = last(uKvBean.getKey().split("/"));
                 if (last(entry.getKey().split("/")).
-                        equals(last(uKvBean.getKey().split("/")))) {
+                        equals(responseNode)) {
                     if (checkString != null) {
                         if (!checkString.equals(uKvBean.getValue())) {
                             if (errorMsg != null) {
-                                errorMsg.setLength(0);
-                                errorMsg.append(new StringBuffer(last(uKvBean.getKey().split("/")) + " " + uKvBean.getValue()));
+                                errorMsg.append(responseNode).append(":").append(uKvBean.getValue()).append(";");
                             }
                         }
                     }

@@ -306,7 +306,7 @@ public final class ReloadConfig {
         FirewallConfig newFirewall = serverConfig.getFirewall();
         Map<String, PhysicalDBPool> newDataHosts = serverConfig.getDataHosts();
 
-        if ((loadAllMode & ManagerParseConfig.OPTT_MODE) != 0) {
+        if ((loadAllMode & ManagerParseConfig.OPTS_MODE) == 0) {
             try {
                 loader.testConnection(false);
             } catch (Exception e) {

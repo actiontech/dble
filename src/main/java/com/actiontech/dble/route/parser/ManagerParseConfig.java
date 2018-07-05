@@ -13,7 +13,7 @@ public final class ManagerParseConfig {
     public static final int CONFIG_ALL = 2;
 
     private int configAllMode;
-    public static final int OPTT_MODE = 1;
+    public static final int OPTS_MODE = 1;
     public static final int OPTF_MODE = 2;
 
     public ManagerParseConfig() {
@@ -92,8 +92,8 @@ public final class ManagerParseConfig {
     private int checkSeriesOpt(String stmt, int offset) {
         for (++offset; offset < stmt.length(); ++offset) {
             char c1 = stmt.charAt(offset);
-            if (c1 == 't' || c1 == 'T') {
-                configAllMode = configAllMode | OPTT_MODE;
+            if (c1 == 's' || c1 == 'S') {
+                configAllMode = configAllMode | OPTS_MODE;
             } else if (c1 == 'f' || c1 == 'F') {
                 configAllMode = configAllMode | OPTF_MODE;
             } else {

@@ -87,7 +87,6 @@ public class ServerConfig {
         } catch (ConfigException e) {
             LOGGER.warn("TestConnection fail", e);
             AlertUtil.alertSelf(AlarmCode.TEST_CONN_FAIL, Alert.AlertLevel.WARN, "TestConnection fail:" + e.getMessage(), null);
-            throw e;
         }
     }
 

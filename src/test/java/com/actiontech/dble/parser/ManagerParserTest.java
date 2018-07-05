@@ -252,7 +252,7 @@ public class ManagerParserTest {
         Assert.assertEquals(0, parser1.getMode());
 
         ManagerParseConfig parser2 = new ManagerParseConfig();
-        Assert.assertEquals(ManagerParseConfig.CONFIG_ALL, parser2.parse("reload @@config_all -t", 14));
+        Assert.assertEquals(ManagerParseConfig.CONFIG_ALL, parser2.parse("reload @@config_all -s", 14));
         Assert.assertEquals(1, parser2.getMode());
 
         ManagerParseConfig parser3 = new ManagerParseConfig();
@@ -260,7 +260,7 @@ public class ManagerParserTest {
         Assert.assertEquals(2, parser3.getMode());
 
         ManagerParseConfig parser4 = new ManagerParseConfig();
-        Assert.assertEquals(ManagerParseConfig.CONFIG_ALL, parser4.parse("reload @@config_all -t -f", 14));
+        Assert.assertEquals(ManagerParseConfig.CONFIG_ALL, parser4.parse("reload @@config_all -s -f", 14));
         Assert.assertEquals(3, parser4.getMode());
     }
 

@@ -125,8 +125,10 @@ public class ConfigInitializer {
 
     public void testConnection(boolean isStart) {
         Map<String, List<String>> hostSchemaMap = genHostSchemaMap();
-        Set<String> errKeys = new HashSet<>();
+        Set<String> errNodeKeys = new HashSet<>();
+        Set<String> errSourceKeys = new HashSet<>();
         boolean isConnectivity = true;
+        boolean isAllDataSourceConnected = true;
         for (Map.Entry<String, List<String>> entry : hostSchemaMap.entrySet()) {
             String hostName = entry.getKey();
             List<String> schemaList = entry.getValue();
@@ -145,27 +147,29 @@ public class ConfigInitializer {
             }
             for (PhysicalDatasource ds : pool.getAllDataSources()) {
                 if (ds.getConfig().isFake()) {
-                    LOGGER.info(ds.getName() + " is an empty and faked config,just mark testing failed and skip it");
+                    LOGGER.info("DataHost[" + ds.getHostConfig().getName() + "] contains an empty and faked config,just mark testing failed and skip it");
                     ds.setTestConnSuccess(false);
                     continue;
                 }
-                String dataSourceName = ds.getName();
+                String dataSourceName = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getName() + "]";
                 try {
                     BoolPtr isDSConnectedPtr = new BoolPtr(false);
-                    TestTask testDsTask = new TestTask(ds, null, errKeys, isDSConnectedPtr);
+                    TestTask testDsTask = new TestTask(ds, null, errNodeKeys, isDSConnectedPtr);
                     testDsTask.start();
                     testDsTask.join(3000);
                     boolean isDataSourceConnected = isDSConnectedPtr.get();
                     ds.setTestConnSuccess(isDataSourceConnected);
                     if (!isDataSourceConnected) {
                         isConnectivity = false;
-                        markDataSourceSchemaFail(errKeys, schemaList, dataSourceName);
+                        isAllDataSourceConnected = false;
+                        errSourceKeys.add(dataSourceName);
+                        markDataSourceSchemaFail(errNodeKeys, schemaList, dataSourceName);
                     } else {
                         for (String schema : schemaList) {
-                            String key = dataSourceName + "_" + schema;
+                            String key = dataSourceName + ",schema[" + schema + "]";
                             try {
                                 BoolPtr isSchemaConnectedPtr = new BoolPtr(false);
-                                TestTask testSchemaTask = new TestTask(ds, schema, errKeys, isSchemaConnectedPtr);
+                                TestTask testSchemaTask = new TestTask(ds, schema, errNodeKeys, isSchemaConnectedPtr);
                                 testSchemaTask.start();
                                 testSchemaTask.join(3000);
                                 boolean isConnected = isSchemaConnectedPtr.get();
@@ -173,38 +177,48 @@ public class ConfigInitializer {
                                     LOGGER.info("SelfCheck### test " + key + " database connection success ");
                                 } else {
                                     isConnectivity = false;
-                                    errKeys.add(key);
+                                    errNodeKeys.add(key);
                                     LOGGER.warn("SelfCheck### test " + key + " database connection failed ");
                                 }
                             } catch (InterruptedException e) {
                                 isConnectivity = false;
-                                errKeys.add(key);
+                                errNodeKeys.add(key);
                                 LOGGER.warn("test conn " + key + " error:", e);
                             }
                         }
                     }
                 } catch (InterruptedException e) {
                     isConnectivity = false;
-                    markDataSourceSchemaFail(errKeys, schemaList, dataSourceName);
+                    isAllDataSourceConnected = false;
+                    errSourceKeys.add(dataSourceName);
+                    markDataSourceSchemaFail(errNodeKeys, schemaList, dataSourceName);
                 }
 
             }
         }
         if (!isConnectivity) {
-            StringBuilder sb = new StringBuilder("SelfCheck### there are some datasource connection failed, pls check these datasource:");
-            for (String key : errKeys) {
-                sb.append("[");
+            StringBuilder sb = new StringBuilder("SelfCheck### there are some data node connection failed, pls check these datasource:");
+            for (String key : errNodeKeys) {
+                sb.append("{");
                 sb.append(key);
-                sb.append("],");
+                sb.append("},");
             }
-
+            LOGGER.warn(sb.toString());
+        }
+        if (!isAllDataSourceConnected) {
+            StringBuilder sb = new StringBuilder("SelfCheck### there are some datasource connection failed, pls check these datasource:");
+            for (String key : errSourceKeys) {
+                sb.append("{");
+                sb.append(key);
+                sb.append("},");
+            }
             throw new ConfigException(sb.toString());
         }
     }
 
     private void markDataSourceSchemaFail(Set<String> errKeys, List<String> schemaList, String dataSourceName) {
         for (String schema : schemaList) {
-            String key = dataSourceName + "_" + schema;
+            String key = dataSourceName + ",schema[" + schema + "]";
             errKeys.add(key);
             LOGGER.warn("SelfCheck### test " + key + " database connection failed ");
         }
@@ -336,7 +350,7 @@ public class ConfigInitializer {
                 boolPtr.set(isConnected);
             } catch (IOException e) {
                 if (schema != null) {
-                    String key = ds.getName() + "_" + schema;
+                    String key = ds.getName() + ",schema[" + schema + "]";
                     errKeys.add(key);
                     LOGGER.warn("test conn " + key + " error:", e);
                 }

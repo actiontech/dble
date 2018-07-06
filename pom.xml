@@ -433,7 +433,7 @@
                             <replacements>
                                 <replacement>
                                     <token>@server-version@</token>
-                                    <value>5.6.29-dble-${project.version}-${git.commit.id}-${timestamp}</value>
+                                    <value>5.6.29-dble-${project.version}-${git.commit.id.abbrev}-${timestamp}</value>
                                 </replacement>
                                 <replacement>
                                     <token>@version-comment@</token>

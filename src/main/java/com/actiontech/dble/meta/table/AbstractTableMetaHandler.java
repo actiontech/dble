@@ -131,6 +131,11 @@ public abstract class AbstractTableMetaHandler {
                 }
                 tableMetas.clear();
             } else if (dataNodeTableStructureSQLMap.size() == 1) {
+                String tableId = schema + "." + tableName;
+                if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(tableId) &&
+                        AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
+                    ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.remove(tableId);
+                }
                 tableMeta = initTableMeta(tableName, dataNodeTableStructureSQLMap.keySet().iterator().next(), version);
             }
             return tableMeta;

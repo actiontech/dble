@@ -1,3 +1,4 @@
+GitVersion @gitcommitid@
 BuildTime  @buildtime@
 MavenVersion @pomversion@
 GitUrl @giturl@

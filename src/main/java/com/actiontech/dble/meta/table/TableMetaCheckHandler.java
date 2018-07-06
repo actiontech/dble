@@ -67,12 +67,12 @@ public class TableMetaCheckHandler extends AbstractTableMetaHandler {
         if (oldTm.equals(tblMetaTmp)) {
             try {
                 StructureMeta.TableMeta test = tmManager.getSyncTableMeta(schema, tbName);
-                return oldTm.equals(test);
+                return !oldTm.equals(test);
             } catch (SQLNonTransientException e) {
                 //someone ddl, skip.
-                return true;
+                return false;
             }
         }
-        return false;
+        return true;
     }
 }

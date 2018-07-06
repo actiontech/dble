@@ -515,8 +515,7 @@ public class PhysicalDBPool {
         if (!theNode.isAlive()) {
             String heartbeatError = "the data source[" + theNode.getConfig().getUrl() + "] can't reached, please check the dataHost";
             LOGGER.warn(heartbeatError);
-            Map<String, String> labels = new HashMap<>(1);
-            labels.put("data_host", theNode.getHostConfig().getName() + "-" + theNode.getConfig().getHostName());
+            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", theNode.getHostConfig().getName() + "-" + theNode.getConfig().getHostName());
             AlertUtil.alert(AlarmCode.DATA_HOST_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", theNode.getConfig().getId(), labels);
             throw new IOException(heartbeatError);
         }

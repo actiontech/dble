@@ -372,8 +372,8 @@ public abstract class PhysicalDatasource {
                         public void connectionError(Throwable e, BackendConnection conn) {
                             Map<String, String> labels = AlertUtil.genSingleLabel("data_host", hostConfig.getName() + "-" + config.getHostName());
                             AlertUtil.alert(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "createNewConn Error" + e.getMessage(), "mysql", config.getId(), labels);
-                            handler.connectionError(e, conn);
                             createConnAlert = true;
+                            handler.connectionError(e, conn);
                         }
 
                         @Override

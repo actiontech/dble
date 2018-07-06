@@ -26,6 +26,7 @@ import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.net.handler.FrontendCommandHandler;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
@@ -340,6 +341,12 @@ public class NonBlockingSession implements Session {
                 multiNodeDdlHandler.execute();
             } catch (Exception e) {
                 LOGGER.info(String.valueOf(source) + rrs, e);
+                try {
+                    DbleServer.getInstance().getTmManager().notifyResponseClusterDDL(rrs.getSchema(), rrs.getTable(), rrs.getSrcStatement(), DDLInfo.DDLStatus.FAILED, true);
+                } catch (Exception ex) {
+                    LOGGER.warn("notifyResponseZKDdl error", e);
+                }
+                DbleServer.getInstance().getTmManager().removeMetaLock(rrs.getSchema(), rrs.getTable());
                 source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
             }
         } else if (ServerParse.SELECT == rrs.getSqlType() && rrs.getGroupByCols() != null) {

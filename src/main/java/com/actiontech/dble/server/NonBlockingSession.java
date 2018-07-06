@@ -547,6 +547,7 @@ public class NonBlockingSession implements Session {
         try {
             handler.execute();
         } catch (Exception e) {
+            source.setLocked(false);
             LOGGER.info(String.valueOf(source) + rrs, e);
             source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
         }

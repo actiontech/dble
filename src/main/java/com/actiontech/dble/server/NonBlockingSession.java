@@ -6,6 +6,9 @@
 package com.actiontech.dble.server;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
@@ -23,9 +26,6 @@ import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.btrace.provider.CostTimeProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.alarm.AlarmCode;
-import com.actiontech.dble.alarm.Alert;
-import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.net.handler.FrontendCommandHandler;
 import com.actiontech.dble.net.mysql.EOFPacket;
@@ -342,7 +342,7 @@ public class NonBlockingSession implements Session {
             } catch (Exception e) {
                 LOGGER.info(String.valueOf(source) + rrs, e);
                 try {
-                    DbleServer.getInstance().getTmManager().notifyResponseClusterDDL(rrs.getSchema(), rrs.getTable(), rrs.getSrcStatement(), DDLInfo.DDLStatus.FAILED, true);
+                    DbleServer.getInstance().getTmManager().notifyResponseClusterDDL(rrs.getSchema(), rrs.getTable(), rrs.getSrcStatement(), DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.UNKNOWN, true);
                 } catch (Exception ex) {
                     LOGGER.warn("notifyResponseZKDdl error", e);
                 }

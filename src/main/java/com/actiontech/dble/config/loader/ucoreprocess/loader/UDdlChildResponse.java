@@ -3,14 +3,13 @@ package com.actiontech.dble.config.loader.ucoreprocess.loader;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterParamCfg;
-import com.actiontech.dble.config.loader.ucoreprocess.*;
+import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
+import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
+import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
+import com.actiontech.dble.config.loader.ucoreprocess.UcoreXmlLoader;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.util.StringUtil;
-import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.statement.SQLDropTableStatement;
-import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
-import com.alibaba.druid.sql.parser.SQLStatementParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,11 +68,8 @@ public class UDdlChildResponse implements UcoreXmlLoader {
 
                 ClusterDelayProvider.delayBeforeUpdateMeta();
                 //to judge the table is be drop
-                SQLStatementParser parser = new MySqlStatementParser(ddlInfo.getSql());
-                SQLStatement statement = parser.parseStatement();
-                if (statement instanceof SQLDropTableStatement) {
-                    DbleServer.getInstance().getTmManager().updateMetaData(ddlInfo.getSchema(), ddlInfo.getSql(),
-                            DDLInfo.DDLStatus.SUCCESS.equals(ddlInfo.getStatus()), false);
+                if (ddlInfo.getType() == DDLInfo.DDLType.DROP_TABLE) {
+                    DbleServer.getInstance().getTmManager().updateMetaData(ddlInfo.getSchema(), ddlInfo.getSql(), DDLInfo.DDLStatus.SUCCESS.equals(ddlInfo.getStatus()), false);
                 } else {
                     //else get the lastest table meta from db
                     DbleServer.getInstance().getTmManager().updateOnetableWithBackData(DbleServer.getInstance().getConfig(), schema, table);

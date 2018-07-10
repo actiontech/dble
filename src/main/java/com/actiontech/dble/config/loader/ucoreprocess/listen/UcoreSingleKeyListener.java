@@ -1,9 +1,9 @@
 package com.actiontech.dble.config.loader.ucoreprocess.listen;
 
+import com.actiontech.dble.alarm.UcoreInterface;
 import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreXmlLoader;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
-import com.actiontech.dble.alarm.UcoreInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,8 +56,7 @@ public class UcoreSingleKeyListener implements Runnable {
                 child.notifyProcess(entry.getValue());
             }
         } catch (Exception e) {
-            LOGGER.warn(" ucore event handle error");
-            e.printStackTrace();
+            LOGGER.warn(" ucore event handle error", e);
         }
     }
 

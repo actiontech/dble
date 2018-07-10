@@ -545,6 +545,7 @@
                                     <extraArgument>-server</extraArgument>
                                     <extraArgument>-XX:MaxPermSize=64M</extraArgument>
                                     <extraArgument>-XX:+AggressiveOpts</extraArgument>
+                                    <extraArgument>-Dfile.encoding=UTF-8</extraArgument>
                                     <!-- 远程JMX -->
                                     <extraArgument>-Dcom.sun.management.jmxremote</extraArgument>
                                     <extraArgument>-Dcom.sun.management.jmxremote.port=1984</extraArgument>

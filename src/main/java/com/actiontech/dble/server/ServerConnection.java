@@ -9,7 +9,6 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.model.UserConfig;
@@ -348,9 +347,9 @@ public class ServerConnection extends FrontendConnection {
                     LOGGER.info(msg);
                     throw new Exception(msg);
                 }
-                DbleServer.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement(), DDLInfo.DDLStatus.INIT);
+                DbleServer.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement());
             } else if (DbleServer.getInstance().isUseUcore()) {
-                DbleServer.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement(), DDLInfo.DDLStatus.INIT);
+                DbleServer.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement());
             }
         } catch (SQLNonTransientException e) {
             throw e;

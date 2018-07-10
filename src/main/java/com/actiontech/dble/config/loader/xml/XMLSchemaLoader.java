@@ -237,6 +237,9 @@ public class XMLSchemaLoader implements SchemaLoader {
             boolean autoIncrement = false;
             if (tableElement.hasAttribute("autoIncrement")) {
                 autoIncrement = Boolean.parseBoolean(tableElement.getAttribute("autoIncrement"));
+                if (autoIncrement && primaryKey == null) {
+                    throw new ConfigException("autoIncrement is true but primaryKey is not setting!");
+                }
             }
             //limit size of the table
             boolean needAddLimit = true;

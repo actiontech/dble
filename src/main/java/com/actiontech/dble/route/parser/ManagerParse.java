@@ -30,6 +30,7 @@ public final class ManagerParse {
     public static final int LOGFILE = 13;
     public static final int PAUSE = 14;
     public static final int RESUME = 15;
+    public static final int CREATE_DB = 16;
 
     public static int parse(String stmt) {
         for (int i = 0; i < stmt.length(); i++) {
@@ -40,6 +41,9 @@ public final class ManagerParse {
                 case '#':
                     i = ParseUtil.comment(stmt, i);
                     continue;
+                case 'C':
+                case 'c':
+                    return cCheck(stmt, i);
                 case 'F':
                 case 'f':
                     return fCheck(stmt, i);
@@ -83,6 +87,14 @@ public final class ManagerParse {
         String thePart = stmt.substring(offset).toUpperCase();
         if (thePart.startsWith("FILE @@")) {
             return CONFIGFILE;
+        }
+        return OTHER;
+    }
+
+    private static int cCheck(String stmt, int offset) {
+        String thePart = stmt.substring(offset).toUpperCase();
+        if (thePart.startsWith("CREATE")) {
+            return CREATE_DB;
         }
         return OTHER;
     }

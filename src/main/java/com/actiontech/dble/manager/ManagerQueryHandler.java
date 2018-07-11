@@ -84,6 +84,9 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
             case ManagerParse.LOGFILE:
                 ShowServerLog.handle(sql, c);
                 break;
+            case ManagerParse.CREATE_DB:
+                CreateDatabaseHandler.handle(sql, c);
+                break;
             default:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
         }

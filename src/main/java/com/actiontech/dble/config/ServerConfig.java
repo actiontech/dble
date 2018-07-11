@@ -109,12 +109,6 @@ public class ServerConfig {
         this.status = RELOAD;
 
         this.lock = new ReentrantLock();
-        try {
-            confInit.testConnection(true);
-        } catch (ConfigException e) {
-            LOGGER.warn("TestConnection fail", e);
-            AlertUtil.alertSelf(AlarmCode.TEST_CONN_FAIL, Alert.AlertLevel.WARN, "TestConnection fail:" + e.getMessage(), null);
-        }
     }
 
     private void waitIfChanging() {

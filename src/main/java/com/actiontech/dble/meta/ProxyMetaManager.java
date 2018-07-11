@@ -6,6 +6,10 @@
 package com.actiontech.dble.meta;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.mysql.view.CKVStoreRepository;
@@ -172,7 +176,7 @@ public class ProxyMetaManager {
                 LOGGER.warn("updateMetaData failed,sql is" + statement.toString(), e);
             } finally {
                 try {
-                    notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
+                    notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.DROP_TABLE, needNotifyOther);
                 } catch (Exception e) {
                     LOGGER.warn("notifyResponseZKDdl error", e);
                 }
@@ -449,15 +453,15 @@ public class ProxyMetaManager {
         }
     }
 
-    public void notifyClusterDDL(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus) throws Exception {
+    public void notifyClusterDDL(String schema, String table, String sql) throws Exception {
         if (DbleServer.getInstance().isUseZK()) {
             CuratorFramework zkConn = ZKUtils.getConnection();
-            DDLInfo ddlInfo = new DDLInfo(schema, sql, ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ddlStatus);
+            DDLInfo ddlInfo = new DDLInfo(schema, sql, ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), DDLInfo.DDLStatus.INIT, DDLInfo.DDLType.UNKNOWN);
             String nodeName = StringUtil.getFullName(schema, table);
             String nodePath = ZKPaths.makePath(KVPathUtil.getDDLPath(), nodeName);
             zkConn.create().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
         } else if (DbleServer.getInstance().isUseUcore()) {
-            DDLInfo ddlInfo = new DDLInfo(schema, sql, UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ddlStatus);
+            DDLInfo ddlInfo = new DDLInfo(schema, sql, UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), DDLInfo.DDLStatus.INIT, DDLInfo.DDLType.UNKNOWN);
             String nodeName = StringUtil.getUFullName(schema, table);
             String ddlPath = UcorePathUtil.getDDLPath(nodeName);
             UDistributeLock lock = new UDistributeLock(ddlPath, ddlInfo.toString());
@@ -473,18 +477,18 @@ public class ProxyMetaManager {
     }
 
 
-    public void notifyResponseClusterDDL(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, boolean needNotifyOther) throws Exception {
+    public void notifyResponseClusterDDL(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, DDLInfo.DDLType ddlType, boolean needNotifyOther) throws Exception {
         if (DbleServer.getInstance().isUseZK()) {
-            notifyResponseZKDdl(schema, table, sql, ddlStatus, needNotifyOther);
+            notifyResponseZKDdl(schema, table, sql, ddlStatus, ddlType, needNotifyOther);
         } else if (DbleServer.getInstance().isUseUcore()) {
             ClusterDelayProvider.delayAfterDdlExecuted();
-            notifyReponseUcoreDDL(schema, table, sql, ddlStatus, needNotifyOther);
+            notifyReponseUcoreDDL(schema, table, sql, ddlStatus, ddlType, needNotifyOther);
         }
     }
 
-    public void notifyResponseZKDdl(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, boolean needNotifyOther) throws Exception {
+    public void notifyResponseZKDdl(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, DDLInfo.DDLType ddlType, boolean needNotifyOther) throws Exception {
         CuratorFramework zkConn = ZKUtils.getConnection();
-        DDLInfo ddlInfo = new DDLInfo(schema, sql, ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ddlStatus);
+        DDLInfo ddlInfo = new DDLInfo(schema, sql, ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ddlStatus, ddlType);
         String nodeName = StringUtil.getFullName(schema, table);
         String nodePath = ZKPaths.makePath(KVPathUtil.getDDLPath(), nodeName);
 
@@ -515,9 +519,9 @@ public class ProxyMetaManager {
      * @param needNotifyOther
      * @throws Exception
      */
-    public void notifyReponseUcoreDDL(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, boolean needNotifyOther) throws Exception {
+    public void notifyReponseUcoreDDL(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, DDLInfo.DDLType ddlType, boolean needNotifyOther) throws Exception {
         String nodeName = StringUtil.getUFullName(schema, table);
-        DDLInfo ddlInfo = new DDLInfo(schema, sql, UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ddlStatus);
+        DDLInfo ddlInfo = new DDLInfo(schema, sql, UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ddlStatus, ddlType);
         ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLInstancePath(nodeName), UcorePathUtil.SUCCESS);
         if (needNotifyOther) {
             try {
@@ -561,13 +565,23 @@ public class ProxyMetaManager {
             if (!isSuccess) {
                 return;
             }
-            StructureMeta.TableMeta tblMeta = MetaHelper.initTableMeta(schemaInfo.getTable(), statement, System.currentTimeMillis());
+            String tableName = schemaInfo.getTable();
+            TableConfig tbConfig = schemaInfo.getSchemaConfig().getTables().get(tableName);
+            if (tbConfig != null) {
+                for (String dataNode : tbConfig.getDataNodes()) {
+                    String tableId = "DataNode[" + dataNode + "]:Table[" + tableName + "]";
+                    if (ToResolveContainer.TABLE_LACK.contains(tableId) && AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
+                        ToResolveContainer.TABLE_LACK.remove(tableId);
+                    }
+                }
+            }
+            StructureMeta.TableMeta tblMeta = MetaHelper.initTableMeta(tableName, statement, System.currentTimeMillis());
             addTable(schemaInfo.getSchema(), tblMeta);
         } catch (Exception e) {
             LOGGER.warn("updateMetaData failed,sql is" + statement.toString(), e);
         } finally {
             try {
-                notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
+                notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.CREATE_TABLE, needNotifyOther);
             } catch (Exception e) {
                 LOGGER.warn("notifyResponseZKDdl error", e);
             }
@@ -637,7 +651,7 @@ public class ProxyMetaManager {
             LOGGER.warn("updateMetaData alterTable failed,sql is" + alterStatement.toString(), e);
         } finally {
             try {
-                notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
+                notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.ALTER_TABLE, needNotifyOther);
             } catch (Exception e) {
                 LOGGER.warn("notifyResponseZKDdl error", e);
             }
@@ -650,7 +664,7 @@ public class ProxyMetaManager {
         SQLExprTableSource exprTableSource = statement.getTableSources().get(0);
         SchemaInfo schemaInfo = getSchemaInfo(schema, exprTableSource);
         try {
-            notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
+            notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.TRUNCATE_TABLE, needNotifyOther);
         } catch (Exception e) {
             LOGGER.warn("notifyResponseZKDdl error", e);
         }
@@ -680,7 +694,7 @@ public class ProxyMetaManager {
                 LOGGER.warn("updateMetaData failed,sql is" + statement.toString(), e);
             } finally {
                 try {
-                    notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
+                    notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.CREATE_INDEX, needNotifyOther);
                 } catch (Exception e) {
                     LOGGER.warn("notifyResponseZKDdl error", e);
                 }
@@ -729,7 +743,7 @@ public class ProxyMetaManager {
             LOGGER.warn("updateMetaData failed,sql is" + dropIndexStatement.toString(), e);
         } finally {
             try {
-                notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, needNotifyOther);
+                notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.DROP_INDEX, needNotifyOther);
             } catch (Exception e) {
                 LOGGER.warn("notifyResponseZKDdl error", e);
             }

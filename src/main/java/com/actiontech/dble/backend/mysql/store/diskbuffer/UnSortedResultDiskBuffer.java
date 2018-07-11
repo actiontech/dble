@@ -8,7 +8,8 @@ package com.actiontech.dble.backend.mysql.store.diskbuffer;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.util.TimeUtil;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -18,7 +19,7 @@ import java.util.List;
  * @author ActionTech
  */
 public class UnSortedResultDiskBuffer extends ResultDiskBuffer {
-    private final Logger logger = Logger.getLogger(UnSortedResultDiskBuffer.class);
+    private final Logger logger = LoggerFactory.getLogger(UnSortedResultDiskBuffer.class);
     /**
      * the tape to store unsorted data
      */

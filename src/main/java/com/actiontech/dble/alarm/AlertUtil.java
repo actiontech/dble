@@ -8,6 +8,7 @@ package com.actiontech.dble.alarm;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public final class AlertUtil {
@@ -25,10 +26,6 @@ public final class AlertUtil {
         }
     }
 
-    public static void alertSelfWithTarget(String code, Alert.AlertLevel level, String desc, String alertComponentId, Map<String, String> labels) {
-        alert.alertSelfWithTarget(code, level, desc, alertComponentId, labels);
-    }
-
     public static void alertSelf(String code, Alert.AlertLevel level, String desc, Map<String, String> labels) {
         alert.alertSelf(code, level, desc, labels);
     }
@@ -44,7 +41,10 @@ public final class AlertUtil {
     public static boolean alertSelfResolve(String code, Alert.AlertLevel level, Map<String, String> labels) {
         return alert.alertSelfResolve(code, level, labels);
     }
-    public static boolean alertSelfWithTargetResolve(String code, Alert.AlertLevel level, String alertComponentId, Map<String, String> labels) {
-        return alert.alertSelfWithTargetResolve(code, level, alertComponentId, labels);
+
+    public static Map<String, String> genSingleLabel(String key, String value) {
+        Map<String, String> labels = new HashMap<>(1);
+        labels.put(key, value);
+        return labels;
     }
 }

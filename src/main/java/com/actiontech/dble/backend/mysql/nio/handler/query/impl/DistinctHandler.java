@@ -20,13 +20,14 @@ import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.server.NonBlockingSession;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class DistinctHandler extends BaseDMLHandler {
-    private static final Logger LOGGER = Logger.getLogger(DistinctHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DistinctHandler.class);
 
     private LocalResult localResult;
     private List<Order> fixedOrders;

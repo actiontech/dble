@@ -21,7 +21,8 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.util.FairLinkedBlockingDeque;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -29,7 +30,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class NotInHandler extends OwnThreadDMLHandler {
-    private static final Logger LOGGER = Logger.getLogger(NotInHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(NotInHandler.class);
 
     private FairLinkedBlockingDeque<LocalResult> leftQueue;
     private FairLinkedBlockingDeque<LocalResult> rightQueue;

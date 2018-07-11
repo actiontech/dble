@@ -234,10 +234,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             //primaryKey used for cache and autoincrement
             String primaryKey = tableElement.hasAttribute("primaryKey") ? tableElement.getAttribute("primaryKey").toUpperCase() : null;
             //if autoIncrement,it will use sequence handler
-            boolean autoIncrement = false;
-            if (tableElement.hasAttribute("autoIncrement")) {
-                autoIncrement = Boolean.parseBoolean(tableElement.getAttribute("autoIncrement"));
-            }
+            boolean autoIncrement = isAutoIncrement(tableElement, primaryKey);
             //limit size of the table
             boolean needAddLimit = true;
             if (tableElement.hasAttribute("needAddLimit")) {
@@ -301,6 +298,17 @@ public class XMLSchemaLoader implements SchemaLoader {
             }
         }
         return tables;
+    }
+
+    private boolean isAutoIncrement(Element tableElement, String primaryKey) {
+        boolean autoIncrement = false;
+        if (tableElement.hasAttribute("autoIncrement")) {
+            autoIncrement = Boolean.parseBoolean(tableElement.getAttribute("autoIncrement"));
+            if (autoIncrement && primaryKey == null) {
+                throw new ConfigException("autoIncrement is true but primaryKey is not setting!");
+            }
+        }
+        return autoIncrement;
     }
 
     /**

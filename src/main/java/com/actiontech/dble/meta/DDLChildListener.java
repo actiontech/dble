@@ -72,6 +72,10 @@ public class DDLChildListener implements PathChildrenCacheListener {
     }
 
     private void updateMeta(ChildData childData) {
+        String nodeName = childData.getPath().substring(childData.getPath().lastIndexOf("/") + 1);
+        String[] tableInfo = nodeName.split("\\.");
+        final String table = StringUtil.removeBackQuote(tableInfo[1]);
+
         String data = new String(childData.getData(), StandardCharsets.UTF_8);
         LOGGER.info("DDL node " + childData.getPath() + " updated , and data is " + data);
         DDLInfo ddlInfo = new DDLInfo(data);
@@ -81,7 +85,13 @@ public class DDLChildListener implements PathChildrenCacheListener {
         if (DDLStatus.INIT == ddlInfo.getStatus()) {
             return;
         }
-        DbleServer.getInstance().getTmManager().updateMetaData(ddlInfo.getSchema(), ddlInfo.getSql(), DDLStatus.SUCCESS.equals(ddlInfo.getStatus()), false);
+        //to judge the table is be drop
+        if (ddlInfo.getType() == DDLInfo.DDLType.DROP_TABLE) {
+            DbleServer.getInstance().getTmManager().updateMetaData(ddlInfo.getSchema(), ddlInfo.getSql(), DDLInfo.DDLStatus.SUCCESS.equals(ddlInfo.getStatus()), false);
+        } else {
+            //else get the lastest table meta from db
+            DbleServer.getInstance().getTmManager().updateOnetableWithBackData(DbleServer.getInstance().getConfig(), ddlInfo.getSchema(), table);
+        }
     }
 
     private void deleteNode(ChildData childData) {

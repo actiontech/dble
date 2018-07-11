@@ -11,9 +11,6 @@
 
     <properties>
         <app.encoding>UTF-8</app.encoding>
-        <!-- maven.build.timestamp.format>yyyyMMdd</maven.build.timestamp.format>
-            <buildNumber>${maven.build.timestamp}</buildNumber      -->
-        <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
         <version.template.file>version.txt.template</version.template.file>
         <version.file>version.txt</version.file>
         <server.comment>dble Server (ActionTech)</server.comment>
@@ -396,8 +393,12 @@
                             <outputFile>${project.basedir}/${version.file}</outputFile>
                             <replacements>
                                 <replacement>
+                                    <token>@gitcommitid@</token>
+                                    <value>${git.commit.id}</value>
+                                </replacement>
+                                <replacement>
                                     <token>@buildtime@</token>
-                                    <value>${maven.build.timestamp}</value>
+                                    <value>${timestamp}</value>
                                 </replacement>
                                 <replacement>
                                     <token>@pomversion@</token>
@@ -432,7 +433,7 @@
                             <replacements>
                                 <replacement>
                                     <token>@server-version@</token>
-                                    <value>5.6.29-dble-${project.version}-${timestamp}</value>
+                                    <value>5.6.29-dble-${project.version}-${git.commit.id.abbrev}-${timestamp}</value>
                                 </replacement>
                                 <replacement>
                                     <token>@version-comment@</token>
@@ -544,6 +545,7 @@
                                     <extraArgument>-server</extraArgument>
                                     <extraArgument>-XX:MaxPermSize=64M</extraArgument>
                                     <extraArgument>-XX:+AggressiveOpts</extraArgument>
+                                    <extraArgument>-Dfile.encoding=UTF-8</extraArgument>
                                     <!-- 远程JMX -->
                                     <extraArgument>-Dcom.sun.management.jmxremote</extraArgument>
                                     <extraArgument>-Dcom.sun.management.jmxremote.port=1984</extraArgument>
@@ -653,7 +655,19 @@
                     <timestampFormat>yyyyMMddHHmmss</timestampFormat>
                 </configuration>
             </plugin>
-
+            <plugin>
+                <groupId>pl.project13.maven</groupId>
+                <artifactId>git-commit-id-plugin</artifactId>
+                <version>2.2.4</version>
+                <executions>
+                    <execution>
+                        <id>get-the-git-infos</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>

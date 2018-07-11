@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
@@ -79,7 +80,7 @@ public final class ShowBinlogStatus {
     private static Logger logger = LoggerFactory.getLogger(ShowBinlogStatus.class);
     private static AtomicInteger sourceCount;
     private static List<RowDataPacket> rows;
-    private static String errMsg = null;
+    private static volatile String errMsg = null;
 
     public static void execute(ManagerConnection c) {
         boolean isUseZK = DbleServer.getInstance().isUseZK();
@@ -345,7 +346,7 @@ public final class ShowBinlogStatus {
     private static void getQueryResult(final String charset) {
         Collection<PhysicalDBPool> allPools = DbleServer.getInstance().getConfig().getDataHosts().values();
         sourceCount = new AtomicInteger(allPools.size());
-        rows = new ArrayList<>(allPools.size());
+        rows = new CopyOnWriteArrayList<>();
         for (PhysicalDBPool pool : allPools) {
             //if WRITE_RANDOM_NODE ,may the binlog is not ready.
             final PhysicalDatasource source = pool.getSource();

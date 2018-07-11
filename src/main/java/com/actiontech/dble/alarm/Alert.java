@@ -11,10 +11,8 @@ public interface Alert {
     enum AlertLevel {
         NOTICE, WARN, CRITICAL
     }
-    void alertSelfWithTarget(String code, AlertLevel level, String desc, String alertComponentId, Map<String, String> labels);
     void alertSelf(String code, AlertLevel level, String desc, Map<String, String> labels);
     void alert(String code, AlertLevel level, String desc, String alertComponentType, String alertComponentId, Map<String, String> labels);
     boolean alertResolve(String code, AlertLevel level, String alertComponentType, String alertComponentId, Map<String, String> labels);
     boolean alertSelfResolve(String code, AlertLevel level, Map<String, String> labels);
-    boolean alertSelfWithTargetResolve(String code, Alert.AlertLevel level, String alertComponentId, Map<String, String> labels);
 }

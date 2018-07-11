@@ -8,10 +8,6 @@ package com.actiontech.dble.alarm;
 import java.util.Map;
 
 public class NoAlert implements Alert {
-    @Override
-    public void alertSelfWithTarget(String code, AlertLevel level, String desc, String alertComponentId, Map<String, String> labels) {
-
-    }
 
     @Override
     public void alertSelf(String code, AlertLevel level, String desc, Map<String, String> labels) {
@@ -33,8 +29,4 @@ public class NoAlert implements Alert {
         return true;
     }
 
-    @Override
-    public boolean alertSelfWithTargetResolve(String code, AlertLevel level, String alertComponentId, Map<String, String> labels) {
-        return true;
-    }
 }

@@ -78,22 +78,22 @@ public abstract class AbstractTableMetaHandler {
 
         @Override
         public void onResult(SQLQueryResult<Map<String, String>> result) {
-            String alertComponentId = "DataNode[" + dataNode + "]:Table[" + tableName + "]";
+            String tableId = "DataNode[" + dataNode + "]:Table[" + tableName + "]";
             if (!result.isSuccess()) {
                 //not thread safe
                 String warnMsg = "Can't get table " + tableName + "'s config from DataNode:" + dataNode + "! Maybe the table is not initialized!";
                 LOGGER.warn(warnMsg);
-                AlertUtil.alertSelfWithTarget(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, warnMsg, alertComponentId, null);
-                ToResolveContainer.TABLE_LACK.add(alertComponentId);
+                AlertUtil.alertSelf(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, warnMsg, AlertUtil.genSingleLabel("TABLE", tableId));
+                ToResolveContainer.TABLE_LACK.add(tableId);
                 if (nodesNumber.decrementAndGet() == 0) {
                     StructureMeta.TableMeta tableMeta = genTableMeta();
                     handlerTable(tableMeta);
                     countdown();
                 }
                 return;
-            } else if (ToResolveContainer.TABLE_LACK.contains(alertComponentId) &&
-                    AlertUtil.alertSelfWithTargetResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, alertComponentId, null)) {
-                ToResolveContainer.TABLE_LACK.remove(alertComponentId);
+            } else if (ToResolveContainer.TABLE_LACK.contains(tableId) &&
+                    AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
+                ToResolveContainer.TABLE_LACK.remove(tableId);
             }
             String currentSql = result.getResult().get(MYSQL_SHOW_CREATE_TABLE_COLS[1]);
             if (dataNodeTableStructureSQLMap.containsKey(currentSql)) {
@@ -122,15 +122,20 @@ public abstract class AbstractTableMetaHandler {
                     tableMeta = initTableMeta(tableName, sql, version);
                     tableMetas.add(tableMeta);
                 }
-                String alertComponentId = schema + "." + tableName;
+                String tableId = schema + "." + tableName;
                 if (tableMetas.size() > 1) {
                     consistentWarning();
-                } else if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(alertComponentId) &&
-                        AlertUtil.alertSelfWithTargetResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, alertComponentId, null)) {
-                    ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.remove(alertComponentId);
+                } else if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(tableId) &&
+                        AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
+                    ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.remove(tableId);
                 }
                 tableMetas.clear();
             } else if (dataNodeTableStructureSQLMap.size() == 1) {
+                String tableId = schema + "." + tableName;
+                if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(tableId) &&
+                        AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
+                    ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.remove(tableId);
+                }
                 tableMeta = initTableMeta(tableName, dataNodeTableStructureSQLMap.keySet().iterator().next(), version);
             }
             return tableMeta;
@@ -139,7 +144,7 @@ public abstract class AbstractTableMetaHandler {
         private void consistentWarning() {
             String errorMsg = "Table [" + tableName + "] structure are not consistent in different data node!";
             LOGGER.warn(errorMsg);
-            AlertUtil.alertSelfWithTarget(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, errorMsg, schema + "." + tableName, null);
+            AlertUtil.alertSelf(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, errorMsg, AlertUtil.genSingleLabel("TABLE", schema + "." + tableName));
             ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.add(schema + "." + tableName);
             LOGGER.info("Currently detected: ");
             for (Map.Entry<String, List<String>> entry : dataNodeTableStructureSQLMap.entrySet()) {

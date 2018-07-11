@@ -27,11 +27,6 @@ public final class UcoreAlert implements Alert {
     }
 
     @Override
-    public void alertSelfWithTarget(String code, AlertLevel level, String desc, String alertComponentId, Map<String, String> labels) {
-        alert(code, level, desc, SOURCE_COMPONENT_TYPE, alertComponentId, labels);
-    }
-
-    @Override
     public void alertSelf(String code, AlertLevel level, String desc, Map<String, String> labels) {
         alert(code, level, desc, SOURCE_COMPONENT_TYPE, SOURCE_COMPONENT_ID, labels);
     }
@@ -79,8 +74,4 @@ public final class UcoreAlert implements Alert {
         return alertResolve(code, level, SOURCE_COMPONENT_TYPE, SOURCE_COMPONENT_ID, labels);
     }
 
-    @Override
-    public boolean alertSelfWithTargetResolve(String code, AlertLevel level, String alertComponentId, Map<String, String> labels) {
-        return alertResolve(code, level, SOURCE_COMPONENT_TYPE, alertComponentId, labels);
-    }
 }

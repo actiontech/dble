@@ -17,7 +17,8 @@ import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.function.sumfunc.Aggregator.AggregatorType;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import org.apache.commons.lang.SerializationUtils;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,7 +55,7 @@ public class GroupResultDiskBuffer extends DistinctResultDiskBuffer {
                     HandlerType.GROUPBY));
             this.sums.add(sum);
         }
-        Logger logger = Logger.getLogger(GroupResultDiskBuffer.class);
+        Logger logger = LoggerFactory.getLogger(GroupResultDiskBuffer.class);
         logger.info("prepare_sum_aggregators");
         prepareSumAggregators(this.sums, true);
     }

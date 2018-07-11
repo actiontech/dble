@@ -16,7 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 
 public class PhysicalDBNode {
@@ -115,8 +114,7 @@ public class PhysicalDBNode {
             if (!readSource.isAlive()) {
                 String heartbeatError = "the data source[" + readSource.getConfig().getUrl() + "] can't reached, please check the dataHost";
                 LOGGER.warn(heartbeatError);
-                Map<String, String> labels = new HashMap<>(1);
-                labels.put("data_host", readSource.getHostConfig().getName() + "-" + readSource.getConfig().getHostName());
+                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", readSource.getHostConfig().getName() + "-" + readSource.getConfig().getHostName());
                 AlertUtil.alert(AlarmCode.DATA_HOST_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", readSource.getConfig().getId(), labels);
                 throw new IOException(heartbeatError);
             }

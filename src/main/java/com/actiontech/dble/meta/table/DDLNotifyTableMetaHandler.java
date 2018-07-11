@@ -2,6 +2,8 @@ package com.actiontech.dble.meta.table;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.meta.protocol.StructureMeta;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Set;
@@ -13,7 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Created by szf on 2018/2/5.
  */
 public class DDLNotifyTableMetaHandler extends AbstractTableMetaHandler {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractTableMetaHandler.class);
     private Lock lock;
     private Condition done;
     private boolean extracting = false;
@@ -63,7 +65,7 @@ public class DDLNotifyTableMetaHandler extends AbstractTableMetaHandler {
                 done.await();
             }
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            LOGGER.warn("InterruptedException", e);
         } finally {
             lock.unlock();
         }

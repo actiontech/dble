@@ -10,7 +10,8 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.server.NonBlockingSession;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -21,7 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author ActionTech
  */
 public class LimitHandler extends BaseDMLHandler {
-    private static final Logger LOGGER = Logger.getLogger(LimitHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LimitHandler.class);
     private long limitIndex;
     private final long limitCount;
     // current index

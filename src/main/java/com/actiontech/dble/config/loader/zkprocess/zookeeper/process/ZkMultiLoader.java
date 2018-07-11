@@ -79,7 +79,7 @@ public class ZkMultiLoader {
                 return true;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.warn("checkPathExists " + path + "Exception ", e);
         }
         return false;
     }

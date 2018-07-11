@@ -20,7 +20,8 @@ import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.Map.Entry;
@@ -35,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author ActionTech
  */
 public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
-    private static final Logger LOGGER = Logger.getLogger(MultiNodeMergeHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeMergeHandler.class);
 
     private final int queueSize;
     private final ReentrantLock lock;

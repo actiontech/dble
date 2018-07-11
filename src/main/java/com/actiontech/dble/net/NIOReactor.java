@@ -163,7 +163,11 @@ public final class NIOReactor {
                     ((NIOSocketWR) c.getSocketWR()).register(finalSelector);
                     c.register();
                 } catch (Exception e) {
-                    c.close("register err" + e.toString());
+                    if (c instanceof FrontendConnection) {
+                        c.close("register err" + e.toString());
+                    } else if (c instanceof BackendAIOConnection) {
+                        ((BackendAIOConnection) c).onConnectFailed(e);
+                    }
                     LOGGER.warn("register err", e);
                 }
             }

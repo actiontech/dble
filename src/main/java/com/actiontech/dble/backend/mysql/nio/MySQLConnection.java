@@ -605,10 +605,10 @@ public class MySQLConnection extends BackendAIOConnection {
     public void close(String reason) {
         if (!isClosed.get()) {
             innerTerminate(reason);
-            if (this.respHandler != null) {
-                this.respHandler.connectionClose(this, reason);
-                respHandler = null;
-            }
+        }
+        if (this.respHandler != null) {
+            this.respHandler.connectionClose(this, reason);
+            respHandler = null;
         }
     }
 

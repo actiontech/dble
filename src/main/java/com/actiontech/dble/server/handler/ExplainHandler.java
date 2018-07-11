@@ -218,7 +218,7 @@ public final class ExplainHandler {
     }
 
     private static String getAllNodesFromLeaf(DMLResponseHandler handler, Map<String, RefHandlerInfo> refMap, Map<DMLResponseHandler, RefHandlerInfo> handlerMap, Map<String, Integer> nameMap) {
-        DMLResponseHandler nextHandler = skipSendMake(handler.getNextHandler());
+        DMLResponseHandler nextHandler = handler.getNextHandler();
         String rootName = null;
         while (nextHandler != null) {
             RefHandlerInfo child = handlerMap.get(handler);
@@ -241,16 +241,9 @@ public final class ExplainHandler {
                 buildHandlerTree(endHandler, refMap, handlerMap, nameMap, Collections.singleton(childName + "'s RESULTS"));
             }
             handler = nextHandler;
-            nextHandler = skipSendMake(nextHandler.getNextHandler());
+            nextHandler = nextHandler.getNextHandler();
         }
         return rootName;
-    }
-
-    private static DMLResponseHandler skipSendMake(DMLResponseHandler handler) {
-        while (handler instanceof SendMakeHandler) {
-            handler = handler.getNextHandler();
-        }
-        return handler;
     }
 
     private static String genHandlerName(String handlerType, Map<String, Integer> nameMap) {
@@ -278,7 +271,7 @@ public final class ExplainHandler {
         } else if (handler instanceof HavingHandler) {
             return "HAVING_FILTER";
         } else if (handler instanceof SendMakeHandler) {
-            return "RENAME";
+            return "SHUFFLE_FIELD";
         } else if (handler instanceof UnionHandler) {
             return "UNION_ALL";
         } else if (handler instanceof OrderByHandler) {

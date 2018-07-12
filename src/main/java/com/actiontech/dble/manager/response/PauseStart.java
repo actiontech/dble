@@ -6,6 +6,7 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOProcessor;
@@ -25,7 +26,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class PauseStart {
-    private static final Pattern PATTERN_FOR_PAUSE = Pattern.compile("^\\s*pause\\s*@@dataNode\\s*=\\s*'([a-zA-Z_0-9,]+)'\\s*and\\s*timeout\\s*=\\s*([0-9]+)\\s*$", 2);
+    private static final Pattern PATTERN_FOR_PAUSE = Pattern.compile("^\\s*pause\\s*@@dataNode\\s*=\\s*'([a-zA-Z_0-9,]+)'\\s*and\\s*timeout\\s*=\\s*([0-9]+)\\s*$", Pattern.CASE_INSENSITIVE);
     private static final OkPacket OK = new OkPacket();
     private static final Logger LOGGER = LoggerFactory.getLogger(PauseStart.class);
 
@@ -44,7 +45,7 @@ public final class PauseStart {
 
         Matcher ma = PATTERN_FOR_PAUSE.matcher(sql);
         if (!ma.matches()) {
-            c.writeErrMessage(1105, "The sql did not match pause @@dataNode 'dn......' and timeout = ([0-9]+)");
+            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql did not match pause @@dataNode ='dn......' and timeout = ([0-9]+)");
             return;
         }
         String dataNode = ma.group(1);
@@ -52,7 +53,7 @@ public final class PauseStart {
         //check dataNodes
         for (String singleDn : dataNodes) {
             if (DbleServer.getInstance().getConfig().getDataNodes().get(singleDn) == null) {
-                c.writeErrMessage(1105, "DataNode " + singleDn + " did not exists");
+                c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "DataNode " + singleDn + " did not exists");
                 return;
             }
         }
@@ -60,13 +61,13 @@ public final class PauseStart {
 
         //clusterPauseNotic
         if (!DbleServer.getInstance().getMiManager().clusterPauseNotic(dataNode)) {
-            c.writeErrMessage(1105, "Other node in cluster is pausing");
+            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Other node in cluster is pausing");
             return;
         }
 
 
         if (!DbleServer.getInstance().getMiManager().getIsPausing().compareAndSet(false, true)) {
-            c.writeErrMessage(1003, "Some dataNodes is paused, please resume first");
+            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Some dataNodes is paused, please resume first");
             return;
         }
 

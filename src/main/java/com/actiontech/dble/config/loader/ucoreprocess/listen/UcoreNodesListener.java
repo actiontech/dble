@@ -1,9 +1,10 @@
 package com.actiontech.dble.config.loader.ucoreprocess.listen;
 
 
+import com.actiontech.dble.alarm.UcoreInterface;
 import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
-import com.actiontech.dble.alarm.UcoreInterface;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +35,7 @@ public class UcoreNodesListener implements Runnable {
                         ips.add(output.getIps(i));
                     }
                     UcoreConfig.getInstance().setIpList(ips);
-                    UcoreConfig.getInstance().setIp(String.join(",", ips));
+                    UcoreConfig.getInstance().setIp(StringUtils.join(ips, ','));
                 }
             } catch (Exception e) {
                 LOGGER.warn("error in ucore nodes watch,try for another time");

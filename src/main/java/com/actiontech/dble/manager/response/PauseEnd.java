@@ -6,6 +6,7 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.ClusterParamCfg;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
 import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
@@ -37,12 +38,12 @@ public final class PauseEnd {
                 UKvBean value = ClusterUcoreSender.getKey(UcorePathUtil.getPauseDataNodePath());
                 PauseInfo pauseInfo = new PauseInfo(value.getValue());
                 if (!pauseInfo.getFrom().equals(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) {
-                    c.writeErrMessage(1003, "This node is not the node which start pause");
+                    c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "This node is not the node which start pause");
                     return;
                 }
 
                 if (!DbleServer.getInstance().getMiManager().tryResume()) {
-                    c.writeErrMessage(1003, "There is other connection is resume the dble");
+                    c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "There is other connection is resume the dble");
                     return;
                 }
 
@@ -52,7 +53,7 @@ public final class PauseEnd {
             }
         } else {
             if (!DbleServer.getInstance().getMiManager().tryResume()) {
-                c.writeErrMessage(1003, "There is other connection is resume the dble");
+                c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "There is other connection is resume the dble");
                 return;
             }
         }

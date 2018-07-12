@@ -23,8 +23,8 @@ public class BackEndRecycleRunnable implements Runnable {
 
     @Override
     public void run() {
+        lock.lock();
         try {
-            lock.lock();
             if (backendConnection.isRunning()) {
 
                 if (!condRelease.await(10, TimeUnit.MILLISECONDS)) {

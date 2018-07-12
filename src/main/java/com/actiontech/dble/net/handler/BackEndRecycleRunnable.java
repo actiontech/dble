@@ -23,22 +23,26 @@ public class BackEndRecycleRunnable implements Runnable {
 
     @Override
     public void run() {
-        lock.lock();
         try {
-            if (backendConnection.isRunning()) {
+            lock.lock();
+            try {
+                if (backendConnection.isRunning()) {
 
-                if (!condRelease.await(10, TimeUnit.MILLISECONDS)) {
-                    backendConnection.close("recycle time out");
+                    if (!condRelease.await(10, TimeUnit.MILLISECONDS)) {
+                        backendConnection.close("recycle time out");
+                    } else {
+                        backendConnection.release();
+                    }
                 } else {
                     backendConnection.release();
                 }
-            } else {
-                backendConnection.release();
+            } catch (Exception e) {
+                backendConnection.close("recycle exception");
+            } finally {
+                lock.unlock();
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             backendConnection.close("recycle exception");
-        } finally {
-            lock.unlock();
         }
     }
 

@@ -55,6 +55,9 @@ public class MySQLConnection extends BackendAIOConnection {
     private volatile boolean complexQuery;
     private volatile NonBlockingSession session;
 
+
+    private volatile BackEndRecycleRunnable recycler = null;
+
     private static long initClientFlags() {
         int flag = 0;
         flag |= Capabilities.CLIENT_LONG_PASSWORD;
@@ -501,6 +504,16 @@ public class MySQLConnection extends BackendAIOConnection {
 
     }
 
+    public void setRecycler(BackEndRecycleRunnable recycler) {
+        this.recycler = recycler;
+    }
+
+    public void singal() {
+        if (recycler != null) {
+            recycler.singal();
+        }
+    }
+
     private String getSetSQL(Map<String, String> usrVars, Map<String, String> sysVars, Set<String> toResetSys) {
         //new final var
         List<Pair<String, String>> setVars = new ArrayList<>();
@@ -870,4 +883,7 @@ public class MySQLConnection extends BackendAIOConnection {
             conn.usrVariables = usrVariables;
         }
     }
+
+
+
 }

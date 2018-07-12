@@ -92,6 +92,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(conn.toString() + "'s field is reached.");
         }
+        ((MySQLConnection) conn).setRunning(true);
         if (terminate.get()) {
             return;
         }

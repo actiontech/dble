@@ -92,6 +92,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(conn.toString() + "'s field is reached.");
         }
+        ((MySQLConnection) conn).setRunning(true);
         if (terminate.get()) {
             return;
         }
@@ -124,8 +125,11 @@ public class BaseSelectHandler extends BaseDMLHandler {
             LOGGER.debug(conn.toString() + " 's rowEof is reached.");
         }
         ((MySQLConnection) conn).setRunning(false);
-        if (this.terminate.get())
+        ((MySQLConnection) conn).singal();
+        if (this.terminate.get()) {
+
             return;
+        }
         nextHandler.rowEofResponse(data, this.isLeft, conn);
     }
 
@@ -160,6 +164,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
     @Override
     public void errorResponse(byte[] err, BackendConnection conn) {
         ((MySQLConnection) conn).setRunning(false);
+        ((MySQLConnection) conn).singal();
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);
         String errMsg;

@@ -13,6 +13,7 @@ import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.net.BackendAIOConnection;
+import com.actiontech.dble.net.handler.BackEndRecycleRunnable;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.util.Pair;
@@ -45,7 +46,7 @@ public class MySQLConnection extends BackendAIOConnection {
     private volatile boolean borrowed = false;
     private volatile boolean modifiedSQLExecuted = false;
     private volatile boolean isDDL = false;
-    private volatile boolean isRunning;
+    private volatile boolean isRunning = false;
     private volatile StatusSync statusSync;
     private volatile boolean metaDataSynced = true;
     private volatile TxState xaStatus = TxState.TX_INITIALIZE_STATE;
@@ -53,6 +54,10 @@ public class MySQLConnection extends BackendAIOConnection {
     private volatile boolean autocommit;
     private volatile boolean complexQuery;
     private volatile NonBlockingSession session;
+
+
+    private volatile BackEndRecycleRunnable recycler = null;
+
     private static long initClientFlags() {
         int flag = 0;
         flag |= Capabilities.CLIENT_LONG_PASSWORD;
@@ -499,6 +504,16 @@ public class MySQLConnection extends BackendAIOConnection {
 
     }
 
+    public void setRecycler(BackEndRecycleRunnable recycler) {
+        this.recycler = recycler;
+    }
+
+    public void singal() {
+        if (recycler != null) {
+            recycler.singal();
+        }
+    }
+
     private String getSetSQL(Map<String, String> usrVars, Map<String, String> sysVars, Set<String> toResetSys) {
         //new final var
         List<Pair<String, String>> setVars = new ArrayList<>();
@@ -651,6 +666,10 @@ public class MySQLConnection extends BackendAIOConnection {
         if (this.usrVariables.size() > 0) {
             this.respHandler = null;
             this.close("close for clear usrVariables");
+            return;
+        }
+        if (this.isRunning()) {
+            DbleServer.getInstance().getComplexQueryExecutor().execute(new BackEndRecycleRunnable(this));
             return;
         }
         complexQuery = false;
@@ -864,4 +883,7 @@ public class MySQLConnection extends BackendAIOConnection {
             conn.usrVariables = usrVariables;
         }
     }
+
+
+
 }

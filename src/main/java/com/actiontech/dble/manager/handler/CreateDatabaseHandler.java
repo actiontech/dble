@@ -1,10 +1,13 @@
 package com.actiontech.dble.manager.handler;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
@@ -58,12 +61,22 @@ public final class CreateDatabaseHandler {
         final AtomicInteger numberCount = new AtomicInteger(dataNodes.size());
         for (final String dataNode : dataNodes) {
             PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
-            PhysicalDatasource ds = dn.getDbPool().getSource();
+            final PhysicalDatasource ds = dn.getDbPool().getSource();
+            final String schema = dn.getDatabase();
             OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(new String[0], new SQLQueryResultListener<SQLQueryResult<Map<String, String>>>() {
                 @Override
                 public void onResult(SQLQueryResult<Map<String, String>> result) {
                     if (!result.isSuccess()) {
                         errMsg.add(dataNode);
+                    } else {
+                        String key = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getConfig().getHostName() + "],data_node[" + dataNode + "],schema[" + schema + "]";
+                        if (ToResolveContainer.DATA_NODE_LACK.contains(key)) {
+                            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName());
+                            labels.put("data_node", dataNode);
+                            if (AlertUtil.alertResolve(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "mysql", ds.getConfig().getId(), labels)) {
+                                ToResolveContainer.DATA_NODE_LACK.remove(key);
+                            }
+                        }
                     }
                     numberCount.decrementAndGet();
                 }

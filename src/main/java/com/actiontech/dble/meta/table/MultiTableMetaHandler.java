@@ -64,7 +64,7 @@ public class MultiTableMetaHandler {
     }
 
     private List<String> getSingleTables() {
-        ShowTablesHandler showTablesHandler = new ShowTablesHandler(this, config);
+        SchemaDefaultNodeTablesHandler showTablesHandler = new SchemaDefaultNodeTablesHandler(this, config);
         showTablesHandler.execute();
         singleTableLock.lock();
         try {

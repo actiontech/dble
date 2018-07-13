@@ -33,4 +33,6 @@ public final class AlarmCode {
     public static final String NIOCONNECTOR_UNKNOWN_EXCEPTION = "DBLE_NIOCONNECTOR_UNKNOWN_EXCEPTION";
     public static final String TEST_CONN_FAIL = "DBLE_TEST_CONN_FAIL";
     public static final String KILL_BACKEND_CONN_FAIL = "DBLE_KILL_BACKEND_CONN_FAIL";
+    public static final String HEARTBEAT_FAIL = "DBLE_HEARTBEAT_FAIL"; //Resolve by trigger
+    public static final String DATA_NODE_LACK = "DBLE_DATA_NODE_LACK"; //Resolve by trigger
 }

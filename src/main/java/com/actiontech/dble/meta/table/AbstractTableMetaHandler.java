@@ -5,10 +5,13 @@
 
 package com.actiontech.dble.meta.table;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
+import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
@@ -57,9 +60,18 @@ public abstract class AbstractTableMetaHandler {
                 this.countdown();
                 return;
             }
-            OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLTableStructureListener(dataNode, System.currentTimeMillis()));
-            SQLJob sqlJob = new SQLJob(SQL_PREFIX + tableName, dataNode, resultHandler, false);
-            sqlJob.run();
+            PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
+            PhysicalDatasource ds = dn.getDbPool().getSource();
+            String sql = SQL_PREFIX + tableName;
+            if (ds.isAlive()) {
+                OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLTableStructureListener(dataNode, System.currentTimeMillis(), ds));
+                SQLJob sqlJob = new SQLJob(sql, dataNode, resultHandler, false);
+                sqlJob.run();
+            } else {
+                OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLTableStructureListener(dataNode, System.currentTimeMillis(), null));
+                SQLJob sqlJob = new SQLJob(sql, dataNode, resultHandler, false);
+                sqlJob.run();
+            }
         }
     }
 
@@ -70,15 +82,21 @@ public abstract class AbstractTableMetaHandler {
     private class MySQLTableStructureListener implements SQLQueryResultListener<SQLQueryResult<Map<String, String>>> {
         private String dataNode;
         private long version;
+        private PhysicalDatasource ds;
 
-        MySQLTableStructureListener(String dataNode, long version) {
+        MySQLTableStructureListener(String dataNode, long version, PhysicalDatasource ds) {
             this.dataNode = dataNode;
             this.version = version;
+            this.ds = ds;
         }
 
         @Override
         public void onResult(SQLQueryResult<Map<String, String>> result) {
             String tableId = "DataNode[" + dataNode + "]:Table[" + tableName + "]";
+            String key = null;
+            if (ds != null) {
+                key = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getConfig().getHostName() + "],data_node[" + dataNode + "],schema[" + schema + "]";
+            }
             if (!result.isSuccess()) {
                 //not thread safe
                 String warnMsg = "Can't get table " + tableName + "'s config from DataNode:" + dataNode + "! Maybe the table is not initialized!";
@@ -91,9 +109,17 @@ public abstract class AbstractTableMetaHandler {
                     countdown();
                 }
                 return;
-            } else if (ToResolveContainer.TABLE_LACK.contains(tableId) &&
-                    AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
-                ToResolveContainer.TABLE_LACK.remove(tableId);
+            } else {
+                if (ToResolveContainer.TABLE_LACK.contains(tableId) && AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
+                    ToResolveContainer.TABLE_LACK.remove(tableId);
+                }
+                if (ds != null && ToResolveContainer.DATA_NODE_LACK.contains(key)) {
+                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName());
+                    labels.put("data_node", dataNode);
+                    if (AlertUtil.alertResolve(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "mysql", ds.getConfig().getId(), labels)) {
+                        ToResolveContainer.DATA_NODE_LACK.remove(key);
+                    }
+                }
             }
             String currentSql = result.getResult().get(MYSQL_SHOW_CREATE_TABLE_COLS[1]);
             if (dataNodeTableStructureSQLMap.containsKey(currentSql)) {

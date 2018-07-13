@@ -17,4 +17,5 @@ public final class ToResolveContainer {
     public static final Set<String> TABLE_NOT_CONSISTENT_IN_MEMORY = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
     public static final Set<String> TABLE_LACK = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
     public static final Set<String> GLOBAL_TABLE_COLUMN_LOST = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+    public static final Set<String> DATA_NODE_LACK = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 }

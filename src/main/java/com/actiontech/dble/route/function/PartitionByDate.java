@@ -65,6 +65,12 @@ public class PartitionByDate extends AbstractPartitionAlgorithm implements RuleA
     @Override
     public Integer calculate(String columnValue) {
         try {
+            if (columnValue == null) {
+                if (defaultNode >= 0) {
+                    return defaultNode;
+                }
+                return null;
+            }
             long targetTime = formatter.get().parse(columnValue).getTime();
             if (targetTime < beginDate) {
                 return (defaultNode >= 0) ? defaultNode : null;

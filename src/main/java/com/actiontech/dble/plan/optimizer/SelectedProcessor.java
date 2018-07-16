@@ -6,14 +6,13 @@
 package com.actiontech.dble.plan.optimizer;
 
 import com.actiontech.dble.plan.Order;
-import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
-import com.actiontech.dble.plan.common.item.ItemInt;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.actiontech.dble.plan.node.MergeNode;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.util.PlanUtil;
 
 import java.util.*;
@@ -97,8 +96,8 @@ public final class SelectedProcessor {
             } else {
                 for (PlanNode child : qtn.getChildren()) {
                     List<Item> referList = qtn.getColumnsReferedByChild(child);
-                    if (referList.isEmpty()) {
-                        referList.add(new ItemInt(1));
+                    if (referList == null) {
+                        referList = new ArrayList<>();
                     }
                     Collection<Item> pdRefers = getPushDownSel(qtn, child, referList);
                     pushSelected(child, pdRefers);

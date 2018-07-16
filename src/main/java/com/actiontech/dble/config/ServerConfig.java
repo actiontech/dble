@@ -25,10 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLNonTransientException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
@@ -453,6 +450,24 @@ public class ServerConfig {
             newSchemas.put(entry.getKey().toLowerCase(), newSchema);
         }
         this.schemas = newSchemas;
+
+
+        HashMap<ERTable, Set<ERTable>> newErMap = new HashMap<ERTable, Set<ERTable>>();
+        for (Map.Entry<ERTable, Set<ERTable>> entry : erRelations.entrySet()) {
+            ERTable key = entry.getKey();
+
+            Set<ERTable> value = entry.getValue();
+
+            HashSet newValues = new HashSet<ERTable>();
+            for (ERTable table : value) {
+                newValues.add(table.changeToLowerCase());
+            }
+
+            newErMap.put(key.changeToLowerCase(), newValues);
+        }
+
+        erRelations = newErMap;
+
         loadSequence();
         selfChecking0();
 

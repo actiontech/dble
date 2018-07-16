@@ -48,6 +48,11 @@ public class ERTable {
         return hashCode;
     }
 
+
+    public ERTable changeToLowerCase() {
+        return new ERTable(schema.toLowerCase(), table.toLowerCase(), column);
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj)

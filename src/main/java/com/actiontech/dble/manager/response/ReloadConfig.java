@@ -173,7 +173,7 @@ public final class ReloadConfig {
             LOGGER.info("reload config: sent finished status to ucore, waiting other instances");
             //step 5 start a loop to check if all the dble in cluster is reload finished
 
-            String errorMsg = ClusterUcoreSender.waitingForAllTheNode(UcorePathUtil.SUCCESS, UcorePathUtil.getConfStatusPath() + SEPARATOR);
+            final String errorMsg = ClusterUcoreSender.waitingForAllTheNode(UcorePathUtil.SUCCESS, UcorePathUtil.getConfStatusPath() + SEPARATOR);
             LOGGER.info("reload config: all instances finished ");
             ClusterDelayProvider.delayBeforeDeleteReloadLock();
             //step 6 delete the reload flag

@@ -125,7 +125,7 @@ public final class DbleServer {
     private InterProcessMutex dnIndexLock;
     private long totalNetWorkBufferSize = 0;
     private XASessionCheck xaSessionCheck;
-    private Map<String, ThreadWorkUsage> threadUsedMap = new HashMap<>();
+    private Map<String, ThreadWorkUsage> threadUsedMap = new TreeMap<>();
     private BlockingQueue<FrontendCommandHandler> frontHandlerQueue;
     private BlockingQueue<List<WriteToBackendTask>> writeToBackendQueue;
     private Queue<FrontendCommandHandler> concurrentFrontHandlerQueue;

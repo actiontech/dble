@@ -155,6 +155,8 @@ public class DefaultDruidParser implements DruidParser {
                         routeCalculateUnit.addShardingExpr(tableName, columnName, rv);
                     } else if (operator.equals("=") || operator.toLowerCase().equals("in")) {
                         routeCalculateUnit.addShardingExpr(tableName, columnName, values.toArray());
+                    } else if (operator.equals("IS")) {
+                        routeCalculateUnit.addShardingExpr(tableName, columnName, values.toArray());
                     }
                 }
             }
@@ -194,6 +196,7 @@ public class DefaultDruidParser implements DruidParser {
             }
         }
     }
+
     SchemaConfig routeToNoSharding(SchemaConfig schema, RouteResultset rrs, String schemaName, StringPtr sqlSchema) {
         String realSchema = sqlSchema.get() == null ? schemaName : sqlSchema.get();
         SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(realSchema);
@@ -202,6 +205,7 @@ public class DefaultDruidParser implements DruidParser {
         rrs.setFinishedRoute(true);
         return schema;
     }
+
     // avoid druid error ,default shardingSupport is true and table name like testTable_number will be parser to testTable
     //eg: testDb.testTb_1->testDb.testTb ,testDb.testTb_1_2->testDb.testTb
     String statementToString(SQLStatement statement) {

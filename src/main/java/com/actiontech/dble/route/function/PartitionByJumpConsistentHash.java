@@ -28,6 +28,9 @@ public final class PartitionByJumpConsistentHash extends AbstractPartitionAlgori
 
     @Override
     public Integer calculate(String columnValue) {
+        if (columnValue == null || columnValue.equalsIgnoreCase("NULL")) {
+            return 0;
+        }
         int start = hashSliceStart >= 0 ? hashSliceStart : columnValue.length() + hashSliceStart;
         int end = hashSliceEnd > 0 ? hashSliceEnd : columnValue.length() + hashSliceEnd;
         return jumpConsistentHash(StringUtil.hash(columnValue, start, end), partitionCount);

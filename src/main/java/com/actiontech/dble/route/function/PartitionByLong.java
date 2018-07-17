@@ -48,6 +48,9 @@ public final class PartitionByLong extends AbstractPartitionAlgorithm implements
     @Override
     public Integer calculate(String columnValue) {
         try {
+            if (columnValue == null || columnValue.equalsIgnoreCase("NULL")) {
+                return 0;
+            }
             long key = Long.parseLong(columnValue);
             return calculate(key);
         } catch (NumberFormatException e) {
@@ -97,6 +100,7 @@ public final class PartitionByLong extends AbstractPartitionAlgorithm implements
             return re;
         }
     }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {

@@ -17,6 +17,7 @@ import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
+import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
 
 import java.sql.SQLNonTransientException;
 import java.util.HashSet;
@@ -55,7 +56,8 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
             SQLCharExpr charExpr = (SQLCharExpr) valueExpr;
             shardingValue = charExpr.getText();
         }
-        if (shardingValue == null) {
+
+        if (shardingValue == null && !(valueExpr instanceof SQLNullExpr)) {
             throw new SQLNonTransientException("Not Supported of Sharding Value EXPR :" + valueExpr.toString());
         }
         return shardingValue;

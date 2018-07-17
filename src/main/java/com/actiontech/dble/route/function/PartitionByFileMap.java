@@ -41,6 +41,7 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
      */
     private int defaultNode = -1;
     private int hashCode = 1;
+
     @Override
     public void init() {
         initialize();
@@ -64,6 +65,10 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
     @Override
     public Integer calculate(String columnValue) {
         try {
+            if (columnValue == null || columnValue.equalsIgnoreCase("NULL")) {
+                return app2Partition.get(DEFAULT_NODE);
+            }
+
             Object value = columnValue;
             if (type == 0) {
                 value = Integer.valueOf(columnValue);

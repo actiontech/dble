@@ -64,6 +64,9 @@ public final class PartitionByString extends AbstractPartitionAlgorithm implemen
 
     @Override
     public Integer calculate(String key) {
+        if (key == null || key.equalsIgnoreCase("NULL")) {
+            return 0;
+        }
         int start = hashSliceStart >= 0 ? hashSliceStart : key.length() + hashSliceStart;
         int end = hashSliceEnd > 0 ? hashSliceEnd : key.length() + hashSliceEnd;
         long hash = StringUtil.hash(key, start, end);

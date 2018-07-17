@@ -569,22 +569,26 @@ public class XMLSchemaLoader implements SchemaLoader {
             if (writeNodes.getLength() > 0) {
                 DBHostConfig[] writeDbConfs = new DBHostConfig[writeNodes.getLength()];
                 Map<Integer, DBHostConfig[]> readHostsMap = new HashMap<>(2);
+                Map<Integer, DBHostConfig[]> standbyReadHostsMap = new HashMap<>(2);
                 for (int w = 0; w < writeDbConfs.length; w++) {
                     Element writeNode = (Element) writeNodes.item(w);
                     writeDbConfs[w] = createDBHostConf(name, writeNode, maxCon, minCon);
                     NodeList readNodes = writeNode.getElementsByTagName("readHost");
                     //for every readHost
-                    if (readNodes.getLength() != 0 && balance != 0) {
+                    if (readNodes.getLength() != 0) {
                         DBHostConfig[] readDbConfs = new DBHostConfig[readNodes.getLength()];
                         for (int r = 0; r < readDbConfs.length; r++) {
                             Element readNode = (Element) readNodes.item(r);
                             readDbConfs[r] = createDBHostConf(name, readNode, maxCon, minCon);
                         }
-                        readHostsMap.put(w, readDbConfs);
+                        if (balance != 0) {
+                            readHostsMap.put(w, readDbConfs);
+                        } else {
+                            standbyReadHostsMap.put(w, readDbConfs);
+                        }
                     }
                 }
-                DataHostConfig hostConf = new DataHostConfig(name,
-                        writeDbConfs, readHostsMap, switchType, slaveThreshold, tempReadHostAvailable);
+                DataHostConfig hostConf = new DataHostConfig(name, writeDbConfs, readHostsMap, standbyReadHostsMap, switchType, slaveThreshold, tempReadHostAvailable);
 
                 hostConf.setMaxCon(maxCon);
                 hostConf.setMinCon(minCon);
@@ -603,8 +607,8 @@ public class XMLSchemaLoader implements SchemaLoader {
                 readDbConfs[0] = createDBHostConf(name, readNode, maxCon, minCon);
                 Map<Integer, DBHostConfig[]> readHostsMap = new HashMap<>(1);
                 readHostsMap.put(0, readDbConfs);
-                DataHostConfig hostConf = new DataHostConfig(name,
-                        writeDbConfs, readHostsMap, -1, slaveThreshold, true); // switchType =-1 and tempReadHostAvailable =true
+                // switchType =-1 and tempReadHostAvailable =true and ignore balance
+                DataHostConfig hostConf = new DataHostConfig(name, writeDbConfs, readHostsMap, new HashMap<Integer, DBHostConfig[]>(0), -1, slaveThreshold, true);
                 hostConf.setMaxCon(maxCon);
                 hostConf.setMinCon(minCon);
                 hostConf.setBalance(3); // all read host
@@ -615,8 +619,7 @@ public class XMLSchemaLoader implements SchemaLoader {
                 writeDbConfs[0] = new DBHostConfig(FAKE_HOST, "-", 0, "-:0)", "-", "-");
                 writeDbConfs[0].setFake(true);
                 Map<Integer, DBHostConfig[]> readHostsMap = new HashMap<>(0);
-                DataHostConfig hostConf = new DataHostConfig(name,
-                        writeDbConfs, readHostsMap, switchType, slaveThreshold, tempReadHostAvailable);
+                DataHostConfig hostConf = new DataHostConfig(name, writeDbConfs, readHostsMap, readHostsMap, switchType, slaveThreshold, tempReadHostAvailable);
 
                 hostConf.setMaxCon(maxCon);
                 hostConf.setMinCon(minCon);

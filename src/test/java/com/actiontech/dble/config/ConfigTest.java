@@ -202,7 +202,7 @@ public class ConfigTest {
             readSourcesMap.put(entry.getKey(), readSources);
         }
         PhysicalDBPool pool = new PhysicalDBPool(conf.getName(), conf, writeSources,
-                readSourcesMap, conf.getBalance());
+                readSourcesMap, new HashMap<Integer, PhysicalDatasource[]>(), conf.getBalance());
         return pool;
     }
 

@@ -30,6 +30,7 @@ public class DataHostConfig {
     private int balance = PhysicalDBPool.BALANCE_NONE;
     private final DBHostConfig[] writeHosts;
     private final Map<Integer, DBHostConfig[]> readHosts;
+    private final Map<Integer, DBHostConfig[]> standbyReadHosts;
     private String hearbeatSQL;
     private boolean isShowSlaveSql = false;
     private boolean isShowClusterSql = false;
@@ -38,11 +39,12 @@ public class DataHostConfig {
     private boolean tempReadHostAvailable = false;
 
     public DataHostConfig(String name,
-                          DBHostConfig[] writeHosts, Map<Integer, DBHostConfig[]> readHosts, int switchType, int slaveThreshold, boolean tempReadHostAvailable) {
+                          DBHostConfig[] writeHosts, Map<Integer, DBHostConfig[]> readHosts, Map<Integer, DBHostConfig[]> standbyReadHosts, int switchType, int slaveThreshold, boolean tempReadHostAvailable) {
         super();
         this.name = name;
         this.writeHosts = writeHosts;
         this.readHosts = readHosts;
+        this.standbyReadHosts = standbyReadHosts;
         this.switchType = switchType;
         this.slaveThreshold = slaveThreshold;
         this.tempReadHostAvailable = tempReadHostAvailable;
@@ -99,6 +101,10 @@ public class DataHostConfig {
 
     public Map<Integer, DBHostConfig[]> getReadHosts() {
         return readHosts;
+    }
+
+    public Map<Integer, DBHostConfig[]> getStandbyReadHosts() {
+        return standbyReadHosts;
     }
 
     public String getHearbeatSQL() {

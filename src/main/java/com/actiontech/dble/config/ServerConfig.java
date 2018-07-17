@@ -6,15 +6,15 @@
 package com.actiontech.dble.config;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.config.model.*;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
-import com.actiontech.dble.alarm.AlarmCode;
-import com.actiontech.dble.alarm.Alert;
-import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.route.sequence.handler.DistributedSequenceHandler;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceMySQLHandler;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceTimeHandler;
@@ -452,22 +452,22 @@ public class ServerConfig {
         this.schemas = newSchemas;
 
 
-        HashMap<ERTable, Set<ERTable>> newErMap = new HashMap<ERTable, Set<ERTable>>();
-        for (Map.Entry<ERTable, Set<ERTable>> entry : erRelations.entrySet()) {
-            ERTable key = entry.getKey();
+        if (erRelations != null) {
+            HashMap<ERTable, Set<ERTable>> newErMap = new HashMap<ERTable, Set<ERTable>>();
+            for (Map.Entry<ERTable, Set<ERTable>> entry : erRelations.entrySet()) {
+                ERTable key = entry.getKey();
+                Set<ERTable> value = entry.getValue();
 
-            Set<ERTable> value = entry.getValue();
+                Set<ERTable> newValues = new HashSet<>();
+                for (ERTable table : value) {
+                    newValues.add(table.changeToLowerCase());
+                }
 
-            HashSet newValues = new HashSet<ERTable>();
-            for (ERTable table : value) {
-                newValues.add(table.changeToLowerCase());
+                newErMap.put(key.changeToLowerCase(), newValues);
             }
 
-            newErMap.put(key.changeToLowerCase(), newValues);
+            erRelations = newErMap;
         }
-
-        erRelations = newErMap;
-
         loadSequence();
         selfChecking0();
 

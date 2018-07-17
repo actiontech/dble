@@ -52,6 +52,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
         if (source.getSession2().generalNextStatement(sql)) {
             sql = sql.substring(0, ParseUtil.findNextBreak(sql));
         }
+        source.setExecuteSql(sql);
 
         int rs = ServerParse.parse(sql);
         int sqlType = rs & 0xff;

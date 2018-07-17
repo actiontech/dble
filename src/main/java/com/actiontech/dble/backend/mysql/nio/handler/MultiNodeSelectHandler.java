@@ -45,7 +45,6 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
 
     @Override
     public void okResponse(byte[] data, BackendConnection conn) {
-        this.netOutBytes += data.length;
         boolean executeResponse = conn.syncAndExecute();
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("received ok response ,executeResponse:" + executeResponse + " from " + conn);
@@ -59,8 +58,6 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
-        this.netOutBytes += header.length;
-        this.netOutBytes += eof.length;
         queues.put(conn, new LinkedBlockingQueue<HeapItem>(queueSize));
         lock.lock();
         try {
@@ -126,7 +123,6 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
         fieldCount = fields.size();
         List<FieldPacket> fieldPackets = new ArrayList<>();
         for (byte[] field : fields) {
-            this.netOutBytes += field.length;
             FieldPacket fieldPacket = new FieldPacket();
             fieldPacket.read(field);
             if (rrs.getSchema() != null) {
@@ -221,8 +217,8 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
                 session.releaseConnectionIfSafe(entry.getKey(), false);
                 iterator.remove();
             }
+            doSqlStat();
             outputHandler.rowEofResponse(null, false, null);
-            doSqlStat(session.getSource());
         } catch (Exception e) {
             String msg = "Merge thread error, " + e.getLocalizedMessage();
             LOGGER.info(msg, e);

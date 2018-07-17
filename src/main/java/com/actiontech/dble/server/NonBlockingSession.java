@@ -68,8 +68,7 @@ public class NonBlockingSession implements Session {
     public static final int CANCEL_STATUS_INIT = 0;
     public static final int CANCEL_STATUS_COMMITTING = 1;
     static final int CANCEL_STATUS_CANCELING = 2;
-
-
+    private long queryStartTime = 0;
     private final ServerConnection source;
     private final ConcurrentMap<RouteResultsetNode, BackendConnection> target;
     private RollbackNodesHandler rollbackHandler;
@@ -866,6 +865,7 @@ public class NonBlockingSession implements Session {
     public void multiStatementNextSql(boolean flag) {
         if (flag) {
             this.setRequestTime();
+            this.setQueryStartTime(System.currentTimeMillis());
             DbleServer.getInstance().getFrontHandlerQueue().offer((FrontendCommandHandler) source.getHandler());
         }
     }
@@ -938,4 +938,15 @@ public class NonBlockingSession implements Session {
     public AtomicInteger getPacketId() {
         return packetId;
     }
+
+
+
+    public long getQueryStartTime() {
+        return queryStartTime;
+    }
+
+    public void setQueryStartTime(long queryStartTime) {
+        this.queryStartTime = queryStartTime;
+    }
+
 }

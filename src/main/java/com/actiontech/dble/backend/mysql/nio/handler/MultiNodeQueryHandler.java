@@ -47,10 +47,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     private final boolean sessionAutocommit;
     private long affectedRows;
     long selectRows;
-    protected long startTime;
-    private long netInBytes;
     private List<BackendConnection> errConnection;
-    protected long netOutBytes;
+    private long netOutBytes;
     protected boolean prepared;
     protected ErrorPacket err;
     protected int fieldCount = 0;
@@ -80,7 +78,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
     protected void reset(int initCount) {
         super.reset(initCount);
-        this.netInBytes = 0;
         this.netOutBytes = 0;
     }
 
@@ -98,7 +95,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         } finally {
             lock.unlock();
         }
-        startTime = System.currentTimeMillis();
         LOGGER.debug("rrs.getRunOnSlave()-" + rrs.getRunOnSlave());
         StringBuilder sb = new StringBuilder();
         for (final RouteResultsetNode node : rrs.getNodes()) {
@@ -257,6 +253,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
                 session.multiStatementPacket(ok, packetId);
                 boolean multiStatementFlag = session.getIsMultiStatement().get();
+                doSqlStat();
                 handleEndPacket(ok.toBytes(), AutoTxOperation.COMMIT, conn);
                 session.multiStatementNextSql(multiStatementFlag);
             } finally {
@@ -297,7 +294,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
 
         this.netOutBytes += eof.length;
-
         if (errorResponse.get()) {
             return;
         }
@@ -329,14 +325,15 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             session.setResponseTime();
             session.multiStatementPacket(eof, packetId);
             boolean multiStatementFlag = session.getIsMultiStatement().get();
+            doSqlStat();
             writeEofResult(eof, source);
             session.multiStatementNextSql(multiStatementFlag);
-            doSqlStat(source);
         }
     }
 
     @Override
     public boolean rowResponse(final byte[] row, RowDataPacket rowPacketNull, boolean isLeft, BackendConnection conn) {
+        this.netOutBytes += row.length;
         if (errorResponse.get()) {
             // the connection has been closed or set to "txInterrupt" properly
             //in tryErrorFinished() method! If we close it here, it can
@@ -459,15 +456,18 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         source.write(byteBuffer);
     }
 
-    void doSqlStat(ServerConnection source) {
+    void doSqlStat() {
         if (DbleServer.getInstance().getConfig().getSystem().getUseSqlStat() == 1) {
-            int resultSize = source.getWriteQueue().size() * DbleServer.getInstance().getConfig().getSystem().getBufferPoolPageSize();
+            long netInBytes = 0;
             if (rrs != null && rrs.getStatement() != null) {
                 netInBytes += rrs.getStatement().getBytes().length;
             }
             assert rrs != null;
             QueryResult queryResult = new QueryResult(session.getSource().getUser(), rrs.getSqlType(),
-                    rrs.getStatement(), selectRows, netInBytes, netOutBytes, startTime, System.currentTimeMillis(), resultSize);
+                    rrs.getStatement(), selectRows, netInBytes, netOutBytes, session.getQueryStartTime(), System.currentTimeMillis());
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("try to record sql:" + rrs.getStatement());
+            }
             QueryResultDispatcher.dispatchQuery(queryResult);
         }
     }

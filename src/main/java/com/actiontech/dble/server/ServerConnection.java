@@ -243,6 +243,7 @@ public class ServerConnection extends FrontendConnection {
             writeErrMessage(ErrorCode.ER_YES, txInterruptMsg);
             return;
         }
+        session.setQueryStartTime(System.currentTimeMillis());
 
         String db = this.schema;
 

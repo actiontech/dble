@@ -10,7 +10,7 @@ package com.actiontech.dble.statistic.stat;
  */
 public class SqlResultSet {
     private String sql;
-    private int resultSetSize = 0;
+    private long resultSetSize = 0;
     private int count;
 
     public String getSql() {
@@ -21,11 +21,11 @@ public class SqlResultSet {
         this.sql = sql;
     }
 
-    public int getResultSetSize() {
+    public long getResultSetSize() {
         return resultSetSize;
     }
 
-    public void setResultSetSize(int resultSetSize) {
+    public void setResultSetSize(long resultSetSize) {
         this.resultSetSize = resultSetSize;
     }
 

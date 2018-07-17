@@ -43,8 +43,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     // only one thread access at one time no need lock
     protected volatile byte packetId;
     protected volatile ByteBuffer buffer;
-    private long startTime;
-    private long netInBytes;
     protected long netOutBytes;
     long selectRows;
 
@@ -69,7 +67,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
 
     public void execute() throws Exception {
-        startTime = System.currentTimeMillis();
         ServerConnection sc = session.getSource();
         connClosed = false;
         this.packetId = (byte) session.getPacketId().get();
@@ -191,6 +188,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
             session.multiStatementPacket(ok, packetId);
             boolean multiStatementFlag = session.getIsMultiStatement().get();
+            doSqlStat();
             ok.write(source);
             session.multiStatementNextSql(multiStatementFlag);
         }
@@ -218,18 +216,24 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         session.multiStatementPacket(eof, packetId);
         ServerConnection source = session.getSource();
         buffer = source.writeToBuffer(eof, allocBuffer());
-        int resultSize = source.getWriteQueue().size() * DbleServer.getInstance().getConfig().getSystem().getBufferPoolPageSize();
-        resultSize = resultSize + buffer.position();
         session.setResponseTime();
         boolean multiStatementFlag = session.getIsMultiStatement().get();
+        doSqlStat();
         source.write(buffer);
         session.multiStatementNextSql(multiStatementFlag);
+    }
+
+    private void doSqlStat() {
         if (DbleServer.getInstance().getConfig().getSystem().getUseSqlStat() == 1) {
+            long netInBytes = 0;
             if (rrs.getStatement() != null) {
-                netInBytes += rrs.getStatement().getBytes().length;
+                netInBytes = rrs.getStatement().getBytes().length;
             }
             QueryResult queryResult = new QueryResult(session.getSource().getUser(), rrs.getSqlType(), rrs.getStatement(), selectRows,
-                    netInBytes, netOutBytes, startTime, System.currentTimeMillis(), resultSize);
+                    netInBytes, netOutBytes, session.getQueryStartTime(), System.currentTimeMillis());
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("try to record sql:" + rrs.getStatement());
+            }
             QueryResultDispatcher.dispatchQuery(queryResult);
         }
     }

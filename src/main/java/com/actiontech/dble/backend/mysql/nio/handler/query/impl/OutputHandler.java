@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
@@ -12,6 +13,9 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.statistic.stat.QueryResult;
+import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +34,8 @@ public class OutputHandler extends BaseDMLHandler {
     private NonBlockingSession session;
     private ByteBuffer buffer;
     private boolean isBinary;
-
+    private long netOutBytes;
+    private long selectRows;
     public OutputHandler(long id, NonBlockingSession session) {
         super(id, session);
         session.setOutputHandler(this);
@@ -48,6 +53,7 @@ public class OutputHandler extends BaseDMLHandler {
 
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
+        this.netOutBytes += ok.length;
         OkPacket okPacket = new OkPacket();
         okPacket.read(ok);
         ServerConnection source = session.getSource();
@@ -97,15 +103,17 @@ public class OutputHandler extends BaseDMLHandler {
             ResultSetHeaderPacket hp = new ResultSetHeaderPacket();
             hp.setFieldCount(fieldPackets.size());
             hp.setPacketId(++packetId);
-
+            this.netOutBytes += hp.calcPacketSize();
             ServerConnection source = session.getSource();
             buffer = hp.write(buffer, source, true);
             for (FieldPacket fp : fieldPackets) {
                 fp.setPacketId(++packetId);
+                this.netOutBytes += fp.calcPacketSize();
                 buffer = fp.write(buffer, source, true);
             }
             EOFPacket ep = new EOFPacket();
             ep.setPacketId(++packetId);
+            this.netOutBytes += ep.calcPacketSize();
             buffer = ep.write(buffer, source, true);
         } finally {
             lock.unlock();
@@ -119,18 +127,22 @@ public class OutputHandler extends BaseDMLHandler {
         }
         lock.lock();
         try {
+            selectRows++;
             byte[] row;
             if (this.isBinary) {
                 BinaryRowDataPacket binRowPacket = new BinaryRowDataPacket();
                 binRowPacket.read(this.fieldPackets, rowPacket);
                 binRowPacket.setPacketId(++packetId);
+                this.netOutBytes += binRowPacket.calcPacketSize();
                 buffer = binRowPacket.write(buffer, session.getSource(), true);
             } else {
                 if (rowPacket != null) {
                     rowPacket.setPacketId(++packetId);
+                    this.netOutBytes += rowPacket.calcPacketSize();
                     buffer = rowPacket.write(buffer, session.getSource(), true);
                 } else {
                     row = rowNull;
+                    this.netOutBytes += row.length;
                     row[3] = ++packetId;
                     buffer = session.getSource().writeToBuffer(row, buffer);
                 }
@@ -155,6 +167,8 @@ public class OutputHandler extends BaseDMLHandler {
                 eofPacket.read(data);
             }
             eofPacket.setPacketId(++packetId);
+            this.netOutBytes += eofPacket.calcPacketSize();
+            doSqlStat();
             HandlerTool.terminateHandlerTree(this);
             session.multiStatementPacket(eofPacket, packetId);
             byte[] eof = eofPacket.toBytes();
@@ -165,6 +179,22 @@ public class OutputHandler extends BaseDMLHandler {
             session.multiStatementNextSql(multiStatementFlag);
         } finally {
             lock.unlock();
+        }
+    }
+
+    private void doSqlStat() {
+        if (DbleServer.getInstance().getConfig().getSystem().getUseSqlStat() == 1) {
+            long netInBytes = 0;
+            String sql = session.getSource().getExecuteSql();
+            if (sql != null) {
+                netInBytes += sql.getBytes().length;
+            }
+            QueryResult queryResult = new QueryResult(session.getSource().getUser(), ServerParse.SELECT,
+                    session.getSource().getExecuteSql(), selectRows, netInBytes, netOutBytes, session.getQueryStartTime(), System.currentTimeMillis());
+            if (logger.isDebugEnabled()) {
+                logger.debug("try to record sql:" + sql);
+            }
+            QueryResultDispatcher.dispatchQuery(queryResult);
         }
     }
 

@@ -18,7 +18,7 @@ public class SqlResultSizeRecorder {
     private ConcurrentMap<String, SqlResultSet> sqlResultSetMap = new ConcurrentHashMap<>();
 
 
-    public void addSql(String sql, int resultSetSize) {
+    public void addSql(String sql, long resultSetSize) {
         SqlResultSet sqlResultSet;
         SqlParser sqlParserHigh = new SqlParser();
         sql = sqlParserHigh.mergeSql(sql);

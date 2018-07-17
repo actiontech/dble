@@ -20,10 +20,9 @@ public class QueryResult {
     private long netOutBytes;
     private long startTime;
     private long endTime;
-    private int resultSize;
 
     public QueryResult(String user, int sqlType, String sql, long sqlRows,
-                       long netInBytes, long netOutBytes, long startTime, long endTime, int resultSize) {
+                       long netInBytes, long netOutBytes, long startTime, long endTime) {
         super();
         this.user = user;
         this.sqlType = sqlType;
@@ -33,7 +32,6 @@ public class QueryResult {
         this.netOutBytes = netOutBytes;
         this.startTime = startTime;
         this.endTime = endTime;
-        this.resultSize = resultSize;
     }
 
     public String getUser() {
@@ -66,9 +64,5 @@ public class QueryResult {
 
     public long getEndTime() {
         return endTime;
-    }
-
-    public int getResultSize() {
-        return resultSize;
     }
 }

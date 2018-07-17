@@ -49,12 +49,17 @@ public class UConfigStatusResponse implements UcoreXmlLoader {
                 LOGGER.info("rollback " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
                 try {
                     ClusterDelayProvider.delayBeforeSlaveRollback();
+                    LOGGER.info("rollback " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
                     RollbackConfig.rollback();
                     ClusterDelayProvider.delayAfterSlaveRollback();
+                    LOGGER.info("rollback config: sent config status success to ucore start");
                     ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getSelfConfStatusPath(), UcorePathUtil.SUCCESS);
+                    LOGGER.info("rollback config: sent config status success to ucore end");
                 } catch (Exception e) {
                     String errorinfo = e.getMessage() == null ? e.toString() : e.getMessage();
+                    LOGGER.info("rollback config: sent config status failed to ucore start");
                     ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getSelfConfStatusPath(), errorinfo);
+                    LOGGER.info("rollback config: sent config status failed to ucore end");
                 }
                 return;
             }
@@ -70,10 +75,14 @@ public class UConfigStatusResponse implements UcoreXmlLoader {
                     ReloadConfig.reload();
                 }
                 ClusterDelayProvider.delayAfterSlaveReload();
+                LOGGER.info("reload config: sent config status success to ucore start");
                 ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getSelfConfStatusPath(), UcorePathUtil.SUCCESS);
+                LOGGER.info("reload config: sent config status success to ucore end");
             } catch (Exception e) {
                 String errorinfo = e.getMessage() == null ? e.toString() : e.getMessage();
+                LOGGER.info("reload config: sent config status failed to ucore start");
                 ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getSelfConfStatusPath(), errorinfo);
+                LOGGER.info("reload config: sent config status failed to ucore end");
             }
         }
     }

@@ -55,12 +55,16 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
             if (status.getStatus() == ConfStatus.Status.ROLLBACK) {
                 try {
                     RollbackConfig.rollback();
+                    LOGGER.info("rollback config: sent config status success to zk start");
                     ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
                             SUCCESS.getBytes(StandardCharsets.UTF_8));
+                    LOGGER.info("rollback config: sent config status success to zk end");
                 } catch (Exception e) {
                     String errorinfo = e.getMessage() == null ? e.toString() : e.getMessage();
+                    LOGGER.info("rollback config: sent config status failed to zk start");
                     ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
                             errorinfo.getBytes(StandardCharsets.UTF_8));
+                    LOGGER.info("rollback config: sent config status failed to zk end");
                 }
 
                 return true;
@@ -73,15 +77,20 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
                 }
             }
             try {
+                LOGGER.info("reload config: ready to reload config");
                 if (status.getStatus() == ConfStatus.Status.RELOAD_ALL) {
                     ReloadConfig.reloadAll(Integer.parseInt(status.getParams()));
                 } else {
                     ReloadConfig.reload();
                 }
+                LOGGER.info("reload config: sent config status success to zk start");
                 ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), SUCCESS.getBytes(StandardCharsets.UTF_8));
+                LOGGER.info("reload config: sent config status success to zk end");
             } catch (Exception e) {
                 String errorinfo = e.getMessage() == null ? e.toString() : e.getMessage();
+                LOGGER.info("reload config: sent config status failed to zk start");
                 ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), errorinfo.getBytes(StandardCharsets.UTF_8));
+                LOGGER.info("reload config: sent config status failed to zk end");
             }
         }
         return true;

@@ -39,6 +39,7 @@ public class PhysicalDBPool {
     private final ReentrantReadWriteLock adjustLock = new ReentrantReadWriteLock();
     private PhysicalDatasource[] writeSources;
     private Map<Integer, PhysicalDatasource[]> readSources;
+    private Map<Integer, PhysicalDatasource[]> standbyReadSourcesMap;
     private Collection<PhysicalDatasource> allDs;
 
     volatile int activeIndex;
@@ -52,21 +53,14 @@ public class PhysicalDBPool {
     private final DataHostConfig dataHostConfig;
 
     public PhysicalDBPool(String name, DataHostConfig conf, PhysicalDatasource[] writeSources,
-                          Map<Integer, PhysicalDatasource[]> readSources, int balance) {
+                          Map<Integer, PhysicalDatasource[]> readSources,
+                          Map<Integer, PhysicalDatasource[]> standbyReadSourcesMap, int balance) {
         this.hostName = name;
         this.dataHostConfig = conf;
         this.writeSources = writeSources;
         this.balance = balance;
-
-        Iterator<Map.Entry<Integer, PhysicalDatasource[]>> iterator = readSources.entrySet().iterator();
-        while (iterator.hasNext()) {
-            PhysicalDatasource[] values = iterator.next().getValue();
-            if (values.length == 0) {
-                iterator.remove();
-            }
-        }
-
         this.readSources = readSources;
+        this.standbyReadSourcesMap = standbyReadSourcesMap;
         this.allDs = this.genAllDataSources();
 
         LOGGER.info("total resources of dataHost " + this.hostName + " is :" + allDs.size());
@@ -491,6 +485,11 @@ public class PhysicalDBPool {
 
     public Collection<PhysicalDatasource> getAllDataSources() {
         return this.allDs;
+    }
+
+
+    public Map<Integer, PhysicalDatasource[]> getStandbyReadSourcesMap() {
+        return standbyReadSourcesMap;
     }
 
     /**

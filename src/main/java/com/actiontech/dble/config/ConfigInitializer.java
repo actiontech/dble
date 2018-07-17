@@ -132,8 +132,8 @@ public class ConfigInitializer {
         Map<String, List<Pair<String, String>>> hostSchemaMap = genHostSchemaMap();
         Set<String> errNodeKeys = new HashSet<>();
         Set<String> errSourceKeys = new HashSet<>();
-        boolean isConnectivity = true;
-        boolean isAllDataSourceConnected = true;
+        BoolPtr isConnectivity = new BoolPtr(true);
+        BoolPtr isAllDataSourceConnected = new BoolPtr(true);
         for (Map.Entry<String, List<Pair<String, String>>> entry : hostSchemaMap.entrySet()) {
             String hostName = entry.getKey();
             List<Pair<String, String>> nodeList = entry.getValue();
@@ -156,53 +156,15 @@ public class ConfigInitializer {
                     ds.setTestConnSuccess(false);
                     continue;
                 }
-                String dataSourceName = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getName() + "]";
-                try {
-                    BoolPtr isDSConnectedPtr = new BoolPtr(false);
-                    TestTask testDsTask = new TestTask(ds, errNodeKeys, isDSConnectedPtr);
-                    testDsTask.start();
-                    testDsTask.join(3000);
-                    boolean isDataSourceConnected = isDSConnectedPtr.get();
-                    ds.setTestConnSuccess(isDataSourceConnected);
-                    if (!isDataSourceConnected) {
-                        isConnectivity = false;
-                        isAllDataSourceConnected = false;
-                        errSourceKeys.add(dataSourceName);
-                        markDataSourceSchemaFail(errNodeKeys, nodeList, dataSourceName);
-                    } else {
-                        boolean needAlert = ds == pool.getSource();
-                        for (Pair<String, String> node : nodeList) {
-                            String key = dataSourceName + ",data_node[" + node.getKey() + "],schema[" + node.getValue() + "]";
-                            try {
-                                BoolPtr isSchemaConnectedPtr = new BoolPtr(false);
-                                TestTask testSchemaTask = new TestTask(ds, node, errNodeKeys, isSchemaConnectedPtr, needAlert);
-                                testSchemaTask.start();
-                                testSchemaTask.join(3000);
-                                boolean isConnected = isSchemaConnectedPtr.get();
-                                if (isConnected) {
-                                    LOGGER.info("SelfCheck### test " + key + " database connection success ");
-                                } else {
-                                    isConnectivity = false;
-                                    errNodeKeys.add(key);
-                                    LOGGER.warn("SelfCheck### test " + key + " database connection failed ");
-                                }
-                            } catch (InterruptedException e) {
-                                isConnectivity = false;
-                                errNodeKeys.add(key);
-                                LOGGER.warn("test conn " + key + " error:", e);
-                            }
-                        }
-                    }
-                } catch (InterruptedException e) {
-                    isConnectivity = false;
-                    isAllDataSourceConnected = false;
-                    errSourceKeys.add(dataSourceName);
-                    markDataSourceSchemaFail(errNodeKeys, nodeList, dataSourceName);
+                testDataSource(errNodeKeys, errSourceKeys, isConnectivity, isAllDataSourceConnected, nodeList, pool, ds);
+            }
+            for (PhysicalDatasource[] dataSources : pool.getStandbyReadSourcesMap().values()) {
+                for (PhysicalDatasource ds : dataSources) {
+                    testDataSource(errNodeKeys, errSourceKeys, isConnectivity, isAllDataSourceConnected, nodeList, pool, ds);
                 }
-
             }
         }
-        if (!isConnectivity) {
+        if (!isConnectivity.get()) {
             StringBuilder sb = new StringBuilder("SelfCheck### there are some data node connection failed, pls check these datasource:");
             for (String key : errNodeKeys) {
                 sb.append("{");
@@ -211,7 +173,7 @@ public class ConfigInitializer {
             }
             LOGGER.warn(sb.toString());
         }
-        if (!isAllDataSourceConnected) {
+        if (!isAllDataSourceConnected.get()) {
             StringBuilder sb = new StringBuilder("SelfCheck### there are some datasource connection failed, pls check these datasource:");
             for (String key : errSourceKeys) {
                 sb.append("{");
@@ -219,6 +181,53 @@ public class ConfigInitializer {
                 sb.append("},");
             }
             throw new ConfigException(sb.toString());
+        }
+    }
+
+    private void testDataSource(Set<String> errNodeKeys, Set<String> errSourceKeys, BoolPtr isConnectivity,
+                                BoolPtr isAllDataSourceConnected, List<Pair<String, String>> nodeList, PhysicalDBPool pool, PhysicalDatasource ds) {
+        String dataSourceName = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getName() + "]";
+        try {
+            BoolPtr isDSConnectedPtr = new BoolPtr(false);
+            TestTask testDsTask = new TestTask(ds, errNodeKeys, isDSConnectedPtr);
+            testDsTask.start();
+            testDsTask.join(3000);
+            boolean isDataSourceConnected = isDSConnectedPtr.get();
+            ds.setTestConnSuccess(isDataSourceConnected);
+            if (!isDataSourceConnected) {
+                isConnectivity.set(false);
+                isAllDataSourceConnected.set(false);
+                errSourceKeys.add(dataSourceName);
+                markDataSourceSchemaFail(errNodeKeys, nodeList, dataSourceName);
+            } else {
+                boolean needAlert = ds == pool.getSource();
+                for (Pair<String, String> node : nodeList) {
+                    String key = dataSourceName + ",data_node[" + node.getKey() + "],schema[" + node.getValue() + "]";
+                    try {
+                        BoolPtr isSchemaConnectedPtr = new BoolPtr(false);
+                        TestTask testSchemaTask = new TestTask(ds, node, errNodeKeys, isSchemaConnectedPtr, needAlert);
+                        testSchemaTask.start();
+                        testSchemaTask.join(3000);
+                        boolean isConnected = isSchemaConnectedPtr.get();
+                        if (isConnected) {
+                            LOGGER.info("SelfCheck### test " + key + " database connection success ");
+                        } else {
+                            isConnectivity.set(false);
+                            errNodeKeys.add(key);
+                            LOGGER.warn("SelfCheck### test " + key + " database connection failed ");
+                        }
+                    } catch (InterruptedException e) {
+                        isConnectivity.set(false);
+                        errNodeKeys.add(key);
+                        LOGGER.warn("test conn " + key + " error:", e);
+                    }
+                }
+            }
+        } catch (InterruptedException e) {
+            isConnectivity.set(false);
+            isAllDataSourceConnected.set(false);
+            errSourceKeys.add(dataSourceName);
+            markDataSourceSchemaFail(errNodeKeys, nodeList, dataSourceName);
         }
     }
 
@@ -314,7 +323,14 @@ public class ConfigInitializer {
             readSourcesMap.put(entry.getKey(), readSources);
         }
 
-        return new PhysicalDBPool(conf.getName(), conf, writeSources, readSourcesMap, conf.getBalance());
+        Map<Integer, DBHostConfig[]> standbyReadHostsMap = conf.getStandbyReadHosts();
+        Map<Integer, PhysicalDatasource[]> standbyReadSourcesMap = new HashMap<>(standbyReadHostsMap.size());
+        for (Map.Entry<Integer, DBHostConfig[]> entry : standbyReadHostsMap.entrySet()) {
+            PhysicalDatasource[] standbyReadSources = createDataSource(conf, entry.getValue(), true);
+            standbyReadSourcesMap.put(entry.getKey(), standbyReadSources);
+        }
+
+        return new PhysicalDBPool(conf.getName(), conf, writeSources, readSourcesMap, standbyReadSourcesMap, conf.getBalance());
     }
 
     private Map<String, PhysicalDBNode> initDataNodes(SchemaLoader schemaLoader) {

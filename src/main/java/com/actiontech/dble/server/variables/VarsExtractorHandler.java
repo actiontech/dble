@@ -90,7 +90,7 @@ public class VarsExtractorHandler {
     }
 
 
-    public void signalDone() {
+    void signalDone() {
         lock.lock();
         try {
             extracting = true;

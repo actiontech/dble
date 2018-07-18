@@ -11,6 +11,25 @@ public class PauseInfo {
     private String from;
     private String dataNodes;
 
+
+    public int getQueueLimit() {
+        return queueLimit;
+    }
+
+    public void setQueueLimit(int queueLimit) {
+        this.queueLimit = queueLimit;
+    }
+
+    private int connectionTimeOut;
+
+
+    private String type;
+
+    private String split = ";";
+
+    private int queueLimit;
+
+
     public String getFrom() {
         return from;
     }
@@ -35,14 +54,21 @@ public class PauseInfo {
         this.type = type;
     }
 
-    private String type;
+    public int getConnectionTimeOut() {
+        return connectionTimeOut;
+    }
 
-    private String split = ";";
+    public void setConnectionTimeOut(int connectionTimeOut) {
+        this.connectionTimeOut = connectionTimeOut;
+    }
 
-    public PauseInfo(String from, String dataNodes, String type) {
+
+    public PauseInfo(String from, String dataNodes, String type, int connectionTimeOut, int queueLimit) {
         this.dataNodes = dataNodes;
         this.from = from;
         this.type = type;
+        this.connectionTimeOut = connectionTimeOut;
+        this.queueLimit = queueLimit;
     }
 
     public PauseInfo(String value) {
@@ -50,9 +76,11 @@ public class PauseInfo {
         this.from = s[0];
         this.type = s[1];
         this.dataNodes = s[2];
+        this.connectionTimeOut = Integer.parseInt(s[3]);
+        this.queueLimit = Integer.parseInt(s[4]);
     }
 
     public String toString() {
-        return from + split + type + split + dataNodes;
+        return from + split + type + split + dataNodes + split + connectionTimeOut + split + queueLimit;
     }
 }

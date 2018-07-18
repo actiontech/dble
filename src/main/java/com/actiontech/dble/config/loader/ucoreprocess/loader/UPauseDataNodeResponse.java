@@ -53,7 +53,7 @@ public class UPauseDataNodeResponse implements UcoreXmlLoader {
         LOGGER.info("get key in UPauseDataNodeResponse:" + configValue.getKey() + "   " + configValue.getValue());
         if (!DELETE.equals(configValue.getChangeType())) {
             if (configValue.getKey().equals(UcorePathUtil.getPauseDataNodePath()) || UcorePathUtil.getPauseResumePath().equals(configValue.getKey())) {
-                PauseInfo pauseInfo = new PauseInfo(configValue.getValue());
+                final PauseInfo pauseInfo = new PauseInfo(configValue.getValue());
                 if (!pauseInfo.getFrom().equals(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) {
                     if (PauseInfo.PAUSE.equals(pauseInfo.getType())) {
                         final String dataNodes = pauseInfo.getDataNodes();
@@ -64,8 +64,7 @@ public class UPauseDataNodeResponse implements UcoreXmlLoader {
                                 try {
                                     LOGGER.info("Strat pause dataNode " + dataNodes);
                                     Set<String> dataNodeSet = new HashSet<>(Arrays.asList(dataNodes.split(",")));
-                                    DbleServer.getInstance().getMiManager().getIsPausing().set(true);
-                                    DbleServer.getInstance().getMiManager().lockWithDataNodes(dataNodeSet);
+                                    DbleServer.getInstance().getMiManager().startPausing(pauseInfo.getConnectionTimeOut(), dataNodeSet, pauseInfo.getQueueLimit());
 
                                     while (!Thread.interrupted()) {
                                         lock.lock();

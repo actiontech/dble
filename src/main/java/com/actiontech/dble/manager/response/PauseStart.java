@@ -26,8 +26,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class PauseStart {
-    private static final Pattern PATTERN_FOR_PAUSE = Pattern.compile("^\\s*pause\\s*@@dataNode\\s*=\\s*'([a-zA-Z_0-9,]+)'\\s*and\\s*timeout\\s*=\\s*([0-9]+)\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN_FOR_PAUSE = Pattern.compile("^\\s*pause\\s*@@dataNode\\s*=\\s*'([a-zA-Z_0-9,]+)'\\s*and\\s*timeout\\s*=\\s*([0-9]+)\\s*(,\\s*queue\\s*=\\s*([0-9]+)){0,1}s*(,\\s*wait_limit\\s*=\\s*([0-9]+)){0,1}\\s*$", Pattern.CASE_INSENSITIVE);
     private static final OkPacket OK = new OkPacket();
+    private static final int DEFAULT_CONNECTION_TIME_OUT = 120000;
+    private static final int DEFAULT_QUEUE_LIMIT = 200;
     private static final Logger LOGGER = LoggerFactory.getLogger(PauseStart.class);
 
     private PauseStart() {
@@ -41,7 +43,6 @@ public final class PauseStart {
 
     public static void execute(ManagerConnection c, String sql) {
 
-        boolean recycleFinish = false;
 
         Matcher ma = PATTERN_FOR_PAUSE.matcher(sql);
         if (!ma.matches()) {
@@ -49,6 +50,8 @@ public final class PauseStart {
             return;
         }
         String dataNode = ma.group(1);
+        int connectionTimeOut = ma.group(6) == null ? DEFAULT_CONNECTION_TIME_OUT : Integer.parseInt(ma.group(6)) * 1000;
+        int queueLimit = ma.group(4) == null ? DEFAULT_QUEUE_LIMIT : Integer.parseInt(ma.group(4));
         Set<String> dataNodes = new HashSet<>(Arrays.asList(dataNode.split(",")));
         //check dataNodes
         for (String singleDn : dataNodes) {
@@ -60,24 +63,46 @@ public final class PauseStart {
 
 
         //clusterPauseNotic
-        if (!DbleServer.getInstance().getMiManager().clusterPauseNotic(dataNode)) {
+        if (!DbleServer.getInstance().getMiManager().clusterPauseNotic(dataNode, connectionTimeOut, queueLimit)) {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Other node in cluster is pausing");
             return;
         }
 
 
-        if (!DbleServer.getInstance().getMiManager().getIsPausing().compareAndSet(false, true)) {
+        if (!DbleServer.getInstance().getMiManager().startPausing(connectionTimeOut, dataNodes, queueLimit)) {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Some dataNodes is paused, please resume first");
             return;
         }
 
 
-        DbleServer.getInstance().getMiManager().lockWithDataNodes(dataNodes);
-
-
         //self pause the dataNode
         long timeOut = Long.parseLong(ma.group(2)) * 1000;
         long beginTime = System.currentTimeMillis();
+        boolean recycleFinish = waitForSelfPause(beginTime, timeOut, dataNodes);
+
+        LOGGER.info("wait finished " + recycleFinish);
+        if (!recycleFinish) {
+            DbleServer.getInstance().getMiManager().resume();
+            try {
+                DbleServer.getInstance().getMiManager().resumeCluster();
+            } catch (Exception e) {
+                LOGGER.warn(e.getMessage());
+            }
+            c.writeErrMessage(1003, "The backend connection recycle failure,try it later");
+        } else {
+            try {
+                if (DbleServer.getInstance().getMiManager().waitForCluster(c, beginTime, timeOut)) {
+                    OK.write(c);
+                }
+            } catch (Exception e) {
+                LOGGER.warn(e.getMessage());
+            }
+        }
+    }
+
+
+    private static boolean waitForSelfPause(long beginTime, long timeOut, Set<String> dataNodes) {
+        boolean recycleFinish = false;
         while (System.currentTimeMillis() - beginTime < timeOut) {
             boolean nextTurn = false;
             for (NIOProcessor processor : DbleServer.getInstance().getFrontProcessors()) {
@@ -107,24 +132,6 @@ public final class PauseStart {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10L));
             }
         }
-
-        LOGGER.info("wait finished " + recycleFinish);
-        if (!recycleFinish) {
-            DbleServer.getInstance().getMiManager().resume();
-            try {
-                DbleServer.getInstance().getMiManager().resumeCluster();
-            } catch (Exception e) {
-                LOGGER.warn(e.getMessage());
-            }
-            c.writeErrMessage(1003, "The backend connection recycle failure,try it later");
-        } else {
-            try {
-                if (DbleServer.getInstance().getMiManager().waitForCluster(c, beginTime, timeOut)) {
-                    OK.write(c);
-                }
-            } catch (Exception e) {
-                LOGGER.warn(e.getMessage());
-            }
-        }
+        return recycleFinish;
     }
 }

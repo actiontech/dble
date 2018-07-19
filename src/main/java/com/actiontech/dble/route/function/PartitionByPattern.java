@@ -64,7 +64,7 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 
     @Override
     public Integer calculate(String columnValue) {
-        if (!isNumeric(columnValue)) {
+        if (columnValue == null || columnValue.equalsIgnoreCase("NULL") || !isNumeric(columnValue)) {
             return defaultNode < 0 ? null : defaultNode;
         }
 

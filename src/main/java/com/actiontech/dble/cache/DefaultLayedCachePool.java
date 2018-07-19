@@ -94,7 +94,7 @@ public class DefaultLayedCachePool implements LayerCachePool {
 
     @Override
     public void clearCache() {
-        LOGGER.info("clear cache ");
+        LOGGER.info("ready cache ");
         for (CachePool pool : allCaches.values()) {
             pool.clearCache();
         }

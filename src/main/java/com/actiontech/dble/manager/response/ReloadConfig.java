@@ -385,7 +385,7 @@ public final class ReloadConfig {
 
         } else {
             // INIT FAILED
-            LOGGER.info("reload failed, clear previously created data sources ");
+            LOGGER.info("reload failed, ready previously created data sources ");
             for (PhysicalDBPool dbPool : newDataHosts.values()) {
                 dbPool.clearDataSources("reload config");
                 dbPool.stopHeartbeat();

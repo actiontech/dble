@@ -171,6 +171,7 @@ public class ServerConnection extends FrontendConnection {
     @Override
     protected void setRequestTime() {
         session.setRequestTime();
+
     }
 
     @Override

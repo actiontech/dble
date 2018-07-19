@@ -71,15 +71,15 @@ public class BTraceCostTime {
 
     @OnMethod(
             clazz = "com.actiontech.dble.btrace.provider.CostTimeProvider",
-            method = "endDelive"
+            method = "readyToDeliver"
     )
-    public static void endDelive(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod, long arg) {
+    public static void readyToDeliver(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod, long arg) {
         Long ts = BTraceUtils.Collections.get(records, arg);
         if (ts == null) {
             return;
         }
         long duration = timeNanos() - ts;
-        Profiling.recordExit(profiler, "request->3.05.endDelive", duration);
+        Profiling.recordExit(profiler, "request->3.05.readyToDeliver", duration);
     }
 
 

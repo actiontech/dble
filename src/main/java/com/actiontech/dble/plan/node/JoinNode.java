@@ -263,7 +263,7 @@ public class JoinNode extends PlanNode {
     /**
      * setupJoinfilters
      *
-     * @param clearName if true:clear filter's itemname,else keep
+     * @param clearName if true:ready filter's itemname,else keep
      */
     private void buildJoinKeys(boolean clearName) {
         Iterator<ItemFuncEqual> iterator = joinFilter.iterator();

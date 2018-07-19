@@ -64,7 +64,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
     public boolean clearIfSessionClosed(NonBlockingSession nonBlockingSession) {
         if (nonBlockingSession.closed()) {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("session closed ,clear resources " + nonBlockingSession);
+                LOGGER.debug("session closed ,ready resources " + nonBlockingSession);
             }
 
             nonBlockingSession.clearResources(true);
@@ -110,9 +110,9 @@ public abstract class MultiNodeHandler implements ResponseHandler {
 
     protected void tryErrorFinished(boolean allEnd) {
         if (allEnd && !session.closed()) {
-            // clear session resources,release all
+            // ready session resources,release all
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("error all end ,clear session resource ");
+                LOGGER.debug("error all end ,ready session resource ");
             }
             clearSessionResources();
             if (errorResponse.compareAndSet(false, true)) {

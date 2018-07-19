@@ -111,7 +111,7 @@ public final class SystemConfig {
     private int maxResultSet = 512 * 1024;
     //Threshold of Usage Percent of buffer pool,if reached the Threshold,big result will be clean up,default 80%
     private int bufferUsagePercent = 80;
-    //period of clear the big result
+    //period of ready the big result
     private long clearBigSqLResultSetMapMs = 10 * 60 * 1000;
     private int sequnceHandlerType = SEQUENCE_HANDLER_LOCAL_TIME;
     private int usingAIO = 0;

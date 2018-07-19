@@ -29,6 +29,9 @@ public final class ShowHandler {
             case ServerParseShow.DATABASES:
                 ShowDatabases.response(c);
                 break;
+            case ServerParseShow.TRACE:
+                ShowTrace.response(c);
+                break;
             case ServerParseShow.TABLES:
                 ShowTables.response(c, stmt);
                 break;

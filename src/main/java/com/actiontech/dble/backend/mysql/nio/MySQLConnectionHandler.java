@@ -59,7 +59,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
     @Override
     public void handle(byte[] data) {
         if (session != null) {
-            session.setBackendResponseTime(source.getId());
+            session.setBackendResponseTime(source);
         }
         if (source.isComplexQuery()) {
             offerData(data, DbleServer.getInstance().getComplexQueryExecutor());

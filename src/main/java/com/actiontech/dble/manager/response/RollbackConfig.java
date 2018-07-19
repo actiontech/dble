@@ -224,7 +224,7 @@ public final class RollbackConfig {
             conf.rollback(users, schemas, dataNodes, dataHosts, erRelations, firewall, backDataHostWithoutWR);
             // stop old resource heartbeat
             for (PhysicalDBPool dn : cNodes.values()) {
-                dn.clearDataSources("clear old config ");
+                dn.clearDataSources("ready old config ");
                 dn.stopHeartbeat();
             }
 

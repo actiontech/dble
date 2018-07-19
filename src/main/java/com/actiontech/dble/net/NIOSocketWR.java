@@ -156,7 +156,7 @@ public class NIOSocketWR extends SocketWR {
                 key.cancel();
             }
         } catch (Exception e) {
-            AbstractConnection.LOGGER.info("clear selector keys err:" + e);
+            AbstractConnection.LOGGER.info("ready selector keys err:" + e);
         }
     }
 

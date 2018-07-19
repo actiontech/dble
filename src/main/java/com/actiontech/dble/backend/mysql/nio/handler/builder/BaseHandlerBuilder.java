@@ -68,7 +68,7 @@ public abstract class BaseHandlerBuilder {
     protected boolean needWhereHandler = true;
 
     protected boolean isExplain = false;
-    protected List<BaseHandlerBuilder> subQueryBuilderList = new ArrayList<>(1);
+    protected List<BaseHandlerBuilder> subQueryBuilderList = new CopyOnWriteArrayList<>();
 
     protected BaseHandlerBuilder(NonBlockingSession session, PlanNode node, HandlerBuilder hBuilder, boolean isExplain) {
         this.session = session;
@@ -480,7 +480,6 @@ public abstract class BaseHandlerBuilder {
         endHandler.setNextHandler(tempHandler);
         this.getSubQueryBuilderList().add(builder);
         subQueryFinished(subNodes, lock, finished, finishSubQuery);
-        return;
     }
     private void handleSubQuery(final ReentrantLock lock, final Condition finishSubQuery, final AtomicBoolean finished,
                                 final AtomicInteger subNodes, final CopyOnWriteArrayList<ErrorPacket> errorPackets, final PlanNode planNode, final SubQueryHandler tempHandler) {
@@ -488,8 +487,10 @@ public abstract class BaseHandlerBuilder {
             @Override
             public void run() {
                 try {
-                    DMLResponseHandler endHandler = hBuilder.buildNode(session, planNode, false);
+                    BaseHandlerBuilder builder = hBuilder.getBuilder(session, planNode, false);
+                    DMLResponseHandler endHandler = builder.getEndHandler();
                     endHandler.setNextHandler(tempHandler);
+                    getSubQueryBuilderList().add(builder);
                     CallBackHandler tempDone = new CallBackHandler() {
                         @Override
                         public void call() throws Exception {

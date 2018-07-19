@@ -38,6 +38,8 @@ import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.trace.TraceRecord;
+import com.actiontech.dble.server.trace.TraceResult;
 import com.actiontech.dble.statistic.stat.QueryTimeCost;
 import com.actiontech.dble.statistic.stat.QueryTimeCostContainer;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
@@ -95,8 +97,7 @@ public class NonBlockingSession implements Session {
     private AtomicBoolean isMultiStatement = new AtomicBoolean(false);
     private volatile String remingSql = null;
     private AtomicInteger packetId = new AtomicInteger(0);
-
-
+    private volatile TraceResult traceResult;
     public NonBlockingSession(ServerConnection source) {
         this.source = source;
         this.target = new ConcurrentHashMap<>(2, 1f);
@@ -114,7 +115,13 @@ public class NonBlockingSession implements Session {
         return source;
     }
 
-    public void setRequestTime() {
+    void setRequestTime() {
+        long requestTime = 0;
+        if (traceResult != null) {
+            requestTime = System.nanoTime();
+            traceResult.setVeryStartPrepare(requestTime);
+            traceResult.setRequestStartPrepare(new TraceRecord(requestTime));
+        }
         if (DbleServer.getInstance().getConfig().getSystem().getUseCostTimeStat() == 0) {
             return;
         }
@@ -124,19 +131,24 @@ public class NonBlockingSession implements Session {
         }
         timeCost = true;
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("clear");
+            LOGGER.debug("ready");
         }
         queryTimeCost = new QueryTimeCost();
         provider = new CostTimeProvider();
         provider.beginRequest(source.getId());
-        long requestTime = System.nanoTime();
+        if (requestTime == 0) {
+            requestTime = System.nanoTime();
+        }
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("frontend connection setRequestTime:" + requestTime);
         }
         queryTimeCost.setRequestTime(requestTime);
     }
 
-    public void startProcess() {
+    void startProcess() {
+        if (traceResult != null) {
+            traceResult.setParseStartPrepare(new TraceRecord(System.nanoTime()));
+        }
         if (!timeCost) {
             return;
         }
@@ -144,6 +156,10 @@ public class NonBlockingSession implements Session {
     }
 
     public void endParse() {
+        if (traceResult != null) {
+            traceResult.ready();
+            traceResult.setRouteStart(new TraceRecord(System.nanoTime()));
+        }
         if (!timeCost) {
             return;
         }
@@ -151,7 +167,10 @@ public class NonBlockingSession implements Session {
     }
 
 
-    public void endRoute(RouteResultset rrs) {
+    void endRoute(RouteResultset rrs) {
+        if (traceResult != null) {
+            traceResult.setPreExecuteStart(new TraceRecord(System.nanoTime()));
+        }
         if (!timeCost) {
             return;
         }
@@ -159,11 +178,14 @@ public class NonBlockingSession implements Session {
         queryTimeCost.setCount(rrs.getNodes() == null ? 0 : rrs.getNodes().length);
     }
 
-    public void endDelive() {
+    public void readyToDeliver() {
+        if (traceResult != null) {
+            traceResult.setPreExecuteEnd(new TraceRecord(System.nanoTime()));
+        }
         if (!timeCost) {
             return;
         }
-        provider.endDelive(source.getId());
+        provider.readyToDeliver(source.getId());
     }
 
     public void setBackendRequestTime(long backendID) {
@@ -181,16 +203,33 @@ public class NonBlockingSession implements Session {
 
     }
 
-    public void setBackendResponseTime(long backendID) {
+    public void setBackendResponseTime(MySQLConnection conn) {
+        long responseTime = 0;
+        if (traceResult != null) {
+            if (traceResult.getConnFlagMap().putIfAbsent(conn, true) == null) {
+                RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
+                ResponseHandler responseHandler = conn.getRespHandler();
+                responseTime = System.nanoTime();
+                TraceRecord record = new TraceRecord(responseTime, node.getName(), node.getStatement());
+                Map<MySQLConnection, TraceRecord> connMap = new ConcurrentHashMap<>();
+                connMap.put(conn, record);
+                Map<MySQLConnection, TraceRecord> existReceivedMap = traceResult.getConnReceivedMap().putIfAbsent(responseHandler, connMap);
+                if (existReceivedMap != null) {
+                    existReceivedMap.putAll(connMap);
+                }
+            }
+        }
         if (!timeCost) {
             return;
         }
-        QueryTimeCost backCost = queryTimeCost.getBackEndTimeCosts().get(backendID);
-        long responseTime = System.nanoTime();
+        QueryTimeCost backCost = queryTimeCost.getBackEndTimeCosts().get(conn.getId());
+        if (responseTime == 0) {
+            responseTime = System.nanoTime();
+        }
         if (backCost != null && backCost.getResponseTime().compareAndSet(0, responseTime)) {
             if (queryTimeCost.getFirstBackConRes().compareAndSet(false, true)) {
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("backend connection[" + backendID + "] setResponseTime:" + responseTime);
+                    LOGGER.debug("backend connection[" + conn.getId() + "] setResponseTime:" + responseTime);
                 }
                 provider.resFromBack(source.getId());
                 firstBackConRes.set(false);
@@ -223,16 +262,45 @@ public class NonBlockingSession implements Session {
     }
 
     public void setResponseTime() {
+        long responseTime = 0;
+        if (traceResult != null) {
+            responseTime = System.nanoTime();
+            traceResult.setVeryEnd(responseTime);
+        }
         if (!timeCost) {
             return;
         }
-        long responseTime = System.nanoTime();
+        if (responseTime == 0) {
+            responseTime = System.nanoTime();
+        }
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("setResponseTime:" + responseTime);
         }
         queryTimeCost.getResponseTime().set(responseTime);
         provider.beginResponse(source.getId());
         QueryTimeCostContainer.getInstance().add(queryTimeCost);
+    }
+
+    public void setBackendResponseEndTime(MySQLConnection conn) {
+        if (traceResult != null) {
+            RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
+            ResponseHandler responseHandler = conn.getRespHandler();
+            TraceRecord record = new TraceRecord(System.nanoTime(), node.getName(), node.getStatement());
+            Map<MySQLConnection, TraceRecord> connMap = new ConcurrentHashMap<>();
+            connMap.put(conn, record);
+            Map<MySQLConnection, TraceRecord> existReceivedMap = traceResult.getConnFinishedMap().putIfAbsent(responseHandler, connMap);
+            if (existReceivedMap != null) {
+                existReceivedMap.putAll(connMap);
+            }
+        }
+    }
+
+    public List<String[]> genTraceResult() {
+        if (traceResult != null) {
+            return traceResult.genTraceResult();
+        } else {
+            return null;
+        }
     }
 
     @Override
@@ -278,7 +346,7 @@ public class NonBlockingSession implements Session {
 
     @Override
     public void execute(RouteResultset rrs) {
-        // clear prev execute resources
+        // ready prev execute resources
         clearHandlesResources();
         if (LOGGER.isDebugEnabled()) {
             StringBuilder s = new StringBuilder();
@@ -312,6 +380,7 @@ public class NonBlockingSession implements Session {
         }
         if (nodes.length == 1) {
             SingleNodeHandler singleNodeHandler = new SingleNodeHandler(rrs, this);
+            setTraceSimpleHandler(singleNodeHandler);
             if (this.isPrepared()) {
                 singleNodeHandler.setPrepared(true);
             }
@@ -366,6 +435,8 @@ public class NonBlockingSession implements Session {
             }
         } else {
             MultiNodeQueryHandler multiNodeHandler = new MultiNodeQueryHandler(rrs, this);
+            setTraceSimpleHandler(multiNodeHandler);
+            readyToDeliver();
             if (this.isPrepared()) {
                 multiNodeHandler.setPrepared(true);
             }
@@ -741,7 +812,7 @@ public class NonBlockingSession implements Session {
 
     public void clearResources(final boolean needRollback) {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("clear session resources " + this);
+            LOGGER.debug("ready session resources " + this);
         }
         this.releaseConnections(needRollback);
         needWaitFinished = false;
@@ -888,7 +959,7 @@ public class NonBlockingSession implements Session {
      * reset the session multiStatementStatus
      */
     public void resetMultiStatementStatus() {
-        //clear the record
+        //ready the record
         this.isMultiStatement.set(false);
         this.remingSql = null;
         this.packetId.set(0);
@@ -949,6 +1020,28 @@ public class NonBlockingSession implements Session {
 
     public void setQueryStartTime(long queryStartTime) {
         this.queryStartTime = queryStartTime;
+    }
+
+
+
+
+    public boolean isTrace() {
+        return traceResult != null;
+    }
+
+    public void setTrace(boolean enable) {
+        if (enable && traceResult == null) {
+            traceResult = new TraceResult();
+        }
+        if (!enable && traceResult != null) {
+            traceResult = null;
+        }
+    }
+
+    public void setTraceSimpleHandler(ResponseHandler simpleHandler) {
+        if (traceResult != null) {
+            traceResult.setSimpleHandler(simpleHandler);
+        }
     }
 
 }

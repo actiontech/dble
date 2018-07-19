@@ -22,6 +22,6 @@ public interface ResultStore {
     /* close result */
     void close();
 
-    /* clear data */
+    /* ready data */
     void clear();
 }

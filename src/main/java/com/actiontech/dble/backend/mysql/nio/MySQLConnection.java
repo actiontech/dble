@@ -684,7 +684,7 @@ public class MySQLConnection extends BackendAIOConnection {
         }
         if (this.usrVariables.size() > 0) {
             this.respHandler = null;
-            this.close("close for clear usrVariables");
+            this.close("close for ready usrVariables");
             return;
         }
         if (this.isRunning()) {
@@ -711,6 +711,10 @@ public class MySQLConnection extends BackendAIOConnection {
             LOGGER.info("set not MySQLConnectionHandler " + queryHandler.getClass().getCanonicalName());
         }
         return false;
+    }
+
+    public ResponseHandler getRespHandler() {
+        return respHandler;
     }
 
     public void setSession(NonBlockingSession session) {

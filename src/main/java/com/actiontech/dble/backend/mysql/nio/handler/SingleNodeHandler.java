@@ -73,13 +73,11 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         this.packetId = (byte) session.getPacketId().get();
         final BackendConnection conn = session.getTarget(node);
         node.setRunOnSlave(rrs.getRunOnSlave());
-
         if (session.tryExistsCon(conn, node)) {
             execute(conn);
         } else {
             // create new connection
             node.setRunOnSlave(rrs.getRunOnSlave());
-
             ServerConfig conf = DbleServer.getInstance().getConfig();
             PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
             dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), sc.isAutocommit(), node, this, node);
@@ -98,6 +96,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         if (!isAutocommit && node.isModifySQL()) {
             TxnLogHelper.putTxnLog(session.getSource(), node.getStatement());
         }
+        session.readyToDeliver();
         conn.execute(node, session.getSource(), isAutocommit);
     }
 
@@ -185,9 +184,9 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             ok.setServerStatus(source.isAutocommit() ? 2 : 1);
             source.setLastInsertId(ok.getInsertId());
             //handleSpecial
+            session.setBackendResponseEndTime((MySQLConnection) conn);
             session.releaseConnectionIfSafe(conn, false);
             session.setResponseTime();
-
             session.multiStatementPacket(ok, packetId);
             boolean multiStatementFlag = session.getIsMultiStatement().get();
             doSqlStat();
@@ -204,10 +203,9 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
      */
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
-
         this.netOutBytes += eof.length;
         this.resultSize += eof.length;
-
+        session.setBackendResponseEndTime((MySQLConnection) conn);
         // if it's call statement,it will not release connection
         if (!rrs.isCallStatement() || rrs.getProcedure().isResultSimpleValue()) {
             session.releaseConnectionIfSafe(conn, false);

@@ -472,7 +472,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             return value;
         }
 
-        //if the value is cover by enclose char and enclose char is not null, clear the enclose char.
+        //if the value is cover by enclose char and enclose char is not null, ready the enclose char.
         if (enclose != null && !"".equals(enclose) && (value.startsWith(enclose) && value.endsWith(enclose))) {
             return this.escaped(value.substring(enclose.length() - 1, value.length() - enclose.length()).replace("\\", "\\\\").replace(escape, "\\"));
         }

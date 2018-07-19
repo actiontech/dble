@@ -78,8 +78,7 @@ public final class SelectVersionComment {
 
     public static byte setCurrentPacket(FrontendConnection c) {
         if (c instanceof ServerConnection) {
-            byte packetId = (byte) ((ServerConnection) c).getSession2().getPacketId().get();
-            return packetId;
+            return (byte) ((ServerConnection) c).getSession2().getPacketId().get();
         }
         return 0;
     }

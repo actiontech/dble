@@ -48,16 +48,6 @@ public class HandlerBuilder {
         }
     }
 
-    /**
-     * generate node handler chain, and return endHandler
-     *
-     * @param planNode
-     * @return
-     */
-    public DMLResponseHandler buildNode(NonBlockingSession nonBlockingSession, PlanNode planNode, boolean isExplain) {
-        BaseHandlerBuilder builder = getBuilder(nonBlockingSession, planNode, isExplain);
-        return builder.getEndHandler();
-    }
 
     public BaseHandlerBuilder getBuilder(NonBlockingSession nonBlockingSession, PlanNode planNode, boolean isExplain) {
         BaseHandlerBuilder builder = createBuilder(nonBlockingSession, planNode, isExplain);
@@ -67,7 +57,8 @@ public class HandlerBuilder {
 
     public void build() throws Exception {
         final long startTime = System.nanoTime();
-        DMLResponseHandler endHandler = buildNode(session, node, false);
+        BaseHandlerBuilder builder = getBuilder(session, node, false);
+        DMLResponseHandler endHandler = builder.getEndHandler();
         OutputHandler fh = new OutputHandler(BaseHandlerBuilder.getSequenceId(), session);
         endHandler.setNextHandler(fh);
         HandlerBuilder.startHandler(fh);

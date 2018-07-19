@@ -82,7 +82,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
 
     private void cleanAndFeedback() {
         byte[] send = sendData;
-        // clear all resources
+        // ready all resources
         session.clearResources(false);
         if (session.closed()) {
             return;

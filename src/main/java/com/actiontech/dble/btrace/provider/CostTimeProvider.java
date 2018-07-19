@@ -38,6 +38,6 @@ public class CostTimeProvider {
     public void beginResponse(long id) {
     }
 
-    public void endDelive(long id) {
+    public void readyToDeliver(long id) {
     }
 }

@@ -216,7 +216,7 @@ public class CacheService {
     }
 
     public void clearCache() {
-        LOGGER.info("clear all cache pool ");
+        LOGGER.info("ready all cache pool ");
         for (CachePool pool : allPools.values()) {
             pool.clearCache();
         }

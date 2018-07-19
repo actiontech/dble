@@ -1,13 +1,11 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2018 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.server.response;
 
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
@@ -16,11 +14,8 @@ import com.actiontech.dble.server.ServerConnection;
 
 import java.nio.ByteBuffer;
 
-/**
- * @author mycat
- */
-public final class SelectVersion {
-    private SelectVersion() {
+public final class SelectTrace {
+    private SelectTrace() {
     }
 
     private static final int FIELD_COUNT = 1;
@@ -32,7 +27,7 @@ public final class SelectVersion {
     public static void response(ServerConnection c) {
         byte packetId = setCurrentPacket(c);
         HEADER.setPacketId(++packetId);
-        FIELDS[0] = PacketUtil.getField("VERSION()", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[0] = PacketUtil.getField("@@trace", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[0].setPacketId(++packetId);
         EOF.setPacketId(++packetId);
 
@@ -45,7 +40,7 @@ public final class SelectVersion {
         buffer = EOF.write(buffer, c, true);
 
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        row.add(Versions.getServerVersion());
+        row.add(c.getSession2().isTrace() ? "1".getBytes() : "0".getBytes());
         row.setPacketId(++packetId);
         buffer = row.write(buffer, c, true);
         EOFPacket lastEof = new EOFPacket();

@@ -119,7 +119,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), sessionAutocommit, node, this, node);
             }
         }
-        session.endDelive();
     }
 
     private void innerExecute(BackendConnection conn, RouteResultsetNode node) {
@@ -214,6 +213,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
         if (executeResponse) {
             this.resultSize += data.length;
+            session.setBackendResponseEndTime((MySQLConnection) conn);
             ServerConnection source = session.getSource();
             OkPacket ok = new OkPacket();
             ok.read(data);
@@ -305,7 +305,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         if (errorResponse.get()) {
             return;
         }
-
+        session.setBackendResponseEndTime((MySQLConnection) conn);
         final ServerConnection source = session.getSource();
         if (!rrs.isCallStatement()) {
             if (clearIfSessionClosed(session)) {
@@ -318,7 +318,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         if (decrementCountBy(1)) {
             this.resultSize += eof.length;
             if (!rrs.isCallStatement() || (rrs.isCallStatement() && rrs.getProcedure().isResultSimpleValue())) {
-                if (this.sessionAutocommit && !session.getSource().isTxStart() && !session.getSource().isLocked()) { // clear all connections
+                if (this.sessionAutocommit && !session.getSource().isTxStart() && !session.getSource().isLocked()) { // ready all connections
                     session.releaseConnections(false);
                 }
 

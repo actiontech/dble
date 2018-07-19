@@ -92,6 +92,9 @@ public final class SelectHandler {
             case ServerParseSelect.SESSION_TX_READ_ONLY:
                 SelectTxReadOnly.response(c);
                 break;
+            case ServerParseSelect.TRACE:
+                SelectTrace.response(c);
+                break;
             default:
                 c.execute(stmt, ServerParse.SELECT);
         }

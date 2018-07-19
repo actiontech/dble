@@ -7,9 +7,9 @@ package com.actiontech.dble.server.parser;
 
 import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.response.ShowColumns;
-import com.actiontech.dble.server.response.ShowTablesStmtInfo;
 import com.actiontech.dble.server.response.ShowIndex;
 import com.actiontech.dble.server.response.ShowTableStatus;
+import com.actiontech.dble.server.response.ShowTablesStmtInfo;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,6 +23,7 @@ public final class ServerParseShow {
 
     public static final int OTHER = -1;
     public static final int DATABASES = 1;
+    public static final int TRACE = 2;
     public static final int TABLES = 5;
     public static final int TABLE_STATUS = 6;
     public static final int CHARSET = 7;
@@ -59,7 +60,7 @@ public final class ServerParseShow {
                     return showGCheck(stmt, i);
                 case 'T':
                 case 't':
-                    return showTableType(stmt);
+                    return showTCheck(stmt, i);
                 case 'S':
                 case 's':
                     return showSCheck(stmt, i);
@@ -339,6 +340,32 @@ public final class ServerParseShow {
         return OTHER;
     }
 
+    private static int showTCheck(String stmt, int offset) {
+        if (stmt.length() > offset++) {
+            char c1 = stmt.charAt(offset);
+            if (c1 == 'A' || c1 == 'a') {
+                return showTableType(stmt);
+            } else if (c1 == 'R' || c1 == 'r') {
+                return showTrace(stmt, offset);
+            } else {
+                return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int showTrace(String stmt, int offset) {
+        if (stmt.length() > offset + "ace".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            if ((c1 == 'A' || c1 == 'a') && (c2 == 'C' || c2 == 'c') && (c3 == 'E' || c3 == 'e') && (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
+                return TRACE;
+            }
+        }
+        return OTHER;
+    }
+
     public static int showTableType(String sql) {
         Pattern pattern = ShowTablesStmtInfo.PATTERN;
         Matcher ma = pattern.matcher(sql);
@@ -386,7 +413,7 @@ public final class ServerParseShow {
             char c9 = stmt.charAt(++offset);
             if ((c1 == 'V' || c1 == 'v') && (c2 == 'A' || c2 == 'a') && (c3 == 'R' || c3 == 'r') && (c4 == 'I' || c4 == 'i') &&
                     (c5 == 'A' || c5 == 'a') && (c6 == 'B' || c6 == 'b') && (c7 == 'L' || c7 == 'l') && (c8 == 'E' || c8 == 'e') &&
-                    (c9 == 'S' || c9 == 's')) {
+                    (c9 == 'S' || c9 == 's') && (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
                 return VARIABLES;
             }
         }

@@ -62,7 +62,8 @@ public final class SetHandler {
         SYSTEM_VARIABLES,
         USER_VARIABLES,
         TX_READ_ONLY,
-        TX_ISOLATION
+        TX_ISOLATION,
+        TRACE
     }
 
     public static void handle(String stmt, ServerConnection c, int offset) {
@@ -236,6 +237,9 @@ public final class SetHandler {
             case XA:
                 c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "set xa cmd can't used in multi-set statement");
                 return false;
+            case TRACE:
+                c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "set trace cmd can't used in multi-set statement");
+                return false;
             case AUTOCOMMIT:
                 c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "set autocommit cmd can't used in multi-set statement");
                 return false;
@@ -397,6 +401,8 @@ public final class SetHandler {
         switch (keyType) {
             case XA:
                 return handleSingleXA(c, valueExpr);
+            case TRACE:
+                return handleSingleTrace(c, valueExpr);
             case AUTOCOMMIT:
                 return handleSingleAutocommit(stmt, c, valueExpr);
             case CHARACTER_SET_CLIENT:
@@ -564,6 +570,18 @@ public final class SetHandler {
         return true;
     }
 
+    private static boolean handleSingleTrace(ServerConnection c, SQLExpr valueExpr) {
+        Boolean switchStatus = isSwitchOn(valueExpr);
+        if (switchStatus == null) {
+            c.writeErrMessage(ErrorCode.ER_WRONG_TYPE_FOR_VAR, "Incorrect argument type to variable 'TRACE'");
+            return false;
+        } else {
+            c.getSession2().setTrace(switchStatus);
+            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+            return true;
+        }
+    }
+
     private static boolean handleSingleXA(ServerConnection c, SQLExpr valueExpr) {
         Boolean switchStatus = isSwitchOn(valueExpr);
         if (switchStatus == null) {
@@ -654,6 +672,8 @@ public final class SetHandler {
         switch (key.toLowerCase()) {
             case "xa":
                 return KeyType.XA;
+            case "trace":
+                return KeyType.TRACE;
             case "autocommit":
                 return KeyType.AUTOCOMMIT;
             case "collation_connection":

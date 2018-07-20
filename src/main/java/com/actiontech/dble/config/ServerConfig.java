@@ -11,7 +11,6 @@ import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.config.model.*;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
@@ -271,11 +270,6 @@ public class ServerConfig {
             this.firewall2 = this.firewall;
             this.erRelations2 = this.erRelations;
             this.dataHostWithoutWR2 = this.dataHostWithoutWR;
-            // TODO:comment BY huqing.yan and will reopen later
-            //if (!isLoadAll) {
-            //    DsDiff diff = dsdiff(newDataHosts);
-            //    diff.apply();
-            //}
 
             // new data host
             // 1 start heartbeat
@@ -325,103 +319,6 @@ public class ServerConfig {
         this.dataHosts = newDataHosts;
         this.firewall = newFirewall;
         this.erRelations = newErRelations;
-    }
-
-    private DsDiff dsdiff(Map<String, PhysicalDBPool> newDataHosts) {
-        DsDiff diff = new DsDiff();
-        // deleted datasource
-        for (PhysicalDBPool opool : dataHosts.values()) {
-            PhysicalDBPool npool = newDataHosts.get(opool.getHostName());
-            if (npool == null) {
-                LOGGER.info("reload -delete- failed, use old datasources ");
-                return null;
-            }
-
-            Map<Integer, PhysicalDatasource[]> odss = opool.getReadSources();
-            Map<Integer, PhysicalDatasource[]> ndss = npool.getReadSources();
-            Map<Integer, ArrayList<PhysicalDatasource>> idel = new HashMap<>(2);
-            boolean haveOne = false;
-            for (Map.Entry<Integer, PhysicalDatasource[]> oentry : odss.entrySet()) {
-                boolean doadd = false;
-                ArrayList<PhysicalDatasource> del = new ArrayList<>();
-                for (PhysicalDatasource ods : oentry.getValue()) {
-                    boolean dodel = true;
-                    for (Map.Entry<Integer, PhysicalDatasource[]> nentry : ndss.entrySet()) {
-                        for (PhysicalDatasource nds : nentry.getValue()) {
-                            if (ods.getName().equals(nds.getName())) {
-                                dodel = false;
-                                break;
-                            }
-                        }
-                        if (!dodel) {
-                            break;
-                        }
-                    }
-                    if (dodel) {
-                        del.add(ods);
-                        doadd = true;
-                    }
-                }
-                if (doadd) {
-                    idel.put(oentry.getKey(), del);
-                    haveOne = true;
-                }
-            }
-            if (haveOne) {
-                diff.deled.put(opool, idel);
-            }
-        }
-
-        // added datasource
-        if (addedDatasource(newDataHosts, diff)) return null;
-
-        return diff;
-    }
-
-    private boolean addedDatasource(Map<String, PhysicalDBPool> newDataHosts, DsDiff diff) {
-        for (PhysicalDBPool npool : newDataHosts.values()) {
-            PhysicalDBPool opool = dataHosts.get(npool.getHostName());
-            if (opool == null) {
-                LOGGER.warn("reload -add- failed, use old datasources ");
-                return true;
-            }
-
-            Map<Integer, PhysicalDatasource[]> ndss = npool.getReadSources();
-            Map<Integer, PhysicalDatasource[]> odss = opool.getReadSources();
-            Map<Integer, ArrayList<PhysicalDatasource>> iadd =
-                    new HashMap<>(2);
-            boolean haveOne = false;
-            for (Map.Entry<Integer, PhysicalDatasource[]> nentry : ndss.entrySet()) {
-                boolean doadd = false;
-                ArrayList<PhysicalDatasource> add = new ArrayList<>();
-                for (PhysicalDatasource nds : nentry.getValue()) {
-                    boolean isExist = false;
-                    for (Map.Entry<Integer, PhysicalDatasource[]> oentry : odss.entrySet()) {
-                        for (PhysicalDatasource ods : oentry.getValue()) {
-                            if (nds.getName().equals(ods.getName())) {
-                                isExist = true;
-                                break;
-                            }
-                        }
-                        if (isExist) {
-                            break;
-                        }
-                    }
-                    if (!isExist) {
-                        add.add(nds);
-                        doadd = true;
-                    }
-                }
-                if (doadd) {
-                    iadd.put(nentry.getKey(), add);
-                    haveOne = true;
-                }
-            }
-            if (haveOne) {
-                diff.added.put(opool, iadd);
-            }
-        }
-        return false;
     }
 
 
@@ -537,77 +434,6 @@ public class ServerConfig {
 
     }
 
-    private static class DsDiff {
-        private Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> deled;
-        private Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> added;
-
-        DsDiff() {
-            deled = new HashMap<>(2);
-            added = new HashMap<>(2);
-        }
-
-        public void apply() {
-            // delete
-            for (Map.Entry<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> lentry : deled.entrySet()) {
-                for (Map.Entry<Integer, ArrayList<PhysicalDatasource>> llentry : lentry.getValue().entrySet()) {
-                    for (int i = 0; i < llentry.getValue().size(); i++) {
-                        // lentry.getKey().delRDs(llentry.getValue().get(i));
-                        llentry.getValue().get(i).setDying();
-                    }
-                }
-            }
-
-            // add
-            for (Map.Entry<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> lentry : added.entrySet()) {
-                for (Map.Entry<Integer, ArrayList<PhysicalDatasource>> llentry : lentry.getValue().entrySet()) {
-                    for (int i = 0; i < llentry.getValue().size(); i++) {
-                        lentry.getKey().addRDs(llentry.getKey(), llentry.getValue().get(i));
-                    }
-                }
-            }
-
-            // sleep
-            ArrayList<PhysicalDatasource> killed = new ArrayList<>(2);
-            for (Map.Entry<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> lentry : deled.entrySet()) {
-                for (Map.Entry<Integer, ArrayList<PhysicalDatasource>> llentry : lentry.getValue().entrySet()) {
-                    for (int i = 0; i < llentry.getValue().size(); i++) {
-                        if (llentry.getValue().get(i).getActiveCount() != 0) {
-                            killed.add(llentry.getValue().get(i));
-                        }
-                    }
-                }
-            }
-            if (!killed.isEmpty()) {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException ignore) {
-                    //ignore error
-                }
-
-                for (PhysicalDatasource aKilled : killed) {
-                    if (aKilled.getActiveCount() != 0) {
-                        aKilled.clearConsByDying();
-                    }
-                }
-            }
-        }
-
-        public Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> getDeled() {
-            return deled;
-        }
-
-        public void setDeled(Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> deled) {
-            this.deled = deled;
-        }
-
-        public Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> getAdded() {
-            return added;
-        }
-
-        public void setAdded(Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> added) {
-            this.added = added;
-        }
-    }
 }
 
 

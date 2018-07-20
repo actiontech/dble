@@ -37,6 +37,7 @@ public class PhysicalDBPool {
     private final String hostName;
 
     private final ReentrantReadWriteLock adjustLock = new ReentrantReadWriteLock();
+
     private PhysicalDatasource[] writeSources;
     private Map<Integer, PhysicalDatasource[]> readSources;
     private Map<Integer, PhysicalDatasource[]> standbyReadSourcesMap;
@@ -50,6 +51,7 @@ public class PhysicalDBPool {
     private final int balance;
     private final Random random = new Random();
     private String[] schemas;
+
     private final DataHostConfig dataHostConfig;
 
     public PhysicalDBPool(String name, DataHostConfig conf, PhysicalDatasource[] writeSources,
@@ -328,6 +330,14 @@ public class PhysicalDBPool {
         initSuccess = false;
         LOGGER.warn(hostName + " init failure");
         return -1;
+    }
+
+    public int reloadInit(int index) {
+        if (initSuccess) {
+            LOGGER.info(hostName + "dataHost already inited doing nothing");
+            return activeIndex;
+        }
+        return init(index);
     }
 
     private boolean checkIndex(int i) {
@@ -743,6 +753,37 @@ public class PhysicalDBPool {
         }
     }
 
+    public boolean equalsBaseInfo(PhysicalDBPool pool) {
+
+        if (pool.getDataHostConfig().getName().equals(this.dataHostConfig.getName())
+                && pool.getDataHostConfig().getHearbeatSQL().equals(this.dataHostConfig.getHearbeatSQL())
+                && pool.getDataHostConfig().getBalance() == this.dataHostConfig.getBalance()
+                && pool.getDataHostConfig().getMaxCon() == this.dataHostConfig.getMaxCon()
+                && pool.getDataHostConfig().getMinCon() == this.dataHostConfig.getMinCon()
+                && pool.getHostName().equals(this.hostName)) {
+            return true;
+        }
+        return false;
+    }
+
+    public String toString() {
+        StringBuffer sb = new StringBuffer("dataHost:").append(hostName).append(this.hashCode());
+        sb.append(" Max = ").append(dataHostConfig.getMaxCon()).append(" Min = ").append(this.dataHostConfig.getMinCon());
+        for (int i = 0; i < writeSources.length; i++) {
+            PhysicalDatasource writeHost = writeSources[0];
+            sb.append("\n\t\t\t writeHost" + i).append(" url=").append(writeHost.getConfig().getUrl());
+            PhysicalDatasource[] readSource = readSources.get(new Integer(i));
+            if (readSource != null) {
+                for (PhysicalDatasource read : readSource) {
+                    sb.append("\n\t\t\t\t\t readHost" + i).append(" url=").append(read.getConfig().getUrl());
+                }
+            }
+
+        }
+
+        return sb.toString();
+    }
+
     public String[] getSchemas() {
         return schemas;
     }
@@ -750,4 +791,14 @@ public class PhysicalDBPool {
     public void setSchemas(String[] mySchemas) {
         this.schemas = mySchemas;
     }
+
+    public DataHostConfig getDataHostConfig() {
+        return dataHostConfig;
+    }
+
+
+    public PhysicalDatasource[] getWriteSources() {
+        return writeSources;
+    }
+
 }

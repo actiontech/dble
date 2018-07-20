@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.actiontech</groupId>
     <artifactId>dble</artifactId>
-    <version>2.18.07.1</version>
+    <version>2.18.07.2</version>
     <packaging>jar</packaging>
     <name>dble-server</name>
     <description>The project of dble-server</description>
@@ -433,7 +433,7 @@
                             <replacements>
                                 <replacement>
                                     <token>@server-version@</token>
-                                    <value>5.6.29-dble-${project.version}-${git.commit.id}-${timestamp}</value>
+                                    <value>5.6.29-dble-${project.version}-${git.commit.id.abbrev}-${timestamp}</value>
                                 </replacement>
                                 <replacement>
                                     <token>@version-comment@</token>

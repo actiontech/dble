@@ -275,7 +275,7 @@ public class ArgComparator {
             }
             if (ac.setNull)
                 ac.owner.setNullValue(true);
-            return -1;
+            return ac.a.isNullValue() ? -1 : 1;
         }
     }
 
@@ -298,7 +298,7 @@ public class ArgComparator {
             }
             if (ac.setNull)
                 ac.owner.setNullValue((true));
-            return -1;
+            return ac.a.isNullValue() ? -1 : 1;
 
         }
     }
@@ -319,7 +319,7 @@ public class ArgComparator {
             }
             if (ac.setNull)
                 ac.owner.setNullValue(true);
-            return -1;
+            return ac.a.isNullValue() ? -1 : 1;
         }
     }
 
@@ -338,7 +338,7 @@ public class ArgComparator {
             }
             if (ac.setNull)
                 ac.owner.setNullValue((true));
-            return -1;
+            return ac.a.isNullValue() ? -1 : 1;
         }
     }
 
@@ -357,7 +357,7 @@ public class ArgComparator {
             }
             if (ac.setNull)
                 ac.owner.setNullValue((true));
-            return -1;
+            return ac.a.isNullValue() ? -1 : 1;
         }
     }
 
@@ -392,7 +392,7 @@ public class ArgComparator {
             }
             if (ac.setNull)
                 ac.owner.setNullValue((true));
-            return -1;
+            return ac.a.isNullValue() ? -1 : 1;
         }
     }
 
@@ -513,7 +513,7 @@ public class ArgComparator {
             }
             if (ac.setNull)
                 ac.owner.setNullValue((true));
-            return -1;
+            return ac.a.isNullValue() ? -1 : 1;
         }
     }
 

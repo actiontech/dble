@@ -6,6 +6,7 @@
 package com.actiontech.dble.config.model;
 
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
+import com.actiontech.dble.config.util.ConfigException;
 
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -113,6 +114,12 @@ public class DataHostConfig {
         Matcher matcher2 = PATTERN_CLUSTER.matcher(heartbeatSQL);
         if (matcher2.find()) {
             isShowClusterSql = true;
+        }
+        if (switchType == SYN_STATUS_SWITCH_DS && !isShowSlaveSql) {
+            throw new ConfigException("if switchType =2 ,the heartbeat must be \"show slave status\"");
+        }
+        if (switchType == CLUSTER_STATUS_SWITCH_DS && !isShowClusterSql) {
+            throw new ConfigException("if switchType =3 ,the heartbeat must be \"show status like 'wsrep%'\"");
         }
     }
 

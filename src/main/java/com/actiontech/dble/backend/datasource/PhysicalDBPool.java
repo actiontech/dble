@@ -615,7 +615,7 @@ public class PhysicalDBPool {
 
     private boolean checkSlaveSynStatus() {
         return (dataHostConfig.getSlaveThreshold() != -1) &&
-                (dataHostConfig.getSwitchType() == DataHostConfig.SYN_STATUS_SWITCH_DS);
+                (dataHostConfig.isShowSlaveSql());
     }
 
     /**

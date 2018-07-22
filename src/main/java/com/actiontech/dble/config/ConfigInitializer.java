@@ -134,6 +134,7 @@ public class ConfigInitializer {
         Set<String> errSourceKeys = new HashSet<>();
         BoolPtr isConnectivity = new BoolPtr(true);
         BoolPtr isAllDataSourceConnected = new BoolPtr(true);
+        boolean isAllMasterDataSourceConnected = true;
         for (Map.Entry<String, List<Pair<String, String>>> entry : hostSchemaMap.entrySet()) {
             String hostName = entry.getKey();
             List<Pair<String, String>> nodeList = entry.getValue();
@@ -156,7 +157,7 @@ public class ConfigInitializer {
                     ds.setTestConnSuccess(false);
                     continue;
                 }
-                testDataSource(errNodeKeys, errSourceKeys, isConnectivity, isAllDataSourceConnected, nodeList, pool, ds);
+                isAllMasterDataSourceConnected &= testDataSource(errNodeKeys, errSourceKeys, isConnectivity, isAllDataSourceConnected, nodeList, pool, ds);
             }
             for (PhysicalDatasource[] dataSources : pool.getStandbyReadSourcesMap().values()) {
                 for (PhysicalDatasource ds : dataSources) {
@@ -180,12 +181,18 @@ public class ConfigInitializer {
                 sb.append(key);
                 sb.append("},");
             }
-            throw new ConfigException(sb.toString());
+            if (!isAllMasterDataSourceConnected) {
+                throw new ConfigException(sb.toString());
+            } else {
+                LOGGER.warn(sb.toString());
+            }
         }
     }
 
-    private void testDataSource(Set<String> errNodeKeys, Set<String> errSourceKeys, BoolPtr isConnectivity,
+    private boolean testDataSource(Set<String> errNodeKeys, Set<String> errSourceKeys, BoolPtr isConnectivity,
                                 BoolPtr isAllDataSourceConnected, List<Pair<String, String>> nodeList, PhysicalDBPool pool, PhysicalDatasource ds) {
+        boolean isMasterDataSourceConnected = true;
+        boolean isMaster = ds == pool.getSource();
         String dataSourceName = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getName() + "]";
         try {
             BoolPtr isDSConnectedPtr = new BoolPtr(false);
@@ -195,17 +202,19 @@ public class ConfigInitializer {
             boolean isDataSourceConnected = isDSConnectedPtr.get();
             ds.setTestConnSuccess(isDataSourceConnected);
             if (!isDataSourceConnected) {
+                if (isMaster) {
+                    isMasterDataSourceConnected = false;
+                }
                 isConnectivity.set(false);
                 isAllDataSourceConnected.set(false);
                 errSourceKeys.add(dataSourceName);
                 markDataSourceSchemaFail(errNodeKeys, nodeList, dataSourceName);
             } else {
-                boolean needAlert = ds == pool.getSource();
                 for (Pair<String, String> node : nodeList) {
                     String key = dataSourceName + ",data_node[" + node.getKey() + "],schema[" + node.getValue() + "]";
                     try {
                         BoolPtr isSchemaConnectedPtr = new BoolPtr(false);
-                        TestTask testSchemaTask = new TestTask(ds, node, errNodeKeys, isSchemaConnectedPtr, needAlert);
+                        TestTask testSchemaTask = new TestTask(ds, node, errNodeKeys, isSchemaConnectedPtr, isMaster);
                         testSchemaTask.start();
                         testSchemaTask.join(3000);
                         boolean isConnected = isSchemaConnectedPtr.get();
@@ -229,6 +238,7 @@ public class ConfigInitializer {
             errSourceKeys.add(dataSourceName);
             markDataSourceSchemaFail(errNodeKeys, nodeList, dataSourceName);
         }
+        return isMasterDataSourceConnected;
     }
 
     private void markDataSourceSchemaFail(Set<String> errKeys, List<Pair<String, String>> nodeList, String dataSourceName) {

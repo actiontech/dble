@@ -95,9 +95,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
     public void onResult(SQLQueryResult<Map<String, String>> result) {
         if (result.isSuccess()) {
             PhysicalDatasource source = heartbeat.getSource();
-            int switchType = source.getHostConfig().getSwitchType();
             Map<String, String> resultResult = result.getResult();
-
             if (source.getHostConfig().isShowSlaveSql()) {
                 setStatusBySlave(source, resultResult);
             } else if (source.getHostConfig().isShowClusterSql()) {

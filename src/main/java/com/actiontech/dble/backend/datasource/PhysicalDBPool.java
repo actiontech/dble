@@ -755,12 +755,12 @@ public class PhysicalDBPool {
 
     public boolean equalsBaseInfo(PhysicalDBPool pool) {
 
-        if (pool.getDataHostConfig().getName().equals(this.dataHostConfig.getName())
-                && pool.getDataHostConfig().getHearbeatSQL().equals(this.dataHostConfig.getHearbeatSQL())
-                && pool.getDataHostConfig().getBalance() == this.dataHostConfig.getBalance()
-                && pool.getDataHostConfig().getMaxCon() == this.dataHostConfig.getMaxCon()
-                && pool.getDataHostConfig().getMinCon() == this.dataHostConfig.getMinCon()
-                && pool.getHostName().equals(this.hostName)) {
+        if (pool.getDataHostConfig().getName().equals(this.dataHostConfig.getName()) &&
+                pool.getDataHostConfig().getHearbeatSQL().equals(this.dataHostConfig.getHearbeatSQL()) &&
+                pool.getDataHostConfig().getBalance() == this.dataHostConfig.getBalance() &&
+                pool.getDataHostConfig().getMaxCon() == this.dataHostConfig.getMaxCon() &&
+                pool.getDataHostConfig().getMinCon() == this.dataHostConfig.getMinCon() &&
+                pool.getHostName().equals(this.hostName)) {
             return true;
         }
         return false;

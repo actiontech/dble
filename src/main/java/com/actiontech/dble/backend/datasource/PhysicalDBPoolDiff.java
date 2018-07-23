@@ -8,10 +8,10 @@ import java.util.Set;
  */
 public class PhysicalDBPoolDiff {
 
-    public final static String CHANGE_TYPE_ADD = "ADD";
-    public final static String CHANGE_TYPE_DELETE = "DELETE";
-    public final static String CHANGE_TYPE_CHANGE = "CHANGE";
-    public final static String CHANGE_TYPE_NO = "NO_CHANGE";
+    public static final String CHANGE_TYPE_ADD = "ADD";
+    public static final String CHANGE_TYPE_DELETE = "DELETE";
+    public static final String CHANGE_TYPE_CHANGE = "CHANGE";
+    public static final String CHANGE_TYPE_NO = "NO_CHANGE";
 
     private String changeType = null;
 
@@ -54,21 +54,21 @@ public class PhysicalDBPoolDiff {
     }
 
 
-    private Set<PhysicalDatasourceDiff> createHostChangeSet(PhysicalDBPool newPool, PhysicalDBPool orgPool) {
+    private Set<PhysicalDatasourceDiff> createHostChangeSet(PhysicalDBPool newDbPool, PhysicalDBPool orgDbPool) {
         Set<PhysicalDatasourceDiff> hostDiff = new HashSet<PhysicalDatasourceDiff>();
 
         //add or not change
-        for (int i = 0; i < newPool.getWriteSources().length; i++) {
-            PhysicalDatasource writeHost = newPool.getWriteSources()[i];
-            PhysicalDatasource[] readHost = newPool.getReadSources().get(new Integer(i));
+        for (int i = 0; i < newDbPool.getWriteSources().length; i++) {
+            PhysicalDatasource writeHost = newDbPool.getWriteSources()[i];
+            PhysicalDatasource[] readHost = newDbPool.getReadSources().get(new Integer(i));
 
             PhysicalDatasource orgHost = null;
             PhysicalDatasource[] relatedHost = null;
-            for (int j = 0; j < orgPool.getWriteSources().length; j++) {
-                PhysicalDatasource oldHost = orgPool.getWriteSources()[i];
-                PhysicalDatasource[] oldRHost = orgPool.getReadSources().get(new Integer(i));
-                if (oldHost.equals(writeHost)
-                        && ((oldRHost == null && readHost == null) || oldRHost.length == readHost.length)) {
+            for (int j = 0; j < orgDbPool.getWriteSources().length; j++) {
+                PhysicalDatasource oldHost = orgDbPool.getWriteSources()[i];
+                PhysicalDatasource[] oldRHost = orgDbPool.getReadSources().get(new Integer(i));
+                if (oldHost.equals(writeHost) &&
+                        ((oldRHost == null && readHost == null) || oldRHost.length == readHost.length)) {
                     boolean sameFlag = true;
                     if (oldRHost != null) {
                         for (int k = 0; k < oldRHost.length; k++) {
@@ -97,9 +97,9 @@ public class PhysicalDBPoolDiff {
         }
 
         //add delete info into hostDiff & from hostDiff
-        for (int i = 0; i < orgPool.getWriteSources().length; i++) {
-            PhysicalDatasource writeHost = newPool.getWriteSources()[i];
-            PhysicalDatasource[] readHost = newPool.getReadSources().get(new Integer(i));
+        for (int i = 0; i < orgDbPool.getWriteSources().length; i++) {
+            PhysicalDatasource writeHost = newDbPool.getWriteSources()[i];
+            PhysicalDatasource[] readHost = newDbPool.getReadSources().get(new Integer(i));
             boolean findFlag = false;
             for (PhysicalDatasourceDiff diff : hostDiff) {
                 if (diff.getSelfHost().equals(writeHost) && diff.getWriteHostChangeType().equals(CHANGE_TYPE_NO)) {
@@ -115,40 +115,40 @@ public class PhysicalDBPoolDiff {
         return hostDiff;
     }
 
-    private Set<BaseInfoDiff> createBaseDiff(PhysicalDBPool newPool, PhysicalDBPool orgPool) {
-        Set<BaseInfoDiff> baseDiff = new HashSet<BaseInfoDiff>();
-        if (newPool.getDataHostConfig().getBalance() != orgPool.getDataHostConfig().getBalance()) {
-            baseDiff.add(new BaseInfoDiff("balance", newPool.getDataHostConfig().getBalance(), orgPool.getDataHostConfig().getBalance()));
+    private Set<BaseInfoDiff> createBaseDiff(PhysicalDBPool newDbPool, PhysicalDBPool orgDbPool) {
+        Set<BaseInfoDiff> baseDiffSet = new HashSet<BaseInfoDiff>();
+        if (newDbPool.getDataHostConfig().getBalance() != orgDbPool.getDataHostConfig().getBalance()) {
+            baseDiffSet.add(new BaseInfoDiff("balance", newDbPool.getDataHostConfig().getBalance(), orgDbPool.getDataHostConfig().getBalance()));
         }
 
-        if (newPool.getDataHostConfig().getSwitchType() != orgPool.getDataHostConfig().getSwitchType()) {
-            baseDiff.add(new BaseInfoDiff("switchType", newPool.getDataHostConfig().getSwitchType(), orgPool.getDataHostConfig().getSwitchType()));
+        if (newDbPool.getDataHostConfig().getSwitchType() != orgDbPool.getDataHostConfig().getSwitchType()) {
+            baseDiffSet.add(new BaseInfoDiff("switchType", newDbPool.getDataHostConfig().getSwitchType(), orgDbPool.getDataHostConfig().getSwitchType()));
         }
 
-        if (newPool.getDataHostConfig().getMaxCon() != orgPool.getDataHostConfig().getMaxCon()) {
-            baseDiff.add(new BaseInfoDiff("maxCon", newPool.getDataHostConfig().getMaxCon(), orgPool.getDataHostConfig().getMaxCon()));
+        if (newDbPool.getDataHostConfig().getMaxCon() != orgDbPool.getDataHostConfig().getMaxCon()) {
+            baseDiffSet.add(new BaseInfoDiff("maxCon", newDbPool.getDataHostConfig().getMaxCon(), orgDbPool.getDataHostConfig().getMaxCon()));
         }
 
-        if (newPool.getDataHostConfig().getMinCon() != orgPool.getDataHostConfig().getMinCon()) {
-            baseDiff.add(new BaseInfoDiff("minCon", newPool.getDataHostConfig().getMinCon(), orgPool.getDataHostConfig().getMinCon()));
-        }
-
-
-        if (newPool.getDataHostConfig().getSlaveThreshold() != orgPool.getDataHostConfig().getSlaveThreshold()) {
-            baseDiff.add(new BaseInfoDiff("slaveThreshold", newPool.getDataHostConfig().getSlaveThreshold(), orgPool.getDataHostConfig().getSlaveThreshold()));
+        if (newDbPool.getDataHostConfig().getMinCon() != orgDbPool.getDataHostConfig().getMinCon()) {
+            baseDiffSet.add(new BaseInfoDiff("minCon", newDbPool.getDataHostConfig().getMinCon(), orgDbPool.getDataHostConfig().getMinCon()));
         }
 
 
-        if (!newPool.getDataHostConfig().getHearbeatSQL().equals(orgPool.getDataHostConfig().getHearbeatSQL())) {
-            baseDiff.add(new BaseInfoDiff("minCon", newPool.getDataHostConfig().getHearbeatSQL(), orgPool.getDataHostConfig().getHearbeatSQL()));
+        if (newDbPool.getDataHostConfig().getSlaveThreshold() != orgDbPool.getDataHostConfig().getSlaveThreshold()) {
+            baseDiffSet.add(new BaseInfoDiff("slaveThreshold", newDbPool.getDataHostConfig().getSlaveThreshold(), orgDbPool.getDataHostConfig().getSlaveThreshold()));
         }
 
-        if (newPool.getDataHostConfig().isTempReadHostAvailable() != orgPool.getDataHostConfig().isTempReadHostAvailable()) {
-            baseDiff.add(new BaseInfoDiff("slaveThreshold", newPool.getDataHostConfig().isTempReadHostAvailable() ? 1 : 0,
-                    orgPool.getDataHostConfig().isTempReadHostAvailable() ? 1 : 0));
+
+        if (!newDbPool.getDataHostConfig().getHearbeatSQL().equals(orgDbPool.getDataHostConfig().getHearbeatSQL())) {
+            baseDiffSet.add(new BaseInfoDiff("minCon", newDbPool.getDataHostConfig().getHearbeatSQL(), orgDbPool.getDataHostConfig().getHearbeatSQL()));
         }
 
-        return baseDiff;
+        if (newDbPool.getDataHostConfig().isTempReadHostAvailable() != orgDbPool.getDataHostConfig().isTempReadHostAvailable()) {
+            baseDiffSet.add(new BaseInfoDiff("slaveThreshold", newDbPool.getDataHostConfig().isTempReadHostAvailable() ? 1 : 0,
+                    orgDbPool.getDataHostConfig().isTempReadHostAvailable() ? 1 : 0));
+        }
+
+        return baseDiffSet;
     }
 
     public String getChangeType() {
@@ -199,7 +199,7 @@ public class PhysicalDBPoolDiff {
 
         private PhysicalDatasource[] relatedHost;
 
-        public PhysicalDatasourceDiff(String writeHostChangeType, PhysicalDatasource selfHost, PhysicalDatasource[] relatedHost) {
+        PhysicalDatasourceDiff(String writeHostChangeType, PhysicalDatasource selfHost, PhysicalDatasource[] relatedHost) {
             this.writeHostChangeType = writeHostChangeType;
             this.selfHost = selfHost;
             this.relatedHost = relatedHost;

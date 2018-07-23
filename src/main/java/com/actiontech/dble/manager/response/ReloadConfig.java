@@ -342,8 +342,6 @@ public final class ReloadConfig {
          */
         ServerConfig config = DbleServer.getInstance().getConfig();
 
-        /* 2.1 do nothing */
-        boolean isReloadStatusOK = true;
         String reasonMsg = null;
 
         /* 2.1.1 get diff of dataHosts */
@@ -358,13 +356,17 @@ public final class ReloadConfig {
 
         boolean mergeReload = true;
 
+        if ((loadAllMode & ManagerParseConfig.OPTR_MODE) != 0) {
+            mergeReload = false;
+        }
+
         if (mergeReload) {
-            initDataHostByMap(mergedDataHosts, newDataNodes);
+            reasonMsg = initDataHostByMap(mergedDataHosts, newDataNodes);
         } else {
-            initDataHostByMap(newDataHosts, newDataNodes);
+            reasonMsg = initDataHostByMap(newDataHosts, newDataNodes);
         }
         LOGGER.info("reload config: init new data host  end");
-        if (isReloadStatusOK) {
+        if (reasonMsg == null) {
             /* 2.3 apply new conf */
             LOGGER.info("reload config: apply new config start");
             if (mergeReload) {
@@ -532,6 +534,8 @@ public final class ReloadConfig {
 
                 case PhysicalDBPoolDiff.CHANGE_TYPE_CHANGE:
                     recyclHost.put(diff.getNewPool().getHostName(), diff.getOrgPool());
+                    mergedDataHosts.put(diff.getNewPool().getHostName(), diff.getNewPool());
+                    break;
                 case PhysicalDBPoolDiff.CHANGE_TYPE_ADD:
                     //when the type is change,just delete the old one and use the new one
                     mergedDataHosts.put(diff.getNewPool().getHostName(), diff.getNewPool());

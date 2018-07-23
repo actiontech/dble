@@ -540,7 +540,15 @@ public abstract class PhysicalDatasource {
 
 
     public boolean equals(PhysicalDatasource dataSource) {
-        return dataSource.getConfig().getUser().equals(this.getConfig().getUser()) && dataSource.getConfig().getUrl().equals(this.getConfig().getUrl())
-                && dataSource.getConfig().getPassword().equals(this.getConfig().getPassword()) && dataSource.getConfig().getHostName().equals(dataSource.getConfig().getHostName());
+        return dataSource.getConfig().getUser().equals(this.getConfig().getUser()) && dataSource.getConfig().getUrl().equals(this.getConfig().getUrl()) &&
+                dataSource.getConfig().getPassword().equals(this.getConfig().getPassword()) && dataSource.getConfig().getHostName().equals(dataSource.getConfig().getHostName());
+    }
+
+    public boolean equals(Object obj) {
+        return super.equals(obj);
+    }
+
+    public int hashCode() {
+        return super.hashCode();
     }
 }

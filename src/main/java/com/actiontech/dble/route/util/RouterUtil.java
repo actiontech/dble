@@ -252,8 +252,7 @@ public final class RouterUtil {
      * @author AStoneGod
      */
     public static String getFixedSql(String stmt) {
-        stmt = stmt.replaceAll("\r\n", " ");
-        return stmt = stmt.trim();
+        return stmt.replaceAll("\r", " ").replaceAll("\n", " ").trim();
     }
 
     /**

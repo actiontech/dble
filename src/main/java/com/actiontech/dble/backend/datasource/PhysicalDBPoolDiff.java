@@ -60,15 +60,17 @@ public class PhysicalDBPoolDiff {
         //add or not change
         for (int i = 0; i < newDbPool.getWriteSources().length; i++) {
             PhysicalDatasource writeHost = newDbPool.getWriteSources()[i];
-            PhysicalDatasource[] readHost = newDbPool.getReadSources().get(new Integer(i));
+            PhysicalDatasource[] readHost = newDbPool.getReadSources().get(Integer.valueOf(i));
 
             PhysicalDatasource orgHost = null;
             PhysicalDatasource[] relatedHost = null;
             for (int j = 0; j < orgDbPool.getWriteSources().length; j++) {
                 PhysicalDatasource oldHost = orgDbPool.getWriteSources()[i];
-                PhysicalDatasource[] oldRHost = orgDbPool.getReadSources().get(new Integer(i));
+                PhysicalDatasource[] oldRHost = orgDbPool.getReadSources().get(Integer.valueOf(i));
+
                 if (oldHost.equals(writeHost) &&
-                        ((oldRHost == null && readHost == null) || oldRHost.length == readHost.length)) {
+                        ((oldRHost == null && readHost == null) ||
+                                ((oldRHost != null && readHost != null) && oldRHost.length == readHost.length))) {
                     boolean sameFlag = true;
                     if (oldRHost != null) {
                         for (int k = 0; k < oldRHost.length; k++) {
@@ -99,7 +101,7 @@ public class PhysicalDBPoolDiff {
         //add delete info into hostDiff & from hostDiff
         for (int i = 0; i < orgDbPool.getWriteSources().length; i++) {
             PhysicalDatasource writeHost = newDbPool.getWriteSources()[i];
-            PhysicalDatasource[] readHost = newDbPool.getReadSources().get(new Integer(i));
+            PhysicalDatasource[] readHost = newDbPool.getReadSources().get(Integer.valueOf(i));
             boolean findFlag = false;
             for (PhysicalDatasourceDiff diff : hostDiff) {
                 if (diff.getSelfHost().equals(writeHost) && diff.getWriteHostChangeType().equals(CHANGE_TYPE_NO)) {
@@ -191,65 +193,4 @@ public class PhysicalDBPoolDiff {
         this.hostChangeSet = hostChangeSet;
     }
 
-    private class PhysicalDatasourceDiff {
-        private String writeHostChangeType = null;
-
-
-        private PhysicalDatasource selfHost;
-
-        private PhysicalDatasource[] relatedHost;
-
-        PhysicalDatasourceDiff(String writeHostChangeType, PhysicalDatasource selfHost, PhysicalDatasource[] relatedHost) {
-            this.writeHostChangeType = writeHostChangeType;
-            this.selfHost = selfHost;
-            this.relatedHost = relatedHost;
-        }
-
-
-        public String getWriteHostChangeType() {
-            return writeHostChangeType;
-        }
-
-        public void setWriteHostChangeType(String writeHostChangeType) {
-            this.writeHostChangeType = writeHostChangeType;
-        }
-
-        public PhysicalDatasource getSelfHost() {
-            return selfHost;
-        }
-
-        public void setSelfHost(PhysicalDatasource selfHost) {
-            this.selfHost = selfHost;
-        }
-
-        public PhysicalDatasource[] getRelatedHost() {
-            return relatedHost;
-        }
-
-        public void setRelatedHost(PhysicalDatasource[] relatedHost) {
-            this.relatedHost = relatedHost;
-        }
-
-
-    }
-
-
-    private class BaseInfoDiff {
-        String type;
-        String orgValue;
-        String newVaule;
-
-        BaseInfoDiff(String type, int orgVaule, int newValue) {
-            this.type = type;
-            this.orgValue = orgVaule + "";
-            this.newVaule = newValue + "";
-        }
-
-
-        BaseInfoDiff(String type, String orgVaule, String newValue) {
-            this.type = type;
-            this.orgValue = orgVaule;
-            this.newVaule = newValue;
-        }
-    }
 }

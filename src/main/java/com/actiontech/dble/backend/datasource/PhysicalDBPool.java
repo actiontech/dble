@@ -772,7 +772,7 @@ public class PhysicalDBPool {
         for (int i = 0; i < writeSources.length; i++) {
             PhysicalDatasource writeHost = writeSources[0];
             sb.append("\n\t\t\t writeHost" + i).append(" url=").append(writeHost.getConfig().getUrl());
-            PhysicalDatasource[] readSource = readSources.get(new Integer(i));
+            PhysicalDatasource[] readSource = readSources.get(Integer.valueOf(i));
             if (readSource != null) {
                 for (PhysicalDatasource read : readSource) {
                     sb.append("\n\t\t\t\t\t readHost" + i).append(" url=").append(read.getConfig().getUrl());

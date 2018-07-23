@@ -20,6 +20,7 @@ import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.server.ServerConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,15 +39,32 @@ import static com.actiontech.dble.config.loader.zkprocess.zookeeper.process.Paus
 
 public class PauseDatanodeManager {
     protected static final Logger LOGGER = LoggerFactory.getLogger(PauseDatanodeManager.class);
-    private ReentrantLock metaLock = new ReentrantLock();
-    private Condition condRelease = this.metaLock.newCondition();
-    private Set<String> dataNodes = null;
+    private ReentrantLock pauseLock = new ReentrantLock();
+    private Condition condRelease = this.pauseLock.newCondition();
+    private volatile Set<String> dataNodes = null;
     private Map<String, Set<String>> pauseMap = new ConcurrentHashMap<>();
     private AtomicBoolean isPausing = new AtomicBoolean(false);
     private UDistributeLock uDistributeLock = null;
 
+    private volatile PauseEndThreadPool pauseThreadPool = null;
+
     public AtomicBoolean getIsPausing() {
         return this.isPausing;
+    }
+
+    public boolean startPausing(int timeOut, Set<String> ds, int queueLimit) {
+        pauseLock.lock();
+        try {
+            if (isPausing.get()) {
+                return false;
+            }
+            pauseThreadPool = new PauseEndThreadPool(timeOut, queueLimit);
+            lockWithDataNodes(ds);
+            isPausing.set(true);
+            return true;
+        } finally {
+            pauseLock.unlock();
+        }
     }
 
     public void lockWithDataNodes(Set<String> dataNodeSet) {
@@ -94,44 +112,40 @@ public class PauseDatanodeManager {
         }
     }
 
-    public void waitForResume() {
-        metaLock.lock();
+    public boolean waitForResume(RouteResultset rrs, ServerConnection con, String stepNext) {
+        pauseLock.lock();
         try {
-            while (isPausing.get()) {
-                condRelease.await();
-            }
-        } catch (Exception e) {
-            LOGGER.info("await error ");
+            return pauseThreadPool.offer(con, stepNext, rrs);
         } finally {
-            metaLock.unlock();
+            pauseLock.unlock();
         }
     }
 
     public void resume() {
-        metaLock.lock();
+        pauseLock.lock();
         try {
             isPausing.set(false);
             dataNodes = null;
             pauseMap.clear();
-            condRelease.signalAll();
+            pauseThreadPool.continueExec();
         } finally {
-            metaLock.unlock();
+            pauseLock.unlock();
         }
     }
 
 
     public boolean tryResume() {
-        metaLock.lock();
+        pauseLock.lock();
         try {
             if (isPausing.compareAndSet(true, false)) {
                 dataNodes = null;
                 pauseMap.clear();
-                condRelease.signalAll();
+                pauseThreadPool.continueExec();
                 return true;
             }
             return false;
         } finally {
-            metaLock.unlock();
+            pauseLock.unlock();
         }
     }
 
@@ -170,11 +184,11 @@ public class PauseDatanodeManager {
     }
 
 
-    public boolean clusterPauseNotic(String dataNode) {
+    public boolean clusterPauseNotic(String dataNode, int timeOut, int queueLimit) {
         if (DbleServer.getInstance().isUseUcore()) {
             try {
                 uDistributeLock = new UDistributeLock(UcorePathUtil.getPauseDataNodePath(),
-                        new PauseInfo(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), dataNode, PAUSE).toString());
+                        new PauseInfo(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), dataNode, PAUSE, timeOut, queueLimit).toString());
                 if (!uDistributeLock.acquire()) {
                     return false;
                 }
@@ -212,7 +226,7 @@ public class PauseDatanodeManager {
     public void resumeCluster() throws Exception {
         if (DbleServer.getInstance().isUseUcore()) {
             ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getPauseResumePath(),
-                    new PauseInfo(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), " ", PauseInfo.RESUME).toString());
+                    new PauseInfo(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), " ", PauseInfo.RESUME, 0, 0).toString());
 
             //send self reponse
             ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getPauseResumePath(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID)),

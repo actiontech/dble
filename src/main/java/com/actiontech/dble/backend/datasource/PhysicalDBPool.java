@@ -6,14 +6,14 @@
 package com.actiontech.dble.backend.datasource;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.heartbeat.DBHeartbeat;
 import com.actiontech.dble.backend.mysql.nio.handler.GetConnectionHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.model.DataHostConfig;
-import com.actiontech.dble.alarm.AlarmCode;
-import com.actiontech.dble.alarm.Alert;
-import com.actiontech.dble.alarm.AlertUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -666,10 +666,8 @@ public class PhysicalDBPool {
     }
 
     private boolean canSelectAsReadNode(PhysicalDatasource theSource) {
-
         Integer slaveBehindMaster = theSource.getHeartbeat().getSlaveBehindMaster();
         int dbSynStatus = theSource.getHeartbeat().getDbSynStatus();
-
         if (slaveBehindMaster == null || dbSynStatus == DBHeartbeat.DB_SYN_ERROR) {
             return false;
         }

@@ -40,19 +40,20 @@ public class DataSourceSyncRecorder {
         return records.toString();
     }
     public void setBySlaveStatus(Map<String, String> resultResult) {
+        long time = TimeUtil.currentTimeMillis();
         try {
-            long time = TimeUtil.currentTimeMillis();
             remove(time);
             if (resultResult != null && !resultResult.isEmpty()) {
                 this.records = resultResult;
                 String seconds = resultResult.get("Seconds_Behind_Master");
                 long secondsBehindMaster = -1;
-                if (seconds != null) {
+                if (seconds != null && !"".equals(seconds) && !"NULL".equalsIgnoreCase(seconds)) {
                     secondsBehindMaster = Long.parseLong(seconds);
                 }
                 this.asyncRecords.add(new Record(time, secondsBehindMaster));
             }
         } catch (Exception e) {
+            this.asyncRecords.add(new Record(time, -1));
             LOGGER.info("record DataSourceSyncRecorder error " + e.getMessage());
         }
 

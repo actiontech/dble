@@ -35,7 +35,11 @@ public class MySQLOutPutException extends RuntimeException {
     public MySQLOutPutException(int errorCode, String sqlState, String msg, Throwable cause) {
         super(msg, cause);
         this.errorCode = errorCode;
-        this.sqlState = sqlState;
+        if (StringUtil.isEmpty(sqlState)) {
+            this.sqlState = "HY000";
+        } else {
+            this.sqlState = sqlState;
+        }
     }
 
     public int getErrorCode() {

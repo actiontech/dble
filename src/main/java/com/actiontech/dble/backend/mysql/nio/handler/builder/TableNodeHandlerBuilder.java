@@ -62,7 +62,7 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
             this.needCommon = mergeBuilder.getNeedCommonFlag();
             buildMergeHandler(node, rrssArray);
         } catch (Exception e) {
-            throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "table node buildOwn exception!", e);
+            throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "table node buildOwn exception! Error:" + e.getMessage(), e);
         }
     }
 
@@ -100,7 +100,7 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
             rrssArray = rrssList.toArray(rrssArray);
             buildMergeHandler(node, rrssArray);
         } catch (Exception e) {
-            throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "", e);
+            throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", e.getMessage(), e);
         }
     }
 }

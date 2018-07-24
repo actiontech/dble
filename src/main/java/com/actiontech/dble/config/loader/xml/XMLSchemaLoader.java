@@ -537,7 +537,7 @@ public class XMLSchemaLoader implements SchemaLoader {
     private void loadDataHosts(Element root) {
         NodeList list = root.getElementsByTagName("dataHost");
         for (int i = 0, n = list.getLength(); i < n; ++i) {
-
+            Set<String> hostNames = new HashSet<>();
             Element element = (Element) list.item(i);
             String name = element.getAttribute("name");
             if (dataHosts.containsKey(name)) {
@@ -581,6 +581,12 @@ public class XMLSchemaLoader implements SchemaLoader {
                 for (int w = 0; w < writeDbConfs.length; w++) {
                     Element writeNode = (Element) writeNodes.item(w);
                     writeDbConfs[w] = createDBHostConf(name, writeNode, maxCon, minCon);
+                    String writeHostName = writeDbConfs[w].getHostName();
+                    if (hostNames.contains(writeHostName)) {
+                        throw new ConfigException("dataHost[" + name + "]'s child write host name \"" + writeHostName + "\"  duplicated!");
+                    } else {
+                        hostNames.add(writeHostName);
+                    }
                     NodeList readNodes = writeNode.getElementsByTagName("readHost");
                     //for every readHost
                     if (readNodes.getLength() != 0) {
@@ -588,6 +594,12 @@ public class XMLSchemaLoader implements SchemaLoader {
                         for (int r = 0; r < readDbConfs.length; r++) {
                             Element readNode = (Element) readNodes.item(r);
                             readDbConfs[r] = createDBHostConf(name, readNode, maxCon, minCon);
+                            String readHostName = readDbConfs[r].getHostName();
+                            if (hostNames.contains(readHostName)) {
+                                throw new ConfigException("dataHost[" + name + "]'s child host name \"" + readHostName + "\"  duplicated!");
+                            } else {
+                                hostNames.add(readHostName);
+                            }
                         }
                         if (balance != 0) {
                             readHostsMap.put(w, readDbConfs);

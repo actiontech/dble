@@ -30,9 +30,8 @@
     <dataNode name="dn2" dataHost="localhost1" database="db2"/>
     <dataNode name="dn3" dataHost="localhost1" database="db3"/>
     <dataNode name="dn4" dataHost="localhost1" database="db4"/>
-    <dataHost name="localhost1" maxCon="1000" minCon="10" balance="0"
-              writeType="0" switchType="1" slaveThreshold="100">
-        <heartbeat>select user()</heartbeat>
+    <dataHost name="localhost1" maxCon="1000" minCon="10" balance="0"  switchType="-1" slaveThreshold="100">
+        <heartbeat>show slave status</heartbeat>
         <!-- can have multi write hosts -->
         <writeHost host="hostM1" url="localhost:3306" user="root"
                    password="123456">

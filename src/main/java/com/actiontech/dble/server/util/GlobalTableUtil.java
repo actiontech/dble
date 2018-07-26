@@ -216,6 +216,7 @@ public final class GlobalTableUtil {
                                 String warnMsg = tableId + " inner column: " + GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN + " is not exist.";
                                 LOGGER.warn(warnMsg);
                                 AlertUtil.alertSelf(AlarmCode.GLOBAL_TABLE_COLUMN_LOST, Alert.AlertLevel.WARN, warnMsg, AlertUtil.genSingleLabel("TABLE", tableId));
+                                ToResolveContainer.GLOBAL_TABLE_COLUMN_LOST.add(tableId);
                             } else {
                                 if (ToResolveContainer.GLOBAL_TABLE_COLUMN_LOST.contains(tableId) &&
                                         AlertUtil.alertSelfResolve(AlarmCode.GLOBAL_TABLE_COLUMN_LOST, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {

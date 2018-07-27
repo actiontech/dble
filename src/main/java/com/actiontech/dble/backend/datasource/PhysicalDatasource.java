@@ -63,6 +63,7 @@ public abstract class PhysicalDatasource {
     }
 
     private volatile boolean testConnSuccess = false;
+
     public PhysicalDatasource(DBHostConfig config, DataHostConfig hostConfig, boolean isReadNode) {
         this.size = config.getMaxCon();
         this.config = config;
@@ -349,8 +350,8 @@ public abstract class PhysicalDatasource {
     }
 
     private void takeCon(BackendConnection conn,
-                                      final ResponseHandler handler, final Object attachment,
-                                      String schema) {
+                         final ResponseHandler handler, final Object attachment,
+                         String schema) {
         if (createConnAlert) {
             Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
             createConnAlert = !AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", this.getConfig().getId(), labels);
@@ -534,5 +535,19 @@ public abstract class PhysicalDatasource {
 
     public boolean isAlive() {
         return ((getHeartbeat().getStatus() == DBHeartbeat.OK_STATUS) && !getDying()) || (getHeartbeat().isStop() && testConnSuccess);
+    }
+
+
+    public boolean equals(PhysicalDatasource dataSource) {
+        return dataSource.getConfig().getUser().equals(this.getConfig().getUser()) && dataSource.getConfig().getUrl().equals(this.getConfig().getUrl()) &&
+                dataSource.getConfig().getPassword().equals(this.getConfig().getPassword()) && dataSource.getConfig().getHostName().equals(dataSource.getConfig().getHostName());
+    }
+
+    public boolean equals(Object obj) {
+        return super.equals(obj);
+    }
+
+    public int hashCode() {
+        return super.hashCode();
     }
 }

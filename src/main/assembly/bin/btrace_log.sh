@@ -1,6 +1,15 @@
 #!/bin/sh
 APP_NAME='dble'
 CORE_JAVA_HOME=$JAVA_HOME
+
+if [ "$1" -gt 0 ] 2>/dev/null ;then
+    echo "recording btrace log for $1 seconds"
+else
+    echo 'Usage: btrace_log.sh [statistical time]'
+    exit 1
+fi
+
+
 #check CORE_JAVA_HOME & java
 noJavaHome=false
 if [ -z "$CORE_JAVA_HOME" ] ; then

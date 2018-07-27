@@ -170,10 +170,7 @@ public class MySQLConnection extends BackendAIOConnection {
 
     public void setSchema(String newSchema) {
         String curSchema = schema;
-        if (curSchema == null) {
-            this.schema = newSchema;
-            this.oldSchema = newSchema;
-        } else {
+        if (newSchema != null) {
             this.oldSchema = curSchema;
             this.schema = newSchema;
         }

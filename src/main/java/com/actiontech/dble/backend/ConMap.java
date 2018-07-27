@@ -21,26 +21,25 @@ public class ConMap {
     // key--schema
     private final ConcurrentMap<String, ConQueue> items = new ConcurrentHashMap<>();
 
+    private static final String KEY_STRING_FOR_NULL_DATABASE = "KEY FOR NULL";
 
     public ConQueue createAndGetSchemaConQueue(String schema) {
-        ConQueue queue = items.get(schema);
+        ConQueue queue = items.get(schema == null ? KEY_STRING_FOR_NULL_DATABASE : schema);
         if (queue == null) {
             ConQueue newQueue = new ConQueue();
-            queue = items.putIfAbsent(schema, newQueue);
+            queue = items.putIfAbsent(schema == null ? KEY_STRING_FOR_NULL_DATABASE : schema, newQueue);
             return (queue == null) ? newQueue : queue;
         }
         return queue;
     }
 
     public ConQueue getSchemaConQueue(String schema) {
-        return items.get(schema);
+        return items.get(schema == null ? KEY_STRING_FOR_NULL_DATABASE : schema);
     }
 
     public BackendConnection tryTakeCon(final String schema, boolean autoCommit) {
-        if (schema == null) {
-            return null;
-        }
-        final ConQueue queue = items.get(schema);
+
+        final ConQueue queue = items.get(schema == null ? KEY_STRING_FOR_NULL_DATABASE : schema);
         if (queue == null) {
             return null;
         }

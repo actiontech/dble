@@ -635,7 +635,7 @@ public class NonBlockingSession implements Session {
                     c.release();
                 } else if (needRollback) {
                     //c.rollback();
-                    c.quit();
+                    c.close("the transaction need to be rollback");
                 } else {
                     c.release();
                 }

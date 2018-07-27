@@ -619,6 +619,28 @@ public class MySQLConnection extends BackendAIOConnection {
     @Override
     public void close(String reason) {
         if (!isClosed.get()) {
+            if (isAuthenticated) {
+                isQuit.set(true);
+                if (channel.isOpen()) {
+                    try {
+                        write(writeToBuffer(QuitPacket.QUIT, allocate()));
+                    } catch (Throwable e) {
+                        LOGGER.info("error when try to quite the connection ,drop the error and close it anyway");
+                    }
+                } else {
+                    LOGGER.info("testdsf assdfasdfas");
+                }
+            }
+            innerTerminate(reason);
+        }
+        if (this.respHandler != null) {
+            this.respHandler.connectionClose(this, reason);
+            respHandler = null;
+        }
+    }
+
+    public void closeInner(String reason) {
+        if (!isClosed.get()) {
             innerTerminate(reason);
         }
         if (this.respHandler != null) {
@@ -883,7 +905,6 @@ public class MySQLConnection extends BackendAIOConnection {
             conn.usrVariables = usrVariables;
         }
     }
-
 
 
 }

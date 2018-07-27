@@ -26,7 +26,7 @@ public class XAAutoRollbackNodesHandler extends XARollbackNodesHandler {
     public void rollback() {
         if (errConnection != null && nodes.length == errConnection.size()) {
             for (BackendConnection conn : errConnection) {
-                conn.quit();
+                conn.close("rollback all connection error");
             }
             errConnection.clear();
             session.getSource().write(sendData);
@@ -37,7 +37,7 @@ public class XAAutoRollbackNodesHandler extends XARollbackNodesHandler {
                 final BackendConnection conn = session.getTarget(node);
                 if (errConnection.contains(conn)) {
                     session.getTargetMap().remove(node);
-                    conn.quit();
+                    conn.close("errorConnection of rollback");
                 }
             }
             errConnection.clear();

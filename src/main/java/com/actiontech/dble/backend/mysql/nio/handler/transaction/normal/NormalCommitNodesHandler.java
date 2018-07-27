@@ -50,7 +50,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
         errPacket.read(err);
         String errMsg = new String(errPacket.getMessage());
         this.setFail(errMsg);
-        conn.quit();
+        conn.close("commit response error");
         if (decrementCountBy(1)) {
             cleanAndFeedback();
         }
@@ -61,7 +61,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
         this.waitUntilSendFinish();
         LOGGER.info("backend connect", e);
         this.setFail(e.getMessage());
-        conn.quit();
+        conn.close("Commit connection Error");
         if (decrementCountBy(1)) {
             cleanAndFeedback();
         }
@@ -74,7 +74,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
             return;
         }
         this.setFail(reason);
-        conn.quit();
+        conn.close("commit connection closed");
         if (decrementCountBy(1)) {
             cleanAndFeedback();
         }

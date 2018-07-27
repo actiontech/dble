@@ -11,7 +11,7 @@ package com.actiontech.dble.statistic.stat;
 public class SqlResultSet {
     private String sql;
     private long resultSetSize = 0;
-    private int count;
+    private int count = 1;
 
     public String getSql() {
         return sql;

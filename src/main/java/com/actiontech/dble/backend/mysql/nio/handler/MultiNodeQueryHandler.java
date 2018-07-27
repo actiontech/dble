@@ -49,6 +49,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     long selectRows;
     private List<BackendConnection> errConnection;
     private long netOutBytes;
+    private long resultSize;
     protected boolean prepared;
     protected ErrorPacket err;
     protected int fieldCount = 0;
@@ -79,6 +80,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     protected void reset(int initCount) {
         super.reset(initCount);
         this.netOutBytes = 0;
+        this.resultSize = 0;
     }
 
     public NonBlockingSession getSession() {
@@ -206,6 +208,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     @Override
     public void okResponse(byte[] data, BackendConnection conn) {
         this.netOutBytes += data.length;
+        this.resultSize += data.length;
         boolean executeResponse = conn.syncAndExecute();
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("received ok response ,executeResponse:" + executeResponse + " from " + conn);
@@ -270,6 +273,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         for (byte[] field : fields) {
             this.netOutBytes += field.length;
         }
+        this.resultSize = this.netOutBytes;
         if (fieldsReturned) {
             return;
         }
@@ -294,6 +298,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
 
         this.netOutBytes += eof.length;
+        this.resultSize += eof.length;
         if (errorResponse.get()) {
             return;
         }
@@ -355,6 +360,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     return false;
                 }
             }
+            this.resultSize += row.length;
             row[3] = ++packetId;
             RowDataPacket rowDataPkg = null;
             // cache primaryKey-> dataNode
@@ -464,7 +470,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             }
             assert rrs != null;
             QueryResult queryResult = new QueryResult(session.getSource().getUser(), rrs.getSqlType(),
-                    rrs.getStatement(), selectRows, netInBytes, netOutBytes, session.getQueryStartTime(), System.currentTimeMillis());
+                    rrs.getStatement(), selectRows, netInBytes, netOutBytes, session.getQueryStartTime(), System.currentTimeMillis(), resultSize);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("try to record sql:" + rrs.getStatement());
             }

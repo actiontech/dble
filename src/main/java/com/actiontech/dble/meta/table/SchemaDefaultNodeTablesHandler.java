@@ -92,6 +92,8 @@ public class SchemaDefaultNodeTablesHandler {
                     AlertUtil.alert(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "{" + key + "} is lack", "mysql", ds.getConfig().getId(), labels);
                     ToResolveContainer.DATA_NODE_LACK.add(key);
                 }
+                finished = true;
+                multiTableMetaHandler.showTablesFinished();
                 return;
             }
             if (ds != null && ToResolveContainer.DATA_NODE_LACK.contains(key)) {

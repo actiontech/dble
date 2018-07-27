@@ -230,7 +230,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                 netInBytes = rrs.getStatement().getBytes().length;
             }
             QueryResult queryResult = new QueryResult(session.getSource().getUser(), rrs.getSqlType(), rrs.getStatement(), selectRows,
-                    netInBytes, netOutBytes, session.getQueryStartTime(), System.currentTimeMillis());
+                    netInBytes, netOutBytes, session.getQueryStartTime(), System.currentTimeMillis(), netOutBytes);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("try to record sql:" + rrs.getStatement());
             }

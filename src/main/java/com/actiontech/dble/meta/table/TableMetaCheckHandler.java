@@ -52,7 +52,7 @@ public class TableMetaCheckHandler extends AbstractTableMetaHandler {
             oldTm = tmManager.getSyncTableMeta(schema, tbName);
         } catch (SQLNonTransientException e) {
             //someone ddl, skip.
-            return true;
+            return false;
         }
         if (oldTm == null) {
             //the DDL may drop table;

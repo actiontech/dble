@@ -94,6 +94,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
     /**
      * execute heart beat
      */
+    @Override
     public void heartbeat() {
         final ReentrantLock reentrantLock = this.lock;
         reentrantLock.lock();

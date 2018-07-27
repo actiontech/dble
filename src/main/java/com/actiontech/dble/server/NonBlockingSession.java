@@ -59,6 +59,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
+import static com.actiontech.dble.meta.PauseEndThreadPool.CONTINUE_TYPE_MULTIPLE;
+import static com.actiontech.dble.meta.PauseEndThreadPool.CONTINUE_TYPE_SINGLE;
+
 /**
  * @author mycat
  */
@@ -288,7 +291,9 @@ public class NonBlockingSession implements Session {
         if (DbleServer.getInstance().getMiManager().getIsPausing().get() &&
                 !DbleServer.getInstance().getMiManager().checkTarget(target) &&
                 DbleServer.getInstance().getMiManager().checkRRS(rrs)) {
-            DbleServer.getInstance().getMiManager().waitForResume();
+            if (DbleServer.getInstance().getMiManager().waitForResume(rrs, this.getSource(), CONTINUE_TYPE_SINGLE)) {
+                return;
+            }
         }
 
         RouteResultsetNode[] nodes = rrs.getNodes();
@@ -404,7 +409,7 @@ public class NonBlockingSession implements Session {
         }
     }
 
-    private void executeMultiSelect(RouteResultset rrs) {
+    public void executeMultiSelect(RouteResultset rrs) {
         SQLSelectStatement ast = (SQLSelectStatement) rrs.getSqlStatement();
         MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(this.getSource().getSchema(), this.getSource().getCharset().getResultsIndex(), DbleServer.getInstance().getTmManager(), false);
         visitor.visit(ast);
@@ -420,7 +425,9 @@ public class NonBlockingSession implements Session {
         if (DbleServer.getInstance().getMiManager().getIsPausing().get() &&
                 !DbleServer.getInstance().getMiManager().checkTarget(target) &&
                 DbleServer.getInstance().getMiManager().checkReferedTableNodes(node.getReferedTableNodes())) {
-            DbleServer.getInstance().getMiManager().waitForResume();
+            if (DbleServer.getInstance().getMiManager().waitForResume(rrs, this.source, CONTINUE_TYPE_MULTIPLE)) {
+                return;
+            }
         }
 
         if (PlanUtil.containsSubQuery(node)) {
@@ -938,7 +945,6 @@ public class NonBlockingSession implements Session {
     public AtomicInteger getPacketId() {
         return packetId;
     }
-
 
 
     public long getQueryStartTime() {

@@ -5,7 +5,6 @@
 */
 package com.actiontech.dble.statistic;
 
-import com.actiontech.dble.config.model.DataHostConfig;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,13 +24,12 @@ public class DataSourceSyncRecorder {
 
     private Map<String, String> records;
     private final List<Record> asyncRecords; //value,time
-    private static final Logger LOGGER = LoggerFactory.getLogger("DataSourceSyncRecorder");
+    private static final Logger LOGGER = LoggerFactory.getLogger(DataSourceSyncRecorder.class);
 
 
     private static final long SWAP_TIME = 24 * 60 * 60 * 1000L;
 
     private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    private int switchType = 2;
 
     public DataSourceSyncRecorder() {
         this.records = new HashMap<>();
@@ -41,28 +39,34 @@ public class DataSourceSyncRecorder {
     public String get() {
         return records.toString();
     }
-
-    public void set(Map<String, String> resultResult, int typeOfSwitch) {
+    public void setBySlaveStatus(Map<String, String> resultResult) {
+        long time = TimeUtil.currentTimeMillis();
         try {
-            long time = TimeUtil.currentTimeMillis();
-            this.switchType = typeOfSwitch;
-
             remove(time);
-
             if (resultResult != null && !resultResult.isEmpty()) {
                 this.records = resultResult;
-                if (typeOfSwitch == DataHostConfig.SYN_STATUS_SWITCH_DS) {  //slave
-                    String seconds = resultResult.get("Seconds_Behind_Master");
-                    long secondsBehindMaster = -1;
-                    if (seconds != null) {
-                        secondsBehindMaster = Long.parseLong(seconds);
-                    }
-                    this.asyncRecords.add(new Record(TimeUtil.currentTimeMillis(), secondsBehindMaster));
+                String seconds = resultResult.get("Seconds_Behind_Master");
+                long secondsBehindMaster = -1;
+                if (seconds != null && !"".equals(seconds) && !"NULL".equalsIgnoreCase(seconds)) {
+                    secondsBehindMaster = Long.parseLong(seconds);
                 }
-                if (typeOfSwitch == DataHostConfig.CLUSTER_STATUS_SWITCH_DS) { //cluster
-                    double wsrepLocalRecQueueAvg = Double.valueOf(resultResult.get("wsrep_local_recv_queue_avg"));
-                    this.asyncRecords.add(new Record(TimeUtil.currentTimeMillis(), wsrepLocalRecQueueAvg));
-                }
+                this.asyncRecords.add(new Record(time, secondsBehindMaster));
+            }
+        } catch (Exception e) {
+            this.asyncRecords.add(new Record(time, -1));
+            LOGGER.info("record DataSourceSyncRecorder error " + e.getMessage());
+        }
+
+    }
+
+    public void setByCluster(Map<String, String> resultResult) {
+        try {
+            long time = TimeUtil.currentTimeMillis();
+            remove(time);
+            if (resultResult != null && !resultResult.isEmpty()) {
+                this.records = resultResult;
+                double wsrepLocalRecQueueAvg = Double.valueOf(resultResult.get("wsrep_local_recv_queue_avg"));
+                this.asyncRecords.add(new Record(time, wsrepLocalRecQueueAvg));
             }
         } catch (Exception e) {
             LOGGER.info("record DataSourceSyncRecorder error " + e.getMessage());
@@ -84,15 +88,6 @@ public class DataSourceSyncRecorder {
             }
         }
     }
-
-    public int getSwitchType() {
-        return this.switchType;
-    }
-
-    public void setSwitchType(int switchType) {
-        this.switchType = switchType;
-    }
-
     public Map<String, String> getRecords() {
         return this.records;
     }

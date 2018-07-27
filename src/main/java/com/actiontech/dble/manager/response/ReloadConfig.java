@@ -300,7 +300,7 @@ public final class ReloadConfig {
         newSystemVariables = handler.execute();
         if (newSystemVariables == null) {
             if (!loader.isDataHostWithoutWH()) {
-                throw new Exception("Can't get variables from any data host");
+                throw new Exception("Can't get variables from any data host, because all of data host can't connect to MySQL correctly");
             } else {
                 LOGGER.info("reload config: no valid data host ,keep variables as old");
                 newSystemVariables = DbleServer.getInstance().getSystemVariables();

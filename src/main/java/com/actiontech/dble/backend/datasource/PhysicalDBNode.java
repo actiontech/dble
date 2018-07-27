@@ -23,7 +23,7 @@ public class PhysicalDBNode {
 
     protected final String name;
     protected String database;
-    protected final PhysicalDBPool dbPool;
+    protected volatile PhysicalDBPool dbPool;
 
     public PhysicalDBNode(String hostName, String database, PhysicalDBPool dbPool) {
         this.name = hostName;
@@ -143,5 +143,10 @@ public class PhysicalDBNode {
         } else {
             throw new IllegalArgumentException("Invalid DataSource:" + dbPool.getActiveIndex());
         }
+    }
+
+
+    public void setDbPool(PhysicalDBPool dbPool) {
+        this.dbPool = dbPool;
     }
 }

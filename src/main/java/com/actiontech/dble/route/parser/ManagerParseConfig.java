@@ -15,6 +15,7 @@ public final class ManagerParseConfig {
     private int configAllMode;
     public static final int OPTS_MODE = 1;
     public static final int OPTF_MODE = 2;
+    public static final int OPTR_MODE = 4;
 
     public ManagerParseConfig() {
         configAllMode = 0;
@@ -96,6 +97,8 @@ public final class ManagerParseConfig {
                 configAllMode = configAllMode | OPTS_MODE;
             } else if (c1 == 'f' || c1 == 'F') {
                 configAllMode = configAllMode | OPTF_MODE;
+            } else if (c1 == 'r' || c1 == 'R') {
+                configAllMode = configAllMode | OPTR_MODE;
             } else {
                 return offset - 1;
             }

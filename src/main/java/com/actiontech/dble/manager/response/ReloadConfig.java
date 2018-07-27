@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
+import com.actiontech.dble.backend.datasource.PhysicalDBPoolDiff;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
@@ -44,10 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
@@ -267,6 +265,7 @@ public final class ReloadConfig {
         LOGGER.warn(sb);
         c.writeErrMessage(ErrorCode.ER_YES, sb);
     }
+
     private static void writeErrorResult(ManagerConnection c, String errorMsg) {
         String sb = "Reload config failure.The reason is " + errorMsg;
         LOGGER.warn(sb);
@@ -335,50 +334,55 @@ public final class ReloadConfig {
         /*
          *  2 transform
          *  2.1 old dataSource continue to work
+         *  2.1.1 define the diff of new & old dataHost config
+         *  2.1.2 create new init plan for the reload
          *  2.2 init the new dataSource
          *  2.3 transform
          *  2.4 put the old connection into a queue
          */
         ServerConfig config = DbleServer.getInstance().getConfig();
 
-        /* 2.1 do nothing */
-        boolean isReloadStatusOK = true;
         String reasonMsg = null;
-        /* 2.2 init the new dataSource */
+
+        /* 2.1.1 get diff of dataHosts */
+        Set<PhysicalDBPoolDiff> dataHostDiffSet = distinguishDataHost(newDataHosts, config.getDataHosts());
+        /* 2.2 init the dataSource with diff*/
+
+        Map<String, PhysicalDBPool> recyclHost = new HashMap<String, PhysicalDBPool>();
+        Map<String, PhysicalDBPool> mergedDataHosts = initDataHostMapWithMerge(dataHostDiffSet, recyclHost);
+
+
         LOGGER.info("reload config: init new data host  start");
-        for (PhysicalDBPool dbPool : newDataHosts.values()) {
-            String hostName = dbPool.getHostName();
-            // set schemas
-            ArrayList<String> dnSchemas = new ArrayList<>(30);
-            for (PhysicalDBNode dn : newDataNodes.values()) {
-                if (dn.getDbPool().getHostName().equals(hostName)) {
-                    dnSchemas.add(dn.getDatabase());
-                }
-            }
-            dbPool.setSchemas(dnSchemas.toArray(new String[dnSchemas.size()]));
 
-            // get data host
-            String dnIndex = DnPropertyUtil.loadDnIndexProps().getProperty(dbPool.getHostName(), "0");
-            if (!"0".equals(dnIndex)) {
-                LOGGER.info("init data host: " + dbPool.getHostName() + " to use datasource index:" + dnIndex);
-            }
+        boolean mergeReload = true;
 
-            dbPool.init(Integer.parseInt(dnIndex));
-            if (!dbPool.isInitSuccess()) {
-                isReloadStatusOK = false;
-                reasonMsg = "Init DbPool [" + dbPool.getHostName() + "] failed";
-                break;
-            }
+        if ((loadAllMode & ManagerParseConfig.OPTR_MODE) != 0) {
+            mergeReload = false;
+        }
+
+        if (mergeReload) {
+            reasonMsg = initDataHostByMap(mergedDataHosts, newDataNodes);
+        } else {
+            reasonMsg = initDataHostByMap(newDataHosts, newDataNodes);
         }
         LOGGER.info("reload config: init new data host  end");
-        if (isReloadStatusOK) {
+        if (reasonMsg == null) {
             /* 2.3 apply new conf */
             LOGGER.info("reload config: apply new config start");
-            config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall,
-                    newSystemVariables, loader.isDataHostWithoutWH(), true);
-            DbleServer.getInstance().getUserManager().initForLatest(newUsers, loader.getSystem().getMaxCon());
-            LOGGER.info("reload config: apply new config end");
-            recycleOldBackendConnections(config, ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
+            if (mergeReload) {
+                config.reload(newUsers, newSchemas, newDataNodes, mergedDataHosts, newErRelations, newFirewall,
+                        newSystemVariables, loader.isDataHostWithoutWH(), true);
+                DbleServer.getInstance().getUserManager().initForLatest(newUsers, loader.getSystem().getMaxCon());
+                LOGGER.info("reload config: apply new config end");
+                recycleOldBackendConnectionsByMerge(recyclHost, ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
+            } else {
+                config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall,
+                        newSystemVariables, loader.isDataHostWithoutWH(), true);
+                DbleServer.getInstance().getUserManager().initForLatest(newUsers, loader.getSystem().getMaxCon());
+                LOGGER.info("reload config: apply new config end");
+                recycleOldBackendConnections(config, ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
+            }
+
         } else {
             // INIT FAILED
             LOGGER.info("reload failed, clear previously created data sources ");
@@ -404,6 +408,32 @@ public final class ReloadConfig {
                                 if (mcon1 == mcon2) {
                                     scon.killAndClose("reload config all");
                                     return;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static void recycleOldBackendConnectionsByMerge(Map<String, PhysicalDBPool> recycleMap, boolean closeFrontCon) {
+        for (PhysicalDBPool dbPool : recycleMap.values()) {
+            dbPool.stopHeartbeat();
+            for (PhysicalDatasource ds : dbPool.getAllDataSources()) {
+                for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
+                    for (BackendConnection con : processor.getBackends().values()) {
+                        if (con instanceof MySQLConnection) {
+                            MySQLConnection mysqlCon = (MySQLConnection) con;
+                            if (mysqlCon.getPool() == ds) {
+                                if (con.isBorrowed()) {
+                                    if (closeFrontCon) {
+                                        findAndcloseFrontCon(con);
+                                    } else {
+                                        NIOProcessor.BACKENDS_OLD.add(con);
+                                    }
+                                } else {
+                                    con.close("old idle conn for reload merge");
                                 }
                             }
                         }
@@ -471,4 +501,89 @@ public final class ReloadConfig {
         DbleServer.getInstance().getUserManager().initForLatest(users, loader.getSystem().getMaxCon());
     }
 
+
+    private static Set<PhysicalDBPoolDiff> distinguishDataHost(Map<String, PhysicalDBPool> newDataHosts, Map<String, PhysicalDBPool> oldDataHosts) {
+        Set<PhysicalDBPoolDiff> changeSet = new HashSet<>();
+
+        for (Map.Entry<String, PhysicalDBPool> entry : newDataHosts.entrySet()) {
+            PhysicalDBPool oldPoool = oldDataHosts.get(entry.getKey());
+            if (oldPoool == null) {
+                changeSet.add(new PhysicalDBPoolDiff(PhysicalDBPoolDiff.CHANGE_TYPE_ADD, entry.getValue(), null));
+                continue;
+            } else {
+                changeSet.add(new PhysicalDBPoolDiff(entry.getValue(), oldPoool));
+            }
+        }
+
+        for (Map.Entry<String, PhysicalDBPool> entry : oldDataHosts.entrySet()) {
+            PhysicalDBPool newPoool = newDataHosts.get(entry.getKey());
+            if (newPoool == null) {
+                changeSet.add(new PhysicalDBPoolDiff(PhysicalDBPoolDiff.CHANGE_TYPE_DELETE, null, entry.getValue()));
+            }
+        }
+        return changeSet;
+    }
+
+
+    private static Map<String, PhysicalDBPool> initDataHostMapWithMerge(Set<PhysicalDBPoolDiff> diffSet, Map<String, PhysicalDBPool> recyclHost) {
+        Map<String, PhysicalDBPool> mergedDataHosts = new HashMap<String, PhysicalDBPool>();
+
+        //make mergeDataHosts a Deep copy of oldDataHosts
+        for (PhysicalDBPoolDiff diff : diffSet) {
+            switch (diff.getChangeType()) {
+
+                case PhysicalDBPoolDiff.CHANGE_TYPE_CHANGE:
+                    recyclHost.put(diff.getNewPool().getHostName(), diff.getOrgPool());
+                    mergedDataHosts.put(diff.getNewPool().getHostName(), diff.getNewPool());
+                    break;
+                case PhysicalDBPoolDiff.CHANGE_TYPE_ADD:
+                    //when the type is change,just delete the old one and use the new one
+                    mergedDataHosts.put(diff.getNewPool().getHostName(), diff.getNewPool());
+                    break;
+                case PhysicalDBPoolDiff.CHANGE_TYPE_NO:
+                    //add old dataHost into the new mergedDataHosts
+                    mergedDataHosts.put(diff.getNewPool().getHostName(), diff.getOrgPool());
+                    break;
+                case PhysicalDBPoolDiff.CHANGE_TYPE_DELETE:
+                    recyclHost.put(diff.getOrgPool().getHostName(), diff.getOrgPool());
+                    break;
+                //do not add into old one
+                default:
+                    break;
+
+            }
+        }
+        return mergedDataHosts;
+    }
+
+
+    private static String initDataHostByMap(Map<String, PhysicalDBPool> newDataHosts, Map<String, PhysicalDBNode> newDataNodes) {
+        String reasonMsg = null;
+        for (PhysicalDBPool dbPool : newDataHosts.values()) {
+            LOGGER.info("try to into dataSouce : " + dbPool.toString());
+            String hostName = dbPool.getHostName();
+            // set schemas
+            ArrayList<String> dnSchemas = new ArrayList<>(30);
+            for (PhysicalDBNode dn : newDataNodes.values()) {
+                if (dn.getDbPool().getHostName().equals(hostName)) {
+                    dn.setDbPool(dbPool);
+                    dnSchemas.add(dn.getDatabase());
+                }
+            }
+            dbPool.setSchemas(dnSchemas.toArray(new String[dnSchemas.size()]));
+
+            // get data host
+            String dnIndex = DnPropertyUtil.loadDnIndexProps().getProperty(dbPool.getHostName(), "0");
+            if (!"0".equals(dnIndex)) {
+                LOGGER.info("init data host: " + dbPool.getHostName() + " to use datasource index:" + dnIndex);
+            }
+
+            dbPool.reloadInit(Integer.parseInt(dnIndex));
+            if (!dbPool.isInitSuccess()) {
+                reasonMsg = "Init DbPool [" + dbPool.getHostName() + "] failed";
+                break;
+            }
+        }
+        return reasonMsg;
+    }
 }

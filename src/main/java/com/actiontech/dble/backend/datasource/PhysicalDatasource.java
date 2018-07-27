@@ -479,19 +479,15 @@ public abstract class PhysicalDatasource {
 
         String errMsg = null;
 
-        if (c.getSchema() != null) {
-            boolean ok;
-            ConQueue queue = this.conMap.createAndGetSchemaConQueue(c.getSchema());
-            if (c.isAutocommit()) {
-                ok = queue.getAutoCommitCons().offer(c);
-            } else {
-                ok = queue.getManCommitCons().offer(c);
-            }
-            if (!ok) {
-                errMsg = "can't return to pool ,so close con " + c;
-            }
+        boolean ok;
+        ConQueue queue = this.conMap.createAndGetSchemaConQueue(c.getSchema());
+        if (c.isAutocommit()) {
+            ok = queue.getAutoCommitCons().offer(c);
         } else {
-            errMsg = "no need to return to pool ,so close con " + c;
+            ok = queue.getManCommitCons().offer(c);
+        }
+        if (!ok) {
+            errMsg = "can't return to pool ,so close con " + c;
         }
         if (errMsg != null) {
             LOGGER.info(errMsg);

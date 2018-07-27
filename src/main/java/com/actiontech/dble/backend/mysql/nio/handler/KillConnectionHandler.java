@@ -64,7 +64,7 @@ public class KillConnectionHandler implements ResponseHandler {
         LOGGER.info("unexpected packet for " +
                 conn + " bound by " + session.getSource() +
                 ": field's eof");
-        conn.quit();
+        conn.close("close unexpected packet of killConnection");
         toKilled.close("killed");
     }
 

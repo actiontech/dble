@@ -30,8 +30,6 @@ public interface BackendConnection extends ClosableConnection {
 
     void setAttachment(Object attachment);
 
-    void quit();
-
     void setLastTime(long currentTimeMillis);
 
     void release();

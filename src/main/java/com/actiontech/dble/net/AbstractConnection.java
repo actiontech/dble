@@ -6,6 +6,7 @@
 package com.actiontech.dble.net;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.CharsetNames;
 import com.actiontech.dble.net.mysql.MySQLPacket;
@@ -87,6 +88,7 @@ public abstract class AbstractConnection implements NIOConnection {
         this.isClosed = new AtomicBoolean(false);
         this.socketWR = null;
     }
+
     public void setCollationConnection(String collation) {
         charsetName.setCollation(collation);
     }
@@ -234,6 +236,7 @@ public abstract class AbstractConnection implements NIOConnection {
     public NIOHandler getHandler() {
         return handler;
     }
+
     public void setHandler(NIOHandler handler) {
         this.handler = handler;
     }
@@ -272,10 +275,18 @@ public abstract class AbstractConnection implements NIOConnection {
 
         lastReadTime = TimeUtil.currentTimeMillis();
         if (got < 0) {
-            this.close("stream closed");
+            if (this instanceof MySQLConnection) {
+                ((MySQLConnection) this).closeInner("stream closed");
+            } else {
+                this.close("stream closed");
+            }
             return;
         } else if (got == 0 && !this.channel.isOpen()) {
-            this.close("socket closed");
+            if (this instanceof MySQLConnection) {
+                ((MySQLConnection) this).closeInner("stream closed");
+            } else {
+                this.close("stream closed");
+            }
             return;
         }
         netInBytes += got;
@@ -586,6 +597,7 @@ public abstract class AbstractConnection implements NIOConnection {
         }
         return sbUsrVariables.toString();
     }
+
     public void onConnectFinish() {
         LOGGER.debug("The backend conntinon has finished connecting");
     }

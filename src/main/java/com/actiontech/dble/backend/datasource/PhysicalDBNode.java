@@ -6,11 +6,11 @@
 package com.actiontech.dble.backend.datasource;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.backend.BackendConnection;
+import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.route.RouteResultsetNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,8 +135,8 @@ public class PhysicalDBNode {
         checkRequest(schema);
         if (dbPool.isInitSuccess()) {
             PhysicalDatasource writeSource = dbPool.getSource();
-            if (writeSource.getConfig().isFake()) {
-                throw new IllegalArgumentException("No Write Host Alive");
+            if (writeSource.getConfig().isDisabled()) {
+                throw new IllegalArgumentException("[" + writeSource.getHostConfig().getName() + "." + writeSource.getConfig().getHostName() + "] is disabled");
             }
             writeSource.setWriteCount();
             writeSource.getConnection(schema, autoCommit, handler, attachment);

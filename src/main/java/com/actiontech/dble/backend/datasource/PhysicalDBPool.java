@@ -349,8 +349,8 @@ public class PhysicalDBPool {
     }
 
     private boolean initSource(int index, PhysicalDatasource ds) {
-        if (ds.getConfig().isFake()) {
-            LOGGER.info(ds.getConfig().getHostName() + " has not real url, skipped");
+        if (ds.getConfig().isDisabled()) {
+            LOGGER.info(ds.getConfig().getHostName() + " is disabled, skipped");
             return true;
         }
         int initSize = ds.getConfig().getMinCon();
@@ -513,11 +513,11 @@ public class PhysicalDBPool {
      */
     void getRWBalanceCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
         PhysicalDatasource theNode = getRWBalanceNode();
-        if (theNode.getConfig().isFake()) {
+        if (theNode.getConfig().isDisabled()) {
             if (this.getReadSources().values().size() > 0) {
                 theNode = this.getReadSources().values().iterator().next()[0];
             } else {
-                String errorMsg = "the dataHost[" + theNode.getHostConfig().getName() + "] is empty, please check it";
+                String errorMsg = "the dataHost[" + theNode.getHostConfig().getName() + "] is disabled, please check it";
                 throw new IOException(errorMsg);
             }
         }

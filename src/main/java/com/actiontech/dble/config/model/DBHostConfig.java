@@ -18,10 +18,11 @@ public class DBHostConfig {
     private int minCon;
     private int weight;
     private String id;
-    private boolean fake = false;
+
+    private boolean disabled = false;
 
     public DBHostConfig(String hostName, String ip, int port, String url,
-                        String user, String password) {
+                        String user, String password, boolean disabled) {
         super();
         this.hostName = hostName;
         this.ip = ip;
@@ -29,6 +30,7 @@ public class DBHostConfig {
         this.url = url;
         this.user = user;
         this.password = password;
+        this.disabled = disabled;
     }
 
     public long getIdleTimeout() {
@@ -87,12 +89,8 @@ public class DBHostConfig {
         this.weight = weight;
     }
 
-    public boolean isFake() {
-        return fake;
-    }
-
-    public void setFake(boolean fake) {
-        this.fake = fake;
+    public boolean isDisabled() {
+        return disabled;
     }
 
     public String getId() {

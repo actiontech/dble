@@ -34,6 +34,8 @@ public class WriteHost {
     @XmlAttribute
     protected String usingDecrypt;
     @XmlAttribute
+    protected String disabled;
+    @XmlAttribute
     protected String id;
 
     private List<ReadHost> readHost;
@@ -78,6 +80,15 @@ public class WriteHost {
         this.usingDecrypt = usingDecrypt;
     }
 
+
+    public String getDisabled() {
+        return disabled;
+    }
+
+    public void setDisabled(String disabled) {
+        this.disabled = disabled;
+    }
+
     public String getId() {
         return id;
     }
@@ -107,6 +118,10 @@ public class WriteHost {
                 password +
                 ", user=" +
                 user +
+                ", disabled=" +
+                disabled +
+                ", id=" +
+                id +
                 ", usingDecrypt=" +
                 usingDecrypt +
                 ", readHost=" +

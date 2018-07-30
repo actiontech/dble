@@ -45,7 +45,7 @@
         <!ATTLIST dataNode dataHost CDATA #REQUIRED>
         <!ATTLIST dataNode database CDATA #REQUIRED>
 
-        <!ELEMENT dataHost (heartbeat,((writeHost)*|(readHost)))>
+        <!ELEMENT dataHost (heartbeat,(writeHost)*)>
         <!ATTLIST dataHost
                 balance CDATA #REQUIRED
                 maxCon CDATA #REQUIRED
@@ -63,7 +63,8 @@
                 password CDATA #REQUIRED
                 user CDATA #REQUIRED
                 id CDATA #IMPLIED
-                usingDecrypt CDATA #IMPLIED>
+                usingDecrypt CDATA #IMPLIED
+                disabled CDATA #IMPLIED>
 
         <!ELEMENT heartbeat (#PCDATA)>
         <!ELEMENT connectionInitSql (#PCDATA)>
@@ -75,6 +76,7 @@
                 user NMTOKEN #REQUIRED
                 weight CDATA #IMPLIED
                 id CDATA #IMPLIED
-                usingDecrypt CDATA #IMPLIED>
+                usingDecrypt CDATA #IMPLIED
+                disabled CDATA #IMPLIED>
 
 

@@ -43,6 +43,11 @@ public final class ParseUtil {
         return space == ' ' || space == '\r' || space == '\n' || space == '\t';
     }
 
+
+    public static boolean isSpaceOrLeft(char space) {
+        return space == ' ' || space == '\r' || space == '\n' || space == '\t' || space == '(';
+    }
+
     /**
      * check the tail is unexpected char
      *

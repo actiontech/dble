@@ -598,7 +598,7 @@ public final class ServerParse {
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
             if ((c1 == 'L' || c1 == 'l') && (c2 == 'A' || c2 == 'a') && (c3 == 'I' || c3 == 'i') && (c4 == 'N' || c4 == 'n')) {
-                if (ParseUtil.isSpace(c5)) {
+                if (ParseUtil.isSpaceOrLeft(c5)) {
                     return (offset << 8) | EXPLAIN;
                 } else if (c5 == '2' && (stmt.length() > offset + 1) && ParseUtil.isSpace(stmt.charAt(++offset))) {
                     return (offset << 8) | EXPLAIN2;

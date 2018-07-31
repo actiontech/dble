@@ -279,7 +279,7 @@ public class TableConfig {
         Map<String, PhysicalDBNode> dataNodeMap = DbleServer.getInstance().getConfig().getDataNodes();
         while (x.size() > 1) {
             for (PhysicalDatasource ds : dataNodeMap.get(x.get(index)).getDbPool().getAllDataSources()) {
-                if (ds.getHeartbeat().getStatus() == 1) {
+                if (ds.isAlive()) {
                     return x.get(index);
                 } else {
                     break;

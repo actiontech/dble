@@ -77,7 +77,7 @@ public class ConfigInitializer {
         for (Map.Entry<String, PhysicalDBPool> pool : this.dataHosts.entrySet()) {
             PhysicalDatasource[] writeSource = pool.getValue().getSources();
             if (writeSource != null && writeSource.length != 0) {
-                if (writeSource[0].getConfig().isFake() && pool.getValue().getReadSources().isEmpty()) {
+                if (writeSource[0].getConfig().isDisabled() && pool.getValue().getReadSources().isEmpty()) {
                     continue;
                 }
                 this.dataHostWithoutWH = false;
@@ -134,7 +134,6 @@ public class ConfigInitializer {
         Set<String> errSourceKeys = new HashSet<>();
         BoolPtr isConnectivity = new BoolPtr(true);
         BoolPtr isAllDataSourceConnected = new BoolPtr(true);
-        boolean isAllMasterDataSourceConnected = true;
         for (Map.Entry<String, List<Pair<String, String>>> entry : hostSchemaMap.entrySet()) {
             String hostName = entry.getKey();
             List<Pair<String, String>> nodeList = entry.getValue();
@@ -152,12 +151,12 @@ public class ConfigInitializer {
                 }
             }
             for (PhysicalDatasource ds : pool.getAllDataSources()) {
-                if (ds.getConfig().isFake()) {
-                    LOGGER.info("DataHost[" + ds.getHostConfig().getName() + "] contains an empty and faked config,just mark testing failed and skip it");
+                if (ds.getConfig().isDisabled()) {
+                    LOGGER.info("DataHost[" + ds.getHostConfig().getName() + "] is disabled,just mark testing failed and skip it");
                     ds.setTestConnSuccess(false);
                     continue;
                 }
-                isAllMasterDataSourceConnected &= testDataSource(errNodeKeys, errSourceKeys, isConnectivity, isAllDataSourceConnected, nodeList, pool, ds);
+                testDataSource(errNodeKeys, errSourceKeys, isConnectivity, isAllDataSourceConnected, nodeList, pool, ds);
             }
             for (PhysicalDatasource[] dataSources : pool.getStandbyReadSourcesMap().values()) {
                 for (PhysicalDatasource ds : dataSources) {
@@ -181,17 +180,12 @@ public class ConfigInitializer {
                 sb.append(key);
                 sb.append("},");
             }
-            if (!isAllMasterDataSourceConnected) {
-                throw new ConfigException(sb.toString());
-            } else {
-                LOGGER.warn(sb.toString());
-            }
+            throw new ConfigException(sb.toString());
         }
     }
 
-    private boolean testDataSource(Set<String> errNodeKeys, Set<String> errSourceKeys, BoolPtr isConnectivity,
+    private void testDataSource(Set<String> errNodeKeys, Set<String> errSourceKeys, BoolPtr isConnectivity,
                                 BoolPtr isAllDataSourceConnected, List<Pair<String, String>> nodeList, PhysicalDBPool pool, PhysicalDatasource ds) {
-        boolean isMasterDataSourceConnected = true;
         boolean isMaster = ds == pool.getSource();
         String dataSourceName = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getName() + "]";
         try {
@@ -202,9 +196,6 @@ public class ConfigInitializer {
             boolean isDataSourceConnected = isDSConnectedPtr.get();
             ds.setTestConnSuccess(isDataSourceConnected);
             if (!isDataSourceConnected) {
-                if (isMaster) {
-                    isMasterDataSourceConnected = false;
-                }
                 isConnectivity.set(false);
                 isAllDataSourceConnected.set(false);
                 errSourceKeys.add(dataSourceName);
@@ -238,7 +229,6 @@ public class ConfigInitializer {
             errSourceKeys.add(dataSourceName);
             markDataSourceSchemaFail(errNodeKeys, nodeList, dataSourceName);
         }
-        return isMasterDataSourceConnected;
     }
 
     private void markDataSourceSchemaFail(Set<String> errKeys, List<Pair<String, String>> nodeList, String dataSourceName) {

@@ -24,7 +24,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLNonTransientException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
@@ -425,7 +428,7 @@ public class ServerConfig {
                     for (String dataNodeName : dataNodeNames) {
                         PhysicalDBNode node = this.dataNodes.get(dataNodeName);
                         if (node == null) {
-                            throw new ConfigException("SelfCheck### schema dataNode is empty!");
+                            throw new ConfigException("SelfCheck### schema dataNode[" + dataNodeName + "] is empty!");
                         }
                     }
                 }

@@ -34,7 +34,6 @@ import java.util.Map.Entry;
 public class XMLSchemaLoader implements SchemaLoader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(XMLSchemaLoader.class);
-    public static final String FAKE_HOST = "fakeHost";
     private static final String DEFAULT_DTD = "/schema.dtd";
     private static final String DEFAULT_XML = "/schema.xml";
 
@@ -516,11 +515,13 @@ public class XMLSchemaLoader implements SchemaLoader {
         String ip = nodeUrl.substring(0, colonIndex).trim();
         int port = Integer.parseInt(nodeUrl.substring(colonIndex + 1).trim());
         String usingDecrypt = node.getAttribute("usingDecrypt");
+        String disabledStr = node.getAttribute("disabled");
+        boolean disabled = !"".equals(disabledStr) && Boolean.parseBoolean(disabledStr);
         String passwordEncryty = DecryptUtil.dbHostDecrypt(usingDecrypt, nodeHost, user, password);
         String weightStr = node.getAttribute("weight");
         int weight = "".equals(weightStr) ? PhysicalDBPool.WEIGHT : Integer.parseInt(weightStr);
 
-        DBHostConfig conf = new DBHostConfig(nodeHost, ip, port, nodeUrl, user, passwordEncryty);
+        DBHostConfig conf = new DBHostConfig(nodeHost, ip, port, nodeUrl, user, passwordEncryty, disabled);
         conf.setMaxCon(maxCon);
         conf.setMinCon(minCon);
         conf.setWeight(weight);
@@ -573,34 +574,42 @@ public class XMLSchemaLoader implements SchemaLoader {
             final String heartbeatSQL = element.getElementsByTagName("heartbeat").item(0).getTextContent();
 
             NodeList writeNodes = element.getElementsByTagName("writeHost");
-            NodeList readOnlyNodes = element.getElementsByTagName("readHost");
-            if (writeNodes.getLength() > 0) {
-                DBHostConfig[] writeDbConfs = new DBHostConfig[writeNodes.getLength()];
-                Map<Integer, DBHostConfig[]> readHostsMap = new HashMap<>(2);
-                Map<Integer, DBHostConfig[]> standbyReadHostsMap = new HashMap<>(2);
-                for (int w = 0; w < writeDbConfs.length; w++) {
-                    Element writeNode = (Element) writeNodes.item(w);
-                    writeDbConfs[w] = createDBHostConf(name, writeNode, maxCon, minCon);
-                    String writeHostName = writeDbConfs[w].getHostName();
-                    if (hostNames.contains(writeHostName)) {
-                        throw new ConfigException("dataHost[" + name + "]'s child write host name \"" + writeHostName + "\"  duplicated!");
-                    } else {
-                        hostNames.add(writeHostName);
-                    }
-                    NodeList readNodes = writeNode.getElementsByTagName("readHost");
-                    //for every readHost
-                    if (readNodes.getLength() != 0) {
-                        DBHostConfig[] readDbConfs = new DBHostConfig[readNodes.getLength()];
-                        for (int r = 0; r < readDbConfs.length; r++) {
-                            Element readNode = (Element) readNodes.item(r);
-                            readDbConfs[r] = createDBHostConf(name, readNode, maxCon, minCon);
-                            String readHostName = readDbConfs[r].getHostName();
-                            if (hostNames.contains(readHostName)) {
-                                throw new ConfigException("dataHost[" + name + "]'s child host name \"" + readHostName + "\"  duplicated!");
-                            } else {
-                                hostNames.add(readHostName);
-                            }
+            if (writeNodes.getLength() < 1) {
+                throw new ConfigException("dataHost[" + name + "]'s has no write host");
+            }
+
+            DBHostConfig[] writeDbConfs = new DBHostConfig[writeNodes.getLength()];
+            Map<Integer, DBHostConfig[]> readHostsMap = new HashMap<>(2);
+            Map<Integer, DBHostConfig[]> standbyReadHostsMap = new HashMap<>(2);
+            for (int w = 0; w < writeDbConfs.length; w++) {
+                Element writeNode = (Element) writeNodes.item(w);
+                writeDbConfs[w] = createDBHostConf(name, writeNode, maxCon, minCon);
+                String writeHostName = writeDbConfs[w].getHostName();
+                if (hostNames.contains(writeHostName)) {
+                    throw new ConfigException("dataHost[" + name + "]'s child write host name \"" + writeHostName + "\"  duplicated!");
+                } else {
+                    hostNames.add(writeHostName);
+                }
+                NodeList readNodes = writeNode.getElementsByTagName("readHost");
+                //for every readHost
+                if (readNodes.getLength() != 0) {
+                    List<DBHostConfig> readDbConfList = new ArrayList<>(readNodes.getLength());
+                    int readHostSize = readNodes.getLength();
+                    for (int r = 0; r < readHostSize; r++) {
+                        Element readNode = (Element) readNodes.item(r);
+                        DBHostConfig tmpDBHostConfig = createDBHostConf(name, readNode, maxCon, minCon);
+                        String readHostName = tmpDBHostConfig.getHostName();
+                        if (hostNames.contains(readHostName)) {
+                            throw new ConfigException("dataHost[" + name + "]'s child host name \"" + readHostName + "\"  duplicated!");
+                        } else {
+                            hostNames.add(readHostName);
                         }
+                        if (!tmpDBHostConfig.isDisabled()) {
+                            readDbConfList.add(tmpDBHostConfig);
+                        }
+                    }
+                    if (readDbConfList.size() > 0) {
+                        DBHostConfig[] readDbConfs = readDbConfList.toArray(new DBHostConfig[readDbConfList.size()]);
                         if (balance != 0) {
                             readHostsMap.put(w, readDbConfs);
                         } else {
@@ -608,46 +617,14 @@ public class XMLSchemaLoader implements SchemaLoader {
                         }
                     }
                 }
-                DataHostConfig hostConf = new DataHostConfig(name, writeDbConfs, readHostsMap, standbyReadHostsMap, switchType, slaveThreshold, tempReadHostAvailable);
-
-                hostConf.setMaxCon(maxCon);
-                hostConf.setMinCon(minCon);
-                hostConf.setBalance(balance);
-                hostConf.setHearbeatSQL(heartbeatSQL);
-                dataHosts.put(hostConf.getName(), hostConf);
-            } else if (readOnlyNodes.getLength() > 0) { //read host only
-                if (readOnlyNodes.getLength() > 1) {
-                    LOGGER.info("only the first Read_Node will be load, others will be ignore");
-                }
-                DBHostConfig[] writeDbConfs = new DBHostConfig[1];
-                writeDbConfs[0] = new DBHostConfig(FAKE_HOST, "-", 0, "-:0)", "-", "-");
-                writeDbConfs[0].setFake(true);
-                DBHostConfig[] readDbConfs = new DBHostConfig[1];
-                Element readNode = (Element) readOnlyNodes.item(0);
-                readDbConfs[0] = createDBHostConf(name, readNode, maxCon, minCon);
-                Map<Integer, DBHostConfig[]> readHostsMap = new HashMap<>(1);
-                readHostsMap.put(0, readDbConfs);
-                // switchType =-1 and tempReadHostAvailable =true and ignore balance
-                DataHostConfig hostConf = new DataHostConfig(name, writeDbConfs, readHostsMap, new HashMap<Integer, DBHostConfig[]>(0), -1, slaveThreshold, true);
-                hostConf.setMaxCon(maxCon);
-                hostConf.setMinCon(minCon);
-                hostConf.setBalance(3); // all read host
-                hostConf.setHearbeatSQL("select 1"); //for heartbeat
-                dataHosts.put(hostConf.getName(), hostConf);
-            } else {
-                DBHostConfig[] writeDbConfs = new DBHostConfig[1];
-                writeDbConfs[0] = new DBHostConfig(FAKE_HOST, "-", 0, "-:0)", "-", "-");
-                writeDbConfs[0].setFake(true);
-                Map<Integer, DBHostConfig[]> readHostsMap = new HashMap<>(0);
-                DataHostConfig hostConf = new DataHostConfig(name, writeDbConfs, readHostsMap, readHostsMap, switchType, slaveThreshold, tempReadHostAvailable);
-
-                hostConf.setMaxCon(maxCon);
-                hostConf.setMinCon(minCon);
-                hostConf.setBalance(balance);
-                hostConf.setHearbeatSQL(heartbeatSQL);
-                dataHosts.put(hostConf.getName(), hostConf);
-                dataHosts.put(hostConf.getName(), hostConf);
             }
+            DataHostConfig hostConf = new DataHostConfig(name, writeDbConfs, readHostsMap, standbyReadHostsMap, switchType, slaveThreshold, tempReadHostAvailable);
+
+            hostConf.setMaxCon(maxCon);
+            hostConf.setMinCon(minCon);
+            hostConf.setBalance(balance);
+            hostConf.setHearbeatSQL(heartbeatSQL);
+            dataHosts.put(hostConf.getName(), hostConf);
         }
     }
 

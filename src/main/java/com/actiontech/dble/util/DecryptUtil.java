@@ -45,7 +45,7 @@ public final class DecryptUtil {
             } catch (Exception e2) {
                 throw new ConfigException("user " + user + " password need to decrypt ,but failed !", e2);
             }
-            throw new ConfigException("user " + user + " password need to decrypt, but the result is not able the encryption rule!");
+            throw new ConfigException("user " + user + " password need to decrypt, but the result is not obey the encryption rule!");
         }
         return password;
     }
@@ -98,7 +98,7 @@ public final class DecryptUtil {
             } catch (Exception e2) {
                 throw new ConfigException("host " + host + ",user " + user + " password need to decrypt, but failed !", e2);
             }
-            throw new ConfigException("host " + host + ",user " + user + " password need to decrypt ,but the result is not able the encryption rule!");
+            throw new ConfigException("host " + host + ",user " + user + " password need to decrypt, but the result is not obey the encryption rule!");
         }
         return password;
     }

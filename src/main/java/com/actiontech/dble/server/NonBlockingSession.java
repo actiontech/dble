@@ -6,9 +6,6 @@
 package com.actiontech.dble.server;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.alarm.AlarmCode;
-import com.actiontech.dble.alarm.Alert;
-import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
@@ -728,7 +725,6 @@ public class NonBlockingSession implements Session {
                         kill, en.getKey());
             } catch (Exception e) {
                 LOGGER.info("get killer connection failed for " + en.getKey(), e);
-                AlertUtil.alertSelf(AlarmCode.KILL_BACKEND_CONN_FAIL, Alert.AlertLevel.NOTICE, "get killer connection " + en.getKey() + " failed:" + e.getMessage(), null);
                 kill.connectionError(e, null);
             }
         }

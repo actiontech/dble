@@ -5,6 +5,9 @@
 */
 package com.actiontech.dble.backend.mysql.nio.handler;
 
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
@@ -45,6 +48,7 @@ public class KillConnectionHandler implements ResponseHandler {
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
+        AlertUtil.alertSelf(AlarmCode.KILL_BACKEND_CONN_FAIL, Alert.AlertLevel.NOTICE, "get killer connection " + conn.toString() + " failed:" + e.getMessage(), null);
         toKilled.close("exception:" + e.toString());
     }
 
@@ -79,6 +83,7 @@ public class KillConnectionHandler implements ResponseHandler {
             msg = new String(err.getMessage());
         }
         LOGGER.info("kill backend connection " + toKilled + " failed: " + msg + " con:" + conn);
+        AlertUtil.alertSelf(AlarmCode.KILL_BACKEND_CONN_FAIL, Alert.AlertLevel.NOTICE, "get killer connection " + conn.toString() + " failed: " + msg, null);
         conn.release();
         toKilled.close("exception:" + msg);
     }
@@ -100,5 +105,7 @@ public class KillConnectionHandler implements ResponseHandler {
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
+        AlertUtil.alertSelf(AlarmCode.KILL_BACKEND_CONN_FAIL, Alert.AlertLevel.NOTICE, "get killer connection " + conn.toString() + " failed: connectionClosed", null);
+        toKilled.close("exception:" + reason);
     }
 }

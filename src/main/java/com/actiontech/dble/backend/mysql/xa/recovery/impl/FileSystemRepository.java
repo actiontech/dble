@@ -60,6 +60,7 @@ public class FileSystemRepository implements Repository {
             initChannelIfNecessary();
             write(coordinatorLogEntry, true);
         } catch (IOException e) {
+            AlertUtil.alertSelf(AlarmCode.XA_WRITE_CHECK_POINT_FAIL, Alert.AlertLevel.WARN, "Failed to write logfile", null);
             LOGGER.warn(e.getMessage(), e);
         }
     }
@@ -97,7 +98,8 @@ public class FileSystemRepository implements Repository {
         } catch (FileNotFoundException firstStart) {
             // the file could not be opened for reading;
             // merely return the default empty vector
-            LOGGER.debug("Only For debug FileSystemRepository.getAllCoordinatorLogEntries error", firstStart);
+            LOGGER.info("Only For debug FileSystemRepository.getAllCoordinatorLogEntries error", firstStart);
+            AlertUtil.alertSelf(AlarmCode.XA_WRITE_CHECK_POINT_FAIL, Alert.AlertLevel.WARN, "Failed to read logfile", null);
         }
         if (fis != null) {
             return readFromInputStream(fis);

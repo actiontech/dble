@@ -5,11 +5,15 @@
 */
 package com.actiontech.dble.config.model;
 
+import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.config.model.rule.RuleConfig;
 import com.actiontech.dble.util.SplitUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -270,7 +274,22 @@ public class TableConfig {
 
     public String getRandomDataNode() {
         int index = Math.abs(rand.nextInt(Integer.MAX_VALUE)) % dataNodes.size();
-        return dataNodes.get(index);
+        ArrayList<String> x = new ArrayList<>();
+        x.addAll(dataNodes);
+        Map<String, PhysicalDBNode> dataNodeMap = DbleServer.getInstance().getConfig().getDataNodes();
+        while (x.size() > 1) {
+            for (PhysicalDatasource ds : dataNodeMap.get(x.get(index)).getDbPool().getAllDataSources()) {
+                if (ds.getHeartbeat().getStatus() == 1) {
+                    return x.get(index);
+                } else {
+                    break;
+                }
+            }
+            x.remove(index);
+            index = Math.abs(rand.nextInt(Integer.MAX_VALUE)) % x.size();
+        }
+
+        return x.get(0);
     }
 
     public boolean isRuleRequired() {

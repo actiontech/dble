@@ -367,13 +367,20 @@ public class PhysicalDBPool {
         // long start = System.currentTimeMillis();
         // long timeOut = start + 5000 * 1000L;
 
-        for (int i = 0; i < initSize; i++) {
+        for (int i = 0; i < initSize - 1; i++) {
             try {
                 ds.initMinConnection(this.schemas[i % schemas.length], true, getConHandler, null);
             } catch (Exception e) {
                 LOGGER.warn(getMessage(index, " init connection error."), e);
             }
         }
+
+        try {
+            ds.initMinConnection(null, true, getConHandler, null);
+        } catch (Exception e) {
+            LOGGER.warn("init connection with schema null error", e);
+        }
+
         long timeOut = System.currentTimeMillis() + 60 * 1000;
 
         // waiting for finish

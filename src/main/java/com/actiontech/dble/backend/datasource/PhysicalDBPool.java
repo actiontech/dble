@@ -354,9 +354,9 @@ public class PhysicalDBPool {
             return true;
         }
         int initSize = ds.getConfig().getMinCon();
-        if (initSize < this.schemas.length) {
-            initSize = this.schemas.length;
-            LOGGER.info("minCon size is less than the count of schema, so dble will create at least 1 conn for every schema");
+        if (initSize < this.schemas.length + 1) {
+            initSize = this.schemas.length + 1;
+            LOGGER.info("minCon size is less than (the count of schema +1), so dble will create at least 1 conn for every schema and an empty schema conn");
         }
 
         LOGGER.info("init backend mysql source ,create connections total " + initSize + " for " + ds.getName() +

@@ -44,6 +44,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     protected volatile byte packetId;
     protected volatile ByteBuffer buffer;
     protected long netOutBytes;
+    private long resultSize;
     long selectRows;
 
     private String primaryKeyTable = null;
@@ -167,6 +168,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
         boolean executeResponse = conn.syncAndExecute();
         if (executeResponse) {
+            this.resultSize += data.length;
             session.handleSpecial(rrs, session.getSource().getSchema(), true);
             ServerConnection source = session.getSource();
             OkPacket ok = new OkPacket();
@@ -204,7 +206,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
 
         this.netOutBytes += eof.length;
-
+        this.resultSize += eof.length;
 
         // if it's call statement,it will not release connection
         if (!rrs.isCallStatement() || rrs.getProcedure().isResultSimpleValue()) {
@@ -230,7 +232,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                 netInBytes = rrs.getStatement().getBytes().length;
             }
             QueryResult queryResult = new QueryResult(session.getSource().getUser(), rrs.getSqlType(), rrs.getStatement(), selectRows,
-                    netInBytes, netOutBytes, session.getQueryStartTime(), System.currentTimeMillis(), netOutBytes);
+                    netInBytes, netOutBytes, session.getQueryStartTime(), System.currentTimeMillis(), resultSize);
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("try to record sql:" + rrs.getStatement());
             }
@@ -253,9 +255,14 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
         this.netOutBytes += header.length;
+        this.resultSize += header.length;
         for (byte[] field : fields) {
             this.netOutBytes += field.length;
+            this.resultSize += field.length;
         }
+        this.netOutBytes += eof.length;
+        this.resultSize += eof.length;
+
 
         String primaryKey = null;
         if (rrs.hasPrimaryKeyToCache()) {
@@ -307,6 +314,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
 
         this.netOutBytes += row.length;
+        this.resultSize += row.length;
         this.selectRows++;
         row[3] = ++packetId;
 

@@ -208,12 +208,12 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     @Override
     public void okResponse(byte[] data, BackendConnection conn) {
         this.netOutBytes += data.length;
-        this.resultSize += data.length;
         boolean executeResponse = conn.syncAndExecute();
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("received ok response ,executeResponse:" + executeResponse + " from " + conn);
         }
         if (executeResponse) {
+            this.resultSize += data.length;
             ServerConnection source = session.getSource();
             OkPacket ok = new OkPacket();
             ok.read(data);
@@ -269,11 +269,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
         this.netOutBytes += header.length;
-        this.netOutBytes += eof.length;
         for (byte[] field : fields) {
             this.netOutBytes += field.length;
         }
-        this.resultSize = this.netOutBytes;
+        this.netOutBytes += eof.length;
         if (fieldsReturned) {
             return;
         }
@@ -282,6 +281,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             if (fieldsReturned) {
                 return;
             }
+            this.resultSize += header.length;
+            for (byte[] field : fields) {
+                this.resultSize += field.length;
+            }
+            this.resultSize += eof.length;
             fieldsReturned = true;
             executeFieldEof(header, fields, eof);
         } catch (Exception e) {
@@ -298,7 +302,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
 
         this.netOutBytes += eof.length;
-        this.resultSize += eof.length;
         if (errorResponse.get()) {
             return;
         }
@@ -313,6 +316,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
 
         if (decrementCountBy(1)) {
+            this.resultSize += eof.length;
             if (!rrs.isCallStatement() || (rrs.isCallStatement() && rrs.getProcedure().isResultSimpleValue())) {
                 if (this.sessionAutocommit && !session.getSource().isTxStart() && !session.getSource().isLocked()) { // clear all connections
                     session.releaseConnections(false);

@@ -136,7 +136,7 @@ public class UserStat {
      * @param startTime
      */
     public void update(int sqlType, String sql, long sqlRows,
-                       long netInBytes, long netOutBytes, long startTime, long endTime) {
+                       long netInBytes, long netOutBytes, long startTime, long endTime, long resultSetSize) {
 
         //-----------------------------------------------------
         int invoking = runningCount.incrementAndGet();
@@ -179,8 +179,8 @@ public class UserStat {
         }
 
         //big size sql
-        if (netOutBytes >= DbleServer.getInstance().getConfig().getSystem().getMaxResultSet()) {
-            this.sqlResultSizeRecorder.addSql(sql, netOutBytes);
+        if (resultSetSize >= DbleServer.getInstance().getConfig().getSystem().getMaxResultSet()) {
+            this.sqlResultSizeRecorder.addSql(sql, resultSetSize);
         }
 
         //after

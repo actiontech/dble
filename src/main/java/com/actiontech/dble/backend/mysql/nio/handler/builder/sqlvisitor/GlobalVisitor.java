@@ -148,6 +148,22 @@ public class GlobalVisitor extends MysqlVisitor {
                 sqlBuilder.append(")");
             }
         }
+
+        if (merge.getOrderBys() != null && merge.getOrderBys().size() > 0) {
+            sqlBuilder.append(" ORDER BY ");
+            for (Order order : merge.getOrderBys()) {
+                sqlBuilder.append(order.getItem().getItemName() + " " + order.getSortOrder() + ",");
+            }
+            sqlBuilder.setLength(sqlBuilder.length() - 1);
+        }
+
+        if (merge.getLimitTo() != 0) {
+            sqlBuilder.append(" LIMIT ");
+            if (merge.getLimitFrom() != 0) {
+                sqlBuilder.append(merge.getLimitFrom() + ",");
+            }
+            sqlBuilder.append(merge.getLimitTo());
+        }
     }
 
     protected void visit(JoinNode join) {

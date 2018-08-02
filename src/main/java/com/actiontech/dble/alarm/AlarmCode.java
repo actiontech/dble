@@ -14,7 +14,6 @@ public final class AlarmCode {
     private AlarmCode() {
     }
 
-    public static final String WRITE_NODE_INDEX_FAIL = "DBLE_WRITE_NODE_INDEX_FAIL";
     public static final String WRITE_TEMP_RESULT_FAIL = "DBLE_WRITE_TEMP_RESULT_FAIL";
     public static final String XA_READ_IO_FAIL = "DBLE_XA_READ_IO_FAIL";
     public static final String XA_READ_XA_STREAM_FAIL = "DBLE_XA_READ_XA_STREAM_FAIL";

@@ -179,13 +179,18 @@ public class NonBlockingSession implements Session {
     }
 
     public void readyToDeliver() {
-        if (traceResult != null) {
-            traceResult.setPreExecuteEnd(new TraceRecord(System.nanoTime()));
-        }
         if (!timeCost) {
             return;
         }
         provider.readyToDeliver(source.getId());
+    }
+
+    public void setPreExecuteEnd() {
+        if (traceResult != null) {
+            traceResult.setPreExecuteEnd(new TraceRecord(System.nanoTime()));
+            traceResult.getConnReceivedMap().clear();
+            traceResult.getConnFlagMap().clear();
+        }
     }
 
     public void setBackendRequestTime(long backendID) {
@@ -447,6 +452,7 @@ public class NonBlockingSession implements Session {
         } else {
             MultiNodeQueryHandler multiNodeHandler = new MultiNodeQueryHandler(rrs, this);
             setTraceSimpleHandler(multiNodeHandler);
+            setPreExecuteEnd();
             readyToDeliver();
             if (this.isPrepared()) {
                 multiNodeHandler.setPrepared(true);

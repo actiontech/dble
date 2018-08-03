@@ -97,6 +97,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             TxnLogHelper.putTxnLog(session.getSource(), node.getStatement());
         }
         session.readyToDeliver();
+        session.setPreExecuteEnd();
         conn.execute(node, session.getSource(), isAutocommit);
     }
 

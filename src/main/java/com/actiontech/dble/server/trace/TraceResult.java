@@ -140,7 +140,7 @@ public class TraceResult {
         lst.add(genTraceRecord("Read SQL", requestStart.getTimestamp(), parseStart.getTimestamp()));
         lst.add(genTraceRecord("Parse SQL", parseStart.getTimestamp(), routeStart.getTimestamp()));
         lst.add(genTraceRecord("Route Calculation", routeStart.getTimestamp(), preExecuteStart.getTimestamp()));
-        lst.add(genTraceRecord("Try to Optimize", preExecuteStart.getTimestamp(), preExecuteEnd.getTimestamp()));
+        lst.add(genTraceRecord("Prepare to Push", preExecuteStart.getTimestamp(), preExecuteEnd.getTimestamp()));
         if (simpleHandler != null) {
             Map<MySQLConnection, TraceRecord> connFetchStartMap = connReceivedMap.get(simpleHandler);
             Map<MySQLConnection, TraceRecord> connFetchEndMap = connFinishedMap.get(simpleHandler);

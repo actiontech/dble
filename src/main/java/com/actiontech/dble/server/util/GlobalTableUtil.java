@@ -24,6 +24,7 @@ import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
 import com.alibaba.druid.sql.ast.statement.SQLCharacterDataType;
 import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
 import com.alibaba.fastjson.JSON;
@@ -69,6 +70,7 @@ public final class GlobalTableUtil {
     public static SQLColumnDefinition createCheckColumn() {
         SQLColumnDefinition column = new SQLColumnDefinition();
         column.setDataType(new SQLCharacterDataType("bigint"));
+        column.setDefaultExpr(new SQLNullExpr());
         column.setName(new SQLIdentifierExpr(GLOBAL_TABLE_CHECK_COLUMN));
         column.setComment(new SQLCharExpr("field for checking consistency"));
         return column;

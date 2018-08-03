@@ -63,16 +63,18 @@ public class TableMetaCheckHandler extends AbstractTableMetaHandler {
             return false;
         }
         StructureMeta.TableMeta tblMetaTmp = tm.toBuilder().setVersion(oldTm.getVersion()).build();
-        //TODO: thread not safe
-        if (oldTm.equals(tblMetaTmp)) {
+        if (!oldTm.equals(tblMetaTmp)) { // oldTm!=tblMetaTmp means memory  meta is not equal show create table result
             try {
                 StructureMeta.TableMeta test = tmManager.getSyncTableMeta(schema, tbName);
-                return !oldTm.equals(test);
+                /* oldTm==test means memory meta is not changed, so memory is really different with show create table result
+                  if(oldTm!=test) means memory meta changed ,left to next check
+                */
+                return oldTm.equals(test);
             } catch (SQLNonTransientException e) {
                 //someone ddl, skip.
                 return false;
             }
         }
-        return true;
+        return false;
     }
 }

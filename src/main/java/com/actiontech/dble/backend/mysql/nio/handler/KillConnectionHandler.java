@@ -48,8 +48,10 @@ public class KillConnectionHandler implements ResponseHandler {
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        AlertUtil.alertSelf(AlarmCode.KILL_BACKEND_CONN_FAIL, Alert.AlertLevel.NOTICE, "get killer connection " + conn.toString() + " failed:" + e.getMessage(), null);
-        toKilled.close("exception:" + e.toString());
+        if (conn != null) {
+            AlertUtil.alertSelf(AlarmCode.KILL_BACKEND_CONN_FAIL, Alert.AlertLevel.NOTICE, "get killer connection " + conn.toString() + " failed:" + e.getMessage(), null);
+            toKilled.close("exception:" + e.toString());
+        }
     }
 
     @Override

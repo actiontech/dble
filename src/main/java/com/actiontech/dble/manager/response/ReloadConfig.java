@@ -406,7 +406,8 @@ public final class ReloadConfig {
                             if (bcon instanceof MySQLConnection) {
                                 MySQLConnection mcon2 = (MySQLConnection) bcon;
                                 if (mcon1 == mcon2) {
-                                    scon.killAndClose("reload config all");
+                                    //frontEnd kill change to frontEnd close ,it's not necessary to use kill
+                                    scon.close("reload config all");
                                     return;
                                 }
                             }

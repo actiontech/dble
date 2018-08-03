@@ -100,8 +100,8 @@ public class PhysicalDBPoolDiff {
 
         //add delete info into hostDiff & from hostDiff
         for (int i = 0; i < orgDbPool.getWriteSources().length; i++) {
-            PhysicalDatasource writeHost = newDbPool.getWriteSources()[i];
-            PhysicalDatasource[] readHost = newDbPool.getReadSources().get(Integer.valueOf(i));
+            PhysicalDatasource writeHost = orgDbPool.getWriteSources()[i];
+            PhysicalDatasource[] readHost = orgDbPool.getReadSources().get(Integer.valueOf(i));
             boolean findFlag = false;
             for (PhysicalDatasourceDiff diff : hostDiff) {
                 if (diff.getSelfHost().equals(writeHost) && diff.getWriteHostChangeType().equals(CHANGE_TYPE_NO)) {

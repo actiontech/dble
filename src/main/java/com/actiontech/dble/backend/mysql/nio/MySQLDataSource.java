@@ -159,14 +159,6 @@ public class MySQLDataSource extends PhysicalDatasource {
 
         } finally {
             try {
-                if (in != null) {
-                    in.close();
-                }
-            } catch (IOException e) {
-                //ignore error
-            }
-
-            try {
                 if (out != null) {
                     out.write(QuitPacket.QUIT);
                     out.flush();
@@ -177,9 +169,17 @@ public class MySQLDataSource extends PhysicalDatasource {
             }
 
             try {
+                if (in != null) {
+                    in.close();
+                }
+            } catch (IOException e) {
+                //ignore error
+            }
+
+            try {
                 if (socket != null)
                     socket.close();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 //ignore error
             }
         }

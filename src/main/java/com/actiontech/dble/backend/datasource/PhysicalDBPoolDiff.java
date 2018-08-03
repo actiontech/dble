@@ -65,8 +65,8 @@ public class PhysicalDBPoolDiff {
             PhysicalDatasource orgHost = null;
             PhysicalDatasource[] relatedHost = null;
             for (int j = 0; j < orgDbPool.getWriteSources().length; j++) {
-                PhysicalDatasource oldHost = orgDbPool.getWriteSources()[i];
-                PhysicalDatasource[] oldRHost = orgDbPool.getReadSources().get(Integer.valueOf(i));
+                PhysicalDatasource oldHost = orgDbPool.getWriteSources()[j];
+                PhysicalDatasource[] oldRHost = orgDbPool.getReadSources().get(Integer.valueOf(j));
 
                 if (oldHost.equals(writeHost) &&
                         ((oldRHost == null && readHost == null) ||

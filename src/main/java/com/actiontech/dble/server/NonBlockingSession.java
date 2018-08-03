@@ -437,6 +437,9 @@ public class NonBlockingSession implements Session {
             }
         } else if (ServerParse.SELECT == rrs.getSqlType() && rrs.getGroupByCols() != null) {
             MultiNodeSelectHandler multiNodeSelectHandler = new MultiNodeSelectHandler(rrs, this);
+            setTraceSimpleHandler(multiNodeSelectHandler);
+            setPreExecuteEnd();
+            readyToDeliver();
             if (this.isPrepared()) {
                 multiNodeSelectHandler.setPrepared(true);
             }

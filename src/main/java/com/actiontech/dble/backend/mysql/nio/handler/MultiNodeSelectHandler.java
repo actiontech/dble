@@ -86,6 +86,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
 
     @Override
     public void rowEofResponse(final byte[] eof, boolean isLeft, BackendConnection conn) {
+        session.setBackendResponseEndTime((MySQLConnection) conn);
         BlockingQueue<HeapItem> queue = queues.get(conn);
         if (queue == null)
             return;

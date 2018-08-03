@@ -67,10 +67,10 @@ public class PushDownVisitor extends MysqlVisitor {
     }
 
     protected void visit(TableNode query) {
-        if (query.isSubQuery() && !isTopQuery) {
+        if (query.isWithSubQuery() && !isTopQuery) {
             sqlBuilder.append(" ( ");
         }
-        if (query.isSubQuery() || isTopQuery) {
+        if (query.isWithSubQuery() || isTopQuery) {
             buildSelect(query);
 
             if (query.getTableName() == null)
@@ -78,7 +78,7 @@ public class PushDownVisitor extends MysqlVisitor {
             sqlBuilder.append(" from ");
         }
         buildTableName(query, sqlBuilder);
-        if (query.isSubQuery() || isTopQuery) {
+        if (query.isWithSubQuery() || isTopQuery) {
             buildWhere(query);
             buildGroupBy(query);
             // having may contains aggregate function, so it need to calc by middle-ware
@@ -90,7 +90,7 @@ public class PushDownVisitor extends MysqlVisitor {
             buildForUpdate(query, sqlBuilder);
         }
 
-        if (query.isSubQuery() && !isTopQuery) {
+        if (query.isWithSubQuery() && !isTopQuery) {
             sqlBuilder.append(" ) ");
             if (query.getAlias() != null) {
                 sqlBuilder.append(" ").append(query.getAlias()).append(" ");
@@ -103,7 +103,7 @@ public class PushDownVisitor extends MysqlVisitor {
         if (!isTopQuery) {
             sqlBuilder.append(" ( ");
         }
-        if (join.isSubQuery() || isTopQuery) {
+        if (join.isWithSubQuery() || isTopQuery) {
             buildSelect(join);
             sqlBuilder.append(" from ");
         }
@@ -130,7 +130,7 @@ public class PushDownVisitor extends MysqlVisitor {
         sqlBuilder = replaceableSqlBuilder.getCurrentElement().getSb();
         StringBuilder joinOnFilterStr = getJoinOn(join, leftVisitor, rightVisitor);
         sqlBuilder.append(joinOnFilterStr.toString());
-        if (join.isSubQuery() || isTopQuery) {
+        if (join.isWithSubQuery() || isTopQuery) {
             buildWhere(join, leftVisitor.getWhereFilter(), rightVisitor.getWhereFilter());
             buildGroupBy(join);
             // having may contains aggregate function, so it need to calc by middle-ware

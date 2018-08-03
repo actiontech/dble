@@ -453,9 +453,9 @@ public class NonBlockingSession implements Session {
         if (outputHandler != null) {
             outputHandler.backendConnError(message);
         } else {
-            if (LOGGER.isDebugEnabled()) {
-                source.close(new String(message));
-            }
+            String error = new String(message);
+            this.closeAndClearResources(error);
+            source.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, error);
         }
     }
 

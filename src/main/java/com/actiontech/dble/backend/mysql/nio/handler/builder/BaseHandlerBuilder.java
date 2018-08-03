@@ -122,7 +122,7 @@ public abstract class BaseHandlerBuilder {
             schema = tbNode.getSchema();
             table = tbNode.getTableName();
         }
-        if (needCommon || node.isSubQuery()) {
+        if (needCommon || node.isWithSubQuery()) {
             SendMakeHandler sh = new SendMakeHandler(getSequenceId(), session, node.getColumnsSelected(), schema, table, tbAlias);
             addHandler(sh);
         }

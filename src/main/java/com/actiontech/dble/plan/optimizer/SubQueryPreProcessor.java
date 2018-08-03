@@ -156,7 +156,7 @@ public final class SubQueryPreProcessor {
         changeQuery.setAlias(alias);
         if (query.getColumnsSelected().size() != 1)
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "only support subquery of one column");
-        query.setSubQuery(true).setDistinct(true);
+        query.setWithSubQuery(true).setDistinct(true);
 
         final List<Item> newSelects = qtn.query.getColumnsSelected();
         SubQueryFilter result = new SubQueryFilter();
@@ -179,7 +179,7 @@ public final class SubQueryPreProcessor {
         result.query.setSql(qtn.query.getSql());
         qtn.query.setSql(null);
         result.query.select(newSelects);
-        qtn.query.setSubQuery(false);
+        qtn.query.setWithSubQuery(false);
         if (!qtn.query.getOrderBys().isEmpty()) {
             List<Order> orderBys = new ArrayList<>();
             orderBys.addAll(qtn.query.getOrderBys());

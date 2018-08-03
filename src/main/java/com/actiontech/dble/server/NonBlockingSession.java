@@ -295,6 +295,17 @@ public class NonBlockingSession implements Session {
         }
     }
 
+    public void setBeginCommitTime() {
+        if (traceResult != null) {
+            traceResult.setAdtCommitBegin(new TraceRecord(System.nanoTime()));
+        }
+    }
+    public void setFinishedCommitTime() {
+        if (traceResult != null) {
+            traceResult.setAdtCommitEnd(new TraceRecord(System.nanoTime()));
+        }
+    }
+
     public List<String[]> genTraceResult() {
         if (traceResult != null) {
             return traceResult.genTraceResult();

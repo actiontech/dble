@@ -567,6 +567,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (!conn.isDDL()) {
                     session.checkBackupStatus();
                 }
+                session.setBeginCommitTime();
                 if (session.getXaState() == null) {
                     NormalAutoCommitNodesHandler autoHandler = new NormalAutoCommitNodesHandler(session, data);
                     autoHandler.commit();

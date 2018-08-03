@@ -26,6 +26,9 @@ public class TraceResult {
     private TraceRecord preExecuteStart; //routeEnd
     private TraceRecord preExecuteEnd;
 
+    private TraceRecord adtCommitBegin; //auto Distributed Transaction commit begin
+    private TraceRecord adtCommitEnd; ////auto Distributed Transaction commit end
+
     private ResponseHandler simpleHandler = null;
     private BaseHandlerBuilder builder = null; //for complex query
     private ConcurrentMap<MySQLConnection, Boolean> connFlagMap = new ConcurrentHashMap<>();
@@ -63,6 +66,13 @@ public class TraceResult {
         this.simpleHandler = simpleHandler;
     }
 
+    public void setAdtCommitBegin(TraceRecord adtCommitBegin) {
+        this.adtCommitBegin = adtCommitBegin;
+    }
+
+    public void setAdtCommitEnd(TraceRecord adtCommitEnd) {
+        this.adtCommitEnd = adtCommitEnd;
+    }
     public ConcurrentMap<MySQLConnection, Boolean> getConnFlagMap() {
         return connFlagMap;
     }
@@ -103,6 +113,8 @@ public class TraceResult {
         routeStart = null;
         preExecuteStart = null;
         preExecuteEnd = null;
+        adtCommitBegin = null;
+        adtCommitEnd = null;
 
         simpleHandler = null;
         builder = null; //for complex query
@@ -135,16 +147,21 @@ public class TraceResult {
             List<String[]> executeList = new ArrayList<>(connFetchStartMap.size());
             List<String[]> fetchList = new ArrayList<>(connFetchStartMap.size());
             long minFetchStart = Long.MAX_VALUE;
+            long maxFetchEnd = 0;
             for (Map.Entry<MySQLConnection, TraceRecord> fetchStart : connFetchStartMap.entrySet()) {
                 TraceRecord fetchStartRecord = fetchStart.getValue();
-                long fetchStartStmap = fetchStartRecord.getTimestamp();
-                minFetchStart = Math.min(minFetchStart, fetchStartStmap);
-                executeList.add(genTraceRecord("Execute SQL", preExecuteEnd.getTimestamp(), fetchStartStmap, fetchStartRecord.getDataNode(), fetchStartRecord.getRef()));
+                minFetchStart = Math.min(minFetchStart, fetchStartRecord.getTimestamp());
+                executeList.add(genTraceRecord("Execute SQL", preExecuteEnd.getTimestamp(), fetchStartRecord.getTimestamp(), fetchStartRecord.getDataNode(), fetchStartRecord.getRef()));
                 TraceRecord fetchEndRecord = connFetchEndMap.get(fetchStart.getKey());
-                fetchList.add(genTraceRecord("Fetch result", fetchStartStmap, fetchEndRecord.getTimestamp(), fetchStartRecord.getDataNode(), fetchStartRecord.getRef()));
+                fetchList.add(genTraceRecord("Fetch result", fetchStartRecord.getTimestamp(), fetchEndRecord.getTimestamp(), fetchStartRecord.getDataNode(), fetchStartRecord.getRef()));
+                maxFetchEnd = Math.max(maxFetchEnd, fetchEndRecord.getTimestamp());
             }
             lst.addAll(executeList);
             lst.addAll(fetchList);
+            if (adtCommitBegin != null) {
+                lst.add(genTraceRecord("Distributed Transaction Prepare", maxFetchEnd, adtCommitBegin.getTimestamp()));
+                lst.add(genTraceRecord("Distributed Transaction Commit", adtCommitBegin.getTimestamp(), adtCommitEnd.getTimestamp()));
+            }
             lst.add(genTraceRecord("Write to Client", minFetchStart, veryEnd));
         }
         lst.add(genTraceRecord("Over All", veryStart, veryEnd));

@@ -38,7 +38,7 @@ public abstract class PlanNode {
     }
 
     public enum PlanNodeType {
-        NONAME, TABLE, JOIN, MERGE, QUERY, VIEW
+        NONAME, TABLE, JOIN, MERGE, QUERY
     }
 
     public abstract PlanNodeType type();
@@ -69,7 +69,6 @@ public abstract class PlanNode {
     Item havingFilter;
     /**
      * parent node ,eg:subquery may use parent's info
-     * TODO:NEED?
      * http://dev.mysql.com/doc/refman/5.0/en/correlated-subqueries.html
      */
     private PlanNode parent;
@@ -100,9 +99,9 @@ public abstract class PlanNode {
     protected String alias;
 
     /**
-     * is this node is subQuery
+     * is this node contains subQuery
      */
-    private boolean subQuery;
+    private boolean withSubQuery;
     private boolean correlatedSubQuery;
 
     private boolean existView = false;
@@ -276,7 +275,7 @@ public abstract class PlanNode {
         to.setLimitFrom(this.limitFrom);
         to.setLimitTo(this.limitTo);
         to.setSql(this.getSql());
-        to.setSubQuery(subQuery);
+        to.setWithSubQuery(withSubQuery);
         to.setCorrelatedSubQuery(correlatedSubQuery);
         to.setUnGlobalTableCount(unGlobalTableCount);
         to.setNoshardNode(noshardNode);
@@ -549,15 +548,14 @@ public abstract class PlanNode {
         return this;
     }
 
-    public boolean isSubQuery() {
-        return subQuery;
+    public boolean isWithSubQuery() {
+        return withSubQuery;
     }
 
-    public PlanNode setSubQuery(boolean isSubQuery) {
-        this.subQuery = isSubQuery;
+    public PlanNode setWithSubQuery(boolean withSub) {
+        this.withSubQuery = withSub;
         return this;
     }
-
 
     public boolean isCorrelatedSubQuery() {
         return correlatedSubQuery;

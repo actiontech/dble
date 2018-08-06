@@ -172,7 +172,7 @@ public class MySQLPlanNodeVisitor {
                 //consider if the table with other name
                 viewNode.setAlias(tableSource.getAlias() == null ? identifierExpr.getName() : tableSource.getAlias());
                 this.tableNode = viewNode;
-                this.tableNode.setSubQuery(true);
+                this.tableNode.setWithSubQuery(true);
                 this.tableNode.setExistView(true);
                 return true;
             } else {
@@ -192,7 +192,7 @@ public class MySQLPlanNodeVisitor {
 
     public boolean visit(SQLUnionQueryTableSource unionTables) {
         visit(unionTables.getUnion());
-        this.tableNode.setSubQuery(true);
+        this.tableNode.setWithSubQuery(true);
         if (unionTables.getAlias() != null) {
             tableNode.setAlias(unionTables.getAlias());
         }
@@ -264,7 +264,7 @@ public class MySQLPlanNodeVisitor {
     public boolean visit(SQLSubqueryTableSource subQueryTables) {
         SQLSelect sqlSelect = subQueryTables.getSelect();
         visit(sqlSelect.getQuery());
-        this.tableNode.setSubQuery(true);
+        this.tableNode.setWithSubQuery(true);
         return true;
     }
 
@@ -336,7 +336,7 @@ public class MySQLPlanNodeVisitor {
         if (selItem instanceof ItemScalarSubQuery) {
             ((ItemScalarSubQuery) selItem).setField(true);
             tableNode.getSubQueries().add((ItemScalarSubQuery) selItem);
-            tableNode.setSubQuery(true);
+            tableNode.setWithSubQuery(true);
         } else if (selItem instanceof ItemFunc) {
             for (Item args : selItem.arguments()) {
                 setSubQueryNode(args);
@@ -351,7 +351,7 @@ public class MySQLPlanNodeVisitor {
             Item whereFilter = mev.getItem();
             tableNode.query(whereFilter);
             if (whereFilter.isWithSubQuery()) {
-                tableNode.setSubQuery(true);
+                tableNode.setWithSubQuery(true);
                 tableNode.setCorrelatedSubQuery(whereFilter.isCorrelatedSubQuery());
             }
         } else {
@@ -365,7 +365,7 @@ public class MySQLPlanNodeVisitor {
             MySQLItemVisitor v = new MySQLItemVisitor(this.currentDb, this.charsetIndex, this.metaManager);
             expr.accept(v);
             if (v.getItem() instanceof ItemScalarSubQuery) {
-                tableNode.setSubQuery(true);
+                tableNode.setWithSubQuery(true);
                 tableNode.setCorrelatedSubQuery(false);
             }
             this.tableNode = tableNode.orderBy(v.getItem(), p.getType());
@@ -432,7 +432,7 @@ public class MySQLPlanNodeVisitor {
             throw new IllegalArgumentException("from expression is null,check the sql!");
         }
         if (havingFilter.isWithSubQuery()) {
-            tableNode.setSubQuery(true);
+            tableNode.setWithSubQuery(true);
             tableNode.setCorrelatedSubQuery(havingFilter.isCorrelatedSubQuery());
         }
         this.tableNode = this.tableNode.having(havingFilter);

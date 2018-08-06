@@ -28,7 +28,7 @@ public class QueryNode extends PlanNode {
         this.whereFilter = filter;
         this.setChild(child);
         if (child != null) {
-            child.setSubQuery(true); // the default is subQuery
+            child.setWithSubQuery(true); // the default is subQuery
         }
     }
 

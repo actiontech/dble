@@ -185,7 +185,7 @@ public class ERJoinChooser {
         ret.having(jn.getHavingFilter());
         ret.setWhereFilter(jn.getWhereFilter());
         ret.setAlias(jn.getAlias());
-        ret.setSubQuery(jn.isSubQuery());
+        ret.setWithSubQuery(jn.isWithSubQuery());
         ret.setSql(jn.getSql());
         ret.setUpFields();
         return ret;
@@ -389,7 +389,7 @@ public class ERJoinChooser {
     private boolean isUnit(PlanNode node) {
         if (isGlobalTree(node))
             return true;
-        else return node.type() != PlanNode.PlanNodeType.JOIN || node.isSubQuery() || !((JoinNode) node).isInnerJoin();
+        else return node.type() != PlanNode.PlanNodeType.JOIN || node.isWithSubQuery() || !((JoinNode) node).isInnerJoin();
     }
 
     /**

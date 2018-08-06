@@ -31,7 +31,7 @@ public final class MyOptimizer {
             node = SubQueryPreProcessor.optimize(node);
             updateReferedTableNodes(node);
             int existGlobal = checkGlobalTable(node, new HashSet<String>());
-            if (node.isExistView() || existGlobal != 1 || node.isSubQuery()) {
+            if (node.isExistView() || existGlobal != 1 || node.isWithSubQuery()) {
                 // optimizer sub query [Derived Tables (Subqueries in the FROM Clause)]
                 //node = SubQueryProcessor.optimize(node);
                 // transform right join to left join
@@ -91,7 +91,7 @@ public final class MyOptimizer {
      * return 0 for other ,may need to global optimizer ;
      */
     public static int checkGlobalTable(PlanNode node, Set<String> resultDataNodes) {
-        if (node.isSubQuery()) {
+        if (node.isWithSubQuery()) {
             return 0;
         }
         Set<String> dataNodes = null;

@@ -253,11 +253,11 @@ public final class PlanUtil {
     }
 
     public static boolean isGlobalOrER(PlanNode node) {
-        return !node.isSubQuery() && ((node.getNoshardNode() != null && node.type() != PlanNodeType.TABLE && node.type() != PlanNodeType.QUERY) || isERNode(node));
+        return !node.isWithSubQuery() && ((node.getNoshardNode() != null && node.type() != PlanNodeType.TABLE && node.type() != PlanNodeType.QUERY) || isERNode(node));
     }
 
     public static boolean isGlobal(PlanNode node) {
-        return node.getNoshardNode() != null && node.getUnGlobalTableCount() == 0 && !node.isSubQuery();
+        return node.getNoshardNode() != null && node.getUnGlobalTableCount() == 0 && !node.isWithSubQuery();
     }
 
     /**
@@ -371,7 +371,7 @@ public final class PlanUtil {
     }
 
     public static boolean containsSubQuery(PlanNode node) {
-        if (node.isSubQuery()) {
+        if (node.isWithSubQuery()) {
             return true;
         }
         for (PlanNode child : node.getChildren()) {

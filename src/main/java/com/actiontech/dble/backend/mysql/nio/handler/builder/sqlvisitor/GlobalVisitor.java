@@ -87,7 +87,6 @@ public class GlobalVisitor extends MysqlVisitor {
     }
 
     protected void visit(NoNameNode query) {
-        //FIXME:如果在viewoptimizr时,将noname的where和select进行了修改,则需要改成和tablenode类似的做法
         if (!isTopQuery) {
             sqlBuilder.append(" ( ");
         }
@@ -157,9 +156,9 @@ public class GlobalVisitor extends MysqlVisitor {
             sqlBuilder.setLength(sqlBuilder.length() - 1);
         }
 
-        if (merge.getLimitTo() != 0) {
+        if (merge.getLimitTo() != -1) {
             sqlBuilder.append(" LIMIT ");
-            if (merge.getLimitFrom() != 0) {
+            if (merge.getLimitFrom() != -1) {
                 sqlBuilder.append(merge.getLimitFrom() + ",");
             }
             sqlBuilder.append(merge.getLimitTo());

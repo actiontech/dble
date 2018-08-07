@@ -14,6 +14,7 @@ import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.sqlengine.SQLQueryResultListener;
+import com.actiontech.dble.util.SplitUtil;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
@@ -30,7 +31,7 @@ import java.util.regex.Pattern;
 public final class CreateDatabaseHandler {
 
     private static final OkPacket OK = new OkPacket();
-    private static final Pattern PATTERN = Pattern.compile("\\s*create\\s*database\\s*@@dataNode\\s*=\\s*'([a-zA-Z_0-9,]+)'\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN = Pattern.compile("\\s*create\\s*database\\s*@@dataNode\\s*=\\s*(['\"])([a-zA-Z_0-9,\\$\\-]+)(['\"])\\s*$", Pattern.CASE_INSENSITIVE);
 
     static {
         OK.setPacketId(1);
@@ -44,12 +45,12 @@ public final class CreateDatabaseHandler {
     public static void handle(String stmt, ManagerConnection c) {
 
         Matcher ma = PATTERN.matcher(stmt);
-        if (!ma.matches()) {
+        if (!ma.matches() || !ma.group(1).equals(ma.group(3))) {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql did not match create database @@dataNode ='dn......'");
             return;
         }
-        String dataNodeStr = ma.group(1);
-        Set<String> dataNodes = new HashSet<>(Arrays.asList(dataNodeStr.split(",")));
+        String dataNodeStr = ma.group(2);
+        Set<String> dataNodes = new HashSet<>(Arrays.asList(SplitUtil.split(dataNodeStr, ',', '$', '-')));
         //check dataNodes
         for (String singleDn : dataNodes) {
             if (DbleServer.getInstance().getConfig().getDataNodes().get(singleDn) == null) {

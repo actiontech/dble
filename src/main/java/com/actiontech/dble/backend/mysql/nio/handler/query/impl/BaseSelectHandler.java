@@ -54,7 +54,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
         } else {
             PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(rrss.getName());
             //autocommit is session.getSource().isAutocommit() && !session.getSource().isTxStart()
-            final BackendConnection newConn = dn.getConnection(dn.getDatabase(), autocommit, autocommit);
+            final BackendConnection newConn = dn.getConnection(dn.getDatabase(), autocommit, autocommit, rrss);
             session.bindConnection(rrss, newConn);
             return (MySQLConnection) newConn;
         }
@@ -67,8 +67,8 @@ public class BaseSelectHandler extends BaseDMLHandler {
         }
         conn.setResponseHandler(this);
         conn.setSession(session);
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info(conn.toString() + " send sql:" + rrss.getStatement());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(conn.toString() + " send sql:" + rrss.getStatement());
         }
         if (session.closed()) {
             session.onQueryError("failed or cancelled by other thread".getBytes());
@@ -89,6 +89,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
+        session.setHandlerEnd(this); //base start receive
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(conn.toString() + "'s field is reached.");
         }
@@ -124,10 +125,10 @@ public class BaseSelectHandler extends BaseDMLHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(conn.toString() + " 's rowEof is reached.");
         }
+        session.setBackendResponseEndTime((MySQLConnection) conn);
         ((MySQLConnection) conn).setRunning(false);
         ((MySQLConnection) conn).singal();
         if (this.terminate.get()) {
-
             return;
         }
         nextHandler.rowEofResponse(data, this.isLeft, conn);

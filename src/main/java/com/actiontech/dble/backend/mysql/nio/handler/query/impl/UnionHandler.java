@@ -57,6 +57,7 @@ public class UnionHandler extends BaseDMLHandler {
                                  byte[] eofNull, boolean isLeft, BackendConnection conn) {
         lock.lock();
         try {
+            session.setHandlerStart(this);
             if (terminate.get())
                 return;
             if (this.fieldPackets == null || this.fieldPackets.size() == 0) {
@@ -143,6 +144,7 @@ public class UnionHandler extends BaseDMLHandler {
         if (terminate.get())
             return;
         if (nodeCount.decrementAndGet() == 0) {
+            session.setHandlerEnd(this);
             nextHandler.rowEofResponse(data, this.isLeft, conn);
         }
     }

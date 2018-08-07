@@ -67,6 +67,7 @@ public class TempTableHandler extends BaseDMLHandler {
         }
         lock.lock();
         try {
+            session.setHandlerStart(this);
             if (this.fieldPackets.isEmpty()) {
                 this.fieldPackets = fieldPackets;
                 tempTable.setFieldPackets(this.fieldPackets);
@@ -130,6 +131,7 @@ public class TempTableHandler extends BaseDMLHandler {
             while ((rp = tempTable.nextRow()) != null) {
                 nextHandler.rowResponse(null, rp, this.isLeft, conn);
             }
+            session.setHandlerEnd(this);
             nextHandler.rowEofResponse(eof, this.isLeft, conn);
         } catch (Exception e) {
             LOGGER.info("rowEof exception!", e);

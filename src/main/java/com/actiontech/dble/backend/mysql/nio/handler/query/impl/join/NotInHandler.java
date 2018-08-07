@@ -63,6 +63,7 @@ public class NotInHandler extends OwnThreadDMLHandler {
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
                                  byte[] eofNull, boolean isLeft, final BackendConnection conn) {
+        session.setHandlerStart(this);
         if (this.pool == null)
             this.pool = DbleServer.getInstance().getBufferPool();
 
@@ -161,6 +162,7 @@ public class NotInHandler extends OwnThreadDMLHandler {
                     rightLocal = takeFirst(rightQueue);
                 }
             }
+            session.setHandlerEnd(this);
             nextHandler.rowEofResponse(null, isLeft, conn);
             HandlerTool.terminateHandlerTree(this);
         } catch (Exception e) {

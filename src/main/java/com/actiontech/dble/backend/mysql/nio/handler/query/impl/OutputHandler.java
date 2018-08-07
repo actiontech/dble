@@ -93,6 +93,7 @@ public class OutputHandler extends BaseDMLHandler {
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, List<FieldPacket> fieldPackets,
                                  byte[] eofNull, boolean isLeft, BackendConnection conn) {
+        session.setHandlerStart(this);
         if (terminate.get()) {
             return;
         }
@@ -173,6 +174,7 @@ public class OutputHandler extends BaseDMLHandler {
             session.multiStatementPacket(eofPacket, packetId);
             byte[] eof = eofPacket.toBytes();
             buffer = source.writeToBuffer(eof, buffer);
+            session.setHandlerEnd(this);
             session.setResponseTime();
             boolean multiStatementFlag = session.getIsMultiStatement().get();
             source.write(buffer);

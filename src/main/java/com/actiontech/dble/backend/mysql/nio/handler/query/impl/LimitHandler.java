@@ -38,6 +38,7 @@ public class LimitHandler extends BaseDMLHandler {
     public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
         LOGGER.debug("row eof");
         if (!terminate.get()) {
+            session.setHandlerEnd(this);
             nextHandler.rowEofResponse(data, this.isLeft, conn);
         }
     }
@@ -50,6 +51,7 @@ public class LimitHandler extends BaseDMLHandler {
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, List<FieldPacket> fieldPackets,
                                  byte[] eofNull, boolean isLeft, BackendConnection conn) {
+        session.setHandlerStart(this);
         nextHandler.fieldEofResponse(null, null, fieldPackets, null, this.isLeft, conn);
     }
 

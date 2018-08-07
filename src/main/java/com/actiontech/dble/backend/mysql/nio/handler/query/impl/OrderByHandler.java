@@ -50,6 +50,7 @@ public class OrderByHandler extends OwnThreadDMLHandler {
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
                                  byte[] eofNull, boolean isLeft, final BackendConnection conn) {
+        session.setHandlerStart(this);
         if (terminate.get())
             return;
         if (this.pool == null)
@@ -122,6 +123,7 @@ public class OrderByHandler extends OwnThreadDMLHandler {
                     break;
             }
             recordElapsedTime("order read end:");
+            session.setHandlerEnd(this);
             nextHandler.rowEofResponse(null, this.isLeft, conn);
         } catch (Exception e) {
             String msg = "OrderBy thread error, " + e.getLocalizedMessage();
@@ -131,8 +133,8 @@ public class OrderByHandler extends OwnThreadDMLHandler {
     }
 
     private void recordElapsedTime(String prefix) {
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info(prefix + TimeUtil.currentTimeMillis());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(prefix + TimeUtil.currentTimeMillis());
         }
     }
 

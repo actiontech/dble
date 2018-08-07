@@ -55,7 +55,7 @@ public class HandlerBuilder {
         return builder;
     }
 
-    public void build() throws Exception {
+    public BaseHandlerBuilder build() throws Exception {
         final long startTime = System.nanoTime();
         BaseHandlerBuilder builder = getBuilder(session, node, false);
         DMLResponseHandler endHandler = builder.getEndHandler();
@@ -63,7 +63,8 @@ public class HandlerBuilder {
         endHandler.setNextHandler(fh);
         HandlerBuilder.startHandler(fh);
         long endTime = System.nanoTime();
-        logger.info("HandlerBuilder.build cost:" + (endTime - startTime));
+        logger.debug("HandlerBuilder.build cost:" + (endTime - startTime));
+        return builder;
     }
 
     private BaseHandlerBuilder createBuilder(final NonBlockingSession nonBlockingSession, PlanNode planNode, boolean isExplain) {

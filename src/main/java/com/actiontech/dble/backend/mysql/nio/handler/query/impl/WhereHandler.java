@@ -38,6 +38,7 @@ public class WhereHandler extends BaseDMLHandler {
 
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
                                  byte[] eofNull, boolean isLeft, BackendConnection conn) {
+        session.setHandlerStart(this);
         if (terminate.get())
             return;
         this.fieldPackets = fieldPackets;
@@ -68,6 +69,7 @@ public class WhereHandler extends BaseDMLHandler {
     public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
         if (terminate.get())
             return;
+        session.setHandlerEnd(this);
         nextHandler.rowEofResponse(data, isLeft, conn);
     }
 

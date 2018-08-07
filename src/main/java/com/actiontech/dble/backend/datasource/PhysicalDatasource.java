@@ -337,6 +337,7 @@ public abstract class PhysicalDatasource {
 
     private BackendConnection takeCon(BackendConnection conn, String schema) {
         conn.setBorrowed(true);
+
         if (!StringUtil.equals(conn.getSchema(), schema)) {
             // need do schema syn in before sql send
             conn.setSchema(schema);
@@ -426,7 +427,7 @@ public abstract class PhysicalDatasource {
         }
     }
 
-    public BackendConnection getConnection(String schema, boolean autocommit) throws IOException {
+    public BackendConnection getConnection(String schema, boolean autocommit, final Object attachment) throws IOException {
         BackendConnection con = this.conMap.tryTakeCon(schema, autocommit);
         if (con == null) {
             int activeCons = this.getActiveCount(); // the max active
@@ -463,7 +464,9 @@ public abstract class PhysicalDatasource {
                 }
             }
         }
-        return takeCon(con, schema);
+        con = takeCon(con, schema);
+        con.setAttachment(attachment);
+        return con;
     }
 
     public void initMinConnection(String schema, boolean autocommit, final ResponseHandler handler,

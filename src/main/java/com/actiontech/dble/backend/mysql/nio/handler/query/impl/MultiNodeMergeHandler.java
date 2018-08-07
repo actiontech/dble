@@ -79,6 +79,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
             if (terminate.get())
                 return;
             for (BaseSelectHandler exeHandler : exeHandlers) {
+                session.setHandlerStart(exeHandler); //base start execute
                 MySQLConnection exeConn = exeHandler.initConnection();
                 if (exeConn != null) {
                     exeConn.setComplexQuery(true);
@@ -92,9 +93,10 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info(conn.toString() + "'s field is reached.");
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(conn.toString() + "'s field is reached.");
         }
+        session.setHandlerStart(this);
         // if terminated
         if (terminate.get()) {
             return;
@@ -143,8 +145,8 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
 
     @Override
     public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info(conn.toString() + " 's rowEof is reached.");
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(conn.toString() + " 's rowEof is reached.");
         }
         ((MySQLConnection) conn).setRunning(false);
         if (this.terminate.get())
@@ -152,8 +154,10 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
         if (isEasyMerge) {
             lock.lock();
             try {
-                if (++reachedConCount == route.length)
+                if (++reachedConCount == route.length) {
+                    session.setHandlerEnd(this);
                     nextHandler.rowEofResponse(null, this.isLeft, conn);
+                }
             } finally {
                 lock.unlock();
             }
@@ -219,10 +223,11 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
                     }
                 }
             }
-            if (LOGGER.isInfoEnabled()) {
+            if (LOGGER.isDebugEnabled()) {
                 String executeQueries = getRoutesSql(route);
-                LOGGER.info(executeQueries + " heap send eof: ");
+                LOGGER.debug(executeQueries + " heap send eof: ");
             }
+            session.setHandlerEnd(this);
             nextHandler.rowEofResponse(null, this.isLeft, queues.keySet().iterator().next());
         } catch (Exception e) {
             String msg = "Merge thread error, " + e.getLocalizedMessage();

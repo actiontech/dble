@@ -78,6 +78,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
                                  byte[] eofNull, boolean isLeft, BackendConnection conn) {
+        session.setHandlerStart(this);
         this.charset = CharsetUtil.getJavaCharset(conn.getCharset().getResults());
         if (terminate.get())
             return;
@@ -162,6 +163,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
         } else {
             sendGroupRowPacket((MySQLConnection) conn);
         }
+        session.setHandlerEnd(this);
         nextHandler.rowEofResponse(data, this.isLeft, conn);
     }
 

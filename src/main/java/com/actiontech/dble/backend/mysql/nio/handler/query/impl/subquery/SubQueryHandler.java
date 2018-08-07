@@ -37,6 +37,7 @@ public abstract class SubQueryHandler extends BaseDMLHandler {
             if (terminate.get()) {
                 return;
             }
+            session.setHandlerEnd(this);
             HandlerTool.terminateHandlerTree(this);
             // locked onTerminate, because terminated may sync with start
             tempDoneCallBack.call();

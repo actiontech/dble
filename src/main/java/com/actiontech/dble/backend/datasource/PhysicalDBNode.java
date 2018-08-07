@@ -108,7 +108,7 @@ public class PhysicalDBNode {
         }
     }
 
-    public BackendConnection getConnection(String schema, boolean autoCommit, boolean canRunINReadDB) throws Exception {
+    public BackendConnection getConnection(String schema, boolean autoCommit, boolean canRunINReadDB, Object attachment) throws Exception {
         if (canRunINReadDB) {
             PhysicalDatasource readSource = dbPool.getRWBalanceNode();
             if (!readSource.isAlive()) {
@@ -118,13 +118,13 @@ public class PhysicalDBNode {
                 AlertUtil.alert(AlarmCode.DATA_HOST_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", readSource.getConfig().getId(), labels);
                 throw new IOException(heartbeatError);
             }
-            return readSource.getConnection(schema, autoCommit);
+            return readSource.getConnection(schema, autoCommit, attachment);
         } else {
             checkRequest(schema);
             if (dbPool.isInitSuccess()) {
                 PhysicalDatasource writeSource = dbPool.getSource();
                 writeSource.setWriteCount();
-                return writeSource.getConnection(schema, autoCommit);
+                return writeSource.getConnection(schema, autoCommit, attachment);
             } else {
                 throw new IllegalArgumentException("Invalid DataSource:" + dbPool.getActiveIndex());
             }

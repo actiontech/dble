@@ -55,6 +55,7 @@ public class DistinctHandler extends BaseDMLHandler {
      */
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
                                  byte[] eofNull, boolean isLeft, BackendConnection conn) {
+        session.setHandlerStart(this);
         if (terminate.get())
             return;
         if (this.pool == null)
@@ -91,6 +92,7 @@ public class DistinctHandler extends BaseDMLHandler {
         if (terminate.get())
             return;
         sendDistinctRowPacket(conn);
+        session.setHandlerEnd(this);
         nextHandler.rowEofResponse(null, isLeft, conn);
     }
 

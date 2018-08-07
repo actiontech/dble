@@ -30,6 +30,7 @@ public class RenameFieldHandler extends BaseDMLHandler {
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof, boolean isLeft, BackendConnection conn) {
+        session.setHandlerStart(this);
         for (FieldPacket fp : fieldPackets) {
             fp.setTable(alias.getBytes());
             if (childType.equals(PlanNode.PlanNodeType.TABLE)) {
@@ -48,6 +49,7 @@ public class RenameFieldHandler extends BaseDMLHandler {
 
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
+        session.setHandlerEnd(this);
         nextHandler.rowEofResponse(eof, this.isLeft, conn);
     }
 

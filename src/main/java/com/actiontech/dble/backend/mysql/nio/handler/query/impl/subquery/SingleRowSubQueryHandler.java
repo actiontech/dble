@@ -33,6 +33,7 @@ public class SingleRowSubQueryHandler extends SubQueryHandler {
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, List<FieldPacket> fieldPackets,
                                  byte[] eofNull, boolean isLeft, BackendConnection conn) {
+        session.setHandlerStart(this);
         if (terminate.get()) {
             return;
         }

@@ -55,6 +55,7 @@ public class SendMakeHandler extends BaseDMLHandler {
                                  byte[] eofNull, boolean isLeft, BackendConnection conn) {
         lock.lock();
         try {
+            session.setHandlerStart(this);
             if (terminate.get())
                 return;
             this.fieldPackets = fieldPackets;
@@ -112,6 +113,7 @@ public class SendMakeHandler extends BaseDMLHandler {
         try {
             if (terminate.get())
                 return;
+            session.setHandlerEnd(this);
             nextHandler.rowEofResponse(eof, this.isLeft, conn);
         } finally {
             lock.unlock();

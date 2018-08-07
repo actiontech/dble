@@ -33,8 +33,8 @@ public final class Heartbeat {
             ok.setAffectedRows(hp.getId());
             ok.setServerStatus(2);
             ok.write(c);
-            if (HEARTBEAT.isInfoEnabled()) {
-                HEARTBEAT.info(responseMessage("OK", c, hp.getId()));
+            if (HEARTBEAT.isDebugEnabled()) {
+                HEARTBEAT.debug(responseMessage("OK", c, hp.getId()));
             }
         } else {
             ErrorPacket error = new ErrorPacket();

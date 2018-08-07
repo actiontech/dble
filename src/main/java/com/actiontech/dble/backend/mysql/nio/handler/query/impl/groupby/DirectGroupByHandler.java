@@ -87,6 +87,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
                                  byte[] eofNull, boolean isLeft, BackendConnection conn) {
+        session.setHandlerStart(this);
         if (terminate.get())
             return;
         if (this.pool == null)
@@ -167,6 +168,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
             } else {
                 sendGroupRowPacket(conn);
             }
+            session.setHandlerEnd(this);
             nextHandler.rowEofResponse(null, this.isLeft, conn);
         } catch (Exception e) {
             String msg = "group by thread is error," + e.getLocalizedMessage();
@@ -176,8 +178,8 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
     }
 
     private void recordElapsedTime(String prefix) {
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info(prefix + TimeUtil.currentTimeMillis());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(prefix + TimeUtil.currentTimeMillis());
         }
     }
 

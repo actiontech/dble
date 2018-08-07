@@ -10,7 +10,9 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.*;
+import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.HandlerBuilder;
+import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.CommitNodesHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.RollbackNodesHandler;
@@ -211,8 +213,8 @@ public class NonBlockingSession implements Session {
     public void setBackendResponseTime(MySQLConnection conn) {
         long responseTime = 0;
         if (traceResult != null) {
-            if (traceResult.getConnFlagMap().putIfAbsent(conn, true) == null) {
-                RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
+            RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
+            if (traceResult.getConnFlagMap().putIfAbsent(conn.getId() + node.toString(), true) == null) {
                 ResponseHandler responseHandler = conn.getRespHandler();
                 responseTime = System.nanoTime();
                 TraceRecord record = new TraceRecord(responseTime, node.getName(), node.getStatement());
@@ -311,6 +313,17 @@ public class NonBlockingSession implements Session {
         }
     }
 
+    public void setHandlerStart(DMLResponseHandler handler) {
+        if (traceResult != null) {
+            traceResult.getRecordStartMap().putIfAbsent(handler, new TraceRecord(System.nanoTime()));
+        }
+    }
+
+    public void setHandlerEnd(DMLResponseHandler handler) {
+        if (traceResult != null) {
+            traceResult.getRecordEndMap().putIfAbsent(handler, new TraceRecord(System.nanoTime()));
+        }
+    }
     public List<String[]> genTraceResult() {
         if (traceResult != null) {
             return traceResult.genTraceResult();
@@ -476,7 +489,10 @@ public class NonBlockingSession implements Session {
         init();
         HandlerBuilder builder = new HandlerBuilder(node, this);
         try {
-            builder.build();
+            BaseHandlerBuilder baseBuilder = builder.build();
+            if (traceResult != null) {
+                traceResult.setBuilder(baseBuilder);
+            }
         } catch (SQLSyntaxErrorException e) {
             LOGGER.info(String.valueOf(source) + " execute plan is : " + node, e);
             source.writeErrMessage(ErrorCode.ER_YES, "optimizer build error");
@@ -517,7 +533,7 @@ public class NonBlockingSession implements Session {
                 return;
             }
         }
-
+        setPreExecuteEnd();
         if (PlanUtil.containsSubQuery(node)) {
             final PlanNode finalNode = node;
             DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
@@ -877,7 +893,7 @@ public class NonBlockingSession implements Session {
                 ServerConfig conf = DbleServer.getInstance().getConfig();
                 PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
                 try {
-                    MySQLConnection newConn = (MySQLConnection) dn.getConnection(dn.getDatabase(), errConn.isAutocommit(), false);
+                    MySQLConnection newConn = (MySQLConnection) dn.getConnection(dn.getDatabase(), errConn.isAutocommit(), false, errConn.getAttachment());
                     newConn.setXaStatus(errConn.getXaStatus());
                     if (!newConn.setResponseHandler(queryHandler)) {
                         return errConn;
@@ -928,7 +944,6 @@ public class NonBlockingSession implements Session {
     /**
      * backend packet server_status change and next round start
      *
-     * @param packet
      */
     public void multiStatementPacket(MySQLPacket packet, byte packetNum) {
         if (this.isMultiStatement.get()) {
@@ -944,7 +959,6 @@ public class NonBlockingSession implements Session {
     /**
      * backend row eof packet server_status change and next round start
      *
-     * @param eof
      */
     public void multiStatementPacket(byte[] eof, byte packetNum) {
         if (this.getIsMultiStatement().get()) {
@@ -985,7 +999,7 @@ public class NonBlockingSession implements Session {
         this.packetId.set(0);
     }
 
-    public boolean generalNextStatement(String sql) {
+    boolean generalNextStatement(String sql) {
         int index = ParseUtil.findNextBreak(sql);
         if (index + 1 < sql.length() && !ParseUtil.isEOF(sql, index)) {
             this.remingSql = sql.substring(index + 1, sql.length());
@@ -1016,17 +1030,8 @@ public class NonBlockingSession implements Session {
         return isMultiStatement;
     }
 
-    public void setIsMultiStatement(AtomicBoolean isMultiStatement) {
-        this.isMultiStatement = isMultiStatement;
-    }
-
-
     public String getRemingSql() {
         return remingSql;
-    }
-
-    public void setRemingSql(String remingSql) {
-        this.remingSql = remingSql;
     }
 
     public AtomicInteger getPacketId() {
@@ -1038,7 +1043,7 @@ public class NonBlockingSession implements Session {
         return queryStartTime;
     }
 
-    public void setQueryStartTime(long queryStartTime) {
+    void setQueryStartTime(long queryStartTime) {
         this.queryStartTime = queryStartTime;
     }
 

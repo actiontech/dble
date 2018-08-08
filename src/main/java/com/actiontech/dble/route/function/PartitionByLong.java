@@ -9,6 +9,7 @@ import com.actiontech.dble.config.model.rule.RuleAlgorithm;
 import com.actiontech.dble.route.util.PartitionUtil;
 import com.actiontech.dble.util.SplitUtil;
 
+
 public final class PartitionByLong extends AbstractPartitionAlgorithm implements RuleAlgorithm {
     private static final long serialVersionUID = -4712399083043025898L;
     protected int[] count;
@@ -38,7 +39,12 @@ public final class PartitionByLong extends AbstractPartitionAlgorithm implements
     @Override
     public void init() {
         partitionUtil = new PartitionUtil(count, length);
+
         initHashCode();
+    }
+
+    @Override
+    public void selfCheck() {
     }
 
     private Integer calculate(long key) {

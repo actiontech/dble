@@ -12,6 +12,7 @@ import com.actiontech.dble.route.util.PartitionUtil;
 import com.actiontech.dble.util.SplitUtil;
 import com.actiontech.dble.util.StringUtil;
 
+
 /**
  * @author <a href="mailto:daasadmin@hp.com">yangwenx</a>
  */
@@ -51,6 +52,10 @@ public final class PartitionByString extends AbstractPartitionAlgorithm implemen
         partitionUtil = new PartitionUtil(count, length);
         initHashCode();
 
+    }
+
+    @Override
+    public void selfCheck() {
     }
 
     private static int[] toIntArray(String string) {

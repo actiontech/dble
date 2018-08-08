@@ -37,6 +37,18 @@ public final class PartitionByJumpConsistentHash extends AbstractPartitionAlgori
     }
 
     @Override
+    public void selfCheck() {
+        StringBuffer sb = new StringBuffer();
+        if (partitionCount <= 0) {
+            sb.append("partitionCount is supported > 0");
+        }
+
+        if (sb.length() > 0) {
+            throw new RuntimeException(sb.toString());
+        }
+    }
+
+    @Override
     public Integer[] calculateRange(String beginValue, String endValue) {
         return new Integer[0];
     }

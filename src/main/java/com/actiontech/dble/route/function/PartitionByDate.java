@@ -69,26 +69,25 @@ public class PartitionByDate extends AbstractPartitionAlgorithm implements RuleA
 
         if (sBeginDate == null || "".equals(sBeginDate)) {
             sb.append("sBeginDate is supported not null\n");
+        } else {
+            try {
+                new SimpleDateFormat(dateFormat).parse(sBeginDate).getTime();
+            } catch (Exception e) {
+                sb.append("pause beginDate error\n");
+            }
         }
 
         if (dateFormat == null || "".equals(dateFormat)) {
             sb.append("dateFormat is supported not null\n");
-        }
-
-        try {
-            new SimpleDateFormat(dateFormat).parse(sBeginDate).getTime();
-        } catch (Exception e) {
-            sb.append("pause beginDate error\n");
-        }
-
-        if (!StringUtil.isEmpty(sEndDate)) {
-            try {
-                new SimpleDateFormat(dateFormat).parse(sEndDate).getTime();
-            } catch (Exception e) {
-                sb.append("pause endDate error\n");
+        } else {
+            if (!StringUtil.isEmpty(sEndDate)) {
+                try {
+                    new SimpleDateFormat(dateFormat).parse(sEndDate).getTime();
+                } catch (Exception e) {
+                    sb.append("pause endDate error\n");
+                }
             }
         }
-
 
         if (sb.length() > 0) {
             sb.setLength(sb.length() - 1);

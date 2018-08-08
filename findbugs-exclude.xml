@@ -53,6 +53,12 @@
         <Class name="com.actiontech.dble.plan.common.item.function.timefunc.ItemTemporalHybridFunc"/>
     </Match>
 
+
+    <Match>
+        <Bug pattern="NP_NULL_PARAM_DEREF"/>
+        <Class name="com.actiontech.dble.route.function.PartitionByDate"/>
+    </Match>
+
     <!-- need refactor -->
     <Match>
         <Bug category="STYLE"/>

@@ -70,7 +70,7 @@ public final class DryRun {
             }
         }
         List<ErrorInfo> list = new ArrayList<>();
-        list.addAll(loader.getList());
+        list.addAll(loader.getErrorInfos());
 
         SystemVariables newSystemVariables = null;
         VarsExtractorHandler handler = new VarsExtractorHandler(loader.getDataHosts());

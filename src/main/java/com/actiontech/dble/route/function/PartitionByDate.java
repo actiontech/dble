@@ -76,14 +76,14 @@ public class PartitionByDate extends AbstractPartitionAlgorithm implements RuleA
         }
 
         try {
-            long begin = new SimpleDateFormat(dateFormat).parse(sBeginDate).getTime();
+            new SimpleDateFormat(dateFormat).parse(sBeginDate).getTime();
         } catch (Exception e) {
             sb.append("pause beginDate error\n");
         }
 
         if (!StringUtil.isEmpty(sEndDate)) {
             try {
-                long end = new SimpleDateFormat(dateFormat).parse(sEndDate).getTime();
+                new SimpleDateFormat(dateFormat).parse(sEndDate).getTime();
             } catch (Exception e) {
                 sb.append("pause endDate error\n");
             }

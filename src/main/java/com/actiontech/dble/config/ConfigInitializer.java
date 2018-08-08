@@ -44,7 +44,7 @@ public class ConfigInitializer {
     private volatile Map<ERTable, Set<ERTable>> erRelations;
 
 
-    private List<ErrorInfo> list = new ArrayList<>();
+    private List<ErrorInfo> errorInfos = new ArrayList<>();
 
 
     private volatile boolean dataHostWithoutWH = true;
@@ -75,7 +75,7 @@ public class ConfigInitializer {
         deleteRedundancyConf();
         checkWriteHost();
         if (dataHostWithoutWH) {
-            list.add(new ErrorInfo("Xml", "Error", "There still some dataHost without writeHost"));
+            errorInfos.add(new ErrorInfo("Xml", "Error", "There still some dataHost without writeHost"));
         }
     }
 
@@ -116,7 +116,7 @@ public class ConfigInitializer {
                 allUseHost.add(entry.getValue().getDbPool().getHostName());
             } else {
                 LOGGER.info("dataNode " + dataNodeName + " is useless,server will ignore it");
-                list.add(new ErrorInfo("Xml", "Warning", "dataNode " + dataNodeName + " is useless"));
+                errorInfos.add(new ErrorInfo("Xml", "Warning", "dataNode " + dataNodeName + " is useless"));
                 iterator.remove();
             }
         }
@@ -128,7 +128,7 @@ public class ConfigInitializer {
                 String dataHostName = dataHost.next();
                 if (!allUseHost.contains(dataHostName)) {
                     LOGGER.info("dataHost " + dataHostName + " is useless,server will ignore it");
-                    list.add(new ErrorInfo("Xml", "Warning", "dataHost " + dataHostName + " is useless"));
+                    errorInfos.add(new ErrorInfo("Xml", "Warning", "dataHost " + dataHostName + " is useless"));
                     dataHost.remove();
                 }
             }
@@ -223,7 +223,7 @@ public class ConfigInitializer {
                             isConnectivity.set(false);
                             errNodeKeys.add(key);
                             LOGGER.warn("SelfCheck### test " + key + " database connection failed ");
-                            list.add(new ErrorInfo("BACKEND", "WARNING", "test dataSourceName failed " + node + " can't connected"));
+                            errorInfos.add(new ErrorInfo("BACKEND", "WARNING", "test dataSourceName failed " + node + " can't connected"));
                         }
                     } catch (InterruptedException e) {
                         isConnectivity.set(false);
@@ -361,8 +361,8 @@ public class ConfigInitializer {
         return dataHostWithoutWH;
     }
 
-    public List<ErrorInfo> getList() {
-        return list;
+    public List<ErrorInfo> getErrorInfos() {
+        return errorInfos;
     }
 
     private static class TestTask extends Thread {

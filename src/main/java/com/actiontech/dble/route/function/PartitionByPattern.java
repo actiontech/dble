@@ -39,6 +39,10 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
         initHashCode();
     }
 
+    @Override
+    public void selfCheck() {
+    }
+
     public void setMapFile(String mapFile) {
         this.mapFile = mapFile;
     }

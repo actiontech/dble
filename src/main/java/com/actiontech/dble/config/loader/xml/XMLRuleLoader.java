@@ -143,7 +143,6 @@ public class XMLRuleLoader {
     }
 
     /**
-     *
      * @param root
      * @throws ClassNotFoundException
      * @throws InstantiationException
@@ -169,6 +168,7 @@ public class XMLRuleLoader {
                 function.setName(name);
                 ParameterMapping.mapping(function, ConfigUtil.loadElements(e));
                 //init for AbstractPartitionAlgorithm
+                function.selfCheck();
                 function.init();
                 functions.put(name, function);
             }

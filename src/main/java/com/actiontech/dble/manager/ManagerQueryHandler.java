@@ -72,6 +72,9 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
             case ManagerParse.STOP:
                 StopHandler.handle(sql, c, rs >>> SHIFT);
                 break;
+            case ManagerParse.DRY_RUN:
+                DryRun.execute(c, sql);
+                break;
             case ManagerParse.RELOAD:
                 ReloadHandler.handle(sql, c, rs >>> SHIFT);
                 break;

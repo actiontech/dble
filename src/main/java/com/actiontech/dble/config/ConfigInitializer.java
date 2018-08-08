@@ -44,6 +44,9 @@ public class ConfigInitializer {
     private volatile Map<ERTable, Set<ERTable>> erRelations;
 
 
+    private List<ErrorInfo> list = new ArrayList<>();
+
+
     private volatile boolean dataHostWithoutWH = true;
 
     public ConfigInitializer(boolean loadDataHost, boolean lowerCaseNames) {
@@ -71,6 +74,9 @@ public class ConfigInitializer {
 
         deleteRedundancyConf();
         checkWriteHost();
+        if (dataHostWithoutWH) {
+            list.add(new ErrorInfo("Xml", "Error", "There still some dataHost without writeHost"));
+        }
     }
 
     private void checkWriteHost() {
@@ -110,6 +116,7 @@ public class ConfigInitializer {
                 allUseHost.add(entry.getValue().getDbPool().getHostName());
             } else {
                 LOGGER.info("dataNode " + dataNodeName + " is useless,server will ignore it");
+                list.add(new ErrorInfo("Xml", "Warning", "dataNode " + dataNodeName + " is useless"));
                 iterator.remove();
             }
         }
@@ -121,6 +128,7 @@ public class ConfigInitializer {
                 String dataHostName = dataHost.next();
                 if (!allUseHost.contains(dataHostName)) {
                     LOGGER.info("dataHost " + dataHostName + " is useless,server will ignore it");
+                    list.add(new ErrorInfo("Xml", "Warning", "dataHost " + dataHostName + " is useless"));
                     dataHost.remove();
                 }
             }
@@ -215,6 +223,7 @@ public class ConfigInitializer {
                             isConnectivity.set(false);
                             errNodeKeys.add(key);
                             LOGGER.warn("SelfCheck### test " + key + " database connection failed ");
+                            list.add(new ErrorInfo("BACKEND", "WARNING", "test dataSourceName failed " + node + " can't connected"));
                         }
                     } catch (InterruptedException e) {
                         isConnectivity.set(false);
@@ -352,6 +361,10 @@ public class ConfigInitializer {
         return dataHostWithoutWH;
     }
 
+    public List<ErrorInfo> getList() {
+        return list;
+    }
+
     private static class TestTask extends Thread {
         private PhysicalDatasource ds;
         private BoolPtr boolPtr;
@@ -359,11 +372,13 @@ public class ConfigInitializer {
         private String schema = null;
         private String nodeName = null;
         private boolean needAlert = false;
+
         TestTask(PhysicalDatasource ds, Set<String> errKeys, BoolPtr boolPtr) {
             this.ds = ds;
             this.errKeys = errKeys;
             this.boolPtr = boolPtr;
         }
+
         TestTask(PhysicalDatasource ds, Pair<String, String> node, Set<String> errKeys, BoolPtr boolPtr, boolean needAlert) {
             this.ds = ds;
             this.errKeys = errKeys;
@@ -374,6 +389,7 @@ public class ConfigInitializer {
                 this.schema = node.getValue();
             }
         }
+
         @Override
         public void run() {
             try {

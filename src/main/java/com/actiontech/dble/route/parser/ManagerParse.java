@@ -31,6 +31,7 @@ public final class ManagerParse {
     public static final int PAUSE = 14;
     public static final int RESUME = 15;
     public static final int CREATE_DB = 16;
+    public static final int DRY_RUN = 17;
 
     public static int parse(String stmt) {
         for (int i = 0; i < stmt.length(); i++) {
@@ -44,6 +45,9 @@ public final class ManagerParse {
                 case 'C':
                 case 'c':
                     return cCheck(stmt, i);
+                case 'D':
+                case 'd':
+                    return dCheck(stmt, i);
                 case 'F':
                 case 'f':
                     return fCheck(stmt, i);
@@ -77,6 +81,15 @@ public final class ManagerParse {
         String thePart = stmt.substring(offset).toUpperCase();
         if (thePart.startsWith("LOG @@")) {
             return LOGFILE;
+        } else {
+            return OTHER;
+        }
+    }
+
+    private static int dCheck(String stmt, int offset) {
+        String thePart = stmt.substring(offset).toUpperCase();
+        if (thePart.startsWith("DRYRUN")) {
+            return DRY_RUN;
         } else {
             return OTHER;
         }

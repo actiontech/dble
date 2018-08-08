@@ -30,4 +30,6 @@ public interface RuleAlgorithm {
     Integer[] calculateRange(String beginValue, String endValue);
 
     Map<String, String> getAllProperties();
+
+    void selfCheck();
 }

@@ -52,14 +52,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         this.tryErrorFinished(decrementCountBy(1));
     }
 
-    public void errorResponse(byte[] data, BackendConnection conn) {
-        session.releaseConnectionIfSafe(conn, false);
-        ErrorPacket errPacket = new ErrorPacket();
-        errPacket.read(data);
-        String errMsg = new String(errPacket.getMessage());
-        LOGGER.info("error response from " + conn + " err " + errMsg + " code:" + errPacket.getErrNo());
-        this.tryErrorFinished(this.decrementCountBy(1));
-    }
+
 
     public boolean clearIfSessionClosed(NonBlockingSession nonBlockingSession) {
         if (nonBlockingSession.closed()) {

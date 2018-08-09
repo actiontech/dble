@@ -715,16 +715,16 @@ public class NonBlockingSession implements Session {
         clearHandlesResources();
     }
 
-    public void releaseConnectionIfSafe(BackendConnection conn, boolean needRollBack) {
+    public void releaseConnectionIfSafe(BackendConnection conn, boolean needClosed) {
         RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
         if (node != null) {
             if ((this.source.isAutocommit() || conn.isFromSlaveDB()) && !this.source.isTxStart() && !this.source.isLocked()) {
-                releaseConnection((RouteResultsetNode) conn.getAttachment(), LOGGER.isDebugEnabled(), needRollBack);
+                releaseConnection((RouteResultsetNode) conn.getAttachment(), LOGGER.isDebugEnabled(), needClosed);
             }
         }
     }
 
-    public void releaseConnection(RouteResultsetNode rrn, boolean debug, final boolean needRollback) {
+    public void releaseConnection(RouteResultsetNode rrn, boolean debug, final boolean needClose) {
 
         BackendConnection c = target.remove(rrn);
         if (c != null) {
@@ -737,13 +737,12 @@ public class NonBlockingSession implements Session {
             if (!c.isClosedOrQuit()) {
                 if (c.isAutocommit()) {
                     c.release();
-                } else if (needRollback) {
+                } else if (needClose) {
                     //c.rollback();
-                    c.close("the transaction need to be rollback");
+                    c.close("the  need to be closed");
                 } else {
                     c.release();
                 }
-
             }
         }
     }
@@ -764,10 +763,10 @@ public class NonBlockingSession implements Session {
 
     }
 
-    public void releaseConnections(final boolean needRollback) {
+    public void releaseConnections(final boolean needClosed) {
         boolean debug = LOGGER.isDebugEnabled();
         for (RouteResultsetNode rrn : target.keySet()) {
-            releaseConnection(rrn, debug, needRollback);
+            releaseConnection(rrn, debug, needClosed);
         }
     }
 
@@ -846,11 +845,11 @@ public class NonBlockingSession implements Session {
         }
     }
 
-    public void clearResources(final boolean needRollback) {
+    public void clearResources(final boolean needClosed) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("ready session resources " + this);
         }
-        this.releaseConnections(needRollback);
+        this.releaseConnections(needClosed);
         needWaitFinished = false;
         clearHandlesResources();
         source.setTxStart(false);

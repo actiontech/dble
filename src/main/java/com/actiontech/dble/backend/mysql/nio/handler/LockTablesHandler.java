@@ -8,6 +8,8 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
@@ -68,6 +70,24 @@ public class LockTablesHandler extends MultiNodeHandler {
         final RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
         session.bindConnection(node, conn);
         innerExecute(conn, node);
+    }
+
+    @Override
+    public void errorResponse(byte[] err, BackendConnection conn) {
+        boolean executeResponse = conn.syncAndExecute();
+        if (executeResponse) {
+            session.releaseConnectionIfSafe(conn, false);
+        } else {
+            ((MySQLConnection) conn).quit();
+        }
+        ErrorPacket errPacket = new ErrorPacket();
+        errPacket.read(err);
+        String errMsg = new String(errPacket.getMessage());
+        if (!isFail()) {
+            setFail(errMsg);
+        }
+        LOGGER.info("error response from " + conn + " err " + errMsg + " code:" + errPacket.getErrNo());
+        this.tryErrorFinished(this.decrementCountBy(1));
     }
 
     @Override

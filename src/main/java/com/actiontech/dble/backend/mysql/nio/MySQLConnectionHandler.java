@@ -78,6 +78,9 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
 
     @Override
     protected void handleData(byte[] data) {
+        if (source.isClosed()){
+            return;
+        }
         switch (resultStatus) {
             case RESULT_STATUS_INIT:
                 if (session != null) {

@@ -598,6 +598,7 @@ public class MySQLConnection extends BackendAIOConnection {
         if (isQuit.compareAndSet(false, true) && !isClosed()) {
             if (isAuthenticated) {
                 write(writeToBuffer(QuitPacket.QUIT, allocate()));
+                innerTerminate("normal");
             } else {
                 close("normal");
             }
@@ -624,8 +625,6 @@ public class MySQLConnection extends BackendAIOConnection {
                     } catch (Throwable e) {
                         LOGGER.info("error when try to quite the connection ,drop the error and close it anyway");
                     }
-                } else {
-                    LOGGER.info("testdsf assdfasdfas");
                 }
             }
             innerTerminate(reason);

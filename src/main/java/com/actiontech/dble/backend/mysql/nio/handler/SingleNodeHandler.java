@@ -117,7 +117,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         errPacket.setErrNo(ErrorCode.ER_DATA_HOST_ABORTING_CONNECTION);
         String errMsg = "Backend connect Error, Connection{DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
         errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
-        backConnectionErr(errPacket, conn);
+        backConnectionErr(errPacket, conn, true);
     }
 
     @Override
@@ -125,11 +125,11 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         ErrorPacket err = new ErrorPacket();
         err.read(data);
         err.setPacketId(++packetId);
-        backConnectionErr(err, conn);
+        backConnectionErr(err, conn, conn.syncAndExecute());
         session.resetMultiStatementStatus();
     }
 
-    private void backConnectionErr(ErrorPacket errPkg, BackendConnection conn) {
+    private void backConnectionErr(ErrorPacket errPkg, BackendConnection conn, boolean syncFinished) {
         ServerConnection source = session.getSource();
         String errUser = source.getUser();
         String errHost = source.getHost();
@@ -139,8 +139,11 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         LOGGER.info("execute sql err :" + errMsg + " con:" + conn +
                 " frontend host:" + errHost + "/" + errPort + "/" + errUser);
 
-        session.releaseConnectionIfSafe(conn, false);
-
+        if (syncFinished) {
+            session.releaseConnectionIfSafe(conn, false);
+        } else {
+            ((MySQLConnection) conn).quit();
+        }
         source.setTxInterrupt(errMsg);
         session.handleSpecial(rrs, session.getSource().getSchema(), false);
 
@@ -150,6 +153,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             buffer = source.writeToBuffer(errPkg.toBytes(), allocBuffer());
             session.setResponseTime();
             source.write(buffer);
+
         } else {
             errPkg.write(source);
         }
@@ -364,7 +368,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         err.setPacketId(++packetId);
         err.setErrNo(ErrorCode.ER_ERROR_ON_CLOSE);
         err.setMessage(StringUtil.encode(reason, session.getSource().getCharset().getResults()));
-        this.backConnectionErr(err, conn);
+        this.backConnectionErr(err, conn, true);
     }
 
     @Override

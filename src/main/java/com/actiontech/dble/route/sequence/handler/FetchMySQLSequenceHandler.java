@@ -77,7 +77,12 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
         String errMsg = new String(err.getMessage());
         LOGGER.info("errorResponse " + err.getErrNo() + " " + errMsg);
         IncrSequenceMySQLHandler.LATEST_ERRORS.put(seqVal.seqName, errMsg);
-        conn.release();
+        boolean executeResponse = conn.syncAndExecute();
+        if (executeResponse) {
+            conn.release();
+        } else {
+            ((MySQLConnection) conn).quit();
+        }
 
     }
 

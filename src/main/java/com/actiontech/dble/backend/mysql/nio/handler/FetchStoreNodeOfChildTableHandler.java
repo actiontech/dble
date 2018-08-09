@@ -152,8 +152,13 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
         ErrorPacket err = new ErrorPacket();
         err.read(data);
         LOGGER.info("errorResponse " + err.getErrNo() + " " + new String(err.getMessage()));
-        if (canReleaseConn()) {
-            conn.release();
+        boolean executeResponse = conn.syncAndExecute();
+        if (executeResponse) {
+            if (canReleaseConn()) {
+                conn.release();
+            }
+        } else {
+            ((MySQLConnection) conn).quit();
         }
     }
 

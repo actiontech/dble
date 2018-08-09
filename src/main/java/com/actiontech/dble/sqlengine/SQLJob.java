@@ -133,7 +133,11 @@ public class SQLJob implements ResponseHandler, Runnable {
         } else {
             LOGGER.info(errMsg);
         }
-        conn.release();
+        if (conn.syncAndExecute()) {
+            conn.release();
+        } else {
+            ((MySQLConnection) conn).quit();
+        }
         doFinished(true);
     }
 

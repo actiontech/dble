@@ -38,12 +38,7 @@ public class KillConnectionHandler implements ResponseHandler {
     public void connectionAcquired(BackendConnection conn) {
         conn.setResponseHandler(this);
         conn.setSession(session);
-        CommandPacket packet = new CommandPacket();
-        packet.setPacketId(0);
-        packet.setCommand(MySQLPacket.COM_QUERY);
-        packet.setArg(("KILL " + toKilled.getThreadId()).getBytes());
-        MySQLConnection mysqlCon = (MySQLConnection) conn;
-        packet.write(mysqlCon);
+        ((MySQLConnection) conn).sendQueryCmd(("KILL " + toKilled.getThreadId()), session.getSource().getCharset());
     }
 
     @Override

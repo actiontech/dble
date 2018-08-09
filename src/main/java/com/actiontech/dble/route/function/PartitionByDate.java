@@ -68,7 +68,7 @@ public class PartitionByDate extends AbstractPartitionAlgorithm implements RuleA
         StringBuffer sb = new StringBuffer();
 
         if (sBeginDate == null || "".equals(sBeginDate)) {
-            sb.append("sBeginDate is supported not null\n");
+            sb.append("sBeginDate can not be null\n");
         } else {
             try {
                 new SimpleDateFormat(dateFormat).parse(sBeginDate).getTime();
@@ -78,7 +78,7 @@ public class PartitionByDate extends AbstractPartitionAlgorithm implements RuleA
         }
 
         if (dateFormat == null || "".equals(dateFormat)) {
-            sb.append("dateFormat is supported not null\n");
+            sb.append("dateFormat can not be null\n");
         } else {
             if (!StringUtil.isEmpty(sEndDate)) {
                 try {

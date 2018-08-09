@@ -78,7 +78,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
 
     @Override
     protected void handleData(byte[] data) {
-        if (source.isClosed()){
+        if (source.isClosed()) {
             return;
         }
         switch (resultStatus) {

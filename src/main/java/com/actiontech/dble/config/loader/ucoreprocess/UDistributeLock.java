@@ -36,10 +36,18 @@ public class UDistributeLock {
     }
 
     public boolean acquire() {
-
         try {
-
-            final String sessionId = ClusterUcoreSender.lockKey(this.path, value);
+            String sessionId = ClusterUcoreSender.lockKey(this.path, value);
+            int time = 0;
+            while ("".equals(sessionId)) {
+                LOGGER.info(" lockKey's sessionId is empty, server will retry for 10 seconds later ");
+                LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(10));
+                sessionId = ClusterUcoreSender.lockKey(this.path, value);
+                if (time++ == 5) {
+                    LOGGER.warn(" lockKey's sessionId is empty and have tried for 5 times, return false ");
+                    return false;
+                }
+            }
             session = sessionId;
             errorCount = 0;
             if ("".equals(sessionId)) {

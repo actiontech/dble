@@ -53,6 +53,7 @@ import org.apache.curator.utils.ZKPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
@@ -282,14 +283,16 @@ public class ProxyMetaManager {
         }
     }
 
-    public void metaUcoreinit() {
+    public void metaUcoreinit() throws IOException {
         //check if the online mark is on than delete the mark and renew it
         ClusterUcoreSender.deleteKV(UcorePathUtil.getOnlinePath(UcoreConfig.getInstance().
                 getValue(ClusterParamCfg.CLUSTER_CFG_MYID)));
         UDistributeLock onlineLock = new UDistributeLock(UcorePathUtil.getOnlinePath(UcoreConfig.getInstance().
                 getValue(ClusterParamCfg.CLUSTER_CFG_MYID)),
                 UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
-        onlineLock.acquire();
+        if (!onlineLock.acquire()) {
+            throw new IOException("set online status failed");
+        }
     }
 
 

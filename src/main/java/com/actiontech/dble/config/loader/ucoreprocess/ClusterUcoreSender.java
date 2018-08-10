@@ -97,6 +97,7 @@ public final class ClusterUcoreSender {
             stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).renewSession(input);
             return true;
         } catch (Exception e1) {
+            LOGGER.info("connect to ucore renew error and will retry");
             for (String ip : UcoreConfig.getInstance().getIpList()) {
                 ManagedChannel channel = null;
                 try {

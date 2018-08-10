@@ -65,19 +65,19 @@ public final class UcoreToXml {
             thread.start();
 
             Thread thread2 = new Thread(ddlListener);
-            thread.setName("DDL_UCORE_LISTENER");
+            thread2.setName("DDL_UCORE_LISTENER");
             thread2.start();
 
             Thread thread3 = new Thread(viewListener);
-            thread.setName("VIEW_UCORE_LISTENER");
+            thread3.setName("VIEW_UCORE_LISTENER");
             thread3.start();
 
             Thread thread4 = new Thread(onlineListener);
-            thread.setName("ONLINE_UCORE_LISTENER");
+            thread4.setName("ONLINE_UCORE_LISTENER");
             thread4.start();
 
             Thread thread5 = new Thread(ucoreNodesListener);
-            thread.setName("NODES_UCORE_LISTENER");
+            thread5.setName("NODES_UCORE_LISTENER");
             thread5.start();
         } catch (Exception e) {
             e.printStackTrace();

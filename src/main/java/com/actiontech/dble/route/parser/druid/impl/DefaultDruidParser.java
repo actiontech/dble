@@ -97,6 +97,18 @@ public class DefaultDruidParser implements DruidParser {
                     value = value.toLowerCase();
                 }
             }
+            if (key != null) {
+                int pos = key.indexOf(".");
+                if (pos > 0) {
+                    key = key.substring(pos + 1);
+                }
+            }
+            if (value != null) {
+                int pos = value.indexOf(".");
+                if (pos > 0) {
+                    value = value.substring(pos + 1);
+                }
+            }
             if (key != null && key.charAt(0) == '`') {
                 key = key.substring(1, key.length() - 1);
             }
@@ -108,10 +120,6 @@ public class DefaultDruidParser implements DruidParser {
                 boolean needAddTable = false;
                 if (key.equals(value)) {
                     needAddTable = true;
-                }
-                int pos = key.indexOf(".");
-                if (pos > 0) {
-                    key = key.substring(pos + 1);
                 }
                 if (needAddTable) {
                     ctx.addTable(key);

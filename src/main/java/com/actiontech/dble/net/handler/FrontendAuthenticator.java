@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.SecurityUtil;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOHandler;
 import com.actiontech.dble.net.mysql.*;
@@ -97,7 +98,7 @@ public class FrontendAuthenticator implements NIOHandler {
         }
 
         //check maxconnection
-        switch (DbleServer.getInstance().getUserManager().maxConnectionCheck(auth.getUser(), source.getPrivileges().getMaxCon(auth.getUser()))) {
+        switch (DbleServer.getInstance().getUserManager().maxConnectionCheck(auth.getUser(), source.getPrivileges().getMaxCon(auth.getUser()), (source instanceof ManagerConnection))) {
             case SERVER_MAX:
                 String s = "Access denied for user '" + auth.getUser() + "',too many connections for dble server";
                 failure(ErrorCode.ER_ACCESS_DENIED_ERROR, s);

@@ -6,6 +6,8 @@
 package com.actiontech.dble.route.parser.druid.impl.ddl;
 
 import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.druid.impl.DefaultDruidParser;
@@ -18,6 +20,7 @@ import com.alibaba.druid.sql.ast.statement.SQLDropTableStatement;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
+import java.util.Map;
 
 public class DruidDropTableParser extends DefaultDruidParser {
     @Override
@@ -36,7 +39,14 @@ public class DruidDropTableParser extends DefaultDruidParser {
             RouterUtil.routeToSingleDDLNode(schemaInfo, rrs);
             return schemaInfo.getSchemaConfig();
         }
-        RouterUtil.routeToDDLNode(schemaInfo, rrs);
+        Map<String, TableConfig> tables = schemaInfo.getSchemaConfig().getTables();
+        TableConfig tc = tables.get(schemaInfo.getTable());
+        if (tc == null) {
+            sc.write(sc.writeToBuffer(OkPacket.OK, sc.allocate()));
+            rrs.setFinishedExecute(true);
+        } else {
+            RouterUtil.routeToDDLNode(schemaInfo, rrs);
+        }
         return schemaInfo.getSchemaConfig();
     }
 }

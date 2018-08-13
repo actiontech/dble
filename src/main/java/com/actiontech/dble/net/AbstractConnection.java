@@ -464,9 +464,13 @@ public abstract class AbstractConnection implements NIOConnection {
         return buffer;
     }
 
+
+    public abstract void connectionCount();
+
     @Override
     public void close(String reason) {
         if (!isClosed.get()) {
+            this.connectionCount();
             closeSocket();
             isClosed.set(true);
             if (processor != null) {

@@ -27,10 +27,12 @@ public class FrontendUserManager {
 
     private int serverConnection = 0;
 
-    public void countDown(String user) {
+    public void countDown(String user, boolean isManager) {
         maxConLock.lock();
         try {
-            serverConnection--;
+            if (!isManager) {
+                serverConnection--;
+            }
             int usercount = userConnectionMap.get(user).intValue();
             userConnectionMap.put(user, --usercount);
         } catch (Throwable e) {
@@ -52,7 +54,7 @@ public class FrontendUserManager {
     }
 
 
-    public CheckStatus maxConnectionCheck(String user, int userLimit) {
+    public CheckStatus maxConnectionCheck(String user, int userLimit, boolean isManager) {
 
         maxConLock.lock();
         try {
@@ -62,11 +64,13 @@ public class FrontendUserManager {
                     return USER_MAX;
                 }
             }
-            if (serverMaxConnection <= serverConnection) {
-                return SERVER_MAX;
-            }
+            if (!isManager) {
+                if (serverMaxConnection <= serverConnection) {
+                    return SERVER_MAX;
+                }
 
-            serverConnection++;
+                serverConnection++;
+            }
             userConnectionMap.put(user, ++userConnection);
 
         } catch (Throwable e) {

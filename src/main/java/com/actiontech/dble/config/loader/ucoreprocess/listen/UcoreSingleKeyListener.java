@@ -32,8 +32,8 @@ public class UcoreSingleKeyListener implements Runnable {
                 UcoreInterface.SubscribeKvPrefixInput input
                         = UcoreInterface.SubscribeKvPrefixInput.newBuilder().setIndex(index).setDuration(60).setKeyPrefix(path).build();
                 UcoreInterface.SubscribeKvPrefixOutput output = ClusterUcoreSender.subscribeKvPrefix(input);
-                Map<String, UKvBean> diffMap = getDiffMap(output);
                 if (output.getIndex() != index) {
+                    Map<String, UKvBean> diffMap = getDiffMap(output);
                     handle(diffMap);
                     index = output.getIndex();
                 }

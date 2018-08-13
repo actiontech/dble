@@ -1,6 +1,5 @@
 package com.actiontech.dble.config.loader.ucoreprocess;
 
-import com.actiontech.dble.cluster.ClusterParamCfg;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +14,7 @@ public class UDistributeLock {
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(UDistributeLock.class);
     private static final int UCORE_ERROR_RETURN_COUNT = 3;
-    int errorCount = 0;
+    private int errorCount = 0;
     private String path;
     private String value;
     private String session;
@@ -60,13 +59,17 @@ public class UDistributeLock {
                     while (!Thread.currentThread().isInterrupted()) {
                         try {
                             LOGGER.info("renew lock of session  start:" + sessionId + " " + path);
-                            boolean flag = ClusterUcoreSender.renewLock(sessionId);
-                            if (path.equals(UcorePathUtil.getOnlinePath(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) &&
-                                    !flag && "".equals(ClusterUcoreSender.getKey(path).getValue())) {
-                                sessionId = ClusterUcoreSender.lockKey(path, value);
+                            if ("".equals(ClusterUcoreSender.getKey(path).getValue())) {
+                                LOGGER.warn("renew lock of session  failure:" + sessionId + " " + path + ", the key is missing ");
+                                // alert
+                                renewThread.interrupt();
+                            } else if (!ClusterUcoreSender.renewLock(sessionId)) {
+                                LOGGER.warn("renew lock of session  failure:" + sessionId + " " + path);
+                                // alert
+                            } else {
+                                LOGGER.info("renew lock of session  success:" + sessionId + " " + path);
                             }
                             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10000));
-                            LOGGER.info("renew lock of session  success:" + sessionId + " " + path);
                         } catch (Exception e) {
                             LOGGER.info("renew lock of session  failure:" + sessionId + " " + path, e);
                             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(5000));

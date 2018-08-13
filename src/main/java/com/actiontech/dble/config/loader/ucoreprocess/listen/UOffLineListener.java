@@ -1,18 +1,21 @@
 package com.actiontech.dble.config.loader.ucoreprocess.listen;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.alarm.UcoreInterface;
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
 import com.actiontech.dble.config.loader.ucoreprocess.KVtoXml.UcoreToXml;
+import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
 import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreXmlLoader;
 import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.config.loader.ucoreprocess.loader.UDdlChildResponse;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.BinlogPause;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.PauseInfo;
-import com.actiontech.dble.alarm.UcoreInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,16 +27,16 @@ import static com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil.SEPAR
 public class UOffLineListener implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UOffLineListener.class);
-    private volatile Map<String, String> onlinMap = new HashMap<String, String>();
+    private volatile Map<String, String> onlineMap = new HashMap<>();
     private long index = 0;
 
 
     public Map<String, String> copyOnlineMap() {
-        return new HashMap<String, String>(onlinMap);
+        return new HashMap<>(onlineMap);
     }
 
     private void checkDDLAndRelease(String serverId) {
-        //deal with the status whan the ddl is init notified
+        //deal with the status when the ddl is init notified
         //and than the ddl server is shutdown
         for (Map.Entry<String, String> en : UDdlChildResponse.getLockMap().entrySet()) {
             if (serverId.equals(en.getValue())) {
@@ -46,7 +49,7 @@ public class UOffLineListener implements Runnable {
 
     private void checkBinlogStatusRelease(String serverId) {
         try {
-            //check the lastest binglog status
+            //check the latest bing_log status
             UKvBean lock = ClusterUcoreSender.getKey(UcorePathUtil.getBinlogPauseLockPath());
             if ("".equals(lock.getValue()) || serverId.equals(lock.getValue())) {
                 DbleServer.getInstance().getBackupLocked().compareAndSet(true, false);
@@ -90,6 +93,7 @@ public class UOffLineListener implements Runnable {
 
     @Override
     public void run() {
+        boolean lackSelf = false;
         for (; ; ) {
             try {
                 UcoreInterface.SubscribeKvPrefixInput input
@@ -97,13 +101,19 @@ public class UOffLineListener implements Runnable {
                         setIndex(index).setDuration(60).
                         setKeyPrefix(UcorePathUtil.getOnlinePath() + SEPARATOR).build();
                 UcoreInterface.SubscribeKvPrefixOutput output = ClusterUcoreSender.subscribeKvPrefix(input);
+                if (output.getIndex() == index) {
+                    if (lackSelf) {
+                        lackSelf = !reInitOnlineStatus();
+                    }
+                    continue;
+                }
                 //LOGGER.debug("the index of the single key "+path+" is "+index);
-                Map<String, String> newMap = new HashMap<String, String>();
+                Map<String, String> newMap = new HashMap<>();
                 for (int i = 0; i < output.getKeysCount(); i++) {
                     newMap.put(output.getKeys(i), output.getValues(i));
                 }
 
-                for (Map.Entry<String, String> en : onlinMap.entrySet()) {
+                for (Map.Entry<String, String> en : onlineMap.entrySet()) {
                     if (!newMap.containsKey(en.getKey())) {
                         String serverId = en.getKey().split("/")[en.getKey().split("/").length - 1];
                         checkDDLAndRelease(serverId);
@@ -111,11 +121,30 @@ public class UOffLineListener implements Runnable {
                         checkPauseStatusRelease(serverId);
                     }
                 }
-                onlinMap = newMap;
+                String serverId = UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
+                String selfPath = UcorePathUtil.getOnlinePath(serverId);
+                if (!newMap.containsKey(selfPath)) {
+                    lackSelf = !reInitOnlineStatus();
+                    newMap.put(selfPath, serverId);
+                }
+                onlineMap = newMap;
                 index = output.getIndex();
             } catch (Exception e) {
                 LOGGER.warn(" error in offline listener ,all ucore connection failure");
             }
+        }
+    }
+
+    private boolean reInitOnlineStatus() {
+        try {
+            //release and renew lock
+            DbleServer.getInstance().metaUcoreInit();
+            LOGGER.info("rewrite server online status success");
+            return true;
+        } catch (IOException e) {
+            LOGGER.warn("rewrite server online status failed");
+            //alert
+            return false;
         }
     }
 }

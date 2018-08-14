@@ -43,8 +43,7 @@ public class WhereHandler extends BaseDMLHandler {
             return;
         this.fieldPackets = fieldPackets;
         this.sourceFields = HandlerTool.createFields(this.fieldPackets);
-        whereItem = HandlerTool.createItem(this.where, this.sourceFields, 0, this.isAllPushDown(), this.type()
-        );
+        whereItem = HandlerTool.createItem(this.where, this.sourceFields, 0, this.isAllPushDown(), this.type());
         nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, conn);
     }
 

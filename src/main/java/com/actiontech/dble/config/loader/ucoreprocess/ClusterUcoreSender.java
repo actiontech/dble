@@ -91,7 +91,7 @@ public final class ClusterUcoreSender {
         throw new IOException("ALL the ucore connect failure");
     }
 
-    public static boolean renewLock(String sessionId) throws Exception {
+    static boolean renewLock(String sessionId) throws Exception {
         UcoreInterface.RenewSessionInput input = UcoreInterface.RenewSessionInput.newBuilder().setSessionId(sessionId).build();
         try {
             stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).renewSession(input);

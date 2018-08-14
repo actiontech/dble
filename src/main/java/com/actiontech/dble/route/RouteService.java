@@ -56,6 +56,7 @@ public class RouteService {
             cacheKey = (schema == null ? "NULL" : schema.getName()) + "_" + sc.getUser() + "_" + stmt;
             rrs = (RouteResultset) sqlRouteCache.get(cacheKey);
             if (rrs != null) {
+                sc.getSession2().endParse();
                 return rrs;
             }
         }

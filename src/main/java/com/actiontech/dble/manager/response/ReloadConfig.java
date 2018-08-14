@@ -78,11 +78,6 @@ public final class ReloadConfig {
     }
 
     private static void execute(ManagerConnection c, final boolean loadAll, final int loadAllMode) {
-        // reload @@config_all check the last old connections
-        if (loadAll && (!NIOProcessor.BACKENDS_OLD.isEmpty()) && ((loadAllMode & ManagerParseConfig.OPTF_MODE) == 0)) {
-            c.writeErrMessage(ErrorCode.ER_YES, "The before reload @@config_all has an unfinished db transaction, please try again later.");
-            return;
-        }
 
         if (DbleServer.getInstance().isUseZK()) {
             CuratorFramework zkConn = ZKUtils.getConnection();
@@ -421,6 +416,7 @@ public final class ReloadConfig {
     private static void recycleOldBackendConnectionsByMerge(Map<String, PhysicalDBPool> recycleMap, boolean closeFrontCon) {
         for (PhysicalDBPool dbPool : recycleMap.values()) {
             dbPool.stopHeartbeat();
+            Long oldTimestamp = System.currentTimeMillis();
             for (PhysicalDatasource ds : dbPool.getAllDataSources()) {
                 for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
                     for (BackendConnection con : processor.getBackends().values()) {
@@ -431,6 +427,7 @@ public final class ReloadConfig {
                                     if (closeFrontCon) {
                                         findAndcloseFrontCon(con);
                                     } else {
+                                        con.setOldTimestamp(oldTimestamp);
                                         NIOProcessor.BACKENDS_OLD.add(con);
                                     }
                                 } else {
@@ -447,6 +444,7 @@ public final class ReloadConfig {
     private static void recycleOldBackendConnections(ServerConfig config, boolean closeFrontCon) {
         /* 2.4 put the old connection into a queue */
         Map<String, PhysicalDBPool> oldDataHosts = config.getBackupDataHosts();
+        Long oldTimestamp = System.currentTimeMillis();
         for (PhysicalDBPool dbPool : oldDataHosts.values()) {
             dbPool.stopHeartbeat();
             for (PhysicalDatasource ds : dbPool.getAllDataSources()) {
@@ -459,6 +457,7 @@ public final class ReloadConfig {
                                     if (closeFrontCon) {
                                         findAndcloseFrontCon(con);
                                     } else {
+                                        con.setOldTimestamp(oldTimestamp);
                                         NIOProcessor.BACKENDS_OLD.add(con);
                                     }
                                 } else {

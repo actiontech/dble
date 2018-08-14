@@ -607,6 +607,15 @@ public class MySQLConnection extends BackendAIOConnection {
     }
 
 
+    public long getOldTimestamp() {
+        return oldTimestamp;
+    }
+
+    @Override
+    public void setOldTimestamp(long oldTimestamp) {
+        this.oldTimestamp = oldTimestamp;
+    }
+
     boolean isComplexQuery() {
         return complexQuery;
     }
@@ -907,14 +916,6 @@ public class MySQLConnection extends BackendAIOConnection {
         }
     }
 
-    public long getOldTimestamp() {
-        return oldTimestamp;
-    }
-
-    @Override
-    public void setOldTimestamp(long oldTimestamp) {
-        this.oldTimestamp = oldTimestamp;
-    }
 
 
 }

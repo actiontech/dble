@@ -54,6 +54,7 @@ public class MySQLConnection extends BackendAIOConnection {
     private volatile boolean autocommit;
     private volatile boolean complexQuery;
     private volatile NonBlockingSession session;
+    private long oldTimestamp;
 
 
     private volatile BackEndRecycleRunnable recycler = null;
@@ -904,6 +905,15 @@ public class MySQLConnection extends BackendAIOConnection {
             conn.sysVariables = sysVariables;
             conn.usrVariables = usrVariables;
         }
+    }
+
+    public long getOldTimestamp() {
+        return oldTimestamp;
+    }
+
+    @Override
+    public void setOldTimestamp(long oldTimestamp) {
+        this.oldTimestamp = oldTimestamp;
     }
 
 

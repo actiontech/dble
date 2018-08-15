@@ -159,7 +159,7 @@ public class OutputHandler extends BaseDMLHandler {
         if (terminate.get()) {
             return;
         }
-        logger.info("--------sql execute end!");
+        logger.debug("--------sql execute end!");
         ServerConnection source = session.getSource();
         lock.lock();
         try {

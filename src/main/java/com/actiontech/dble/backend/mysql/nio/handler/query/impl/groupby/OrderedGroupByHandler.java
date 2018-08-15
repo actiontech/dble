@@ -193,7 +193,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
      */
     protected void prepareSumAggregators(List<ItemSum> functions, List<ItemSum> sumFunctions, List<FieldPacket> packets,
                                          boolean isAllPushDown, boolean needDistinct, MySQLConnection conn) {
-        LOGGER.info("prepare_sum_aggregators");
+        LOGGER.debug("prepare_sum_aggregators");
         for (int i = 0; i < functions.size(); i++) {
             ItemSum func = functions.get(i);
             ResultStore store = null;
@@ -220,7 +220,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
      */
 
     protected boolean setupSumFunctions(List<ItemSum> functions) {
-        LOGGER.info("setup_sum_funcs");
+        LOGGER.debug("setup_sum_funcs");
         for (ItemSum func : functions) {
             if (func.aggregatorSetup())
                 return true;

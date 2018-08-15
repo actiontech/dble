@@ -110,7 +110,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        session.handleSpecial(rrs, session.getSource().getSchema(), true);
         LOGGER.warn("Backend connect Error, Connection info:" + conn, e);
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);

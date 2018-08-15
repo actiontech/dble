@@ -121,7 +121,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         }
         LOGGER.info("backend connect" + reason);
         ErrorPacket errPacket = new ErrorPacket();
-        errPacket.setPacketId(++packetId);
+        errPacket.setPacketId(1);
         errPacket.setErrNo(ErrorCode.ER_ABORTING_CONNECTION);
         errPacket.setMessage(StringUtil.encode(reason, session.getSource().getCharset().getResults()));
         err = errPacket;
@@ -169,7 +169,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     public void connectionError(Throwable e, BackendConnection conn) {
         LOGGER.info("backend connect", e);
         ErrorPacket errPacket = new ErrorPacket();
-        errPacket.setPacketId(++packetId);
+        errPacket.setPacketId(1);
         errPacket.setErrNo(ErrorCode.ER_ABORTING_CONNECTION);
         errPacket.setMessage(StringUtil.encode(e.toString(), session.getSource().getCharset().getResults()));
         err = errPacket;

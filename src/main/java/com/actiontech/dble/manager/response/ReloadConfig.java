@@ -369,13 +369,13 @@ public final class ReloadConfig {
                         newSystemVariables, loader.isDataHostWithoutWH(), true);
                 DbleServer.getInstance().getUserManager().initForLatest(newUsers, loader.getSystem().getMaxCon());
                 LOGGER.info("reload config: apply new config end");
-                recycleOldBackendConnectionsByMerge(recyclHost, ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
+                recycleOldBackendConnections(recyclHost, ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
             } else {
                 config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall,
                         newSystemVariables, loader.isDataHostWithoutWH(), true);
                 DbleServer.getInstance().getUserManager().initForLatest(newUsers, loader.getSystem().getMaxCon());
                 LOGGER.info("reload config: apply new config end");
-                recycleOldBackendConnections(config, ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
+                recycleOldBackendConnections(config.getBackupDataHosts(), ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
             }
 
         } else {
@@ -413,7 +413,7 @@ public final class ReloadConfig {
         }
     }
 
-    private static void recycleOldBackendConnectionsByMerge(Map<String, PhysicalDBPool> recycleMap, boolean closeFrontCon) {
+    private static void recycleOldBackendConnections(Map<String, PhysicalDBPool> recycleMap, boolean closeFrontCon) {
         for (PhysicalDBPool dbPool : recycleMap.values()) {
             dbPool.stopHeartbeat();
             Long oldTimestamp = System.currentTimeMillis();
@@ -439,38 +439,21 @@ public final class ReloadConfig {
                 }
             }
         }
-    }
-
-    private static void recycleOldBackendConnections(ServerConfig config, boolean closeFrontCon) {
-        /* 2.4 put the old connection into a queue */
-        Map<String, PhysicalDBPool> oldDataHosts = config.getBackupDataHosts();
-        Long oldTimestamp = System.currentTimeMillis();
-        for (PhysicalDBPool dbPool : oldDataHosts.values()) {
-            dbPool.stopHeartbeat();
-            for (PhysicalDatasource ds : dbPool.getAllDataSources()) {
-                for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
-                    for (BackendConnection con : processor.getBackends().values()) {
-                        if (con instanceof MySQLConnection) {
-                            MySQLConnection mysqlCon = (MySQLConnection) con;
-                            if (mysqlCon.getPool() == ds) {
-                                if (con.isBorrowed()) {
-                                    if (closeFrontCon) {
-                                        findAndcloseFrontCon(con);
-                                    } else {
-                                        con.setOldTimestamp(oldTimestamp);
-                                        NIOProcessor.BACKENDS_OLD.add(con);
-                                    }
-                                } else {
-                                    con.close("old idle conn for reload");
-                                }
-                            }
+        if (closeFrontCon) {
+            for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
+                for (BackendConnection con : processor.getBackends().values()) {
+                    if (con instanceof MySQLConnection) {
+                        MySQLConnection mysqlCon = (MySQLConnection) con;
+                        if (mysqlCon.getOldTimestamp() != 0) {
+                            findAndcloseFrontCon(con);
                         }
                     }
                 }
             }
         }
-        LOGGER.info("the size of old backend connection to be recycled is: " + NIOProcessor.BACKENDS_OLD.size());
+
     }
+
 
     public static void reload() throws Exception {
         /* 1 load new conf, ConfigInitializer will check itself */

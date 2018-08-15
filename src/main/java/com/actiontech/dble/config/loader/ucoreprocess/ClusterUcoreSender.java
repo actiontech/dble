@@ -117,9 +117,13 @@ public final class ClusterUcoreSender {
         }
     }
 
-    public static void unlockKey(String key, String sessionId) {
+    static void unlockKey(String key, String sessionId) {
         UcoreInterface.UnlockOnSessionInput put = UcoreInterface.UnlockOnSessionInput.newBuilder().setKey(key).setSessionId(sessionId).build();
-        stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).unlockOnSession(put);
+        try {
+            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).unlockOnSession(put);
+        } catch (Exception e) {
+            LOGGER.info(sessionId + " unlockKey " + key + " error ," + stub, e);
+        }
     }
 
     public static List<UKvBean> getKeyTree(String key) {

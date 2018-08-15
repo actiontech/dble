@@ -15,7 +15,6 @@ import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.PauseInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -130,7 +129,7 @@ public class UOffLineListener implements Runnable {
                 onlineMap = newMap;
                 index = output.getIndex();
             } catch (Exception e) {
-                LOGGER.warn(" error in offline listener ,all ucore connection failure");
+                LOGGER.warn("error in offline listener :", e);
             }
         }
     }
@@ -141,7 +140,7 @@ public class UOffLineListener implements Runnable {
             DbleServer.getInstance().metaUcoreInit();
             LOGGER.info("rewrite server online status success");
             return true;
-        } catch (IOException e) {
+        } catch (Exception e) {
             LOGGER.warn("rewrite server online status failed");
             //alert
             return false;

@@ -31,7 +31,7 @@ public final class ShowPauseInfo {
         HEADER.setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("PAUSE_DATANODE", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
     }

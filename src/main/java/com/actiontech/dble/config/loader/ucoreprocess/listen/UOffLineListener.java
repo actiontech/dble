@@ -141,7 +141,7 @@ public class UOffLineListener implements Runnable {
             LOGGER.info("rewrite server online status success");
             return true;
         } catch (Exception e) {
-            LOGGER.warn("rewrite server online status failed");
+            LOGGER.warn("rewrite server online status failed", e);
             //alert
             return false;
         }

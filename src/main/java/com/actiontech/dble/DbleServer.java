@@ -17,10 +17,7 @@ import com.actiontech.dble.buffer.DirectByteBufferPool;
 import com.actiontech.dble.cache.CacheService;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
-import com.actiontech.dble.config.loader.ucoreprocess.UDistributeLock;
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
-import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -47,10 +44,7 @@ import com.actiontech.dble.statistic.stat.SqlResultSizeRecorder;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import com.actiontech.dble.statistic.stat.UserStat;
 import com.actiontech.dble.statistic.stat.UserStatAnalyzer;
-import com.actiontech.dble.util.ExecutorUtil;
-import com.actiontech.dble.util.KVPathUtil;
-import com.actiontech.dble.util.TimeUtil;
-import com.actiontech.dble.util.ZKUtils;
+import com.actiontech.dble.util.*;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.curator.framework.CuratorFramework;
@@ -133,7 +127,6 @@ public final class DbleServer {
 
 
     private FrontendUserManager userManager = new FrontendUserManager();
-    private UDistributeLock onlineLock = null;
     private DbleServer() {
         this.config = new ServerConfig();
         scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("TimerScheduler-%d").build());
@@ -438,7 +431,7 @@ public final class DbleServer {
         userManager.initForLatest(config.getUsers(), system.getMaxCon());
 
         if (isUseUcore()) {
-            metaUcoreInit();
+            GlobalStatus.getInstance().metaUcoreInit(true);
         }
         //initialized the cache service
         cacheService = new CacheService(this.systemVariables.isLowerCaseTableNames());
@@ -502,23 +495,6 @@ public final class DbleServer {
             node.startHeartbeat();
         }
     }
-
-
-    public void metaUcoreInit() throws IOException {
-        //check if the online mark is on than delete the mark and renew it
-        ClusterUcoreSender.deleteKV(UcorePathUtil.getOnlinePath(UcoreConfig.getInstance().
-                getValue(ClusterParamCfg.CLUSTER_CFG_MYID)));
-        if (onlineLock != null) {
-            onlineLock.release();
-        }
-        onlineLock = new UDistributeLock(UcorePathUtil.getOnlinePath(UcoreConfig.getInstance().
-                getValue(ClusterParamCfg.CLUSTER_CFG_MYID)),
-                UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
-        if (!onlineLock.acquire()) {
-            throw new IOException("set online status failed");
-        }
-    }
-
 
     private void initZkDnindex() {
         //upload the dnindex data to zk

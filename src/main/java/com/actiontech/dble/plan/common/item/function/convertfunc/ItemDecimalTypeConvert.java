@@ -3,17 +3,17 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.plan.common.item.function.castfunc;
+package com.actiontech.dble.plan.common.item.function.convertfunc;
 
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.FieldTypes;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.time.MySQLTime;
-import com.alibaba.druid.sql.ast.SQLDataTypeImpl;
 import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.expr.SQLCastExpr;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
+import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -22,11 +22,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class ItemDecimalTypecast extends ItemFunc {
+public class ItemDecimalTypeConvert extends ItemFunc {
     private int precision;
     private int dec;
 
-    public ItemDecimalTypecast(Item a, int precision, int dec) {
+    public ItemDecimalTypeConvert(Item a, int precision, int dec) {
         super(new ArrayList<Item>());
         args.add(a);
         this.precision = precision;
@@ -35,7 +35,7 @@ public class ItemDecimalTypecast extends ItemFunc {
 
     @Override
     public final String funcName() {
-        return "decimal_typecast";
+        return "convert_decimal";
     }
 
     @Override
@@ -97,17 +97,23 @@ public class ItemDecimalTypecast extends ItemFunc {
 
     @Override
     public SQLExpr toExpression() {
-        SQLCastExpr cast = new SQLCastExpr();
-        cast.setExpr(args.get(0).toExpression());
-        SQLDataTypeImpl dataType = new SQLDataTypeImpl("DECIMAL");
-        if (precision >= 0) {
-            dataType.addArgument(new SQLIntegerExpr(precision));
+        SQLMethodInvokeExpr method = new SQLMethodInvokeExpr();
+        method.setMethodName("CONVERT");
+        method.addParameter(args.get(0).toExpression());
+        if (precision >= 0 || dec > 0) {
+            SQLMethodInvokeExpr dataType = new SQLMethodInvokeExpr();
+            dataType.setMethodName("DECIMAL");
+            if (precision >= 0) {
+                dataType.addParameter(new SQLIntegerExpr(precision));
+            }
+            if (dec > 0) {
+                dataType.addParameter(new SQLIntegerExpr(dec));
+            }
+            method.addParameter(dataType);
+        } else {
+            method.addParameter(new SQLIdentifierExpr("DECIMAL"));
         }
-        if (dec > 0) {
-            dataType.addArgument(new SQLIntegerExpr(dec));
-        }
-        cast.setDataType(dataType);
-        return cast;
+        return method;
     }
 
     @Override
@@ -118,7 +124,7 @@ public class ItemDecimalTypecast extends ItemFunc {
         } else {
             newArgs = calArgs;
         }
-        return new ItemDecimalTypecast(newArgs.get(0), precision, dec);
+        return new ItemDecimalTypeConvert(newArgs.get(0), precision, dec);
     }
 
 }

@@ -16,10 +16,11 @@ import com.actiontech.dble.plan.common.item.*;
 import com.actiontech.dble.plan.common.item.function.ItemCreate;
 import com.actiontech.dble.plan.common.item.function.ItemFuncKeyWord;
 import com.actiontech.dble.plan.common.item.function.bitfunc.*;
-import com.actiontech.dble.plan.common.item.function.castfunc.ItemCharTypecast;
-import com.actiontech.dble.plan.common.item.function.castfunc.ItemFuncBinary;
+import com.actiontech.dble.plan.common.item.function.castfunc.ItemCharTypeCast;
+import com.actiontech.dble.plan.common.item.function.castfunc.ItemFuncBinaryCast;
 import com.actiontech.dble.plan.common.item.function.castfunc.ItemFuncConvCharset;
-import com.actiontech.dble.plan.common.item.function.castfunc.ItemNCharTypecast;
+import com.actiontech.dble.plan.common.item.function.castfunc.ItemNCharTypeCast;
+import com.actiontech.dble.plan.common.item.function.convertfunc.ItemCharTypeConvert;
 import com.actiontech.dble.plan.common.item.function.mathsfunc.operator.*;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.*;
 import com.actiontech.dble.plan.common.item.function.operator.controlfunc.ItemFuncCase;
@@ -54,6 +55,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlIntervalExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlIntervalUnit;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
+import com.alibaba.druid.sql.parser.SQLExprParser;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
@@ -299,7 +301,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 item = a;
                 break;
             case BINARY:
-                item = new ItemFuncBinary(a, -1);
+                item = new ItemFuncBinaryCast(a, -1);
                 break;
             default:
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
@@ -390,13 +392,13 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 if (args.size() > 0) {
                     len = args.get(0);
                 }
-                item = new ItemCharTypecast(a, len, charSetName);
+                item = new ItemCharTypeCast(a, len, charSetName);
             } else if (charSetName == null) {
                 int len = -1;
                 if (args.size() > 0) {
                     len = args.get(0);
                 }
-                item = new ItemNCharTypecast(a, len);
+                item = new ItemNCharTypeCast(a, len);
             } else {
                 throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "",
                         "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'character set " + charSetName + ")'");
@@ -543,12 +545,29 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 break;
             case "CONVERT":
                 if (args.size() >= 2) {
-                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported  CONVERT(expr, type) ,please use CAST(expr AS type)");
+                    if ((args.get(1) instanceof ItemFuncChar)) {
+                        ItemFuncChar charfunc = (ItemFuncChar) (args.get(1));
+                        int castLength = -1;
+                        try {
+                            castLength = charfunc.arguments().get(0).valInt().intValue();
+                        } catch (Exception e) {
+                            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported  CONVERT(expr, " + args.get(1).getItemName() + ") ,please use CAST(expr AS type)");
+                        }
+                        item = new ItemCharTypeConvert(args.get(0), castLength, null);
+                        break;
+                    }
+                    CastType castType = getCastType(args.get(1).getItemName());
+                    if (castType == null) {
+                        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported  CONVERT(expr, " + args.get(1).getItemName() + ") ,please use CAST(expr AS type)");
+                    } else {
+                        item = ItemCreate.getInstance().createFuncConvert(args.get(0), castType);
+                    }
+                } else {
+                    if (attributes == null || attributes.get(ItemFuncKeyWord.USING) == null) {
+                        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "CONVERT(... USING ...) is standard SQL syntax");
+                    }
+                    item = new ItemFuncConvCharset(args.get(0), (String) attributes.get(ItemFuncKeyWord.USING));
                 }
-                if (attributes == null || attributes.get(ItemFuncKeyWord.USING) == null) {
-                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "CONVERT(... USING ...) is standard SQL syntax");
-                }
-                item = new ItemFuncConvCharset(args.get(0), (String) attributes.get(ItemFuncKeyWord.USING));
                 break;
             case "CHAR":
                 if (attributes == null || attributes.get(ItemFuncKeyWord.USING) == null) {
@@ -756,6 +775,15 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 
     }
 
+    private CastType getCastType(String dataType) {
+        SQLExprParser expr = new SQLExprParser(dataType);
+        SQLDataType dataTypeImpl = expr.parseDataType();
+        if (dataTypeImpl == null) {
+            return null;
+        }
+        return getCastType((SQLDataTypeImpl) dataTypeImpl);
+    }
+
     private CastType getCastType(SQLDataTypeImpl dataTypeImpl) {
         CastType castType = new CastType();
         String upType = dataTypeImpl.getName().toUpperCase();
@@ -787,6 +815,12 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 break;
             case "NCHAR":
                 castType.setTarget(CastTarget.ITEM_CAST_NCHAR);
+                if (args.size() > 0) {
+                    castType.setLength(args.get(0));
+                }
+                break;
+            case "CHAR":
+                castType.setTarget(CastTarget.ITEM_CAST_CHAR);
                 if (args.size() > 0) {
                     castType.setLength(args.get(0));
                 }

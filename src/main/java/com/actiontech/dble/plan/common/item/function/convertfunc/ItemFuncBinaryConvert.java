@@ -3,24 +3,25 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.plan.common.item.function.castfunc;
+package com.actiontech.dble.plan.common.item.function.convertfunc;
 
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.strfunc.ItemStrFunc;
 import com.alibaba.druid.sql.ast.SQLDataTypeImpl;
 import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.expr.SQLCastExpr;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
+import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
 
 import java.util.ArrayList;
 import java.util.List;
 
 
-public class ItemFuncBinary extends ItemStrFunc {
+public class ItemFuncBinaryConvert extends ItemStrFunc {
     private int castLength;
 
-    public ItemFuncBinary(Item a, int lengthArg) {
+    public ItemFuncBinaryConvert(Item a, int lengthArg) {
         super(new ArrayList<Item>());
         args.add(a);
         this.castLength = lengthArg;
@@ -28,7 +29,7 @@ public class ItemFuncBinary extends ItemStrFunc {
 
     @Override
     public final String funcName() {
-        return "cast_as_binary";
+        return "convert_as_binary";
     }
 
     @Override
@@ -52,14 +53,18 @@ public class ItemFuncBinary extends ItemStrFunc {
 
     @Override
     public SQLExpr toExpression() {
-        SQLCastExpr cast = new SQLCastExpr();
-        cast.setExpr(args.get(0).toExpression());
-        SQLDataTypeImpl dataType = new SQLDataTypeImpl("BINARY");
-        if (castLength >= 0) {
-            dataType.addArgument(new SQLIntegerExpr(castLength));
+        SQLMethodInvokeExpr method = new SQLMethodInvokeExpr();
+        method.setMethodName("CONVERT");
+        method.addParameter(args.get(0).toExpression());
+        if (decimals != NOT_FIXED_DEC) {
+            SQLMethodInvokeExpr dataType = new SQLMethodInvokeExpr();
+            dataType.setMethodName("BINARY");
+            dataType.addParameter(new SQLIntegerExpr(decimals));
+            method.addParameter(dataType);
+        } else {
+            method.addParameter(new SQLIdentifierExpr("BINARY"));
         }
-        cast.setDataType(dataType);
-        return cast;
+        return method;
     }
 
     @Override
@@ -69,6 +74,6 @@ public class ItemFuncBinary extends ItemStrFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncBinary(newArgs.get(0), castLength);
+        return new ItemFuncBinaryConvert(newArgs.get(0), castLength);
     }
 }

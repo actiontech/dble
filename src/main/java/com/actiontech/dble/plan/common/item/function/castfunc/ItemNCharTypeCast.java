@@ -7,37 +7,47 @@ package com.actiontech.dble.plan.common.item.function.castfunc;
 
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
-import com.actiontech.dble.plan.common.item.function.timefunc.ItemDateFunc;
-import com.actiontech.dble.plan.common.time.MySQLTime;
-import com.actiontech.dble.plan.common.time.MySQLTimestampType;
-import com.actiontech.dble.plan.common.time.MyTime;
+import com.actiontech.dble.plan.common.item.function.strfunc.ItemStrFunc;
 import com.alibaba.druid.sql.ast.SQLDataTypeImpl;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLCastExpr;
+import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class ItemDateTypecast extends ItemDateFunc {
-    public ItemDateTypecast(Item a) {
+
+public class ItemNCharTypeCast extends ItemStrFunc {
+    private int castLength;
+
+    public ItemNCharTypeCast(Item a, int lengthArg) {
         super(new ArrayList<Item>());
         args.add(a);
-        maybeNull = true;
+        this.castLength = lengthArg;
     }
 
     @Override
     public final String funcName() {
-        return "cast_as_date";
+        return "cast_as_nchar";
     }
 
     @Override
-    public boolean getDate(MySQLTime ltime, long fuzzyDate) {
-        final boolean res = getArg0Date(ltime, fuzzyDate | MyTime.TIME_NO_DATE_FRAC_WARN);
-        ltime.setSecondPart(0);
-        ltime.setSecond(0);
-        ltime.setMinute(0);
-        ltime.setHour(0);
-        ltime.setTimeType(MySQLTimestampType.MYSQL_TIMESTAMP_DATE);
+    public void fixLengthAndDec() {
+        fixCharLength(castLength >= 0 ? castLength : args.get(0).getMaxLength());
+    }
+
+    @Override
+    public String valStr() {
+        assert (fixed && castLength >= 0);
+
+        String res = null;
+        if ((res = args.get(0).valStr()) == null) {
+            nullValue = true;
+            return null;
+        }
+        nullValue = false;
+        if (castLength < res.length())
+            res = res.substring(0, castLength);
         return res;
     }
 
@@ -45,8 +55,12 @@ public class ItemDateTypecast extends ItemDateFunc {
     public SQLExpr toExpression() {
         SQLCastExpr cast = new SQLCastExpr();
         cast.setExpr(args.get(0).toExpression());
-        SQLDataTypeImpl dataType = new SQLDataTypeImpl("DATE");
+        SQLDataTypeImpl dataType = new SQLDataTypeImpl("NCAHR");
+        if (castLength >= 0) {
+            dataType.addArgument(new SQLIntegerExpr(castLength));
+        }
         cast.setDataType(dataType);
+
         return cast;
     }
 
@@ -57,7 +71,6 @@ public class ItemDateTypecast extends ItemDateFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemDateTypecast(newArgs.get(0));
+        return new ItemNCharTypeCast(newArgs.get(0), castLength);
     }
-
 }

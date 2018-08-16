@@ -3,27 +3,27 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.plan.common.item.function.castfunc;
+package com.actiontech.dble.plan.common.item.function.convertfunc;
 
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.strfunc.ItemStrFunc;
 import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.expr.SQLCastExpr;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
-import com.alibaba.druid.sql.ast.statement.SQLCharacterDataType;
+import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
 
-public class ItemCharTypecast extends ItemStrFunc {
+public class ItemCharTypeConvert extends ItemStrFunc {
     private int castLength;
     private String charSetName;
 
-    public ItemCharTypecast(Item a, int lengthArg, String charSetName) {
+    public ItemCharTypeConvert(Item a, int lengthArg, String charSetName) {
         super(new ArrayList<Item>());
         args.add(a);
         this.castLength = lengthArg;
@@ -32,7 +32,7 @@ public class ItemCharTypecast extends ItemStrFunc {
 
     @Override
     public final String funcName() {
-        return "cast_as_char";
+        return "convert_as_char";
     }
 
     @Override
@@ -67,18 +67,18 @@ public class ItemCharTypecast extends ItemStrFunc {
 
     @Override
     public SQLExpr toExpression() {
-        SQLCastExpr cast = new SQLCastExpr();
-        cast.setExpr(args.get(0).toExpression());
-        SQLCharacterDataType dataType = new SQLCharacterDataType(SQLCharacterDataType.CHAR_TYPE_CHAR);
-        cast.setDataType(dataType);
+        SQLMethodInvokeExpr method = new SQLMethodInvokeExpr();
+        method.setMethodName("CONVERT");
+        method.addParameter(args.get(0).toExpression());
         if (castLength >= 0) {
-            dataType.addArgument(new SQLIntegerExpr(castLength));
+            SQLMethodInvokeExpr dataType = new SQLMethodInvokeExpr();
+            dataType.setMethodName("CHAR");
+            dataType.addParameter(new SQLIntegerExpr(castLength));
+            method.addParameter(dataType);
+        } else {
+            method.addParameter(new SQLIdentifierExpr("CHAR"));
         }
-        if (charSetName != null) {
-            dataType.setName(charSetName);
-        }
-        cast.setDataType(dataType);
-        return cast;
+        return method;
     }
 
     @Override
@@ -88,6 +88,6 @@ public class ItemCharTypecast extends ItemStrFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemCharTypecast(newArgs.get(0), castLength, charSetName);
+        return new ItemCharTypeConvert(newArgs.get(0), castLength, charSetName);
     }
 }

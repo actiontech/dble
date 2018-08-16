@@ -13,6 +13,7 @@ import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.bitfunc.ItemFuncBitCount;
 import com.actiontech.dble.plan.common.item.function.castfunc.*;
+import com.actiontech.dble.plan.common.item.function.convertfunc.*;
 import com.actiontech.dble.plan.common.item.function.mathsfunc.*;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.*;
 import com.actiontech.dble.plan.common.item.function.operator.controlfunc.ItemFuncIfnull;
@@ -274,28 +275,24 @@ public class ItemCreate {
         CastTarget castType = type.getTarget();
         ItemFunc res = null;
         if (castType == CastTarget.ITEM_CAST_BINARY) {
-            res = new ItemFuncBinary(a, type.getLength());
-
+            res = new ItemFuncBinaryCast(a, type.getLength());
         } else if (castType == CastTarget.ITEM_CAST_SIGNED_INT) {
-            res = new ItemFuncSigned(a);
-
+            res = new ItemFuncSignedCast(a);
         } else if (castType == CastTarget.ITEM_CAST_UNSIGNED_INT) {
-            res = new ItemFuncUnsigned(a);
-
+            res = new ItemFuncUnsignedCast(a);
         } else if (castType == CastTarget.ITEM_CAST_DATE) {
-            res = new ItemDateTypecast(a);
-
+            res = new ItemDateTypeCast(a);
         } else if (castType == CastTarget.ITEM_CAST_TIME || castType == CastTarget.ITEM_CAST_DATETIME) {
             if (type.getLength() > MyTime.DATETIME_MAX_DECIMALS) {
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
                         "too big precision in cast time/datetime,max 6,current:" + type.getLength());
             }
             if (type.getLength() == -1) {
-                res = (castType == CastTarget.ITEM_CAST_TIME) ? new ItemTimeTypecast(a) :
-                        new ItemDatetimeTypecast(a);
+                res = (castType == CastTarget.ITEM_CAST_TIME) ? new ItemTimeTypeCast(a) :
+                        new ItemDatetimeTypeCast(a);
             } else {
-                res = (castType == CastTarget.ITEM_CAST_TIME) ? new ItemTimeTypecast(a, type.getLength()) :
-                        new ItemDatetimeTypecast(a, type.getLength());
+                res = (castType == CastTarget.ITEM_CAST_TIME) ? new ItemTimeTypeCast(a, type.getLength()) :
+                        new ItemDatetimeTypeCast(a, type.getLength());
             }
         } else if (castType == CastTarget.ITEM_CAST_DECIMAL) {
             if (type.getLength() < type.getDec()) {
@@ -310,17 +307,69 @@ public class ItemCreate {
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
                         "Too big scale " + type.getDec() + " max is " + MySQLcom.DECIMAL_MAX_SCALE);
             }
-            res = new ItemDecimalTypecast(a, type.getLength(), type.getDec());
+            res = new ItemDecimalTypeCast(a, type.getLength(), type.getDec());
         } else if (castType == CastTarget.ITEM_CAST_NCHAR) {
             int len = -1;
             if (type.getLength() > 0)
                 len = type.getLength();
-            res = new ItemNCharTypecast(a, len);
+            res = new ItemNCharTypeCast(a, len);
         } else {
             assert (false);
         }
         return res;
     }
 
+    public ItemFunc createFuncConvert(Item a, CastType type) {
+        CastTarget castType = type.getTarget();
+        ItemFunc res = null;
+        if (castType == CastTarget.ITEM_CAST_BINARY) {
+            res = new ItemFuncBinaryConvert(a, type.getLength());
+        } else if (castType == CastTarget.ITEM_CAST_SIGNED_INT) {
+            res = new ItemFuncSignedConvert(a);
+        } else if (castType == CastTarget.ITEM_CAST_UNSIGNED_INT) {
+            res = new ItemFuncUnsignedConvert(a);
+        } else if (castType == CastTarget.ITEM_CAST_DATE) {
+            res = new ItemDateTypeConvert(a);
+        } else if (castType == CastTarget.ITEM_CAST_TIME || castType == CastTarget.ITEM_CAST_DATETIME) {
+            if (type.getLength() > MyTime.DATETIME_MAX_DECIMALS) {
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
+                        "too big precision in cast time/datetime,max 6,current:" + type.getLength());
+            }
+            if (type.getLength() == -1) {
+                res = (castType == CastTarget.ITEM_CAST_TIME) ? new ItemTimeTypeConvert(a) :
+                        new ItemDatetimeTypeConvert(a);
+            } else {
+                res = (castType == CastTarget.ITEM_CAST_TIME) ? new ItemTimeTypeConvert(a, type.getLength()) :
+                        new ItemDatetimeTypeConvert(a, type.getLength());
+            }
+        } else if (castType == CastTarget.ITEM_CAST_DECIMAL) {
+            if (type.getLength() < type.getDec()) {
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
+                        "For float(m,d), double(m,d) or decimal(m,d), M must be >= d");
+            }
+            if (type.getLength() > MySQLcom.DECIMAL_MAX_PRECISION) {
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
+                        "Too big precision " + type.getLength() + " max is " + MySQLcom.DECIMAL_MAX_PRECISION);
+            }
+            if (type.getDec() > MySQLcom.DECIMAL_MAX_SCALE) {
+                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
+                        "Too big scale " + type.getDec() + " max is " + MySQLcom.DECIMAL_MAX_SCALE);
+            }
+            res = new ItemDecimalTypeConvert(a, type.getLength(), type.getDec());
+        } else if (castType == CastTarget.ITEM_CAST_NCHAR) {
+            int len = -1;
+            if (type.getLength() > 0)
+                len = type.getLength();
+            res = new ItemNCharTypeConvert(a, len);
+        } else if (castType == CastTarget.ITEM_CAST_CHAR) {
+            int len = -1;
+            if (type.getLength() > 0)
+                len = type.getLength();
+            res = new ItemCharTypeConvert(a, len, null);
+        } else {
+            assert (false);
+        }
+        return res;
+    }
 
 }

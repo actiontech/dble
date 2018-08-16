@@ -12,6 +12,7 @@ import com.alibaba.druid.sql.ast.SQLDataTypeImpl;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLCastExpr;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,23 +31,30 @@ import java.util.List;
  *
  * @author Administrator
  */
-public class ItemFuncSigned extends ItemIntFunc {
+public class ItemFuncUnsignedCast extends ItemIntFunc {
 
-    public ItemFuncSigned(Item a) {
+    public ItemFuncUnsignedCast(Item a) {
         super(new ArrayList<Item>());
         args.add(a);
     }
 
     @Override
     public final String funcName() {
-        return "cast_as_signed";
+        return "cast_as_unsigned";
     }
 
     @Override
     public BigInteger valInt() {
         BigInteger value = BigInteger.ZERO;
 
-        if (args.get(0).castToIntType() != ItemResult.STRING_RESULT || args.get(0).isTemporal()) {
+        if (args.get(0).castToIntType() == ItemResult.DECIMAL_RESULT) {
+            BigDecimal dec = args.get(0).valDecimal();
+            if (!(nullValue = args.get(0).isNullValue()))
+                value = dec.toBigInteger();
+            else
+                value = BigInteger.ZERO;
+            return value;
+        } else if (args.get(0).castToIntType() != ItemResult.STRING_RESULT || args.get(0).isTemporal()) {
             value = args.get(0).valInt();
             nullValue = args.get(0).isNullValue();
             return value;
@@ -56,7 +64,7 @@ public class ItemFuncSigned extends ItemIntFunc {
             value = valIntFromStr();
         } catch (Exception e) {
             value = new BigInteger("-1");
-            LOGGER.info("Cast to signed converted positive out-of-range integer to " + "it's negative complement", e);
+            LOGGER.info("Cast to unsigned converted negative integer to it's " + "positive complement", e);
         }
         return value;
     }
@@ -86,7 +94,7 @@ public class ItemFuncSigned extends ItemIntFunc {
     public SQLExpr toExpression() {
         SQLCastExpr cast = new SQLCastExpr();
         cast.setExpr(args.get(0).toExpression());
-        SQLDataTypeImpl dataType = new SQLDataTypeImpl("SIGNED");
+        SQLDataTypeImpl dataType = new SQLDataTypeImpl("UNSIGNED");
         cast.setDataType(dataType);
         return cast;
     }
@@ -98,6 +106,7 @@ public class ItemFuncSigned extends ItemIntFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncSigned(newArgs.get(0));
+        return new ItemFuncUnsignedCast(newArgs.get(0));
     }
+
 }

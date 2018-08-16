@@ -3,16 +3,16 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.plan.common.item.function.castfunc;
+package com.actiontech.dble.plan.common.item.function.convertfunc;
 
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.primary.ItemIntFunc;
 import com.alibaba.druid.sql.ast.SQLDataTypeImpl;
 import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.expr.SQLCastExpr;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
 
-import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,30 +31,23 @@ import java.util.List;
  *
  * @author Administrator
  */
-public class ItemFuncUnsigned extends ItemIntFunc {
+public class ItemFuncSignedConvert extends ItemIntFunc {
 
-    public ItemFuncUnsigned(Item a) {
+    public ItemFuncSignedConvert(Item a) {
         super(new ArrayList<Item>());
         args.add(a);
     }
 
     @Override
     public final String funcName() {
-        return "cast_as_unsigned";
+        return "convert_as_signed";
     }
 
     @Override
     public BigInteger valInt() {
         BigInteger value = BigInteger.ZERO;
 
-        if (args.get(0).castToIntType() == ItemResult.DECIMAL_RESULT) {
-            BigDecimal dec = args.get(0).valDecimal();
-            if (!(nullValue = args.get(0).isNullValue()))
-                value = dec.toBigInteger();
-            else
-                value = BigInteger.ZERO;
-            return value;
-        } else if (args.get(0).castToIntType() != ItemResult.STRING_RESULT || args.get(0).isTemporal()) {
+        if (args.get(0).castToIntType() != ItemResult.STRING_RESULT || args.get(0).isTemporal()) {
             value = args.get(0).valInt();
             nullValue = args.get(0).isNullValue();
             return value;
@@ -64,7 +57,7 @@ public class ItemFuncUnsigned extends ItemIntFunc {
             value = valIntFromStr();
         } catch (Exception e) {
             value = new BigInteger("-1");
-            LOGGER.info("Cast to unsigned converted negative integer to it's " + "positive complement", e);
+            LOGGER.info("Cast to signed converted positive out-of-range integer to " + "it's negative complement", e);
         }
         return value;
     }
@@ -92,11 +85,11 @@ public class ItemFuncUnsigned extends ItemIntFunc {
 
     @Override
     public SQLExpr toExpression() {
-        SQLCastExpr cast = new SQLCastExpr();
-        cast.setExpr(args.get(0).toExpression());
-        SQLDataTypeImpl dataType = new SQLDataTypeImpl("UNSIGNED");
-        cast.setDataType(dataType);
-        return cast;
+        SQLMethodInvokeExpr method = new SQLMethodInvokeExpr();
+        method.setMethodName("CONVERT");
+        method.addParameter(args.get(0).toExpression());
+        method.addParameter(new SQLIdentifierExpr("SIGNED"));
+        return method;
     }
 
     @Override
@@ -106,7 +99,6 @@ public class ItemFuncUnsigned extends ItemIntFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemFuncUnsigned(newArgs.get(0));
+        return new ItemFuncSignedConvert(newArgs.get(0));
     }
-
 }

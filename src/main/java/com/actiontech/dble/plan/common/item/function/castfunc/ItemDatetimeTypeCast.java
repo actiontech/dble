@@ -7,7 +7,7 @@ package com.actiontech.dble.plan.common.item.function.castfunc;
 
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
-import com.actiontech.dble.plan.common.item.function.timefunc.ItemTimeFunc;
+import com.actiontech.dble.plan.common.item.function.timefunc.ItemDatetimeFunc;
 import com.actiontech.dble.plan.common.time.MySQLTime;
 import com.actiontech.dble.plan.common.time.MySQLTimestampType;
 import com.actiontech.dble.plan.common.time.MyTime;
@@ -19,37 +19,22 @@ import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ItemTimeTypecast extends ItemTimeFunc {
 
-    public ItemTimeTypecast(Item a) {
+public class ItemDatetimeTypeCast extends ItemDatetimeFunc {
+    public ItemDatetimeTypeCast(Item a) {
         super(new ArrayList<Item>());
         args.add(a);
     }
 
-    public ItemTimeTypecast(Item a, int decArg) {
+    public ItemDatetimeTypeCast(Item a, int decArg) {
         super(new ArrayList<Item>());
         args.add(a);
-        decimals = decArg;
+        this.decimals = decArg;
     }
 
     @Override
     public final String funcName() {
-        return "cast_as_time";
-    }
-
-    public boolean getTime(MySQLTime ltime) {
-        if (getArg0Time(ltime))
-            return true;
-        if (decimals != NOT_FIXED_DEC) {
-            MyTime.myTimeRound(ltime, decimals);
-        }
-        /*
-         * For MYSQL_TIMESTAMP_TIME value we can have non-zero day part, which
-         * we should not lose.
-         */
-        if (ltime.getTimeType() != MySQLTimestampType.MYSQL_TIMESTAMP_TIME)
-            MyTime.datetimeToTime(ltime);
-        return false;
+        return "cast_as_datetime";
     }
 
     @Override
@@ -58,11 +43,24 @@ public class ItemTimeTypecast extends ItemTimeFunc {
     }
 
     @Override
+    public boolean getDate(MySQLTime ltime, long fuzzyDate) {
+        if ((nullValue = args.get(0).getDate(ltime, fuzzyDate | MyTime.TIME_NO_DATE_FRAC_WARN)))
+            return true;
+        assert (ltime.getTimeType() != MySQLTimestampType.MYSQL_TIMESTAMP_TIME);
+        ltime.setTimeType(MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME); // In
+        // case
+        // it
+        // was
+        // DATE
+        return (nullValue = MyTime.myDatetimeRound(ltime, decimals));
+    }
+
+    @Override
     public SQLExpr toExpression() {
         SQLCastExpr cast = new SQLCastExpr();
         cast.setExpr(args.get(0).toExpression());
-        SQLDataTypeImpl dataType = new SQLDataTypeImpl("TIME");
-        if (decimals != NOT_FIXED_DEC) {
+        SQLDataTypeImpl dataType = new SQLDataTypeImpl("DATETIME");
+        if (decimals != Item.NOT_FIXED_DEC) {
             dataType.addArgument(new SQLIntegerExpr(decimals));
         }
         cast.setDataType(dataType);
@@ -76,6 +74,6 @@ public class ItemTimeTypecast extends ItemTimeFunc {
             newArgs = cloneStructList(args);
         else
             newArgs = calArgs;
-        return new ItemTimeTypecast(newArgs.get(0), this.decimals);
+        return new ItemDatetimeTypeCast(newArgs.get(0), this.decimals);
     }
 }

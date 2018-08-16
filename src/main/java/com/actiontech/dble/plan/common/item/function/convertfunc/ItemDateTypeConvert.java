@@ -11,7 +11,6 @@ import com.actiontech.dble.plan.common.item.function.timefunc.ItemDateFunc;
 import com.actiontech.dble.plan.common.time.MySQLTime;
 import com.actiontech.dble.plan.common.time.MySQLTimestampType;
 import com.actiontech.dble.plan.common.time.MyTime;
-import com.alibaba.druid.sql.ast.SQLDataTypeImpl;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;

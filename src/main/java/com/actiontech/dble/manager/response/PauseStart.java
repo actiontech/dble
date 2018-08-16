@@ -82,13 +82,17 @@ public final class PauseStart {
 
         LOGGER.info("wait finished " + recycleFinish);
         if (!recycleFinish) {
-            DbleServer.getInstance().getMiManager().resume();
-            try {
-                DbleServer.getInstance().getMiManager().resumeCluster();
-            } catch (Exception e) {
-                LOGGER.warn(e.getMessage());
+            if (DbleServer.getInstance().getMiManager().tryResume()) {
+                try {
+                    DbleServer.getInstance().getMiManager().resumeCluster();
+                } catch (Exception e) {
+                    LOGGER.warn(e.getMessage());
+                }
+                c.writeErrMessage(1003, "The backend connection recycle failure,try it later");
+            } else {
+                c.writeErrMessage(1003, "Pause resume when recycle connection ,pause revert");
             }
-            c.writeErrMessage(1003, "The backend connection recycle failure,try it later");
+
         } else {
             try {
                 if (DbleServer.getInstance().getMiManager().waitForCluster(c, beginTime, timeOut)) {
@@ -103,7 +107,7 @@ public final class PauseStart {
 
     private static boolean waitForSelfPause(long beginTime, long timeOut, Set<String> dataNodes) {
         boolean recycleFinish = false;
-        while (System.currentTimeMillis() - beginTime < timeOut) {
+        while ((System.currentTimeMillis() - beginTime < timeOut) && DbleServer.getInstance().getMiManager().getIsPausing().get()) {
             boolean nextTurn = false;
             for (NIOProcessor processor : DbleServer.getInstance().getFrontProcessors()) {
                 for (Map.Entry<Long, FrontendConnection> entry : processor.getFrontends().entrySet()) {

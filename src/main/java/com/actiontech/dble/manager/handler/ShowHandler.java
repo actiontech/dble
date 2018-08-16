@@ -79,6 +79,9 @@ public final class ShowHandler {
                 ShowTableDataNode.execute(c, tableInfo);
                 break;
             }
+            case ManagerParseShow.PAUSE_DATANDE:
+                ShowPauseInfo.execute(c);
+                break;
             case ManagerParseShow.HELP:
                 ShowHelp.execute(c);
                 break;

@@ -316,7 +316,7 @@ public class ServerConnection extends FrontendConnection {
             if (rrs == null) {
                 return;
             }
-            if (rrs.getSqlType() == ServerParse.DDL) {
+            if (rrs.getSqlType() == ServerParse.DDL && rrs.getSchema() != null) {
                 addTableMetaLock(rrs);
                 if (DbleServer.getInstance().getTmManager().getCatalogs().get(rrs.getSchema()).getView(rrs.getTable()) != null) {
                     DbleServer.getInstance().getTmManager().removeMetaLock(rrs.getSchema(), rrs.getTable());

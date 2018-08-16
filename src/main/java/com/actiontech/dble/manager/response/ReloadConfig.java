@@ -291,7 +291,14 @@ public final class ReloadConfig {
                 LOGGER.debug("just test ,not stop reload, catch exception", e);
             }
         }
-        VarsExtractorHandler handler = new VarsExtractorHandler(loader.getDataHosts());
+
+        /* 2.1.1 get diff of dataHosts */
+        ServerConfig config = DbleServer.getInstance().getConfig();
+        Set<PhysicalDBPoolDiff> dataHostDiffSet = distinguishDataHost(loader.getDataHosts(), config.getDataHosts());
+        Map<String, PhysicalDBPool> recyclHost = new HashMap<String, PhysicalDBPool>();
+        Map<String, PhysicalDBPool> mergedDataHosts = initDataHostMapWithMerge(dataHostDiffSet, recyclHost);
+
+        VarsExtractorHandler handler = new VarsExtractorHandler(mergedDataHosts);
         newSystemVariables = handler.execute();
         if (newSystemVariables == null) {
             if (!loader.isDataHostWithoutWH()) {
@@ -335,16 +342,14 @@ public final class ReloadConfig {
          *  2.3 transform
          *  2.4 put the old connection into a queue
          */
-        ServerConfig config = DbleServer.getInstance().getConfig();
+
 
         String reasonMsg = null;
 
-        /* 2.1.1 get diff of dataHosts */
-        Set<PhysicalDBPoolDiff> dataHostDiffSet = distinguishDataHost(newDataHosts, config.getDataHosts());
+
         /* 2.2 init the dataSource with diff*/
 
-        Map<String, PhysicalDBPool> recyclHost = new HashMap<String, PhysicalDBPool>();
-        Map<String, PhysicalDBPool> mergedDataHosts = initDataHostMapWithMerge(dataHostDiffSet, recyclHost);
+
 
 
         LOGGER.info("reload config: init new data host  start");
@@ -422,6 +427,7 @@ public final class ReloadConfig {
                     for (BackendConnection con : processor.getBackends().values()) {
                         if (con instanceof MySQLConnection) {
                             MySQLConnection mysqlCon = (MySQLConnection) con;
+                            LOGGER.info("mysqlCon.getPool() == " + mysqlCon.getPool() + " " + mysqlCon.getSchema() + " " + mysqlCon.getId());
                             if (mysqlCon.getPool() == ds) {
                                 if (con.isBorrowed()) {
                                     if (closeFrontCon) {

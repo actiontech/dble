@@ -31,7 +31,9 @@ public class UDistributeLock {
         if (renewThread != null) {
             renewThread.interrupt();
         }
-        ClusterUcoreSender.unlockKey(path, session);
+        if (session != null) {
+            ClusterUcoreSender.unlockKey(path, session);
+        }
     }
 
     public boolean acquire() {

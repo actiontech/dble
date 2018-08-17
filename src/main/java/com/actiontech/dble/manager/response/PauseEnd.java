@@ -43,7 +43,7 @@ public final class PauseEnd {
                 }
 
                 if (!DbleServer.getInstance().getMiManager().tryResume()) {
-                    c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "There is other connection is resume the dble");
+                    c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "No dataNode paused");
                     return;
                 }
 
@@ -53,7 +53,7 @@ public final class PauseEnd {
             }
         } else {
             if (!DbleServer.getInstance().getMiManager().tryResume()) {
-                c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "There is other connection is resume the dble");
+                c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "No dataNode paused");
                 return;
             }
         }

@@ -245,4 +245,7 @@ public class PauseDatanodeManager {
         return uDistributeLock;
     }
 
+    public Set<String> getDataNodes() {
+        return dataNodes;
+    }
 }

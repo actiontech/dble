@@ -34,6 +34,7 @@ public final class ManagerParseShow {
     public static final int SQL_LARGE = 19;
     public static final int SQL_RESULTSET = 20;
 
+
     public static final int THREADPOOL = 21;
     public static final int TIME_CURRENT = 22;
     public static final int TIME_STARTUP = 23;
@@ -67,6 +68,7 @@ public final class ManagerParseShow {
     public static final int COST_TIME = 51;
     public static final int THREAD_USED = 52;
     public static final int TABLE_ALGORITHM = 53;
+    public static final int PAUSE_DATANDE = 54;
 
     public static final Pattern PATTERN_FOR_TABLE_INFO = Pattern.compile("^(\\s*schema\\s*=\\s*)([a-zA-Z_0-9]+)" +
             "(\\s+and\\s+table\\s*=\\s*)([a-zA-Z_0-9]+)\\s*$", Pattern.CASE_INSENSITIVE);
@@ -604,6 +606,9 @@ public final class ManagerParseShow {
     private static int show2PCheck(String stmt, int offset) {
         if (stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
+                case 'A':
+                case 'a':
+                    return show2PaCheck(stmt, offset);
                 case 'R':
                 case 'r':
                     return show2PrCheck(stmt, offset);
@@ -1057,6 +1062,23 @@ public final class ManagerParseShow {
                     return OTHER;
                 }
                 return PROCESSOR;
+            }
+        }
+        return OTHER;
+    }
+
+
+    // SHOW @@PAUSE
+    private static int show2PaCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "USE".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            if ((c1 == 'U' || c1 == 'u') && (c2 == 'S' || c2 == 's') && (c3 == 'E' || c3 == 'e')) {
+                if (ParseUtil.isErrorTail(++offset, stmt)) {
+                    return OTHER;
+                }
+                return PAUSE_DATANDE;
             }
         }
         return OTHER;

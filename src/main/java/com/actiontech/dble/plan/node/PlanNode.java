@@ -544,6 +544,9 @@ public abstract class PlanNode {
      * setAlias for table
      */
     public PlanNode setAlias(String aliasName) {
+        if (aliasName != null && aliasName.charAt(0) == '`') {
+            aliasName = aliasName.substring(1, aliasName.length() - 1);
+        }
         this.alias = aliasName;
         return this;
     }

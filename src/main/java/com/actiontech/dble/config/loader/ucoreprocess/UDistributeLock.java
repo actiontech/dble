@@ -13,7 +13,7 @@ import java.util.concurrent.locks.LockSupport;
 public class UDistributeLock {
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(UDistributeLock.class);
-    private static final int UCORE_ERROR_RETURN_COUNT = 3;
+    private final int maxErrorCnt;
     private int errorCount = 0;
     private String path;
     private String value;
@@ -24,6 +24,13 @@ public class UDistributeLock {
     public UDistributeLock(String path, String value) {
         this.path = path;
         this.value = value;
+        this.maxErrorCnt = 3;
+    }
+
+    public UDistributeLock(String path, String value, int maxErrorCnt) {
+        this.path = path;
+        this.value = value;
+        this.maxErrorCnt = maxErrorCnt;
     }
 
 
@@ -39,21 +46,15 @@ public class UDistributeLock {
     public boolean acquire() {
         try {
             String sessionId = ClusterUcoreSender.lockKey(this.path, value);
-            int time = 0;
-            while ("".equals(sessionId)) {
-                LOGGER.info(" lockKey's sessionId is empty, server will retry for 10 seconds later ");
-                LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(10));
-                sessionId = ClusterUcoreSender.lockKey(this.path, value);
-                if (time++ == 5) {
-                    LOGGER.warn(" lockKey's sessionId is empty and have tried for 5 times, return false ");
-                    return false;
+            if ("".equals(sessionId)) {
+                errorCount++;
+                if (errorCount == maxErrorCnt) {
+                    throw new RuntimeException(" get lock from ucore error,ucore maybe offline ");
                 }
+                return false;
             }
             session = sessionId;
             errorCount = 0;
-            if ("".equals(sessionId)) {
-                return false;
-            }
             renewThread = new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -84,7 +85,7 @@ public class UDistributeLock {
         } catch (Exception e) {
             LOGGER.warn(" get lock from ucore error", e);
             errorCount++;
-            if (errorCount == UCORE_ERROR_RETURN_COUNT) {
+            if (errorCount == maxErrorCnt) {
                 throw new RuntimeException(" get lock from ucore error,ucore maybe offline ");
             }
             return false;

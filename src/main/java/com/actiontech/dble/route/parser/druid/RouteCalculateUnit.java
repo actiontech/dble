@@ -60,7 +60,7 @@ public class RouteCalculateUnit {
         } else if (value instanceof RangeValue) {
             columnValues.add(new ColumnRoutePair((RangeValue) value));
         } else if (value instanceof IsValue) {
-            columnValues.add(new ColumnRoutePair(true));
+            columnValues.add(new ColumnRoutePair((IsValue) value, true));
         } else {
             columnValues.add(new ColumnRoutePair(value.toString()));
         }

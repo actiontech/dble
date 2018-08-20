@@ -98,7 +98,7 @@ public class PartitionByDate extends AbstractPartitionAlgorithm implements RuleA
     @Override
     public Integer calculate(String columnValue) {
         try {
-            if (columnValue == null) {
+            if (columnValue == null || "null".equalsIgnoreCase(columnValue)) {
                 if (defaultNode >= 0) {
                     return defaultNode;
                 }

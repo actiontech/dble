@@ -5,7 +5,18 @@ package com.actiontech.dble.sqlengine.mpp;
  */
 public class IsValue {
 
-    public IsValue(Object[] list) {
 
+    private final Object[] valueList;
+
+
+    public IsValue(Object[] list) {
+        valueList = list;
     }
+
+
+
+    public Object[] getValueList() {
+        return valueList;
+    }
+
 }

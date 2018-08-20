@@ -5,6 +5,8 @@
 */
 package com.actiontech.dble.sqlengine.mpp;
 
+import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
+
 /**
  * column ->node index
  *
@@ -40,10 +42,16 @@ public class ColumnRoutePair {
         this.isRange = false;
     }
 
-    public ColumnRoutePair(boolean isRange) {
+    public ColumnRoutePair(IsValue value, boolean isRange) {
         super();
+        String stringValue = null;
+        if (value.getValueList() != null) {
+            if (value.getValueList()[0] instanceof SQLNullExpr) {
+                stringValue = "null";
+            }
+        }
+        this.colValue = stringValue;
         this.rangeValue = null;
-        this.colValue = null;
         this.isRange = isRange;
     }
 

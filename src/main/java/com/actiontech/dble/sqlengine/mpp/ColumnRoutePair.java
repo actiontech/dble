@@ -13,6 +13,7 @@ package com.actiontech.dble.sqlengine.mpp;
 public class ColumnRoutePair {
     public final String colValue;
     public final RangeValue rangeValue;
+    public final boolean isRange;
     private Integer nodeId;
 
     private int slot = -2;
@@ -29,12 +30,21 @@ public class ColumnRoutePair {
         super();
         this.colValue = colValue;
         this.rangeValue = null;
+        this.isRange = false;
     }
 
     public ColumnRoutePair(RangeValue rangeValue) {
         super();
         this.rangeValue = rangeValue;
         this.colValue = null;
+        this.isRange = false;
+    }
+
+    public ColumnRoutePair(boolean isRange) {
+        super();
+        this.rangeValue = null;
+        this.colValue = null;
+        this.isRange = isRange;
     }
 
     public Integer getNodeId() {

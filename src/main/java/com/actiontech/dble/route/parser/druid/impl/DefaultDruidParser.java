@@ -19,6 +19,7 @@ import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.sqlengine.mpp.IsValue;
 import com.actiontech.dble.sqlengine.mpp.RangeValue;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -164,7 +165,8 @@ public class DefaultDruidParser implements DruidParser {
                     } else if (operator.equals("=") || operator.toLowerCase().equals("in")) {
                         routeCalculateUnit.addShardingExpr(tableName, columnName, values.toArray());
                     } else if (operator.equals("IS")) {
-                        routeCalculateUnit.addShardingExpr(tableName, columnName, values.toArray());
+                        IsValue isValue = new IsValue(values.toArray());
+                        routeCalculateUnit.addShardingExpr(tableName, columnName, isValue);
                     }
                 }
             }

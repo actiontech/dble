@@ -248,7 +248,8 @@ public final class ManagerParse {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             if ((c1 == 'U' || c1 == 'u') &&
-                    (c2 == 'm' || c2 == 'M') && (c3 == 'e' || c3 == 'E')) {
+                    (c2 == 'm' || c2 == 'M') && (c3 == 'e' || c3 == 'E') &&
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
                 return RESUME;
             }
         }

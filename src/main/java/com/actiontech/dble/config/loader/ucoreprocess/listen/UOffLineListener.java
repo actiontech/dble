@@ -12,7 +12,7 @@ import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.config.loader.ucoreprocess.loader.UDdlChildResponse;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.BinlogPause;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.PauseInfo;
-import com.actiontech.dble.util.GlobalStatus;
+import com.actiontech.dble.server.status.OnlineLockStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -138,7 +138,7 @@ public class UOffLineListener implements Runnable {
     private boolean reInitOnlineStatus() {
         try {
             //release and renew lock
-            boolean init = GlobalStatus.getInstance().metaUcoreInit(false);
+            boolean init = OnlineLockStatus.getInstance().metaUcoreInit(false);
             if (init) {
                 LOGGER.info("rewrite server online status success");
             } else {

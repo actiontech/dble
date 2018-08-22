@@ -124,17 +124,23 @@ public final class ParseUtil {
         return sb.toString();
     }
 
-    public static long getSQLId(String stmt) {
-        int offset = stmt.indexOf('=');
-        if (offset != -1 && stmt.length() > ++offset) {
+    public static int getSQLId(String stmt, int start) {
+        int offset = start;
+        while (stmt.length() > offset) {
+            if (!isSpace(stmt.charAt(offset))) {
+                break;
+            }
+            offset++;
+        }
+        if (stmt.charAt(offset) == '=' && stmt.length() > ++offset) {
             String id = stmt.substring(offset).trim();
             try {
-                return Long.parseLong(id);
+                return Integer.parseInt(id);
             } catch (NumberFormatException e) {
                 //ignore error
             }
         }
-        return 0L;
+        return -1;
     }
 
     /**

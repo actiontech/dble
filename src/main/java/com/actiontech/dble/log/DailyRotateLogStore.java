@@ -8,6 +8,7 @@ package com.actiontech.dble.log;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.text.SimpleDateFormat;
@@ -29,6 +30,7 @@ public class DailyRotateLogStore {
     private String dateString;
     private long pos;
     private FileChannel channel;
+    private String fileHeader;
 
     /**
      * @param baseDir
@@ -36,7 +38,7 @@ public class DailyRotateLogStore {
      * @param suffix
      * @param rotateSize unit:M
      */
-    public DailyRotateLogStore(String baseDir, String baseName, String suffix, int rotateSize) {
+    public DailyRotateLogStore(String baseDir, String baseName, String suffix, int rotateSize, String fileHeader) {
         if (!baseDir.endsWith(FILE_SEPARATOR)) {
             baseDir += FILE_SEPARATOR;
         }
@@ -49,6 +51,7 @@ public class DailyRotateLogStore {
         this.cal = Calendar.getInstance();
         this.dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         this.dateString = dateFormat.format(new Date());
+        this.fileHeader = fileHeader;
     }
 
     public void open() throws IOException {
@@ -67,6 +70,7 @@ public class DailyRotateLogStore {
             indexRollOver();
         } else {
             channel = new RandomAccessFile(fileName, mode).getChannel();
+            writeFileHeader();
         }
     }
 
@@ -148,6 +152,7 @@ public class DailyRotateLogStore {
         file = new File(fileName);
         file.renameTo(target);
         channel = new RandomAccessFile(fileName, mode).getChannel();
+        writeFileHeader();
     }
 
     private String buildRollFileName(int index) {
@@ -168,5 +173,19 @@ public class DailyRotateLogStore {
         cal.set(Calendar.MILLISECOND, 0);
         cal.add(Calendar.DATE, 1);
         return cal.getTimeInMillis();
+    }
+
+    private void writeFileHeader() throws IOException {
+        if (fileHeader == null) {
+            return;
+        }
+        byte[] data;
+        try {
+            data = fileHeader.getBytes("utf-8");
+        } catch (UnsupportedEncodingException e) {
+            return;
+        }
+        ByteBuffer buffer = ByteBuffer.wrap(data);
+        write(buffer);
     }
 }

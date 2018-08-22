@@ -35,6 +35,8 @@ import com.actiontech.dble.net.mysql.WriteToBackendTask;
 import com.actiontech.dble.route.RouteService;
 import com.actiontech.dble.route.sequence.handler.*;
 import com.actiontech.dble.server.ServerConnectionFactory;
+import com.actiontech.dble.server.status.OnlineLockStatus;
+import com.actiontech.dble.server.status.SlowQueryLog;
 import com.actiontech.dble.server.util.GlobalTableUtil;
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.variables.VarsExtractorHandler;
@@ -44,7 +46,10 @@ import com.actiontech.dble.statistic.stat.SqlResultSizeRecorder;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import com.actiontech.dble.statistic.stat.UserStat;
 import com.actiontech.dble.statistic.stat.UserStatAnalyzer;
-import com.actiontech.dble.util.*;
+import com.actiontech.dble.util.ExecutorUtil;
+import com.actiontech.dble.util.KVPathUtil;
+import com.actiontech.dble.util.TimeUtil;
+import com.actiontech.dble.util.ZKUtils;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.curator.framework.CuratorFramework;
@@ -370,6 +375,10 @@ public final class DbleServer {
         for (int i = 0; i < backendProcessorCount; i++) {
             backendProcessors[i] = new NIOProcessor("backendProcessor" + i, bufferPool);
         }
+
+        if (system.getEnableSlowLog() == 1) {
+            SlowQueryLog.getInstance().setEnableSlowLog(true);
+        }
         if (aio) {
             int processorCount = frontProcessorCount + backendProcessorCount;
             LOGGER.info("using aio network handler ");
@@ -431,7 +440,7 @@ public final class DbleServer {
         userManager.initForLatest(config.getUsers(), system.getMaxCon());
 
         if (isUseUcore()) {
-            GlobalStatus.getInstance().metaUcoreInit(true);
+            OnlineLockStatus.getInstance().metaUcoreInit(true);
         }
         //initialized the cache service
         cacheService = new CacheService(this.systemVariables.isLowerCaseTableNames());
@@ -703,6 +712,10 @@ public final class DbleServer {
         return businessExecutor;
     }
 
+    public ExecutorService getWriteToBackendExecutor() {
+        return writeToBackendExecutor;
+    }
+
     public ExecutorService getBackendBusinessExecutor() {
         return backendBusinessExecutor;
     }
@@ -969,11 +982,11 @@ public final class DbleServer {
                     coordinatorLogEntry.getTxState() == TxState.TX_COMMITTING_STATE) {
                 needCommit = true;
             } else if (coordinatorLogEntry.getTxState() == TxState.TX_ROLLBACK_FAILED_STATE ||
-                    //don't konw prepare is successed or not ,should rollback
+                    //don't konw prepare is succeed or not ,should rollback
                     coordinatorLogEntry.getTxState() == TxState.TX_PREPARE_UNCONNECT_STATE ||
-                    // will rollbacking, may send but failed receiving,should rollback agagin
+                    // will rollbacking, may send but failed receiving,should rollback again
                     coordinatorLogEntry.getTxState() == TxState.TX_ROLLBACKING_STATE ||
-                    // will preparing, may send but failed receiving,should rollback agagin
+                    // will preparing, may send but failed receiving,should rollback again
                     coordinatorLogEntry.getTxState() == TxState.TX_PREPARING_STATE) {
                 needRollback = true;
 

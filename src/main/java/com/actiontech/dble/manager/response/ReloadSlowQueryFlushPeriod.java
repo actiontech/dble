@@ -8,18 +8,15 @@ package com.actiontech.dble.manager.response;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.statistic.stat.UserStat;
-import com.actiontech.dble.statistic.stat.UserStatAnalyzer;
+import com.actiontech.dble.server.status.SlowQueryLog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-
-public final class ReloadSqlSlowTime {
-    private ReloadSqlSlowTime() {
+public final class ReloadSlowQueryFlushPeriod {
+    private ReloadSlowQueryFlushPeriod() {
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ReloadSqlSlowTime.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReloadSlowQueryFlushPeriod.class);
 
     public static void execute(ManagerConnection c, int time) {
         if (time < 0) {
@@ -27,18 +24,14 @@ public final class ReloadSqlSlowTime {
             return;
         }
 
-        Map<String, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
-        for (UserStat userStat : statMap.values()) {
-            userStat.setSlowTime(time);
-        }
-
-        LOGGER.info(String.valueOf(c) + " reload @@sqlslow=" + time + " success by manager");
+        SlowQueryLog.getInstance().setFlushPeriod(time);
+        LOGGER.info(String.valueOf(c) + " reload @@slow_query.flushPeriod=" + time + " success by manager");
 
         OkPacket ok = new OkPacket();
         ok.setPacketId(1);
         ok.setAffectedRows(1);
         ok.setServerStatus(2);
-        ok.setMessage("reload @@sqlslow success".getBytes());
+        ok.setMessage("reload @@slow_query.flushPeriod success".getBytes());
         ok.write(c);
     }
 

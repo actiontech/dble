@@ -58,7 +58,7 @@ public final class ComplexQueryPlanUtil {
 
     private static String buildResultByEndHandler(Set<String> subQueries, List<ReferenceHandlerInfo> finalResult, DMLResponseHandler endHandler, Map<String, Integer> nameMap) {
         Map<String, ReferenceHandlerInfo> refMap = new HashMap<>();
-        String rootName = buildHandlerTree(endHandler, refMap, new HashMap<DMLResponseHandler, ReferenceHandlerInfo>(), nameMap, subQueries);
+        String rootName = buildHandlerTree(endHandler, refMap, new HashMap<>(), nameMap, subQueries);
         List<ReferenceHandlerInfo> resultList = new ArrayList<>(refMap.size());
         getDFSHandlers(refMap, rootName, resultList);
         for (int i = resultList.size() - 1; i >= 0; i--) {
@@ -82,7 +82,7 @@ public final class ComplexQueryPlanUtil {
             refMap.put(mergeNode, refInfo);
             for (BaseSelectHandler exeHandler : mergeList) {
                 RouteResultsetNode rrss = exeHandler.getRrss();
-                String dateNode = rrss.getName() + "." + rrss.getMultiplexNum();
+                String dateNode = rrss.getName() + "_" + rrss.getMultiplexNum();
                 refInfo.addChild(dateNode);
                 String type = "BASE SQL";
                 if (dependencies != null && dependencies.size() > 0) {
@@ -128,10 +128,10 @@ public final class ComplexQueryPlanUtil {
         if (nameMap.containsKey(handlerType)) {
             int number = nameMap.get(handlerType) + 1;
             nameMap.put(handlerType, number);
-            handlerName = handlerType.toLowerCase() + "." + number;
+            handlerName = handlerType.toLowerCase() + "_" + number;
         } else {
             nameMap.put(handlerType, 1);
-            handlerName = handlerType.toLowerCase() + ".1";
+            handlerName = handlerType.toLowerCase() + "_1";
         }
         return handlerName;
     }

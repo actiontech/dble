@@ -5,7 +5,11 @@
 
 package com.actiontech.dble.server.trace;
 
-public class TraceRecord {
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class TraceRecord implements Cloneable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TraceRecord.class);
     private final String dataNode;
     private final String ref;
     private long timestamp;
@@ -31,4 +35,14 @@ public class TraceRecord {
         return timestamp;
     }
 
+    @Override
+    public Object clone() {
+        TraceRecord obj = null;
+        try {
+            obj = (TraceRecord) super.clone();
+        } catch (Exception e) {
+            LOGGER.warn("clone TraceRecord error", e);
+        }
+        return obj;
+    }
 }

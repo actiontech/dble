@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class TraceResult {
+public class TraceResult implements Cloneable {
     private static final Logger LOGGER = LoggerFactory.getLogger(TraceResult.class);
     private long veryStartPrepare;
     private long veryStart;
@@ -85,26 +85,39 @@ public class TraceResult {
     public void setAdtCommitEnd(TraceRecord adtCommitEnd) {
         this.adtCommitEnd = adtCommitEnd;
     }
-    public ConcurrentMap<String, Boolean> getConnFlagMap() {
-        return connFlagMap;
+
+    public synchronized Boolean addToConnFlagMap(String item) {
+        return connFlagMap.putIfAbsent(item, true);
     }
 
-
-    public ConcurrentMap<ResponseHandler, Map<MySQLConnection, TraceRecord>> getConnReceivedMap() {
-        return connReceivedMap;
+    public synchronized void clearConnFlagMap() {
+        connFlagMap.clear();
     }
 
-    public ConcurrentMap<ResponseHandler, Map<MySQLConnection, TraceRecord>> getConnFinishedMap() {
-        return connFinishedMap;
+    public synchronized void addToConnReceivedMap(ResponseHandler responseHandler, Map<MySQLConnection, TraceRecord> connMap) {
+        Map<MySQLConnection, TraceRecord> existReceivedMap = connReceivedMap.putIfAbsent(responseHandler, connMap);
+        if (existReceivedMap != null) {
+            existReceivedMap.putAll(connMap);
+        }
     }
 
-
-    public ConcurrentMap<DMLResponseHandler, TraceRecord> getRecordStartMap() {
-        return recordStartMap;
+    public synchronized void clearConnReceivedMap() {
+        connReceivedMap.clear();
     }
 
-    public ConcurrentMap<DMLResponseHandler, TraceRecord> getRecordEndMap() {
-        return recordEndMap;
+    public synchronized void addToConnFinishedMap(ResponseHandler responseHandler, Map<MySQLConnection, TraceRecord> connMap) {
+        Map<MySQLConnection, TraceRecord> existReceivedMap = connFinishedMap.putIfAbsent(responseHandler, connMap);
+        if (existReceivedMap != null) {
+            existReceivedMap.putAll(connMap);
+        }
+    }
+
+    public synchronized void addToRecordStartMap(DMLResponseHandler handler, TraceRecord traceRecord) {
+        recordStartMap.putIfAbsent(handler, traceRecord);
+    }
+
+    public synchronized void addToRecordEndMap(DMLResponseHandler handler, TraceRecord traceRecord) {
+        recordEndMap.putIfAbsent(handler, traceRecord);
     }
 
     public void setVeryEnd(long veryEnd) {
@@ -148,7 +161,7 @@ public class TraceResult {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("start genTraceResult");
         }
-        if (veryEnd == 0 || connFlagMap.size() == 0 || connReceivedMap.size() != connFinishedMap.size() || recordStartMap.size() != recordEndMap.size()) {
+        if (!isCompleted()) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("collect info not in pairs,veryEnd:" + veryEnd + ",connFlagMap.size:" + connFlagMap.size() +
                         ",connReceivedMap.size:" + connReceivedMap.size() + ",connFinishedMap.size:" + connFinishedMap.size() +
@@ -157,8 +170,8 @@ public class TraceResult {
             return null;
         }
         List<String[]> lst = new ArrayList<>();
-        lst.add(genTraceRecord("Read SQL", requestStart.getTimestamp(), parseStart.getTimestamp()));
-        lst.add(genTraceRecord("Parse SQL", parseStart.getTimestamp(), routeStart.getTimestamp()));
+        lst.add(genTraceRecord("Read_SQL", requestStart.getTimestamp(), parseStart.getTimestamp()));
+        lst.add(genTraceRecord("Parse_SQL", parseStart.getTimestamp(), routeStart.getTimestamp()));
         if (simpleHandler != null) {
             genSimpleResults(lst);
         } else if (builder != null) {
@@ -169,7 +182,7 @@ public class TraceResult {
             }
             return null;
         }
-        lst.add(genTraceRecord("Over All", veryStart, veryEnd));
+        lst.add(genTraceRecord("Over_All", veryStart, veryEnd));
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("end genTraceResult");
         }
@@ -178,8 +191,8 @@ public class TraceResult {
     }
 
     private boolean genComplexQueryResults(List<String[]> lst) {
-        lst.add(genTraceRecord("Try Route Calculation", routeStart.getTimestamp(), preExecuteStart.getTimestamp()));
-        lst.add(genTraceRecord("Try to Optimize", preExecuteStart.getTimestamp(), preExecuteEnd.getTimestamp()));
+        lst.add(genTraceRecord("Try_Route_Calculation", routeStart.getTimestamp(), preExecuteStart.getTimestamp()));
+        lst.add(genTraceRecord("Try_to_Optimize", preExecuteStart.getTimestamp(), preExecuteEnd.getTimestamp()));
         List<ReferenceHandlerInfo> results = ComplexQueryPlanUtil.getComplexQueryResult(builder);
         long lastChildFinished = preExecuteEnd.getTimestamp();
         for (ReferenceHandlerInfo result : results) {
@@ -188,15 +201,13 @@ public class TraceResult {
                 Map<MySQLConnection, TraceRecord> fetchStartRecordMap = connReceivedMap.get(handler);
                 Map<MySQLConnection, TraceRecord> fetchEndRecordMap = connFinishedMap.get(handler);
                 if (fetchStartRecordMap == null || fetchEndRecordMap == null || fetchStartRecordMap.size() != 1 || fetchEndRecordMap.size() != 1) {
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("collect info not in pairs for connection");
-                    }
+                    printNoResultDebug(fetchStartRecordMap, fetchEndRecordMap);
                     return true;
                 }
                 TraceRecord fetchStartRecord = fetchStartRecordMap.values().iterator().next();
                 TraceRecord fetchEndRecord = fetchEndRecordMap.values().iterator().next();
                 if (!result.isNestLoopQuery()) {
-                    lst.add(genTraceRecord("Execute SQL", lastChildFinished, fetchStartRecord.getTimestamp(), result.getName(), result.getRefOrSQL()));
+                    lst.add(genTraceRecord("Execute_SQL", lastChildFinished, fetchStartRecord.getTimestamp(), result.getName(), result.getRefOrSQL()));
                 } else {
                     TraceRecord handlerStart = recordStartMap.get(handler);
                     TraceRecord handlerEnd = recordEndMap.get(handler);
@@ -206,10 +217,10 @@ public class TraceResult {
                         }
                         return true;
                     }
-                    lst.add(genTraceRecord("Generate New Query", lastChildFinished, handlerStart.getTimestamp()));
-                    lst.add(genTraceRecord("Execute SQL", handlerStart.getTimestamp(), handlerEnd.getTimestamp(), result.getName(), result.getRefOrSQL()));
+                    lst.add(genTraceRecord("Generate_New_Query", lastChildFinished, handlerStart.getTimestamp()));
+                    lst.add(genTraceRecord("Execute_SQL", handlerStart.getTimestamp(), handlerEnd.getTimestamp(), result.getName(), result.getRefOrSQL()));
                 }
-                lst.add(genTraceRecord("Fetch result", fetchStartRecord.getTimestamp(), fetchEndRecord.getTimestamp(), result.getName(), result.getRefOrSQL()));
+                lst.add(genTraceRecord("Fetch_result", fetchStartRecord.getTimestamp(), fetchEndRecord.getTimestamp(), result.getName(), result.getRefOrSQL()));
             } else if (handler instanceof OutputHandler) {
                 TraceRecord startWrite = recordStartMap.get(handler);
                 if (startWrite == null) {
@@ -218,7 +229,7 @@ public class TraceResult {
                     }
                     return true;
                 }
-                lst.add(genTraceRecord("Write to Client", startWrite.getTimestamp(), veryEnd));
+                lst.add(genTraceRecord("Write_to_Client", startWrite.getTimestamp(), veryEnd));
             } else {
                 TraceRecord handlerStart = recordStartMap.get(handler);
                 TraceRecord handlerEnd = recordEndMap.get(handler);
@@ -237,9 +248,21 @@ public class TraceResult {
         return false;
     }
 
+    private void printNoResultDebug(Map<MySQLConnection, TraceRecord> fetchStartRecordMap, Map<MySQLConnection, TraceRecord> fetchEndRecordMap) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("collect info not in pairs for connection");
+            if (fetchStartRecordMap != null) {
+                LOGGER.debug("fetchStartRecordMap size is " + fetchStartRecordMap.size());
+            }
+            if (fetchEndRecordMap != null) {
+                LOGGER.debug("fetchEndRecordMap size is " + fetchEndRecordMap.size());
+            }
+        }
+    }
+
     private void genSimpleResults(List<String[]> lst) {
-        lst.add(genTraceRecord("Route Calculation", routeStart.getTimestamp(), preExecuteStart.getTimestamp()));
-        lst.add(genTraceRecord("Prepare to Push", preExecuteStart.getTimestamp(), preExecuteEnd.getTimestamp()));
+        lst.add(genTraceRecord("Route_Calculation", routeStart.getTimestamp(), preExecuteStart.getTimestamp()));
+        lst.add(genTraceRecord("Prepare_to_Push", preExecuteStart.getTimestamp(), preExecuteEnd.getTimestamp()));
         Map<MySQLConnection, TraceRecord> connFetchStartMap = connReceivedMap.get(simpleHandler);
         Map<MySQLConnection, TraceRecord> connFetchEndMap = connFinishedMap.get(simpleHandler);
         List<String[]> executeList = new ArrayList<>(connFetchStartMap.size());
@@ -249,18 +272,18 @@ public class TraceResult {
         for (Map.Entry<MySQLConnection, TraceRecord> fetchStart : connFetchStartMap.entrySet()) {
             TraceRecord fetchStartRecord = fetchStart.getValue();
             minFetchStart = Math.min(minFetchStart, fetchStartRecord.getTimestamp());
-            executeList.add(genTraceRecord("Execute SQL", preExecuteEnd.getTimestamp(), fetchStartRecord.getTimestamp(), fetchStartRecord.getDataNode(), fetchStartRecord.getRef()));
+            executeList.add(genTraceRecord("Execute_SQL", preExecuteEnd.getTimestamp(), fetchStartRecord.getTimestamp(), fetchStartRecord.getDataNode(), fetchStartRecord.getRef()));
             TraceRecord fetchEndRecord = connFetchEndMap.get(fetchStart.getKey());
-            fetchList.add(genTraceRecord("Fetch result", fetchStartRecord.getTimestamp(), fetchEndRecord.getTimestamp(), fetchStartRecord.getDataNode(), fetchStartRecord.getRef()));
+            fetchList.add(genTraceRecord("Fetch_result", fetchStartRecord.getTimestamp(), fetchEndRecord.getTimestamp(), fetchStartRecord.getDataNode(), fetchStartRecord.getRef()));
             maxFetchEnd = Math.max(maxFetchEnd, fetchEndRecord.getTimestamp());
         }
         lst.addAll(executeList);
         lst.addAll(fetchList);
         if (adtCommitBegin != null) {
-            lst.add(genTraceRecord("Distributed Transaction Prepare", maxFetchEnd, adtCommitBegin.getTimestamp()));
-            lst.add(genTraceRecord("Distributed Transaction Commit", adtCommitBegin.getTimestamp(), adtCommitEnd.getTimestamp()));
+            lst.add(genTraceRecord("Distributed_Transaction_Prepare", maxFetchEnd, adtCommitBegin.getTimestamp()));
+            lst.add(genTraceRecord("Distributed_Transaction_Commit", adtCommitBegin.getTimestamp(), adtCommitEnd.getTimestamp()));
         }
-        lst.add(genTraceRecord("Write to Client", minFetchStart, veryEnd));
+        lst.add(genTraceRecord("Write_to_Client", minFetchStart, veryEnd));
     }
 
     private String[] genTraceRecord(String operation, long start, long end) {
@@ -281,5 +304,167 @@ public class TraceResult {
     private String nanoToMilliSecond(long nano) {
         double milliSecond = (double) nano / 1000000;
         return String.valueOf(milliSecond);
+    }
+
+    public boolean isCompleted() {
+        return veryStart != 0 && veryEnd != 0 && connFlagMap.size() != 0 && connReceivedMap.size() == connFinishedMap.size() && recordStartMap.size() == recordEndMap.size();
+    }
+
+    public List<String[]> genLogResult() {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("start genLogResult");
+        }
+        if (!isCompleted()) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("collect info not in pairs,veryEnd:" + veryEnd + ",connFlagMap.size:" + connFlagMap.size() +
+                        ",connReceivedMap.size:" + connReceivedMap.size() + ",connFinishedMap.size:" + connFinishedMap.size() +
+                        ",recordStartMap.size:" + connReceivedMap.size() + ",recordEndMap.size:" + connFinishedMap.size());
+            }
+            return null;
+        }
+        List<String[]> lst = new ArrayList<>();
+        lst.add(genLogRecord("Read_SQL", requestStart.getTimestamp(), parseStart.getTimestamp()));
+        lst.add(genLogRecord("Prepare_Push", parseStart.getTimestamp(), preExecuteEnd.getTimestamp()));
+        if (simpleHandler != null) {
+            genSimpleLogs(lst);
+        } else if (builder != null) {
+            if (genComplexQueryLogs(lst)) return null;
+        } else {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("not support trace this query");
+            }
+            return null;
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("end genLogResult");
+        }
+        return lst;
+    }
+
+
+    private boolean genComplexQueryLogs(List<String[]> lst) {
+        List<ReferenceHandlerInfo> results = ComplexQueryPlanUtil.getComplexQueryResult(builder);
+        long lastChildFinished = preExecuteEnd.getTimestamp();
+        for (ReferenceHandlerInfo result : results) {
+            DMLResponseHandler handler = result.getHandler();
+            if (handler instanceof BaseSelectHandler) {
+                Map<MySQLConnection, TraceRecord> fetchStartRecordMap = connReceivedMap.get(handler);
+                Map<MySQLConnection, TraceRecord> fetchEndRecordMap = connFinishedMap.get(handler);
+                if (fetchStartRecordMap == null || fetchEndRecordMap == null || fetchStartRecordMap.size() != 1 || fetchEndRecordMap.size() != 1) {
+                    printNoResultDebug(fetchStartRecordMap, fetchEndRecordMap);
+                    return true;
+                }
+                TraceRecord fetchStartRecord = fetchStartRecordMap.values().iterator().next();
+                TraceRecord fetchEndRecord = fetchEndRecordMap.values().iterator().next();
+                if (!result.isNestLoopQuery()) {
+                    lst.add(genLogRecord(result.getName() + "_First_Result_Fetch", lastChildFinished, fetchStartRecord.getTimestamp()));
+                } else {
+                    TraceRecord handlerStart = recordStartMap.get(handler);
+                    TraceRecord handlerEnd = recordEndMap.get(handler);
+                    if (handlerStart == null || handlerEnd == null) {
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("collect info not in pairs for handler" + handler);
+                        }
+                        return true;
+                    }
+                    lst.add(genLogRecord("Generate_New_Query", lastChildFinished, handlerStart.getTimestamp()));
+                    lst.add(genLogRecord(result.getName() + "_First_Result_Fetch", handlerStart.getTimestamp(), handlerEnd.getTimestamp()));
+                }
+                lst.add(genLogRecord(result.getName() + "_Last_Result_Fetch", fetchStartRecord.getTimestamp(), fetchEndRecord.getTimestamp()));
+            } else if (handler instanceof OutputHandler) {
+                TraceRecord startWrite = recordStartMap.get(handler);
+                if (startWrite == null) {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("collect info not in pairs for OutputHandler");
+                    }
+                    return true;
+                }
+                lst.add(genLogRecord("Write_Client", startWrite.getTimestamp(), veryEnd));
+            } else {
+                TraceRecord handlerStart = recordStartMap.get(handler);
+                TraceRecord handlerEnd = recordEndMap.get(handler);
+                if (handlerStart == null || handlerEnd == null) {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("collect info not in pairs for handler" + handler);
+                    }
+                    return true;
+                }
+                if (handler.getNextHandler() == null) {
+                    lastChildFinished = Math.max(lastChildFinished, handlerEnd.getTimestamp());
+                }
+            }
+        }
+        return false;
+    }
+
+    private void genSimpleLogs(List<String[]> lst) {
+        Map<MySQLConnection, TraceRecord> connFetchStartMap = connReceivedMap.get(simpleHandler);
+        Map<MySQLConnection, TraceRecord> connFetchEndMap = connFinishedMap.get(simpleHandler);
+        List<String[]> executeList = new ArrayList<>(connFetchStartMap.size());
+        List<String[]> fetchList = new ArrayList<>(connFetchStartMap.size());
+        long minFetchStart = Long.MAX_VALUE;
+        long maxFetchEnd = 0;
+        for (Map.Entry<MySQLConnection, TraceRecord> fetchStart : connFetchStartMap.entrySet()) {
+            TraceRecord fetchStartRecord = fetchStart.getValue();
+            minFetchStart = Math.min(minFetchStart, fetchStartRecord.getTimestamp());
+            executeList.add(genLogRecord(fetchStartRecord.getDataNode() + "_First_Result_Fetch", preExecuteEnd.getTimestamp(), fetchStartRecord.getTimestamp()));
+            TraceRecord fetchEndRecord = connFetchEndMap.get(fetchStart.getKey());
+            fetchList.add(genLogRecord(fetchStartRecord.getDataNode() + "_Last_Result_Fetch", fetchStartRecord.getTimestamp(), fetchEndRecord.getTimestamp()));
+            maxFetchEnd = Math.max(maxFetchEnd, fetchEndRecord.getTimestamp());
+        }
+        lst.addAll(executeList);
+        lst.addAll(fetchList);
+        lst.add(genLogRecord("Write_Client", minFetchStart, veryEnd));
+    }
+
+    private String[] genLogRecord(String operation, long start, long end) {
+        String[] readQuery = new String[2];
+        readQuery[0] = operation;
+        readQuery[1] = nanoToSecond(end - start);
+        return readQuery;
+    }
+
+    public double getOverAllMilliSecond() {
+        return (double) (veryEnd - veryStart) / 1000000;
+    }
+
+    private String nanoToSecond(long nano) {
+        double milliSecond = (double) nano / 1000000000;
+        return String.format("%.6f", milliSecond);
+    }
+
+    public String getOverAllSecond() {
+        return nanoToSecond(veryEnd - veryStart);
+    }
+
+    @Override
+    public Object clone() {
+        TraceResult tr = null;
+        try {
+            tr = (TraceResult) super.clone();
+            tr.simpleHandler = this.simpleHandler;
+            tr.builder = this.builder;
+            tr.connFlagMap = new ConcurrentHashMap<>();
+            tr.connFlagMap.putAll(this.connFlagMap);
+            tr.connReceivedMap = new ConcurrentHashMap<>();
+            for (Map.Entry<ResponseHandler, Map<MySQLConnection, TraceRecord>> item : connReceivedMap.entrySet()) {
+                Map<MySQLConnection, TraceRecord> connMap = new ConcurrentHashMap<>();
+                connMap.putAll(item.getValue());
+                tr.connReceivedMap.put(item.getKey(), connMap);
+            }
+            tr.connFinishedMap = new ConcurrentHashMap<>();
+            for (Map.Entry<ResponseHandler, Map<MySQLConnection, TraceRecord>> item : connFinishedMap.entrySet()) {
+                Map<MySQLConnection, TraceRecord> connMap = new ConcurrentHashMap<>();
+                connMap.putAll(item.getValue());
+                tr.connFinishedMap.put(item.getKey(), connMap);
+            }
+            tr.recordStartMap = new ConcurrentHashMap<>();
+            tr.recordStartMap.putAll(this.recordStartMap);
+            tr.recordEndMap = new ConcurrentHashMap<>();
+            tr.recordEndMap.putAll(this.recordEndMap);
+        } catch (Exception e) {
+            LOGGER.warn("clone TraceResult error", e);
+        }
+        return tr;
     }
 }

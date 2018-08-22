@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class UserStat {
 
-    private long sqlSlowTime = 100;
+    private volatile int sqlSlowTime = DbleServer.getInstance().getConfig().getSystem().getSqlSlowTime();
 
     private String user;
 
@@ -102,7 +102,7 @@ public class UserStat {
     }
 
 
-    public void setSlowTime(long time) {
+    public void setSlowTime(int time) {
         this.sqlSlowTime = time;
         this.sqlRecorder.clear();
     }

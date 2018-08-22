@@ -2,6 +2,7 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.*;
+import com.actiontech.dble.config.model.UserConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.server.variables.SystemVariables;
@@ -11,8 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by szf on 2018/8/6.
@@ -81,6 +81,40 @@ public final class DryRun {
             } else {
                 list.add(new ErrorInfo("BACKEND", "WARNING", "Hava dataHost without writeHost"));
             }
+        }
+
+
+        Map<String, UserConfig> userMap = loader.getUsers();
+        if (userMap != null && userMap.size() > 0) {
+            Set<String> schema = new HashSet<String>();
+            boolean hasManagerUser = false;
+            boolean hasServerUser = false;
+            for (UserConfig user : userMap.values()) {
+                if (user.isManager()) {
+                    hasManagerUser = true;
+                    break;
+                }
+                hasServerUser = true;
+                schema.addAll(user.getSchemas());
+            }
+
+            if (!hasServerUser) {
+                list.add(new ErrorInfo("XML", "ERROR", "There is No Server User"));
+            } else if (schema.size() <= loader.getSchemas().size()) {
+                for (String schemaName : loader.getSchemas().keySet()) {
+                    if (!schema.contains(schemaName)) {
+                        list.add(new ErrorInfo("XML", "WARNING", "Schema:" + schemaName + " has no user"));
+                    }
+                }
+            }
+
+            if (!hasManagerUser) {
+                list.add(new ErrorInfo("XML", "ERROR", "There is No Manager User"));
+            }
+
+
+        } else {
+            list.add(new ErrorInfo("XML", "ERROR", "No user in server.xml"));
         }
 
 

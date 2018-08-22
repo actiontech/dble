@@ -92,7 +92,7 @@ public final class DryRun {
             for (UserConfig user : userMap.values()) {
                 if (user.isManager()) {
                     hasManagerUser = true;
-                    break;
+                    continue;
                 }
                 hasServerUser = true;
                 schema.addAll(user.getSchemas());

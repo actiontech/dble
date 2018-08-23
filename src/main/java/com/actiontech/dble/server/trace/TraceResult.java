@@ -439,7 +439,7 @@ public class TraceResult implements Cloneable {
 
     @Override
     public Object clone() {
-        TraceResult tr = null;
+        TraceResult tr;
         try {
             tr = (TraceResult) super.clone();
             tr.simpleHandler = this.simpleHandler;
@@ -462,9 +462,10 @@ public class TraceResult implements Cloneable {
             tr.recordStartMap.putAll(this.recordStartMap);
             tr.recordEndMap = new ConcurrentHashMap<>();
             tr.recordEndMap.putAll(this.recordEndMap);
+            return tr;
         } catch (Exception e) {
             LOGGER.warn("clone TraceResult error", e);
+            throw new AssertionError(e.getMessage());
         }
-        return tr;
     }
 }

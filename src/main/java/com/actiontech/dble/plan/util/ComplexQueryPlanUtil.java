@@ -58,7 +58,7 @@ public final class ComplexQueryPlanUtil {
 
     private static String buildResultByEndHandler(Set<String> subQueries, List<ReferenceHandlerInfo> finalResult, DMLResponseHandler endHandler, Map<String, Integer> nameMap) {
         Map<String, ReferenceHandlerInfo> refMap = new HashMap<>();
-        String rootName = buildHandlerTree(endHandler, refMap, new HashMap<>(), nameMap, subQueries);
+        String rootName = buildHandlerTree(endHandler, refMap, new HashMap<DMLResponseHandler, ReferenceHandlerInfo>(), nameMap, subQueries);
         List<ReferenceHandlerInfo> resultList = new ArrayList<>(refMap.size());
         getDFSHandlers(refMap, rootName, resultList);
         for (int i = resultList.size() - 1; i >= 0; i--) {

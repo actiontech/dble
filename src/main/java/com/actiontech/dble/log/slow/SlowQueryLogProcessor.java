@@ -57,8 +57,10 @@ public class SlowQueryLogProcessor extends Thread {
                 }
                 writeLog(log);
                 logSize++;
-                if ((logSize - lastLogSize) % SlowQueryLog.getInstance().getFlushSize() == 0) {
-                    flushLog();
+                synchronized (this) {
+                    if ((logSize - lastLogSize) % SlowQueryLog.getInstance().getFlushSize() == 0) {
+                        flushLog();
+                    }
                 }
             }
             // disable slow_query_log, end task
@@ -88,7 +90,7 @@ public class SlowQueryLogProcessor extends Thread {
         store.write(buffer);
     }
 
-    private synchronized void flushLog() {
+    private void flushLog() {
         if (logSize == lastLogSize) {
             return;
         }
@@ -105,7 +107,9 @@ public class SlowQueryLogProcessor extends Thread {
         return new Runnable() {
             @Override
             public void run() {
-                flushLog();
+                synchronized (this) {
+                    flushLog();
+                }
             }
         };
     }

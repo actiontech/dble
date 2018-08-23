@@ -37,12 +37,13 @@ public class TraceRecord implements Cloneable {
 
     @Override
     public Object clone() {
-        TraceRecord obj = null;
+        TraceRecord obj;
         try {
             obj = (TraceRecord) super.clone();
+            return obj;
         } catch (Exception e) {
             LOGGER.warn("clone TraceRecord error", e);
+            throw new AssertionError(e.getMessage());
         }
-        return obj;
     }
 }

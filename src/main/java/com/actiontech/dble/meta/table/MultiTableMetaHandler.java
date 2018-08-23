@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -25,6 +26,7 @@ public class MultiTableMetaHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiTableMetaHandler.class);
     private AtomicInteger shardTableCnt;
     private AtomicInteger singleTableCnt;
+    private AtomicBoolean countDownFlag = new AtomicBoolean(false);
     private String schema;
     private SchemaConfig config;
     private SchemaMetaHandler schemaMetaHandler;
@@ -103,7 +105,9 @@ public class MultiTableMetaHandler {
 
     private void countDown() {
         if (shardTableCnt.get() == 0 && singleTableCnt.get() == 0) {
-            schemaMetaHandler.countDown();
+            if (countDownFlag.compareAndSet(false, true)) {
+                schemaMetaHandler.countDown();
+            }
         }
     }
 

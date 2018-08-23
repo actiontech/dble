@@ -32,6 +32,8 @@ public final class ManagerParse {
     public static final int RESUME = 15;
     public static final int CREATE_DB = 16;
     public static final int DRY_RUN = 17;
+    public static final int ENABLE = 18;
+    public static final int DISABLE = 19;
 
     public static int parse(String stmt) {
         for (int i = 0; i < stmt.length(); i++) {
@@ -48,6 +50,9 @@ public final class ManagerParse {
                 case 'D':
                 case 'd':
                     return dCheck(stmt, i);
+                case 'E':
+                case 'e':
+                    return eCheck(stmt, i);
                 case 'F':
                 case 'f':
                     return fCheck(stmt, i);
@@ -87,12 +92,44 @@ public final class ManagerParse {
     }
 
     private static int dCheck(String stmt, int offset) {
-        String thePart = stmt.substring(offset).toUpperCase();
+        if (stmt.length() > ++offset) {
+            switch (stmt.charAt(offset)) {
+                case 'R':
+                case 'r':
+                    return dryRunCheck(stmt);
+                case 'I':
+                case 'i':
+                    return disCheck(stmt);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int dryRunCheck(String stmt) {
+        String thePart = stmt.toUpperCase();
         if (thePart.startsWith("DRYRUN")) {
             return DRY_RUN;
         } else {
             return OTHER;
         }
+    }
+
+    private static int disCheck(String stmt) {
+        String thePart = stmt.toUpperCase();
+        if (thePart.startsWith("DISABLE") && stmt.length() > 7 && ParseUtil.isSpace(stmt.charAt(7))) {
+            return DISABLE;
+        }
+        return OTHER;
+    }
+
+    private static int eCheck(String stmt, int offset) {
+        String thePart = stmt.substring(offset).toUpperCase();
+        if (thePart.startsWith("ENABLE") && stmt.length() > 6 && ParseUtil.isSpace(stmt.charAt(6))) {
+            return ENABLE;
+        }
+        return OTHER;
     }
 
     // config file check

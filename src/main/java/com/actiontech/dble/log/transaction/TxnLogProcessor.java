@@ -35,7 +35,7 @@ public class TxnLogProcessor extends Thread {
         this.queue = new LinkedBlockingQueue<>(256);
         ServerConfig config = DbleServer.getInstance().getConfig();
         SystemConfig systemConfig = config.getSystem();
-        this.store = new DailyRotateLogStore(systemConfig.getTransactionLogBaseDir(), systemConfig.getTransactionLogBaseName(), "log", systemConfig.getTransactionRatateSize());
+        this.store = new DailyRotateLogStore(systemConfig.getTransactionLogBaseDir(), systemConfig.getTransactionLogBaseName(), "log", systemConfig.getTransactionRatateSize(), null);
     }
 
     @Override

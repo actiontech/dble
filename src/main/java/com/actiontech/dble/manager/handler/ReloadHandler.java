@@ -30,7 +30,16 @@ public final class ReloadHandler {
                 ReloadUserStat.execute(c);
                 break;
             case ManagerParseReload.SQL_SLOW:
-                ReloadSqlSlowTime.execute(c, ParseUtil.getSQLId(stmt));
+                ReloadSqlSlowTime.execute(c, ParseUtil.getSQLId(stmt, rs >>> SHIFT));
+                break;
+            case ManagerParseReload.SLOW_QUERY_TIME:
+                ReloadSlowQueryTime.execute(c, ParseUtil.getSQLId(stmt, rs >>> SHIFT));
+                break;
+            case ManagerParseReload.SLOW_QUERY_FLUSH_PERIOD:
+                ReloadSlowQueryFlushPeriod.execute(c, ParseUtil.getSQLId(stmt, rs >>> SHIFT));
+                break;
+            case ManagerParseReload.SLOW_QUERY_FLUSH_SIZE:
+                ReloadSlowQueryFlushSize.execute(c, ParseUtil.getSQLId(stmt, rs >>> SHIFT));
                 break;
             case ManagerParseReload.QUERY_CF:
                 String filter = ParseUtil.parseString(stmt);

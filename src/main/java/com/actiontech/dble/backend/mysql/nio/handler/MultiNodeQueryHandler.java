@@ -331,10 +331,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     return;
                 }
             }
-            session.setResponseTime();
             session.multiStatementPacket(eof, packetId);
             boolean multiStatementFlag = session.getIsMultiStatement().get();
-            doSqlStat();
             writeEofResult(eof, source);
             session.multiStatementNextSql(multiStatementFlag);
         }
@@ -463,6 +461,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
         byteBuffer = source.writeToBuffer(eof, byteBuffer);
         session.setResponseTime();
+        doSqlStat();
         source.write(byteBuffer);
     }
 

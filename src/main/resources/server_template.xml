@@ -14,11 +14,14 @@
         <!--<property name="bindIp">0.0.0.0</property>-->
         <!-- property name="serverPort">8066</property> -->
         <!--<property name="managerPort">9066</property> -->
+        <!--<property name="managerPort">maxCon</property> -->
         <!-- <property name="processors">4</property>-->
         <!-- <property name="backendProcessors">12</property>-->
         <!--<property name="processorExecutor">4</property> -->
         <!--<property name="backendProcessorExecutor">12</property> -->
         <!--<property name="complexExecutor">8</property> -->
+        <!--<property name="writeToBackendExecutor">4</property> -->
+
         <!--<property name="fakeMySQLVersion">5.6.20</property>-->
         <property name="sequnceHandlerType">2</property>
         <!-- serverBacklog size,default 2048-->
@@ -33,6 +36,7 @@
         <!--<property name="useThreadUsageStat">0</property>-->
         <!--<property name="usePerformanceMode">0</property>-->
 
+        <!-- query time cost statistics-->
         <!--<property name="useCostTimeStat">0</property>-->
         <!--<property name="maxCostStatSize">100</property>-->
         <!--<property name="costSamplePercent">1</property>-->
@@ -65,7 +69,7 @@
         <property name="recordTxn">0</property>
         <!--<property name="transactionLogBaseDir">/txlogs</property>-->
         <!--<property name="transactionLogBaseName">server-tx</property>-->
-        <!--<property name="transactionRatateSize">16</property>&lt;!&ndash; unit M &ndash;&gt;-->
+        <!--<property name="transactionRatateSize">16</property>--><!-- unit M -->
 
         <!-- XA transaction -->
         <!-- use XA transaction ,if the mysql service crash,the unfinished XA commit/rollback will retry for several times
@@ -92,6 +96,7 @@
         <property name="bufferPoolChunkSize ">4096</property>
         <property name="bufferPoolPageNumber ">512</property>
         <property name="bufferPoolPageSize ">2097152</property>
+        <!--<property name="bufferPoolPageSize ">mappedFileSize</property>-->
 
         <!-- sql statistics-->
         <!-- 1 means use SQL statistics, 0 means not -->
@@ -111,11 +116,17 @@
         <!--<property name="frontSocketSoSndbuf">4194304</property>-->
         <!--<property name="frontSocketNoDelay ">1</property>-->
 
+        <!-- for join tmp results -->
+        <!--<property name="mergeQueueSize ">1024</property>-->
+        <!--<property name="orderByQueueSize ">1024</property>-->
+        <!--<property name="joinQueueSize ">1024</property>-->
 
-        <!-- query time cost statistics-->
-        <!--<property name="costTimeStat ">0</property>-->
-        <!--<property name="maxCostStatSize">100</property>-->
-        <!--<property name="costSamplePercent ">1</property>-->
+        <property name="enableSlowLog ">0</property>
+        <!--<property name="slowLogBaseDir ">./slowlogs</property>-->
+        <!--<property name="slowLogBaseName ">slow-query</property>-->
+        <property name="flushSlowLogPeriod ">1</property>
+        <property name="flushSlowLogSize ">1000</property>
+        <property name="sqlSlowTime ">10</property>
 
 
     </system>

@@ -3,7 +3,7 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.util;
+package com.actiontech.dble.server.status;
 
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
@@ -17,17 +17,16 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
-public final class GlobalStatus {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GlobalStatus.class);
+public final class OnlineLockStatus {
+    private static final Logger LOGGER = LoggerFactory.getLogger(OnlineLockStatus.class);
     private volatile UDistributeLock onlineLock = null;
     private volatile boolean onlineInited = false;
-
-    private GlobalStatus() {
+    private OnlineLockStatus() {
     }
 
-    private static final GlobalStatus INSTANCE = new GlobalStatus();
+    private static final OnlineLockStatus INSTANCE = new OnlineLockStatus();
 
-    public static GlobalStatus getInstance() {
+    public static OnlineLockStatus getInstance() {
         return INSTANCE;
     }
 

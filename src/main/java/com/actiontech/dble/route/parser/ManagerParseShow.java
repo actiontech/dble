@@ -69,6 +69,10 @@ public final class ManagerParseShow {
     public static final int THREAD_USED = 52;
     public static final int TABLE_ALGORITHM = 53;
     public static final int PAUSE_DATANDE = 54;
+    public static final int SLOW_QUERY_LOG = 55;
+    public static final int SLOW_QUERY_TIME = 56;
+    public static final int SLOW_QUERY_FLUSH_PERIOD = 57;
+    public static final int SLOW_QUERY_FLUSH_SIZE = 58;
 
     public static final Pattern PATTERN_FOR_TABLE_INFO = Pattern.compile("^(\\s*schema\\s*=\\s*)([a-zA-Z_0-9]+)" +
             "(\\s+and\\s+table\\s*=\\s*)([a-zA-Z_0-9]+)\\s*$", Pattern.CASE_INSENSITIVE);
@@ -632,6 +636,9 @@ public final class ManagerParseShow {
                 case 'Y':
                 case 'y':
                     return show2SyCheck(stmt, offset);
+                case 'L':
+                case 'l':
+                    return show2SlCheck(stmt, offset);
                 default:
                     return OTHER;
             }
@@ -709,7 +716,6 @@ public final class ManagerParseShow {
     // SHOW @@SYSPARAM
     // SHOW @@SYSLOG LIMIT=1000
     private static int show2SyCheck(String stmt, int offset) {
-
         if (stmt.length() > offset + "YS".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -724,6 +730,134 @@ public final class ManagerParseShow {
                     default:
                         return OTHER;
                 }
+            }
+        }
+        return OTHER;
+    }
+
+    //show @@slow_query
+    private static int show2SlCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "OW_QUERY ".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            char c9 = stmt.charAt(++offset);
+            if ((c1 == 'O' || c1 == 'o') && (c2 == 'W' || c2 == 'w') && (c3 == '_') &&
+                    (c4 == 'Q' || c4 == 'q') && (c5 == 'U' || c5 == 'u') && (c6 == 'E' || c6 == 'e') &&
+                    (c7 == 'R' || c7 == 'r') && (c8 == 'Y' || c8 == 'y')) {
+                switch (c9) {
+                    case '.':
+                        return show2SlowQueryCheck(stmt, offset);
+                    case '_':
+                        return show2SlowQueryLog(stmt, offset);
+                    default:
+                        return OTHER;
+                }
+            }
+        }
+        return OTHER;
+    }
+    //show @@slow_query.
+    private static int show2SlowQueryCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 1) {
+            switch (stmt.charAt(++offset)) {
+                case 'T':
+                case 't':
+                    return slowQueryTimeCheck(stmt, offset);
+                case 'F':
+                case 'f':
+                    return slowQueryFlushCheck(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+    private static int slowQueryTimeCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 3) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+
+            // show @@slow_query.time
+            if ((c1 == 'I' || c1 == 'i') && (c2 == 'M' || c2 == 'm') && (c3 == 'E' || c3 == 'e') &&
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
+                return SLOW_QUERY_TIME;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int slowQueryFlushCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 4) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+
+            // show @@slow_query.flush
+            if ((c1 == 'L' || c1 == 'l') && (c2 == 'U' || c2 == 'u') && (c3 == 's' || c3 == 'S') &&
+                    (c4 == 'H' || c4 == 'h')) {
+                switch (stmt.charAt(++offset)) {
+                    case 'S':
+                    case 's':
+                        return slowQueryFlushSizeCheck(stmt, offset);
+                    case 'p':
+                    case 'P':
+                        return slowQueryFlushPeriodCheck(stmt, offset);
+                    default:
+                        return OTHER;
+                }
+            }
+
+            return OTHER;
+        }
+        return OTHER;
+    }
+
+    private static int slowQueryFlushSizeCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 3) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+
+            // show @@slow_query.flushsize
+            if ((c1 == 'I' || c1 == 'i') && (c2 == 'Z' || c2 == 'z') && (c3 == 'E' || c3 == 'e') &&
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
+                return SLOW_QUERY_FLUSH_SIZE;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int slowQueryFlushPeriodCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 5) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+
+            // show @@slow_query.flushperiod
+            if ((c1 == 'E' || c1 == 'e') && (c2 == 'R' || c2 == 'r') && (c3 == 'I' || c3 == 'i') &&
+                    (c4 == 'O' || c4 == 'o') && (c5 == 'D' || c5 == 'd') &&
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
+                return SLOW_QUERY_FLUSH_PERIOD;
+            }
+        }
+        return OTHER;
+    }
+    //show @@slow_query_log
+    private static int show2SlowQueryLog(String stmt, int offset) {
+        if (stmt.length() >= offset + "_LOG".length()) {
+            String prefix = stmt.substring(offset).toUpperCase();
+            if (prefix.startsWith("_LOG") && ((stmt.length() == offset + 4) || (ParseUtil.isEOF(stmt, offset + 4)))) {
+                return SLOW_QUERY_LOG;
             }
         }
         return OTHER;

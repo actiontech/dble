@@ -207,6 +207,7 @@ public class ConfigInitializer {
                 isConnectivity.set(false);
                 isAllDataSourceConnected.set(false);
                 errSourceKeys.add(dataSourceName);
+                errorInfos.add(new ErrorInfo("BACKEND", "WARNING", "Can't connect to [" + ds.getHostConfig().getName() + "," + ds.getName() + "]"));
                 markDataSourceSchemaFail(errNodeKeys, nodeList, dataSourceName);
             } else {
                 for (Pair<String, String> node : nodeList) {
@@ -223,7 +224,8 @@ public class ConfigInitializer {
                             isConnectivity.set(false);
                             errNodeKeys.add(key);
                             LOGGER.warn("SelfCheck### test " + key + " database connection failed ");
-                            errorInfos.add(new ErrorInfo("BACKEND", "WARNING", "test dataSourceName failed " + node + " can't connected"));
+                            errorInfos.add(new ErrorInfo("BACKEND", "WARNING", "Database [" + ds.getHostConfig().getName() +
+                                    "," + ds.getName() + "," + node.getValue() + "] not exists"));
                         }
                     } catch (InterruptedException e) {
                         isConnectivity.set(false);

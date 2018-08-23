@@ -61,7 +61,7 @@ public final class DryRun {
         //check all the config is legal
         //loader.check();
 
-
+        List<ErrorInfo> list = new ArrayList<>();
         try {
             loader.testConnection(false);
         } catch (Exception e) {
@@ -69,7 +69,7 @@ public final class DryRun {
                 LOGGER.debug("just test ,not stop reload, catch exception", e);
             }
         }
-        List<ErrorInfo> list = new ArrayList<>();
+
         list.addAll(loader.getErrorInfos());
 
         SystemVariables newSystemVariables = null;
@@ -77,9 +77,9 @@ public final class DryRun {
         newSystemVariables = handler.execute();
         if (newSystemVariables == null) {
             if (!loader.isDataHostWithoutWH()) {
-                list.add(new ErrorInfo("BACKEND", "ERROR", "Can't get Vars from backend"));
+                list.add(new ErrorInfo("BACKEND", "ERROR", "Get Vars from backend failed,Maybe all backend Mysql can't connected"));
             } else {
-                list.add(new ErrorInfo("BACKEND", "WARNING", "Hava dataHost without writeHost"));
+                list.add(new ErrorInfo("BACKEND", "WARNING", "Still have dataHost without writeHost"));
             }
         }
 

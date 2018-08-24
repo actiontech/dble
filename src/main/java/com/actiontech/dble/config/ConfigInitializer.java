@@ -160,6 +160,7 @@ public class ConfigInitializer {
             }
             for (PhysicalDatasource ds : pool.getAllDataSources()) {
                 if (ds.getConfig().isDisabled()) {
+                    errorInfos.add(new ErrorInfo("BACKEND", "WARNING", "DataHost[" + pool.getHostName() + "," + ds.getName() + "] is disabled"));
                     LOGGER.info("DataHost[" + ds.getHostConfig().getName() + "] is disabled,just mark testing failed and skip it");
                     ds.setTestConnSuccess(false);
                     continue;

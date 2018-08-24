@@ -60,7 +60,7 @@ public class LevelDBPool implements CachePool {
 
     @Override
     public void clearCache() {
-        LOGGER.info("ready cache " + name);
+        LOGGER.info("clear cache " + name);
         //cache.delete(key);
         cacheStatistics.reset();
         //cacheStati.setMemorySize(cache.g);

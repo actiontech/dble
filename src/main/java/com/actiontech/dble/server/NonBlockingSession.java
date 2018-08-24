@@ -135,7 +135,7 @@ public class NonBlockingSession implements Session {
         }
         timeCost = true;
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("ready");
+            LOGGER.debug("clear");
         }
         queryTimeCost = new QueryTimeCost();
         provider = new CostTimeProvider();
@@ -373,7 +373,7 @@ public class NonBlockingSession implements Session {
 
     @Override
     public void execute(RouteResultset rrs) {
-        // ready prev execute resources
+        // clear prev execute resources
         clearHandlesResources();
         if (LOGGER.isDebugEnabled()) {
             StringBuilder s = new StringBuilder();
@@ -845,7 +845,7 @@ public class NonBlockingSession implements Session {
 
     public void clearResources(final boolean needClosed) {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("ready session resources " + this);
+            LOGGER.debug("clear session resources " + this);
         }
         this.releaseConnections(needClosed);
         needWaitFinished = false;
@@ -990,7 +990,7 @@ public class NonBlockingSession implements Session {
      * reset the session multiStatementStatus
      */
     public void resetMultiStatementStatus() {
-        //ready the record
+        //clear the record
         this.isMultiStatement.set(false);
         this.remingSql = null;
         this.packetId.set(0);

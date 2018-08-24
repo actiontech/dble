@@ -251,7 +251,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
         Iterator<Entry<MySQLConnection, BlockingQueue<HeapItem>>> iterator = this.queues.entrySet().iterator();
         while (iterator.hasNext()) {
             Entry<MySQLConnection, BlockingQueue<HeapItem>> entry = iterator.next();
-            // fair lock queue,poll for ready
+            // fair lock queue,poll for clear
             while (true) {
                 if (entry.getValue().poll() == null) {
                     break;

@@ -153,8 +153,8 @@ public abstract class ItemSum extends ItemResultField {
      * This function is called by the execution engine to assign 'NO ROWS FOUND'
      * value to an aggregate item, when the underlying result set has no rows.
      * Such value, in a general case, may be different from the default value of
-     * the item after 'ready()': e.g. a numeric item may be initialized to 0 by
-     * ready() and to NULL by no_rows_in_result().
+     * the item after 'clear()': e.g. a numeric item may be initialized to 0 by
+     * clear() and to NULL by no_rows_in_result().
      */
     public void noRowsInResult() {
         setAggregator(withDistinct ? AggregatorType.DISTINCT_AGGREGATOR : AggregatorType.SIMPLE_AGGREGATOR, null);

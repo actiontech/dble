@@ -72,7 +72,7 @@ public final class Queue<T> {
         if (count == 0) {
             return null;
         }
-        // pull the object off, and ready our reference to it
+        // pull the object off, and clear our reference to it
         T retval = items[start];
         items[start] = null;
         start = (start + 1) % size;
@@ -110,7 +110,7 @@ public final class Queue<T> {
             }
         }
 
-        // pull the object off, and ready our reference to it
+        // pull the object off, and clear our reference to it
         T retval = items[start];
         items[start] = null;
 

@@ -318,7 +318,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         if (decrementCountBy(1)) {
             this.resultSize += eof.length;
             if (!rrs.isCallStatement() || (rrs.isCallStatement() && rrs.getProcedure().isResultSimpleValue())) {
-                if (this.sessionAutocommit && !session.getSource().isTxStart() && !session.getSource().isLocked()) { // ready all connections
+                if (this.sessionAutocommit && !session.getSource().isTxStart() && !session.getSource().isLocked()) { // clear all connections
                     session.releaseConnections(false);
                 }
 

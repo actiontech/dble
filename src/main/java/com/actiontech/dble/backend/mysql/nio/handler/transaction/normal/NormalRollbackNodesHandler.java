@@ -105,7 +105,7 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
 
     private void cleanAndFeedback() {
         byte[] send = sendData;
-        // ready all resources
+        // clear all resources
         session.clearResources(false);
         if (session.closed()) {
             return;

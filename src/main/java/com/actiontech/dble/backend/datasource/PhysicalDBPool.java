@@ -285,7 +285,7 @@ public class PhysicalDBPool {
                 int result = this.init(activeIndex);
                 if (result >= 0) {
                     DbleServer.getInstance().saveDataHostIndex(hostName, result, false);
-                    // ready all connections
+                    // clear all connections
                     this.getSources()[current].clearCons("switch datasource");
                     // write log
                     LOGGER.warn(switchMessage(current, result, reason));
@@ -475,7 +475,7 @@ public class PhysicalDBPool {
      * @param reason reason
      */
     public void clearDataSources(String reason) {
-        LOGGER.info("ready data sources of pool " + this.hostName);
+        LOGGER.info("clear data sources of pool " + this.hostName);
         Collection<PhysicalDatasource> all;
         adjustLock.readLock().lock();
         try {
@@ -485,7 +485,7 @@ public class PhysicalDBPool {
         }
 
         for (PhysicalDatasource source : all) {
-            LOGGER.info("ready datasource of pool  " + this.hostName + " ds:" + source.getConfig());
+            LOGGER.info("clear datasource of pool  " + this.hostName + " ds:" + source.getConfig());
             source.clearCons(reason);
             source.stopHeartbeat();
         }

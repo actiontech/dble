@@ -345,7 +345,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
     }
 
     private void cleanAndFeedback() {
-        if (session.getXaState() == TxState.TX_INITIALIZE_STATE) { // ready all resources
+        if (session.getXaState() == TxState.TX_INITIALIZE_STATE) { // clear all resources
             XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_ROLLBACKED_STATE);
             session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_INIT);
             session.clearResources(false);

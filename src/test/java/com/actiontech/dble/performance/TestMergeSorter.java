@@ -50,7 +50,7 @@ package com.actiontech.dble.performance;
 //			row.read(buffer.array());
 //			sorter.addRow(row);
 //		}
-//		set.ready();
+//		set.clear();
 //		System.gc();
 //		System.out.println("add finished");
 //		for (int i = 0; i < 100; i++) {

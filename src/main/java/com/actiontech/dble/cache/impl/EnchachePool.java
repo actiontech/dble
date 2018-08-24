@@ -64,7 +64,7 @@ public class EnchachePool implements CachePool {
 
     @Override
     public void clearCache() {
-        LOGGER.info("ready cache " + name);
+        LOGGER.info("clear cache " + name);
         enCache.removeAll();
         enCache.clearStatistics();
         cacheStatistics.reset();

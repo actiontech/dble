@@ -301,7 +301,7 @@ public class ManagerParserTest {
     @Test
     public void testclearSlowSchema() {
         Assert.assertEquals(ManagerParseClear.SLOW_SCHEMA,
-                0xff & ManagerParseClear.parse("ready @@slow where schema=s", 5));
+                0xff & ManagerParseClear.parse("clear @@slow where schema=s", 5));
         Assert.assertEquals(ManagerParseClear.SLOW_SCHEMA,
                 0xff & ManagerParseClear.parse("CLEAR @@SLOW WHERE SCHEMA= S", 5));
         Assert.assertEquals(ManagerParseClear.SLOW_SCHEMA,
@@ -311,11 +311,11 @@ public class ManagerParserTest {
     @Test
     public void testclearSlowDataNode() {
         Assert.assertEquals(ManagerParseClear.SLOW_DATANODE,
-                0xff & ManagerParseClear.parse("ready @@slow where datanode=d", 5));
+                0xff & ManagerParseClear.parse("clear @@slow where datanode=d", 5));
         Assert.assertEquals(ManagerParseClear.SLOW_DATANODE,
                 0xff & ManagerParseClear.parse("CLEAR @@SLOW WHERE DATANODE= D", 5));
         Assert.assertEquals(ManagerParseClear.SLOW_DATANODE,
-                0xff & ManagerParseClear.parse("ready @@SLOW where  DATANODE= d", 5));
+                0xff & ManagerParseClear.parse("clear @@SLOW where  DATANODE= d", 5));
     }
 
     @Test

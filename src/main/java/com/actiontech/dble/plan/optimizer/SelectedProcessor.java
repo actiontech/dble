@@ -109,8 +109,8 @@ public final class SelectedProcessor {
 
     private static Collection<Item> getPushDownSel(PlanNode parent, PlanNode child, List<Item> selList) {
         // oldselectable->newselectbable
-        HashMap<Item, Item> oldNewMap = new HashMap<>();
-        HashMap<Item, Item> oldKeyKeyMap = new HashMap<>();
+        LinkedHashMap<Item, Item> oldNewMap = new LinkedHashMap<>();
+        LinkedHashMap<Item, Item> oldKeyKeyMap = new LinkedHashMap<>();
         for (Item sel : selList) {
             Item pdSel = oldNewMap.get(sel);
             if (pdSel == null) {

@@ -551,6 +551,7 @@
                                     <extraArgument>-Dcom.sun.management.jmxremote.port=1984</extraArgument>
                                     <extraArgument>-Dcom.sun.management.jmxremote.authenticate=false</extraArgument>
                                     <extraArgument>-Dcom.sun.management.jmxremote.ssl=false</extraArgument>
+                                    <extraArgument>-Dcom.sun.management.jmxremote.host=127.0.0.1</extraArgument>
                                     <extraArgument>-Xmx4G</extraArgument>
                                     <extraArgument>-Xms1G</extraArgument>
                                     <extraArgument>-XX:MaxDirectMemorySize=2G</extraArgument>

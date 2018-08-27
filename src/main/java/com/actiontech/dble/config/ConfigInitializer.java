@@ -95,6 +95,10 @@ public class ConfigInitializer {
     private void deleteRedundancyConf() {
         Set<String> allUseDataNode = new HashSet<>();
 
+        if (schemas.size() == 0) {
+            errorInfos.add(new ErrorInfo("Xml", "WARNING", "No schema available"));
+        }
+
         for (SchemaConfig sc : schemas.values()) {
             // check dataNode / dataHost
             Set<String> dataNodeNames = sc.getAllDataNodes();
@@ -116,7 +120,7 @@ public class ConfigInitializer {
                 allUseHost.add(entry.getValue().getDbPool().getHostName());
             } else {
                 LOGGER.info("dataNode " + dataNodeName + " is useless,server will ignore it");
-                errorInfos.add(new ErrorInfo("Xml", "Warning", "dataNode " + dataNodeName + " is useless"));
+                errorInfos.add(new ErrorInfo("Xml", "WARNING", "dataNode " + dataNodeName + " is useless"));
                 iterator.remove();
             }
         }
@@ -128,7 +132,7 @@ public class ConfigInitializer {
                 String dataHostName = dataHost.next();
                 if (!allUseHost.contains(dataHostName)) {
                     LOGGER.info("dataHost " + dataHostName + " is useless,server will ignore it");
-                    errorInfos.add(new ErrorInfo("Xml", "Warning", "dataHost " + dataHostName + " is useless"));
+                    errorInfos.add(new ErrorInfo("Xml", "WARNING", "dataHost " + dataHostName + " is useless"));
                     dataHost.remove();
                 }
             }
@@ -160,6 +164,7 @@ public class ConfigInitializer {
             }
             for (PhysicalDatasource ds : pool.getAllDataSources()) {
                 if (ds.getConfig().isDisabled()) {
+                    errorInfos.add(new ErrorInfo("BACKEND", "WARNING", "DataHost[" + pool.getHostName() + "," + ds.getName() + "] is disabled"));
                     LOGGER.info("DataHost[" + ds.getHostConfig().getName() + "] is disabled,just mark testing failed and skip it");
                     ds.setTestConnSuccess(false);
                     continue;

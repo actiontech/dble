@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.transaction.normal;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AbstractCommitNodesHandler;
@@ -68,7 +69,17 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     }
 
     @Override
-    public void connectionClose(BackendConnection conn, String reason) {
+    public void connectionClose(final BackendConnection conn, final String reason) {
+        final NormalCommitNodesHandler thisHandler = this;
+        DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                thisHandler.connectionCloseLocal(conn, reason);
+            }
+        });
+    }
+
+    private void connectionCloseLocal(BackendConnection conn, String reason) {
         this.waitUntilSendFinish();
         if (checkClosedConn(conn)) {
             return;

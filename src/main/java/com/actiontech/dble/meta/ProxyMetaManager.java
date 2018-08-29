@@ -112,8 +112,9 @@ public class ProxyMetaManager {
     public void removeMetaLock(String schema, String tbName) {
         metaLock.lock();
         try {
-            lockTables.remove(genLockKey(schema, tbName));
-            metaCount.decrementAndGet();
+            if (lockTables.remove(genLockKey(schema, tbName))) {
+                metaCount.decrementAndGet();
+            }
         } finally {
             metaLock.unlock();
         }

@@ -130,7 +130,7 @@
         <property name="flushSlowLogPeriod ">1</property>
         <!-- the max records for flushing the slow query log from memory to disk after last time -->
         <property name="flushSlowLogSize ">1000</property>
-        <!-- the threshold for judging if the query is slow , unit is microsecond -->
+        <!-- the threshold for judging if the query is slow , unit is millisecond -->
         <property name="sqlSlowTime ">100</property>
 
 

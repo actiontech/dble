@@ -48,7 +48,7 @@ public final class ShowBackend {
         FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("PORT", Fields.FIELD_TYPE_LONG);
         FIELDS[i++].setPacketId(++packetId);
-        FIELDS[i] = PacketUtil.getField("LOACL_TCP_PORT", Fields.FIELD_TYPE_LONG);
+        FIELDS[i] = PacketUtil.getField("LOCAL_TCP_PORT", Fields.FIELD_TYPE_LONG);
         FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("NET_IN", Fields.FIELD_TYPE_LONGLONG);
         FIELDS[i++].setPacketId(++packetId);

@@ -296,6 +296,7 @@ public abstract class FrontendConnection extends AbstractConnection {
             writeErrMessage(ErrorCode.ER_NOT_ALLOWED_COMMAND, "Empty SQL");
             return;
         }
+        sql = sql.trim();
 
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(String.valueOf(this) + " " + sql);

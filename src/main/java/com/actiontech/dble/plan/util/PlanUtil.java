@@ -312,7 +312,6 @@ public final class PlanUtil {
             Item pushedArg = pushItemToUnionChild(arg, colIndexs, childSelects);
             func.arguments().set(index, pushedArg);
         }
-        func.setPushDownName(null);
         refreshReferTables(func);
         return func;
     }

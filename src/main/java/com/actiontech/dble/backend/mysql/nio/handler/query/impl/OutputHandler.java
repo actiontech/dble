@@ -190,13 +190,13 @@ public class OutputHandler extends BaseDMLHandler {
             String sql = session.getSource().getExecuteSql();
             if (sql != null) {
                 netInBytes += sql.getBytes().length;
+                QueryResult queryResult = new QueryResult(session.getSource().getUser(), ServerParse.SELECT,
+                        sql, selectRows, netInBytes, netOutBytes, session.getQueryStartTime(), System.currentTimeMillis(), netOutBytes);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("try to record sql:" + sql);
+                }
+                QueryResultDispatcher.dispatchQuery(queryResult);
             }
-            QueryResult queryResult = new QueryResult(session.getSource().getUser(), ServerParse.SELECT,
-                    session.getSource().getExecuteSql(), selectRows, netInBytes, netOutBytes, session.getQueryStartTime(), System.currentTimeMillis(), netOutBytes);
-            if (logger.isDebugEnabled()) {
-                logger.debug("try to record sql:" + sql);
-            }
-            QueryResultDispatcher.dispatchQuery(queryResult);
         }
     }
 

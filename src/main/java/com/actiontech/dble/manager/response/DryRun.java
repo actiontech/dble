@@ -72,19 +72,29 @@ public final class DryRun {
 
         list.addAll(loader.getErrorInfos());
 
+        ServerConfig serverConfig = new ServerConfig(loader);
         SystemVariables newSystemVariables = null;
         VarsExtractorHandler handler = new VarsExtractorHandler(loader.getDataHosts());
         newSystemVariables = handler.execute();
         if (newSystemVariables == null) {
             if (!loader.isDataHostWithoutWH()) {
                 list.add(new ErrorInfo("BACKEND", "ERROR", "Get Vars from backend failed,Maybe all backend Mysql can't connected"));
-            } else {
-                list.add(new ErrorInfo("BACKEND", "WARNING", "Still have dataHost without writeHost"));
+            }
+        } else {
+            try {
+
+                if (newSystemVariables.isLowerCaseTableNames()) {
+                    serverConfig.reviseLowerCase();
+                } else {
+                    serverConfig.selfChecking0();
+                }
+            } catch (Exception e) {
+                list.add(new ErrorInfo("Xml", "ERROR", e.getMessage()));
             }
         }
 
 
-        Map<String, UserConfig> userMap = loader.getUsers();
+        Map<String, UserConfig> userMap = serverConfig.getUsers();
         if (userMap != null && userMap.size() > 0) {
             Set<String> schema = new HashSet<String>();
             boolean hasManagerUser = false;
@@ -100,8 +110,8 @@ public final class DryRun {
 
             if (!hasServerUser) {
                 list.add(new ErrorInfo("XML", "ERROR", "There is No Server User"));
-            } else if (schema.size() <= loader.getSchemas().size()) {
-                for (String schemaName : loader.getSchemas().keySet()) {
+            } else if (schema.size() <= serverConfig.getSchemas().size()) {
+                for (String schemaName : serverConfig.getSchemas().keySet()) {
                     if (!schema.contains(schemaName)) {
                         list.add(new ErrorInfo("XML", "WARNING", "Schema:" + schemaName + " has no user"));
                     }

@@ -60,6 +60,8 @@ public class UViewChildResponse implements UcoreXmlLoader {
                     String stmt = ClusterUcoreSender.getKey(UcorePathUtil.getViewPath() + SEPARATOR + schema + Repository.SCHEMA_VIEW_SPLIT + viewName).getValue();
                     if (DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().get(viewName) != null &&
                             stmt.equals(DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().get(viewName).getCreateSql())) {
+                        ClusterDelayProvider.delayBeforeReponseView();
+                        ClusterUcoreSender.sendDataToUcore(configValue.getKey() + SEPARATOR + myId, UcorePathUtil.SUCCESS);
                         return;
                     }
                     ViewMeta vm = new ViewMeta(stmt, schema, DbleServer.getInstance().getTmManager());

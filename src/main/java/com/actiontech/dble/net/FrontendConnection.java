@@ -296,6 +296,7 @@ public abstract class FrontendConnection extends AbstractConnection {
             writeErrMessage(ErrorCode.ER_NOT_ALLOWED_COMMAND, "Empty SQL");
             return;
         }
+        sql = sql.trim();
 
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(String.valueOf(this) + " " + sql);
@@ -466,7 +467,12 @@ public abstract class FrontendConnection extends AbstractConnection {
         //when TERMINATED char of load data infile is \001
         if (data.length > 4 && data[0] == 1 && data[1] == 0 && data[2] == 0 && data[3] == 0 && data[4] == MySQLPacket.COM_QUIT) {
             this.getProcessor().getCommands().doQuit();
-            this.close("quit cmd");
+            DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
+                @Override
+                public void run() {
+                    close("quit cmd");
+                }
+            });
             return;
         }
         handler.handle(data);

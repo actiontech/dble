@@ -58,9 +58,11 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
                 if (user.isManager() && schemas != null) {
                     throw new ConfigException("manager user can't set any schema!");
                 } else if (!user.isManager()) {
-                    if (schemas != null) {
+                    if (schemas != null && !"".equals(schemas)) {
                         String[] strArray = SplitUtil.split(schemas, ',', true);
                         user.setSchemas(new HashSet<>(Arrays.asList(strArray)));
+                    } else {
+                        throw new ConfigException("Server user must have at least one schemas");
                     }
                     // load DML
                     loadPrivileges(user, false, e);

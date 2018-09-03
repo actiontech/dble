@@ -14,7 +14,7 @@
         <!--<property name="bindIp">0.0.0.0</property>-->
         <!-- property name="serverPort">8066</property> -->
         <!--<property name="managerPort">9066</property> -->
-        <!--<property name="managerPort">maxCon</property> -->
+        <!--<property name="maxCon">1024</property> -->
         <!-- <property name="processors">4</property>-->
         <!-- <property name="backendProcessors">12</property>-->
         <!--<property name="processorExecutor">4</property> -->
@@ -121,12 +121,17 @@
         <!--<property name="orderByQueueSize ">1024</property>-->
         <!--<property name="joinQueueSize ">1024</property>-->
 
+        <!-- if enable the slow query log -->
         <property name="enableSlowLog ">0</property>
+        <!-- the slow query log location -->
         <!--<property name="slowLogBaseDir ">./slowlogs</property>-->
         <!--<property name="slowLogBaseName ">slow-query</property>-->
+        <!-- the max period for flushing the slow query log from memory to disk  after last time , unit is second -->
         <property name="flushSlowLogPeriod ">1</property>
+        <!-- the max records for flushing the slow query log from memory to disk after last time -->
         <property name="flushSlowLogSize ">1000</property>
-        <property name="sqlSlowTime ">10</property>
+        <!-- the threshold for judging if the query is slow , unit is millisecond -->
+        <property name="sqlSlowTime ">100</property>
 
 
     </system>

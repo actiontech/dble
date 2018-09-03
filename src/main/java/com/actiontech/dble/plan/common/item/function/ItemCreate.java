@@ -201,7 +201,7 @@ public class ItemCreate {
         nativFuncs.put("MONTH", new ItemFuncMonth(null));
         nativFuncs.put("NULLIF", new ItemFuncNullif(null, null));
         nativFuncs.put("NOW", new ItemFuncNowLocal(null));
-        nativFuncs.put("OCT", new ItemFuncLog2(null));
+        //nativFuncs.put("OCT", new ItemFuncLog2(null));
         nativFuncs.put("PERIOD_ADD", new ItemFuncPeriodAdd(null));
         nativFuncs.put("PERIOD_DIFF", new ItemFuncPeriodDiff(null));
         nativFuncs.put("PI", new ItemFuncPi(null));

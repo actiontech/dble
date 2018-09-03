@@ -1016,7 +1016,9 @@ public abstract class Item {
 
     public final Item reStruct(List<Item> calArgs, boolean isPushDown, List<Field> fields) {
         Item clone = cloneStruct(true, calArgs, isPushDown, fields);
-        // TODO
+        if (calArgs.size() > 0) {
+            clone.setCharsetIndex(calArgs.get(0).getCharsetIndex());
+        }
         return clone;
     }
 

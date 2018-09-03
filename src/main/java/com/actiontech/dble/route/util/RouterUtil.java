@@ -173,10 +173,10 @@ public final class RouterUtil {
         return statement instanceof SQLSelectStatement;
     }
 
-    public static void routeToSingleDDLNode(SchemaInfo schemaInfo, RouteResultset rrs) throws SQLException {
+    public static void routeToSingleDDLNode(SchemaInfo schemaInfo, RouteResultset rrs, String dataNode) throws SQLException {
         rrs.setSchema(schemaInfo.getSchema());
         rrs.setTable(schemaInfo.getTable());
-        RouterUtil.routeToSingleNode(rrs, schemaInfo.getSchemaConfig().getDataNode());
+        RouterUtil.routeToSingleNode(rrs, dataNode);
     }
 
     public static void routeNoNameTableToSingleNode(RouteResultset rrs, SchemaConfig schema) throws SQLNonTransientException {
@@ -421,8 +421,9 @@ public final class RouterUtil {
         List<String> tables = ctx.getTables();
 
         // no sharding table
-        if (isNoSharding(schema, tables.get(0))) {
-            return routeToSingleNode(rrs, schema.getDataNode());
+        String noShardingNode = RouterUtil.isNoSharding(schema, tables.get(0));
+        if (noShardingNode != null) {
+            RouterUtil.routeToSingleNode(rrs, noShardingNode);
         }
 
         if (tables.size() == 1) {
@@ -750,15 +751,25 @@ public final class RouterUtil {
     /**
      * no shard-ing table dataNode
      *
-     * @param schemaConfig
-     * @param tableName
-     * @return
+     * @param schemaConfig the SchemaConfig info
+     * @param tableName  the TableName
+     * @return dataNode DataNode of no-sharding table
      */
-    public static boolean isNoSharding(SchemaConfig schemaConfig, String tableName) throws SQLNonTransientException {
+    public static String isNoSharding(SchemaConfig schemaConfig, String tableName) throws SQLNonTransientException {
         if (schemaConfig == null || DbleServer.getInstance().getTmManager().getSyncView(schemaConfig.getName(), tableName) != null) {
-            return false;
+            return null;
         }
-        return schemaConfig.isNoSharding() || (schemaConfig.getDataNode() != null && !schemaConfig.getTables().containsKey(tableName));
+        if (schemaConfig.isNoSharding()) { //schema without table
+            return schemaConfig.getDataNode();
+        }
+        TableConfig tbConfig = schemaConfig.getTables().get(tableName);
+        if (tbConfig == null && schemaConfig.getDataNode() != null) {
+            return schemaConfig.getDataNode();
+        }
+        if (tbConfig != null && tbConfig.isNoSharding()) {
+            return tbConfig.getDataNodes().get(0);
+        }
+        return null;
     }
 
     /**

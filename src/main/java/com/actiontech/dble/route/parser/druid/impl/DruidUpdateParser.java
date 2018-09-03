@@ -28,10 +28,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * see http://dev.mysql.com/doc/refman/5.7/en/update.html
@@ -45,12 +42,13 @@ public class DruidUpdateParser extends DefaultDruidParser {
         SQLTableSource tableSource = update.getTableSource();
         String schemaName = schema == null ? null : schema.getName();
         if (tableSource instanceof SQLJoinTableSource) {
-            StringPtr sqlSchema = new StringPtr(null);
-            if (!SchemaUtil.isNoSharding(sc, (SQLJoinTableSource) tableSource, stmt, stmt, schemaName, sqlSchema)) {
+            StringPtr noShardingNode = new StringPtr(null);
+            Set<String> schemas = new HashSet<>();
+            if (!SchemaUtil.isNoSharding(sc, (SQLJoinTableSource) tableSource, stmt, stmt, schemaName, schemas, noShardingNode)) {
                 String msg = "UPDATE query with multiple tables is not supported, sql:" + stmt;
                 throw new SQLNonTransientException(msg);
             } else {
-                return routeToNoSharding(schema, rrs, schemaName, sqlSchema);
+                return routeToNoSharding(schema, rrs, schemas, noShardingNode);
             }
         } else {
             SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, (SQLExprTableSource) tableSource);
@@ -62,18 +60,20 @@ public class DruidUpdateParser extends DefaultDruidParser {
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
             super.visitorParse(schema, rrs, stmt, visitor, sc);
             if (visitor.getSubQueryList().size() > 0) {
-                StringPtr sqlSchema = new StringPtr(null);
-                if (!SchemaUtil.isNoSharding(sc, tableSource, stmt, stmt, schemaInfo.getSchema(), sqlSchema)) {
+                StringPtr noShardingNode = new StringPtr(null);
+                Set<String> schemas = new HashSet<>();
+                if (!SchemaUtil.isNoSharding(sc, tableSource, stmt, stmt, schemaInfo.getSchema(), schemas, noShardingNode)) {
                     String msg = "UPDATE query with sub-query  is not supported, sql:" + stmt;
                     throw new SQLNonTransientException(msg);
                 } else {
-                    return routeToNoSharding(schema, rrs, schemaName, sqlSchema);
+                    return routeToNoSharding(schema, rrs, schemas, noShardingNode);
                 }
             }
 
             String tableName = schemaInfo.getTable();
-            if (RouterUtil.isNoSharding(schema, tableName)) {
-                RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
+            String noShardingNode = RouterUtil.isNoSharding(schema, tableName);
+            if (noShardingNode != null) {
+                RouterUtil.routeToSingleNode(rrs, noShardingNode);
                 rrs.setFinishedRoute(true);
                 return schema;
             }

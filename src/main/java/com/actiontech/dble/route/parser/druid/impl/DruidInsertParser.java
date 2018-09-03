@@ -109,17 +109,17 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
 
     private boolean parserNoSharding(ServerConnection sc, String contextSchema, SchemaInfo schemaInfo, RouteResultset rrs,
                                      MySqlInsertStatement insert) throws SQLException {
-
-        if (RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable())) {
+        String noShardingNode = RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable());
+        if (noShardingNode != null) {
+            StringPtr noShardingNodePr = new StringPtr(noShardingNode);
+            Set<String> schemas = new HashSet<>();
             if (insert.getQuery() != null) {
                 SQLSelectStatement selectStmt = new SQLSelectStatement(insert.getQuery());
-                StringPtr sqlSchema = new StringPtr(schemaInfo.getSchema());
-                if (!SchemaUtil.isNoSharding(sc, insert.getQuery().getQuery(), insert, selectStmt, contextSchema, sqlSchema)) {
+                if (!SchemaUtil.isNoSharding(sc, insert.getQuery().getQuery(), insert, selectStmt, contextSchema, schemas, noShardingNodePr)) {
                     return false;
                 }
             }
-            rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
-            RouterUtil.routeToSingleNode(rrs, schemaInfo.getSchemaConfig().getDataNode());
+            routeToNoSharding(schemaInfo.getSchemaConfig(), rrs, schemas, noShardingNodePr);
             return true;
         }
         return false;

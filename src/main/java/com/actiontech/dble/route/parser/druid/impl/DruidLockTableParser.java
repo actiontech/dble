@@ -63,8 +63,9 @@ public class DruidLockTableParser extends DefaultDruidParser {
         SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, lockTableStat.getTableSource());
         schema = schemaInfo.getSchemaConfig();
         String table = schemaInfo.getTable();
-        if (RouterUtil.isNoSharding(schema, table)) {
-            RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
+        String noShardingNode = RouterUtil.isNoSharding(schema, table);
+        if (noShardingNode != null) {
+            RouterUtil.routeToSingleNode(rrs, noShardingNode);
             rrs.setFinishedRoute(true);
             return schema;
         }

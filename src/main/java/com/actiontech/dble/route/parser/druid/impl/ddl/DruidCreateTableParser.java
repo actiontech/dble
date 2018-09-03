@@ -54,8 +54,9 @@ public class DruidCreateTableParser extends DefaultDruidParser {
 
         String statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema());
         rrs.setStatement(statement);
-        if (RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable())) {
-            RouterUtil.routeToSingleDDLNode(schemaInfo, rrs);
+        String noShardingNode = RouterUtil.isNoSharding(schema, schemaInfo.getTable());
+        if (noShardingNode != null) {
+            RouterUtil.routeToSingleDDLNode(schemaInfo, rrs, noShardingNode);
             return schemaInfo.getSchemaConfig();
         }
         sharingTableCheck(createStmt);

@@ -292,8 +292,9 @@ public class ServerConnection extends FrontendConnection {
         }
         RouteResultset rrs = new RouteResultset(stmt, sqlType);
         try {
-            if (RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable())) {
-                RouterUtil.routeToSingleNode(rrs, schemaInfo.getSchemaConfig().getDataNode());
+            String noShardingNode = RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable());
+            if (noShardingNode != null) {
+                RouterUtil.routeToSingleNode(rrs, noShardingNode);
             } else {
                 TableConfig tc = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
                 if (tc == null) {

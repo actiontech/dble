@@ -116,8 +116,9 @@ public class DruidSelectParser extends DefaultDruidParser {
                     return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc);
                 }
 
-                if (RouterUtil.isNoSharding(schema, schemaInfo.getTable())) {
-                    RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
+                String noShardingNode = RouterUtil.isNoSharding(schema, schemaInfo.getTable());
+                if (noShardingNode != null) {
+                    RouterUtil.routeToSingleNode(rrs, noShardingNode);
                     return schema;
                 }
 
@@ -433,13 +434,14 @@ public class DruidSelectParser extends DefaultDruidParser {
 
     private SchemaConfig executeComplexSQL(String schemaName, SchemaConfig schema, RouteResultset rrs, SQLSelectStatement selectStmt, ServerConnection sc)
             throws SQLException {
-        StringPtr sqlSchema = new StringPtr(null);
-        if (!SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, sqlSchema)) {
+        StringPtr noShardingNode = new StringPtr(null);
+        Set<String> schemas = new HashSet<>();
+        if (!SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, schemas, noShardingNode)) {
             rrs.setSqlStatement(selectStmt);
             rrs.setNeedOptimizer(true);
             return schema;
         } else {
-            return routeToNoSharding(schema, rrs, schemaName, sqlSchema);
+            return routeToNoSharding(schema, rrs, schemas, noShardingNode);
         }
     }
 
@@ -520,8 +522,9 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
         SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
         String table = ctx.getTables().get(0);
-        if (RouterUtil.isNoSharding(schema, table)) {
-            RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
+        String noShardingNode = RouterUtil.isNoSharding(schema, table);
+        if (noShardingNode != null) {
+            RouterUtil.routeToSingleNode(rrs, noShardingNode);
             return;
         }
         for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {

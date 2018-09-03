@@ -35,6 +35,7 @@ public class TableConfig {
     private final boolean ruleRequired;
     private final boolean partionKeyIsPrimaryKey;
     private final Random rand = new Random();
+    private final boolean isNoSharding;
     /**
      * Child Table
      */
@@ -66,11 +67,16 @@ public class TableConfig {
         }
         this.name = name;
         String[] theDataNodes = SplitUtil.split(dataNode, ',', '$', '-');
-        if (theDataNodes == null || theDataNodes.length <= 0) {
+        if (theDataNodes.length <= 0) {
             throw new IllegalArgumentException("invalid table dataNodes: " + dataNode + " for table " + name);
         }
         if (tableType != TableTypeEnum.TYPE_GLOBAL_TABLE && parentTC == null && theDataNodes.length > 1 && rule == null) {
             throw new IllegalArgumentException("invalid table dataNodes: " + dataNode + " for table " + name);
+        }
+        if (theDataNodes.length == 1) {
+            isNoSharding = true;
+        } else {
+            isNoSharding = false;
         }
         dataNodes = new ArrayList<>(theDataNodes.length);
         Collections.addAll(dataNodes, theDataNodes);
@@ -133,6 +139,11 @@ public class TableConfig {
         this.parentTC = parentTC;
         this.joinKey = joinKey;
         this.parentKey = parentKey;
+        if (dataNodes.size() == 1) {
+            isNoSharding = true;
+        } else {
+            isNoSharding = false;
+        }
         if (parentTC != null) {
             if (parentTC.getParentTC() == null) {
                 if (parentKey.equalsIgnoreCase(parentTC.partitionColumn)) {
@@ -163,7 +174,6 @@ public class TableConfig {
 
 
     public TableConfig lowerCaseCopy(TableConfig parent) {
-
         return new TableConfig(this.name.toLowerCase(), this.primaryKey, this.autoIncrement, this.needAddLimit,
                 this.tableType, this.dataNodes, this.rule, this.ruleRequired, parent, this.joinKey, this.parentKey);
 
@@ -302,6 +312,11 @@ public class TableConfig {
 
     public boolean primaryKeyIsPartionKey() {
         return partionKeyIsPrimaryKey;
+    }
+
+
+    public boolean isNoSharding() {
+        return isNoSharding;
     }
 
 }

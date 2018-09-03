@@ -30,10 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * DefaultDruidParser
@@ -207,11 +204,13 @@ public class DefaultDruidParser implements DruidParser {
         }
     }
 
-    SchemaConfig routeToNoSharding(SchemaConfig schema, RouteResultset rrs, String schemaName, StringPtr sqlSchema) {
-        String realSchema = sqlSchema.get() == null ? schemaName : sqlSchema.get();
-        SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(realSchema);
-        rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), realSchema));
-        RouterUtil.routeToSingleNode(rrs, schemaConfig.getDataNode());
+    SchemaConfig routeToNoSharding(SchemaConfig schema, RouteResultset rrs, Set<String> schemas, StringPtr dataNode) {
+        String statement = rrs.getStatement();
+        for (String realSchema : schemas) {
+            statement = RouterUtil.removeSchema(statement, realSchema);
+        }
+        rrs.setStatement(statement);
+        RouterUtil.routeToSingleNode(rrs, dataNode.get());
         rrs.setFinishedRoute(true);
         return schema;
     }

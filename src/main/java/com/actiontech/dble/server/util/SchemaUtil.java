@@ -28,6 +28,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by magicdoom on 2016/1/26.
@@ -98,41 +99,41 @@ public final class SchemaUtil {
         return getSchemaInfo(user, schema, tableSource.getExpr(), tableSource.getAlias());
     }
 
-    public static boolean isNoSharding(ServerConnection source, SQLSelectQuery sqlSelectQuery, SQLStatement selectStmt, SQLStatement childSelectStmt, String contextSchema, StringPtr sqlSchema)
+    public static boolean isNoSharding(ServerConnection source, SQLSelectQuery sqlSelectQuery, SQLStatement selectStmt, SQLStatement childSelectStmt, String contextSchema, Set<String> schemas, StringPtr dataNode)
             throws SQLException {
         if (sqlSelectQuery instanceof MySqlSelectQueryBlock) {
             MySqlSelectQueryBlock mySqlSelectQueryBlock = (MySqlSelectQueryBlock) sqlSelectQuery;
-            return isNoSharding(source, mySqlSelectQueryBlock.getFrom(), selectStmt, childSelectStmt, contextSchema, sqlSchema);
+            return isNoSharding(source, mySqlSelectQueryBlock.getFrom(), selectStmt, childSelectStmt, contextSchema, schemas, dataNode);
         } else if (sqlSelectQuery instanceof MySqlUnionQuery) {
-            return isNoSharding(source, (MySqlUnionQuery) sqlSelectQuery, selectStmt, contextSchema, sqlSchema);
+            return isNoSharding(source, (MySqlUnionQuery) sqlSelectQuery, selectStmt, contextSchema, schemas, dataNode);
         } else {
             return false;
         }
     }
 
-    private static boolean isNoSharding(ServerConnection source, MySqlUnionQuery sqlSelectQuery, SQLStatement stmt, String contextSchema, StringPtr sqlSchema)
+    private static boolean isNoSharding(ServerConnection source, MySqlUnionQuery sqlSelectQuery, SQLStatement stmt, String contextSchema, Set<String> schemas, StringPtr dataNode)
             throws SQLException {
         SQLSelectQuery left = sqlSelectQuery.getLeft();
         SQLSelectQuery right = sqlSelectQuery.getRight();
-        return isNoSharding(source, left, stmt, new SQLSelectStatement(new SQLSelect(left)), contextSchema, sqlSchema) && isNoSharding(source, right, stmt, new SQLSelectStatement(new SQLSelect(right)), contextSchema, sqlSchema);
+        return isNoSharding(source, left, stmt, new SQLSelectStatement(new SQLSelect(left)), contextSchema, schemas, dataNode) && isNoSharding(source, right, stmt, new SQLSelectStatement(new SQLSelect(right)), contextSchema, schemas, dataNode);
     }
 
-    public static boolean isNoSharding(ServerConnection source, SQLTableSource tables, SQLStatement stmt, SQLStatement childSelectStmt, String contextSchema, StringPtr sqlSchema)
+    public static boolean isNoSharding(ServerConnection source, SQLTableSource tables, SQLStatement stmt, SQLStatement childSelectStmt, String contextSchema, Set<String> schemas, StringPtr dataNode)
             throws SQLException {
 
         if (tables == null) {
             return true;
         } else if (tables instanceof SQLExprTableSource) {
-            if (!isNoSharding(source, (SQLExprTableSource) tables, stmt, childSelectStmt, contextSchema, sqlSchema)) {
+            if (!isNoSharding(source, (SQLExprTableSource) tables, stmt, childSelectStmt, contextSchema, schemas, dataNode)) {
                 return false;
             }
         } else if (tables instanceof SQLJoinTableSource) {
-            if (!isNoSharding(source, (SQLJoinTableSource) tables, stmt, childSelectStmt, contextSchema, sqlSchema)) {
+            if (!isNoSharding(source, (SQLJoinTableSource) tables, stmt, childSelectStmt, contextSchema, schemas, dataNode)) {
                 return false;
             }
         } else if (tables instanceof SQLSubqueryTableSource) {
             SQLSelectQuery sqlSelectQuery = ((SQLSubqueryTableSource) tables).getSelect().getQuery();
-            if (!isNoSharding(source, sqlSelectQuery, stmt, new SQLSelectStatement(new SQLSelect(sqlSelectQuery)), contextSchema, sqlSchema)) {
+            if (!isNoSharding(source, sqlSelectQuery, stmt, new SQLSelectStatement(new SQLSelect(sqlSelectQuery)), contextSchema, schemas, dataNode)) {
                 return false;
             }
         } else {
@@ -141,14 +142,14 @@ public final class SchemaUtil {
         ServerSchemaStatVisitor queryTableVisitor = new ServerSchemaStatVisitor();
         childSelectStmt.accept(queryTableVisitor);
         for (SQLSelect sqlSelect : queryTableVisitor.getSubQueryList()) {
-            if (!isNoSharding(source, sqlSelect.getQuery(), stmt, new SQLSelectStatement(sqlSelect), contextSchema, sqlSchema)) {
+            if (!isNoSharding(source, sqlSelect.getQuery(), stmt, new SQLSelectStatement(sqlSelect), contextSchema, schemas, dataNode)) {
                 return false;
             }
         }
         return true;
     }
 
-    private static boolean isNoSharding(ServerConnection source, SQLExprTableSource table, SQLStatement stmt, SQLStatement childSelectStmt, String contextSchema, StringPtr sqlSchema)
+    private static boolean isNoSharding(ServerConnection source, SQLExprTableSource table, SQLStatement stmt, SQLStatement childSelectStmt, String contextSchema, Set<String> schemas, StringPtr dataNode)
             throws SQLException {
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(source.getUser(), contextSchema, table);
         ServerPrivileges.CheckType checkType = ServerPrivileges.CheckType.SELECT;
@@ -164,21 +165,23 @@ public final class SchemaUtil {
             String msg = "The statement DML privilege check is not passed, sql:" + stmt;
             throw new SQLNonTransientException(msg);
         }
-        if (!RouterUtil.isNoSharding(schemaInfo.schemaConfig, schemaInfo.table)) {
+        String noShardingNode = RouterUtil.isNoSharding(schemaInfo.schemaConfig, schemaInfo.table);
+        schemas.add(schemaInfo.schema);
+        if (noShardingNode == null) {
             return false;
-        } else if (sqlSchema.get() == null) {
-            sqlSchema.set(schemaInfo.schema);
+        } else if (dataNode.get() == null) {
+            dataNode.set(noShardingNode);
             return true;
         } else {
-            return sqlSchema.get().equals(schemaInfo.schema);
+            return dataNode.get().equals(noShardingNode);
         }
     }
 
-    public static boolean isNoSharding(ServerConnection source, SQLJoinTableSource tables, SQLStatement stmt, SQLStatement childSelectStmt, String contextSchema, StringPtr sqlSchema)
+    public static boolean isNoSharding(ServerConnection source, SQLJoinTableSource tables, SQLStatement stmt, SQLStatement childSelectStmt, String contextSchema, Set<String> schemas, StringPtr dataNode)
             throws SQLException {
         SQLTableSource left = tables.getLeft();
         SQLTableSource right = tables.getRight();
-        return isNoSharding(source, left, stmt, childSelectStmt, contextSchema, sqlSchema) && isNoSharding(source, right, stmt, childSelectStmt, contextSchema, sqlSchema);
+        return isNoSharding(source, left, stmt, childSelectStmt, contextSchema, schemas, dataNode) && isNoSharding(source, right, stmt, childSelectStmt, contextSchema, schemas, dataNode);
     }
 
     public static class SchemaInfo {

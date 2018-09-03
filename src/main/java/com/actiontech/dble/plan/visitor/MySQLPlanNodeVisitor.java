@@ -172,7 +172,7 @@ public class MySQLPlanNodeVisitor {
                 //consider if the table with other name
                 viewNode.setAlias(tableSource.getAlias() == null ? identifierExpr.getName() : tableSource.getAlias());
                 this.tableNode = viewNode;
-                this.tableNode.setWithSubQuery(true);
+                tableNode.setWithSubQuery(true);
                 this.tableNode.setExistView(true);
                 return true;
             } else {
@@ -264,7 +264,6 @@ public class MySQLPlanNodeVisitor {
     public boolean visit(SQLSubqueryTableSource subQueryTables) {
         SQLSelect sqlSelect = subQueryTables.getSelect();
         visit(sqlSelect.getQuery());
-        this.tableNode.setWithSubQuery(true);
         return true;
     }
 
@@ -337,6 +336,7 @@ public class MySQLPlanNodeVisitor {
             ((ItemScalarSubQuery) selItem).setField(true);
             tableNode.getSubQueries().add((ItemScalarSubQuery) selItem);
             tableNode.setWithSubQuery(true);
+            tableNode.setContainsSubQuery(true);
         } else if (selItem instanceof ItemFunc) {
             for (Item args : selItem.arguments()) {
                 setSubQueryNode(args);
@@ -352,6 +352,7 @@ public class MySQLPlanNodeVisitor {
             tableNode.query(whereFilter);
             if (whereFilter.isWithSubQuery()) {
                 tableNode.setWithSubQuery(true);
+                tableNode.setContainsSubQuery(true);
                 tableNode.setCorrelatedSubQuery(whereFilter.isCorrelatedSubQuery());
             }
         } else {
@@ -366,6 +367,7 @@ public class MySQLPlanNodeVisitor {
             expr.accept(v);
             if (v.getItem() instanceof ItemScalarSubQuery) {
                 tableNode.setWithSubQuery(true);
+                tableNode.setContainsSubQuery(true);
                 tableNode.setCorrelatedSubQuery(false);
             }
             this.tableNode = tableNode.orderBy(v.getItem(), p.getType());
@@ -433,6 +435,7 @@ public class MySQLPlanNodeVisitor {
         }
         if (havingFilter.isWithSubQuery()) {
             tableNode.setWithSubQuery(true);
+            tableNode.setContainsSubQuery(true);
             tableNode.setCorrelatedSubQuery(havingFilter.isCorrelatedSubQuery());
         }
         this.tableNode = this.tableNode.having(havingFilter);

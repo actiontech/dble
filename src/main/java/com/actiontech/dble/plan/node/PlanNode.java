@@ -97,11 +97,14 @@ public abstract class PlanNode {
      * alias for table node ,used for named subNode when join.
      */
     protected String alias;
-
+    /**
+     * is this node is subQuery
+     */
+    private boolean withSubQuery;
     /**
      * is this node contains subQuery
      */
-    private boolean withSubQuery;
+    private boolean containsSubQuery;
     private boolean correlatedSubQuery;
 
     private boolean existView = false;
@@ -276,6 +279,7 @@ public abstract class PlanNode {
         to.setLimitTo(this.limitTo);
         to.setSql(this.getSql());
         to.setWithSubQuery(withSubQuery);
+        to.setContainsSubQuery(containsSubQuery);
         to.setCorrelatedSubQuery(correlatedSubQuery);
         to.setUnGlobalTableCount(unGlobalTableCount);
         to.setNoshardNode(noshardNode);
@@ -555,10 +559,18 @@ public abstract class PlanNode {
         return withSubQuery;
     }
 
-    public PlanNode setWithSubQuery(boolean withSub) {
-        this.withSubQuery = withSub;
-        return this;
+    public void setWithSubQuery(boolean withSubQuery) {
+        this.withSubQuery = withSubQuery;
     }
+
+    public boolean isContainsSubQuery() {
+        return containsSubQuery;
+    }
+
+    public void setContainsSubQuery(boolean containsSubQuery) {
+        this.containsSubQuery = containsSubQuery;
+    }
+
 
     public boolean isCorrelatedSubQuery() {
         return correlatedSubQuery;

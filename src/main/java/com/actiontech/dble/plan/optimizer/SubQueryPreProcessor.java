@@ -156,7 +156,8 @@ public final class SubQueryPreProcessor {
         changeQuery.setAlias(alias);
         if (query.getColumnsSelected().size() != 1)
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "only support subquery of one column");
-        query.setWithSubQuery(true).setDistinct(true);
+        query.setWithSubQuery(true);
+        query.setDistinct(true);
 
         final List<Item> newSelects = qtn.query.getColumnsSelected();
         SubQueryFilter result = new SubQueryFilter();

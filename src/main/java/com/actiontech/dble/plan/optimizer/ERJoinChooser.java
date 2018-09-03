@@ -186,6 +186,7 @@ public class ERJoinChooser {
         ret.setWhereFilter(jn.getWhereFilter());
         ret.setAlias(jn.getAlias());
         ret.setWithSubQuery(jn.isWithSubQuery());
+        ret.setContainsSubQuery(jn.isContainsSubQuery());
         ret.setSql(jn.getSql());
         ret.setUpFields();
         return ret;

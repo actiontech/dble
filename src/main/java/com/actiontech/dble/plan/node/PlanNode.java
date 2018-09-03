@@ -312,6 +312,17 @@ public abstract class PlanNode {
         outerFields.clear();
         nameContext.setFindInSelect(false);
         nameContext.setSelectFirst(false);
+        if (parent instanceof MergeNode) {
+            if (parent.getChildren().get(1) != null && parent.getChildren().get(1) == this) {
+                List<Item> alaisList = parent.getChildren().get(0).getColumnsSelected();
+                for (int i = 0; i < columnsSelected.size(); i++) {
+                    Item sel = columnsSelected.get(i);
+                    Item beforeUnion = alaisList.get(i);
+                    sel.setAlias(beforeUnion.getAlias() == null ? beforeUnion.getItemName() : beforeUnion.getAlias());
+                }
+            }
+        }
+
         for (Item sel : columnsSelected) {
             setUpItem(sel);
             NamedField field = makeOutNamedField(sel);

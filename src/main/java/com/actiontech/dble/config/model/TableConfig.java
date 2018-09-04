@@ -73,11 +73,7 @@ public class TableConfig {
         if (tableType != TableTypeEnum.TYPE_GLOBAL_TABLE && parentTC == null && theDataNodes.length > 1 && rule == null) {
             throw new IllegalArgumentException("invalid table dataNodes: " + dataNode + " for table " + name);
         }
-        if (theDataNodes.length == 1) {
-            isNoSharding = true;
-        } else {
-            isNoSharding = false;
-        }
+        isNoSharding = theDataNodes.length == 1;
         dataNodes = new ArrayList<>(theDataNodes.length);
         Collections.addAll(dataNodes, theDataNodes);
         this.rule = rule;
@@ -98,7 +94,7 @@ public class TableConfig {
                     locateRTableKeySql = genLocateRootParentSQL();
                 }
             } else if (parentTC.getDirectRouteTC() != null) {
-                /**
+                /*
                  * grandTable partitionColumn =col1
                  * fatherTable joinkey =col2,parentkey = col1....so directRouteTC = grandTable
                  * thisTable joinkey = col3 ,parentkey = col2...so directRouteTC = grandTable
@@ -139,11 +135,7 @@ public class TableConfig {
         this.parentTC = parentTC;
         this.joinKey = joinKey;
         this.parentKey = parentKey;
-        if (dataNodes.size() == 1) {
-            isNoSharding = true;
-        } else {
-            isNoSharding = false;
-        }
+        isNoSharding = dataNodes.size() == 1;
         if (parentTC != null) {
             if (parentTC.getParentTC() == null) {
                 if (parentKey.equalsIgnoreCase(parentTC.partitionColumn)) {
@@ -173,7 +165,7 @@ public class TableConfig {
     }
 
 
-    public TableConfig lowerCaseCopy(TableConfig parent) {
+    TableConfig lowerCaseCopy(TableConfig parent) {
         return new TableConfig(this.name.toLowerCase(), this.primaryKey, this.autoIncrement, this.needAddLimit,
                 this.tableType, this.dataNodes, this.rule, this.ruleRequired, parent, this.joinKey, this.parentKey);
 
@@ -203,7 +195,7 @@ public class TableConfig {
         return this.tableType == TableTypeEnum.TYPE_GLOBAL_TABLE;
     }
 
-    public String genLocateRootParentSQL() {
+    private String genLocateRootParentSQL() {
         TableConfig tb = this;
         StringBuilder tableSb = new StringBuilder();
         StringBuilder condition = new StringBuilder();
@@ -246,7 +238,6 @@ public class TableConfig {
     /**
      * get root parent
      *
-     * @return
      */
     public TableConfig getRootParent() {
         if (parentTC == null) {

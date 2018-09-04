@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2018 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.DbleServer;
@@ -13,6 +13,7 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.net.handler.LoadDataInfileHandler;
 import com.actiontech.dble.net.mysql.BinaryPacket;
+import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RequestFilePacket;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -272,7 +273,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 String value = lineList[partitionColumnIndex];
                 RouteCalculateUnit routeCalculateUnit = new RouteCalculateUnit();
                 routeCalculateUnit.addShardingExpr(tableName, getPartitionColumn(),
-                                                   parseFieldString(value, loadData.getEnclose(), loadData.getEscape()));
+                        parseFieldString(value, loadData.getEnclose(), loadData.getEscape()));
                 ctx.addRouteCalculateUnit(routeCalculateUnit);
 
                 try {
@@ -536,7 +537,13 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             parseFileByLine(tempFile, loadData.getCharset(), loadData.getLineTerminatedBy());
         } else {
             String content = new String(tempByteBuffer.toByteArray(), Charset.forName(loadData.getCharset()));
-
+            if ("".equals(content)) {
+                OkPacket ok = new OkPacket();
+                ok.setPacketId(++packId);
+                ok.setMessage("Records: 0  Deleted: 0  Skipped: 0  Warnings: 0".getBytes());
+                ok.write(serverConnection);
+                return;
+            }
             // List<String> lines = Splitter.on(loadData.getLineTerminatedBy()).omitEmptyStrings().splitToList(content);
             CsvParserSettings settings = new CsvParserSettings();
             settings.setMaxColumns(65535);

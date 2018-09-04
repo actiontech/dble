@@ -137,7 +137,6 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             StringPtr noShardingNodePr = new StringPtr(noShardingNode);
             Set<String> schemas = new HashSet<>();
             if (replace.getQuery() != null) {
-                StringPtr sqlSchema = new StringPtr(schemaInfo.getSchema());
                 //replace into ...select  if the both table is nosharding table
                 SQLSelect select = replace.getQuery().getSubQuery();
                 SQLSelectStatement selectStmt = new SQLSelectStatement(select);

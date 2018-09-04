@@ -71,7 +71,6 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
                 rrs.setCanRunInReadDB(false);
             }
         } else if (sqlSelectQuery instanceof MySqlUnionQuery) {
-            StringPtr sqlSchema = new StringPtr(null);
             StringPtr noShardingNode = new StringPtr(null);
             Set<String> schemas = new HashSet<>();
             if (SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, schemas, noShardingNode)) {

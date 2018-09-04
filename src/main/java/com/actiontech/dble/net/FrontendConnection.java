@@ -428,8 +428,7 @@ public abstract class FrontendConnection extends AbstractConnection {
             hs.setThreadId(id);
             hs.setSeed(rand1);
             hs.setServerCapabilities(getServerCapabilities());
-            //TODO:CHECK
-            int charsetIndex = CharsetUtil.getCharsetDefaultIndex(DbleServer.getInstance().getSystemVariables().getDefaultValue("character_set_server"));
+            int charsetIndex = CharsetUtil.getCharsetDefaultIndex(DbleServer.getInstance().getConfig().getSystem().getCharset());
             hs.setServerCharsetIndex((byte) (charsetIndex & 0xff));
             hs.setServerStatus(2);
             hs.setRestOfScrambleBuff(rand2);

@@ -134,8 +134,7 @@ public class MySQLConnection extends BackendAIOConnection {
     public void resetContextStatus() {
         this.txIsolation = -1;
         this.autocommit = true;
-        //TODO:CHECK
-        this.setCharacterSet(DbleServer.getInstance().getSystemVariables().getDefaultValue("character_set_server"));
+        this.setCharacterSet(DbleServer.getInstance().getConfig().getSystem().getCharset());
         this.usrVariables.clear();
         this.sysVariables.clear();
     }
@@ -222,8 +221,7 @@ public class MySQLConnection extends BackendAIOConnection {
         packet.setPacketId(1);
         packet.setClientFlags(clientFlags);
         packet.setMaxPacketSize(maxPacketSize);
-        //TODO:CHECK
-        int charsetIndex = CharsetUtil.getCharsetDefaultIndex(DbleServer.getInstance().getSystemVariables().getDefaultValue("character_set_server"));
+        int charsetIndex = CharsetUtil.getCharsetDefaultIndex(DbleServer.getInstance().getConfig().getSystem().getCharset());
         packet.setCharsetIndex(charsetIndex);
 
         packet.setUser(user);

@@ -35,7 +35,7 @@ public class ItemFuncGe extends ItemBoolFunc2 {
     @Override
     public BigInteger valInt() {
         int value = cmp.compare();
-        return value >= 0 ? BigInteger.ONE : BigInteger.ZERO;
+        return value >= 0 && !nullValue ? BigInteger.ONE : BigInteger.ZERO;
     }
 
     @Override

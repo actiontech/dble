@@ -275,10 +275,7 @@ public class ArgComparator {
             }
             if (ac.setNull)
                 ac.owner.setNullValue(true);
-            if (ac.a.isNullValue() && ac.b.isNullValue()) {
-                return ac.a.isNullValue() ? -1 : 1;
-            }
-            return -1;
+            return ac.a.isNullValue() ? -1 : 1;
         }
     }
 
@@ -301,10 +298,7 @@ public class ArgComparator {
             }
             if (ac.setNull)
                 ac.owner.setNullValue((true));
-            if (ac.a.isNullValue() && ac.b.isNullValue()) {
-                return ac.a.isNullValue() ? -1 : 1;
-            }
-            return -1;
+            return ac.a.isNullValue() ? -1 : 1;
 
         }
     }
@@ -325,10 +319,7 @@ public class ArgComparator {
             }
             if (ac.setNull)
                 ac.owner.setNullValue(true);
-            if (ac.a.isNullValue() && ac.b.isNullValue()) {
-                return ac.a.isNullValue() ? -1 : 1;
-            }
-            return -1;
+            return ac.a.isNullValue() ? -1 : 1;
         }
     }
 
@@ -347,10 +338,7 @@ public class ArgComparator {
             }
             if (ac.setNull)
                 ac.owner.setNullValue((true));
-            if (ac.a.isNullValue() && ac.b.isNullValue()) {
-                return ac.a.isNullValue() ? -1 : 1;
-            }
-            return -1;
+            return ac.a.isNullValue() ? -1 : 1;
         }
     }
 
@@ -369,10 +357,7 @@ public class ArgComparator {
             }
             if (ac.setNull)
                 ac.owner.setNullValue((true));
-            if (ac.a.isNullValue() && ac.b.isNullValue()) {
-                return ac.a.isNullValue() ? -1 : 1;
-            }
-            return -1;
+            return ac.a.isNullValue() ? -1 : 1;
         }
     }
 
@@ -407,10 +392,7 @@ public class ArgComparator {
             }
             if (ac.setNull)
                 ac.owner.setNullValue((true));
-            if (ac.a.isNullValue() && ac.b.isNullValue()) {
-                return ac.a.isNullValue() ? -1 : 1;
-            }
-            return -1;
+            return ac.a.isNullValue() ? -1 : 1;
         }
     }
 
@@ -531,10 +513,7 @@ public class ArgComparator {
             }
             if (ac.setNull)
                 ac.owner.setNullValue((true));
-            if (ac.a.isNullValue() && ac.b.isNullValue()) {
-                return ac.a.isNullValue() ? -1 : 1;
-            }
-            return -1;
+            return ac.a.isNullValue() ? -1 : 1;
         }
     }
 

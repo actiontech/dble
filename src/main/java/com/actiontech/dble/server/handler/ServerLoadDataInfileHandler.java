@@ -181,12 +181,13 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 serverConnection.writeErrMessage(ErrorCode.ER_FILE_NOT_FOUND, fileName + " is not found!");
                 clear();
             } else {
-                parseFileByLine(fileName, loadData.getCharset(), loadData.getLineTerminatedBy());
-                RouteResultset rrs = buildResultSet(routeResultMap);
-                if (rrs != null) {
-                    flushDataToFile();
-                    isStartLoadData = false;
-                    serverConnection.getSession2().execute(rrs);
+                if (parseFileByLine(fileName, loadData.getCharset(), loadData.getLineTerminatedBy())) {
+                    RouteResultset rrs = buildResultSet(routeResultMap);
+                    if (rrs != null) {
+                        flushDataToFile();
+                        isStartLoadData = false;
+                        serverConnection.getSession2().execute(rrs);
+                    }
                 }
             }
         }
@@ -595,7 +596,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     }
 
 
-    private void parseFileByLine(String file, String encode, String split) {
+    private boolean parseFileByLine(String file, String encode, String split) {
         List<SQLExpr> columns = statement.getColumns();
 
         CsvParserSettings settings = new CsvParserSettings();
@@ -628,13 +629,23 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             if (statement.getIgnoreLinesNumber() != null && !"".equals(statement.getIgnoreLinesNumber().toString())) {
                 ignoreNumber = Integer.parseInt(statement.getIgnoreLinesNumber().toString());
             }
+            boolean empty = true;
             while ((row = parser.parseNext()) != null) {
                 if (ignoreNumber == 0) {
                     parseOneLine(columns, tableName, row, true, loadData.getLineTerminatedBy());
+                    empty = false;
                 } else {
                     ignoreNumber--;
                 }
             }
+            if (empty) {
+                OkPacket ok = new OkPacket();
+                ok.setPacketId(1);
+                ok.setMessage("Records: 0  Deleted: 0  Skipped: 0  Warnings: 0".getBytes());
+                ok.write(serverConnection);
+                return false;
+            }
+            return true;
         } catch (FileNotFoundException | UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         } finally {

@@ -152,7 +152,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         if (!DbleServer.getInstance().getTmManager().checkTableExists(schema.getName(), tableName)) {
             String msg = "Table '" + schema.getName() + "." + tableName + "' doesn't exist";
             clear();
-            serverConnection.writeErrMessage("42S02", msg, 1146);
+            serverConnection.writeErrMessage("42S02", msg, ErrorCode.ER_NO_SUCH_TABLE);
             return;
         }
         tempPath = SystemConfig.getHomePath() + File.separator + "temp" + File.separator + serverConnection.getId() + File.separator;
@@ -312,7 +312,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     }
 
 
-    private void parseOneLine(List<SQLExpr> columns, String table, String[] line, boolean toFile, String lineEnd) {
+    private void parseOneLine(List<SQLExpr> columns, String table, String[] line, boolean toFile, String lineEnd) throws Exception {
         if (loadData.getEnclose() != null && loadData.getEnclose().charAt(0) > 0x0020) {
             for (int i = 0; i < line.length; i++) {
                 line[i] = line[i].trim();
@@ -322,7 +322,11 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         RouteResultset rrs = tryDirectRoute(sql, line);
         if (rrs == null || rrs.getNodes() == null || rrs.getNodes().length == 0) {
             String insertSql = makeSimpleInsert(columns, line, table);
-            rrs = serverConnection.routeSQL(insertSql, ServerParse.INSERT);
+            try {
+                rrs = DbleServer.getInstance().getRouterService().route(schema, ServerParse.INSERT, insertSql, serverConnection);
+            } catch (Exception e) {
+                throw e;
+            }
         }
 
         if (rrs == null || rrs.getNodes() == null || rrs.getNodes().length == 0) {
@@ -410,6 +414,9 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
 
     private RouteResultset buildResultSet(Map<String, LoadData> routeMap) {
+        if (routeMap.size() == 0) {
+            return null;
+        }
         statement.setLocal(true);
         SQLLiteralExpr fn = new SQLCharExpr(fileName);    //druid will filter path, reset it now
         statement.setFileName(fn);
@@ -583,7 +590,13 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 }
                 while ((row = parser.parseNext()) != null) {
                     if (ignoreNumber == 0) {
-                        parseOneLine(columns, tableName, row, true, loadData.getLineTerminatedBy());
+                        try {
+                            parseOneLine(columns, tableName, row, true, loadData.getLineTerminatedBy());
+                        } catch (Exception e) {
+                            clear();
+                            serverConnection.writeErrMessage(++packId, ErrorCode.ER_WRONG_VALUE_COUNT_ON_ROW, "row data can't not calculate a sharding value," + e.getMessage());
+                            return;
+                        }
                     } else {
                         ignoreNumber--;
                     }
@@ -598,8 +611,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             flushDataToFile();
             serverConnection.getSession2().execute(rrs);
         }
-
-        // sendOk(++packID);
     }
 
 
@@ -639,16 +650,23 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             boolean empty = true;
             while ((row = parser.parseNext()) != null) {
                 if (ignoreNumber == 0) {
-                    parseOneLine(columns, tableName, row, true, loadData.getLineTerminatedBy());
+                    try {
+                        parseOneLine(columns, tableName, row, true, loadData.getLineTerminatedBy());
+                    } catch (Exception e) {
+                        clear();
+                        serverConnection.writeErrMessage(ErrorCode.ER_WRONG_VALUE_COUNT_ON_ROW, "row data can't not calculate a sharding value," + e.getMessage());
+                        return false;
+                    }
                     empty = false;
                 } else {
                     ignoreNumber--;
                 }
             }
             if (empty) {
+                byte packId = packID;
                 clear();
                 OkPacket ok = new OkPacket();
-                ok.setPacketId(1);
+                ok.setPacketId(++packId);
                 ok.setMessage("Records: 0  Deleted: 0  Skipped: 0  Warnings: 0".getBytes());
                 ok.write(serverConnection);
                 return false;

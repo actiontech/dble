@@ -22,7 +22,7 @@ public interface Repository {
 
     CoordinatorLogEntry get(String coordinatorId);
 
-    Collection<CoordinatorLogEntry> getAllCoordinatorLogEntries();
+    Collection<CoordinatorLogEntry> getAllCoordinatorLogEntries(boolean first);
 
     boolean writeCheckpoint(Collection<CoordinatorLogEntry> checkpointContent);
 

@@ -91,14 +91,16 @@ public class FileSystemRepository implements Repository {
     }
 
     @Override
-    public Collection<CoordinatorLogEntry> getAllCoordinatorLogEntries() {
+    public Collection<CoordinatorLogEntry> getAllCoordinatorLogEntries(boolean first) {
         FileInputStream fis = null;
         try {
             fis = file.openLastValidVersionForReading();
         } catch (FileNotFoundException firstStart) {
             // the file could not be opened for reading;
             // merely return the default empty vector
-            LOGGER.info("Only For debug FileSystemRepository.getAllCoordinatorLogEntries error", firstStart);
+            if (!first) {
+                LOGGER.info("Only For debug FileSystemRepository.getAllCoordinatorLogEntries error", firstStart);
+            }
         }
         if (fis != null) {
             return readFromInputStream(fis);

@@ -60,7 +60,7 @@ public class InMemoryRepository implements Repository {
     }
 
     @Override
-    public Collection<CoordinatorLogEntry> getAllCoordinatorLogEntries() {
+    public Collection<CoordinatorLogEntry> getAllCoordinatorLogEntries(boolean first) {
         return storage.values();
     }
 

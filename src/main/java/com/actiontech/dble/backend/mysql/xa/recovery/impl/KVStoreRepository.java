@@ -57,7 +57,7 @@ public class KVStoreRepository implements Repository {
     }
 
     @Override
-    public Collection<CoordinatorLogEntry> getAllCoordinatorLogEntries() {
+    public Collection<CoordinatorLogEntry> getAllCoordinatorLogEntries(boolean first) {
         String data = null;
         try {
             if (zkConn.checkExists().forPath(logPath) != null) {
@@ -67,7 +67,9 @@ public class KVStoreRepository implements Repository {
                         data = new String(raw, StandardCharsets.UTF_8);
                     }
                 } catch (Exception e) {
-                    LOGGER.warn("KVStoreRepository.getAllCoordinatorLogEntries error", e);
+                    if (!first) {
+                        LOGGER.warn("KVStoreRepository.getAllCoordinatorLogEntries error", e);
+                    }
                 }
             }
         } catch (Exception e2) {

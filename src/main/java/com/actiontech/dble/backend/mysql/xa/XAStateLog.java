@@ -125,7 +125,7 @@ public final class XAStateLog {
                 ReentrantLock lockMap = ((InMemoryRepository) IN_MEMORY_REPOSITORY).getLock();
                 lockMap.lock();
                 try {
-                    Collection<CoordinatorLogEntry> logCollection = IN_MEMORY_REPOSITORY.getAllCoordinatorLogEntries();
+                    Collection<CoordinatorLogEntry> logCollection = IN_MEMORY_REPOSITORY.getAllCoordinatorLogEntries(false);
                     for (CoordinatorLogEntry coordinatorLogEntry : logCollection) {
                         CoordinatorLogEntry log = coordinatorLogEntry.getDeepCopy();
                         if (log != null) {
@@ -195,7 +195,7 @@ public final class XAStateLog {
     }
 
     public static void cleanCompleteRecoveryLog() {
-        for (CoordinatorLogEntry entry : IN_MEMORY_REPOSITORY.getAllCoordinatorLogEntries()) {
+        for (CoordinatorLogEntry entry : IN_MEMORY_REPOSITORY.getAllCoordinatorLogEntries(false)) {
             if (entry.getTxState() == TxState.TX_COMMITTED_STATE || entry.getTxState() == TxState.TX_ROLLBACKED_STATE) {
                 IN_MEMORY_REPOSITORY.remove(entry.getId());
             }

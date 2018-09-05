@@ -88,15 +88,15 @@
         <property name="nestLoopRowsSize">2000</property>
 
         <!-- query memory used for per session,unit is M-->
-        <property name="otherMemSize ">4</property>
-        <property name="orderMemSize ">4</property>
-        <property name="joinMemSize ">4</property>
+        <property name="otherMemSize">4</property>
+        <property name="orderMemSize">4</property>
+        <property name="joinMemSize">4</property>
 
         <!-- off Heap unit:bytes-->
-        <property name="bufferPoolChunkSize ">4096</property>
-        <property name="bufferPoolPageNumber ">512</property>
-        <property name="bufferPoolPageSize ">2097152</property>
-        <!--<property name="bufferPoolPageSize ">mappedFileSize</property>-->
+        <property name="bufferPoolChunkSize">4096</property>
+        <property name="bufferPoolPageNumber">512</property>
+        <property name="bufferPoolPageSize">2097152</property>
+        <!--<property name="bufferPoolPageSize">mappedFileSize</property>-->
 
         <!-- sql statistics-->
         <!-- 1 means use SQL statistics, 0 means not -->
@@ -107,31 +107,31 @@
         <!--<property name="maxResultSet">524288</property>-->
 
         <!-- backSocket unit:bytes-->
-        <!--<property name="backSocketSoRcvbuf ">4194304</property>-->
+        <!--<property name="backSocketSoRcvbuf">4194304</property>-->
         <!--<property name="backSocketSoSndbuf">1048576</property>-->
-        <!--<property name="backSocketNoDelay ">1</property>-->
+        <!--<property name="backSocketNoDelay">1</property>-->
 
         <!-- frontSocket-->
-        <!--<property name="frontSocketSoRcvbuf ">1048576</property>-->
+        <!--<property name="frontSocketSoRcvbuf">1048576</property>-->
         <!--<property name="frontSocketSoSndbuf">4194304</property>-->
-        <!--<property name="frontSocketNoDelay ">1</property>-->
+        <!--<property name="frontSocketNoDelay">1</property>-->
 
         <!-- for join tmp results -->
-        <!--<property name="mergeQueueSize ">1024</property>-->
-        <!--<property name="orderByQueueSize ">1024</property>-->
-        <!--<property name="joinQueueSize ">1024</property>-->
+        <!--<property name="mergeQueueSize">1024</property>-->
+        <!--<property name="orderByQueueSize">1024</property>-->
+        <!--<property name="joinQueueSize">1024</property>-->
 
         <!-- if enable the slow query log -->
-        <property name="enableSlowLog ">0</property>
+        <property name="enableSlowLog">0</property>
         <!-- the slow query log location -->
-        <!--<property name="slowLogBaseDir ">./slowlogs</property>-->
-        <!--<property name="slowLogBaseName ">slow-query</property>-->
+        <!--<property name="slowLogBaseDir">./slowlogs</property>-->
+        <!--<property name="slowLogBaseName">slow-query</property>-->
         <!-- the max period for flushing the slow query log from memory to disk  after last time , unit is second -->
-        <property name="flushSlowLogPeriod ">1</property>
+        <property name="flushSlowLogPeriod">1</property>
         <!-- the max records for flushing the slow query log from memory to disk after last time -->
-        <property name="flushSlowLogSize ">1000</property>
+        <property name="flushSlowLogSize">1000</property>
         <!-- the threshold for judging if the query is slow , unit is millisecond -->
-        <property name="sqlSlowTime ">100</property>
+        <property name="sqlSlowTime">100</property>
 
 
     </system>

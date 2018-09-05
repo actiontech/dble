@@ -149,6 +149,11 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         }
 
         tableConfig = schema.getTables().get(tableName);
+        if (!DbleServer.getInstance().getTmManager().checkTableExists(schema.getName(), tableName)) {
+            serverConnection.writeErrMessage("42S02", "Table '" + schema.getName() + "." + tableName + "' doesn't exist", 1146);
+            clear();
+            return;
+        }
         tempPath = SystemConfig.getHomePath() + File.separator + "temp" + File.separator + serverConnection.getId() + File.separator;
         tempFile = tempPath + "clientTemp.txt";
         tempByteBuffer = new ByteArrayOutputStream();
@@ -539,6 +544,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         } else {
             String content = new String(tempByteBuffer.toByteArray(), Charset.forName(loadData.getCharset()));
             if ("".equals(content)) {
+                clear();
                 OkPacket ok = new OkPacket();
                 ok.setPacketId(++packId);
                 ok.setMessage("Records: 0  Deleted: 0  Skipped: 0  Warnings: 0".getBytes());
@@ -639,6 +645,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 }
             }
             if (empty) {
+                clear();
                 OkPacket ok = new OkPacket();
                 ok.setPacketId(1);
                 ok.setMessage("Records: 0  Deleted: 0  Skipped: 0  Warnings: 0".getBytes());

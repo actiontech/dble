@@ -150,8 +150,9 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
         tableConfig = schema.getTables().get(tableName);
         if (!DbleServer.getInstance().getTmManager().checkTableExists(schema.getName(), tableName)) {
-            serverConnection.writeErrMessage("42S02", "Table '" + schema.getName() + "." + tableName + "' doesn't exist", 1146);
+            String msg = "Table '" + schema.getName() + "." + tableName + "' doesn't exist";
             clear();
+            serverConnection.writeErrMessage("42S02", msg, 1146);
             return;
         }
         tempPath = SystemConfig.getHomePath() + File.separator + "temp" + File.separator + serverConnection.getId() + File.separator;
@@ -183,8 +184,9 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             filePacket.write(buffer, serverConnection, true);
         } else {
             if (!new File(fileName).exists()) {
-                serverConnection.writeErrMessage(ErrorCode.ER_FILE_NOT_FOUND, fileName + " is not found!");
+                String msg = fileName + " is not found!";
                 clear();
+                serverConnection.writeErrMessage(ErrorCode.ER_FILE_NOT_FOUND, msg);
             } else {
                 if (parseFileByLine(fileName, loadData.getCharset(), loadData.getLineTerminatedBy())) {
                     RouteResultset rrs = buildResultSet(routeResultMap);
@@ -202,8 +204,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     public void handle(byte[] data) {
         try {
             if (sql == null) {
-                serverConnection.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
                 clear();
+                serverConnection.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
                 return;
             }
             BinaryPacket packet = new BinaryPacket();
@@ -444,7 +446,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
     private String makeSimpleInsert(List<SQLExpr> columns, String[] fields, String table) {
         StringBuilder sb = new StringBuilder();
-        sb.append(LoadData.LOAD_DATA_HINT).append("insert into ").append(table.toUpperCase());
+        sb.append(LoadData.LOAD_DATA_HINT).append("insert into ").append(table);
         if (columns != null && columns.size() > 0) {
             sb.append("(");
             for (int i = 0, columnsSize = columns.size(); i < columnsSize; i++) {
@@ -538,7 +540,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         saveByteOrToFile(null, true);
 
         List<SQLExpr> columns = statement.getColumns();
-        String tableSimpleName = statement.getTableName().getSimpleName();
         if (isHasStoreToFile) {
             parseFileByLine(tempFile, loadData.getCharset(), loadData.getLineTerminatedBy());
         } else {
@@ -582,7 +583,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 }
                 while ((row = parser.parseNext()) != null) {
                     if (ignoreNumber == 0) {
-                        parseOneLine(columns, tableSimpleName, row, true, loadData.getLineTerminatedBy());
+                        parseOneLine(columns, tableName, row, true, loadData.getLineTerminatedBy());
                     } else {
                         ignoreNumber--;
                     }

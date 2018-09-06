@@ -8,6 +8,7 @@ package com.actiontech.dble.cache;
 import com.actiontech.dble.cache.impl.EnchachePooFactory;
 import com.actiontech.dble.cache.impl.LevelDBCachePooFactory;
 import com.actiontech.dble.cache.impl.MapDBCachePooFactory;
+import com.actiontech.dble.cache.impl.RocksDBCachePoolFactory;
 import com.actiontech.dble.util.ResourceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -170,6 +171,8 @@ public class CacheService {
             case "mapdb":
                 poolFactories.put(factoryType, new MapDBCachePooFactory());
                 break;
+            case "rocksdb":
+                poolFactories.put(factoryType,new RocksDBCachePoolFactory());
             default:
                 CachePoolFactory factry = (CachePoolFactory) Class.forName(factryClassName).newInstance();
                 poolFactories.put(factoryType, factry);

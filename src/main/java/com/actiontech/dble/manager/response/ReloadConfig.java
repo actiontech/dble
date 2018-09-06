@@ -256,9 +256,9 @@ public final class ReloadConfig {
     }
 
     private static void writeErrorResultForCluster(ManagerConnection c, String errorMsg) {
-        String sb = "Reload config failure partially. This failed node reasons:[" + errorMsg + "]";
+        String sb = "Reload config failed partially. The node(s) failed because of:[" + errorMsg + "]";
         LOGGER.warn(sb);
-        c.writeErrMessage(ErrorCode.ER_YES, sb);
+        c.writeErrMessage(ErrorCode.ER_CLUSTER_RELOAD, sb);
     }
 
     private static void writeErrorResult(ManagerConnection c, String errorMsg) {

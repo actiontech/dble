@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -418,9 +419,11 @@ public final class ClusterUcoreSender {
 
 
     public static void checkOnline(Map<String, String> expectedMap, Map<String, String> currentMap) {
-        for (Map.Entry<String, String> entry : expectedMap.entrySet()) {
+        Iterator<Map.Entry<String, String>> iterator = expectedMap.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, String> entry = iterator.next();
             if (!currentMap.containsKey(entry.getKey())) {
-                expectedMap.remove(entry.getKey());
+                iterator.remove();
             }
         }
 

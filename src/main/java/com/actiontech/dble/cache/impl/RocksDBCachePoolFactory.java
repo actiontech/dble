@@ -40,7 +40,7 @@ public class RocksDBCachePoolFactory extends CachePoolFactory {
                     }
                 }
             });
-            return new RocksDBPool(db,poolName,cacheSize);
+            return new RocksDBPool(db,poolName,cacheSize,expireSeconds);
         }catch(RocksDBException e){
             throw new InitStoreException(e);
         }

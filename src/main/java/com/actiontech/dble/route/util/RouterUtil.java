@@ -423,7 +423,7 @@ public final class RouterUtil {
         // no sharding table
         String noShardingNode = RouterUtil.isNoSharding(schema, tables.get(0));
         if (noShardingNode != null) {
-            RouterUtil.routeToSingleNode(rrs, noShardingNode);
+            return RouterUtil.routeToSingleNode(rrs, noShardingNode);
         }
 
         if (tables.size() == 1) {

@@ -15,27 +15,32 @@ public class RocksDBCachePoolFactory extends CachePoolFactory {
         options.setAllowMmapReads(true).
                 setAllowMmapWrites(true).
                 setCreateIfMissing(true).
-                setCreateMissingColumnFamilies(true).
-                setCreateIfMissing(true).
-                setCreateMissingColumnFamilies(true).
-                setWalSizeLimitMB(cacheSize).
-                setWalTtlSeconds(expireSeconds);
-        CompactionOptionsFIFO fifo = new CompactionOptionsFIFO();
-        fifo.setMaxTableFilesSize(cacheSize);
-        options.setCompactionOptionsFIFO(fifo);
+                setCreateMissingColumnFamilies(true);
+        if (cacheSize > 0) {
+            CompactionOptionsFIFO fifo = new CompactionOptionsFIFO();
+            fifo.setMaxTableFilesSize(cacheSize);
+            options.setCompactionOptionsFIFO(fifo);
+        }
+
         String path = "rocksdb/" + poolName;
         try {
-            final RocksDB db = TtlDB.open(options, path, expireSeconds, false);
+            RocksDB db;
+            if (expireSeconds > 0) {
+                db = TtlDB.open(options, path, expireSeconds, false);
+            } else {
+                db = RocksDB.open(options, path);
+            }
+            final RocksDB finalDB = db;
             Runtime.getRuntime().addShutdownHook(new Thread() {
                 public void run() {
                     FlushOptions fo = new FlushOptions();
                     fo.setWaitForFlush(true);
                     try {
-                        db.flush(fo);
+                        finalDB.flush(fo);
                     } catch (RocksDBException e) {
                         LOGGER.warn("RocksDB flush error", e);
                     } finally {
-                        db.close();
+                        finalDB.close();
                         fo.close();
                         options.close();
                     }

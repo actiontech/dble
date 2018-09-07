@@ -1,5 +1,5 @@
-GitVersion a258933fe831efc18d8b236313e4053344706f5f
-BuildTime  20180907105815
+GitVersion 715373a87f3afe789dbef0646a69d179dc589e55
+BuildTime  20180907110922
 MavenVersion 9.9.9.9
 GitUrl https://github.com/actiontech/dble
 WebSite http://dble.cloud/

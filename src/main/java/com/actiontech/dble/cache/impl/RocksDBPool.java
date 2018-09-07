@@ -9,11 +9,11 @@ import org.slf4j.LoggerFactory;
 
 public class RocksDBPool implements CachePool {
     private static final Logger LOGGER = LoggerFactory.getLogger(RocksDBPool.class);
-    private FSTConfiguration fst = FSTConfiguration.createDefaultConfiguration();
     private final RocksDB cache;
     private final CacheStatic cacheStatistics = new CacheStatic();
     private final String name;
     private final long maxSize;
+    private FSTConfiguration fst = FSTConfiguration.createDefaultConfiguration();
 
     public RocksDBPool(RocksDB cache, String name, long maxSize) {
         this.cache = cache;
@@ -23,20 +23,20 @@ public class RocksDBPool implements CachePool {
 
     @Override
     public void putIfAbsent(Object key, Object value) {
-        try{
+        try {
             cache.put(fst.asByteArray(key), fst.asByteArray(value));
             cacheStatistics.incPutTimes();
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(name + " add leveldb cache ,key:" + key + " value:" + value);
             }
-        }catch(Exception e){
+        } catch (Exception e) {
             throw new RocksDBPoolException(e);
         }
     }
 
     @Override
     public Object get(Object key) {
-        try{
+        try {
             byte[] keyBytes = fst.asByteArray(key);
             byte[] bytes = cache.get(fst.asByteArray(keyBytes));
             if (bytes != null) {
@@ -54,7 +54,7 @@ public class RocksDBPool implements CachePool {
                 cacheStatistics.incAccessTimes();
                 return null;
             }
-        }catch(Exception e){
+        } catch (Exception e) {
             throw new RocksDBPoolException(e);
         }
     }
@@ -77,7 +77,8 @@ public class RocksDBPool implements CachePool {
     public long getMaxSize() {
         return maxSize;
     }
-    public static class RocksDBPoolException extends RuntimeException{
+
+    public static class RocksDBPoolException extends RuntimeException {
         public RocksDBPoolException(Throwable cause) {
             super(cause);
         }

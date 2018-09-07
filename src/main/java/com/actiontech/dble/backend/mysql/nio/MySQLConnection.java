@@ -625,7 +625,7 @@ public class MySQLConnection extends BackendAIOConnection {
     }
 
     @Override
-    public void close(String reason) {
+    public void close(final String reason) {
         if (!isClosed.get()) {
             if (isAuthenticated) {
                 isQuit.set(true);
@@ -640,18 +640,28 @@ public class MySQLConnection extends BackendAIOConnection {
             innerTerminate(reason);
         }
         if (this.respHandler != null) {
-            this.respHandler.connectionClose(this, reason);
-            respHandler = null;
+            closeResponseHandler(reason);
         }
     }
 
-    public void closeInner(String reason) {
+    private void closeResponseHandler(final String reason) {
+        final ResponseHandler handler = respHandler;
+        final MySQLConnection conn = this;
+        DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                handler.connectionClose(conn, reason);
+                respHandler = null;
+            }
+        });
+    }
+
+    public void closeInner(final String reason) {
         if (!isClosed.get()) {
             innerTerminate(reason);
         }
         if (this.respHandler != null) {
-            this.respHandler.connectionClose(this, reason);
-            respHandler = null;
+            closeResponseHandler(reason);
         }
     }
 

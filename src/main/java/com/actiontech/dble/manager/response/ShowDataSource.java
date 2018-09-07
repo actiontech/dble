@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -72,7 +72,7 @@ public final class ShowDataSource {
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("WRITE_LOAD", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
     }
@@ -98,6 +98,9 @@ public final class ShowDataSource {
         if (null != name) {
             PhysicalDBNode dn = conf.getDataNodes().get(name);
             for (PhysicalDatasource w : dn.getDbPool().getAllDataSources()) {
+                if (w.getConfig().isDisabled()) {
+                    continue;
+                }
                 RowDataPacket row = getRow(w, c.getCharset().getResults());
                 row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
@@ -110,14 +113,18 @@ public final class ShowDataSource {
                 PhysicalDBPool dataHost = entry.getValue();
 
                 for (int i = 0; i < dataHost.getSources().length; i++) {
-                    RowDataPacket row = getRow(dataHost.getSources()[i], c.getCharset().getResults());
-                    row.setPacketId(++packetId);
-                    buffer = row.write(buffer, c, true);
+                    if (!dataHost.getSources()[i].getConfig().isDisabled()) {
+                        RowDataPacket row = getRow(dataHost.getSources()[i], c.getCharset().getResults());
+                        row.setPacketId(++packetId);
+                        buffer = row.write(buffer, c, true);
+                    }
                     if (dataHost.getrReadSources().get(i) != null) {
-                        for (PhysicalDatasource w : dataHost.getrReadSources().get(i)) {
-                            RowDataPacket sRow = getRow(w, c.getCharset().getResults());
-                            sRow.setPacketId(++packetId);
-                            buffer = sRow.write(buffer, c, true);
+                        for (PhysicalDatasource r : dataHost.getrReadSources().get(i)) {
+                            if (!r.getConfig().isDisabled()) {
+                                RowDataPacket sRow = getRow(r, c.getCharset().getResults());
+                                sRow.setPacketId(++packetId);
+                                buffer = sRow.write(buffer, c, true);
+                            }
                         }
                     }
                 }

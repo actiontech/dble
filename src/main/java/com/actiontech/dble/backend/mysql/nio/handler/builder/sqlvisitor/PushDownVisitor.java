@@ -1,17 +1,21 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor;
 
 import com.actiontech.dble.plan.Order;
-import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.NoNameNode;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.TableNode;
+import com.actiontech.dble.plan.util.PlanUtil;
+import com.actiontech.dble.util.StringUtil;
+import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
@@ -63,10 +67,10 @@ public class PushDownVisitor extends MysqlVisitor {
     }
 
     protected void visit(TableNode query) {
-        if (query.isSubQuery() && !isTopQuery) {
+        if (query.isWithSubQuery() && !isTopQuery) {
             sqlBuilder.append(" ( ");
         }
-        if (query.isSubQuery() || isTopQuery) {
+        if (query.isWithSubQuery() || isTopQuery) {
             buildSelect(query);
 
             if (query.getTableName() == null)
@@ -74,7 +78,7 @@ public class PushDownVisitor extends MysqlVisitor {
             sqlBuilder.append(" from ");
         }
         buildTableName(query, sqlBuilder);
-        if (query.isSubQuery() || isTopQuery) {
+        if (query.isWithSubQuery() || isTopQuery) {
             buildWhere(query);
             buildGroupBy(query);
             // having may contains aggregate function, so it need to calc by middle-ware
@@ -82,7 +86,11 @@ public class PushDownVisitor extends MysqlVisitor {
             buildLimit(query, sqlBuilder);
         }
 
-        if (query.isSubQuery() && !isTopQuery) {
+        if (isTopQuery) {
+            buildForUpdate(query, sqlBuilder);
+        }
+
+        if (query.isWithSubQuery() && !isTopQuery) {
             sqlBuilder.append(" ) ");
             if (query.getAlias() != null) {
                 sqlBuilder.append(" ").append(query.getAlias()).append(" ");
@@ -90,11 +98,12 @@ public class PushDownVisitor extends MysqlVisitor {
         }
     }
 
+
     protected void visit(JoinNode join) {
         if (!isTopQuery) {
             sqlBuilder.append(" ( ");
         }
-        if (join.isSubQuery() || isTopQuery) {
+        if (join.isWithSubQuery() || isTopQuery) {
             buildSelect(join);
             sqlBuilder.append(" from ");
         }
@@ -121,7 +130,7 @@ public class PushDownVisitor extends MysqlVisitor {
         sqlBuilder = replaceableSqlBuilder.getCurrentElement().getSb();
         StringBuilder joinOnFilterStr = getJoinOn(join, leftVisitor, rightVisitor);
         sqlBuilder.append(joinOnFilterStr.toString());
-        if (join.isSubQuery() || isTopQuery) {
+        if (join.isWithSubQuery() || isTopQuery) {
             buildWhere(join, leftVisitor.getWhereFilter(), rightVisitor.getWhereFilter());
             buildGroupBy(join);
             // having may contains aggregate function, so it need to calc by middle-ware
@@ -145,13 +154,17 @@ public class PushDownVisitor extends MysqlVisitor {
             if (first) {
                 sqlBuilder.append(" on ");
                 first = false;
-            } else
+            } else {
                 joinOnFilterStr.append(" and ");
+            }
             joinOnFilterStr.append(filter);
         }
 
         if (join.getOtherJoinOnFilter() != null) {
-            if (!first) {
+            if (first) {
+                sqlBuilder.append(" on ");
+                first = false;
+            } else {
                 joinOnFilterStr.append(" and ");
             }
             joinOnFilterStr.append(join.getOtherJoinOnFilter());
@@ -206,6 +219,7 @@ public class PushDownVisitor extends MysqlVisitor {
         // refresh sqlbuilder
         sqlBuilder = replaceableSqlBuilder.getCurrentElement().getSb();
     }
+
     protected void buildSelect(PlanNode query) {
         sqlBuilder.append("select ");
         if (query.isDistinct()) {
@@ -333,7 +347,13 @@ public class PushDownVisitor extends MysqlVisitor {
 
     @Override
     protected String visitPushDownNameSel(Item item) {
-        String orgPushDownName = item.getItemName();
+        String orgPushDownName = null;
+        if (item.isWithSubQuery()) {
+            Item tmpItem = PlanUtil.rebuildSubQueryItem(item);
+            orgPushDownName = tmpItem.getItemName();
+        } else {
+            orgPushDownName = item.getItemName();
+        }
         if (item.type().equals(Item.ItemType.FIELD_ITEM)) {
             orgPushDownName = "`" + item.getTableName() + "`.`" + orgPushDownName + "`";
         }
@@ -348,7 +368,7 @@ public class PushDownVisitor extends MysqlVisitor {
             String aggName = ((ItemSum) item).funcName().toUpperCase();
             pushAlias = getMadeAggAlias(aggName) + getRandomAliasName();
         } else if (item.getAlias() != null) {
-            pushAlias = item.getAlias();
+            pushAlias = StringUtil.removeApostropheOrBackQuote(item.getAlias());
             if (pushAlias.startsWith(Item.FNAF))
                 pushAlias = getRandomAliasName();
         } else if (orgPushDownName.length() > MAX_COL_LENGTH) {
@@ -374,4 +394,17 @@ public class PushDownVisitor extends MysqlVisitor {
             return orgPushDownName + " as `" + pushAlias + "`";
     }
 
+    protected void buildForUpdate(TableNode query, StringBuilder sb) {
+        if (query.getAst() != null) {
+            SQLSelectQuery queryblock = query.getAst().getSelect().getQuery();
+            if (queryblock instanceof MySqlSelectQueryBlock) {
+                if (((MySqlSelectQueryBlock) queryblock).isForUpdate()) {
+                    sb.append(" FOR UPDATE");
+                } else if (((MySqlSelectQueryBlock) queryblock).isLockInShareMode()) {
+                    sb.append(" LOCK IN SHARE MODE ");
+                }
+
+            }
+        }
+    }
 }

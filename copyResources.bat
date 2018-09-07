@@ -1,0 +1,1 @@
+copy src\main\resources\* target\classes\ /Y

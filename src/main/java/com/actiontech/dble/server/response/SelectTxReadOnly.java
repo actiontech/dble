@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -31,21 +31,26 @@ public final class SelectTxReadOnly {
     static {
         int i = 0;
         byte packetId = 0;
-        HEADER.setPacketId(++packetId);
-        FIELDS[i] = PacketUtil.getField("@@session.tx_read_only", Fields.FIELD_TYPE_LONG);
-        FIELDS[i].setPacketId(++packetId);
-        EOF.setPacketId(++packetId);
+
 
     }
 
     public static void response(ServerConnection c) {
+
+        byte packetId = setCurrentPacket(c);
+
+        HEADER.setPacketId(++packetId);
+        FIELDS[0] = PacketUtil.getField("@@session.tx_read_only", Fields.FIELD_TYPE_LONG);
+        FIELDS[0].setPacketId(++packetId);
+        EOF.setPacketId(++packetId);
+
         ByteBuffer buffer = c.allocate();
         buffer = HEADER.write(buffer, c, true);
         for (FieldPacket field : FIELDS) {
             buffer = field.write(buffer, c, true);
         }
         buffer = EOF.write(buffer, c, true);
-        byte packetId = EOF.getPacketId();
+
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         int result = c.isReadOnly() ? 1 : 0;
         row.add(LongUtil.toBytes(result));
@@ -53,8 +58,17 @@ public final class SelectTxReadOnly {
         buffer = row.write(buffer, c, true);
         EOFPacket lastEof = new EOFPacket();
         lastEof.setPacketId(++packetId);
+        c.getSession2().multiStatementPacket(lastEof, packetId);
         buffer = lastEof.write(buffer, c, true);
+        boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
         c.write(buffer);
+        c.getSession2().multiStatementNextSql(multiStatementFlag);
+    }
+
+
+    public static byte setCurrentPacket(ServerConnection c) {
+        byte packetId = (byte) c.getSession2().getPacketId().get();
+        return packetId;
     }
 
 }

@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -30,7 +30,16 @@ public final class ReloadHandler {
                 ReloadUserStat.execute(c);
                 break;
             case ManagerParseReload.SQL_SLOW:
-                ReloadSqlSlowTime.execute(c, ParseUtil.getSQLId(stmt));
+                ReloadSqlSlowTime.execute(c, ParseUtil.getSQLId(stmt, rs >>> SHIFT));
+                break;
+            case ManagerParseReload.SLOW_QUERY_TIME:
+                ReloadSlowQueryTime.execute(c, ParseUtil.getSQLId(stmt, rs >>> SHIFT));
+                break;
+            case ManagerParseReload.SLOW_QUERY_FLUSH_PERIOD:
+                ReloadSlowQueryFlushPeriod.execute(c, ParseUtil.getSQLId(stmt, rs >>> SHIFT));
+                break;
+            case ManagerParseReload.SLOW_QUERY_FLUSH_SIZE:
+                ReloadSlowQueryFlushSize.execute(c, ParseUtil.getSQLId(stmt, rs >>> SHIFT));
                 break;
             case ManagerParseReload.QUERY_CF:
                 String filter = ParseUtil.parseString(stmt);

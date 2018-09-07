@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -9,15 +9,6 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.HandlerBuilder;
-import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.*;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.DirectGroupByHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.OrderedGroupByHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.JoinHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.NotInHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.AllAnySubQueryHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.InSubQueryHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.SingleRowSubQueryHandler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.SchemaConfig;
@@ -28,7 +19,9 @@ import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.optimizer.MyOptimizer;
+import com.actiontech.dble.plan.util.ComplexQueryPlanUtil;
 import com.actiontech.dble.plan.util.PlanUtil;
+import com.actiontech.dble.plan.util.ReferenceHandlerInfo;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -47,7 +40,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
-import java.util.*;
+import java.util.List;
 
 /**
  * @author mycat
@@ -99,12 +92,13 @@ public final class ExplainHandler {
                 buffer = row.write(buffer, c, true);
             }
         } else {
-            List<String[]> results = getComplexQueryResult(rrs, c);
-            for (String[] result : results) {
+            BaseHandlerBuilder builder = buildNodes(rrs, c);
+            List<ReferenceHandlerInfo> results = ComplexQueryPlanUtil.getComplexQueryResult(builder);
+            for (ReferenceHandlerInfo result : results) {
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-                row.add(StringUtil.encode(result[0], c.getCharset().getResults()));
-                row.add(StringUtil.encode(result[1], c.getCharset().getResults()));
-                row.add(StringUtil.encode(result[2].replaceAll("[\\t\\n\\r]", " "), c.getCharset().getResults()));
+                row.add(StringUtil.encode(result.getName(), c.getCharset().getResults()));
+                row.add(StringUtil.encode(result.getType(), c.getCharset().getResults()));
+                row.add(StringUtil.encode(result.getRefOrSQL(), c.getCharset().getResults()));
                 row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
             }
@@ -118,194 +112,9 @@ public final class ExplainHandler {
         c.write(buffer);
     }
 
-    private static List<String[]> getComplexQueryResult(RouteResultset rrs, ServerConnection c) {
-        List<BaseHandlerBuilder> builderList = getBaseHandlerBuilders(rrs, c);
-        Map<String, Integer> nameMap = new HashMap<>();
-        List<String[]> result = new ArrayList<>();
-
-        Map<BaseHandlerBuilder, String> builderNameMap = new HashMap<>();
-        for (int i = builderList.size() - 1; i >= 0; i--) {
-            BaseHandlerBuilder tmpBuilder = builderList.get(i);
-            Set<String> subQueries = new LinkedHashSet<>();
-            for (BaseHandlerBuilder childBuilder : tmpBuilder.getSubQueryBuilderList()) {
-                subQueries.add(builderNameMap.get(childBuilder));
-            }
-            String subQueryRootName = buildResultByEndHandler(subQueries, result, tmpBuilder.getEndHandler(), nameMap);
-            builderNameMap.put(tmpBuilder, subQueryRootName);
-        }
-        return result;
-    }
-
-    private static List<BaseHandlerBuilder> getBaseHandlerBuilders(RouteResultset rrs, ServerConnection c) {
-        BaseHandlerBuilder builder = buildNodes(rrs, c);
-        Queue<BaseHandlerBuilder> queue = new LinkedList<>();
-        queue.add(builder);
-        List<BaseHandlerBuilder> builderList = new ArrayList<>();
-        while (queue.size() > 0) {
-            BaseHandlerBuilder rootBuilder = queue.poll();
-            builderList.add(rootBuilder);
-            if (rootBuilder.getSubQueryBuilderList().size() > 0) {
-                queue.addAll(rootBuilder.getSubQueryBuilderList());
-            }
-        }
-        return builderList;
-    }
-
-    private static String buildResultByEndHandler(Set<String> subQueries, List<String[]> result, DMLResponseHandler endHandler, Map<String, Integer> nameMap) {
-        Map<String, RefHandlerInfo> refMap = new HashMap<>();
-        String rootName = buildHandlerTree(endHandler, refMap, new HashMap<DMLResponseHandler, RefHandlerInfo>(), nameMap, subQueries);
-        List<RefHandlerInfo> resultList = new ArrayList<>(refMap.size());
-        getDFSHandlers(refMap, rootName, resultList);
-        for (int i = resultList.size() - 1; i >= 0; i--) {
-            RefHandlerInfo handlerInfo = resultList.get(i);
-            result.add(new String[]{handlerInfo.name, handlerInfo.type, handlerInfo.getRefOrSQL()});
-        }
-        return rootName;
-    }
-
-    private static String buildHandlerTree(DMLResponseHandler endHandler, Map<String, RefHandlerInfo> refMap, Map<DMLResponseHandler, RefHandlerInfo> handlerMap, Map<String, Integer> nameMap, Set<String> dependencies) {
-        String rootName = null;
-        int mergeNodeSize = endHandler.getMerges().size();
-        for (int i = 0; i < mergeNodeSize; i++) {
-            DMLResponseHandler startHandler = endHandler.getMerges().get(i);
-            MultiNodeMergeHandler mergeHandler = (MultiNodeMergeHandler) startHandler;
-            List<BaseSelectHandler> mergeList = new ArrayList<>();
-            mergeList.addAll(((MultiNodeMergeHandler) startHandler).getExeHandlers());
-            String mergeNode = genHandlerName("MERGE", nameMap);
-            RefHandlerInfo refInfo = new RefHandlerInfo(mergeNode, "MERGE");
-            handlerMap.put(mergeHandler, refInfo);
-            refMap.put(mergeNode, refInfo);
-            for (BaseSelectHandler exeHandler : mergeList) {
-                RouteResultsetNode rrss = exeHandler.getRrss();
-                String dateNode = rrss.getName() + "." + rrss.getMultiplexNum();
-                refInfo.addChild(dateNode);
-                String type = "BASE SQL";
-                if (dependencies != null && dependencies.size() > 0) {
-                    type += "(May No Need)";
-                }
-                RefHandlerInfo baseSQLInfo = new RefHandlerInfo(dateNode, type, rrss.getStatement());
-                refMap.put(dateNode, baseSQLInfo);
-                if (dependencies != null && dependencies.size() > 0) {
-                    baseSQLInfo.addAllStepChildren(dependencies);
-                }
-            }
-            String mergeRootName = getAllNodesFromLeaf(mergeHandler, refMap, handlerMap, nameMap);
-            if (rootName == null) {
-                if (mergeRootName == null) {
-                    rootName = mergeNode;
-                } else {
-                    rootName = mergeRootName;
-                }
-            }
-        }
-        return rootName;
-    }
-
-    private static void getDFSHandlers(Map<String, RefHandlerInfo> refMap, String rootName, List<RefHandlerInfo> resultList) {
-        Stack<RefHandlerInfo> stackSearch = new Stack<>();
-        stackSearch.push(refMap.get(rootName));
-        while (stackSearch.size() > 0) {
-            RefHandlerInfo root = stackSearch.pop();
-            resultList.add(root);
-            for (String child : root.getChildren()) {
-                RefHandlerInfo childRef = refMap.get(child);
-                if (childRef != null) {
-                    stackSearch.push(childRef);
-                }
-            }
-        }
-        refMap.clear();
-    }
-
-    private static String getAllNodesFromLeaf(DMLResponseHandler handler, Map<String, RefHandlerInfo> refMap, Map<DMLResponseHandler, RefHandlerInfo> handlerMap, Map<String, Integer> nameMap) {
-        DMLResponseHandler nextHandler = skipSendMake(handler.getNextHandler());
-        String rootName = null;
-        while (nextHandler != null) {
-            RefHandlerInfo child = handlerMap.get(handler);
-            String childName = child.name;
-            String handlerType = getTypeName(nextHandler);
-            if (!handlerMap.containsKey(nextHandler)) {
-                String handlerName = genHandlerName(handlerType, nameMap);
-                RefHandlerInfo handlerInfo = new RefHandlerInfo(handlerName, handlerType);
-                handlerMap.put(nextHandler, handlerInfo);
-                refMap.put(handlerName, handlerInfo);
-                handlerInfo.addChild(childName);
-                rootName = handlerName;
-            } else {
-                handlerMap.get(nextHandler).addChild(childName);
-            }
-            if (handler instanceof TempTableHandler) {
-                TempTableHandler tmp = (TempTableHandler) handler;
-                DMLResponseHandler endHandler = tmp.getCreatedHandler();
-                endHandler.setNextHandler(nextHandler);
-                buildHandlerTree(endHandler, refMap, handlerMap, nameMap, Collections.singleton(childName + "'s RESULTS"));
-            }
-            handler = nextHandler;
-            nextHandler = skipSendMake(nextHandler.getNextHandler());
-        }
-        return rootName;
-    }
-
-    private static DMLResponseHandler skipSendMake(DMLResponseHandler handler) {
-        while (handler instanceof SendMakeHandler) {
-            handler = handler.getNextHandler();
-        }
-        return handler;
-    }
-
-    private static String genHandlerName(String handlerType, Map<String, Integer> nameMap) {
-        String handlerName;
-        if (nameMap.containsKey(handlerType)) {
-            int number = nameMap.get(handlerType) + 1;
-            nameMap.put(handlerType, number);
-            handlerName = handlerType.toLowerCase() + "." + number;
-        } else {
-            nameMap.put(handlerType, 1);
-            handlerName = handlerType.toLowerCase() + ".1";
-        }
-        return handlerName;
-    }
-
-    private static String getTypeName(DMLResponseHandler handler) {
-        if (handler instanceof OrderedGroupByHandler) {
-            return "ORDERED_GROUP";
-        } else if (handler instanceof DistinctHandler) {
-            return "DISTINCT";
-        } else if (handler instanceof LimitHandler) {
-            return "LIMIT";
-        } else if (handler instanceof WhereHandler) {
-            return "WHERE_FILTER";
-        } else if (handler instanceof HavingHandler) {
-            return "HAVING_FILTER";
-        } else if (handler instanceof SendMakeHandler) {
-            return "RENAME";
-        } else if (handler instanceof UnionHandler) {
-            return "UNION_ALL";
-        } else if (handler instanceof OrderByHandler) {
-            return "ORDER";
-        } else if (handler instanceof NotInHandler) {
-            return "NOT_IN";
-        } else if (handler instanceof JoinHandler) {
-            return "JOIN";
-        } else if (handler instanceof DirectGroupByHandler) {
-            return "DIRECT_GROUP";
-        } else if (handler instanceof TempTableHandler) {
-            return "NEST_LOOP";
-        } else if (handler instanceof InSubQueryHandler) {
-            return "IN_SUB_QUERY";
-        } else if (handler instanceof AllAnySubQueryHandler) {
-            return "ALL_ANY_SUB_QUERY";
-        } else if (handler instanceof SingleRowSubQueryHandler) {
-            return "SCALAR_SUB_QUERY";
-        } else if (handler instanceof RenameFieldHandler) {
-            return "RENAME_DERIVED_SUB_QUERY";
-        }
-        return "OTHER";
-    }
-
     private static BaseHandlerBuilder buildNodes(RouteResultset rrs, ServerConnection c) {
         SQLSelectStatement ast = (SQLSelectStatement) rrs.getSqlStatement();
-        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(c.getSchema(), c.getCharset().getResultsIndex());
+        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(c.getSchema(), c.getCharset().getResultsIndex(), DbleServer.getInstance().getTmManager(), false);
         visitor.visit(ast);
         PlanNode node = visitor.getTableNode();
         node.setSql(rrs.getStatement());
@@ -381,57 +190,5 @@ public final class ExplainHandler {
             return true;
         }
         return false;
-    }
-
-    private static class RefHandlerInfo {
-        private String name;
-        private String type;
-        private String baseSQL;
-        private Set<String> children = new LinkedHashSet<>();
-        private Set<String> stepChildren = new LinkedHashSet<>();
-
-        RefHandlerInfo(String name, String type, String baseSQL) {
-            this(name, type);
-            this.baseSQL = baseSQL;
-        }
-        RefHandlerInfo(String name, String type) {
-            this.name = name;
-            this.type = type;
-        }
-
-        String getRefOrSQL() {
-            StringBuilder names = new StringBuilder("");
-            for (String child : stepChildren) {
-                if (names.length() > 0) {
-                    names.append("; ");
-                }
-                names.append(child);
-            }
-            for (String child : children) {
-                if (names.length() > 0) {
-                    names.append("; ");
-                }
-                names.append(child);
-            }
-
-            if (baseSQL != null) {
-                if (names.length() > 0) {
-                    names.append("; ");
-                }
-                names.append(baseSQL);
-            }
-            return names.toString();
-        }
-
-        public Set<String> getChildren() {
-            return children;
-        }
-
-        void addAllStepChildren(Set<String> dependencies) {
-            this.stepChildren.addAll(dependencies);
-        }
-        void addChild(String child) {
-            this.children.add(child);
-        }
     }
 }

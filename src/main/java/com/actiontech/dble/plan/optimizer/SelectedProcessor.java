@@ -1,19 +1,18 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.plan.optimizer;
 
 import com.actiontech.dble.plan.Order;
-import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
-import com.actiontech.dble.plan.common.item.ItemInt;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.actiontech.dble.plan.node.MergeNode;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.util.PlanUtil;
 
 import java.util.*;
@@ -97,8 +96,8 @@ public final class SelectedProcessor {
             } else {
                 for (PlanNode child : qtn.getChildren()) {
                     List<Item> referList = qtn.getColumnsReferedByChild(child);
-                    if (referList.isEmpty()) {
-                        referList.add(new ItemInt(1));
+                    if (referList == null) {
+                        referList = new ArrayList<>();
                     }
                     Collection<Item> pdRefers = getPushDownSel(qtn, child, referList);
                     pushSelected(child, pdRefers);
@@ -110,8 +109,8 @@ public final class SelectedProcessor {
 
     private static Collection<Item> getPushDownSel(PlanNode parent, PlanNode child, List<Item> selList) {
         // oldselectable->newselectbable
-        HashMap<Item, Item> oldNewMap = new HashMap<>();
-        HashMap<Item, Item> oldKeyKeyMap = new HashMap<>();
+        LinkedHashMap<Item, Item> oldNewMap = new LinkedHashMap<>();
+        LinkedHashMap<Item, Item> oldKeyKeyMap = new LinkedHashMap<>();
         for (Item sel : selList) {
             Item pdSel = oldNewMap.get(sel);
             if (pdSel == null) {

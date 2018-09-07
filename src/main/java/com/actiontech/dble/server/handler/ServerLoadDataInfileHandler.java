@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2018 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.DbleServer;
@@ -13,6 +13,7 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.net.handler.LoadDataInfileHandler;
 import com.actiontech.dble.net.mysql.BinaryPacket;
+import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RequestFilePacket;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -115,7 +116,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         SQLTextLiteralExpr escapedExpr = (SQLTextLiteralExpr) statement.getColumnsEscaped();
         String escaped = escapedExpr == null ? "\\" : escapedExpr.getText();
         loadData.setEscape(escaped);
-        String charset = statement.getCharset() != null ? statement.getCharset() : DbleServer.getInstance().getSystemVariables().getDefaultValue("character_set_filesystem");
+        String charset = statement.getCharset() != null ? statement.getCharset() : DbleServer.getInstance().getSystemVariables().getDefaultValue("character_set_database");
         loadData.setCharset(charset);
         loadData.setFileName(fileName);
     }
@@ -148,6 +149,12 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         }
 
         tableConfig = schema.getTables().get(tableName);
+        if (!DbleServer.getInstance().getTmManager().checkTableExists(schema.getName(), tableName)) {
+            String msg = "Table '" + schema.getName() + "." + tableName + "' doesn't exist";
+            clear();
+            serverConnection.writeErrMessage("42S02", msg, ErrorCode.ER_NO_SUCH_TABLE);
+            return;
+        }
         tempPath = SystemConfig.getHomePath() + File.separator + "temp" + File.separator + serverConnection.getId() + File.separator;
         tempFile = tempPath + "clientTemp.txt";
         tempByteBuffer = new ByteArrayOutputStream();
@@ -177,15 +184,17 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             filePacket.write(buffer, serverConnection, true);
         } else {
             if (!new File(fileName).exists()) {
-                serverConnection.writeErrMessage(ErrorCode.ER_FILE_NOT_FOUND, fileName + " is not found!");
+                String msg = fileName + " is not found!";
                 clear();
+                serverConnection.writeErrMessage(ErrorCode.ER_FILE_NOT_FOUND, msg);
             } else {
-                parseFileByLine(fileName, loadData.getCharset(), loadData.getLineTerminatedBy());
-                RouteResultset rrs = buildResultSet(routeResultMap);
-                if (rrs != null) {
-                    flushDataToFile();
-                    isStartLoadData = false;
-                    serverConnection.getSession2().execute(rrs);
+                if (parseFileByLine(fileName, loadData.getCharset(), loadData.getLineTerminatedBy())) {
+                    RouteResultset rrs = buildResultSet(routeResultMap);
+                    if (rrs != null) {
+                        flushDataToFile();
+                        isStartLoadData = false;
+                        serverConnection.getSession2().execute(rrs);
+                    }
                 }
             }
         }
@@ -195,8 +204,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     public void handle(byte[] data) {
         try {
             if (sql == null) {
-                serverConnection.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
                 clear();
+                serverConnection.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
                 return;
             }
             BinaryPacket packet = new BinaryPacket();
@@ -272,7 +281,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 String value = lineList[partitionColumnIndex];
                 RouteCalculateUnit routeCalculateUnit = new RouteCalculateUnit();
                 routeCalculateUnit.addShardingExpr(tableName, getPartitionColumn(),
-                                                   parseFieldString(value, loadData.getEnclose(), loadData.getEscape()));
+                        parseFieldString(value, loadData.getEnclose(), loadData.getEscape()));
                 ctx.addRouteCalculateUnit(routeCalculateUnit);
 
                 try {
@@ -303,7 +312,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     }
 
 
-    private void parseOneLine(List<SQLExpr> columns, String table, String[] line, boolean toFile, String lineEnd) {
+    private void parseOneLine(List<SQLExpr> columns, String table, String[] line, boolean toFile, String lineEnd) throws Exception {
         if (loadData.getEnclose() != null && loadData.getEnclose().charAt(0) > 0x0020) {
             for (int i = 0; i < line.length; i++) {
                 line[i] = line[i].trim();
@@ -313,7 +322,11 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         RouteResultset rrs = tryDirectRoute(sql, line);
         if (rrs == null || rrs.getNodes() == null || rrs.getNodes().length == 0) {
             String insertSql = makeSimpleInsert(columns, line, table);
-            rrs = serverConnection.routeSQL(insertSql, ServerParse.INSERT);
+            try {
+                rrs = DbleServer.getInstance().getRouterService().route(schema, ServerParse.INSERT, insertSql, serverConnection);
+            } catch (Exception e) {
+                throw e;
+            }
         }
 
         if (rrs == null || rrs.getNodes() == null || rrs.getNodes().length == 0) {
@@ -401,6 +414,9 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
 
     private RouteResultset buildResultSet(Map<String, LoadData> routeMap) {
+        if (routeMap.size() == 0) {
+            return null;
+        }
         statement.setLocal(true);
         SQLLiteralExpr fn = new SQLCharExpr(fileName);    //druid will filter path, reset it now
         statement.setFileName(fn);
@@ -437,7 +453,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
     private String makeSimpleInsert(List<SQLExpr> columns, String[] fields, String table) {
         StringBuilder sb = new StringBuilder();
-        sb.append(LoadData.LOAD_DATA_HINT).append("insert into ").append(table.toUpperCase());
+        sb.append(LoadData.LOAD_DATA_HINT).append("insert into ").append(table);
         if (columns != null && columns.size() > 0) {
             sb.append("(");
             for (int i = 0, columnsSize = columns.size(); i < columnsSize; i++) {
@@ -531,12 +547,18 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         saveByteOrToFile(null, true);
 
         List<SQLExpr> columns = statement.getColumns();
-        String tableSimpleName = statement.getTableName().getSimpleName();
         if (isHasStoreToFile) {
             parseFileByLine(tempFile, loadData.getCharset(), loadData.getLineTerminatedBy());
         } else {
             String content = new String(tempByteBuffer.toByteArray(), Charset.forName(loadData.getCharset()));
-
+            if ("".equals(content)) {
+                clear();
+                OkPacket ok = new OkPacket();
+                ok.setPacketId(++packId);
+                ok.setMessage("Records: 0  Deleted: 0  Skipped: 0  Warnings: 0".getBytes());
+                ok.write(serverConnection);
+                return;
+            }
             // List<String> lines = Splitter.on(loadData.getLineTerminatedBy()).omitEmptyStrings().splitToList(content);
             CsvParserSettings settings = new CsvParserSettings();
             settings.setMaxColumns(65535);
@@ -568,7 +590,13 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 }
                 while ((row = parser.parseNext()) != null) {
                     if (ignoreNumber == 0) {
-                        parseOneLine(columns, tableSimpleName, row, true, loadData.getLineTerminatedBy());
+                        try {
+                            parseOneLine(columns, tableName, row, true, loadData.getLineTerminatedBy());
+                        } catch (Exception e) {
+                            clear();
+                            serverConnection.writeErrMessage(++packId, ErrorCode.ER_WRONG_VALUE_COUNT_ON_ROW, "row data can't not calculate a sharding value," + e.getMessage());
+                            return;
+                        }
                     } else {
                         ignoreNumber--;
                     }
@@ -583,12 +611,10 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             flushDataToFile();
             serverConnection.getSession2().execute(rrs);
         }
-
-        // sendOk(++packID);
     }
 
 
-    private void parseFileByLine(String file, String encode, String split) {
+    private boolean parseFileByLine(String file, String encode, String split) {
         List<SQLExpr> columns = statement.getColumns();
 
         CsvParserSettings settings = new CsvParserSettings();
@@ -621,13 +647,31 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             if (statement.getIgnoreLinesNumber() != null && !"".equals(statement.getIgnoreLinesNumber().toString())) {
                 ignoreNumber = Integer.parseInt(statement.getIgnoreLinesNumber().toString());
             }
+            boolean empty = true;
             while ((row = parser.parseNext()) != null) {
                 if (ignoreNumber == 0) {
-                    parseOneLine(columns, tableName, row, true, loadData.getLineTerminatedBy());
+                    try {
+                        parseOneLine(columns, tableName, row, true, loadData.getLineTerminatedBy());
+                    } catch (Exception e) {
+                        clear();
+                        serverConnection.writeErrMessage(ErrorCode.ER_WRONG_VALUE_COUNT_ON_ROW, "row data can't not calculate a sharding value," + e.getMessage());
+                        return false;
+                    }
+                    empty = false;
                 } else {
                     ignoreNumber--;
                 }
             }
+            if (empty) {
+                byte packId = packID;
+                clear();
+                OkPacket ok = new OkPacket();
+                ok.setPacketId(++packId);
+                ok.setMessage("Records: 0  Deleted: 0  Skipped: 0  Warnings: 0".getBytes());
+                ok.write(serverConnection);
+                return false;
+            }
+            return true;
         } catch (FileNotFoundException | UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         } finally {

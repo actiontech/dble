@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -38,7 +38,7 @@ public final class AIOConnector implements SocketConnector,
         try {
             if (c.finishConnect()) {
                 c.setId(ID_GENERATOR.getId());
-                NIOProcessor processor = DbleServer.getInstance().nextProcessor();
+                NIOProcessor processor = DbleServer.getInstance().nextBackendProcessor();
                 c.setProcessor(processor);
                 c.register();
             }

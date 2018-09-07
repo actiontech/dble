@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -7,13 +7,13 @@ package com.actiontech.dble.plan.optimizer;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.util.SchemaUtil;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -31,7 +31,7 @@ public final class MyOptimizer {
             node = SubQueryPreProcessor.optimize(node);
             updateReferedTableNodes(node);
             int existGlobal = checkGlobalTable(node, new HashSet<String>());
-            if (node.isExistView() || existGlobal != 1) {
+            if (node.isExistView() || existGlobal != 1 || node.isWithSubQuery() || node.isContainsSubQuery()) {
                 // optimizer sub query [Derived Tables (Subqueries in the FROM Clause)]
                 //node = SubQueryProcessor.optimize(node);
                 // transform right join to left join
@@ -63,7 +63,7 @@ public final class MyOptimizer {
             }
             return node;
         } catch (MySQLOutPutException e) {
-            Logger.getLogger(MyOptimizer.class).error(node.toString(), e);
+            LoggerFactory.getLogger(MyOptimizer.class).error(node.toString(), e);
             throw e;
         }
     }
@@ -91,7 +91,7 @@ public final class MyOptimizer {
      * return 0 for other ,may need to global optimizer ;
      */
     public static int checkGlobalTable(PlanNode node, Set<String> resultDataNodes) {
-        if (node.isSubQuery()) {
+        if (node.isWithSubQuery()) {
             return 0;
         }
         Set<String> dataNodes = null;

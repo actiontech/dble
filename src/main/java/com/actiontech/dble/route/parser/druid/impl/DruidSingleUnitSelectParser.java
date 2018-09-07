@@ -1,11 +1,10 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.route.parser.druid.impl;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.ServerPrivileges.CheckType;
 import com.actiontech.dble.config.model.SchemaConfig;
@@ -23,6 +22,8 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUnionQuery;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
+import java.util.HashSet;
+import java.util.Set;
 
 public class DruidSingleUnitSelectParser extends DefaultDruidParser {
     @Override
@@ -39,13 +40,10 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
                 return schema;
             }
             if (mysqlFrom instanceof SQLSubqueryTableSource || mysqlFrom instanceof SQLJoinTableSource || mysqlFrom instanceof SQLUnionQueryTableSource) {
-                StringPtr sqlSchema = new StringPtr(null);
-                if (SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, schemaName, sqlSchema)) {
-                    String realSchema = sqlSchema.get() == null ? schemaName : sqlSchema.get();
-                    SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(realSchema);
-                    rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), realSchema));
-                    RouterUtil.routeToSingleNode(rrs, schemaConfig.getDataNode());
-                    return schemaConfig;
+                StringPtr noShardingNode = new StringPtr(null);
+                Set<String> schemas = new HashSet<>();
+                if (SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, schemas, noShardingNode)) {
+                    return routeToNoSharding(schema, rrs, schemas, noShardingNode);
                 } else {
                     super.visitorParse(schema, rrs, stmt, visitor, sc);
                     return schema;
@@ -65,7 +63,7 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
             schema = schemaInfo.getSchemaConfig();
             super.visitorParse(schema, rrs, stmt, visitor, sc);
-            if (visitor.isHasSubQuery()) {
+            if (visitor.getSubQueryList().size() > 0) {
                 this.getCtx().getRouteCalculateUnits().clear();
             }
             // change canRunInReadDB
@@ -73,13 +71,10 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
                 rrs.setCanRunInReadDB(false);
             }
         } else if (sqlSelectQuery instanceof MySqlUnionQuery) {
-            StringPtr sqlSchema = new StringPtr(null);
-            if (SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, schemaName, sqlSchema)) {
-                String realSchema = sqlSchema.get() == null ? schemaName : sqlSchema.get();
-                SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(realSchema);
-                rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), realSchema));
-                RouterUtil.routeToSingleNode(rrs, schemaConfig.getDataNode());
-                return schemaConfig;
+            StringPtr noShardingNode = new StringPtr(null);
+            Set<String> schemas = new HashSet<>();
+            if (SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, schemas, noShardingNode)) {
+                return routeToNoSharding(schema, rrs, schemas, noShardingNode);
             } else {
                 super.visitorParse(schema, rrs, stmt, visitor, sc);
             }

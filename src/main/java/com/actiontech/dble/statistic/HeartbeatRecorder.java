@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -31,7 +31,7 @@ public class HeartbeatRecorder {
     private final Queue<Record> records;
     private final Queue<Record> recordsAll;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("DataSourceSyncRecorder");
+    private static final Logger LOGGER = LoggerFactory.getLogger(HeartbeatRecorder.class);
 
     public HeartbeatRecorder() {
         this.records = new ConcurrentLinkedQueue<>();

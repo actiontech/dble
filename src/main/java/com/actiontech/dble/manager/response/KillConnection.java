@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -49,7 +49,7 @@ public final class KillConnection {
         if (ids.length() > 0) {
             String[] idList = SplitUtil.split(ids, ',', true);
             List<FrontendConnection> fcList = new ArrayList<>(idList.length);
-            NIOProcessor[] processors = DbleServer.getInstance().getProcessors();
+            NIOProcessor[] processors = DbleServer.getInstance().getFrontProcessors();
             for (String id : idList) {
                 long value = 0;
                 try {

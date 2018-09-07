@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.meta;
 
 import com.actiontech.dble.meta.protocol.StructureMeta;
+import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.plan.node.QueryNode;
 
 import java.util.Map;
@@ -53,7 +54,17 @@ public class SchemaMeta {
         ViewMeta view = viewMetas.get(name);
         QueryNode queryNode = null;
         if (view != null) {
-            queryNode = view.getViewQuery().copy();
+            if (view.getViewQuery() != null) {
+                queryNode = view.getViewQuery().copy();
+            } else {
+                ErrorPacket error = view.initAndSet(true, false);
+                if (error != null) {
+                    throw new RuntimeException(" View '" + view.getViewName() +
+                            "' references invalid table(s) or column(s) or function(s) or definer/invoker of view lack rights to use them");
+                } else {
+                    queryNode = view.getViewQuery().copy();
+                }
+            }
         }
         return queryNode;
     }

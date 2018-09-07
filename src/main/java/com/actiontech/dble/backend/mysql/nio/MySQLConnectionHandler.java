@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -14,6 +14,7 @@ import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RequestFilePacket;
+import com.actiontech.dble.server.NonBlockingSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +42,8 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
      */
     private volatile ResponseHandler responseHandler;
 
+    private volatile NonBlockingSession session;
+
     public MySQLConnectionHandler(MySQLConnection source) {
         this.source = source;
         this.resultStatus = RESULT_STATUS_INIT;
@@ -55,10 +58,15 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
 
     @Override
     public void handle(byte[] data) {
+        if (session != null) {
+            session.setBackendResponseTime(source);
+        }
         if (source.isComplexQuery()) {
             offerData(data, DbleServer.getInstance().getComplexQueryExecutor());
+        } else if (DbleServer.getInstance().getConfig().getSystem().getUsePerformanceMode() == 1) {
+            offerData(data);
         } else {
-            offerData(data, source.getProcessor().getExecutor());
+            offerData(data, DbleServer.getInstance().getBackendBusinessExecutor());
         }
     }
 
@@ -70,8 +78,14 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
 
     @Override
     protected void handleData(byte[] data) {
+        if (source.isClosed()) {
+            return;
+        }
         switch (resultStatus) {
             case RESULT_STATUS_INIT:
+                if (session != null) {
+                    session.startExecuteBackend(source.getId());
+                }
                 switch (data[4]) {
                     case OkPacket.FIELD_COUNT:
                         handleOkPacket(data);
@@ -127,6 +141,10 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
         // throw new RuntimeException("reset agani!");
         // }
         this.responseHandler = responseHandler;
+    }
+
+    public void setSession(NonBlockingSession session) {
+        this.session = session;
     }
 
     /**

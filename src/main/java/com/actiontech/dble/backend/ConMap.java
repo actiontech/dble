@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.net.NIOProcessor;
+import com.actiontech.dble.util.StringUtil;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -20,18 +21,28 @@ public class ConMap {
     // key--schema
     private final ConcurrentMap<String, ConQueue> items = new ConcurrentHashMap<>();
 
-    public ConQueue getSchemaConQueue(String schema) {
-        ConQueue queue = items.get(schema);
+    private static final String KEY_STRING_FOR_NULL_DATABASE = "KEY FOR NULL";
+
+    public ConQueue createAndGetSchemaConQueue(String schema) {
+        ConQueue queue = items.get(schema == null ? KEY_STRING_FOR_NULL_DATABASE : schema);
         if (queue == null) {
             ConQueue newQueue = new ConQueue();
-            queue = items.putIfAbsent(schema, newQueue);
+            queue = items.putIfAbsent(schema == null ? KEY_STRING_FOR_NULL_DATABASE : schema, newQueue);
             return (queue == null) ? newQueue : queue;
         }
         return queue;
     }
 
+    public ConQueue getSchemaConQueue(String schema) {
+        return items.get(schema == null ? KEY_STRING_FOR_NULL_DATABASE : schema);
+    }
+
     public BackendConnection tryTakeCon(final String schema, boolean autoCommit) {
-        final ConQueue queue = items.get(schema);
+
+        final ConQueue queue = items.get(schema == null ? KEY_STRING_FOR_NULL_DATABASE : schema);
+        if (queue == null) {
+            return null;
+        }
         BackendConnection con = tryTakeCon(queue, autoCommit);
         if (con != null) {
             return con;
@@ -51,7 +62,7 @@ public class ConMap {
 
     private BackendConnection tryTakeCon(ConQueue queue, boolean autoCommit) {
 
-        BackendConnection con = null;
+        BackendConnection con;
         if (queue != null && ((con = queue.takeIdleCon(autoCommit)) != null)) {
             return con;
         } else {
@@ -65,12 +76,12 @@ public class ConMap {
 
     public int getActiveCountForSchema(String schema, PhysicalDatasource dataSource) {
         int total = 0;
-        for (NIOProcessor processor : DbleServer.getInstance().getProcessors()) {
+        for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
             for (BackendConnection con : processor.getBackends().values()) {
                 if (con instanceof MySQLConnection) {
                     MySQLConnection mysqlCon = (MySQLConnection) con;
 
-                    if (mysqlCon.getSchema().equals(schema) &&
+                    if (StringUtil.equals(mysqlCon.getSchema(), schema) &&
                             mysqlCon.getPool() == dataSource &&
                             mysqlCon.isBorrowed()) {
                         total++;
@@ -83,7 +94,7 @@ public class ConMap {
 
     public int getActiveCountForDs(PhysicalDatasource dataSource) {
         int total = 0;
-        for (NIOProcessor processor : DbleServer.getInstance().getProcessors()) {
+        for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
             for (BackendConnection con : processor.getBackends().values()) {
                 if (con instanceof MySQLConnection) {
                     MySQLConnection mysqlCon = (MySQLConnection) con;
@@ -98,7 +109,7 @@ public class ConMap {
     }
 
     public void clearConnections(String reason, PhysicalDatasource dataSource) {
-        for (NIOProcessor processor : DbleServer.getInstance().getProcessors()) {
+        for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
             ConcurrentMap<Long, BackendConnection> map = processor.getBackends();
             Iterator<Entry<Long, BackendConnection>> iterator = map.entrySet().iterator();
 

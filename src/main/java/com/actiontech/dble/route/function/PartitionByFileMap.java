@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -40,11 +40,17 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
      * Otherwise will report error like this:can't find datanode for sharding column:column_name val:ffffffff
      */
     private int defaultNode = -1;
+    private int hashCode = 1;
 
     @Override
     public void init() {
-
         initialize();
+        initHashCode();
+    }
+
+    @Override
+    public void selfCheck() {
+
     }
 
     public void setMapFile(String mapFile) {
@@ -53,20 +59,26 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
 
     public void setType(int type) {
         this.type = type;
+        propertiesMap.put("type", String.valueOf(type));
     }
 
     public void setDefaultNode(int defaultNode) {
         this.defaultNode = defaultNode;
+        propertiesMap.put("defaultNode", String.valueOf(defaultNode));
     }
 
     @Override
     public Integer calculate(String columnValue) {
         try {
+            if (columnValue == null || columnValue.equalsIgnoreCase("NULL")) {
+                return app2Partition.get(DEFAULT_NODE);
+            }
+
             Object value = columnValue;
             if (type == 0) {
                 value = Integer.valueOf(columnValue);
             }
-            Integer rst = null;
+            Integer rst;
             Integer pid = app2Partition.get(value);
             if (pid != null) {
                 rst = pid;
@@ -88,15 +100,13 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
     @Override
     public int getPartitionNum() {
         Set<Integer> set = new HashSet<>(app2Partition.values());
-        int count = set.size();
-        return count;
+        return set.size();
     }
 
     private void initialize() {
+        StringBuilder sb = new StringBuilder("{");
         BufferedReader in = null;
         try {
-            // FileInputStream fin = new FileInputStream(new File(fileMapPath));
-
             InputStream fin = ResourceUtil.getResourceAsStreamFromRoot(mapFile);
             if (fin == null) {
                 throw new RuntimeException("can't find class resource file " + mapFile);
@@ -105,7 +115,8 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
 
             app2Partition = new HashMap<>();
 
-            for (String line = null; (line = in.readLine()) != null; ) {
+            int iRow = 0;
+            for (String line; (line = in.readLine()) != null; ) {
                 line = line.trim();
                 if (line.startsWith("#") || line.startsWith("//")) {
                     continue;
@@ -116,16 +127,29 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
                 }
                 try {
                     String key = line.substring(0, ind).trim();
-                    int pid = Integer.parseInt(line.substring(ind + 1).trim());
+                    String value = line.substring(ind + 1).trim();
+                    int pid = Integer.parseInt(value);
                     if (type == 0) {
                         app2Partition.put(Integer.parseInt(key), pid);
                     } else {
                         app2Partition.put(key, pid);
                     }
+                    if (iRow > 0) {
+                        sb.append(",");
+                    }
+                    iRow++;
+                    sb.append("\"");
+                    sb.append(key);
+                    sb.append("\":");
+                    sb.append("\"");
+                    sb.append(value);
+                    sb.append("\"");
                 } catch (Exception e) {
                     //ignore error
                 }
             }
+            sb.append("}");
+            propertiesMap.put("mapFile", sb.toString());
             //set default node
             if (defaultNode >= 0) {
                 app2Partition.put(DEFAULT_NODE, defaultNode);
@@ -139,10 +163,54 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
 
         } finally {
             try {
-                in.close();
+                if (in != null) {
+                    in.close();
+                }
             } catch (Exception e2) {
                 //ignore error
             }
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        PartitionByFileMap other = (PartitionByFileMap) o;
+        if (other.defaultNode != defaultNode) {
+            return false;
+        }
+        if (other.type != type) {
+            return false;
+        }
+        if (other.app2Partition.size() != app2Partition.size()) {
+            return false;
+        }
+        for (Map.Entry<Object, Integer> entry : app2Partition.entrySet()) {
+            Integer otherValue = other.app2Partition.get(entry.getKey());
+            if (!entry.getValue().equals(otherValue)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return hashCode;
+    }
+
+    private void initHashCode() {
+        if (defaultNode != 0) {
+            hashCode *= defaultNode;
+        }
+        if (type != 0) {
+            hashCode *= type;
+        }
+        hashCode *= app2Partition.size();
     }
 }

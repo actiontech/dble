@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -140,13 +140,26 @@ public class DirectByteBufferPool implements BufferPool {
         return memoryUsage;
     }
 
-    //TODO   should  fix it
+    /**
+     * return the total size of the buffer memory
+     *
+     * @return
+     */
     public long capacity() {
-        return size();
+        return (long) pageSize * pageCount;
     }
 
+    /**
+     * return the remain free part of memory
+     *
+     * @return
+     */
     public long size() {
-        return (long) pageSize * chunkSize * pageCount;
+        long usage = 0L;
+        for (ByteBufferPage page : allPages) {
+            usage += page.getUsage();
+        }
+        return this.capacity() - usage;
     }
 
     //TODO

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -11,7 +11,6 @@ import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.InMemoryRepository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.KVStoreRepository;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,11 +50,15 @@ public final class XAStateLog {
     private static AtomicInteger batchNum = new AtomicInteger(0);
     private static Set<Long> waitSet = new CopyOnWriteArraySet<>();
     private static ConcurrentMap<Long, Boolean> mapResult = new ConcurrentHashMap<>();
+    private static volatile boolean writeAlert = false;
 
     public static boolean saveXARecoveryLog(String xaTxId, TxState sessionState) {
         CoordinatorLogEntry coordinatorLogEntry = IN_MEMORY_REPOSITORY.get(xaTxId);
         coordinatorLogEntry.setTxState(sessionState);
         flushMemoryRepository(xaTxId, coordinatorLogEntry);
+        if (DbleServer.getInstance().getConfig().getSystem().getUsePerformanceMode() == 1) {
+            return true;
+        }
         //will preparing, may success send but failed received,should be rollback
         if (sessionState == TxState.TX_PREPARING_STATE ||
                 //will committing, may success send but failed received,should be commit agagin
@@ -96,7 +99,7 @@ public final class XAStateLog {
                 waitWriting.await();
             }
         } catch (InterruptedException e) {
-            LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "writeCheckpoint error, waiter XID is " + xaTxId, e);
+            LOGGER.warn("writeCheckpoint error, waiter XID is " + xaTxId, e);
         } finally {
             lock.unlock();
         }
@@ -122,7 +125,7 @@ public final class XAStateLog {
                 ReentrantLock lockMap = ((InMemoryRepository) IN_MEMORY_REPOSITORY).getLock();
                 lockMap.lock();
                 try {
-                    Collection<CoordinatorLogEntry> logCollection = IN_MEMORY_REPOSITORY.getAllCoordinatorLogEntries();
+                    Collection<CoordinatorLogEntry> logCollection = IN_MEMORY_REPOSITORY.getAllCoordinatorLogEntries(false);
                     for (CoordinatorLogEntry coordinatorLogEntry : logCollection) {
                         CoordinatorLogEntry log = coordinatorLogEntry.getDeepCopy();
                         if (log != null) {
@@ -130,7 +133,7 @@ public final class XAStateLog {
                         }
                     }
                 } catch (Exception e) {
-                    LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "logCollection deep copy error, leader Xid is:" + xaTxId, e);
+                    LOGGER.warn("logCollection deep copy error, leader Xid is:" + xaTxId, e);
                     logs.clear();
                 } finally {
                     lockMap.unlock();
@@ -172,7 +175,7 @@ public final class XAStateLog {
                 mapResult.remove(Thread.currentThread().getId());
                 return result;
             } catch (InterruptedException e) {
-                LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "writeCheckpoint error, follower Xid is:" + xaTxId, e);
+                LOGGER.warn("writeCheckpoint error, follower Xid is:" + xaTxId, e);
                 return false;
             } finally {
                 lock.unlock();
@@ -192,10 +195,19 @@ public final class XAStateLog {
     }
 
     public static void cleanCompleteRecoveryLog() {
-        for (CoordinatorLogEntry entry : IN_MEMORY_REPOSITORY.getAllCoordinatorLogEntries()) {
+        for (CoordinatorLogEntry entry : IN_MEMORY_REPOSITORY.getAllCoordinatorLogEntries(false)) {
             if (entry.getTxState() == TxState.TX_COMMITTED_STATE || entry.getTxState() == TxState.TX_ROLLBACKED_STATE) {
                 IN_MEMORY_REPOSITORY.remove(entry.getId());
             }
         }
     }
+
+    public static void setWriteAlert(boolean writeAlert) {
+        XAStateLog.writeAlert = writeAlert;
+    }
+
+    public static boolean isWriteAlert() {
+        return writeAlert;
+    }
+
 }

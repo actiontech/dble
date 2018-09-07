@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.plan.common.item;
 
+import com.actiontech.dble.DbleServer;
 import org.apache.commons.lang.StringUtils;
 
 public abstract class ItemIdent extends Item {
@@ -19,8 +20,18 @@ public abstract class ItemIdent extends Item {
     protected String tableName;
 
     public ItemIdent(final String dbNameArg, final String tableNameArg, final String fieldNameArg) {
-        this.dbName = dbNameArg;
-        this.tableName = tableNameArg;
+        String tempTableName;
+        String tempDbName;
+        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+            tempTableName = tableNameArg == null ? null : tableNameArg.toLowerCase();
+            tempDbName = dbNameArg == null ? null : dbNameArg.toLowerCase();
+        } else {
+            tempTableName = tableNameArg;
+            tempDbName = dbNameArg;
+        }
+
+        this.dbName = tempDbName;
+        this.tableName = tempTableName;
         this.itemName = fieldNameArg;
         this.withUnValAble = true;
     }

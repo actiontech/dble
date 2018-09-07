@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -13,8 +13,9 @@ public final class ManagerParseConfig {
     public static final int CONFIG_ALL = 2;
 
     private int configAllMode;
-    public static final int OPTT_MODE = 1;
+    public static final int OPTS_MODE = 1;
     public static final int OPTF_MODE = 2;
+    public static final int OPTR_MODE = 4;
 
     public ManagerParseConfig() {
         configAllMode = 0;
@@ -92,10 +93,12 @@ public final class ManagerParseConfig {
     private int checkSeriesOpt(String stmt, int offset) {
         for (++offset; offset < stmt.length(); ++offset) {
             char c1 = stmt.charAt(offset);
-            if (c1 == 't' || c1 == 'T') {
-                configAllMode = configAllMode | OPTT_MODE;
+            if (c1 == 's' || c1 == 'S') {
+                configAllMode = configAllMode | OPTS_MODE;
             } else if (c1 == 'f' || c1 == 'F') {
                 configAllMode = configAllMode | OPTF_MODE;
+            } else if (c1 == 'r' || c1 == 'R') {
+                configAllMode = configAllMode | OPTR_MODE;
             } else {
                 return offset - 1;
             }

@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -27,32 +27,33 @@ public final class SelectUser {
     private static final EOFPacket EOF = new EOFPacket();
     private static final ErrorPacket ERROR = PacketUtil.getShutdown();
 
-    static {
-        int i = 0;
-        byte packetId = 0;
-        HEADER.setPacketId(++packetId);
-        FIELDS[i] = PacketUtil.getField("USER()", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i].setPacketId(++packetId);
-        EOF.setPacketId(++packetId);
-    }
-
     public static void response(ServerConnection c) {
         if (DbleServer.getInstance().isOnline()) {
+
+            byte packetId = setCurrentPacket(c);
+            HEADER.setPacketId(++packetId);
+            FIELDS[0] = PacketUtil.getField("USER()", Fields.FIELD_TYPE_VAR_STRING);
+            FIELDS[0].setPacketId(++packetId);
+            EOF.setPacketId(++packetId);
+
             ByteBuffer buffer = c.allocate();
             buffer = HEADER.write(buffer, c, true);
             for (FieldPacket field : FIELDS) {
                 buffer = field.write(buffer, c, true);
             }
             buffer = EOF.write(buffer, c, true);
-            byte packetId = EOF.getPacketId();
+
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
             row.add(getUser(c));
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
             EOFPacket lastEof = new EOFPacket();
             lastEof.setPacketId(++packetId);
+            c.getSession2().multiStatementPacket(lastEof, packetId);
             buffer = lastEof.write(buffer, c, true);
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
             c.write(buffer);
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
         } else {
             ERROR.write(c);
         }
@@ -60,6 +61,11 @@ public final class SelectUser {
 
     private static byte[] getUser(ServerConnection c) {
         return StringUtil.encode(c.getUser() + '@' + c.getHost(), c.getCharset().getResults());
+    }
+
+    public static byte setCurrentPacket(ServerConnection c) {
+        byte packetId = (byte) c.getSession2().getPacketId().get();
+        return packetId;
     }
 
 }

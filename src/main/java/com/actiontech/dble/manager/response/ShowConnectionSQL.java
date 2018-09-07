@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -51,7 +51,7 @@ public final class ShowConnectionSQL {
         FIELDS[i] = PacketUtil.getField("SCHEMA", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("START_TIME", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i] = PacketUtil.getField("START_TIME", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("EXECUTE_TIME", Fields.FIELD_TYPE_LONGLONG);
@@ -79,7 +79,7 @@ public final class ShowConnectionSQL {
 
         // write rows
         byte packetId = EOF.getPacketId();
-        for (NIOProcessor p : DbleServer.getInstance().getProcessors()) {
+        for (NIOProcessor p : DbleServer.getInstance().getFrontProcessors()) {
             for (FrontendConnection fc : p.getFrontends().values()) {
                 if (!fc.isClosed()) {
                     RowDataPacket row = getRow(fc, c.getCharset().getResults());
@@ -108,7 +108,11 @@ public final class ShowConnectionSQL {
         long rt = c.getLastReadTime();
         long wt = c.getLastWriteTime();
         row.add(LongUtil.toBytes((wt > rt) ? (wt - rt) : (TimeUtil.currentTimeMillis() - rt)));
-        row.add(StringUtil.encode(c.getExecuteSql(), charset));
+        String executeSql = "";
+        if (c.getExecuteSql() != null) {
+            executeSql = c.getExecuteSql().length() <= 1024 ? c.getExecuteSql() : c.getExecuteSql().substring(0, 1024);
+        }
+        row.add(StringUtil.encode(executeSql, charset));
         return row;
     }
 

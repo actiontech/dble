@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -29,7 +29,7 @@ public class TestMySQLPlanNodeVisitor {
     private PlanNode getPlanNode(String sql) {
         SQLStatementParser parser = new MySqlStatementParser(sql);
         SQLSelectStatement ast = (SQLSelectStatement) parser.parseStatement();
-        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor("TESTDB", 33);
+        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor("TESTDB", 33, null, true);
         visitor.visit(ast);
         return visitor.getTableNode();
     }

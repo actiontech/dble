@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -7,6 +7,7 @@ package com.actiontech.dble.plan.visitor;
 
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.CastTarget;
 import com.actiontech.dble.plan.common.CastType;
@@ -15,10 +16,11 @@ import com.actiontech.dble.plan.common.item.*;
 import com.actiontech.dble.plan.common.item.function.ItemCreate;
 import com.actiontech.dble.plan.common.item.function.ItemFuncKeyWord;
 import com.actiontech.dble.plan.common.item.function.bitfunc.*;
-import com.actiontech.dble.plan.common.item.function.castfunc.ItemCharTypecast;
-import com.actiontech.dble.plan.common.item.function.castfunc.ItemFuncBinary;
+import com.actiontech.dble.plan.common.item.function.castfunc.ItemCharTypeCast;
+import com.actiontech.dble.plan.common.item.function.castfunc.ItemFuncBinaryCast;
 import com.actiontech.dble.plan.common.item.function.castfunc.ItemFuncConvCharset;
-import com.actiontech.dble.plan.common.item.function.castfunc.ItemNCharTypecast;
+import com.actiontech.dble.plan.common.item.function.castfunc.ItemNCharTypeCast;
+import com.actiontech.dble.plan.common.item.function.convertfunc.ItemCharTypeConvert;
 import com.actiontech.dble.plan.common.item.function.mathsfunc.operator.*;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.*;
 import com.actiontech.dble.plan.common.item.function.operator.controlfunc.ItemFuncCase;
@@ -47,11 +49,13 @@ import com.alibaba.druid.sql.ast.statement.SQLCharacterDataType;
 import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlCharExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlExtractExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlIntervalExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlIntervalUnit;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
+import com.alibaba.druid.sql.parser.SQLExprParser;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
@@ -62,14 +66,12 @@ import java.util.Map;
 public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     private String currentDb;
     private final int charsetIndex;
+    private final ProxyMetaManager metaManager;
 
-    public MySQLItemVisitor(String currentDb) {
-        this(currentDb, CharsetUtil.getCharsetDefaultIndex("utf8"));
-    }
-
-    public MySQLItemVisitor(String currentDb, int charsetIndex) {
+    public MySQLItemVisitor(String currentDb, int charsetIndex, ProxyMetaManager metaManager) {
         this.currentDb = currentDb;
         this.charsetIndex = charsetIndex;
+        this.metaManager = metaManager;
     }
 
     private Item item;
@@ -79,7 +81,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     }
 
     private Item getItem(SQLExpr expr) {
-        MySQLItemVisitor fv = new MySQLItemVisitor(currentDb, this.charsetIndex);
+        MySQLItemVisitor fv = new MySQLItemVisitor(currentDb, this.charsetIndex, this.metaManager);
         expr.accept(fv);
         return fv.getItem();
     }
@@ -89,16 +91,28 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     }
 
     @Override
+    public void endVisit(MySqlCharExpr x) {
+        String value = x.toString();
+        item = new ItemString(value);
+        item.setItemName(value);
+    }
+
+    @Override
     public void endVisit(SQLQueryExpr x) {
         SQLSelectQuery sqlSelect = x.getSubQuery().getQuery();
-        item = new ItemScalarSubQuery(currentDb, sqlSelect);
+        item = new ItemScalarSubQuery(currentDb, sqlSelect, metaManager);
         initName(x);
         item.setItemName(item.getItemName().replaceAll("\n\\t", " "));
     }
 
     @Override
     public void endVisit(SQLBetweenExpr x) {
-        item = new ItemFuncBetweenAnd(getItem(x.getTestExpr()), getItem(x.getBeginExpr()), getItem(x.getEndExpr()), x.isNot());
+        Item itemTest = getItem(x.getTestExpr());
+        Item itemBegin = getItem(x.getBeginExpr());
+        Item itemEnd = getItem(x.getEndExpr());
+        item = new ItemFuncBetweenAnd(itemTest, itemBegin, itemEnd, x.isNot());
+        item.setWithSubQuery(itemTest.isWithSubQuery() || itemBegin.isWithSubQuery() || itemEnd.isWithSubQuery());
+        item.setCorrelatedSubQuery(itemTest.isCorrelatedSubQuery() || itemBegin.isCorrelatedSubQuery() || itemEnd.isCorrelatedSubQuery());
         initName(x);
     }
 
@@ -106,7 +120,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     public void endVisit(SQLInSubQueryExpr x) {
         boolean isNeg = x.isNot();
         Item left = getItem(x.getExpr());
-        item = new ItemInSubQuery(currentDb, x.getSubQuery().getQuery(), left, isNeg);
+        item = new ItemInSubQuery(currentDb, x.getSubQuery().getQuery(), left, isNeg, metaManager);
         initName(x);
     }
 
@@ -123,8 +137,9 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     @Override
     public void endVisit(SQLBinaryOpExpr x) {
         Item itemLeft = getItem(x.getLeft());
-        Item itemRight = getItem(x.getRight());
-        if (itemRight instanceof ItemInSubQuery) {
+        SQLExpr rightExpr = x.getRight();
+        Item itemRight = getItem();
+        if (itemRight instanceof ItemInSubQuery && (rightExpr instanceof SQLSomeExpr || rightExpr instanceof SQLAllExpr || rightExpr instanceof SQLAnyExpr)) {
             item = itemRight;
             return;
         }
@@ -286,7 +301,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 item = a;
                 break;
             case BINARY:
-                item = new ItemFuncBinary(a, -1);
+                item = new ItemFuncBinaryCast(a, -1);
                 break;
             default:
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
@@ -323,7 +338,10 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 
     @Override
     public void endVisit(SQLNotExpr x) {
-        item = new ItemFuncNot(getItem(x.getExpr()));
+        Item arg = getItem(x.getExpr());
+        item = new ItemFuncNot(arg);
+        item.setWithSubQuery(arg.isWithSubQuery());
+        item.setCorrelatedSubQuery(arg.isCorrelatedSubQuery());
         initName(x);
     }
 
@@ -374,13 +392,13 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 if (args.size() > 0) {
                     len = args.get(0);
                 }
-                item = new ItemCharTypecast(a, len, charSetName);
+                item = new ItemCharTypeCast(a, len, charSetName);
             } else if (charSetName == null) {
                 int len = -1;
                 if (args.size() > 0) {
                     len = args.get(0);
                 }
-                item = new ItemNCharTypecast(a, len);
+                item = new ItemNCharTypeCast(a, len);
             } else {
                 throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "",
                         "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'character set " + charSetName + ")'");
@@ -527,12 +545,29 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 break;
             case "CONVERT":
                 if (args.size() >= 2) {
-                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported  CONVERT(expr, type) ,please use CAST(expr AS type)");
+                    if ((args.get(1) instanceof ItemFuncChar)) {
+                        ItemFuncChar charfunc = (ItemFuncChar) (args.get(1));
+                        int castLength = -1;
+                        try {
+                            castLength = charfunc.arguments().get(0).valInt().intValue();
+                        } catch (Exception e) {
+                            throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported  CONVERT(expr, " + args.get(1).getItemName() + ") ,please use CAST(expr AS type)");
+                        }
+                        item = new ItemCharTypeConvert(args.get(0), castLength, null);
+                        break;
+                    }
+                    CastType castType = getCastType(args.get(1).getItemName());
+                    if (castType == null) {
+                        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported  CONVERT(expr, " + args.get(1).getItemName() + ") ,please use CAST(expr AS type)");
+                    } else {
+                        item = ItemCreate.getInstance().createFuncConvert(args.get(0), castType);
+                    }
+                } else {
+                    if (attributes == null || attributes.get(ItemFuncKeyWord.USING) == null) {
+                        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "CONVERT(... USING ...) is standard SQL syntax");
+                    }
+                    item = new ItemFuncConvCharset(args.get(0), (String) attributes.get(ItemFuncKeyWord.USING));
                 }
-                if (attributes == null || attributes.get(ItemFuncKeyWord.USING) == null) {
-                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "CONVERT(... USING ...) is standard SQL syntax");
-                }
-                item = new ItemFuncConvCharset(args.get(0), (String) attributes.get(ItemFuncKeyWord.USING));
                 break;
             case "CHAR":
                 if (attributes == null || attributes.get(ItemFuncKeyWord.USING) == null) {
@@ -621,8 +656,9 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 }
                 initName(x);
         }
+        item.setWithSubQuery(getArgsSubQueryStatus(args));
+        item.setCorrelatedSubQuery(getArgsCorrelatedSubQueryStatus(args));
     }
-
 
     @Override
     public void endVisit(SQLListExpr x) {
@@ -666,7 +702,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     @Override
     public void endVisit(SQLExistsExpr x) {
         SQLSelectQuery sqlSelect = x.getSubQuery().getQuery();
-        item = new ItemExistsSubQuery(currentDb, sqlSelect, x.isNot());
+        item = new ItemExistsSubQuery(currentDb, sqlSelect, x.isNot(), metaManager);
     }
 
     @Override
@@ -701,7 +737,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     @Override
     public void endVisit(SQLSelectStatement node) {
         SQLSelectQuery sqlSelect = node.getSelect().getQuery();
-        item = new ItemScalarSubQuery(currentDb, sqlSelect);
+        item = new ItemScalarSubQuery(currentDb, sqlSelect, metaManager);
     }
 
 
@@ -710,26 +746,26 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         switch (operator) {
             case Equality:
                 if (isAll) {
-                    item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, true);
+                    item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, true, metaManager);
                 } else {
                     Item left = getItem(parent.getLeft());
-                    item = new ItemInSubQuery(currentDb, sqlSelect, left, false);
+                    item = new ItemInSubQuery(currentDb, sqlSelect, left, false, metaManager);
                 }
                 break;
             case NotEqual:
             case LessThanOrGreater:
                 if (isAll) {
                     Item left = getItem(parent.getLeft());
-                    item = new ItemInSubQuery(currentDb, sqlSelect, left, true);
+                    item = new ItemInSubQuery(currentDb, sqlSelect, left, true, metaManager);
                 } else {
-                    item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, false);
+                    item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, false, metaManager);
                 }
                 break;
             case LessThan:
             case LessThanOrEqual:
             case GreaterThan:
             case GreaterThanOrEqual:
-                item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, isAll);
+                item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, isAll, metaManager);
                 break;
             default:
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",
@@ -737,6 +773,15 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 
         }
 
+    }
+
+    private CastType getCastType(String dataType) {
+        SQLExprParser expr = new SQLExprParser(dataType);
+        SQLDataType dataTypeImpl = expr.parseDataType();
+        if (dataTypeImpl == null) {
+            return null;
+        }
+        return getCastType((SQLDataTypeImpl) dataTypeImpl);
     }
 
     private CastType getCastType(SQLDataTypeImpl dataTypeImpl) {
@@ -774,6 +819,12 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                     castType.setLength(args.get(0));
                 }
                 break;
+            case "CHAR":
+                castType.setTarget(CastTarget.ITEM_CAST_CHAR);
+                if (args.size() > 0) {
+                    castType.setLength(args.get(0));
+                }
+                break;
             case "SIGNED":
                 castType.setTarget(CastTarget.ITEM_CAST_SIGNED_INT);
                 break;
@@ -791,6 +842,24 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported cast as:" + upType);
         }
         return castType;
+    }
+
+    private boolean getArgsSubQueryStatus(List<Item> args) {
+        for (Item arg : args) {
+            if (arg.isWithSubQuery()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean getArgsCorrelatedSubQueryStatus(List<Item> args) {
+        for (Item arg : args) {
+            if (arg.isCorrelatedSubQuery()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private List<Integer> changeExprListToInt(List<SQLExpr> exprList) {
@@ -817,6 +886,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     private void initName(SQLExpr expr) {
         StringBuilder sb = new StringBuilder();
         MySqlOutputVisitor ov = new MySqlOutputVisitor(sb);
+        ov.setShardingSupport(false);
         expr.accept(ov);
         item.setItemName(sb.toString());
     }

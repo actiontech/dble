@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -69,7 +69,7 @@ public final class ShowSession {
 
         // write rows
         byte packetId = EOF.getPacketId();
-        for (NIOProcessor process : DbleServer.getInstance().getProcessors()) {
+        for (NIOProcessor process : DbleServer.getInstance().getFrontProcessors()) {
             for (FrontendConnection front : process.getFrontends().values()) {
 
                 if (!(front instanceof ServerConnection)) {

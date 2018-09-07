@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -95,12 +95,16 @@ public final class ShowProcessor {
 
         // write rows
         byte packetId = EOF.getPacketId();
-        for (NIOProcessor p : DbleServer.getInstance().getProcessors()) {
+        for (NIOProcessor p : DbleServer.getInstance().getFrontProcessors()) {
             RowDataPacket row = getRow(p);
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
         }
-
+        for (NIOProcessor p : DbleServer.getInstance().getBackendProcessors()) {
+            RowDataPacket row = getRow(p);
+            row.setPacketId(++packetId);
+            buffer = row.write(buffer, c, true);
+        }
         // write last eof
         EOFPacket lastEof = new EOFPacket();
         lastEof.setPacketId(++packetId);

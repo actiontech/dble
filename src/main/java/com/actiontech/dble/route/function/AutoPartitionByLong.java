@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.Serializable;
 import java.util.LinkedList;
 
 /**
@@ -27,11 +26,17 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
     private String mapFile;
     private LongRange[] longRanges;
     private int defaultNode = -1;
+    private int hashCode = 1;
 
     @Override
     public void init() {
-
         initialize();
+        initHashCode();
+    }
+
+    @Override
+    public void selfCheck() {
+
     }
 
     public void setMapFile(String mapFile) {
@@ -42,10 +47,18 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
     public Integer calculate(String columnValue) {
         //columnValue = NumberParseUtil.eliminateQuote(columnValue);
         try {
+
+            if (columnValue == null || columnValue.equalsIgnoreCase("NULL")) {
+                if (defaultNode >= 0) {
+                    return defaultNode;
+                }
+                return null;
+            }
+
             long value = Long.parseLong(columnValue);
             for (LongRange longRang : this.longRanges) {
-                if (value <= longRang.valueEnd && value >= longRang.valueStart) {
-                    return longRang.nodeIndex;
+                if (value <= longRang.getValueEnd() && value >= longRang.getValueStart()) {
+                    return longRang.getNodeIndex();
                 }
             }
             // use default node for other value
@@ -66,7 +79,7 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
         try {
             long value = Long.parseLong(columnValue);
             for (LongRange longRang : this.longRanges) {
-                if (value <= longRang.valueEnd && value >= longRang.valueStart) {
+                if (value <= longRang.getValueEnd() && value >= longRang.getValueStart()) {
                     return false;
                 }
             }
@@ -114,6 +127,7 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
     }
 
     private void initialize() {
+        StringBuilder sb = new StringBuilder("{");
         BufferedReader in = null;
         try {
             // FileInputStream fin = new FileInputStream(new File(fileMapPath));
@@ -123,7 +137,7 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
             }
             in = new BufferedReader(new InputStreamReader(fin));
             LinkedList<LongRange> longRangeList = new LinkedList<>();
-
+            int iRow = 0;
             for (String line = null; (line = in.readLine()) != null; ) {
                 line = line.trim();
                 if ((line.length() == 0) || line.startsWith("#") || line.startsWith("//")) {
@@ -134,14 +148,28 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
                     LOGGER.info(" warn: bad line int " + mapFile + " :" + line);
                     continue;
                 }
-                String[] pairs = line.substring(0, ind).trim().split("-");
+
+                String key = line.substring(0, ind).trim();
+                String[] pairs = key.split("-");
                 long longStart = NumberParseUtil.parseLong(pairs[0].trim());
                 long longEnd = NumberParseUtil.parseLong(pairs[1].trim());
-                int nodeId = Integer.parseInt(line.substring(ind + 1).trim());
+                String value = line.substring(ind + 1).trim();
+                int nodeId = Integer.parseInt(value);
                 longRangeList.add(new LongRange(nodeId, longStart, longEnd));
-
+                if (iRow > 0) {
+                    sb.append(",");
+                }
+                iRow++;
+                sb.append("\"");
+                sb.append(key);
+                sb.append("\":");
+                sb.append("\"");
+                sb.append(value);
+                sb.append("\"");
             }
             longRanges = longRangeList.toArray(new LongRange[longRangeList.size()]);
+            sb.append("}");
+            propertiesMap.put("mapFile", sb.toString());
         } catch (Exception e) {
             if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;
@@ -160,19 +188,43 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
 
     public void setDefaultNode(int defaultNode) {
         this.defaultNode = defaultNode;
+        propertiesMap.put("defaultNode", String.valueOf(defaultNode));
     }
 
-    static class LongRange implements Serializable {
-        public final int nodeIndex;
-        public final long valueStart;
-        public final long valueEnd;
-
-        LongRange(int nodeIndex, long valueStart, long valueEnd) {
-            super();
-            this.nodeIndex = nodeIndex;
-            this.valueStart = valueStart;
-            this.valueEnd = valueEnd;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
         }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        AutoPartitionByLong other = (AutoPartitionByLong) o;
+        if (other.defaultNode != defaultNode) {
+            return false;
+        }
+        if (other.longRanges.length != longRanges.length) {
+            return false;
+        }
+        for (int i = 0; i < longRanges.length; i++) {
+            if (!other.longRanges[i].equals(longRanges[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
 
+    @Override
+    public int hashCode() {
+        return hashCode;
+    }
+
+    private void initHashCode() {
+        if (defaultNode != 0) {
+            hashCode *= defaultNode;
+        }
+        for (LongRange longRange : longRanges) {
+            hashCode *= longRange.hashCode();
+        }
     }
 }

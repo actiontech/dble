@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
@@ -78,7 +79,7 @@ public class TransformSQLJob implements ResponseHandler, Runnable {
         conn.setResponseHandler(this);
         connection = conn;
         try {
-            conn.query(sql);
+            ((MySQLConnection) conn).sendQueryCmd(sql, mc.getCharset());
         } catch (Exception e) { // (UnsupportedEncodingException e) {
             ErrorPacket errPacket = new ErrorPacket();
             errPacket.setPacketId(0);

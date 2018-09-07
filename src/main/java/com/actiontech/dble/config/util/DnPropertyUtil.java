@@ -1,12 +1,11 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.config.util;
 
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +39,7 @@ public final class DnPropertyUtil {
             filein = new FileInputStream(file);
             prop.load(filein);
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "load DataNodeIndex err:" + e);
+            LOGGER.warn("load DataNodeIndex err:" + e);
         } finally {
             if (filein != null) {
                 try {

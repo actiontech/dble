@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -20,7 +20,8 @@ import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.meta.TempTable;
 import com.actiontech.dble.server.NonBlockingSession;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.List;
@@ -31,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * get the tmp table's result
  */
 public class TempTableHandler extends BaseDMLHandler {
-    private static final Logger LOGGER = Logger.getLogger(TempTableHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TempTableHandler.class);
 
     private final ReentrantLock lock;
     private final TempTable tempTable;
@@ -66,6 +67,7 @@ public class TempTableHandler extends BaseDMLHandler {
         }
         lock.lock();
         try {
+            session.setHandlerStart(this);
             if (this.fieldPackets.isEmpty()) {
                 this.fieldPackets = fieldPackets;
                 tempTable.setFieldPackets(this.fieldPackets);
@@ -129,6 +131,7 @@ public class TempTableHandler extends BaseDMLHandler {
             while ((rp = tempTable.nextRow()) != null) {
                 nextHandler.rowResponse(null, rp, this.isLeft, conn);
             }
+            session.setHandlerEnd(this);
             nextHandler.rowEofResponse(eof, this.isLeft, conn);
         } catch (Exception e) {
             LOGGER.info("rowEof exception!", e);

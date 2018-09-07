@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.route.parser.druid.impl;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerPrivileges;
@@ -110,8 +111,14 @@ public class DruidSelectParser extends DefaultDruidParser {
                     return schema;
                 }
 
-                if (RouterUtil.isNoSharding(schema, schemaInfo.getTable())) {
-                    RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
+                super.visitorParse(schema, rrs, stmt, visitor, sc);
+                if (visitor.getSubQueryList().size() > 0) {
+                    return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc);
+                }
+
+                String noShardingNode = RouterUtil.isNoSharding(schema, schemaInfo.getTable());
+                if (noShardingNode != null) {
+                    RouterUtil.routeToSingleNode(rrs, noShardingNode);
                     return schema;
                 }
 
@@ -119,14 +126,6 @@ public class DruidSelectParser extends DefaultDruidParser {
                 if (tc == null) {
                     String msg = "Table '" + schema.getName() + "." + schemaInfo.getTable() + "' doesn't exist";
                     throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
-                }
-
-
-                super.visitorParse(schema, rrs, stmt, visitor, sc);
-                if (visitor.isHasSubQuery()) {
-                    rrs.setSqlStatement(selectStmt);
-                    rrs.setNeedOptimizer(true);
-                    return schema;
                 }
 
                 parseOrderAggGroupMysql(schema, stmt, rrs, mysqlSelectQuery, tc);
@@ -209,13 +208,11 @@ public class DruidSelectParser extends DefaultDruidParser {
                 if (aggregateSet.contains(methodName)) {
                     rrs.setNeedOptimizer(true);
                     return;
+                } else if (isSumFuncOrSubQuery(schema.getName(), itemExpr)) {
+                    rrs.setNeedOptimizer(true);
+                    return;
                 } else {
-                    if (isSumFunc(schema.getName(), itemExpr)) {
-                        rrs.setNeedOptimizer(true);
-                        return;
-                    } else {
-                        addToAliaColumn(aliaColumns, selectItem);
-                    }
+                    addToAliaColumn(aliaColumns, selectItem);
                 }
             } else if (itemExpr instanceof SQLAllColumnExpr) {
                 StructureMeta.TableMeta tbMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schema.getName(), tc.getName());
@@ -242,7 +239,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                         }
                         addToAliaColumn(aliaColumns, selectItem);
                     }
-                } else if (isSumFunc(schema.getName(), itemExpr)) {
+                } else if (isSumFuncOrSubQuery(schema.getName(), itemExpr)) {
                     rrs.setNeedOptimizer(true);
                     return;
                 } else {
@@ -287,20 +284,24 @@ public class DruidSelectParser extends DefaultDruidParser {
             }
         }
     }
-    private boolean isSumFunc(String schema, SQLExpr itemExpr) {
-        MySQLItemVisitor ev = new MySQLItemVisitor(schema);
+
+    private boolean isSumFuncOrSubQuery(String schema, SQLExpr itemExpr) {
+        MySQLItemVisitor ev = new MySQLItemVisitor(schema, CharsetUtil.getCharsetDefaultIndex("utf8"), DbleServer.getInstance().getTmManager());
         itemExpr.accept(ev);
         Item selItem = ev.getItem();
-        return contactSumFunc(selItem);
+        return contaisSumFuncOrSubquery(selItem);
     }
 
-    private boolean contactSumFunc(Item selItem) {
+    private boolean contaisSumFuncOrSubquery(Item selItem) {
         if (selItem.isWithSumFunc()) {
+            return true;
+        }
+        if (selItem.isWithSubQuery()) {
             return true;
         }
         if (selItem.getArgCount() > 0) {
             for (Item child : selItem.arguments()) {
-                if (contactSumFunc(child)) {
+                if (contaisSumFuncOrSubquery(child)) {
                     return true;
                 }
             }
@@ -363,7 +364,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
 
         if (isDistinct) {
-            rrs.changeNodeSqlAfterAddLimit(stmt.toString(), 0, -1);
+            rrs.changeNodeSqlAfterAddLimit(statementToString(stmt), 0, -1);
         }
         return aliaColumns;
     }
@@ -433,17 +434,14 @@ public class DruidSelectParser extends DefaultDruidParser {
 
     private SchemaConfig executeComplexSQL(String schemaName, SchemaConfig schema, RouteResultset rrs, SQLSelectStatement selectStmt, ServerConnection sc)
             throws SQLException {
-        StringPtr sqlSchema = new StringPtr(null);
-        if (!SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, schemaName, sqlSchema)) {
+        StringPtr noShardingNode = new StringPtr(null);
+        Set<String> schemas = new HashSet<>();
+        if (!SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, schemas, noShardingNode)) {
             rrs.setSqlStatement(selectStmt);
             rrs.setNeedOptimizer(true);
             return schema;
         } else {
-            String realSchema = sqlSchema.get() == null ? schemaName : sqlSchema.get();
-            SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(realSchema);
-            rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), realSchema));
-            RouterUtil.routeToSingleNode(rrs, schemaConfig.getDataNode());
-            return schemaConfig;
+            return routeToNoSharding(schema, rrs, schemas, noShardingNode);
         }
     }
 
@@ -524,8 +522,9 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
         SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
         String table = ctx.getTables().get(0);
-        if (RouterUtil.isNoSharding(schema, table)) {
-            RouterUtil.routeToSingleNode(rrs, schema.getDataNode());
+        String noShardingNode = RouterUtil.isNoSharding(schema, table);
+        if (noShardingNode != null) {
+            RouterUtil.routeToSingleNode(rrs, noShardingNode);
             return;
         }
         for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
@@ -571,7 +570,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 
     protected String getSql(RouteResultset rrs, SQLStatement stmt, boolean isNeedAddLimit, String schema) {
         if ((isNeedChangeLimit(rrs) || isNeedAddLimit)) {
-            return RouterUtil.removeSchema(stmt.toString(), schema);
+            return RouterUtil.removeSchema(statementToString(stmt), schema);
         }
         return rrs.getStatement();
     }
@@ -614,6 +613,8 @@ public class DruidSelectParser extends DefaultDruidParser {
         } else if (mysqlSelectQuery.getLimit() != null) {
             return;
         } else if (!tableConfig.isNeedAddLimit()) {
+            return;
+        } else if (mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode()) {
             return;
         }
         SQLLimit limit = new SQLLimit();

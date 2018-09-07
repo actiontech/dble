@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -76,6 +76,10 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             }
 
         }
+    }
+
+
+    protected void setResponseTime() {
     }
 
     private boolean executeRollback(MySQLConnection mysqlCon, int position) {
@@ -344,11 +348,12 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
         if (session.getXaState() == TxState.TX_INITIALIZE_STATE) { // clear all resources
             XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_ROLLBACKED_STATE);
             session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_INIT);
-            byte[] send = sendData;
             session.clearResources(false);
             if (session.closed()) {
                 return;
             }
+            setResponseTime();
+            byte[] send = sendData;
             session.getSource().write(send);
 
             //partially committed,must commit again
@@ -375,6 +380,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                 byte[] toSend = sendData;
                 session.clearResources(false);
                 if (!session.closed()) {
+                    setResponseTime();
                     session.getSource().write(toSend);
                 }
             }
@@ -388,6 +394,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             if (session.closed()) {
                 return;
             }
+            setResponseTime();
             session.getSource().write(sendData);
 
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -18,7 +18,7 @@ import com.actiontech.dble.plan.visitor.MySQLItemVisitor;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.server.response.ShowCreateStmtInfo;
+import com.actiontech.dble.server.response.ShowTablesStmtInfo;
 import com.actiontech.dble.server.response.ShowTables;
 import com.actiontech.dble.util.StringUtil;
 
@@ -34,8 +34,8 @@ public class ShowTablesHandler extends SingleNodeHandler {
     private Map<String, String> shardingTablesMap;
     private Item whereItem;
     private List<Field> sourceFields;
-    private ShowCreateStmtInfo info;
-    public ShowTablesHandler(RouteResultset rrs, NonBlockingSession session, ShowCreateStmtInfo info) {
+    private ShowTablesStmtInfo info;
+    public ShowTablesHandler(RouteResultset rrs, NonBlockingSession session, ShowTablesStmtInfo info) {
         super(rrs, session);
         this.info = info;
         ServerConnection source = session.getSource();
@@ -59,7 +59,7 @@ public class ShowTablesHandler extends SingleNodeHandler {
             packetId = bufInf.getPacketId();
             buffer = bufInf.getBuffer();
             if (info.getWhere() != null) {
-                MySQLItemVisitor mev = new MySQLItemVisitor(source.getSchema(), source.getCharset().getResultsIndex());
+                MySQLItemVisitor mev = new MySQLItemVisitor(source.getSchema(), source.getCharset().getResultsIndex(), DbleServer.getInstance().getTmManager());
                 info.getWhereExpr().accept(mev);
                 sourceFields = HandlerTool.createFields(fieldPackets);
                 whereItem = HandlerTool.createItem(mev.getItem(), sourceFields, 0, false, DMLResponseHandler.HandlerType.WHERE);

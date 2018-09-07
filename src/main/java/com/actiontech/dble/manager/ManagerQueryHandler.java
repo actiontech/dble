@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -7,9 +7,7 @@ package com.actiontech.dble.manager;
 
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.handler.*;
-import com.actiontech.dble.manager.response.KillConnection;
-import com.actiontech.dble.manager.response.Offline;
-import com.actiontech.dble.manager.response.Online;
+import com.actiontech.dble.manager.response.*;
 import com.actiontech.dble.net.handler.FrontendQueryHandler;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.parser.ManagerParse;
@@ -65,8 +63,17 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
             case ManagerParse.ONLINE:
                 Online.execute(c);
                 break;
+            case ManagerParse.PAUSE:
+                PauseStart.execute(c, sql);
+                break;
+            case ManagerParse.RESUME:
+                PauseEnd.execute(c);
+                break;
             case ManagerParse.STOP:
                 StopHandler.handle(sql, c, rs >>> SHIFT);
+                break;
+            case ManagerParse.DRY_RUN:
+                DryRun.execute(c, sql);
                 break;
             case ManagerParse.RELOAD:
                 ReloadHandler.handle(sql, c, rs >>> SHIFT);
@@ -79,6 +86,15 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
                 break;
             case ManagerParse.LOGFILE:
                 ShowServerLog.handle(sql, c);
+                break;
+            case ManagerParse.CREATE_DB:
+                CreateDatabaseHandler.handle(sql, c);
+                break;
+            case ManagerParse.ENABLE:
+                EnableHandler.handle(sql, c, 7);
+                break;
+            case ManagerParse.DISABLE:
+                DisableHandler.handle(sql, c, 8);
                 break;
             default:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");

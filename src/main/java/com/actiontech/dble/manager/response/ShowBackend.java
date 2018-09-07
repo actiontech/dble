@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -16,10 +16,7 @@ import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
-import com.actiontech.dble.util.IntegerUtil;
-import com.actiontech.dble.util.LongUtil;
-import com.actiontech.dble.util.StringUtil;
-import com.actiontech.dble.util.TimeUtil;
+import com.actiontech.dble.util.*;
 
 import java.nio.ByteBuffer;
 
@@ -32,7 +29,7 @@ public final class ShowBackend {
     private ShowBackend() {
     }
 
-    private static final int FIELD_COUNT = 21;
+    private static final int FIELD_COUNT = 22;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
@@ -51,7 +48,7 @@ public final class ShowBackend {
         FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("PORT", Fields.FIELD_TYPE_LONG);
         FIELDS[i++].setPacketId(++packetId);
-        FIELDS[i] = PacketUtil.getField("LOACL_TCP_PORT", Fields.FIELD_TYPE_LONG);
+        FIELDS[i] = PacketUtil.getField("LOCAL_TCP_PORT", Fields.FIELD_TYPE_LONG);
         FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("NET_IN", Fields.FIELD_TYPE_LONGLONG);
         FIELDS[i++].setPacketId(++packetId);
@@ -84,6 +81,8 @@ public final class ShowBackend {
         FIELDS[i] = PacketUtil.getField("USER_VARIABLES", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("XA_STATUS", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i] = PacketUtil.getField("DEAD_TIME", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
@@ -97,7 +96,7 @@ public final class ShowBackend {
         }
         buffer = EOF.write(buffer, c, true);
         byte packetId = EOF.getPacketId();
-        for (NIOProcessor p : DbleServer.getInstance().getProcessors()) {
+        for (NIOProcessor p : DbleServer.getInstance().getBackendProcessors()) {
             for (BackendConnection bc : p.getBackends().values()) {
                 if (bc != null) {
                     RowDataPacket row = getRow(bc, c.getCharset().getResults());
@@ -132,7 +131,7 @@ public final class ShowBackend {
         row.add(c.isClosed() ? "true".getBytes() : "false".getBytes());
         row.add(c.isBorrowed() ? "true".getBytes() : "false".getBytes());
         row.add(IntegerUtil.toBytes(conn.getWriteQueue().size()));
-        row.add(conn.getSchema().getBytes());
+        row.add((conn.getSchema() == null ? "NULL" : conn.getSchema()).getBytes());
         row.add(conn.getCharset().getClient().getBytes());
         row.add(conn.getCharset().getCollation().getBytes());
         row.add(conn.getCharset().getResults().getBytes());
@@ -141,6 +140,7 @@ public final class ShowBackend {
         row.add(StringUtil.encode(conn.getStringOfSysVariables(), charset));
         row.add(StringUtil.encode(conn.getStringOfUsrVariables(), charset));
         row.add(StringUtil.encode(conn.getXaStatus().toString(), charset));
+        row.add(StringUtil.encode(FormatUtil.formatDate(conn.getOldTimestamp()), charset));
         return row;
     }
 }

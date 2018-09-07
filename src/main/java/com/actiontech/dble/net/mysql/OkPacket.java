@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -92,6 +92,11 @@ public class OkPacket extends MySQLPacket {
     public void write(FrontendConnection c) {
         ByteBuffer buffer = write(c.allocate(), c);
         c.write(buffer);
+    }
+
+
+    public void markMoreResultsExists() {
+        serverStatus = serverStatus | StatusFlags.SERVER_MORE_RESULTS_EXISTS;
     }
 
     @Override

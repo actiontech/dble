@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -20,13 +20,14 @@ import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.server.NonBlockingSession;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class DistinctHandler extends BaseDMLHandler {
-    private static final Logger LOGGER = Logger.getLogger(DistinctHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DistinctHandler.class);
 
     private LocalResult localResult;
     private List<Order> fixedOrders;
@@ -54,6 +55,7 @@ public class DistinctHandler extends BaseDMLHandler {
      */
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
                                  byte[] eofNull, boolean isLeft, BackendConnection conn) {
+        session.setHandlerStart(this);
         if (terminate.get())
             return;
         if (this.pool == null)
@@ -90,6 +92,7 @@ public class DistinctHandler extends BaseDMLHandler {
         if (terminate.get())
             return;
         sendDistinctRowPacket(conn);
+        session.setHandlerEnd(this);
         nextHandler.rowEofResponse(null, isLeft, conn);
     }
 

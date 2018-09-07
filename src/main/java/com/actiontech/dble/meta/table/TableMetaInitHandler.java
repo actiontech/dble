@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -25,7 +25,9 @@ public class TableMetaInitHandler extends AbstractTableMetaHandler {
 
     @Override
     protected void handlerTable(StructureMeta.TableMeta tableMeta) {
-        multiTableMetaHandler.getTmManager().addTable(schema, tableMeta);
+        if (tableMeta != null) {
+            multiTableMetaHandler.getTmManager().addTable(schema, tableMeta);
+        }
     }
 
 }

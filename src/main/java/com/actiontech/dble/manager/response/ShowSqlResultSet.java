@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -15,7 +15,6 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.statistic.stat.SqlResultSet;
 import com.actiontech.dble.statistic.stat.UserStat;
 import com.actiontech.dble.statistic.stat.UserStatAnalyzer;
-import com.actiontech.dble.util.IntegerUtil;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
 
@@ -98,13 +97,13 @@ public final class ShowSqlResultSet {
         c.write(buffer);
     }
 
-    private static RowDataPacket getRow(int i, String user, String sql, int count, int resultSetSize, String charset) {
+    private static RowDataPacket getRow(int i, String user, String sql, int count, long resultSetSize, String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(LongUtil.toBytes(i));
         row.add(StringUtil.encode(user, charset));
         row.add(LongUtil.toBytes(count));
         row.add(StringUtil.encode(sql, charset));
-        row.add(IntegerUtil.toBytes(resultSetSize));
+        row.add(LongUtil.toBytes(resultSetSize));
         return row;
     }
 

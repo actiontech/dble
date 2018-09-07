@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -17,7 +17,6 @@ import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.cache.json.EhcacheJsonParse;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.cache.xml.EhcacheParseXmlImpl;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.util.KVPathUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
@@ -80,7 +79,7 @@ public class EcachesxmlTozkLoader extends ZkMultiLoader implements NotifyService
             String serviceValue = ConfFileRWUtils.readFile(KVPathUtil.CACHESERVER_NAME);
             this.checkAndWriteString(basePath, KVPathUtil.CACHESERVER_NAME, serviceValue);
         } catch (IOException e) {
-            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "EhcachexmlTozkLoader readMapFile IOException", e);
+            LOGGER.warn("EhcachexmlTozkLoader readMapFile IOException", e);
         }
     }
 }

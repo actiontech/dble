@@ -1,17 +1,24 @@
+/*
+ * Copyright (C) 2016-2018 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
 package com.actiontech.dble.meta;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.net.mysql.ErrorPacket;
-import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static com.actiontech.dble.config.ErrorCode.CREATE_VIEW_ERROR;
 
@@ -27,6 +34,7 @@ public class ViewMeta {
 
     private List<String> viewColumnMeta;
     private String schema;
+    private ProxyMetaManager tmManager;
 
 
     public ErrorPacket init(boolean isReplace) {
@@ -39,8 +47,7 @@ public class ViewMeta {
 
             SQLSelectStatement selectStatement = (SQLSelectStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(selectSql);
 
-            MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(this.schema, 63);
-
+            MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(this.schema, 63, tmManager, false);
             msv.visit(selectStatement.getSelect().getQuery());
             PlanNode selNode = msv.getTableNode();
             selNode.setUpFields();
@@ -60,7 +67,8 @@ public class ViewMeta {
         return null;
     }
 
-    public ErrorPacket initAndSet(boolean isReplace) {
+
+    public ErrorPacket initAndSet(boolean isReplace, boolean isNewCreate) {
 
         //check the create sql is legal
         //parse sql into three parts
@@ -72,14 +80,14 @@ public class ViewMeta {
                 throw new Exception("sql not supported ");
             }
 
-            DbleServer.getInstance().getTmManager().addMetaLock(schema, viewName);
+            tmManager.addMetaLock(schema, viewName);
 
             //check if the select part has
             this.checkDuplicate(viewParser, isReplace);
 
             SQLSelectStatement selectStatement = (SQLSelectStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(selectSql);
 
-            MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(this.schema, 63);
+            MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(this.schema, 63, tmManager, false);
 
             msv.visit(selectStatement.getSelect().getQuery());
             PlanNode selNode = msv.getTableNode();
@@ -90,7 +98,11 @@ public class ViewMeta {
 
             viewQuery = new QueryNode(selNode);
 
-            DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().put(viewName, this);
+            if (isNewCreate) {
+                DbleServer.getInstance().getTmManager().getRepository().put(schema, viewName, this.createSql);
+            }
+
+            tmManager.getCatalogs().get(schema).getViewMetas().put(viewName, this);
         } catch (Exception e) {
             //the select part sql is wrong & report the error
             ErrorPacket error = new ErrorPacket();
@@ -99,7 +111,7 @@ public class ViewMeta {
             error.setErrNo(CREATE_VIEW_ERROR);
             return error;
         } finally {
-            DbleServer.getInstance().getTmManager().removeMetaLock(schema, viewName);
+            tmManager.removeMetaLock(schema, viewName);
         }
         return null;
     }
@@ -107,9 +119,9 @@ public class ViewMeta {
 
     private void checkDuplicate(ViewMetaParser viewParser, Boolean isReplace) throws Exception {
 
-        QueryNode viewNode = DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getView(viewName);
+        ViewMeta viewNode = tmManager.getCatalogs().get(schema).getViewMetas().get(viewName);
         //.getSyncView(schema,viewName);
-        StructureMeta.TableMeta tableMeta = DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getTableMeta(viewName);
+        StructureMeta.TableMeta tableMeta = tmManager.getCatalogs().get(schema).getTableMeta(viewName);
         //if the alter table
         if (viewParser.getType() == ViewMetaParser.TYPE_ALTER_VIEW && !isReplace) {
             if (viewNode == null) {
@@ -132,7 +144,7 @@ public class ViewMeta {
             throw new Exception("Table '" + viewName + "' already exists");
         }
 
-        if (viewParser.getType() == ViewMetaParser.TYPE_CREATE_VIEW) {
+        if (viewParser.getType() == ViewMetaParser.TYPE_CREATE_VIEW && !isReplace) {
             // if the sql without replace & the view exists
             if (viewNode != null) {
                 // return error because the view is exists
@@ -181,9 +193,10 @@ public class ViewMeta {
         return null;
     }
 
-    public ViewMeta(String createSql, String schema) {
+    public ViewMeta(String createSql, String schema, ProxyMetaManager tmManager) {
         this.createSql = createSql;
         this.schema = schema;
+        this.tmManager = tmManager;
     }
 
     public String getCreateSql() {

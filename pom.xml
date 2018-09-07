@@ -4,16 +4,13 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.actiontech</groupId>
     <artifactId>dble</artifactId>
-    <version>2.17.11.0-dev</version>
+    <version>9.9.9.9</version>
     <packaging>jar</packaging>
     <name>dble-server</name>
     <description>The project of dble-server</description>
 
     <properties>
         <app.encoding>UTF-8</app.encoding>
-        <!-- maven.build.timestamp.format>yyyyMMdd</maven.build.timestamp.format>
-            <buildNumber>${maven.build.timestamp}</buildNumber      -->
-        <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
         <version.template.file>version.txt.template</version.template.file>
         <version.file>version.txt</version.file>
         <server.comment>dble Server (ActionTech)</server.comment>
@@ -23,6 +20,16 @@
         <grpc.version>1.4.0</grpc.version><!-- CURRENT_GRPC_VERSION -->
     </properties>
     <repositories>
+        <repository>
+            <id>repo1</id>
+            <name>Maven Repository Switchboard</name>
+            <url>http://repo1.maven.org/maven2/</url>
+        </repository>
+        <repository>
+            <id>repo2</id>
+            <name>Human Readable Name for this Mirror.</name>
+            <url>http://repo2.maven.org/maven2/</url>
+        </repository>
         <repository>
             <id>UK</id>
             <name>UK Central</name>
@@ -35,6 +42,16 @@
         </repository>
     </repositories>
     <pluginRepositories>
+        <pluginRepository>
+            <id>repo1</id>
+            <name>Maven Repository Switchboard</name>
+            <url>http://repo1.maven.org/maven2/</url>
+        </pluginRepository>
+        <pluginRepository>
+            <id>repo2</id>
+            <name>Human Readable Name for this Mirror.</name>
+            <url>http://repo2.maven.org/maven2/</url>
+        </pluginRepository>
         <pluginRepository>
             <id>UK</id>
             <name>UK Central</name>
@@ -258,6 +275,13 @@
             <artifactId>commons-lang</artifactId>
             <version>2.6</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.sun.tools.btrace</groupId>
+            <artifactId>btrace-client</artifactId>
+            <version>1.2</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -379,8 +403,12 @@
                             <outputFile>${project.basedir}/${version.file}</outputFile>
                             <replacements>
                                 <replacement>
+                                    <token>@gitcommitid@</token>
+                                    <value>${git.commit.id}</value>
+                                </replacement>
+                                <replacement>
                                     <token>@buildtime@</token>
-                                    <value>${maven.build.timestamp}</value>
+                                    <value>${timestamp}</value>
                                 </replacement>
                                 <replacement>
                                     <token>@pomversion@</token>
@@ -415,7 +443,7 @@
                             <replacements>
                                 <replacement>
                                     <token>@server-version@</token>
-                                    <value>5.6.29-dble-${project.version}-${timestamp}</value>
+                                    <value>5.6.29-dble-${project.version}-${git.commit.id.abbrev}-${timestamp}</value>
                                 </replacement>
                                 <replacement>
                                     <token>@version-comment@</token>
@@ -527,14 +555,16 @@
                                     <extraArgument>-server</extraArgument>
                                     <extraArgument>-XX:MaxPermSize=64M</extraArgument>
                                     <extraArgument>-XX:+AggressiveOpts</extraArgument>
-                                    <extraArgument>-XX:MaxDirectMemorySize=2G</extraArgument>
+                                    <extraArgument>-Dfile.encoding=UTF-8</extraArgument>
                                     <!-- 远程JMX -->
                                     <extraArgument>-Dcom.sun.management.jmxremote</extraArgument>
                                     <extraArgument>-Dcom.sun.management.jmxremote.port=1984</extraArgument>
                                     <extraArgument>-Dcom.sun.management.jmxremote.authenticate=false</extraArgument>
                                     <extraArgument>-Dcom.sun.management.jmxremote.ssl=false</extraArgument>
+                                    <extraArgument>-Dcom.sun.management.jmxremote.host=127.0.0.1</extraArgument>
                                     <extraArgument>-Xmx4G</extraArgument>
                                     <extraArgument>-Xms1G</extraArgument>
+                                    <extraArgument>-XX:MaxDirectMemorySize=2G</extraArgument>
                                 </extraArguments>
                             </jvmSettings>
                             <generatorConfigurations>
@@ -562,6 +592,10 @@
                                         <property>
                                             <name>wrapper.logfile</name>
                                             <value>logs/wrapper.log</value>
+                                        </property>
+                                        <property>
+                                            <name>wrapper.pidfile</name> <!-- in fact, it means PIDDIR in bin/dble-->
+                                            <value>$BASEDIR</value>
                                         </property>
                                     </configuration>
 
@@ -632,7 +666,19 @@
                     <timestampFormat>yyyyMMddHHmmss</timestampFormat>
                 </configuration>
             </plugin>
-
+            <plugin>
+                <groupId>pl.project13.maven</groupId>
+                <artifactId>git-commit-id-plugin</artifactId>
+                <version>2.2.4</version>
+                <executions>
+                    <execution>
+                        <id>get-the-git-infos</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>

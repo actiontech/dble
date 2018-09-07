@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -83,6 +83,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
                         return null;
                     }
                     conn.setResponseHandler(this);
+                    conn.setSession(session);
                     ((MySQLConnection) conn).setComplexQuery(true);
                     conn.execute(node, session.getSource(), isAutoCommit());
                 } else {
@@ -131,6 +132,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
     @Override
     public void connectionAcquired(BackendConnection conn) {
         conn.setResponseHandler(this);
+        conn.setSession(session);
         try {
             conn.query(sql);
         } catch (Exception e) {
@@ -150,8 +152,13 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
         ErrorPacket err = new ErrorPacket();
         err.read(data);
         LOGGER.info("errorResponse " + err.getErrNo() + " " + new String(err.getMessage()));
-        if (canReleaseConn()) {
-            conn.release();
+        boolean executeResponse = conn.syncAndExecute();
+        if (executeResponse) {
+            if (canReleaseConn()) {
+                conn.release();
+            }
+        } else {
+            ((MySQLConnection) conn).quit();
         }
     }
 

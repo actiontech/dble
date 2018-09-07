@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -23,7 +23,6 @@ public final class RouteResultsetNode implements Serializable, Comparable<RouteR
     private String statement; // the query for node to executr
     private final int sqlType;
     private volatile boolean canRunInReadDB;
-    private final boolean hasBalanceFlag;
     private int limitStart;
     private int limitSize;
     private LoadData loadData;
@@ -39,7 +38,6 @@ public final class RouteResultsetNode implements Serializable, Comparable<RouteR
         this.sqlType = sqlType;
         this.statement = srcStatement;
         canRunInReadDB = (sqlType == ServerParse.SELECT || sqlType == ServerParse.SHOW);
-        hasBalanceFlag = (statement != null) && statement.startsWith("/*balance*/");
         this.multiplexNum = new AtomicLong(0);
     }
 
@@ -74,7 +72,7 @@ public final class RouteResultsetNode implements Serializable, Comparable<RouteR
      * @return
      */
     public boolean canRunINReadDB(boolean autocommit) {
-        return canRunInReadDB && (autocommit || hasBalanceFlag);
+        return canRunInReadDB && (autocommit);
     }
 
     public String getName() {
@@ -164,9 +162,4 @@ public final class RouteResultsetNode implements Serializable, Comparable<RouteR
         }
         return this.name.compareTo(obj.name);
     }
-
-    public boolean isHasBalanceFlag() {
-        return hasBalanceFlag;
-    }
-
 }

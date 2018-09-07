@@ -1,11 +1,10 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
 package com.actiontech.dble.config.loader.xml;
 
-import com.actiontech.dble.config.model.AlarmConfig;
 import com.actiontech.dble.config.model.FirewallConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.UserConfig;
@@ -27,18 +26,15 @@ public class XMLServerLoader {
     private final SystemConfig system;
     private final Map<String, UserConfig> users;
     private final FirewallConfig firewall;
-    private final AlarmConfig alarm;
 
-    public XMLServerLoader(boolean isLowerCaseTableNames) {
+    public XMLServerLoader() {
         this.system = new SystemConfig();
         this.users = new HashMap<>();
         this.firewall = new FirewallConfig();
-        this.alarm = new AlarmConfig();
 
-        this.load(new AlarmConfigLoader(), isLowerCaseTableNames);
-        this.load(new SystemConfigLoader(), isLowerCaseTableNames);
-        this.load(new UserConfigLoader(), isLowerCaseTableNames);
-        this.load(new FirewallConfigLoader(), isLowerCaseTableNames);
+        this.load(new SystemConfigLoader());
+        this.load(new UserConfigLoader());
+        this.load(new FirewallConfigLoader());
     }
 
     public SystemConfig getSystem() {
@@ -51,15 +47,11 @@ public class XMLServerLoader {
         return users;
     }
 
-    public AlarmConfig getAlarm() {
-        return alarm;
-    }
-
     public FirewallConfig getFirewall() {
         return firewall;
     }
 
-    public void load(Loader loader, boolean isLowerCaseTableNames) {
+    public void load(Loader loader) {
         //read server.xml
         InputStream dtd = null;
         InputStream xml = null;
@@ -67,7 +59,7 @@ public class XMLServerLoader {
             dtd = ResourceUtil.getResourceAsStream("/server.dtd");
             xml = ResourceUtil.getResourceAsStream("/server.xml");
             Element root = ConfigUtil.getDocument(dtd, xml).getDocumentElement();
-            loader.load(root, this, isLowerCaseTableNames);
+            loader.load(root, this);
         } catch (ConfigException e) {
             throw e;
         } catch (Exception e) {

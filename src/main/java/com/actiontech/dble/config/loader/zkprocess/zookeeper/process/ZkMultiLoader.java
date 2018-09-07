@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -7,7 +7,6 @@ package com.actiontech.dble.config.loader.zkprocess.zookeeper.process;
 
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.DataInf;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.DirectoryInf;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.google.gson.Gson;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
@@ -80,7 +79,7 @@ public class ZkMultiLoader {
                 return true;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.warn("checkPathExists " + path + "Exception ", e);
         }
         return false;
     }
@@ -132,7 +131,7 @@ public class ZkMultiLoader {
         try {
             ZKPaths.mkdirs(curator.getZookeeperClient().getZooKeeper(), path);
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.CORE_ZK_WARN + " createPath error", e);
+            LOGGER.warn(" createPath error", e);
             result = false;
         }
 

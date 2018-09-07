@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -46,6 +46,11 @@ public class ERTable {
             hashCode = hash;
         }
         return hashCode;
+    }
+
+
+    public ERTable changeToLowerCase() {
+        return new ERTable(schema.toLowerCase(), table.toLowerCase(), column);
     }
 
     @Override

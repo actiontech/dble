@@ -1,9 +1,11 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.statistic.stat;
+
+import com.actiontech.dble.route.util.RouterUtil;
 
 /**
  * QueryResult
@@ -20,14 +22,14 @@ public class QueryResult {
     private long netOutBytes;
     private long startTime;
     private long endTime;
-    private int resultSize;
+    private long resultSize;
 
     public QueryResult(String user, int sqlType, String sql, long sqlRows,
-                       long netInBytes, long netOutBytes, long startTime, long endTime, int resultSize) {
+                       long netInBytes, long netOutBytes, long startTime, long endTime, long resultSize) {
         super();
         this.user = user;
         this.sqlType = sqlType;
-        this.sql = sql;
+        this.sql = RouterUtil.getFixedSql(sql);
         this.sqlRows = sqlRows;
         this.netInBytes = netInBytes;
         this.netOutBytes = netOutBytes;
@@ -68,7 +70,8 @@ public class QueryResult {
         return endTime;
     }
 
-    public int getResultSize() {
+    public long getResultSize() {
         return resultSize;
     }
+
 }

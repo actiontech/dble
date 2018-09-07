@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -13,7 +13,8 @@ import com.actiontech.dble.plan.common.field.FieldUtil;
 import com.actiontech.dble.plan.common.item.FieldTypes;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.server.NonBlockingSession;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author ActionTech
  */
 public class UnionHandler extends BaseDMLHandler {
-    private static final Logger LOGGER = Logger.getLogger(UnionHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(UnionHandler.class);
 
     public UnionHandler(long id, NonBlockingSession session, List<Item> selects, int nodeCount) {
         super(id, session);
@@ -54,10 +55,11 @@ public class UnionHandler extends BaseDMLHandler {
 
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
                                  byte[] eofNull, boolean isLeft, BackendConnection conn) {
-        if (terminate.get())
-            return;
         lock.lock();
         try {
+            session.setHandlerStart(this);
+            if (terminate.get())
+                return;
             if (this.fieldPackets == null || this.fieldPackets.size() == 0) {
                 this.fieldPackets = fieldPackets;
             } else {
@@ -69,7 +71,7 @@ public class UnionHandler extends BaseDMLHandler {
                 nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, conn);
                 conFieldSend.signalAll();
             } else {
-                while (nodeCountField.get() != 0) {
+                while (nodeCountField.get() != 0 && !terminate.get()) {
                     conFieldSend.await();
                 }
             }
@@ -89,7 +91,7 @@ public class UnionHandler extends BaseDMLHandler {
             Item sel = selects.get(i);
             fp.setName(sel.getItemName().getBytes());
             fp.setDb(null);
-            fp.setTable(null);
+            fp.setTable(sel.getTableName() == null ? null : sel.getTableName().getBytes());
             fp.setOrgTable(null);
         }
     }
@@ -142,6 +144,7 @@ public class UnionHandler extends BaseDMLHandler {
         if (terminate.get())
             return;
         if (nodeCount.decrementAndGet() == 0) {
+            session.setHandlerEnd(this);
             nextHandler.rowEofResponse(data, this.isLeft, conn);
         }
     }

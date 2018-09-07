@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -38,7 +38,8 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -50,7 +51,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class BaseHandlerBuilder {
-    private static final Logger LOGGER = Logger.getLogger(BaseHandlerBuilder.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BaseHandlerBuilder.class);
     private static AtomicLong sequenceId = new AtomicLong(0);
     protected NonBlockingSession session;
     protected HandlerBuilder hBuilder;
@@ -67,7 +68,7 @@ public abstract class BaseHandlerBuilder {
     protected boolean needWhereHandler = true;
 
     protected boolean isExplain = false;
-    protected List<BaseHandlerBuilder> subQueryBuilderList = new ArrayList<>(1);
+    protected List<BaseHandlerBuilder> subQueryBuilderList = new CopyOnWriteArrayList<>();
 
     protected BaseHandlerBuilder(NonBlockingSession session, PlanNode node, HandlerBuilder hBuilder, boolean isExplain) {
         this.session = session;
@@ -96,7 +97,7 @@ public abstract class BaseHandlerBuilder {
         boolean isNestLoopJoin = isNestLoopStrategy(node);
         if (isNestLoopJoin) {
             nestLoopBuild();
-        } else if (!node.isExistView() && PlanUtil.isGlobal(node)) {
+        } else if (PlanUtil.isGlobal(node)) {
             // the query can be send to a certain node
             noShardBuild();
         } else if (canDoAsMerge()) {
@@ -121,8 +122,11 @@ public abstract class BaseHandlerBuilder {
             schema = tbNode.getSchema();
             table = tbNode.getTableName();
         }
-        SendMakeHandler sh = new SendMakeHandler(getSequenceId(), session, node.getColumnsSelected(), schema, table, tbAlias);
-        addHandler(sh);
+        if (needCommon || node.isWithSubQuery()) {
+            SendMakeHandler sh = new SendMakeHandler(getSequenceId(), session, node.getColumnsSelected(), schema, table, tbAlias);
+            addHandler(sh);
+        }
+
 
         if (preHandlers != null) {
             for (DMLResponseHandler preHandler : preHandlers) {
@@ -158,18 +162,9 @@ public abstract class BaseHandlerBuilder {
      */
     protected final void noShardBuild() {
         this.needCommon = false;
-        // nearly all global tables :unGlobalCount=0.
-        // Maybe the join node break the rule. eg: global1(node 0,1) join global2(node 2,3)
-        String sql = null;
-        if (node.getParent() == null) { // it's root
-            sql = node.getSql();
-        }
-        // maybe some node is view
-        if (sql == null) {
-            GlobalVisitor visitor = new GlobalVisitor(node, true);
-            visitor.visit();
-            sql = visitor.getSql().toString();
-        }
+        GlobalVisitor visitor = new GlobalVisitor(node, true);
+        visitor.visit();
+        String sql = visitor.getSql().toString();
         RouteResultsetNode[] rrss = getTableSources(node.getNoshardNode(), sql);
         hBuilder.checkRRSs(rrss);
         MultiNodeMergeHandler mh = new MultiNodeMergeHandler(getSequenceId(), rrss, session.getSource().isAutocommit() && !session.getSource().isTxStart(),
@@ -485,7 +480,6 @@ public abstract class BaseHandlerBuilder {
         endHandler.setNextHandler(tempHandler);
         this.getSubQueryBuilderList().add(builder);
         subQueryFinished(subNodes, lock, finished, finishSubQuery);
-        return;
     }
     private void handleSubQuery(final ReentrantLock lock, final Condition finishSubQuery, final AtomicBoolean finished,
                                 final AtomicInteger subNodes, final CopyOnWriteArrayList<ErrorPacket> errorPackets, final PlanNode planNode, final SubQueryHandler tempHandler) {
@@ -493,8 +487,10 @@ public abstract class BaseHandlerBuilder {
             @Override
             public void run() {
                 try {
-                    DMLResponseHandler endHandler = hBuilder.buildNode(session, planNode, false);
+                    BaseHandlerBuilder builder = hBuilder.getBuilder(session, planNode, false);
+                    DMLResponseHandler endHandler = builder.getEndHandler();
                     endHandler.setNextHandler(tempHandler);
+                    getSubQueryBuilderList().add(builder);
                     CallBackHandler tempDone = new CallBackHandler() {
                         @Override
                         public void call() throws Exception {

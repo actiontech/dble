@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -26,7 +26,8 @@ import com.actiontech.dble.plan.common.item.function.sumfunc.Aggregator;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.util.TimeUtil;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author ActionTech
  */
 public class DirectGroupByHandler extends OwnThreadDMLHandler {
-    private static final Logger LOGGER = Logger.getLogger(DirectGroupByHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DirectGroupByHandler.class);
 
     private BlockingQueue<RowDataPacket> queue;
 
@@ -86,6 +87,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
                                  byte[] eofNull, boolean isLeft, BackendConnection conn) {
+        session.setHandlerStart(this);
         if (terminate.get())
             return;
         if (this.pool == null)
@@ -166,6 +168,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
             } else {
                 sendGroupRowPacket(conn);
             }
+            session.setHandlerEnd(this);
             nextHandler.rowEofResponse(null, this.isLeft, conn);
         } catch (Exception e) {
             String msg = "group by thread is error," + e.getLocalizedMessage();
@@ -175,8 +178,8 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
     }
 
     private void recordElapsedTime(String prefix) {
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info(prefix + TimeUtil.currentTimeMillis());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(prefix + TimeUtil.currentTimeMillis());
         }
     }
 

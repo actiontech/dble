@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -65,7 +65,7 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
     public void okResponse(byte[] ok, BackendConnection conn) {
         if (decrementCountBy(1)) {
             if (sendData == null) {
-                sendData = ok;
+                sendData = session.getOkByteArray();
             }
             cleanAndFeedback();
         }
@@ -77,7 +77,7 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
         errPacket.read(err);
         String errMsg = new String(errPacket.getMessage());
         this.setFail(errMsg);
-        conn.quit(); //quit to rollback
+        conn.close("rollback error response"); //quit to rollback
         if (decrementCountBy(1)) {
             cleanAndFeedback();
         }
@@ -88,7 +88,7 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
         LOGGER.info("backend connect", e);
         String errMsg = new String(StringUtil.encode(e.getMessage(), session.getSource().getCharset().getResults()));
         this.setFail(errMsg);
-        conn.quit(); //quit if not rollback
+        conn.close("rollback connection error"); //quit if not rollback
         if (decrementCountBy(1)) {
             cleanAndFeedback();
         }
@@ -110,10 +110,16 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
         if (session.closed()) {
             return;
         }
+        setResponseTime();
         if (this.isFail()) {
             createErrPkg(error).write(session.getSource());
         } else {
+            boolean multiStatementFlag = session.getIsMultiStatement().get();
             session.getSource().write(send);
+            session.multiStatementNextSql(multiStatementFlag);
         }
+    }
+
+    protected void setResponseTime() {
     }
 }

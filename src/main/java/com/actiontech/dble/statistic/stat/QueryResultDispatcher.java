@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -48,7 +48,7 @@ public final class QueryResultDispatcher {
     }
 
     public static void dispatchQuery(final QueryResult queryResult) {
-        DbleServer.getInstance().getBusinessExecutor().execute(new Runnable() {
+        DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
 
             public void run() {
 

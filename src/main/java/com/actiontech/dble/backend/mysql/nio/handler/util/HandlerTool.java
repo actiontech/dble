@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.backend.mysql.nio.handler.util;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.MysqlVisitor;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler.HandlerType;
@@ -21,9 +22,10 @@ import com.actiontech.dble.plan.common.item.ItemRef;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +37,7 @@ public final class HandlerTool {
     // private static Pattern pat = Pattern.compile("^\'([^\']*?)\'$");
 
     /**
-     * @param node
+     * @param node DMLResponseHandler
      */
     public static void terminateHandlerTree(final DMLResponseHandler node) {
         try {
@@ -51,7 +53,7 @@ public final class HandlerTool {
             }
             node.terminate();
         } catch (Exception e) {
-            Logger.getLogger(HandlerTool.class).error("terminate node exception:", e);
+            LoggerFactory.getLogger(HandlerTool.class).error("terminate node exception:", e);
         }
     }
 
@@ -72,17 +74,25 @@ public final class HandlerTool {
     /**
      * create Item, the Item value referenced by field and changed by field changes
      *
-     * @param sel
-     * @param fields
-     * @param type
-     * @return
+     * @param sel Item
+     * @param fields List<Field>
+     * @param type HandlerType
+     * @return Item
      */
     public static Item createItem(Item sel, List<Field> fields, int startIndex, boolean allPushDown, HandlerType type) {
         Item ret;
         if (sel.basicConstItem())
             return sel;
         if (sel instanceof ItemScalarSubQuery) {
-            return ((ItemScalarSubQuery) sel).getValue();
+            ItemScalarSubQuery scalarSubQuery = (ItemScalarSubQuery) sel;
+            if (scalarSubQuery.getPlanNode().type() == PlanNode.PlanNodeType.NONAME) {
+                Item result = scalarSubQuery.getSelect();
+                result.setItemName(scalarSubQuery.getItemName());
+                result.setAlias(scalarSubQuery.getItemName());
+                return result;
+            } else {
+                return scalarSubQuery.getValue();
+            }
         }
         Item.ItemType i = sel.type();
         if (i == Item.ItemType.FUNC_ITEM || i == Item.ItemType.COND_ITEM) {
@@ -117,14 +127,14 @@ public final class HandlerTool {
     /**
      * clone field
      *
-     * @param fields
-     * @param bs
+     * @param fields List<Field>
+     * @param bs List<byte[]>
      */
     public static void initFields(List<Field> fields, List<byte[]> bs) {
         FieldUtil.initFields(fields, bs);
     }
 
-    public static List<byte[]> getItemListBytes(List<Item> items) {
+    static List<byte[]> getItemListBytes(List<Item> items) {
         List<byte[]> ret = new ArrayList<>(items.size());
         for (Item item : items) {
             byte[] b = item.getRowPacketByte();
@@ -146,14 +156,14 @@ public final class HandlerTool {
      * 3.avg(id) avg(id) = sum[sum(id) 0...n]/sum[count(id) 0...n];
      *
      * @param sumFunction aggregate function name
-     * @param fields
-     * @return
+     * @param fields List<Field>
+     * @return Item
      */
-    protected static Item createPushDownGroupBy(ItemSum sumFunction, List<Field> fields, int startIndex) {
+    private static Item createPushDownGroupBy(ItemSum sumFunction, List<Field> fields, int startIndex) {
         String funName = sumFunction.funcName().toUpperCase();
         String colName = sumFunction.getItemName();
         String pdName = sumFunction.getPushDownName();
-        Item ret = null;
+        Item ret;
         List<Item> args = new ArrayList<>();
         if (funName.equalsIgnoreCase("AVG")) {
             String colNameSum = colName.replace(funName + "(", "SUM(");
@@ -200,13 +210,12 @@ public final class HandlerTool {
         return ret;
     }
 
-    protected static ItemFunc createFunctionItem(ItemFunc f, List<Field> fields, int startIndex, boolean allPushDown,
+    private static ItemFunc createFunctionItem(ItemFunc f, List<Field> fields, int startIndex, boolean allPushDown,
                                                  HandlerType type) {
-        ItemFunc ret = null;
         List<Item> args = new ArrayList<>();
         for (int index = 0; index < f.getArgCount(); index++) {
             Item arg = f.arguments().get(index);
-            Item newArg = null;
+            Item newArg;
             if (arg.isWild())
                 newArg = new ItemInt(0);
             else
@@ -215,26 +224,25 @@ public final class HandlerTool {
                 throw new RuntimeException("Function argument not found:" + arg);
             args.add(newArg);
         }
-        ret = (ItemFunc) f.reStruct(args, allPushDown, fields);
+        ItemFunc ret = (ItemFunc) f.reStruct(args, allPushDown, fields);
         ret.setItemName(f.getPushDownName() == null ? f.getItemName() : f.getPushDownName());
         return ret;
     }
 
     /**
-     * @param f
-     * @param fields
-     * @param startIndex
-     * @param allPushDown
-     * @param type
-     * @return
+     * @param f ItemSum
+     * @param fields List<Field>
+     * @param startIndex startIndex
+     * @param allPushDown allPushDown
+     * @param type HandlerType
+     * @return ItemSum
      */
     private static ItemSum createSumItem(ItemSum f, List<Field> fields, int startIndex, boolean allPushDown,
                                          HandlerType type) {
-        ItemSum ret = null;
         List<Item> args = new ArrayList<>();
         for (int index = 0; index < f.getArgCount(); index++) {
             Item arg = f.arguments().get(index);
-            Item newArg = null;
+            Item newArg;
             if (arg.isWild())
                 newArg = new ItemInt(0);
             else
@@ -243,12 +251,12 @@ public final class HandlerTool {
                 throw new RuntimeException("Function argument not found:" + arg);
             args.add(newArg);
         }
-        ret = (ItemSum) f.reStruct(args, allPushDown, fields);
+        ItemSum ret = (ItemSum) f.reStruct(args, allPushDown, fields);
         ret.setItemName(f.getPushDownName() == null ? f.getItemName() : f.getPushDownName());
         return ret;
     }
 
-    protected static ItemField createFieldItem(Item col, List<Field> fields, int startIndex) {
+    static ItemField createFieldItem(Item col, List<Field> fields, int startIndex) {
         int index = findField(col, fields, startIndex);
         if (index < 0)
             throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "field not found:" + col);
@@ -260,10 +268,10 @@ public final class HandlerTool {
     /**
      * findField in sel from start
      *
-     * @param sel
-     * @param fields
-     * @param startIndex
-     * @return
+     * @param sel sel
+     * @param fields fields
+     * @param startIndex startIndex
+     * @return index
      */
     public static int findField(Item sel, List<Field> fields, int startIndex) {
         String selName = (sel.getPushDownName() == null ? sel.getItemName() : sel.getPushDownName());
@@ -274,6 +282,9 @@ public final class HandlerTool {
             // field.name==null if '' push down
             String colName2 = field.getName() == null ? null : field.getName().trim();
             String tableName2 = field.getTable();
+            if (tableName2 != null && DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+                tableName2 = tableName2.toLowerCase();
+            }
             if (sel instanceof ItemField && !StringUtil.equalsWithEmpty(tableName, tableName2)) {
                 continue;
             }
@@ -287,8 +298,8 @@ public final class HandlerTool {
     /**
      * make order by from distinct
      *
-     * @param selects
-     * @return
+     * @param selects selects
+     * @return order list
      */
     public static List<Order> makeOrder(List<Item> selects) {
         List<Order> orders = new ArrayList<>();

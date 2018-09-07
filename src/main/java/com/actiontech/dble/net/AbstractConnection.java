@@ -1,11 +1,12 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
 package com.actiontech.dble.net;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.CharsetNames;
 import com.actiontech.dble.net.mysql.MySQLPacket;
@@ -87,6 +88,7 @@ public abstract class AbstractConnection implements NIOConnection {
         this.isClosed = new AtomicBoolean(false);
         this.socketWR = null;
     }
+
     public void setCollationConnection(String collation) {
         charsetName.setCollation(collation);
     }
@@ -231,6 +233,10 @@ public abstract class AbstractConnection implements NIOConnection {
         this.processor.getBufferPool().recycle(buffer);
     }
 
+    public NIOHandler getHandler() {
+        return handler;
+    }
+
     public void setHandler(NIOHandler handler) {
         this.handler = handler;
     }
@@ -269,10 +275,18 @@ public abstract class AbstractConnection implements NIOConnection {
 
         lastReadTime = TimeUtil.currentTimeMillis();
         if (got < 0) {
-            this.close("stream closed");
+            if (this instanceof MySQLConnection) {
+                ((MySQLConnection) this).closeInner("stream closed");
+            } else {
+                this.close("stream closed");
+            }
             return;
         } else if (got == 0 && !this.channel.isOpen()) {
-            this.close("socket closed");
+            if (this instanceof MySQLConnection) {
+                ((MySQLConnection) this).closeInner("stream closed");
+            } else {
+                this.close("stream closed");
+            }
             return;
         }
         netInBytes += got;
@@ -450,9 +464,13 @@ public abstract class AbstractConnection implements NIOConnection {
         return buffer;
     }
 
+
+    public abstract void connectionCount();
+
     @Override
     public void close(String reason) {
         if (!isClosed.get()) {
+            this.connectionCount();
             closeSocket();
             isClosed.set(true);
             if (processor != null) {
@@ -469,7 +487,7 @@ public abstract class AbstractConnection implements NIOConnection {
                 LOGGER.debug("close connection,reason:" + reason + " ," + this);
             }
             if (reason.contains("connection,reason:java.net.ConnectException")) {
-                throw new RuntimeException(" errr");
+                throw new RuntimeException(reason);
             }
         } else {
             // make sure buffer recycle again, avoid buffer leak
@@ -488,7 +506,7 @@ public abstract class AbstractConnection implements NIOConnection {
         }
     }
 
-    protected void cleanup() {
+    protected synchronized void cleanup() {
 
         if (readBuffer != null) {
             this.recycle(readBuffer);
@@ -583,6 +601,7 @@ public abstract class AbstractConnection implements NIOConnection {
         }
         return sbUsrVariables.toString();
     }
+
     public void onConnectFinish() {
         LOGGER.debug("The backend conntinon has finished connecting");
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -14,6 +14,7 @@ import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.FieldTypes;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.util.StringUtil;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
@@ -54,6 +55,7 @@ public class SendMakeHandler extends BaseDMLHandler {
                                  byte[] eofNull, boolean isLeft, BackendConnection conn) {
         lock.lock();
         try {
+            session.setHandlerStart(this);
             if (terminate.get())
                 return;
             this.fieldPackets = fieldPackets;
@@ -62,8 +64,9 @@ public class SendMakeHandler extends BaseDMLHandler {
                 Item tmpItem = HandlerTool.createItem(sel, this.sourceFields, 0, isAllPushDown(), type());
                 tmpItem.setItemName(sel.getItemName());
                 String selAlias = sel.getAlias();
-                if (selAlias != null || tableAlias != null) {
+                if (selAlias != null) {
                     // remove the added tmp FNAF
+                    selAlias = StringUtil.removeApostropheOrBackQuote(selAlias);
                     if (StringUtils.indexOf(selAlias, Item.FNAF) == 0)
                         selAlias = StringUtils.substring(selAlias, Item.FNAF.length());
                 }
@@ -110,6 +113,7 @@ public class SendMakeHandler extends BaseDMLHandler {
         try {
             if (terminate.get())
                 return;
+            session.setHandlerEnd(this);
             nextHandler.rowEofResponse(eof, this.isLeft, conn);
         } finally {
             lock.unlock();

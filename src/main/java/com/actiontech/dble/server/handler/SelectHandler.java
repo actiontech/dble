@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -91,6 +91,9 @@ public final class SelectHandler {
                 break;
             case ServerParseSelect.SESSION_TX_READ_ONLY:
                 SelectTxReadOnly.response(c);
+                break;
+            case ServerParseSelect.TRACE:
+                SelectTrace.response(c);
                 break;
             default:
                 c.execute(stmt, ServerParse.SELECT);

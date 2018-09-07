@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -34,7 +34,6 @@ import java.util.Map.Entry;
 public class XMLSchemaLoader implements SchemaLoader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(XMLSchemaLoader.class);
-
     private static final String DEFAULT_DTD = "/schema.dtd";
     private static final String DEFAULT_XML = "/schema.xml";
 
@@ -210,7 +209,6 @@ public class XMLSchemaLoader implements SchemaLoader {
                 setFuncNode.addAll(entry.getValue());
             }
         }
-        schemaFuncNodeER = null;
     }
 
     private void mergeFkERMap(SchemaConfig schemaConfig) {
@@ -235,10 +233,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             //primaryKey used for cache and autoincrement
             String primaryKey = tableElement.hasAttribute("primaryKey") ? tableElement.getAttribute("primaryKey").toUpperCase() : null;
             //if autoIncrement,it will use sequence handler
-            boolean autoIncrement = false;
-            if (tableElement.hasAttribute("autoIncrement")) {
-                autoIncrement = Boolean.parseBoolean(tableElement.getAttribute("autoIncrement"));
-            }
+            boolean autoIncrement = isAutoIncrement(tableElement, primaryKey);
             //limit size of the table
             boolean needAddLimit = true;
             if (tableElement.hasAttribute("needAddLimit")) {
@@ -302,6 +297,17 @@ public class XMLSchemaLoader implements SchemaLoader {
             }
         }
         return tables;
+    }
+
+    private boolean isAutoIncrement(Element tableElement, String primaryKey) {
+        boolean autoIncrement = false;
+        if (tableElement.hasAttribute("autoIncrement")) {
+            autoIncrement = Boolean.parseBoolean(tableElement.getAttribute("autoIncrement"));
+            if (autoIncrement && primaryKey == null) {
+                throw new ConfigException("autoIncrement is true but primaryKey is not setting!");
+            }
+        }
+        return autoIncrement;
     }
 
     /**
@@ -497,37 +503,42 @@ public class XMLSchemaLoader implements SchemaLoader {
         String nodeHost = node.getAttribute("host");
         String nodeUrl = node.getAttribute("url");
         String user = node.getAttribute("user");
+        String password = node.getAttribute("password");
 
-        String ip = null;
-        int port = 0;
         if (empty(nodeHost) || empty(nodeUrl) || empty(user)) {
             throw new ConfigException(
                     "dataHost " + dataHost +
                             " define error,some attributes of this element is empty: " +
                             nodeHost);
         }
-
         int colonIndex = nodeUrl.indexOf(':');
-        ip = nodeUrl.substring(0, colonIndex).trim();
-        port = Integer.parseInt(nodeUrl.substring(colonIndex + 1).trim());
-
-        String password = node.getAttribute("password");
+        String ip = nodeUrl.substring(0, colonIndex).trim();
+        int port = Integer.parseInt(nodeUrl.substring(colonIndex + 1).trim());
         String usingDecrypt = node.getAttribute("usingDecrypt");
+        String disabledStr = node.getAttribute("disabled");
+        boolean disabled = !"".equals(disabledStr) && Boolean.parseBoolean(disabledStr);
         String passwordEncryty = DecryptUtil.dbHostDecrypt(usingDecrypt, nodeHost, user, password);
-        DBHostConfig conf = new DBHostConfig(nodeHost, ip, port, nodeUrl, user, passwordEncryty);
-        conf.setMaxCon(maxCon);
-        conf.setMinCon(minCon);
-
         String weightStr = node.getAttribute("weight");
         int weight = "".equals(weightStr) ? PhysicalDBPool.WEIGHT : Integer.parseInt(weightStr);
+
+        DBHostConfig conf = new DBHostConfig(nodeHost, ip, port, nodeUrl, user, passwordEncryty, disabled);
+        conf.setMaxCon(maxCon);
+        conf.setMinCon(minCon);
         conf.setWeight(weight);
+        String id = node.getAttribute("id");
+        if (!"".equals(id)) {
+            conf.setId(id);
+        } else {
+            conf.setId(nodeHost);
+        }
+
         return conf;
     }
 
     private void loadDataHosts(Element root) {
         NodeList list = root.getElementsByTagName("dataHost");
         for (int i = 0, n = list.getLength(); i < n; ++i) {
-
+            Set<String> hostNames = new HashSet<>();
             Element element = (Element) list.item(i);
             String name = element.getAttribute("name");
             if (dataHosts.containsKey(name)) {
@@ -563,25 +574,51 @@ public class XMLSchemaLoader implements SchemaLoader {
             final String heartbeatSQL = element.getElementsByTagName("heartbeat").item(0).getTextContent();
 
             NodeList writeNodes = element.getElementsByTagName("writeHost");
+            if (writeNodes.getLength() < 1) {
+                throw new ConfigException("dataHost[" + name + "]'s has no write host");
+            }
+
             DBHostConfig[] writeDbConfs = new DBHostConfig[writeNodes.getLength()];
             Map<Integer, DBHostConfig[]> readHostsMap = new HashMap<>(2);
+            Map<Integer, DBHostConfig[]> standbyReadHostsMap = new HashMap<>(2);
             for (int w = 0; w < writeDbConfs.length; w++) {
                 Element writeNode = (Element) writeNodes.item(w);
                 writeDbConfs[w] = createDBHostConf(name, writeNode, maxCon, minCon);
+                String writeHostName = writeDbConfs[w].getHostName();
+                if (hostNames.contains(writeHostName)) {
+                    throw new ConfigException("dataHost[" + name + "]'s child write host name \"" + writeHostName + "\"  duplicated!");
+                } else {
+                    hostNames.add(writeHostName);
+                }
                 NodeList readNodes = writeNode.getElementsByTagName("readHost");
                 //for every readHost
                 if (readNodes.getLength() != 0) {
-                    DBHostConfig[] readDbConfs = new DBHostConfig[readNodes.getLength()];
-                    for (int r = 0; r < readDbConfs.length; r++) {
+                    List<DBHostConfig> readDbConfList = new ArrayList<>(readNodes.getLength());
+                    int readHostSize = readNodes.getLength();
+                    for (int r = 0; r < readHostSize; r++) {
                         Element readNode = (Element) readNodes.item(r);
-                        readDbConfs[r] = createDBHostConf(name, readNode, maxCon, minCon);
+                        DBHostConfig tmpDBHostConfig = createDBHostConf(name, readNode, maxCon, minCon);
+                        String readHostName = tmpDBHostConfig.getHostName();
+                        if (hostNames.contains(readHostName)) {
+                            throw new ConfigException("dataHost[" + name + "]'s child host name \"" + readHostName + "\"  duplicated!");
+                        } else {
+                            hostNames.add(readHostName);
+                        }
+                        if (!tmpDBHostConfig.isDisabled()) {
+                            readDbConfList.add(tmpDBHostConfig);
+                        }
                     }
-                    readHostsMap.put(w, readDbConfs);
+                    if (readDbConfList.size() > 0) {
+                        DBHostConfig[] readDbConfs = readDbConfList.toArray(new DBHostConfig[readDbConfList.size()]);
+                        if (balance != 0) {
+                            readHostsMap.put(w, readDbConfs);
+                        } else {
+                            standbyReadHostsMap.put(w, readDbConfs);
+                        }
+                    }
                 }
             }
-
-            DataHostConfig hostConf = new DataHostConfig(name,
-                    writeDbConfs, readHostsMap, switchType, slaveThreshold, tempReadHostAvailable);
+            DataHostConfig hostConf = new DataHostConfig(name, writeDbConfs, readHostsMap, standbyReadHostsMap, switchType, slaveThreshold, tempReadHostAvailable);
 
             hostConf.setMaxCon(maxCon);
             hostConf.setMinCon(minCon);

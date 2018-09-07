@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -17,6 +17,7 @@ import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
+import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
 
 import java.sql.SQLNonTransientException;
 import java.util.HashSet;
@@ -55,7 +56,8 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
             SQLCharExpr charExpr = (SQLCharExpr) valueExpr;
             shardingValue = charExpr.getText();
         }
-        if (shardingValue == null) {
+
+        if (shardingValue == null && !(valueExpr instanceof SQLNullExpr)) {
             throw new SQLNonTransientException("Not Supported of Sharding Value EXPR :" + valueExpr.toString());
         }
         return shardingValue;
@@ -126,7 +128,7 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
         }
     }
 
-    protected int getShardingColIndex(SchemaInfo schemaInfo, List<SQLExpr> columnExprList, String partitionColumn) {
+    protected int getShardingColIndex(SchemaInfo schemaInfo, List<SQLExpr> columnExprList, String partitionColumn) throws SQLNonTransientException {
         int shardingColIndex = -1;
         if (columnExprList == null || columnExprList.size() == 0) {
             StructureMeta.TableMeta tbMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());

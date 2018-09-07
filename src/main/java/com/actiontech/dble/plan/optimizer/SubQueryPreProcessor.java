@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -12,17 +12,19 @@ import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.Item.ItemType;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.ItemInt;
-import com.actiontech.dble.plan.common.item.function.operator.ItemBoolFunc2;
+import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondOr;
-import com.actiontech.dble.plan.common.item.subquery.*;
+import com.actiontech.dble.plan.common.item.function.operator.logic.ItemFuncNot;
+import com.actiontech.dble.plan.common.item.subquery.ItemInSubQuery;
+import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
+import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.util.FilterUtils;
-import com.actiontech.dble.plan.util.PlanUtil;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
@@ -49,6 +51,15 @@ public final class SubQueryPreProcessor {
             PlanNode child = qtn.getChildren().get(i);
             qtn.getChildren().set(i, findComparisonsSubQueryToJoinNode(child, childTransform));
         }
+        for (Item itemSelect : qtn.getColumnsSelected()) {
+            if (itemSelect instanceof ItemScalarSubQuery) {
+                ItemScalarSubQuery scalarSubQuery = (ItemScalarSubQuery) itemSelect;
+                findComparisonsSubQueryToJoinNode(scalarSubQuery.getPlanNode(), childTransform);
+            }
+        }
+        //having contains sub query
+        buildSubQuery(qtn, new SubQueryFilter(), qtn.getHavingFilter(), false, childTransform);
+        bulidOrderSubQuery(qtn);
 
         SubQueryFilter find = new SubQueryFilter();
         find.query = qtn;
@@ -71,7 +82,17 @@ public final class SubQueryPreProcessor {
         }
     }
 
-    private static SubQueryFilter buildSubQuery(PlanNode node, SubQueryFilter qtn, Item filter, boolean isOrChild, BoolPtr childTransform) {
+    private static SubQueryFilter bulidOrderSubQuery(PlanNode node) {
+        for (Order o : node.getOrderBys()) {
+            if (o.getItem() instanceof ItemScalarSubQuery) {
+                ((ItemScalarSubQuery) o.getItem()).setOrderCondition(true);
+                node.getSubQueries().add((ItemScalarSubQuery) o.getItem());
+            }
+        }
+        return null;
+    }
+
+    private static SubQueryFilter buildSubQuery(PlanNode node, SubQueryFilter qtn, Item filter, boolean noTransform, BoolPtr childTransform) {
         if (filter == null)
             return qtn;
         if (!filter.isWithSubQuery()) {
@@ -79,51 +100,41 @@ public final class SubQueryPreProcessor {
         } else if (filter instanceof ItemCondOr) {
             return buildSubQueryWithOrFilter(node, qtn, (ItemCondOr) filter, childTransform);
         } else if (filter instanceof ItemCondAnd) {
-            return buildSubQueryWithAndFilter(node, qtn, (ItemCondAnd) filter, isOrChild, childTransform);
+            return buildSubQueryWithAndFilter(node, qtn, (ItemCondAnd) filter, noTransform, childTransform);
+        } else if (filter instanceof ItemFuncNot) {
+            return buildSubQueryWithNotFilter(node, qtn, (ItemFuncNot) filter, childTransform);
         } else {
-            return buildSubQueryByFilter(node, qtn, filter, isOrChild, childTransform);
+            return buildSubQueryByFilter(node, qtn, filter, noTransform, childTransform);
         }
+
         return qtn;
     }
 
-    private static SubQueryFilter buildSubQueryByFilter(PlanNode node, SubQueryFilter qtn, Item filter, boolean isOrChild, BoolPtr childTransform) {
-        if (filter instanceof ItemInSubQuery && !isOrChild) {
-            return transformInSubQuery(qtn, (ItemInSubQuery) filter, childTransform);
-        } else if (filter instanceof ItemInSubQuery) {
-            addSubQuery(node, (ItemInSubQuery) filter, childTransform);
-            return qtn;
-        } else if (PlanUtil.isCmpFunc(filter)) {
-            ItemBoolFunc2 eqFilter = (ItemBoolFunc2) filter;
-            Item arg0 = eqFilter.arguments().get(0);
-            if (arg0.type().equals(ItemType.SUBSELECT_ITEM)) {
-                if (arg0 instanceof ItemScalarSubQuery) {
-                    addSubQuery(node, (ItemScalarSubQuery) arg0, childTransform);
-                } else {
-                    //todo: when happened?
-                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support subquery of:" + filter.type());
-                }
-            }
-
-            Item arg1 = eqFilter.arguments().get(1);
-            if (arg1.type().equals(ItemType.SUBSELECT_ITEM)) {
-                if (arg1 instanceof ItemScalarSubQuery) {
-                    addSubQuery(node, (ItemScalarSubQuery) arg1, childTransform);
-                } else if (arg1 instanceof ItemAllAnySubQuery) {
-                    addSubQuery(node, (ItemAllAnySubQuery) arg1, childTransform);
-                } else {
-                    //todo: when happened?
-                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support subquery of:" + filter.type());
-                }
-            }
-            return qtn;
-        } else if (filter.type().equals(ItemType.SUBSELECT_ITEM)) {
-            if (filter instanceof ItemExistsSubQuery) {
-                addSubQuery(node, (ItemExistsSubQuery) filter, childTransform);
+    private static SubQueryFilter buildSubQueryByFilter(PlanNode node, SubQueryFilter qtn, Item filter, boolean noTransform, BoolPtr childTransform) {
+        if (filter instanceof ItemInSubQuery) {
+            if (noTransform || ((ItemInSubQuery) filter).getLeftOperand().basicConstItem() || ((ItemInSubQuery) filter).isNeg()) {
+                addSubQuery(node, (ItemInSubQuery) filter, childTransform);
+                return qtn;
             } else {
-                //todo: when happened?
-                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support subquery of:" + filter.type());
+                return transformInSubQuery(qtn, (ItemInSubQuery) filter, childTransform);
             }
+        } else {
+            addSubQueryForExpr(node, filter, childTransform);
             return qtn;
+        }
+    }
+
+    private static void addSubQueryForExpr(PlanNode node, Item filter, BoolPtr childTransform) {
+        if (filter.type().equals(ItemType.SUBSELECT_ITEM)) {
+            addSubQuery(node, (ItemSubQuery) filter, childTransform);
+        } else if (filter.type().equals(ItemType.FUNC_ITEM)) {
+            ItemFunc func = (ItemFunc) filter;
+            for (int i = 0; i < func.getArgCount(); i++) {
+                Item arg = func.arguments().get(i);
+                if (arg.isWithSubQuery()) {
+                    addSubQueryForExpr(node, arg, childTransform);
+                }
+            }
         } else {
             //todo: when happened?
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not support subquery of:" + filter.type());
@@ -145,7 +156,8 @@ public final class SubQueryPreProcessor {
         changeQuery.setAlias(alias);
         if (query.getColumnsSelected().size() != 1)
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "only support subquery of one column");
-        query.setSubQuery(true).setDistinct(true);
+        query.setWithSubQuery(true);
+        query.setDistinct(true);
 
         final List<Item> newSelects = qtn.query.getColumnsSelected();
         SubQueryFilter result = new SubQueryFilter();
@@ -168,6 +180,7 @@ public final class SubQueryPreProcessor {
         result.query.setSql(qtn.query.getSql());
         qtn.query.setSql(null);
         result.query.select(newSelects);
+        qtn.query.setWithSubQuery(false);
         if (!qtn.query.getOrderBys().isEmpty()) {
             List<Order> orderBys = new ArrayList<>();
             orderBys.addAll(qtn.query.getOrderBys());
@@ -223,6 +236,11 @@ public final class SubQueryPreProcessor {
             }
         }
         qtn.filter = filter;
+        return qtn;
+    }
+
+    private static SubQueryFilter buildSubQueryWithNotFilter(PlanNode node, SubQueryFilter qtn, ItemFuncNot filter, BoolPtr childTransform) {
+        buildSubQuery(node, qtn, filter.arguments().get(0), true, childTransform);
         return qtn;
     }
 

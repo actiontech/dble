@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.meta;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo.DDLStatus;
 import com.actiontech.dble.util.StringUtil;
@@ -34,7 +34,7 @@ public class DDLChildListener implements PathChildrenCacheListener {
                 try {
                     lockTableByNewNode(childData);
                 } catch (Exception e) {
-                    LOGGER.info("CHILD_ADDED error", e);
+                    LOGGER.warn("CHILD_ADDED error", e);
                 }
                 break;
             case CHILD_UPDATED:
@@ -53,7 +53,7 @@ public class DDLChildListener implements PathChildrenCacheListener {
         LOGGER.info("DDL node " + childData.getPath() + " created , and data is " + data);
         DDLInfo ddlInfo = new DDLInfo(data);
         final String fromNode = ddlInfo.getFrom();
-        if (fromNode.equals(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID))) {
+        if (fromNode.equals(ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) {
             return; //self node
         }
         if (DDLStatus.INIT != ddlInfo.getStatus()) {
@@ -72,16 +72,26 @@ public class DDLChildListener implements PathChildrenCacheListener {
     }
 
     private void updateMeta(ChildData childData) {
+        String nodeName = childData.getPath().substring(childData.getPath().lastIndexOf("/") + 1);
+        String[] tableInfo = nodeName.split("\\.");
+        final String table = StringUtil.removeBackQuote(tableInfo[1]);
+
         String data = new String(childData.getData(), StandardCharsets.UTF_8);
         LOGGER.info("DDL node " + childData.getPath() + " updated , and data is " + data);
         DDLInfo ddlInfo = new DDLInfo(data);
-        if (ddlInfo.getFrom().equals(ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID))) {
+        if (ddlInfo.getFrom().equals(ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) {
             return; //self node
         }
         if (DDLStatus.INIT == ddlInfo.getStatus()) {
             return;
         }
-        DbleServer.getInstance().getTmManager().updateMetaData(ddlInfo.getSchema(), ddlInfo.getSql(), DDLStatus.SUCCESS.equals(ddlInfo.getStatus()), false);
+        //to judge the table is be drop
+        if (ddlInfo.getType() == DDLInfo.DDLType.DROP_TABLE) {
+            DbleServer.getInstance().getTmManager().updateMetaData(ddlInfo.getSchema(), ddlInfo.getSql(), DDLInfo.DDLStatus.SUCCESS.equals(ddlInfo.getStatus()), false);
+        } else {
+            //else get the lastest table meta from db
+            DbleServer.getInstance().getTmManager().updateOnetableWithBackData(DbleServer.getInstance().getConfig(), ddlInfo.getSchema(), table);
+        }
     }
 
     private void deleteNode(ChildData childData) {

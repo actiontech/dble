@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -12,13 +12,14 @@ import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.server.NonBlockingSession;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class SubQueryHandler extends BaseDMLHandler {
-    protected static final Logger LOGGER = Logger.getLogger(SubQueryHandler.class);
+    protected static final Logger LOGGER = LoggerFactory.getLogger(SubQueryHandler.class);
     protected final ReentrantLock lock;
     protected CallBackHandler tempDoneCallBack;
     protected ErrorPacket errorPacket;
@@ -36,6 +37,7 @@ public abstract class SubQueryHandler extends BaseDMLHandler {
             if (terminate.get()) {
                 return;
             }
+            session.setHandlerEnd(this);
             HandlerTool.terminateHandlerTree(this);
             // locked onTerminate, because terminated may sync with start
             tempDoneCallBack.call();

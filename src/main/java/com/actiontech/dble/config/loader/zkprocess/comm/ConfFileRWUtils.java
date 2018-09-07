@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -35,6 +35,14 @@ public final class ConfFileRWUtils {
             IOUtils.close(input);
         }
         return mapFileStr.toString();
+    }
+
+    public static String readFileWithOutError(String name) {
+        try {
+            return readFile(name);
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     public static void writeFile(String name, String value) throws IOException {

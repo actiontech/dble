@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -11,6 +11,7 @@ import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Versions;
+import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.handler.*;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.HandshakeV10Packet;
@@ -208,6 +209,10 @@ public abstract class FrontendConnection extends AbstractConnection {
         err.write(this);
     }
 
+    protected abstract void setRequestTime();
+
+    public abstract void startProcess();
+
     public void initDB(byte[] data) {
 
         MySQLMessage mm = new MySQLMessage(data);
@@ -291,6 +296,7 @@ public abstract class FrontendConnection extends AbstractConnection {
             writeErrMessage(ErrorCode.ER_NOT_ALLOWED_COMMAND, "Empty SQL");
             return;
         }
+        sql = sql.trim();
 
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(String.valueOf(this) + " " + sql);
@@ -318,7 +324,6 @@ public abstract class FrontendConnection extends AbstractConnection {
     }
 
     public void query(byte[] data) {
-
         String sql = null;
         try {
             MySQLMessage mm = new MySQLMessage(data);
@@ -328,7 +333,6 @@ public abstract class FrontendConnection extends AbstractConnection {
             writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + charsetName.getClient() + "'");
             return;
         }
-
         this.query(sql);
     }
 
@@ -424,8 +428,7 @@ public abstract class FrontendConnection extends AbstractConnection {
             hs.setThreadId(id);
             hs.setSeed(rand1);
             hs.setServerCapabilities(getServerCapabilities());
-            //TODO:CHECK
-            int charsetIndex = CharsetUtil.getCharsetDefaultIndex(DbleServer.getInstance().getSystemVariables().getDefaultValue("character_set_server"));
+            int charsetIndex = CharsetUtil.getCharsetDefaultIndex(DbleServer.getInstance().getConfig().getSystem().getCharset());
             hs.setServerCharsetIndex((byte) (charsetIndex & 0xff));
             hs.setServerStatus(2);
             hs.setRestOfScrambleBuff(rand2);
@@ -438,7 +441,7 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     @Override
     public void handle(final byte[] data) {
-
+        setRequestTime();
         if (isSupportCompress()) {
             List<byte[]> packs = CompressUtil.decompressMysqlPacket(data, decompressUnfinishedDataQueue);
             for (byte[] pack : packs) {
@@ -463,10 +466,16 @@ public abstract class FrontendConnection extends AbstractConnection {
         //when TERMINATED char of load data infile is \001
         if (data.length > 4 && data[0] == 1 && data[1] == 0 && data[2] == 0 && data[3] == 0 && data[4] == MySQLPacket.COM_QUIT) {
             this.getProcessor().getCommands().doQuit();
-            this.close("quit cmd");
+            DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
+                @Override
+                public void run() {
+                    close("quit cmd");
+                }
+            });
             return;
         }
         handler.handle(data);
+
     }
 
     protected int getServerCapabilities() {
@@ -512,4 +521,11 @@ public abstract class FrontendConnection extends AbstractConnection {
     }
 
     public abstract void killAndClose(String reason);
+
+    @Override
+    public void connectionCount() {
+        if (this.isAuthenticated) {
+            DbleServer.getInstance().getUserManager().countDown(user, (this instanceof ManagerConnection));
+        }
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -26,7 +26,7 @@ public class NormalAutoRollbackNodesHandler extends NormalRollbackNodesHandler {
     public void rollback() {
         if (errConnection != null && nodes.length == errConnection.size()) {
             for (BackendConnection conn : errConnection) {
-                conn.quit();
+                conn.close("rollback all connection error");
             }
             errConnection.clear();
             session.getSource().write(sendData);
@@ -37,11 +37,16 @@ public class NormalAutoRollbackNodesHandler extends NormalRollbackNodesHandler {
                 final BackendConnection conn = session.getTarget(node);
                 if (errConnection.contains(conn)) {
                     session.getTargetMap().remove(node);
-                    conn.quit();
+                    conn.close("rollback error connection closed");
                 }
             }
             errConnection.clear();
         }
         super.rollback();
+    }
+
+    @Override
+    protected void setResponseTime() {
+        session.setResponseTime();
     }
 }

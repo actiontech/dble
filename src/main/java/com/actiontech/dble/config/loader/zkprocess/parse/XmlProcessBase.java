@@ -1,12 +1,11 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.config.loader.zkprocess.parse;
 
 import com.actiontech.dble.config.Versions;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.util.ResourceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,6 +90,7 @@ public class XmlProcessBase {
      * @Created 2016/9/15
      */
     public void baseParseAndWriteToXml(Object user, String inputPath, String name) throws IOException {
+        OutputStream out = null;
         try {
             Marshaller marshaller = this.jaxContext.createMarshaller();
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
@@ -103,13 +103,17 @@ public class XmlProcessBase {
 
             Path path = Paths.get(inputPath);
 
-            OutputStream out = Files.newOutputStream(path, StandardOpenOption.CREATE,
+            out = Files.newOutputStream(path, StandardOpenOption.CREATE,
                     StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
 
             marshaller.marshal(user, out);
 
         } catch (JAXBException | IOException e) {
-            LOGGER.error(AlarmCode.CORE_ERROR + "ZookeeperProcessListen parseToXml  error:Exception info:", e);
+            LOGGER.error("ZookeeperProcessListen parseToXml  error:Exception info:", e);
+        } finally {
+            if (out != null) {
+                out.close();
+            }
         }
     }
 
@@ -124,6 +128,7 @@ public class XmlProcessBase {
     @SuppressWarnings("restriction")
     public void baseParseAndWriteToXml(Object user, String inputPath, String name, Map<String, Object> map)
             throws IOException {
+        OutputStream out = null;
         try {
             Marshaller marshaller = this.jaxContext.createMarshaller();
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
@@ -142,14 +147,17 @@ public class XmlProcessBase {
 
             Path path = Paths.get(inputPath);
 
-            OutputStream out = Files.newOutputStream(path, StandardOpenOption.CREATE,
+            out = Files.newOutputStream(path, StandardOpenOption.CREATE,
                     StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
 
             marshaller.marshal(user, out);
 
         } catch (JAXBException | IOException e) {
-            LOGGER.error(AlarmCode.CORE_ERROR +
-                    "ZookeeperProcessListen parseToXml  error:Exception info:", e);
+            LOGGER.error("ZookeeperProcessListen parseToXml  error:Exception info:", e);
+        } finally {
+            if (out != null) {
+                out.close();
+            }
         }
     }
 
@@ -169,8 +177,8 @@ public class XmlProcessBase {
             XMLInputFactory xif = XMLInputFactory.newFactory();
             xif.setProperty(XMLInputFactory.SUPPORT_DTD, false);
             XMLStreamReader xmlRead = xif.createXMLStreamReader(new StreamSource(inputStream));
-
             return unmarshaller.unmarshal(xmlRead);
+
         }
 
         return null;

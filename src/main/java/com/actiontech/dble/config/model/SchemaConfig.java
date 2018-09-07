@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -49,6 +49,32 @@ public class SchemaConfig {
         }
     }
 
+    public SchemaConfig(SchemaConfig oldSchemaConfig) {
+        this.name = oldSchemaConfig.getName().toLowerCase();
+        if (oldSchemaConfig.getDataNode() != null) {
+            this.dataNode = oldSchemaConfig.getDataNode().toLowerCase();
+        } else {
+            this.dataNode = null;
+        }
+        this.tables = oldSchemaConfig.getLowerCaseTables();
+        this.defaultMaxLimit = oldSchemaConfig.getDefaultMaxLimit();
+        buildERMap();
+        this.noSharding = (tables == null || tables.isEmpty());
+        if (noSharding && dataNode == null) {
+            throw new RuntimeException(name + " in noSharding mode schema must have default dataNode ");
+        }
+        this.metaDataNode = buildMetaDataNodes();
+        this.allDataNodes = buildAllDataNodes();
+        if (this.allDataNodes != null && !this.allDataNodes.isEmpty()) {
+            String[] dnArr = new String[this.allDataNodes.size()];
+            dnArr = this.allDataNodes.toArray(dnArr);
+            this.allDataNodeStrArr = dnArr;
+        } else {
+            this.allDataNodeStrArr = null;
+        }
+    }
+
+
     public int getDefaultMaxLimit() {
         return defaultMaxLimit;
     }
@@ -60,7 +86,7 @@ public class SchemaConfig {
         for (TableConfig tc : tables.values()) {
             TableConfig parent = tc.getParentTC();
             if (parent == null) {
-                // noraml table may has the same funaction add date node with other tables
+                // noraml table may has the same function add date node with other tables
                 TableConfig root = tc.getDirectRouteTC();
                 if (tc.isGlobalTable() || tc.getRule() == null) {
                     continue;
@@ -100,7 +126,7 @@ public class SchemaConfig {
             } else {
                 if (tc.getDirectRouteTC() != null) {
                     TableConfig root = tc.getDirectRouteTC();
-                    String key = root.getRule().getRuleAlgorithm().getName() + "_" + root.getDataNodes().toString();
+                    String key = root.getRule().getRuleAlgorithm().getAlias() + "_" + root.getDataNodes().toString();
                     if (funcNodeERMap == null) {
                         funcNodeERMap = new HashMap<>();
                     }
@@ -126,6 +152,34 @@ public class SchemaConfig {
 
     public Map<String, TableConfig> getTables() {
         return tables;
+    }
+
+    private Map<String, TableConfig> getLowerCaseTables() {
+        Map<String, TableConfig> newTables = new HashMap<>();
+
+        //first round is only get the top tables
+        List<TableConfig> valueList = new ArrayList<>(tables.values());
+        Iterator<TableConfig> it = valueList.iterator();
+        while (it.hasNext()) {
+            TableConfig tc = it.next();
+            if (tc.getParentTC() == null) {
+                newTables.put(tc.getName().toLowerCase(), tc.lowerCaseCopy(null));
+                it.remove();
+            }
+        }
+
+        while (valueList.size() > 0) {
+            Iterator<TableConfig> its = valueList.iterator();
+            while (its.hasNext()) {
+                TableConfig tc = its.next();
+                if (newTables.containsKey(tc.getParentTC().getName().toLowerCase())) {
+                    newTables.put(tc.getName().toLowerCase(), tc.lowerCaseCopy(newTables.get(tc.getParentTC().getName().toLowerCase())));
+                    its.remove();
+                }
+            }
+        }
+
+        return newTables;
     }
 
     public boolean isNoSharding() {

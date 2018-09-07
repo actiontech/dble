@@ -1,16 +1,15 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.server;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.BinlogPause;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
@@ -77,12 +76,12 @@ public class OfflineStatusListener implements PathChildrenCacheListener {
                     LOGGER.info(" service instance[" + crashNode + "] has crashed. Remove MetaLock for " + ddlNode);
                 }
                 //other status should be unlocked
-                LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + " service instance[" + crashNode + "] has crashed." +
+                LOGGER.warn(" service instance[" + crashNode + "] has crashed." +
                         "Please manually check ddl status on every data node and delete ddl node [" + ddlNodePath + "]  from zookeeper " +
                         "after every instance received this message");
             }
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.CORE_ZK_WARN + " releaseForDDL error", e);
+            LOGGER.warn(" releaseForDDL error", e);
         }
     }
 
@@ -100,14 +99,15 @@ public class OfflineStatusListener implements PathChildrenCacheListener {
                 return;
             }
             if (BinlogPause.BinlogPauseStatus.ON == binlogPauseInfo.getStatus()) {
-                String instancePath = ZKPaths.makePath(KVPathUtil.getBinlogPauseInstance(), ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID));
+                //ClusterParamCfg.CLUSTER_CFG_MYID
+                String instancePath = ZKPaths.makePath(KVPathUtil.getBinlogPauseInstance(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
                 boolean needDelete = true;
                 long beginTime = TimeUtil.currentTimeMillis();
                 long timeout = DbleServer.getInstance().getConfig().getSystem().getShowBinlogStatusTimeout();
                 while (zkConn.checkExists().forPath(instancePath) == null) {
                     //wait 2* timeout to release itself
                     if (TimeUtil.currentTimeMillis() > beginTime + 2 * timeout) {
-                        LOGGER.warn(AlarmCode.CORE_ZK_WARN + "checkExists of " + instancePath + " time out");
+                        LOGGER.warn("checkExists of " + instancePath + " time out");
                         needDelete = false;
                         break;
                     }
@@ -117,16 +117,16 @@ public class OfflineStatusListener implements PathChildrenCacheListener {
                     try {
                         zkConn.delete().forPath(instancePath);
                     } catch (Exception e) {
-                        LOGGER.warn(AlarmCode.CORE_ZK_WARN + " delete binlogPause instance failed", e);
+                        LOGGER.warn(" delete binlogPause instance failed", e);
                     }
                 }
                 DbleServer.getInstance().getBackupLocked().compareAndSet(true, false);
             }
-            LOGGER.warn(AlarmCode.CORE_CLUSTER_WARN + " service instance[" + crashNode + "] has crashed." +
+            LOGGER.warn(" service instance[" + crashNode + "] has crashed." +
                     "Please manually make sure node [" + binlogStatusPath + "] status in zookeeper " +
                     "after every instance received this message");
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.CORE_ZK_WARN + " releaseForBinlog error", e);
+            LOGGER.warn(" releaseForBinlog error", e);
         }
     }
 }

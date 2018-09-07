@@ -1,28 +1,36 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.route.sequence.handler;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by huqing.yan on 2017/7/3.
  */
 public class SequenceVal {
 
-    AtomicBoolean newValueSetted = new AtomicBoolean(false);
-    AtomicLong curVal = new AtomicLong(0);
+
+    Counter counter = null;
+    //exec fetch sql result
     volatile String dbretVal = null;
+    //exec fetch sql flag
     volatile boolean dbfinished;
+    //exec get next segment lock
     AtomicBoolean fetching = new AtomicBoolean(false);
-    volatile long maxSegValue;
+
+    //flag if the init of the Sequence is done
     volatile boolean successFetched;
+    //the dataNode of sequence creater
     volatile String dataNode;
     final String seqName;
     final String sql;
+    private ReentrantLock executeLock = new ReentrantLock();
+    private Condition condRelease = executeLock.newCondition();
 
     public SequenceVal(String seqName, String dataNode) {
         this.seqName = seqName;
@@ -30,12 +38,9 @@ public class SequenceVal {
         sql = "SELECT dble_seq_nextval('" + seqName + "')";
     }
 
-    public boolean isNexValValid(Long nexVal) {
-        return nexVal < this.maxSegValue;
-    }
 
-    public void setCurValue(long newValue) {
-        curVal.set(newValue);
+    public void setNewCounter(long start, long end) {
+        counter = new Counter(start, end);
         successFetched = true;
     }
 
@@ -46,7 +51,7 @@ public class SequenceVal {
             if (IncrSequenceMySQLHandler.ERR_SEQ_RESULT.equals(dbretVal)) {
                 throw new java.lang.RuntimeException(
                         "sequence not found in db table ");
-            } else if (dbretVal != null) {
+            } else if (dbfinished) {
                 String[] items = dbretVal.split(",");
                 Long curValue = Long.parseLong(items[0]);
                 int span = Integer.parseInt(items[1]);
@@ -71,6 +76,30 @@ public class SequenceVal {
             throw new java.lang.RuntimeException(
                     "sequnce fetched failed  from db ");
         }
-        return curVal.incrementAndGet();
+        return counter.getNext();
+    }
+
+    public void waitOtherFinish() {
+        executeLock.lock();
+        try {
+            while (fetching.get()) {
+                condRelease.await();
+            }
+        } catch (Exception e) {
+            throw new java.lang.RuntimeException("wait");
+        } finally {
+            executeLock.unlock();
+        }
+    }
+
+
+    public void signalAll() {
+        executeLock.lock();
+        try {
+            this.fetching.set(false);
+            condRelease.signalAll();
+        } finally {
+            executeLock.unlock();
+        }
     }
 }

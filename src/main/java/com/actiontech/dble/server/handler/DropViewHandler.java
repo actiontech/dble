@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2016-2018 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
 package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.DbleServer;
@@ -23,24 +28,34 @@ public final class DropViewHandler {
             //check if all the view is exists
             if (!flag) {
                 for (String singleName : viewName) {
+
                     if (!(DbleServer.getInstance().getTmManager().getCatalogs().get(c.getSchema()).getViewMetas().containsKey(singleName))) {
                         c.writeErrMessage(ER_BAD_TABLE_ERROR, " Unknown table '" + singleName + "'");
                         return;
                     }
                 }
             }
+
             for (String singleName : viewName) {
-                DbleServer.getInstance().getTmManager().getCatalogs().get(c.getSchema()).getViewMetas().remove(singleName.trim());
+                DbleServer.getInstance().getTmManager().addMetaLock(c.getSchema(), singleName);
+                try {
+                    deleteFromReposoitory(c.getSchema(), singleName);
+                    DbleServer.getInstance().getTmManager().getCatalogs().get(c.getSchema()).getViewMetas().remove(singleName.trim());
+                } catch (Throwable e) {
+                    throw e;
+                } finally {
+                    DbleServer.getInstance().getTmManager().removeMetaLock(c.getSchema(), singleName);
+                }
             }
-            deleteFromReposoitory(c.getSchema(), viewName);
+
             c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
             return;
         } catch (Exception e) {
-            c.writeErrMessage(ER_PARSE_ERROR, "You have an error in your SQL syntax");
+            c.writeErrMessage(ER_PARSE_ERROR, "Get Error when delete the view");
         }
     }
 
-    public static void deleteFromReposoitory(String schema, String[] name) {
+    public static void deleteFromReposoitory(String schema, String name) {
         DbleServer.getInstance().getTmManager().getRepository().delete(schema, name);
     }
 

@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.backend.mysql.store.fs;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.log.alarm.AlarmCode;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sun.nio.ch.DirectBuffer;
 
 import java.io.EOFException;
@@ -26,7 +26,7 @@ import java.nio.channels.FileLock;
  */
 class FileNioMapped extends FileBase {
 
-    private static Logger logger = Logger.getLogger(FileNioMapped.class);
+    private static Logger logger = LoggerFactory.getLogger(FileNioMapped.class);
     private static final long GC_TIMEOUT_MS = 10000;
     private final String name;
     private final MapMode mode;
@@ -79,7 +79,7 @@ class FileNioMapped extends FileBase {
             }
             useSystemGc = false;
         } catch (Throwable e) {
-            logger.warn(AlarmCode.CORE_FILE_WRITE_WARN + "unmap byteBuffer error", e);
+            logger.warn("unmap byteBuffer error", e);
             // useSystemGc is already true
         } finally {
             mapped = null;

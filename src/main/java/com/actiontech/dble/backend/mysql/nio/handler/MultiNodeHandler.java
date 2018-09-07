@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -52,14 +52,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         this.tryErrorFinished(decrementCountBy(1));
     }
 
-    public void errorResponse(byte[] data, BackendConnection conn) {
-        session.releaseConnectionIfSafe(conn, false);
-        ErrorPacket errPacket = new ErrorPacket();
-        errPacket.read(data);
-        String errMsg = new String(errPacket.getMessage());
-        LOGGER.info("error response from " + conn + " err " + errMsg + " code:" + errPacket.getErrNo());
-        this.tryErrorFinished(this.decrementCountBy(1));
-    }
+
 
     public boolean clearIfSessionClosed(NonBlockingSession nonBlockingSession) {
         if (nonBlockingSession.closed()) {
@@ -92,7 +85,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         nodeCount = initCount;
         isFailed.set(false);
         error = null;
-        packetId = 0;
+        packetId = (byte) session.getPacketId().get();
     }
 
     protected ErrorPacket createErrPkg(String errMsg) {
@@ -110,19 +103,23 @@ public abstract class MultiNodeHandler implements ResponseHandler {
 
     protected void tryErrorFinished(boolean allEnd) {
         if (allEnd && !session.closed()) {
-            if (errorResponse.compareAndSet(false, true)) {
-                createErrPkg(this.error).write(session.getSource());
-            }
             // clear session resources,release all
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("error all end ,clear session resource ");
             }
-            if (session.getSource().isAutocommit()) {
-                session.closeAndClearResources(error);
-            } else {
-                session.getSource().setTxInterrupt(this.error);
-                this.clearResources();
+            clearSessionResources();
+            if (errorResponse.compareAndSet(false, true)) {
+                createErrPkg(this.error).write(session.getSource());
             }
+        }
+    }
+
+    protected void clearSessionResources() {
+        if (session.getSource().isAutocommit()) {
+            session.closeAndClearResources(error);
+        } else {
+            session.getSource().setTxInterrupt(this.error);
+            this.clearResources();
         }
     }
 

@@ -23,7 +23,7 @@
         <Class name="com.actiontech.dble.meta.protocol.StructureMeta$TableMeta$Builder"/>
     </Match>
     <Match>
-        <Package name="com.actiontech.dble.log.alarm"/>
+        <Package name="com.actiontech.dble.alarm"/>
     </Match>
     <Match>
         <Class name="com.actiontech.dble.log.AlarmAppender"/>
@@ -52,6 +52,7 @@
         <Bug pattern="DLS_DEAD_LOCAL_STORE"/>
         <Class name="com.actiontech.dble.plan.common.item.function.timefunc.ItemTemporalHybridFunc"/>
     </Match>
+
 
     <!-- need refactor -->
     <Match>
@@ -171,6 +172,12 @@
         <Bug category="MT_CORRECTNESS"/>
         <Class name="com.actiontech.dble.DbleServer"/>
         <Method name="genXaTxId"/>
+        <Bug pattern="JLM_JSR166_UTILCONCURRENT_MONITORENTER"/>
+    </Match>
+    <Match>
+        <Bug category="MT_CORRECTNESS"/>
+        <Class name="com.actiontech.dble.statistic.stat.QueryTimeCostContainer"/>
+        <Method name="add"/>
         <Bug pattern="JLM_JSR166_UTILCONCURRENT_MONITORENTER"/>
     </Match>
     <Match>

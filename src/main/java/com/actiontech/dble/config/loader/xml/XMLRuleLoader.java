@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -143,7 +143,6 @@ public class XMLRuleLoader {
     }
 
     /**
-     *
      * @param root
      * @throws ClassNotFoundException
      * @throws InstantiationException
@@ -169,8 +168,26 @@ public class XMLRuleLoader {
                 function.setName(name);
                 ParameterMapping.mapping(function, ConfigUtil.loadElements(e));
                 //init for AbstractPartitionAlgorithm
+                function.selfCheck();
                 function.init();
                 functions.put(name, function);
+            }
+        }
+        setFunctionAlias();
+    }
+
+    private void setFunctionAlias() {
+        Map<AbstractPartitionAlgorithm, String> funcAlias = new HashMap<>();
+        int i = 0;
+        for (AbstractPartitionAlgorithm function : functions.values()) {
+            String alias = funcAlias.get(function);
+            if (alias != null) {
+                function.setAlias(alias);
+            } else {
+                alias = "function" + i;
+                i++;
+                function.setAlias(alias);
+                funcAlias.put(function, alias);
             }
         }
     }
@@ -187,6 +204,8 @@ public class XMLRuleLoader {
                 return new PartitionByString();
             case "enum":
                 return new PartitionByFileMap();
+            case "jumpstringhash":
+                return new PartitionByJumpConsistentHash();
             case "numberrange":
                 return new AutoPartitionByLong();
             case "patternrange":

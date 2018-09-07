@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -7,7 +7,6 @@ package com.actiontech.dble.plan.common.item;
 
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.net.mysql.FieldPacket;
-import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.common.MySQLcom;
 import com.actiontech.dble.plan.common.context.NameResolutionContext;
 import com.actiontech.dble.plan.common.context.ReferContext;
@@ -15,9 +14,11 @@ import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.field.FieldUtil;
 import com.actiontech.dble.plan.common.field.TypeConversionStatus;
 import com.actiontech.dble.plan.common.time.*;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
@@ -28,7 +29,7 @@ import java.util.List;
 
 public abstract class Item {
 
-    protected static final Logger LOGGER = Logger.getLogger(Item.class);
+    protected static final Logger LOGGER = LoggerFactory.getLogger(Item.class);
 
     public static final int NOT_FIXED_DEC = 31;
     public static final int DECIMAL_MAX_SCALE = 30;
@@ -320,7 +321,7 @@ public abstract class Item {
                 try {
                     result = res.getBytes(charset());
                 } catch (UnsupportedEncodingException e) {
-                    LOGGER.info(e);
+                    LOGGER.info(e.toString());
                 }
             else {
                 assert (nullValue);
@@ -937,6 +938,7 @@ public abstract class Item {
             SQLExpr expr = toExpression();
             StringBuilder sb = new StringBuilder();
             MySqlOutputVisitor ov = new MySqlOutputVisitor(sb);
+            ov.setShardingSupport(false);
             expr.accept(ov);
             itemName = sb.toString();
         }
@@ -1014,7 +1016,9 @@ public abstract class Item {
 
     public final Item reStruct(List<Item> calArgs, boolean isPushDown, List<Field> fields) {
         Item clone = cloneStruct(true, calArgs, isPushDown, fields);
-        // TODO
+        if (calArgs.size() > 0) {
+            clone.setCharsetIndex(calArgs.get(0).getCharsetIndex());
+        }
         return clone;
     }
 

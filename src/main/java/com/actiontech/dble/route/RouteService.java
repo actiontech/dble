@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -56,6 +56,7 @@ public class RouteService {
             cacheKey = (schema == null ? "NULL" : schema.getName()) + "_" + sc.getUser() + "_" + stmt;
             rrs = (RouteResultset) sqlRouteCache.get(cacheKey);
             if (rrs != null) {
+                sc.getSession2().endParse();
                 return rrs;
             }
         }
@@ -111,7 +112,8 @@ public class RouteService {
             rrs = RouteStrategyFactory.getRouteStrategy().route(schema, sqlType, stmt, sc, tableId2DataNodeCache);
         }
 
-        if (rrs != null && sqlType == ServerParse.SELECT && rrs.isCacheAble() && !LOGGER.isDebugEnabled() && sqlRouteCache != null) {
+        if (rrs != null && sqlType == ServerParse.SELECT && rrs.isCacheAble() && !LOGGER.isDebugEnabled() && sqlRouteCache != null &&
+                sc.getSession2().getRemingSql() == null) {
             sqlRouteCache.putIfAbsent(cacheKey, rrs);
         }
         return rrs;

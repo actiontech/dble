@@ -1,9 +1,10 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.config.model;
+
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,7 +19,7 @@ public class UserPrivilegesConfig {
 
     private boolean check = false;
 
-    private Map<String, SchemaPrivilege> schemaPrivileges = new HashMap<>();
+    private volatile Map<String, SchemaPrivilege> schemaPrivileges = new HashMap<>();
 
     public boolean isCheck() {
         return check;
@@ -35,6 +36,17 @@ public class UserPrivilegesConfig {
     public SchemaPrivilege getSchemaPrivilege(String schemaName) {
         SchemaPrivilege schemaPrivilege = schemaPrivileges.get(schemaName);
         return schemaPrivilege;
+    }
+
+
+    public void changeMapToLowerCase() {
+        Map<String, SchemaPrivilege> newSchemaPrivileges = new HashMap<>();
+
+        for (Map.Entry<String, SchemaPrivilege> entry : schemaPrivileges.entrySet()) {
+            entry.getValue().changeMapToLowerCase();
+            newSchemaPrivileges.put(entry.getKey().toLowerCase(), entry.getValue());
+        }
+        schemaPrivileges = newSchemaPrivileges;
     }
 
     public static class SchemaPrivilege {
@@ -54,6 +66,14 @@ public class UserPrivilegesConfig {
 
         public void addTablePrivilege(String tableName, TablePrivilege privilege) {
             this.tablePrivileges.put(tableName, privilege);
+        }
+
+        public void changeMapToLowerCase() {
+            Map<String, TablePrivilege> newTablePrivileges = new HashMap<>();
+            for (Map.Entry<String, TablePrivilege> entry : tablePrivileges.entrySet()) {
+                newTablePrivileges.put(entry.getKey().toLowerCase(), entry.getValue());
+            }
+            tablePrivileges = newTablePrivileges;
         }
 
         public TablePrivilege getTablePrivilege(String tableName) {

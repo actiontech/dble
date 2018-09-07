@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.plan.common.item.subquery;
 
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.plan.common.context.NameResolutionContext;
 import com.actiontech.dble.plan.common.context.ReferContext;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
@@ -22,8 +23,8 @@ public class ItemInSubQuery extends ItemMultiRowSubQuery {
     private boolean isNeg;
     protected Item leftOperand;
 
-    public ItemInSubQuery(String currentDb, SQLSelectQuery query, Item leftOperand, boolean isNeg) {
-        super(currentDb, query);
+    public ItemInSubQuery(String currentDb, SQLSelectQuery query, Item leftOperand, boolean isNeg, ProxyMetaManager metaManager) {
+        super(currentDb, query, metaManager);
         this.leftOperand = leftOperand;
         this.isNeg = isNeg;
         if (this.planNode.getColumnsSelected().size() > 1) {
@@ -65,7 +66,7 @@ public class ItemInSubQuery extends ItemMultiRowSubQuery {
 
     @Override
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
-        return new ItemInSubQuery(this.currentDb, this.query, this.leftOperand.cloneItem(), this.isNeg);
+        return new ItemInSubQuery(this.currentDb, this.query, this.leftOperand.cloneItem(), this.isNeg, this.metaManager);
     }
 
     public Item getLeftOperand() {

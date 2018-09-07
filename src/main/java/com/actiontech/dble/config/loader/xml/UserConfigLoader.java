@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -21,7 +21,7 @@ import java.util.HashSet;
 import java.util.Map;
 
 public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
-    public void load(Element root, XMLServerLoader xsl, boolean isLowerCaseTableNames) throws IllegalAccessException, InvocationTargetException {
+    public void load(Element root, XMLServerLoader xsl) throws IllegalAccessException, InvocationTargetException {
         Map<String, UserConfig> users = xsl.getUsers();
         NodeList list = root.getElementsByTagName("user");
 
@@ -39,9 +39,9 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
                 user.setPassword(passwordDecrypt);
                 user.setEncryptPassword(password);
 
-                String benchmark = (String) props.get("benchmark");
-                if (null != benchmark) {
-                    user.setBenchmark(Integer.parseInt(benchmark));
+                String maxCon = (String) props.get("maxCon");
+                if (null != maxCon) {
+                    user.setMaxCon(Integer.parseInt(maxCon));
                 }
 
                 String readOnly = (String) props.get("readOnly");
@@ -58,15 +58,14 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
                 if (user.isManager() && schemas != null) {
                     throw new ConfigException("manager user can't set any schema!");
                 } else if (!user.isManager()) {
-                    if (schemas != null) {
-                        if (isLowerCaseTableNames) {
-                            schemas = schemas.toLowerCase();
-                        }
+                    if (schemas != null && !"".equals(schemas)) {
                         String[] strArray = SplitUtil.split(schemas, ',', true);
                         user.setSchemas(new HashSet<>(Arrays.asList(strArray)));
+                    } else {
+                        throw new ConfigException("Server user must have at least one schemas");
                     }
                     // load DML
-                    loadPrivileges(user, isLowerCaseTableNames, e);
+                    loadPrivileges(user, false, e);
                 }
                 if (users.containsKey(name)) {
                     throw new ConfigException("user " + name + " duplicated!");

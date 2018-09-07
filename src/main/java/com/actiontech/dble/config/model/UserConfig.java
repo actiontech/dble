@@ -1,10 +1,11 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
 package com.actiontech.dble.config.model;
 
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -15,7 +16,7 @@ public class UserConfig {
     private String name;
     private String password;
     private String encryptPassword;
-    private int benchmark = 0;                        // default 0 means not check
+    private int maxCon = 0;                        // default 0 means not check
     private UserPrivilegesConfig privilegesConfig;    //privileges for tables
 
     private boolean readOnly = false;
@@ -55,12 +56,12 @@ public class UserConfig {
         this.password = password;
     }
 
-    public int getBenchmark() {
-        return benchmark;
+    public int getMaxCon() {
+        return maxCon;
     }
 
-    public void setBenchmark(int benchmark) {
-        this.benchmark = benchmark;
+    public void setMaxCon(int maxCon) {
+        this.maxCon = maxCon;
     }
 
     public Set<String> getSchemas() {
@@ -86,8 +87,16 @@ public class UserConfig {
     @Override
     public String toString() {
         return "UserConfig [name=" + this.name + ", password=" + this.password + ", encryptPassword=" +
-                this.encryptPassword + ", benchmark=" + this.benchmark + ", manager=" + this.manager +
+                this.encryptPassword + ", maxCon=" + this.maxCon + ", manager=" + this.manager +
                 ", readOnly=" + this.readOnly + ", schemas=" + this.schemas + "]";
+    }
+
+    public void changeMapToLowerCase() {
+        Set<String> newSchemas = new HashSet<>();
+        for (String schemaName : schemas) {
+            newSchemas.add(schemaName.toLowerCase());
+        }
+        schemas = newSchemas;
     }
 
 

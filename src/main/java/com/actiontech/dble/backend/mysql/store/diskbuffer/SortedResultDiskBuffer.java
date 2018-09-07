@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -11,7 +11,8 @@ import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.util.MinHeap;
 import com.actiontech.dble.util.TimeUtil;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -24,7 +25,7 @@ import java.util.List;
  * @author ActionTech
  */
 public class SortedResultDiskBuffer extends ResultDiskBuffer {
-    private final Logger logger = Logger.getLogger(SortedResultDiskBuffer.class);
+    private final Logger logger = LoggerFactory.getLogger(SortedResultDiskBuffer.class);
 
     /**
      * the tapes to store data, which is sorted each, so we can use minheap to

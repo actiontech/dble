@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -25,6 +26,7 @@ public class MultiTableMetaHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiTableMetaHandler.class);
     private AtomicInteger shardTableCnt;
     private AtomicInteger singleTableCnt;
+    private AtomicBoolean countDownFlag = new AtomicBoolean(false);
     private String schema;
     private SchemaConfig config;
     private SchemaMetaHandler schemaMetaHandler;
@@ -43,22 +45,28 @@ public class MultiTableMetaHandler {
 
     public void execute() {
         this.schemaMetaHandler.getTmManager().createDatabase(schema);
+        boolean existTable = false;
         if (config.getDataNode() != null) {
             List<String> tables = getSingleTables();
             singleTableCnt.set(tables.size());
             for (String table : tables) {
+                existTable = true;
                 AbstractTableMetaHandler tableHandler = new SingleTableMetaInitHandler(this, schema, table, Collections.singletonList(config.getDataNode()), selfNode);
                 tableHandler.execute();
             }
         }
         for (Entry<String, TableConfig> entry : config.getTables().entrySet()) {
+            existTable = true;
             AbstractTableMetaHandler tableHandler = new TableMetaInitHandler(this, schema, entry.getValue(), selfNode);
             tableHandler.execute();
+        }
+        if (!existTable) {
+            countDown();
         }
     }
 
     private List<String> getSingleTables() {
-        ShowTablesHandler showTablesHandler = new ShowTablesHandler(this, config);
+        SchemaDefaultNodeTablesHandler showTablesHandler = new SchemaDefaultNodeTablesHandler(this, config);
         showTablesHandler.execute();
         singleTableLock.lock();
         try {
@@ -97,7 +105,9 @@ public class MultiTableMetaHandler {
 
     private void countDown() {
         if (shardTableCnt.get() == 0 && singleTableCnt.get() == 0) {
-            schemaMetaHandler.countDown();
+            if (countDownFlag.compareAndSet(false, true)) {
+                schemaMetaHandler.countDown();
+            }
         }
     }
 

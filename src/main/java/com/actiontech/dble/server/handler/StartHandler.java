@@ -1,13 +1,11 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
 package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.log.transaction.TxnLogHelper;
-import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.parser.ServerParseStart;
@@ -22,13 +20,7 @@ public final class StartHandler {
     public static void handle(String stmt, ServerConnection c, int offset) {
         switch (ServerParseStart.parse(stmt, offset)) {
             case ServerParseStart.TRANSACTION:
-                if (c.isTxStart() || !c.isAutocommit()) {
-                    c.beginInTx(stmt);
-                } else {
-                    c.setTxStart(true);
-                    TxnLogHelper.putTxnLog(c, stmt);
-                    c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
-                }
+                BeginHandler.handle(stmt, c);
                 break;
             case ServerParseStart.READCHARCS:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");

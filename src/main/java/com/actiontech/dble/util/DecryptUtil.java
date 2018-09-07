@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -23,47 +23,45 @@ public final class DecryptUtil {
     private DecryptUtil() {
     }
 
+    @SuppressWarnings("SpellCheckingInspection")
     private static final String DEFAULT_PRIVATE_KEY_STRING = "MIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEAocbCrurZGbC5GArEHKlAfDSZi7gFBnd4yxOt0rwTqKBFzGyhtQLu5PRKjEiOXVa95aeIIBJ6OhC2f8FjqFUpawIDAQABAkAPejKaBYHrwUqUEEOe8lpnB6lBAsQIUFnQI/vXU4MV+MhIzW0BLVZCiarIQqUXeOhThVWXKFt8GxCykrrUsQ6BAiEA4vMVxEHBovz1di3aozzFvSMdsjTcYRRo82hS5Ru2/OECIQC2fAPoXixVTVY7bNMeuxCP4954ZkXp7fEPDINCjcQDywIgcc8XLkkPcs3Jxk7uYofaXaPbg39wuJpEmzPIxi3k0OECIGubmdpOnin3HuCP/bbjbJLNNoUdGiEmFL5hDI4UdwAdAiEAtcAwbm08bKN7pwwvyqaCBC//VnEWaq39DCzxr+Z2EIk=";
-    public static final String DEFAULT_PUBLIC_KEY_STRING = "MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAKHGwq7q2RmwuRgKxBypQHw0mYu4BQZ3eMsTrdK8E6igRcxsobUC7uT0SoxIjl1WveWniCASejoQtn/BY6hVKWsCAwEAAQ==";
+    @SuppressWarnings("SpellCheckingInspection")
+    private static final String DEFAULT_PUBLIC_KEY_STRING = "MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAKHGwq7q2RmwuRgKxBypQHw0mYu4BQZ3eMsTrdK8E6igRcxsobUC7uT0SoxIjl1WveWniCASejoQtn/BY6hVKWsCAwEAAQ==";
 
     public static void main(String[] args) throws Exception {
         String password = args[0];
         System.out.println(encrypt(password));
     }
 
-    public static String decrypt(String usingDecrypt, String user, String passwrod) {
+    public static String decrypt(String usingDecrypt, String user, String password) {
         if ("1".equals(usingDecrypt)) {
             //type:user:password
             //0:test:test
-            boolean flag = false;
             try {
-                String[] passwrods = DecryptUtil.decrypt(passwrod).split(":");
-                if ("0".equals(passwrods[0]) && user.equals(passwrods[1])) {
-                    flag = true;
-                    return passwrods[2];
-                }
-                if (!flag) {
-                    throw new ConfigException("user " + user + " passwrod need to decrype ,but decrype password is wrong !");
+                String[] passwords = DecryptUtil.decrypt(password).split(":");
+                if (passwords.length == 3 && "0".equals(passwords[0]) && user.equals(passwords[1])) {
+                    return passwords[2];
                 }
             } catch (Exception e2) {
-                throw new ConfigException("user " + user + " passwrod need to decrype ,but decrype password is wrong !", e2);
+                throw new ConfigException("user " + user + " password need to decrypt ,but failed !", e2);
             }
+            throw new ConfigException("user " + user + " password need to decrypt, but the result is not obey the encryption rule!");
         }
-        return passwrod;
+        return password;
     }
 
-    public static String decrypt(String cipherText) throws Exception {
+    private static String decrypt(String cipherText) throws Exception {
         return decrypt((String) null, cipherText);
     }
 
-    public static String decrypt(String publicKeyText, String cipherText)
+    private static String decrypt(String publicKeyText, String cipherText)
             throws Exception {
         PublicKey publicKey = getPublicKey(publicKeyText);
 
         return decrypt(publicKey, cipherText);
     }
 
-    public static String decrypt(PublicKey publicKey, String cipherText)
+    private static String decrypt(PublicKey publicKey, String cipherText)
             throws Exception {
         Cipher cipher = Cipher.getInstance("RSA");
         try {
@@ -88,28 +86,25 @@ public final class DecryptUtil {
         return new String(plainBytes);
     }
 
-    public static String dbHostDecrypt(String usingDecrypt, String host, String user, String passwrod) {
+    public static String dbHostDecrypt(String usingDecrypt, String host, String user, String password) {
         if ("1".equals(usingDecrypt)) {
             //type:host:user:password
-            //1:myhost1:test:test
-            boolean flag = false;
+            //1:my_host1:test:test
             try {
-                String[] passwrods = DecryptUtil.decrypt(passwrod).split(":");
-                if ("1".equals(passwrods[0]) && host.equals(passwrods[1]) && user.equals(passwrods[2])) {
-                    return passwrods[3];
-                }
-                if (!flag) {
-                    throw new ConfigException("user " + user + " passwrod need to decrype ,but decrype password is wrong !");
+                String[] passwords = DecryptUtil.decrypt(password).split(":");
+                if (passwords.length == 4 && "1".equals(passwords[0]) && host.equals(passwords[1]) && user.equals(passwords[2])) {
+                    return passwords[3];
                 }
             } catch (Exception e2) {
-                throw new ConfigException("host " + host + ",user " + user + " passwrod need to decrype ,but decrype password is wrong !", e2);
+                throw new ConfigException("host " + host + ",user " + user + " password need to decrypt, but failed !", e2);
             }
+            throw new ConfigException("host " + host + ",user " + user + " password need to decrypt, but the result is not obey the encryption rule!");
         }
-        return passwrod;
+        return password;
     }
 
 
-    public static PublicKey getPublicKey(String publicKeyText) {
+    private static PublicKey getPublicKey(String publicKeyText) {
         if (publicKeyText == null || publicKeyText.length() == 0) {
             publicKeyText = DecryptUtil.DEFAULT_PUBLIC_KEY_STRING;
         }
@@ -127,11 +122,11 @@ public final class DecryptUtil {
     }
 
 
-    public static String encrypt(String plainText) throws Exception {
+    private static String encrypt(String plainText) throws Exception {
         return encrypt((String) null, plainText);
     }
 
-    public static String encrypt(String key, String plainText) throws Exception {
+    private static String encrypt(String key, String plainText) throws Exception {
         if (key == null) {
             key = DEFAULT_PRIVATE_KEY_STRING;
         }
@@ -140,7 +135,7 @@ public final class DecryptUtil {
         return encrypt(keyBytes, plainText);
     }
 
-    public static String encrypt(byte[] keyBytes, String plainText)
+    private static String encrypt(byte[] keyBytes, String plainText)
             throws Exception {
         PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
         KeyFactory factory = KeyFactory.getInstance("RSA");
@@ -158,12 +153,10 @@ public final class DecryptUtil {
         }
 
         byte[] encryptedBytes = cipher.doFinal(plainText.getBytes("UTF-8"));
-        String encryptedString = Base64.byteArrayToBase64(encryptedBytes);
-
-        return encryptedString;
+        return Base64.byteArrayToBase64(encryptedBytes);
     }
 
-    public static byte[][] genKeyPairBytes(int keySize)
+    private static byte[][] genKeyPairBytes(int keySize)
             throws NoSuchAlgorithmException {
         byte[][] keyPairBytes = new byte[2][];
 
@@ -193,7 +186,7 @@ public final class DecryptUtil {
         /**
          * Translates the specified byte array into a Base64 string as per Preferences.put(byte[]).
          */
-        public static String byteArrayToBase64(byte[] a) {
+        static String byteArrayToBase64(byte[] a) {
             return byteArrayToBase64(a, false);
         }
 
@@ -271,7 +264,7 @@ public final class DecryptUtil {
          *
          * @throw IllegalArgumentException if <tt>s</tt> is not a valid Base64 string.
          */
-        public static byte[] base64ToByteArray(String s) {
+        static byte[] base64ToByteArray(String s) {
             return base64ToByteArray(s, false);
         }
 

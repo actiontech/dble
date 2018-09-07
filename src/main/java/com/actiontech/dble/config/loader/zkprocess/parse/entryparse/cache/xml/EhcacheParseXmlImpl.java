@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -8,7 +8,6 @@ package com.actiontech.dble.config.loader.zkprocess.parse.entryparse.cache.xml;
 import com.actiontech.dble.config.loader.zkprocess.entity.cache.Ehcache;
 import com.actiontech.dble.config.loader.zkprocess.parse.ParseXmlServiceInf;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,11 +47,9 @@ public class EhcacheParseXmlImpl implements ParseXmlServiceInf<Ehcache> {
         try {
             schema = (Ehcache) this.parseBean.baseParseXmlToBean(path);
         } catch (JAXBException e) {
-            LOGGER.warn(AlarmCode.CORE_ZK_WARN +
-                    "EhcacheParseXmlImpl parseXmlToBean JAXBException", e);
+            LOGGER.warn("EhcacheParseXmlImpl parseXmlToBean JAXBException", e);
         } catch (XMLStreamException e) {
-            LOGGER.warn(AlarmCode.CORE_ZK_WARN +
-                    "EhcacheParseXmlImpl parseXmlToBean XMLStreamException", e);
+            LOGGER.warn("EhcacheParseXmlImpl parseXmlToBean XMLStreamException", e);
         }
 
         return schema;
@@ -66,8 +63,7 @@ public class EhcacheParseXmlImpl implements ParseXmlServiceInf<Ehcache> {
 
             this.parseBean.baseParseAndWriteToXml(data, outputFile, dataName, paramMap);
         } catch (IOException e) {
-            LOGGER.warn(AlarmCode.CORE_ZK_WARN +
-                    "EhcacheParseXmlImpl parseToXmlWrite IOException", e);
+            LOGGER.warn("EhcacheParseXmlImpl parseToXmlWrite IOException", e);
         }
     }
 

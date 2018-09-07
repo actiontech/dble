@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -8,14 +8,15 @@ package com.actiontech.dble.backend.mysql.nio.handler.query;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.server.NonBlockingSession;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class BaseDMLHandler implements DMLResponseHandler {
-    private static Logger logger = Logger.getLogger(BaseDMLHandler.class);
+    private static Logger logger = LoggerFactory.getLogger(BaseDMLHandler.class);
     protected final long id;
 
     /**

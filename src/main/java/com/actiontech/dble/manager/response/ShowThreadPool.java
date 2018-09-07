@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -21,6 +21,7 @@ import com.actiontech.dble.util.StringUtil;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 /**
  * ShowThreadPool status
@@ -82,10 +83,10 @@ public final class ShowThreadPool {
 
         // write rows
         byte packetId = EOF.getPacketId();
-        List<NameableExecutor> executors = getExecutors();
-        for (NameableExecutor exec : executors) {
+        List<ExecutorService> executors = getExecutors();
+        for (ExecutorService exec : executors) {
             if (exec != null) {
-                RowDataPacket row = getRow(exec, c.getCharset().getResults());
+                RowDataPacket row = getRow((NameableExecutor) exec, c.getCharset().getResults());
                 row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
             }
@@ -111,12 +112,14 @@ public final class ShowThreadPool {
         return row;
     }
 
-    private static List<NameableExecutor> getExecutors() {
-        List<NameableExecutor> list = new LinkedList<>();
+    private static List<ExecutorService> getExecutors() {
+        List<ExecutorService> list = new LinkedList<>();
         DbleServer server = DbleServer.getInstance();
         list.add(server.getTimerExecutor());
         list.add(server.getBusinessExecutor());
+        list.add(server.getBackendBusinessExecutor());
         list.add(server.getComplexQueryExecutor());
+        list.add(server.getWriteToBackendExecutor());
         // for (NIOProcessor pros : server.getProcessors()) {
         // list.add(pros.getExecutor());
         // }

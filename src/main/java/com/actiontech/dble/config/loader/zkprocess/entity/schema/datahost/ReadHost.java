@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -38,10 +38,7 @@ public class ReadHost extends WriteHost {
 
     @Override
     public String toString() {
-        String builder = "ReadHost [weight=" +
-                weight +
-                "]";
-        return builder;
+        return "ReadHost [host=" + host + ", url=" + url + ", password=" + password + ", user=" + user + ", usingDecrypt=" + usingDecrypt + ", weight=" + weight + "]";
     }
 
 }

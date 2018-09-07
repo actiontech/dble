@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -10,11 +10,8 @@ import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.plan.NamedField;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
-import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.common.item.*;
 import com.actiontech.dble.plan.common.item.Item.ItemType;
-import com.actiontech.dble.plan.common.item.ItemBasicConstant;
-import com.actiontech.dble.plan.common.item.ItemField;
-import com.actiontech.dble.plan.common.item.ItemInt;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.ItemFunc.Functype;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.*;
@@ -26,6 +23,7 @@ import com.actiontech.dble.plan.common.item.subquery.ItemAllAnySubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemExistsSubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemInSubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
+import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.MergeNode;
 import com.actiontech.dble.plan.node.PlanNode;
@@ -57,7 +55,7 @@ public final class PlanUtil {
      * <the column to be found must be  table's parent's column>
      *
      * @param column column
-     * @param node node
+     * @param node   node
      * @return the target table node and the column
      */
     public static Pair<TableNode, ItemField> findColumnInTableLeaf(ItemField column, PlanNode node) {
@@ -106,8 +104,8 @@ public final class PlanUtil {
     /**
      * the sel can be pushed down to child?
      *
-     * @param sel item
-     * @param child child
+     * @param sel    item
+     * @param child  child
      * @param parent parent
      * @return can push down
      */
@@ -195,7 +193,7 @@ public final class PlanUtil {
     /**
      * is bf can be the joinkey for node?make bf's left related to left to node
      *
-     * @param bf ItemFuncEqual
+     * @param bf   ItemFuncEqual
      * @param node node
      * @return is Join Key
      */
@@ -255,18 +253,18 @@ public final class PlanUtil {
     }
 
     public static boolean isGlobalOrER(PlanNode node) {
-        return (node.getNoshardNode() != null && node.type() != PlanNodeType.TABLE) || isERNode(node);
+        return !node.isContainsSubQuery() && ((node.getNoshardNode() != null && node.type() != PlanNodeType.TABLE && node.type() != PlanNodeType.QUERY) || isERNode(node));
     }
 
     public static boolean isGlobal(PlanNode node) {
-        return node.getNoshardNode() != null && node.getUnGlobalTableCount() == 0;
+        return node.getNoshardNode() != null && node.getUnGlobalTableCount() == 0 && !node.isContainsSubQuery();
     }
 
     /**
      * push function in merge node to child node
      *
-     * @param mn MergeNode
-     * @param toPush Item toPush
+     * @param mn        MergeNode
+     * @param toPush    Item toPush
      * @param colIndexs colIndex
      * @return all child's pushdown sel
      */
@@ -302,8 +300,8 @@ public final class PlanUtil {
     /**
      * arg of merge node's function belong to child
      *
-     * @param toPush toPush
-     * @param colIndexs colIndexs
+     * @param toPush       toPush
+     * @param colIndexs    colIndexs
      * @param childSelects childSelects
      * @return ItemFunc
      */
@@ -314,7 +312,6 @@ public final class PlanUtil {
             Item pushedArg = pushItemToUnionChild(arg, colIndexs, childSelects);
             func.arguments().set(index, pushedArg);
         }
-        func.setPushDownName(null);
         refreshReferTables(func);
         return func;
     }
@@ -330,7 +327,7 @@ public final class PlanUtil {
     /**
      * generate push orders from orders node
      *
-     * @param node node
+     * @param node   node
      * @param orders orders
      * @return List<Order>
      */
@@ -366,14 +363,14 @@ public final class PlanUtil {
         }
     }
 
-    public static boolean isCmpFunc(Item filter) {
+    private static boolean isCmpFunc(Item filter) {
         return filter instanceof ItemFuncEqual || filter instanceof ItemFuncGt || filter instanceof ItemFuncGe ||
                 filter instanceof ItemFuncLt || filter instanceof ItemFuncLe || filter instanceof ItemFuncNe ||
-                filter instanceof ItemFuncStrictEqual;
+                filter instanceof ItemFuncStrictEqual || filter instanceof ItemFuncLike;
     }
 
     public static boolean containsSubQuery(PlanNode node) {
-        if (node.isSubQuery()) {
+        if (node.isWithSubQuery()) {
             return true;
         }
         for (PlanNode child : node.getChildren()) {
@@ -386,12 +383,16 @@ public final class PlanUtil {
 
 
     public static Item rebuildSubQueryItem(Item item) {
+        if (!item.isWithSubQuery()) {
+            return item;
+        }
+        BoolPtr reBuild = new BoolPtr(false);
         if (PlanUtil.isCmpFunc(item)) {
-            Item res1 = rebuildBoolSubQuery(item, 0);
+            Item res1 = rebuildBoolSubQuery(item, 0, reBuild);
             if (res1 != null) {
                 return res1;
             }
-            Item res2 = rebuildBoolSubQuery(item, 1);
+            Item res2 = rebuildBoolSubQuery(item, 1, reBuild);
             if (res2 != null) {
                 return res2;
             }
@@ -419,8 +420,53 @@ public final class PlanUtil {
                 item.arguments().set(index, rebuildItem);
                 item.setItemName(null);
             }
+        } else if (item instanceof ItemScalarSubQuery) {
+            Item result = ((ItemScalarSubQuery) item).getValue();
+            if (result == null || result.getResultItem() == null) {
+                if (!((ItemScalarSubQuery) item).isOrderCondition()) {
+                    return new ItemFuncEqual(new ItemInt(1), new ItemInt(0));
+                } else {
+                    return new ItemString("null");
+                }
+            }
+            return result.getResultItem();
+        }
+        if (!reBuild.get() && item instanceof ItemFunc) {
+            return rebuildSubQueryFuncItem(item);
         }
         return item;
+    }
+
+    private static Item rebuildSubQueryFuncItem(Item item) {
+        ItemFunc func = (ItemFunc) item;
+        Item itemTmp = item.cloneItem();
+        for (int index = 0; index < func.getArgCount(); index++) {
+            Item arg = item.arguments().get(index);
+            if (arg instanceof ItemScalarSubQuery) {
+                Item result = ((ItemScalarSubQuery) arg).getValue();
+                if (result == null || result.getResultItem() == null) {
+                    itemTmp.arguments().set(index, new ItemNull());
+                } else {
+                    itemTmp.arguments().set(index, result.getResultItem());
+                }
+            } else if (arg instanceof ItemInSubQuery) {
+                ItemInSubQuery inSubItem = (ItemInSubQuery) arg;
+                if (inSubItem.getValue().size() == 0) {
+                    itemTmp.arguments().set(index, genBoolItem(inSubItem.isNeg()));
+                } else {
+                    List<Item> newArgs = new ArrayList<>(inSubItem.getValue().size() + 1);
+                    newArgs.add(inSubItem.getLeftOperand());
+                    newArgs.addAll(inSubItem.getValue());
+                    itemTmp.arguments().set(index, new ItemFuncIn(newArgs, inSubItem.isNeg()));
+                }
+                itemTmp.setItemName(null);
+                return itemTmp;
+            } else if (arg instanceof ItemFunc) {
+                itemTmp.arguments().set(index, rebuildSubQueryItem(arg));
+            }
+        }
+        itemTmp.setItemName(null);
+        return itemTmp;
     }
 
 
@@ -433,12 +479,13 @@ public final class PlanUtil {
     }
 
 
-    private static Item rebuildBoolSubQuery(Item item, int index) {
+    private static Item rebuildBoolSubQuery(Item item, int index, BoolPtr reBuild) {
         Item arg = item.arguments().get(index);
         if (arg.type().equals(ItemType.SUBSELECT_ITEM)) {
             if (arg instanceof ItemScalarSubQuery) {
                 Item result = ((ItemScalarSubQuery) arg).getValue();
                 if (result == null || result.getResultItem() == null) {
+                    reBuild.set(true);
                     return new ItemFuncEqual(new ItemInt(1), new ItemInt(0));
                 }
                 item.arguments().set(index, result.getResultItem());
@@ -446,6 +493,7 @@ public final class PlanUtil {
             } else if (arg instanceof ItemAllAnySubQuery) {
                 ItemAllAnySubQuery allAnySubItem = (ItemAllAnySubQuery) arg;
                 if (allAnySubItem.getValue().size() == 0) {
+                    reBuild.set(true);
                     return genBoolItem(allAnySubItem.isAll());
                 } else if (allAnySubItem.getValue().size() == 1) {
                     Item value = allAnySubItem.getValue().get(0);
@@ -455,6 +503,7 @@ public final class PlanUtil {
                     item.arguments().set(index, value.getResultItem());
                     item.setItemName(null);
                 } else {
+                    reBuild.set(true);
                     return genBoolItem(!allAnySubItem.isAll());
                 }
             }

@@ -1,12 +1,11 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
 package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.log.transaction.TxnLogHelper;
-import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.server.ServerConnection;
 
 public final class BeginHandler {
@@ -19,7 +18,9 @@ public final class BeginHandler {
         } else {
             c.setTxStart(true);
             TxnLogHelper.putTxnLog(c, stmt);
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
         }
     }
 }

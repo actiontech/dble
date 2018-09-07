@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.plan;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.plan.node.PlanNode;
 import org.apache.commons.lang.StringUtils;
 
@@ -15,14 +16,20 @@ public class NamedField {
     // which node of the field belong
     public final PlanNode planNode;
 
-    public NamedField(String table, String name, PlanNode planNode) {
-        this.table = table;
+    public NamedField(String inputTable, String name, PlanNode planNode) {
+        String tempTableName;
+        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+            tempTableName = inputTable == null ? null : inputTable.toLowerCase();
+        } else {
+            tempTableName = inputTable;
+        }
+        this.table = tempTableName;
         this.name = name;
         this.planNode = planNode;
 
         //init hashCode
         int prime = 2;
-        int hash = table == null ? 0 : table.hashCode();
+        int hash = tempTableName == null ? 0 : tempTableName.hashCode();
         this.hashCode = hash * prime + (name == null ? 0 : name.toLowerCase().hashCode());
     }
 

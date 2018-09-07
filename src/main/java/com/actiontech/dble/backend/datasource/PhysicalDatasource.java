@@ -1,11 +1,15 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
 package com.actiontech.dble.backend.datasource;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.ConMap;
 import com.actiontech.dble.backend.ConQueue;
@@ -15,10 +19,9 @@ import com.actiontech.dble.backend.mysql.nio.handler.ConnectionHeartBeatHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.DelegateResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.NewConnectionRespHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
-import com.actiontech.dble.config.Alarms;
 import com.actiontech.dble.config.model.DBHostConfig;
 import com.actiontech.dble.config.model.DataHostConfig;
-import com.actiontech.dble.log.alarm.AlarmCode;
+import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -48,6 +52,16 @@ public abstract class PhysicalDatasource {
     private AtomicLong readCount = new AtomicLong(0);
 
     private AtomicLong writeCount = new AtomicLong(0);
+
+    public void setTestConnSuccess(boolean testConnSuccess) {
+        this.testConnSuccess = testConnSuccess;
+    }
+
+    public boolean isTestConnSuccess() {
+        return testConnSuccess;
+    }
+
+    private volatile boolean testConnSuccess = false;
 
     public PhysicalDatasource(DBHostConfig config, DataHostConfig hostConfig, boolean isReadNode) {
         this.size = config.getMaxCon();
@@ -128,7 +142,8 @@ public abstract class PhysicalDatasource {
     }
 
     public long getExecuteCountForSchema(String schema) {
-        return conMap.getSchemaConQueue(schema).getExecuteCount();
+        ConQueue queue = conMap.getSchemaConQueue(schema);
+        return queue == null ? 0 : queue.getExecuteCount();
 
     }
 
@@ -138,9 +153,11 @@ public abstract class PhysicalDatasource {
 
     public int getIdleCountForSchema(String schema) {
         ConQueue queue = conMap.getSchemaConQueue(schema);
-        int total = 0;
-        total += queue.getAutoCommitCons().size() + queue.getManCommitCons().size();
-        return total;
+        if (queue == null) {
+            return 0;
+        } else {
+            return queue.getAutoCommitCons().size() + queue.getManCommitCons().size();
+        }
     }
 
     public DBHeartbeat getHeartbeat() {
@@ -186,7 +203,7 @@ public abstract class PhysicalDatasource {
         } else {
             int activeCount = this.getActiveCount();
             if (activeCount > size) {
-                String s = Alarms.DEFAULT + "DATASOURCE EXCEED [name=" + name +
+                String s = "DATASOURCE EXCEED [name=" + name +
                         ",active=" + activeCount +
                         ",size=" + size + ']';
                 LOGGER.info(s);
@@ -270,8 +287,18 @@ public abstract class PhysicalDatasource {
                 // creat new connection
                 this.createNewConnection(simpleHandler, null, schemas[i % schemas.length]);
                 simpleHandler.getBackConn().release();
+                if (ToResolveContainer.CREATE_CONN_FAIL.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {
+                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                    if (AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", this.getConfig().getId(), labels)) {
+                        ToResolveContainer.CREATE_CONN_FAIL.remove(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                    }
+                }
             } catch (IOException e) {
-                LOGGER.info("create connection err " + e);
+                String errMsg = "create connection err ";
+                LOGGER.warn(errMsg, e);
+                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                AlertUtil.alert(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, errMsg + e.getMessage(), "mysql", this.getConfig().getId(), labels);
+                ToResolveContainer.CREATE_CONN_FAIL.add(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
             }
         }
     }
@@ -290,7 +317,9 @@ public abstract class PhysicalDatasource {
     }
 
     public void startHeartbeat() {
-        heartbeat.start();
+        if (!this.getConfig().isDisabled()) {
+            heartbeat.start();
+        }
     }
 
     public void stopHeartbeat() {
@@ -301,7 +330,6 @@ public abstract class PhysicalDatasource {
         if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
             return;
         }
-
         if (!heartbeat.isStop()) {
             heartbeat.heartbeat();
         }
@@ -309,24 +337,32 @@ public abstract class PhysicalDatasource {
 
     private BackendConnection takeCon(BackendConnection conn, String schema) {
         conn.setBorrowed(true);
-        if (!conn.getSchema().equals(schema)) {
+
+        if (!StringUtil.equals(conn.getSchema(), schema)) {
             // need do schema syn in before sql send
             conn.setSchema(schema);
         }
-        ConQueue queue = conMap.getSchemaConQueue(schema);
-        queue.incExecuteCount();
+        if (schema != null) {
+            ConQueue queue = conMap.createAndGetSchemaConQueue(schema);
+            queue.incExecuteCount();
+        }
         // update last time, the schedule job will not close it
         conn.setLastTime(System.currentTimeMillis());
         return conn;
     }
 
-    private BackendConnection takeCon(BackendConnection conn,
-                                      final ResponseHandler handler, final Object attachment,
-                                      String schema) {
+    private void takeCon(BackendConnection conn,
+                         final ResponseHandler handler, final Object attachment,
+                         String schema) {
+        if (ToResolveContainer.CREATE_CONN_FAIL.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {
+            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+            if (AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", this.getConfig().getId(), labels)) {
+                ToResolveContainer.CREATE_CONN_FAIL.remove(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+            }
+        }
         takeCon(conn, schema);
         conn.setAttachment(attachment);
         handler.connectionAcquired(conn);
-        return conn;
     }
 
     private void createNewConnection(final ResponseHandler handler, final Object attachment,
@@ -338,6 +374,9 @@ public abstract class PhysicalDatasource {
                     createNewConnection(new DelegateResponseHandler(handler) {
                         @Override
                         public void connectionError(Throwable e, BackendConnection conn) {
+                            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", hostConfig.getName() + "-" + config.getHostName());
+                            AlertUtil.alert(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "createNewConn Error" + e.getMessage(), "mysql", config.getId(), labels);
+                            ToResolveContainer.CREATE_CONN_FAIL.add(hostConfig.getName() + "-" + config.getHostName());
                             handler.connectionError(e, conn);
                         }
 
@@ -366,36 +405,75 @@ public abstract class PhysicalDatasource {
         BackendConnection con = this.conMap.tryTakeCon(schema, autocommit);
         if (con != null) {
             takeCon(con, handler, attachment, schema);
-            return;
         } else {
             int activeCons = this.getActiveCount();
             if (activeCons + 1 > size) {
-                LOGGER.warn(AlarmCode.CORE_PERFORMANCE_WARN + "the max activeConnnections size can not be max than maxconnections");
-                throw new IOException("the max activeConnnections size can not be max than maxconnections");
+                String maxConError = "the max active Connections size can not be max than maxCon for data host[" + this.getHostConfig().getName() + "." + this.getName() + "]";
+                LOGGER.warn(maxConError);
+                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                AlertUtil.alert(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, maxConError, "dble", this.getConfig().getId(), labels);
+                ToResolveContainer.REACH_MAX_CON.add(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                throw new IOException(maxConError);
             } else { // create connection
-                LOGGER.info("no ilde connection in pool,create new connection for " +
-                        this.name + " of schema " + schema);
+                if (ToResolveContainer.REACH_MAX_CON.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {
+                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                    if (AlertUtil.alertResolve(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, "dble", this.getConfig().getId(), labels)) {
+                        ToResolveContainer.REACH_MAX_CON.remove(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                    }
+                }
+                LOGGER.info("no idle connection in pool,create new connection for " + this.name + " of schema " + schema);
                 createNewConnection(handler, attachment, schema);
             }
         }
     }
 
-    public BackendConnection getConnection(String schema, boolean autocommit) throws IOException {
+    public BackendConnection getConnection(String schema, boolean autocommit, final Object attachment) throws IOException {
         BackendConnection con = this.conMap.tryTakeCon(schema, autocommit);
         if (con == null) {
             int activeCons = this.getActiveCount(); // the max active
             if (activeCons + 1 > size) {
-                LOGGER.warn(AlarmCode.CORE_PERFORMANCE_WARN + "the max activeConnnections size can not be max than maxconnections");
-                throw new IOException("the max activeConnnections size can not be max than maxconnections");
+                String maxConError = "the max active Connections size can not be max than maxCon data host[" + this.getHostConfig().getName() + "." + this.getName() + "]";
+                LOGGER.warn(maxConError);
+                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                AlertUtil.alert(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, maxConError, "dble", this.getConfig().getId(), labels);
+                ToResolveContainer.REACH_MAX_CON.add(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                throw new IOException(maxConError);
             } else { // create connection
-                LOGGER.info(
-                        "no ilde connection in pool,create new connection for " + this.name + " of schema " + schema);
-                NewConnectionRespHandler simpleHandler = new NewConnectionRespHandler();
-                this.createNewConnection(simpleHandler, schema);
-                con = simpleHandler.getBackConn();
+                if (ToResolveContainer.REACH_MAX_CON.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {
+                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                    if (AlertUtil.alertResolve(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, "dble", this.getConfig().getId(), labels)) {
+                        ToResolveContainer.REACH_MAX_CON.remove(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                    }
+                }
+                LOGGER.info("no ilde connection in pool,create new connection for " + this.name + " of schema " + schema);
+                try {
+                    NewConnectionRespHandler simpleHandler = new NewConnectionRespHandler();
+                    this.createNewConnection(simpleHandler, schema);
+                    con = simpleHandler.getBackConn();
+                    if (ToResolveContainer.CREATE_CONN_FAIL.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {
+                        Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                        if (AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", this.getConfig().getId(), labels)) {
+                            ToResolveContainer.CREATE_CONN_FAIL.remove(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                        }
+                    }
+                } catch (IOException e) {
+                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                    AlertUtil.alert(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "createNewConn Error" + e.getMessage(), "mysql", this.getConfig().getId(), labels);
+                    ToResolveContainer.CREATE_CONN_FAIL.add(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                    throw e;
+                }
             }
         }
-        return takeCon(con, schema);
+        con = takeCon(con, schema);
+        con.setAttachment(attachment);
+        return con;
+    }
+
+    public void initMinConnection(String schema, boolean autocommit, final ResponseHandler handler,
+                                  final Object attachment) throws IOException {
+        LOGGER.info("create new connection for " +
+                this.name + " of schema " + schema);
+        createNewConnection(handler, attachment, schema);
     }
 
     private void returnCon(BackendConnection c) {
@@ -404,23 +482,28 @@ public abstract class PhysicalDatasource {
             closeByDyingAll();
             return;
         }
-
+        if (c.isClosedOrQuit()) {
+            return;
+        }
         c.setAttachment(null);
         c.setBorrowed(false);
         c.setLastTime(TimeUtil.currentTimeMillis());
-        ConQueue queue = this.conMap.getSchemaConQueue(c.getSchema());
 
-        boolean ok = false;
+        String errMsg = null;
+
+        boolean ok;
+        ConQueue queue = this.conMap.createAndGetSchemaConQueue(c.getSchema());
         if (c.isAutocommit()) {
             ok = queue.getAutoCommitCons().offer(c);
         } else {
             ok = queue.getManCommitCons().offer(c);
         }
-
         if (!ok) {
-
-            LOGGER.info("can't return to pool ,so close con " + c);
-            c.close("can't return to pool ");
+            errMsg = "can't return to pool ,so close con " + c;
+        }
+        if (errMsg != null) {
+            LOGGER.info(errMsg);
+            c.close(errMsg);
         }
     }
 
@@ -433,9 +516,11 @@ public abstract class PhysicalDatasource {
     }
 
     public void connectionClosed(BackendConnection conn) {
-        ConQueue queue = this.conMap.getSchemaConQueue(conn.getSchema());
-        if (queue != null) {
-            queue.removeCon(conn);
+        if (conn.getSchema() != null) {
+            ConQueue queue = this.conMap.getSchemaConQueue(conn.getSchema());
+            if (queue != null) {
+                queue.removeCon(conn);
+            }
         }
     }
 
@@ -457,6 +542,21 @@ public abstract class PhysicalDatasource {
     }
 
     public boolean isAlive() {
-        return (getHeartbeat().getStatus() == DBHeartbeat.OK_STATUS) && !getDying();
+        return ((getHeartbeat().getStatus() == DBHeartbeat.OK_STATUS) && !getDying()) || (getHeartbeat().isStop() && testConnSuccess);
+    }
+
+
+    public boolean equals(PhysicalDatasource dataSource) {
+        return dataSource.getConfig().getUser().equals(this.getConfig().getUser()) && dataSource.getConfig().getUrl().equals(this.getConfig().getUrl()) &&
+                dataSource.getConfig().getPassword().equals(this.getConfig().getPassword()) && dataSource.getConfig().getHostName().equals(this.getConfig().getHostName()) &&
+                dataSource.getConfig().isDisabled() == this.getConfig().isDisabled() && dataSource.getConfig().getWeight() == this.getConfig().getWeight();
+    }
+
+    public boolean equals(Object obj) {
+        return super.equals(obj);
+    }
+
+    public int hashCode() {
+        return super.hashCode();
     }
 }

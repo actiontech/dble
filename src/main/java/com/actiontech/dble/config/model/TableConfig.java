@@ -1,15 +1,19 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
 package com.actiontech.dble.config.model;
 
+import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.config.model.rule.RuleConfig;
 import com.actiontech.dble.util.SplitUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -31,6 +35,7 @@ public class TableConfig {
     private final boolean ruleRequired;
     private final boolean partionKeyIsPrimaryKey;
     private final Random rand = new Random();
+    private final boolean isNoSharding;
     /**
      * Child Table
      */
@@ -62,12 +67,13 @@ public class TableConfig {
         }
         this.name = name;
         String[] theDataNodes = SplitUtil.split(dataNode, ',', '$', '-');
-        if (theDataNodes == null || theDataNodes.length <= 0) {
+        if (theDataNodes.length <= 0) {
             throw new IllegalArgumentException("invalid table dataNodes: " + dataNode + " for table " + name);
         }
         if (tableType != TableTypeEnum.TYPE_GLOBAL_TABLE && parentTC == null && theDataNodes.length > 1 && rule == null) {
             throw new IllegalArgumentException("invalid table dataNodes: " + dataNode + " for table " + name);
         }
+        isNoSharding = theDataNodes.length == 1;
         dataNodes = new ArrayList<>(theDataNodes.length);
         Collections.addAll(dataNodes, theDataNodes);
         this.rule = rule;
@@ -88,7 +94,7 @@ public class TableConfig {
                     locateRTableKeySql = genLocateRootParentSQL();
                 }
             } else if (parentTC.getDirectRouteTC() != null) {
-                /**
+                /*
                  * grandTable partitionColumn =col1
                  * fatherTable joinkey =col2,parentkey = col1....so directRouteTC = grandTable
                  * thisTable joinkey = col3 ,parentkey = col2...so directRouteTC = grandTable
@@ -110,6 +116,59 @@ public class TableConfig {
             locateRTableKeySql = null;
             directRouteTC = this;
         }
+    }
+
+
+    public TableConfig(String name, String primaryKey, boolean autoIncrement, boolean needAddLimit,
+                       TableTypeEnum tableType, ArrayList<String> dataNode, RuleConfig rule, boolean ruleRequired, TableConfig parentTC,
+                       String joinKey, String parentKey) {
+        this.primaryKey = primaryKey;
+        this.autoIncrement = autoIncrement;
+        this.needAddLimit = needAddLimit;
+        this.tableType = tableType;
+        this.name = name;
+        this.dataNodes = dataNode;
+        this.rule = rule;
+        this.partitionColumn = (rule == null) ? null : rule.getColumn();
+        partionKeyIsPrimaryKey = (partitionColumn == null) ? primaryKey == null : partitionColumn.equals(primaryKey);
+        this.ruleRequired = ruleRequired;
+        this.parentTC = parentTC;
+        this.joinKey = joinKey;
+        this.parentKey = parentKey;
+        isNoSharding = dataNodes.size() == 1;
+        if (parentTC != null) {
+            if (parentTC.getParentTC() == null) {
+                if (parentKey.equalsIgnoreCase(parentTC.partitionColumn)) {
+                    // secondLevel ,parentKey==parent.partitionColumn
+                    directRouteTC = parentTC;
+                    locateRTableKeySql = null;
+                } else {
+                    directRouteTC = null;
+                    locateRTableKeySql = genLocateRootParentSQL();
+                }
+            } else if (parentTC.getDirectRouteTC() != null) {
+                if (parentKey.equals(parentTC.joinKey)) {
+                    directRouteTC = parentTC.getDirectRouteTC();
+                    locateRTableKeySql = null;
+                } else {
+                    directRouteTC = null;
+                    locateRTableKeySql = genLocateRootParentSQL();
+                }
+            } else {
+                directRouteTC = null;
+                locateRTableKeySql = genLocateRootParentSQL();
+            }
+        } else {
+            locateRTableKeySql = null;
+            directRouteTC = this;
+        }
+    }
+
+
+    TableConfig lowerCaseCopy(TableConfig parent) {
+        return new TableConfig(this.name.toLowerCase(), this.primaryKey, this.autoIncrement, this.needAddLimit,
+                this.tableType, this.dataNodes, this.rule, this.ruleRequired, parent, this.joinKey, this.parentKey);
+
     }
 
     public String getPrimaryKey() {
@@ -136,7 +195,7 @@ public class TableConfig {
         return this.tableType == TableTypeEnum.TYPE_GLOBAL_TABLE;
     }
 
-    public String genLocateRootParentSQL() {
+    private String genLocateRootParentSQL() {
         TableConfig tb = this;
         StringBuilder tableSb = new StringBuilder();
         StringBuilder condition = new StringBuilder();
@@ -179,7 +238,6 @@ public class TableConfig {
     /**
      * get root parent
      *
-     * @return
      */
     public TableConfig getRootParent() {
         if (parentTC == null) {
@@ -217,7 +275,22 @@ public class TableConfig {
 
     public String getRandomDataNode() {
         int index = Math.abs(rand.nextInt(Integer.MAX_VALUE)) % dataNodes.size();
-        return dataNodes.get(index);
+        ArrayList<String> x = new ArrayList<>();
+        x.addAll(dataNodes);
+        Map<String, PhysicalDBNode> dataNodeMap = DbleServer.getInstance().getConfig().getDataNodes();
+        while (x.size() > 1) {
+            for (PhysicalDatasource ds : dataNodeMap.get(x.get(index)).getDbPool().getAllDataSources()) {
+                if (ds.isAlive()) {
+                    return x.get(index);
+                } else {
+                    break;
+                }
+            }
+            x.remove(index);
+            index = Math.abs(rand.nextInt(Integer.MAX_VALUE)) % x.size();
+        }
+
+        return x.get(0);
     }
 
     public boolean isRuleRequired() {
@@ -230,6 +303,11 @@ public class TableConfig {
 
     public boolean primaryKeyIsPartionKey() {
         return partionKeyIsPrimaryKey;
+    }
+
+
+    public boolean isNoSharding() {
+        return isNoSharding;
     }
 
 }

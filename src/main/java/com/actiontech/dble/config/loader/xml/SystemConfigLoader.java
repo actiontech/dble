@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -18,7 +18,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
 public class SystemConfigLoader implements Loader<SystemConfig, XMLServerLoader> {
-    public void load(Element root, XMLServerLoader xsl, boolean isLowerCaseTableNames) throws IllegalAccessException, InvocationTargetException {
+    public void load(Element root, XMLServerLoader xsl) throws IllegalAccessException, InvocationTargetException {
         SystemConfig system = xsl.getSystem();
         NodeList list = root.getElementsByTagName("system");
 

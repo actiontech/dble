@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -515,5 +515,10 @@ public final class StringUtil {
 
     public static String getFullName(String schema, String tableName) {
         return String.format("`%s`.`%s`", schema, tableName);
+    }
+
+
+    public static String getUFullName(String schema, String tableName) {
+        return String.format("%s.%s", schema, tableName);
     }
 }

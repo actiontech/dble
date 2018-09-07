@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.plan.common.item.subquery;
 
+import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.time.MySQLTime;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
@@ -17,8 +18,8 @@ public abstract class ItemSingleRowSubQuery extends ItemSubQuery {
     protected Item select;
     protected boolean isField;
 
-    public ItemSingleRowSubQuery(String currentDb, SQLSelectQuery query, boolean isField) {
-        super(currentDb, query);
+    public ItemSingleRowSubQuery(String currentDb, SQLSelectQuery query, boolean isField, ProxyMetaManager metaManager) {
+        super(currentDb, query, metaManager);
         this.select = this.planNode.getColumnsSelected().get(0);
         this.isField = isField;
     }

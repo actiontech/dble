@@ -13,7 +13,7 @@
          - See the License for the specific language governing permissions and
          - limitations under the License.
         -->
-        <!ELEMENT dble:server (system?,firewall?,user+,cluster?,alarm?)>
+        <!ELEMENT dble:server (system?,firewall?,user+,cluster?)>
         <!ATTLIST dble:server xmlns:dble CDATA #FIXED "http://dble.cloud/">
 
         <!ELEMENT system (property*) >
@@ -50,15 +50,6 @@
                 user CDATA #REQUIRED
                 >
         <!ATTLIST sqllist sql CDATA #REQUIRED>
-
-
-        <!ELEMENT alarm (url,port,level,serverId,componentId,componentType) >
-        <!ELEMENT url (#PCDATA) >
-        <!ELEMENT port (#PCDATA) >
-        <!ELEMENT level (#PCDATA)>
-        <!ELEMENT serverId (#PCDATA)>
-        <!ELEMENT componentId (#PCDATA)>
-        <!ELEMENT componentType (#PCDATA)>
 
         <!ELEMENT property (#PCDATA | bean)*>
         <!ATTLIST property name NMTOKEN #REQUIRED>

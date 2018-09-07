@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -25,8 +25,27 @@ public final class ParseUtil {
         return true;
     }
 
+    public static boolean isMultiEof(String stmt, int offset) {
+        for (; offset < stmt.length(); offset++) {
+            char c = stmt.charAt(offset);
+            if (c == ';') {
+                return true;
+            } else if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+                continue;
+            } else {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public static boolean isSpace(char space) {
         return space == ' ' || space == '\r' || space == '\n' || space == '\t';
+    }
+
+
+    public static boolean isSpaceOrLeft(char space) {
+        return space == ' ' || space == '\r' || space == '\n' || space == '\t' || space == '(';
     }
 
     /**
@@ -44,6 +63,7 @@ public final class ParseUtil {
         }
         return false;
     }
+
     //FIXME SIZE CHECK
     public static String parseString(String stmt) {
         int offset = stmt.indexOf('=');
@@ -104,17 +124,23 @@ public final class ParseUtil {
         return sb.toString();
     }
 
-    public static long getSQLId(String stmt) {
-        int offset = stmt.indexOf('=');
-        if (offset != -1 && stmt.length() > ++offset) {
+    public static int getSQLId(String stmt, int start) {
+        int offset = start;
+        while (stmt.length() > offset) {
+            if (!isSpace(stmt.charAt(offset))) {
+                break;
+            }
+            offset++;
+        }
+        if (stmt.charAt(offset) == '=' && stmt.length() > ++offset) {
             String id = stmt.substring(offset).trim();
             try {
-                return Long.parseLong(id);
+                return Integer.parseInt(id);
             } catch (NumberFormatException e) {
                 //ignore error
             }
         }
-        return 0L;
+        return -1;
     }
 
     /**
@@ -292,6 +318,37 @@ public final class ParseUtil {
             return true;
         }
         return false;
+    }
+
+
+    public static int findNextBreak(String sql) {
+        boolean breakFlag = false;
+        char beginChar = 0;
+        for (int i = 0; i < sql.length(); i++) {
+            char c = sql.charAt(i);
+            switch (c) {
+                case '\\':
+                    i++;
+                    break;
+                case '\'':
+                case '\"':
+                    if (!breakFlag) {
+                        breakFlag = true;
+                        beginChar = c;
+                    } else if (c == beginChar) {
+                        breakFlag = false;
+                        beginChar = 0;
+                    }
+                    break;
+                case ';':
+                    if (!breakFlag) {
+                        return i;
+                    }
+                    break;
+                default:
+            }
+        }
+        return sql.length();
     }
 
 }

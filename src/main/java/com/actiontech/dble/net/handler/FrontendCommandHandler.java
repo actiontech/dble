@@ -1,22 +1,21 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
 package com.actiontech.dble.net.handler;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOHandler;
 import com.actiontech.dble.net.mysql.MySQLPacket;
+import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.statistic.CommandCount;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * FrontendCommandHandler
@@ -25,15 +24,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class FrontendCommandHandler implements NIOHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(FrontendCommandHandler.class);
-    private final ConcurrentLinkedQueue<byte[]> dataQueue = new ConcurrentLinkedQueue<>();
-    private final AtomicBoolean handleStatus;
     protected final FrontendConnection source;
     protected final CommandCount commands;
+    private byte[] dataTodo;
 
     public FrontendCommandHandler(FrontendConnection source) {
         this.source = source;
         this.commands = source.getProcessor().getCommands();
-        this.handleStatus = new AtomicBoolean(false);
     }
 
     @Override
@@ -46,14 +43,30 @@ public class FrontendCommandHandler implements NIOHandler {
             }
             return;
         }
-        if (dataQueue.offer(data)) {
-            handleQueue();
-        } else {
-            throw new RuntimeException("add data to queue error.");
+        dataTodo = data;
+        if (source instanceof ServerConnection) {
+            ((ServerConnection) source).getSession2().resetMultiStatementStatus();
+        }
+        DbleServer.getInstance().getFrontHandlerQueue().offer(this);
+    }
+
+    public void handle() {
+        try {
+            handleData(dataTodo);
+        } catch (Throwable e) {
+            String msg = e.getMessage();
+            if (StringUtil.isEmpty(msg)) {
+                LOGGER.info("Maybe occur a bug, please check it.", e);
+                msg = e.toString();
+            } else {
+                LOGGER.info("There is an error you may need know.", e);
+            }
+            source.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, msg);
         }
     }
 
     protected void handleData(byte[] data) {
+        source.startProcess();
         switch (data[4]) {
             case MySQLPacket.COM_INIT_DB:
                 commands.doInitDB();
@@ -102,37 +115,6 @@ public class FrontendCommandHandler implements NIOHandler {
             default:
                 commands.doOther();
                 source.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
-        }
-    }
-
-    private void handleQueue() {
-        if (this.handleStatus.compareAndSet(false, true)) {
-            this.source.getProcessor().getExecutor().execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        byte[] data;
-                        while ((data = dataQueue.poll()) != null) {
-                            handleData(data);
-                        }
-                    } catch (Exception e) {
-                        String msg = e.getMessage();
-                        if (StringUtil.isEmpty(msg)) {
-                            LOGGER.info("Maybe occur a bug, please check it.", e);
-                            msg = e.toString();
-                        } else {
-                            LOGGER.info("There is an error you may need know.", e);
-                        }
-                        source.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, msg);
-                        dataQueue.clear();
-                    } finally {
-                        handleStatus.set(false);
-                        if (dataQueue.size() > 0) {
-                            handleQueue();
-                        }
-                    }
-                }
-            });
         }
     }
 }

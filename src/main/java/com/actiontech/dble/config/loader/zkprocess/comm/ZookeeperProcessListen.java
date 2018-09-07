@@ -1,11 +1,10 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.config.loader.zkprocess.comm;
 
-import com.actiontech.dble.log.alarm.AlarmCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +48,7 @@ public class ZookeeperProcessListen {
                 try {
                     result = cacheService.notifyProcess();
                 } catch (Exception e) {
-                    LOGGER.warn(AlarmCode.CORE_ZK_WARN + "ZookeeperProcessListen notify key :" + key + " error:Exception info:", e);
+                    LOGGER.warn("ZookeeperProcessListen notify key :" + key + " error:Exception info:", e);
                 }
             }
         }
@@ -64,7 +63,7 @@ public class ZookeeperProcessListen {
             try {
                 item.notifyProcess();
             } catch (Exception e) {
-                LOGGER.warn(AlarmCode.CORE_ZK_WARN + "ZookeeperProcessListen initAllNode :" + item + ";error:Exception info:", e);
+                LOGGER.warn("ZookeeperProcessListen initAllNode :" + item + ";error:Exception info:", e);
             }
         }
     }

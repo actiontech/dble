@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
@@ -12,7 +13,11 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
-import org.apache.log4j.Logger;
+import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.statistic.stat.QueryResult;
+import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -22,22 +27,21 @@ import java.util.concurrent.locks.ReentrantLock;
  * send back to client handler
  */
 public class OutputHandler extends BaseDMLHandler {
-    private static Logger logger = Logger.getLogger(OutputHandler.class);
+    private static Logger logger = LoggerFactory.getLogger(OutputHandler.class);
     protected final ReentrantLock lock;
 
     private byte packetId;
     private NonBlockingSession session;
     private ByteBuffer buffer;
     private boolean isBinary;
-    private boolean hasNext;
-
-    public OutputHandler(long id, NonBlockingSession session, boolean hasNext) {
+    private long netOutBytes;
+    private long selectRows;
+    public OutputHandler(long id, NonBlockingSession session) {
         super(id, session);
         session.setOutputHandler(this);
         this.lock = new ReentrantLock();
-        this.packetId = 0;
+        this.packetId = (byte) session.getPacketId().get();
         this.session = session;
-        this.hasNext = hasNext;
         this.isBinary = session.isPrepared();
         this.buffer = session.getSource().allocate();
     }
@@ -49,28 +53,23 @@ public class OutputHandler extends BaseDMLHandler {
 
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
+        this.netOutBytes += ok.length;
         OkPacket okPacket = new OkPacket();
         okPacket.read(ok);
         ServerConnection source = session.getSource();
         lock.lock();
         try {
             ok[3] = ++packetId;
+            session.multiStatementPacket(okPacket, packetId);
+            boolean multiStatementFlag = session.getIsMultiStatement().get();
             if ((okPacket.getServerStatus() & StatusFlags.SERVER_MORE_RESULTS_EXISTS) > 0) {
                 buffer = source.writeToBuffer(ok, buffer);
             } else {
                 HandlerTool.terminateHandlerTree(this);
-                if (hasNext) {
-                    okPacket.setServerStatus(okPacket.getServerStatus() | StatusFlags.SERVER_MORE_RESULTS_EXISTS);
-                }
                 buffer = source.writeToBuffer(ok, buffer);
-                if (hasNext) {
-                    source.write(buffer);
-                    //source.executeNext(packetId, false);
-                } else {
-                    //source.executeNext(packetId, false);
-                    source.write(buffer);
-                }
+                source.write(buffer);
             }
+            session.multiStatementNextSql(multiStatementFlag);
         } finally {
             lock.unlock();
         }
@@ -80,11 +79,11 @@ public class OutputHandler extends BaseDMLHandler {
     public void errorResponse(byte[] err, BackendConnection conn) {
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);
-        logger.info(new StringBuilder().append(conn.toString()).append("|errorResponse()|").append(new String(errPacket.getMessage())));
+        logger.info(conn.toString() + "|errorResponse()|" + new String(errPacket.getMessage()));
         lock.lock();
         try {
             buffer = session.getSource().writeToBuffer(err, buffer);
-            //session.getSource().executeNext(packetId, true);
+            session.resetMultiStatementStatus();
             session.getSource().write(buffer);
         } finally {
             lock.unlock();
@@ -94,6 +93,7 @@ public class OutputHandler extends BaseDMLHandler {
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, List<FieldPacket> fieldPackets,
                                  byte[] eofNull, boolean isLeft, BackendConnection conn) {
+        session.setHandlerStart(this);
         if (terminate.get()) {
             return;
         }
@@ -104,15 +104,17 @@ public class OutputHandler extends BaseDMLHandler {
             ResultSetHeaderPacket hp = new ResultSetHeaderPacket();
             hp.setFieldCount(fieldPackets.size());
             hp.setPacketId(++packetId);
-
+            this.netOutBytes += hp.calcPacketSize();
             ServerConnection source = session.getSource();
             buffer = hp.write(buffer, source, true);
             for (FieldPacket fp : fieldPackets) {
                 fp.setPacketId(++packetId);
+                this.netOutBytes += fp.calcPacketSize();
                 buffer = fp.write(buffer, source, true);
             }
             EOFPacket ep = new EOFPacket();
             ep.setPacketId(++packetId);
+            this.netOutBytes += ep.calcPacketSize();
             buffer = ep.write(buffer, source, true);
         } finally {
             lock.unlock();
@@ -126,18 +128,22 @@ public class OutputHandler extends BaseDMLHandler {
         }
         lock.lock();
         try {
+            selectRows++;
             byte[] row;
             if (this.isBinary) {
                 BinaryRowDataPacket binRowPacket = new BinaryRowDataPacket();
                 binRowPacket.read(this.fieldPackets, rowPacket);
                 binRowPacket.setPacketId(++packetId);
+                this.netOutBytes += binRowPacket.calcPacketSize();
                 buffer = binRowPacket.write(buffer, session.getSource(), true);
             } else {
                 if (rowPacket != null) {
                     rowPacket.setPacketId(++packetId);
+                    this.netOutBytes += rowPacket.calcPacketSize();
                     buffer = rowPacket.write(buffer, session.getSource(), true);
                 } else {
                     row = rowNull;
+                    this.netOutBytes += row.length;
                     row[3] = ++packetId;
                     buffer = session.getSource().writeToBuffer(row, buffer);
                 }
@@ -153,7 +159,7 @@ public class OutputHandler extends BaseDMLHandler {
         if (terminate.get()) {
             return;
         }
-        logger.info("--------sql execute end!");
+        logger.debug("--------sql execute end!");
         ServerConnection source = session.getSource();
         lock.lock();
         try {
@@ -162,26 +168,41 @@ public class OutputHandler extends BaseDMLHandler {
                 eofPacket.read(data);
             }
             eofPacket.setPacketId(++packetId);
-            if (hasNext) {
-                eofPacket.setStatus(eofPacket.getStatus() | StatusFlags.SERVER_MORE_RESULTS_EXISTS);
-            }
+            this.netOutBytes += eofPacket.calcPacketSize();
+            doSqlStat();
             HandlerTool.terminateHandlerTree(this);
+            session.multiStatementPacket(eofPacket, packetId);
             byte[] eof = eofPacket.toBytes();
             buffer = source.writeToBuffer(eof, buffer);
-            if (hasNext) {
-                source.write(buffer);
-                //source.executeNext(packetId, false);
-            } else {
-                //source.executeNext(packetId, false);
-                source.write(buffer);
-            }
+            session.setHandlerEnd(this);
+            session.setResponseTime();
+            boolean multiStatementFlag = session.getIsMultiStatement().get();
+            source.write(buffer);
+            session.multiStatementNextSql(multiStatementFlag);
         } finally {
             lock.unlock();
         }
     }
 
+    private void doSqlStat() {
+        if (DbleServer.getInstance().getConfig().getSystem().getUseSqlStat() == 1) {
+            long netInBytes = 0;
+            String sql = session.getSource().getExecuteSql();
+            if (sql != null) {
+                netInBytes += sql.getBytes().length;
+                QueryResult queryResult = new QueryResult(session.getSource().getUser(), ServerParse.SELECT,
+                        sql, selectRows, netInBytes, netOutBytes, session.getQueryStartTime(), System.currentTimeMillis(), netOutBytes);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("try to record sql:" + sql);
+                }
+                QueryResultDispatcher.dispatchQuery(queryResult);
+            }
+        }
+    }
+
     public void backendConnError(byte[] errMsg) {
         if (terminate.compareAndSet(false, true)) {
+            session.resetMultiStatementStatus();
             ErrorPacket err = new ErrorPacket();
             err.setErrNo(ErrorCode.ER_YES);
             err.setMessage(errMsg);
@@ -200,7 +221,6 @@ public class OutputHandler extends BaseDMLHandler {
                 error.setMessage("unknown error".getBytes());
             }
             error.setPacketId(++packetId);
-            //session.getSource().executeNext(packetId, true);
             session.getSource().write(error.toBytes());
         } finally {
             lock.unlock();
@@ -216,6 +236,7 @@ public class OutputHandler extends BaseDMLHandler {
                 buffer = null;
             }
         }
+        session.resetMultiStatementStatus();
     }
 
     @Override

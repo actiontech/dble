@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -17,6 +17,7 @@ import com.actiontech.dble.net.mysql.*;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 
 /**
@@ -38,12 +39,14 @@ public class MySQLDataSource extends PhysicalDatasource {
         factory.make(this, handler, schema);
     }
 
-    private long getClientFlags() {
+    private long getClientFlags(boolean isConnectWithDB) {
         int flag = 0;
         flag |= Capabilities.CLIENT_LONG_PASSWORD;
         flag |= Capabilities.CLIENT_FOUND_ROWS;
         flag |= Capabilities.CLIENT_LONG_FLAG;
-        flag |= Capabilities.CLIENT_CONNECT_WITH_DB;
+        if (isConnectWithDB) {
+            flag |= Capabilities.CLIENT_CONNECT_WITH_DB;
+        }
         // flag |= Capabilities.CLIENT_NO_SCHEMA;
         // flag |= Capabilities.CLIENT_COMPRESS;
         flag |= Capabilities.CLIENT_ODBC;
@@ -101,6 +104,11 @@ public class MySQLDataSource extends PhysicalDatasource {
             BinaryPacket bin1 = new BinaryPacket();
             bin1.read(in);
 
+            if (bin1.getData()[0] == ErrorPacket.FIELD_COUNT) {
+                ErrorPacket err = new ErrorPacket();
+                err.read(bin1);
+                throw new IOException(new String(err.getMessage(), StandardCharsets.UTF_8));
+            }
             HandshakeV10Packet handshake = new HandshakeV10Packet();
             handshake.read(bin1);
 
@@ -109,14 +117,14 @@ public class MySQLDataSource extends PhysicalDatasource {
              */
             AuthPacket authPacket = new AuthPacket();
             authPacket.setPacketId(1);
-            authPacket.setClientFlags(getClientFlags());
+            authPacket.setClientFlags(getClientFlags(schema != null));
             authPacket.setMaxPacketSize(1024 * 1024 * 16);
             authPacket.setCharsetIndex(handshake.getServerCharsetIndex() & 0xff);
             authPacket.setUser(this.getConfig().getUser());
             try {
                 authPacket.setPassword(passwd(this.getConfig().getPassword(), handshake));
             } catch (NoSuchAlgorithmException e) {
-                throw new RuntimeException(e.getMessage());
+                throw new IOException(e.getMessage());
             }
             authPacket.setDatabase(schema);
             authPacket.write(out);
@@ -149,17 +157,7 @@ public class MySQLDataSource extends PhysicalDatasource {
                     break;
             }
 
-        } catch (IOException e) {
-            isConnected = false;
         } finally {
-            try {
-                if (in != null) {
-                    in.close();
-                }
-            } catch (IOException e) {
-                //ignore error
-            }
-
             try {
                 if (out != null) {
                     out.write(QuitPacket.QUIT);
@@ -171,9 +169,17 @@ public class MySQLDataSource extends PhysicalDatasource {
             }
 
             try {
+                if (in != null) {
+                    in.close();
+                }
+            } catch (IOException e) {
+                //ignore error
+            }
+
+            try {
                 if (socket != null)
                     socket.close();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 //ignore error
             }
         }

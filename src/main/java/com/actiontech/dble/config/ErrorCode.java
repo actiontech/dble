@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -29,6 +29,7 @@ public final class ErrorCode {
     public static final int ER_HANDLE_DATA = 4002;
     public static final int ER_OPTIMIZER = 4004;
     public static final int ER_QUERYHANDLER = 4005;
+    public static final int ER_DOING_DDL = 4006;
     public static final int ER_NO_VALID_CONNECTION = 5004;
     public static final int ER_FILE_INIT = 5301;
     public static final int ER_FILE_FORCE = 5302;
@@ -39,6 +40,8 @@ public final class ErrorCode {
     public static final int ER_FILE_DELETE = 5307;
     public static final int ER_IO_EXCEPTION = 5308;
     public static final int ER_FILE_CREATE = 5313;
+    public static final int ER_DATA_HOST_ABORTING_CONNECTION = 5314;
+    public static final int ER_CLUSTER_RELOAD = 5315;
     // mysql error code
     public static final int ER_HASHCHK = 1000;
     public static final int ER_NISAMCHK = 1001;

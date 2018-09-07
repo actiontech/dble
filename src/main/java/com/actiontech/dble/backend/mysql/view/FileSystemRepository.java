@@ -1,9 +1,13 @@
+/*
+ * Copyright (C) 2016-2018 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
 package com.actiontech.dble.backend.mysql.view;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import org.slf4j.Logger;
@@ -12,8 +16,8 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by szf on 2017/10/12.
@@ -23,13 +27,12 @@ public class FileSystemRepository implements Repository {
     private FileChannel rwChannel = null;
     private String baseDir;
     private String baseName;
-    private Map<String, Map<String, String>> viewCreateSqlMap = new ConcurrentHashMap<String, Map<String, String>>();
+    private Map<String, Map<String, String>> viewCreateSqlMap = new HashMap<String, Map<String, String>>();
 
 
     public FileSystemRepository() {
         init();
     }
-
 
     /**
      * init the file read & create the viewMap
@@ -54,25 +57,51 @@ public class FileSystemRepository implements Repository {
         }
     }
 
+    @Override
+    public void terminate() {
+        try {
+            if (rwChannel != null) {
+                rwChannel.close();
+            }
+        } catch (Exception e) {
+            LOGGER.info("close error");
+        }
+    }
+
     /**
      * delete the view info from both fileSystem & memory
      *
      * @param schemaName
      * @param viewName
      */
-    public void delete(String schemaName, String[] viewName) {
+    public void delete(String schemaName, String viewName) {
         try {
-            for (String singleName : viewName) {
-                Map<String, String> schemaMap = viewCreateSqlMap.get(schemaName);
-                if (schemaMap == null) {
-                    schemaMap = new ConcurrentHashMap<String, String>();
-                    viewCreateSqlMap.put(schemaName, schemaMap);
+            Map<String, Map<String, String>> tmp = new HashMap<String, Map<String, String>>();
+            for (Map.Entry<String, Map<String, String>> entry : viewCreateSqlMap.entrySet()) {
+                if (entry.getKey().equals(schemaName)) {
+                    Map<String, String> tmpSchemaMap = new HashMap<String, String>();
+                    for (Map.Entry<String, String> schemaEntry : entry.getValue().entrySet()) {
+                        if (!schemaEntry.getKey().equals(viewName.trim())) {
+                            tmpSchemaMap.put(schemaEntry.getKey(), schemaEntry.getValue());
+                        }
+                    }
+                    tmp.put(entry.getKey(), tmpSchemaMap);
+                    break;
                 }
-                schemaMap.remove(singleName.trim());
+                tmp.put(entry.getKey(), entry.getValue());
             }
-            this.writeToFile(mapToJsonString());
+
+            this.writeToFile(mapToJsonString(tmp));
+
+            Map<String, String> schemaMap = viewCreateSqlMap.get(schemaName);
+            if (schemaMap == null) {
+                schemaMap = new HashMap<String, String>();
+                viewCreateSqlMap.put(schemaName, schemaMap);
+            }
+            schemaMap.remove(viewName.trim());
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "delete view from file error make sure the file is correct :" + e.getMessage());
+            LOGGER.warn("delete view from file error make sure the file is correct :" + e.getMessage());
+            throw new RuntimeException(e);
         }
     }
 
@@ -85,16 +114,41 @@ public class FileSystemRepository implements Repository {
      */
     public void put(String schemaName, String viewName, String createSql) {
         try {
+            Map<String, Map<String, String>> tmp = new HashMap<String, Map<String, String>>();
+            for (Map.Entry<String, Map<String, String>> entry : viewCreateSqlMap.entrySet()) {
+                if (entry.getKey().equals(schemaName)) {
+                    Map<String, String> tmpSchemaMap = new HashMap<String, String>();
+                    for (Map.Entry<String, String> schemaEntry : entry.getValue().entrySet()) {
+                        tmpSchemaMap.put(schemaEntry.getKey(), schemaEntry.getValue());
+                    }
+                    tmpSchemaMap.put(viewName, createSql);
+                    tmp.put(entry.getKey(), tmpSchemaMap);
+                    break;
+                }
+                tmp.put(entry.getKey(), entry.getValue());
+            }
+
+            Map<String, String> temSchemaMap = tmp.get(schemaName);
+            if (temSchemaMap == null) {
+                temSchemaMap = new HashMap<String, String>();
+                tmp.put(schemaName, temSchemaMap);
+                temSchemaMap.put(viewName, createSql);
+
+            }
+
+
+            this.writeToFile(mapToJsonString(tmp));
             Map<String, String> schemaMap = viewCreateSqlMap.get(schemaName);
             if (schemaMap == null) {
-                schemaMap = new ConcurrentHashMap<String, String>();
+                schemaMap = new HashMap<String, String>();
                 viewCreateSqlMap.put(schemaName, schemaMap);
             }
             schemaMap.put(viewName, createSql);
 
-            this.writeToFile(mapToJsonString());
+
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "add view from file error make sure the file is correct :" + e.getMessage());
+            LOGGER.warn("add view from file error make sure the file is correct :" + e.getMessage());
+            throw new RuntimeException("put view data to file error", e);
         }
 
     }
@@ -106,7 +160,7 @@ public class FileSystemRepository implements Repository {
      * @throws Exception
      */
     public Map<String, Map<String, String>> getObject() throws Exception {
-        Map<String, Map<String, String>> result = new ConcurrentHashMap<String, Map<String, String>>();
+        Map<String, Map<String, String>> result = new HashMap<String, Map<String, String>>();
         String jsonString = readFromFile();
         JSONArray jsonArray = JSONObject.parseArray(jsonString);
         if (jsonArray != null) {
@@ -114,7 +168,7 @@ public class FileSystemRepository implements Repository {
                 JSONObject x = (JSONObject) schema;
                 String schemaName = x.getString("schema");
                 JSONArray viewList = x.getJSONArray("list");
-                Map<String, String> schemaView = new ConcurrentHashMap<String, String>();
+                Map<String, String> schemaView = new HashMap<String, String>();
                 for (Object view : viewList) {
                     JSONObject y = (JSONObject) view;
                     schemaView.put(y.getString("name"), y.getString("sql"));
@@ -145,16 +199,33 @@ public class FileSystemRepository implements Repository {
      * @throws Exception
      */
     public String readFromFile() throws Exception {
-        FileInputStream fis = new FileInputStream(baseDir + baseName);
-        InputStreamReader isr = new InputStreamReader(fis);
-        BufferedReader br = new BufferedReader(isr);
-        StringBuilder sb = new StringBuilder("");
-        String line;
-        while ((line = br.readLine()) != null) {
-            sb.append(line);
+        FileInputStream fis = null;
+        InputStreamReader isr = null;
+        BufferedReader br = null;
+        try {
+            fis = new FileInputStream(baseDir + baseName);
+            isr = new InputStreamReader(fis);
+            br = new BufferedReader(isr);
+            StringBuilder sb = new StringBuilder("");
+            String line;
+            while ((line = br.readLine()) != null) {
+                sb.append(line);
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            LOGGER.error("can not read file from viewFile", e);
+        } finally {
+            if (br != null) {
+                br.close();
+            }
+            if (isr != null) {
+                isr.close();
+            }
+            if (fis != null) {
+                fis.close();
+            }
         }
-        br.close();
-        return sb.toString();
+        return null;
     }
 
 
@@ -174,9 +245,9 @@ public class FileSystemRepository implements Repository {
      *
      * @return
      */
-    public String mapToJsonString() {
+    public String mapToJsonString(Map<String, Map<String, String>> map) {
         StringBuilder sb = new StringBuilder("[");
-        for (Map.Entry<String, Map<String, String>> schema : viewCreateSqlMap.entrySet()) {
+        for (Map.Entry<String, Map<String, String>> schema : map.entrySet()) {
             Map<String, String> schemaSet = schema.getValue();
             sb.append("{\"schema\":\"").append(schema.getKey()).append("\",\"list\":[");
             for (Map.Entry<String, String> view : schemaSet.entrySet()) {

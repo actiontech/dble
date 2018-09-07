@@ -1,18 +1,20 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.plan.visitor;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
+import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
 import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
+import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.plan.util.FilterUtils;
 import com.actiontech.dble.util.StringUtil;
@@ -26,6 +28,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUnionQuery;
 
+import java.sql.SQLNonTransientException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,25 +36,28 @@ public class MySQLPlanNodeVisitor {
     private PlanNode tableNode;
     private final String currentDb;
     private final int charsetIndex;
-
-    public boolean isContainSchema() {
-        return containSchema;
-    }
-
+    private final ProxyMetaManager metaManager;
     private boolean containSchema = false;
+    private boolean isSubQuery = false;
 
-    public MySQLPlanNodeVisitor(String currentDb, int charsetIndex) {
+    public MySQLPlanNodeVisitor(String currentDb, int charsetIndex, ProxyMetaManager metaManager, boolean isSubQuery) {
         this.currentDb = currentDb;
         this.charsetIndex = charsetIndex;
+        this.metaManager = metaManager;
+        this.isSubQuery = isSubQuery;
     }
 
     public PlanNode getTableNode() {
         return tableNode;
     }
 
+    public boolean isContainSchema() {
+        return containSchema;
+    }
+
     public boolean visit(SQLSelectStatement node) {
         SQLSelectQuery sqlSelect = node.getSelect().getQuery();
-        MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
+        MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
         mtv.visit(sqlSelect);
         this.tableNode = mtv.getTableNode();
         this.containSchema = mtv.isContainSchema();
@@ -67,22 +73,16 @@ public class MySQLPlanNodeVisitor {
     }
 
     public boolean visit(SQLUnionQuery sqlSelectQuery) {
-        SQLSelectQuery left = sqlSelectQuery.getLeft();
-        MySQLPlanNodeVisitor mtvleft = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
-        mtvleft.visit(left);
-
-        SQLSelectQuery right = sqlSelectQuery.getRight();
-        MySQLPlanNodeVisitor mtvright = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
-        mtvright.visit(right);
-
         MergeNode mergeNode = new MergeNode();
-        if (sqlSelectQuery.getOperator() == SQLUnionOperator.UNION || sqlSelectQuery.getOperator() == SQLUnionOperator.DISTINCT) {
-            mergeNode.setUnion(true);
-        }
-        mergeNode.addChild(mtvleft.getTableNode());
-        mergeNode.addChild(mtvright.getTableNode());
+        SQLSelectQuery left = sqlSelectQuery.getLeft();
+        MySQLPlanNodeVisitor mtvLeft = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
+        mtvLeft.visit(left);
+        mergeNode.addChild(mtvLeft.getTableNode());
+
+        BoolPtr containSchemaPtr = new BoolPtr(mtvLeft.isContainSchema());
+        mergeNode = checkRightChild(mergeNode, sqlSelectQuery.getRight(), isUnion(sqlSelectQuery.getOperator()), containSchemaPtr);
         this.tableNode = mergeNode;
-        this.containSchema = mtvleft.isContainSchema() || mtvright.isContainSchema();
+        this.containSchema = containSchemaPtr.get();
         SQLOrderBy orderBy = sqlSelectQuery.getOrderBy();
         if (orderBy != null) {
             handleOrderBy(orderBy);
@@ -149,7 +149,11 @@ public class MySQLPlanNodeVisitor {
         SQLExpr expr = tableSource.getExpr();
         if (expr instanceof SQLPropertyExpr) {
             SQLPropertyExpr propertyExpr = (SQLPropertyExpr) expr;
-            table = new TableNode(StringUtil.removeBackQuote(propertyExpr.getOwner().toString()), StringUtil.removeBackQuote(propertyExpr.getName()));
+            try {
+                table = new TableNode(StringUtil.removeBackQuote(propertyExpr.getOwner().toString()), StringUtil.removeBackQuote(propertyExpr.getName()), this.metaManager);
+            } catch (SQLNonTransientException e) {
+                throw new MySQLOutPutException(e.getErrorCode(), e.getSQLState(), e.getMessage());
+            }
             containSchema = true;
         } else if (expr instanceof SQLIdentifierExpr) {
             SQLIdentifierExpr identifierExpr = (SQLIdentifierExpr) expr;
@@ -158,16 +162,25 @@ public class MySQLPlanNodeVisitor {
                 return true;
             }
             //here to check if the table name is a view in metaManager
-            QueryNode viewNode = DbleServer.getInstance().getTmManager().getSyncView(currentDb, identifierExpr.getName());
+            QueryNode viewNode = null;
+            try {
+                viewNode = metaManager.getSyncView(currentDb, identifierExpr.getName());
+            } catch (SQLNonTransientException e) {
+                throw new MySQLOutPutException(e.getErrorCode(), e.getSQLState(), e.getMessage());
+            }
             if (viewNode != null) {
                 //consider if the table with other name
                 viewNode.setAlias(tableSource.getAlias() == null ? identifierExpr.getName() : tableSource.getAlias());
                 this.tableNode = viewNode;
-                this.tableNode.setSubQuery(true);
+                tableNode.setWithSubQuery(true);
                 this.tableNode.setExistView(true);
                 return true;
             } else {
-                table = new TableNode(this.currentDb, StringUtil.removeBackQuote(identifierExpr.getName()));
+                try {
+                    table = new TableNode(this.currentDb, StringUtil.removeBackQuote(identifierExpr.getName()), this.metaManager);
+                } catch (SQLNonTransientException e) {
+                    throw new MySQLOutPutException(e.getErrorCode(), e.getSQLState(), e.getMessage());
+                }
             }
         } else {
             throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "42000", "table is " + tableSource.toString());
@@ -179,7 +192,7 @@ public class MySQLPlanNodeVisitor {
 
     public boolean visit(SQLUnionQueryTableSource unionTables) {
         visit(unionTables.getUnion());
-        this.tableNode.setSubQuery(true);
+        this.tableNode.setWithSubQuery(true);
         if (unionTables.getAlias() != null) {
             tableNode.setAlias(unionTables.getAlias());
         }
@@ -188,11 +201,11 @@ public class MySQLPlanNodeVisitor {
 
     public boolean visit(SQLJoinTableSource joinTables) {
         SQLTableSource left = joinTables.getLeft();
-        MySQLPlanNodeVisitor mtvLeft = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
+        MySQLPlanNodeVisitor mtvLeft = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
         mtvLeft.visit(left);
 
         SQLTableSource right = joinTables.getRight();
-        MySQLPlanNodeVisitor mtvRight = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
+        MySQLPlanNodeVisitor mtvRight = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
         mtvRight.visit(right);
         JoinNode joinNode = new JoinNode(mtvLeft.getTableNode(), mtvRight.getTableNode());
         switch (joinTables.getJoinType()) {
@@ -231,7 +244,7 @@ public class MySQLPlanNodeVisitor {
                 throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "42000",
                         "You have an error in your SQL syntax;check the manual that corresponds to your MySQL server version for the right syntax to use near '" + cond.toString() + "'");
             }
-            MySQLItemVisitor ev = new MySQLItemVisitor(this.currentDb, this.charsetIndex);
+            MySQLItemVisitor ev = new MySQLItemVisitor(this.currentDb, this.charsetIndex, this.metaManager);
             cond.accept(ev);
             addJoinOnColumns(ev.getItem(), joinNode);
         }
@@ -251,12 +264,11 @@ public class MySQLPlanNodeVisitor {
     public boolean visit(SQLSubqueryTableSource subQueryTables) {
         SQLSelect sqlSelect = subQueryTables.getSelect();
         visit(sqlSelect.getQuery());
-        this.tableNode.setSubQuery(true);
         return true;
     }
 
     public boolean visit(SQLSelect node) {
-        MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
+        MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
         mtv.visit(node.getQuery());
         this.tableNode = mtv.getTableNode();
         this.containSchema = mtv.isContainSchema();
@@ -266,13 +278,13 @@ public class MySQLPlanNodeVisitor {
     public void visit(SQLTableSource tables) {
         if (tables instanceof SQLExprTableSource) {
             SQLExprTableSource table = (SQLExprTableSource) tables;
-            MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
+            MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
             mtv.visit(table);
             this.tableNode = mtv.getTableNode();
             this.containSchema = mtv.isContainSchema();
         } else if (tables instanceof SQLJoinTableSource) {
             SQLJoinTableSource joinTables = (SQLJoinTableSource) tables;
-            MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
+            MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
             mtv.visit(joinTables);
             this.tableNode = mtv.getTableNode();
             this.containSchema = mtv.isContainSchema();
@@ -281,7 +293,7 @@ public class MySQLPlanNodeVisitor {
                 throw new MySQLOutPutException(ErrorCode.ER_DERIVED_MUST_HAVE_ALIAS, "", "Every derived table must have its own alias");
             }
             SQLUnionQueryTableSource unionTables = (SQLUnionQueryTableSource) tables;
-            MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
+            MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
             mtv.visit(unionTables);
             this.tableNode = new QueryNode(mtv.getTableNode());
             this.containSchema = mtv.isContainSchema();
@@ -290,7 +302,7 @@ public class MySQLPlanNodeVisitor {
                 throw new MySQLOutPutException(ErrorCode.ER_DERIVED_MUST_HAVE_ALIAS, "", "Every derived table must have its own alias");
             }
             SQLSubqueryTableSource subQueryTables = (SQLSubqueryTableSource) tables;
-            MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex);
+            MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
             mtv.visit(subQueryTables);
             this.tableNode = new QueryNode(mtv.getTableNode());
             this.containSchema = mtv.isContainSchema();
@@ -304,28 +316,43 @@ public class MySQLPlanNodeVisitor {
         List<Item> selectItems = new ArrayList<>();
         for (SQLSelectItem item : items) {
             SQLExpr expr = item.getExpr();
-            MySQLItemVisitor ev = new MySQLItemVisitor(currentDb, this.charsetIndex);
+            MySQLItemVisitor ev = new MySQLItemVisitor(currentDb, this.charsetIndex, this.metaManager);
             expr.accept(ev);
             Item selItem = ev.getItem();
-            if (selItem instanceof ItemScalarSubQuery) {
-                ((ItemScalarSubQuery) selItem).setField(true);
-                tableNode.getSubQueries().add((ItemScalarSubQuery) selItem);
-                tableNode.setSubQuery(true);
+            if (selItem.isWithSubQuery()) {
+                setSubQueryNode(selItem);
             }
             selItem.setAlias(item.getAlias());
+            if (isSubQuery && selItem.getAlias() == null) {
+                selItem.setAlias("autoalias_scalar");
+            }
             selectItems.add(selItem);
         }
         return selectItems;
     }
 
+    private void setSubQueryNode(Item selItem) {
+        if (selItem instanceof ItemScalarSubQuery) {
+            ((ItemScalarSubQuery) selItem).setField(true);
+            tableNode.getSubQueries().add((ItemScalarSubQuery) selItem);
+            tableNode.setWithSubQuery(true);
+            tableNode.setContainsSubQuery(true);
+        } else if (selItem instanceof ItemFunc) {
+            for (Item args : selItem.arguments()) {
+                setSubQueryNode(args);
+            }
+        }
+    }
+
     private void handleWhereCondition(SQLExpr whereExpr) {
-        MySQLItemVisitor mev = new MySQLItemVisitor(this.currentDb, this.charsetIndex);
+        MySQLItemVisitor mev = new MySQLItemVisitor(this.currentDb, this.charsetIndex, this.metaManager);
         whereExpr.accept(mev);
         if (this.tableNode != null) {
             Item whereFilter = mev.getItem();
             tableNode.query(whereFilter);
             if (whereFilter.isWithSubQuery()) {
-                tableNode.setSubQuery(true);
+                tableNode.setWithSubQuery(true);
+                tableNode.setContainsSubQuery(true);
                 tableNode.setCorrelatedSubQuery(whereFilter.isCorrelatedSubQuery());
             }
         } else {
@@ -336,8 +363,13 @@ public class MySQLPlanNodeVisitor {
     private void handleOrderBy(SQLOrderBy orderBy) {
         for (SQLSelectOrderByItem p : orderBy.getItems()) {
             SQLExpr expr = p.getExpr();
-            MySQLItemVisitor v = new MySQLItemVisitor(this.currentDb, this.charsetIndex);
+            MySQLItemVisitor v = new MySQLItemVisitor(this.currentDb, this.charsetIndex, this.metaManager);
             expr.accept(v);
+            if (v.getItem() instanceof ItemScalarSubQuery) {
+                tableNode.setWithSubQuery(true);
+                tableNode.setContainsSubQuery(true);
+                tableNode.setCorrelatedSubQuery(false);
+            }
             this.tableNode = tableNode.orderBy(v.getItem(), p.getType());
         }
     }
@@ -347,11 +379,11 @@ public class MySQLPlanNodeVisitor {
             if (p instanceof MySqlOrderingExpr) {
                 MySqlOrderingExpr groupitem = (MySqlOrderingExpr) p;
                 SQLExpr q = groupitem.getExpr();
-                MySQLItemVisitor v = new MySQLItemVisitor(this.currentDb, this.charsetIndex);
+                MySQLItemVisitor v = new MySQLItemVisitor(this.currentDb, this.charsetIndex, this.metaManager);
                 q.accept(v);
                 this.tableNode = tableNode.groupBy(v.getItem(), groupitem.getType());
             } else {
-                MySQLItemVisitor v = new MySQLItemVisitor(this.currentDb, this.charsetIndex);
+                MySQLItemVisitor v = new MySQLItemVisitor(this.currentDb, this.charsetIndex, this.metaManager);
                 p.accept(v);
                 this.tableNode = tableNode.groupBy(v.getItem(), SQLOrderingSpecification.ASC);
             }
@@ -365,12 +397,46 @@ public class MySQLPlanNodeVisitor {
         }
     }
 
+
+    private MergeNode checkRightChild(MergeNode mergeNode, SQLSelectQuery rightQuery, boolean isUnion, BoolPtr containSchemaPtr) {
+        if (rightQuery instanceof SQLUnionQuery) {
+            SQLUnionQuery subUnion = (SQLUnionQuery) rightQuery;
+            SQLSelectQuery subLeft = subUnion.getLeft();
+            MySQLPlanNodeVisitor mtvRight = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
+            mtvRight.visit(subLeft);
+            mergeNode.addChild(mtvRight.getTableNode());
+            containSchemaPtr.set(containSchemaPtr.get() || mtvRight.isContainSchema());
+            mergeNode.setUnion(isUnion);
+
+            MergeNode mergeParentNode = new MergeNode();
+            mergeParentNode.addChild(mergeNode);
+            return checkRightChild(mergeParentNode, subUnion.getRight(), isUnion(subUnion.getOperator()), containSchemaPtr);
+
+        } else {
+            MySQLPlanNodeVisitor mtvRight = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
+            mtvRight.visit(rightQuery);
+            mergeNode.addChild(mtvRight.getTableNode());
+            mergeNode.setUnion(isUnion);
+            containSchemaPtr.set(containSchemaPtr.get() || mtvRight.isContainSchema());
+            return mergeNode;
+        }
+    }
+
+    private boolean isUnion(SQLUnionOperator unionOperator) {
+        return unionOperator == SQLUnionOperator.UNION || unionOperator == SQLUnionOperator.DISTINCT;
+    }
+
     private void handleHavingCondition(SQLExpr havingExpr) {
-        MySQLItemVisitor mev = new MySQLItemVisitor(currentDb, this.charsetIndex);
+        MySQLItemVisitor mev = new MySQLItemVisitor(currentDb, this.charsetIndex, this.metaManager);
         havingExpr.accept(mev);
         Item havingFilter = mev.getItem();
         if (this.tableNode == null) {
             throw new IllegalArgumentException("from expression is null,check the sql!");
+        }
+        if (havingFilter.isWithSubQuery()) {
+            tableNode.setWithSubQuery(true);
+            tableNode.setContainsSubQuery(true);
+            tableNode.setCorrelatedSubQuery(havingFilter.isCorrelatedSubQuery());
         }
         this.tableNode = this.tableNode.having(havingFilter);
 

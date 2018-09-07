@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -28,7 +28,7 @@ public class MySQLConnectionFactory extends BackendConnectionFactory {
         DBHostConfig dsc = pool.getConfig();
         NetworkChannel channel = openSocketChannel(DbleServer.getInstance().isAIO());
 
-        MySQLConnection c = new MySQLConnection(channel, pool.isReadNode());
+        MySQLConnection c = new MySQLConnection(channel, pool.isReadNode(), schema == null);
         c.setSocketParams(false);
         c.setHost(dsc.getIp());
         c.setPort(dsc.getPort());

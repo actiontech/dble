@@ -1,10 +1,13 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
 package com.actiontech.dble.backend.heartbeat;
 
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
 import com.actiontech.dble.config.model.DataHostConfig;
@@ -13,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -42,9 +46,6 @@ public class MySQLHeartbeat extends DBHeartbeat {
         return source;
     }
 
-    public MySQLDetector getDetector() {
-        return detector;
-    }
 
     public long getTimeout() {
         if (detector == null) {
@@ -78,9 +79,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
         reentrantLock.lock();
         try {
             if (isStop.compareAndSet(false, true)) {
-                if (isChecking.get()) {
-                    // nothing
-                } else {
+                if (!isChecking.get()) {
                     if (detector != null) {
                         detector.quit();
                         isChecking.set(false);
@@ -95,6 +94,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
     /**
      * execute heart beat
      */
+    @Override
     public void heartbeat() {
         final ReentrantLock reentrantLock = this.lock;
         reentrantLock.lock();
@@ -106,8 +106,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
                         detector.heartbeat();
                     } catch (Exception e) {
                         LOGGER.info(source.getConfig().toString(), e);
-                        setResult(ERROR_STATUS, null);
-                        return;
+                        setResult(ERROR_STATUS);
                     }
                 } else {
                     detector.heartbeat();
@@ -117,7 +116,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
                     if (detector.isQuit()) {
                         isChecking.compareAndSet(true, false);
                     } else if (detector.isHeartbeatTimeout()) {
-                        setResult(TIMEOUT_STATUS, null);
+                        setResult(TIMEOUT_STATUS);
                     }
                 }
             }
@@ -126,7 +125,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
         }
     }
 
-    public void setResult(int result, String msg) {
+    void setResult(int result) {
         this.isChecking.set(false);
         switch (result) {
             case OK_STATUS:
@@ -142,11 +141,17 @@ public class MySQLHeartbeat extends DBHeartbeat {
                 break;
         }
         if (this.status != OK_STATUS) {
+            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getHostConfig().getName() + "-" + this.source.getConfig().getHostName());
+            AlertUtil.alert(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "heartbeat status:" + this.status, "mysql", this.source.getConfig().getId(), labels);
             switchSourceIfNeed("heartbeat error");
         }
     }
 
     private void setOk() {
+        if (this.status != OK_STATUS) {
+            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getHostConfig().getName() + "-" + this.source.getConfig().getHostName());
+            AlertUtil.alertResolve(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "mysql", this.source.getConfig().getId(), labels);
+        }
         switch (status) {
             case TIMEOUT_STATUS:
                 this.status = INIT_STATUS;

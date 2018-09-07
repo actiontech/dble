@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -35,7 +35,7 @@ public class ItemFuncGe extends ItemBoolFunc2 {
     @Override
     public BigInteger valInt() {
         int value = cmp.compare();
-        return value >= 0 ? BigInteger.ONE : BigInteger.ZERO;
+        return value >= 0 && !nullValue ? BigInteger.ONE : BigInteger.ZERO;
     }
 
     @Override

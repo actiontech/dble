@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -21,6 +21,9 @@ public final class ManagerParseReload {
     public static final int SQL_SLOW = 6;
     public static final int META_DATA = 7;
     public static final int QUERY_CF = 8;
+    public static final int SLOW_QUERY_TIME = 9;
+    public static final int SLOW_QUERY_FLUSH_PERIOD = 10;
+    public static final int SLOW_QUERY_FLUSH_SIZE = 11;
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -41,7 +44,7 @@ public final class ManagerParseReload {
         return OTHER;
     }
 
-    static int reload2Check(String stmt, int offset) {
+    private static int reload2Check(String stmt, int offset) {
         if (stmt.length() > ++offset && stmt.charAt(offset) == '@' && stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
                 case 'C':
@@ -66,20 +69,18 @@ public final class ManagerParseReload {
         return OTHER;
     }
 
-    static boolean isConfig(String stmt, int offset) {
+    private static boolean isConfig(String stmt, int offset) {
         if (stmt.length() == ++offset)
             return true;
 
         char c1 = stmt.charAt(offset);
-        if ((c1 == ' ') || (c1 == '\t') || (c1 == '\r') || (c1 == '\n') || (c1 == '_') || (c1 == '-'))
-            return true;
+        return (c1 == ' ') || (c1 == '\t') || (c1 == '\r') || (c1 == '\n') || (c1 == '_') || (c1 == '-');
 
-        return false;
     }
 
     // RELOAD @@CONFIG
     // Please comply with the specification: offset retain the last position that has been checked.
-    static int reload2CCheck(String stmt, int offset) {
+    private static int reload2CCheck(String stmt, int offset) {
         if (stmt.length() > offset + 5) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -97,7 +98,7 @@ public final class ManagerParseReload {
     }
 
     // RELOAD @@USER
-    static int reload2UCheck(String stmt, int offset) {
+    private static int reload2UCheck(String stmt, int offset) {
         if (stmt.length() > offset + 3) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -120,21 +121,112 @@ public final class ManagerParseReload {
         return OTHER;
     }
 
+    // RELOAD @@S
+    private static int reload2SCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 1) {
+
+            switch (stmt.charAt(++offset)) {
+                case 'Q':
+                case 'q':
+                    return reload2SQCheck(stmt, offset);
+                case 'L':
+                case 'l':
+                    return reload2SLCheck(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
     // RELOAD @@SQL
-    static int reload2SCheck(String stmt, int offset) {
-        if (stmt.length() > offset + 6) {
+    private static int reload2SLCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 10) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            char c9 = stmt.charAt(++offset);
+            char c10 = stmt.charAt(++offset);
+
+            // reload @@slow_query
+            if ((c1 == 'O' || c1 == 'o') && (c2 == 'W' || c2 == 'w') && (c3 == '_') &&
+                    (c4 == 'Q' || c4 == 'q') && (c5 == 'U' || c5 == 'u') && (c6 == 'E' || c6 == 'e') &&
+                    (c7 == 'R' || c7 == 'r') && (c8 == 'Y' || c8 == 'y') && (c9 == '.') &&
+                    (stmt.length() > offset)) {
+                switch (c10) {
+                    case 'T':
+                    case 't':
+                        return slowQueryTimeCheck(stmt, offset);
+                    case 'F':
+                    case 'f':
+                        return slowQueryFlushCheck(stmt, offset);
+                    default:
+                        return OTHER;
+                }
+            }
+        }
+        return OTHER;
+    }
+
+    // RELOAD @@SQL
+    private static int reload2SQCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 5) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
 
             // reload @@sqlslow
-            if ((c1 == 'Q' || c1 == 'q') && (c2 == 'L' || c2 == 'l') && (c3 == 's' || c3 == 'S') &&
-                    (c4 == 'L' || c4 == 'l') && (c5 == 'O' || c5 == 'o') && (c6 == 'W' || c6 == 'w') &&
-                    stmt.length() > ++offset && stmt.charAt(offset) != ' ') {
-                return SQL_SLOW;
+            if ((c1 == 'L' || c1 == 'l') && (c2 == 's' || c2 == 'S') &&
+                    (c3 == 'L' || c3 == 'l') && (c4 == 'O' || c4 == 'o') && (c5 == 'W' || c5 == 'w') &&
+                    (stmt.length() > ++offset)) {
+                return (offset << 8) | SQL_SLOW;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int slowQueryTimeCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 3) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+
+            // reload @@slow_query.time
+            if ((c1 == 'I' || c1 == 'i') && (c2 == 'M' || c2 == 'm') && (c3 == 'E' || c3 == 'e') &&
+                    (stmt.length() > ++offset)) {
+                return (offset << 8) | SLOW_QUERY_TIME;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int slowQueryFlushCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 4) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+
+            // reload @@slowquery.flush
+            if ((c1 == 'L' || c1 == 'l') && (c2 == 'U' || c2 == 'u') && (c3 == 's' || c3 == 'S') &&
+                    (c4 == 'H' || c4 == 'h')) {
+                switch (stmt.charAt(++offset)) {
+                    case 'S':
+                    case 's':
+                        return slowQueryFlushSizeCheck(stmt, offset);
+                    case 'p':
+                    case 'P':
+                        return slowQueryFlushPeriodCheck(stmt, offset);
+                    default:
+                        return OTHER;
+                }
             }
 
             return OTHER;
@@ -142,8 +234,40 @@ public final class ManagerParseReload {
         return OTHER;
     }
 
+    private static int slowQueryFlushSizeCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 3) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+
+            // reload @@slow_query.flushsize
+            if ((c1 == 'I' || c1 == 'i') && (c2 == 'Z' || c2 == 'z') &&
+                    (c3 == 'E' || c3 == 'e') && (stmt.length() > ++offset)) {
+                return (offset << 8) | SLOW_QUERY_FLUSH_SIZE;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int slowQueryFlushPeriodCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 5) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+
+            // reload @@slow_query.flushperiod
+            if ((c1 == 'E' || c1 == 'e') && (c2 == 'R' || c2 == 'r') && (c3 == 'I' || c3 == 'i') &&
+                    (c4 == 'O' || c4 == 'o') && (c5 == 'D' || c5 == 'd') && (stmt.length() > ++offset)) {
+                return (offset << 8) | SLOW_QUERY_FLUSH_PERIOD;
+            }
+        }
+        return OTHER;
+    }
+
     // RELOAD @@METADATA
-    static int reload2MCheck(String stmt, int offset) {
+    private static int reload2MCheck(String stmt, int offset) {
         if (stmt.length() > offset + 7) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -165,7 +289,7 @@ public final class ManagerParseReload {
     }
 
     // RELOAD @@QUERY
-    static int reload2QCheck(String stmt, int offset) {
+    private static int reload2QCheck(String stmt, int offset) {
         if (stmt.length() > offset + 7) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);

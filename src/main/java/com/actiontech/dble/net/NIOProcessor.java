@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -12,7 +12,6 @@ import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.statistic.CommandCount;
-import com.actiontech.dble.util.NameableExecutor;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +33,6 @@ public final class NIOProcessor {
 
     private final String name;
     private final BufferPool bufferPool;
-    private final NameableExecutor executor;
     private final ConcurrentMap<Long, FrontendConnection> frontends;
     private final ConcurrentMap<Long, BackendConnection> backends;
     private final CommandCount commands;
@@ -46,11 +44,9 @@ public final class NIOProcessor {
 
     private AtomicInteger frontEndsLength = new AtomicInteger(0);
 
-    public NIOProcessor(String name, BufferPool bufferPool,
-                        NameableExecutor executor) throws IOException {
+    public NIOProcessor(String name, BufferPool bufferPool) throws IOException {
         this.name = name;
         this.bufferPool = bufferPool;
-        this.executor = executor;
         this.frontends = new ConcurrentHashMap<>();
         this.backends = new ConcurrentHashMap<>();
         this.commands = new CommandCount();
@@ -76,10 +72,6 @@ public final class NIOProcessor {
         }
         return total;
 
-    }
-
-    public NameableExecutor getExecutor() {
-        return this.executor;
     }
 
     public CommandCount getCommands() {

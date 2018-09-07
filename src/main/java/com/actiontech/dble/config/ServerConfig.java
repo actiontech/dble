@@ -1,24 +1,31 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
 package com.actiontech.dble.config;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.config.model.*;
+import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
-import com.actiontech.dble.log.alarm.AlarmCode;
+import com.actiontech.dble.route.sequence.handler.DistributedSequenceHandler;
+import com.actiontech.dble.route.sequence.handler.IncrSequenceMySQLHandler;
+import com.actiontech.dble.route.sequence.handler.IncrSequenceTimeHandler;
+import com.actiontech.dble.route.sequence.handler.IncrSequenceZKHandler;
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
+import java.sql.SQLNonTransientException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -34,7 +41,6 @@ public class ServerConfig {
     private static final int ROLLBACK = 2;
     private static final int RELOAD_ALL = 3;
 
-    private volatile AlarmConfig alarm;
     private volatile SystemConfig system;
     private volatile FirewallConfig firewall;
     private volatile FirewallConfig firewall2;
@@ -59,7 +65,6 @@ public class ServerConfig {
     public ServerConfig() {
         //read schema.xml,rule.xml and server.xml
         ConfigInitializer confInit = new ConfigInitializer(true, false);
-        this.alarm = confInit.getAlarm();
         this.system = confInit.getSystem();
         this.users = confInit.getUsers();
         this.schemas = confInit.getSchemas();
@@ -76,7 +81,33 @@ public class ServerConfig {
         this.status = RELOAD;
 
         this.lock = new ReentrantLock();
-        confInit.testConnection(true);
+        try {
+            confInit.testConnection(true);
+        } catch (ConfigException e) {
+            LOGGER.warn("TestConnection fail", e);
+            AlertUtil.alertSelf(AlarmCode.TEST_CONN_FAIL, Alert.AlertLevel.WARN, "TestConnection fail:" + e.getMessage(), null);
+        }
+    }
+
+
+    public ServerConfig(ConfigInitializer confInit) {
+        //read schema.xml,rule.xml and server.xml
+        this.system = confInit.getSystem();
+        this.users = confInit.getUsers();
+        this.schemas = confInit.getSchemas();
+        this.dataHosts = confInit.getDataHosts();
+        this.dataNodes = confInit.getDataNodes();
+        this.erRelations = confInit.getErRelations();
+        this.dataHostWithoutWR = confInit.isDataHostWithoutWH();
+        ConfigUtil.setSchemasForPool(dataHosts, dataNodes);
+
+        this.firewall = confInit.getFirewall();
+
+        this.reloadTime = TimeUtil.currentTimeMillis();
+        this.rollbackTime = -1L;
+        this.status = RELOAD;
+
+        this.lock = new ReentrantLock();
     }
 
     private void waitIfChanging() {
@@ -120,10 +151,6 @@ public class ServerConfig {
         return dataNodes;
     }
 
-    public AlarmConfig getAlarm() {
-        waitIfChanging();
-        return alarm;
-    }
 
     public Map<String, PhysicalDBNode> getBackupDataNodes() {
         waitIfChanging();
@@ -182,7 +209,7 @@ public class ServerConfig {
     public void reload(Map<String, UserConfig> newUsers, Map<String, SchemaConfig> newSchemas,
                        Map<String, PhysicalDBNode> newDataNodes, Map<String, PhysicalDBPool> newDataHosts,
                        Map<ERTable, Set<ERTable>> newErRelations, FirewallConfig newFirewall,
-                       SystemVariables newSystemVariables, boolean newDataHostWithoutWR, boolean reloadAll) {
+                       SystemVariables newSystemVariables, boolean newDataHostWithoutWR, boolean reloadAll) throws SQLNonTransientException {
 
         apply(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall,
                 newSystemVariables, newDataHostWithoutWR, reloadAll);
@@ -200,7 +227,7 @@ public class ServerConfig {
 
     public void rollback(Map<String, UserConfig> backupUsers, Map<String, SchemaConfig> backupSchemas,
                          Map<String, PhysicalDBNode> backupDataNodes, Map<String, PhysicalDBPool> backupDataHosts,
-                         Map<ERTable, Set<ERTable>> backupErRelations, FirewallConfig backFirewall, boolean backDataHostWithoutWR) {
+                         Map<ERTable, Set<ERTable>> backupErRelations, FirewallConfig backFirewall, boolean backDataHostWithoutWR) throws SQLNonTransientException {
 
         apply(backupUsers, backupSchemas, backupDataNodes, backupDataHosts, backupErRelations, backFirewall,
                 DbleServer.getInstance().getSystemVariables(), backDataHostWithoutWR, status == RELOAD_ALL);
@@ -214,9 +241,16 @@ public class ServerConfig {
                        Map<String, PhysicalDBPool> newDataHosts,
                        Map<ERTable, Set<ERTable>> newErRelations,
                        FirewallConfig newFirewall, SystemVariables newSystemVariables,
-                       boolean newDataHostWithoutWR, boolean isLoadAll) {
+                       boolean newDataHostWithoutWR, boolean isLoadAll) throws SQLNonTransientException {
+        final ReentrantLock metaLock = DbleServer.getInstance().getTmManager().getMetaLock();
+        metaLock.lock();
         this.changing = true;
         try {
+            if (DbleServer.getInstance().getTmManager().getMetaCount() != 0) {
+                String msg = "There is other session is doing DDL";
+                LOGGER.warn(msg);
+                throw new SQLNonTransientException(msg, "HY000", ErrorCode.ER_DOING_DDL);
+            }
             // old data host
             // 1 stop heartbeat
             // 2 backup
@@ -239,11 +273,6 @@ public class ServerConfig {
             this.firewall2 = this.firewall;
             this.erRelations2 = this.erRelations;
             this.dataHostWithoutWR2 = this.dataHostWithoutWR;
-            // TODO:comment BY huqing.yan and will reopen later
-            //if (!isLoadAll) {
-            //    DsDiff diff = dsdiff(newDataHosts);
-            //    diff.apply();
-            //}
 
             // new data host
             // 1 start heartbeat
@@ -253,7 +282,8 @@ public class ServerConfig {
                 if (newDataHosts != null) {
                     for (PhysicalDBPool newDbPool : newDataHosts.values()) {
                         if (newDbPool != null && !newDataHostWithoutWR) {
-                            DbleServer.getInstance().saveDataHostIndex(newDbPool.getHostName(), newDbPool.getActiveIndex());
+                            DbleServer.getInstance().saveDataHostIndex(newDbPool.getHostName(), newDbPool.getActiveIndex(),
+                                    this.system.isUseZKSwitch() && DbleServer.getInstance().isUseZK());
                             newDbPool.startHeartbeat();
                         }
                     }
@@ -270,18 +300,13 @@ public class ServerConfig {
             this.firewall = newFirewall;
             this.erRelations = newErRelations;
             DbleServer.getInstance().getCacheService().clearCache();
+            this.changing = false;
             if (!newDataHostWithoutWR) {
-                DbleServer.getInstance().setMetaChanging(true);
+                DbleServer.getInstance().reloadMetaData(this);
             }
         } finally {
             this.changing = false;
-        }
-        if (!newDataHostWithoutWR) {
-            try {
-                DbleServer.getInstance().reloadMetaData(this);
-            } finally {
-                DbleServer.getInstance().setMetaChanging(false);
-            }
+            metaLock.unlock();
         }
     }
 
@@ -299,174 +324,119 @@ public class ServerConfig {
         this.erRelations = newErRelations;
     }
 
-    private DsDiff dsdiff(Map<String, PhysicalDBPool> newDataHosts) {
-        DsDiff diff = new DsDiff();
-        // deleted datasource
-        for (PhysicalDBPool opool : dataHosts.values()) {
-            PhysicalDBPool npool = newDataHosts.get(opool.getHostName());
-            if (npool == null) {
-                LOGGER.info("reload -delete- failed, use old datasources ");
-                return null;
-            }
 
-            Map<Integer, PhysicalDatasource[]> odss = opool.getReadSources();
-            Map<Integer, PhysicalDatasource[]> ndss = npool.getReadSources();
-            Map<Integer, ArrayList<PhysicalDatasource>> idel = new HashMap<>(2);
-            boolean haveOne = false;
-            for (Map.Entry<Integer, PhysicalDatasource[]> oentry : odss.entrySet()) {
-                boolean doadd = false;
-                ArrayList<PhysicalDatasource> del = new ArrayList<>();
-                for (PhysicalDatasource ods : oentry.getValue()) {
-                    boolean dodel = true;
-                    for (Map.Entry<Integer, PhysicalDatasource[]> nentry : ndss.entrySet()) {
-                        for (PhysicalDatasource nds : nentry.getValue()) {
-                            if (ods.getName().equals(nds.getName())) {
-                                dodel = false;
-                                break;
-                            }
-                        }
-                        if (!dodel) {
-                            break;
-                        }
-                    }
-                    if (dodel) {
-                        del.add(ods);
-                        doadd = true;
-                    }
-                }
-                if (doadd) {
-                    idel.put(oentry.getKey(), del);
-                    haveOne = true;
-                }
-            }
-            if (haveOne) {
-                diff.deled.put(opool, idel);
+    /**
+     * turned all the config into lowerCase config
+     */
+    public void reviseLowerCase() {
+
+        //user schema
+        for (UserConfig uc : users.values()) {
+            if (uc.getPrivilegesConfig() != null) {
+                uc.getPrivilegesConfig().changeMapToLowerCase();
+                uc.changeMapToLowerCase();
             }
         }
 
-        // added datasource
-        if (addedDatasource(newDataHosts, diff)) return null;
+        //dataNode
+        for (PhysicalDBNode physicalDBNode : dataNodes.values()) {
+            physicalDBNode.toLowerCase();
+        }
 
-        return diff;
+        //schemas
+        Map<String, SchemaConfig> newSchemas = new HashMap<>();
+        for (Map.Entry<String, SchemaConfig> entry : schemas.entrySet()) {
+            SchemaConfig newSchema = new SchemaConfig(entry.getValue());
+            newSchemas.put(entry.getKey().toLowerCase(), newSchema);
+        }
+        this.schemas = newSchemas;
+
+
+        if (erRelations != null) {
+            HashMap<ERTable, Set<ERTable>> newErMap = new HashMap<ERTable, Set<ERTable>>();
+            for (Map.Entry<ERTable, Set<ERTable>> entry : erRelations.entrySet()) {
+                ERTable key = entry.getKey();
+                Set<ERTable> value = entry.getValue();
+
+                Set<ERTable> newValues = new HashSet<>();
+                for (ERTable table : value) {
+                    newValues.add(table.changeToLowerCase());
+                }
+
+                newErMap.put(key.changeToLowerCase(), newValues);
+            }
+
+            erRelations = newErMap;
+        }
+        loadSequence();
+        selfChecking0();
+
     }
 
-    private boolean addedDatasource(Map<String, PhysicalDBPool> newDataHosts, DsDiff diff) {
-        for (PhysicalDBPool npool : newDataHosts.values()) {
-            PhysicalDBPool opool = dataHosts.get(npool.getHostName());
-            if (opool == null) {
-                LOGGER.warn(AlarmCode.CORE_GENERAL_WARN + "reload -add- failed, use old datasources ");
-                return true;
-            }
-
-            Map<Integer, PhysicalDatasource[]> ndss = npool.getReadSources();
-            Map<Integer, PhysicalDatasource[]> odss = opool.getReadSources();
-            Map<Integer, ArrayList<PhysicalDatasource>> iadd =
-                    new HashMap<>(2);
-            boolean haveOne = false;
-            for (Map.Entry<Integer, PhysicalDatasource[]> nentry : ndss.entrySet()) {
-                boolean doadd = false;
-                ArrayList<PhysicalDatasource> add = new ArrayList<>();
-                for (PhysicalDatasource nds : nentry.getValue()) {
-                    boolean isExist = false;
-                    for (Map.Entry<Integer, PhysicalDatasource[]> oentry : odss.entrySet()) {
-                        for (PhysicalDatasource ods : oentry.getValue()) {
-                            if (nds.getName().equals(ods.getName())) {
-                                isExist = true;
-                                break;
-                            }
-                        }
-                        if (isExist) {
-                            break;
-                        }
-                    }
-                    if (!isExist) {
-                        add.add(nds);
-                        doadd = true;
-                    }
-                }
-                if (doadd) {
-                    iadd.put(nentry.getKey(), add);
-                    haveOne = true;
-                }
-            }
-            if (haveOne) {
-                diff.added.put(opool, iadd);
-            }
-        }
-        return false;
-    }
-
-    private static class DsDiff {
-        private Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> deled;
-        private Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> added;
-
-        DsDiff() {
-            deled = new HashMap<>(2);
-            added = new HashMap<>(2);
+    public void loadSequence() {
+        //load global sequence
+        if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_MYSQL) {
+            IncrSequenceMySQLHandler.getInstance().load(DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
         }
 
-        public void apply() {
-            // delete
-            for (Map.Entry<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> lentry : deled.entrySet()) {
-                for (Map.Entry<Integer, ArrayList<PhysicalDatasource>> llentry : lentry.getValue().entrySet()) {
-                    for (int i = 0; i < llentry.getValue().size(); i++) {
-                        // lentry.getKey().delRDs(llentry.getValue().get(i));
-                        llentry.getValue().get(i).setDying();
-                    }
-                }
-            }
-
-            // add
-            for (Map.Entry<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> lentry : added.entrySet()) {
-                for (Map.Entry<Integer, ArrayList<PhysicalDatasource>> llentry : lentry.getValue().entrySet()) {
-                    for (int i = 0; i < llentry.getValue().size(); i++) {
-                        lentry.getKey().addRDs(llentry.getKey(), llentry.getValue().get(i));
-                    }
-                }
-            }
-
-            // sleep
-            ArrayList<PhysicalDatasource> killed = new ArrayList<>(2);
-            for (Map.Entry<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> lentry : deled.entrySet()) {
-                for (Map.Entry<Integer, ArrayList<PhysicalDatasource>> llentry : lentry.getValue().entrySet()) {
-                    for (int i = 0; i < llentry.getValue().size(); i++) {
-                        if (llentry.getValue().get(i).getActiveCount() != 0) {
-                            killed.add(llentry.getValue().get(i));
-                        }
-                    }
-                }
-            }
-            if (!killed.isEmpty()) {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException ignore) {
-                    //ignore error
-                }
-
-                for (PhysicalDatasource aKilled : killed) {
-                    if (aKilled.getActiveCount() != 0) {
-                        aKilled.clearConsByDying();
-                    }
-                }
-            }
+        if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_LOCAL_TIME) {
+            IncrSequenceTimeHandler.getInstance().load();
         }
 
-        public Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> getDeled() {
-            return deled;
+        if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_ZK_DISTRIBUTED) {
+            DistributedSequenceHandler.getInstance().load();
         }
 
-        public void setDeled(Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> deled) {
-            this.deled = deled;
-        }
-
-        public Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> getAdded() {
-            return added;
-        }
-
-        public void setAdded(Map<PhysicalDBPool, Map<Integer, ArrayList<PhysicalDatasource>>> added) {
-            this.added = added;
+        if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT) {
+            IncrSequenceZKHandler.getInstance().load(DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
         }
     }
+
+    public void selfChecking0() throws ConfigException {
+        // check 1.user's schemas are all existed in schema's conf
+        // 2.schema's conf is not empty
+        if (users == null || users.isEmpty()) {
+            throw new ConfigException("SelfCheck### user all node is empty!");
+        } else {
+            for (UserConfig uc : users.values()) {
+                if (uc == null) {
+                    throw new ConfigException("SelfCheck### users node within the item is empty!");
+                }
+                if (!uc.isManager()) {
+                    Set<String> authSchemas = uc.getSchemas();
+                    if (authSchemas == null) {
+                        throw new ConfigException("SelfCheck### user " + uc.getName() + "referred schemas is empty!");
+                    }
+                    for (String schema : authSchemas) {
+                        if (!schemas.containsKey(schema)) {
+                            String errMsg = "SelfCheck###  schema " + schema + " referred by user " + uc.getName() + " is not exist!";
+                            throw new ConfigException(errMsg);
+                        }
+                    }
+                }
+            }
+        }
+
+        // check schema
+        for (SchemaConfig sc : schemas.values()) {
+            if (null == sc) {
+                throw new ConfigException("SelfCheck### schema all node is empty!");
+            } else {
+                // check dataNode / dataHost
+                if (this.dataNodes != null && this.dataHosts != null) {
+                    Set<String> dataNodeNames = sc.getAllDataNodes();
+                    for (String dataNodeName : dataNodeNames) {
+                        PhysicalDBNode node = this.dataNodes.get(dataNodeName);
+                        if (node == null) {
+                            throw new ConfigException("SelfCheck### schema dataNode[" + dataNodeName + "] is empty!");
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
 }
 
 

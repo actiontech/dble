@@ -1,0 +1,393 @@
+syntax = "proto3";
+option java_multiple_files = false;
+option java_package = "com.actiontech.dble.alarm";
+option java_outer_classname = "UcoreInterface";
+option objc_class_prefix = "ucore";
+
+package ucore;
+
+service Ucore {
+
+  // PutKv guarantee atomic.
+  rpc PutKv(PutKvInput) returns(Empty){}
+
+  // GetKv guarantee atomic.
+  rpc GetKv(GetKvInput) returns(GetKvOutput){}
+
+  // DeleteKv guarantee atomic.
+  rpc DeleteKv(DeleteKvInput) returns(Empty){}
+
+  // DeleteKvs guarantee atomic.
+  rpc DeleteKvs(DeleteKvsInput) returns(Empty){}
+
+  // DeleteKvTree guarantee atomic.
+  rpc DeleteKvTree(DeleteKvTreeInput) returns(Empty){}
+
+  // SubscribeKv returns when k-v changes or timeout.
+  rpc SubscribeKv(SubscribeKvInput) returns(SubscribeKvOutput){}
+
+  // SubscribeKvPrefix returns when k-v with prefix changes or timeout.
+  rpc SubscribeKvPrefix(SubscribeKvPrefixInput) returns(SubscribeKvPrefixOutput){}
+
+  // SubscribeKvPrefixs subscribe multi k-v prefixs, returns targets changes or timeout.
+  rpc SubscribeKvPrefixs(SubscribeKvPrefixsInput) returns(SubscribeKvPrefixsOutput){}
+
+  // SubscribeKvPrefixs returns when consul nodes changes or timeout.
+  rpc SubscribeNodes(SubscribeNodesInput) returns(SubscribeNodesOutput){}
+
+  // GetKvTree guarantee atomic.
+  rpc GetKvTree(GetKvTreeInput) returns(GetKvTreeOutput){}
+
+  // GetKvTreeRaw guarantee atomic.
+  rpc GetKvTreeRaw(GetKvTreeInput) returns(GetKvTreeOutput){}
+
+  // ListKvKeys guarantee atomic.
+  rpc ListKvKeys(ListKvKeysInput) returns(ListKvKeysOutput){}
+
+  // PutKvs guarantee atomic.
+  rpc PutKvs(PutKvsInput) returns(Empty){}
+
+  // ServiceHeartbeat, ucore-guarded service should report heartbeat via `ServiceHeartbeat`.
+  rpc ServiceHeartbeat(ServiceHeartbeatInput) returns(Empty){}
+
+  // RegisterService mark service as ucore-guarded service.
+  rpc RegisterService(RegisterServiceInput) returns(Empty){}
+
+  // UpdateConfigStart is of 3-phase commit.
+  rpc UpdateConfigStart(UpdateConfigStartInput) returns(UpdateConfigStartOutput){}
+
+  // UpdateConfigCommit is of 3-phase commit.
+  rpc UpdateConfigCommit(UpdateConfigCommitInput) returns(Empty){}
+
+  // UpdateConfigRollback is of 3-phase commit.
+  rpc UpdateConfigRollback(UpdateConfigRollbackInput) returns(Empty){}
+
+  // Alert record an alert message in consul, alertmanager should send notification after some time.
+  rpc Alert(AlertInput) returns(Empty){}
+
+  // AlertResolve mark some alerts as resolved.
+  rpc AlertResolve(AlertInput) returns(Empty){}
+
+  // AlertResolveByFingerprint mark the alert as resolved.
+  rpc AlertResolveByFingerprint(AlertResolveByFingerprintInput) returns(Empty){}
+
+  rpc GetUnresolvedAlertsNum(GetUnresolvedAlertsNumInput) returns(GetUnresolvedAlertsNumOutput){}
+
+  rpc SendAlertTestMessage(SendAlertTestMessageInput) returns(Empty){}
+
+  // GetUsage returns ucore rpc call usages.
+  rpc GetUsage(Empty) returns(GetUsageOutput){}
+  rpc RequestServerCertificate(RequestServerCertificateInput) returns(RequestServerCertificateOutput){}
+  rpc GetCaCertificate(Empty) returns(GetCaCertificateOutput){}
+
+  // IsUcoreInit returns if consul is started.
+  rpc IsUcoreInit(Empty) returns(Empty){}
+
+  // Collect local nodes infos
+  rpc CollectClusterInfos (CollectClusterInfosInput) returns (CollectClusterInfosOutput) {}
+
+  // UcoreHealthCheck check health of ucore and if its leader
+  rpc UcoreHealthCheck (Empty) returns (Empty) {}
+
+  // ListKvNextLevelRaw not guarantee atomic.
+  rpc ListKvNextLevelRaw(ListKvNextLevelRawInput) returns(ListKvNextLevelRawOutput){}
+
+  // ListKvByPathRaw not guarantee atomic.
+  rpc ListKvByPathRaw(ListKvByPathRawInput) returns(ListKvByPathRawOutput){}
+
+  rpc ReportUguardExerciseResult (ReportUguardExerciseResultInput) returns (Empty){}
+
+  rpc UcoreLearder(Empty)returns(UcoreLearderOutput){}
+
+  // GetUcoreStats get ucore cluster status
+  rpc GetUcoreStats (Empty) returns (GetUcoreStatsOutput) {}
+
+  rpc ForceLeaveUcore(ForceLeaveUcoreInput) returns (Empty){}
+
+  rpc GetKvTreeWithLimit(GetKvTreeWithLimitInput)returns(GetKvTreeWithLimitOutput){}
+
+  rpc GetKvsTree(GetKvsTreeInput)returns (GetKvsTreeOutput){}
+
+  rpc LockOnSession(LockOnSessionInput) returns(LockOnSessionOutput){}
+  rpc RenewSession(RenewSessionInput) returns(Empty){}
+  rpc UnlockOnSession(UnlockOnSessionInput) returns(Empty){}
+}
+
+message Empty {
+}
+
+message GetUsageOutput{
+  map<string, uint32> Usage = 1;
+}
+
+message PutKvInput{
+  string Key = 1;
+  string Value = 2;
+}
+
+message GetKvInput{
+  string Key = 1;
+}
+
+message GetKvOutput{
+  string Value = 1;
+}
+
+message DeleteKvInput{
+  string Key = 1;
+}
+
+message SubscribeKvInput{
+  string Key = 1;
+  uint64 Index = 2;
+  uint32 Duration = 3;
+}
+
+message SubscribeKvOutput{
+  uint64 Index = 1;
+  string Value = 2;
+}
+
+message SubscribeNodesInput{
+  uint64 Index = 1;
+  uint32 Duration = 2;
+}
+
+message SubscribeNodesOutput{
+  uint64 Index = 1;
+  repeated string Ips = 2;
+}
+
+message SubscribeKvPrefixInput{
+  string KeyPrefix = 1;
+  uint64 Index = 2;
+  uint32 Duration = 3;
+}
+
+message SubscribeKvPrefixOutput{
+  uint64 Index = 1;
+  repeated string Keys = 2;
+  repeated string Values = 3;
+}
+
+message GetKvTreeInput{
+  string Key = 1;
+}
+
+message GetKvTreeOutput{
+  uint64 Index = 1;
+  repeated string Keys = 2;
+  repeated string Values = 3;
+}
+
+message ListKvKeysInput{
+  string Key = 1;
+}
+
+message ListKvKeysOutput{
+  uint64 Index = 1;
+  repeated string Keys = 2;
+}
+
+message PutKvsInput{
+  repeated string Keys = 1;
+  repeated string Values = 2;
+}
+
+message ServiceHeartbeatInput {
+  string Id = 1;
+}
+
+message RegisterServiceInput {
+  string Id = 1;
+  string Refer = 2;
+}
+
+message UpdateConfigStartInput {
+  string Id = 1;
+  repeated string InvolvedGroups = 2;
+  repeated string InvolvedInstances = 3;
+  repeated string ChangeKeys = 4;
+  repeated string ChangeValues = 5;
+  uint32 TimeoutSeconds = 6;
+  repeated string DeleteKeys = 7;
+  repeated string DeleteTrees = 8;
+}
+
+message UpdateConfigStartOutput {
+  string CanCommitMessage = 1;
+}
+
+message UpdateConfigCommitInput {
+  string Id = 1;
+}
+
+message UpdateConfigRollbackInput {
+  string Id = 1;
+}
+
+message DeleteKvsInput{
+  repeated string Keys = 1;
+}
+
+message DeleteKvTreeInput{
+  string Key = 1;
+}
+
+message AlertInput {
+  string Code = 1;
+  string Level = 2;
+  string Desc = 3;
+  string SourceComponentType = 4;
+  string SourceComponentId = 5;
+  string AlertComponentType = 6;
+  string AlertComponentId = 7;
+  string ServerId = 8;
+  map<string, string> Labels = 9;
+  map<string, string> Annotations = 10;
+  int64 TimestampUnix = 11;
+  int64 ResolveTimestampUnix = 12;
+}
+
+message AlertResolveByFingerprintInput {
+  string AlertFingerprint = 1;
+  int64 TimestampUnix = 2;
+}
+
+message SubscribeKvPrefixsInput{
+  repeated string KeyPrefixs = 1;
+  uint64 Index = 2;
+  uint32 Duration = 3;
+}
+
+message SubscribeKvPrefixsOutput{
+  uint64 Index = 1;
+}
+
+message SendAlertTestMessageInput{
+  string AlertReceiverConfigJson = 1;
+  string Message = 2;
+}
+
+message UniverseCheckIdDuplicateInput{
+  string Id = 1;
+}
+
+message UniverseCheckIdDuplicateOutput{
+  string DuplicateKey = 1;
+}
+
+message RequestServerCertificateInput{
+  string ServerId = 1;
+  repeated string ServerIps = 2;
+}
+
+message RequestServerCertificateOutput{
+  string Certificate = 1;
+  string PrivateKey = 2;
+}
+
+message GetCaCertificateOutput{
+  string Certificate = 1;
+}
+
+message CollectClusterInfosInput {
+  repeated string ips = 1;
+}
+
+message CollectClusterInfosOutput {
+  repeated string hardwareInfos = 1;
+}
+
+message ListKvNextLevelRawInput{
+  string Key = 1;
+}
+
+message ListKvNextLevelRawOutput{
+  map<string, string> Kvs = 1;
+}
+
+message ListKvByPathRawInput{
+  string Key = 1;
+}
+
+message ListKvByPathRawOutput{
+  map<string, string> Kvs = 1;
+}
+
+message ReportUguardExerciseResultInput{
+  map<string, bool> UguardAgentOnline = 1;
+  map<string, bool> UstatOnline = 2;
+  string ServerID = 3;
+  bool PromoteOk = 4;
+  string PromoteError = 5;
+  string CompID = 6;
+}
+
+message UcoreLearderOutput {
+  string NodeName = 1;
+  bool IsLeader = 2;
+}
+
+message GetUnresolvedAlertsNumOutput {
+  int64 Number = 1;
+  bool Overrange = 2;
+}
+
+message UcoreStats {
+    string name = 1;
+    string addr = 2;
+    string status = 3;
+    bool leader = 4;
+}
+
+message GetUcoreStatsOutput {
+    repeated UcoreStats stats = 1;
+}
+
+message ForceLeaveUcoreInput {
+  string CompId = 1;
+}
+
+message GetUnresolvedAlertsNumInput {
+  int64 maxRange = 1;
+}
+message GetKvTreeWithLimitInput{
+    string Key = 1;
+    uint32 Offset = 2;
+    uint32 Limit = 3;
+}
+
+message GetKvTreeWithLimitOutput{
+    bool more = 1;
+    map<string,string> Kvs = 2;
+}
+
+message GetKvsTreeInput{
+  repeated string Keys = 1;
+}
+
+message GetKvsTreeOutput{
+  map<string, string> Kvs = 1;
+  uint64 Index = 2;
+}
+
+message LockOnSessionInput {
+  string Key = 1;
+  string Value = 2;
+  uint64 TTLSeconds = 3;
+}
+
+message LockOnSessionOutput {
+  bool Locked = 1;
+  string SessionId = 2;
+}
+
+message RenewSessionInput {
+  string SessionId = 1;
+}
+
+message UnlockOnSessionInput {
+  string Key = 1;
+  string SessionId = 2;
+}

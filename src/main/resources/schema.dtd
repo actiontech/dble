@@ -16,10 +16,8 @@
         <!ELEMENT dble:schema (schema*,dataNode*,dataHost*)>
         <!ATTLIST dble:schema xmlns:dble CDATA #FIXED "http://dble.cloud/">
 
-        <!-- checkSQLschema will be ignored,just for compatibility -->
         <!ELEMENT schema (table*)>
         <!ATTLIST schema name NMTOKEN #REQUIRED>
-        <!ATTLIST schema checkSQLschema NMTOKEN #IMPLIED>
         <!ATTLIST schema dataNode CDATA #IMPLIED>
         <!ATTLIST schema sqlMaxLimit CDATA #IMPLIED>
 
@@ -46,19 +44,17 @@
         <!ATTLIST dataNode name CDATA #REQUIRED>
         <!ATTLIST dataNode dataHost CDATA #REQUIRED>
         <!ATTLIST dataNode database CDATA #REQUIRED>
-        <!-- writeType ,dbDriver and dbType will be ignored,just for compatibility -->
+
         <!ELEMENT dataHost (heartbeat,(writeHost)*)>
         <!ATTLIST dataHost
                 balance CDATA #REQUIRED
                 maxCon CDATA #REQUIRED
                 minCon CDATA #REQUIRED
                 name NMTOKEN #REQUIRED
-                switchType  CDATA #IMPLIED
-                slaveThreshold  CDATA #IMPLIED
+                switchType CDATA #IMPLIED
+                slaveThreshold CDATA #IMPLIED
                 tempReadHostAvailable CDATA #IMPLIED
-                writeType CDATA #IMPLIED
-                dbDriver CDATA #IMPLIED
-                dbType CDATA #IMPLIED>
+                keepOrig CDATA #IMPLIED>
 
         <!ELEMENT writeHost (readHost)*>
         <!ATTLIST writeHost
@@ -66,7 +62,9 @@
                 host NMTOKEN #REQUIRED
                 password CDATA #REQUIRED
                 user CDATA #REQUIRED
-                usingDecrypt CDATA #IMPLIED>
+                id CDATA #IMPLIED
+                usingDecrypt CDATA #IMPLIED
+                disabled CDATA #IMPLIED>
 
         <!ELEMENT heartbeat (#PCDATA)>
         <!ELEMENT connectionInitSql (#PCDATA)>
@@ -77,6 +75,8 @@
                 password CDATA #REQUIRED
                 user NMTOKEN #REQUIRED
                 weight CDATA #IMPLIED
-                usingDecrypt CDATA #IMPLIED>
+                id CDATA #IMPLIED
+                usingDecrypt CDATA #IMPLIED
+                disabled CDATA #IMPLIED>
 
 

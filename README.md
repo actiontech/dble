@@ -46,7 +46,7 @@ Read the [Roadmap](./docs/ROADMAP.md).
 Read the [Quick Start](./docs/QUICKSTART.md).
 
 ## Documentation
-+ [简体中文](https://github.com/actiontech/dble/wiki)
++ [简体中文](https://github.com/actiontech/dble-docs-cn)
 + English(Comming soon)
 
 ## Contributing
@@ -58,3 +58,13 @@ for details on submitting patches and the contribution workflow.
 
 * IRC: [![Visit our IRC channel](https://kiwiirc.com/buttons/irc.freenode.net/dble.png)](https://kiwiirc.com/client/irc.freenode.net/?nick=user|?&theme=cli#dble)
 * QQ group: 669663113
+* [If you use DBLE, please let us know.](https://wj.qq.com/s/2291106/09f4)
+
+## Contact us
+
+Dble has enterprise support plan, you may contact our sales team: 
+* Global Sales: 400-820-6580
+* North China: 86-13718877200, Mr.Wang
+* South China: 86-18503063188, Mr.Cao
+* East China: 86-18930110869, Mr.Liang
+* South-West China: 86-18328335660, Mr.Lei

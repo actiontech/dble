@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -55,5 +55,10 @@ public abstract class BackendAIOConnection extends AbstractConnection implements
 
     public String compactInfo() {
         return "BackendConnection host=" + host + ", port=" + port;
+    }
+
+    @Override
+    public void connectionCount() {
+        return;
     }
 }

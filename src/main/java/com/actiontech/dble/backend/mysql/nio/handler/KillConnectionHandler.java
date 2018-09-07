@@ -1,10 +1,13 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
 package com.actiontech.dble.backend.mysql.nio.handler;
 
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
@@ -34,17 +37,16 @@ public class KillConnectionHandler implements ResponseHandler {
     @Override
     public void connectionAcquired(BackendConnection conn) {
         conn.setResponseHandler(this);
-        CommandPacket packet = new CommandPacket();
-        packet.setPacketId(0);
-        packet.setCommand(MySQLPacket.COM_QUERY);
-        packet.setArg(("KILL " + toKilled.getThreadId()).getBytes());
-        MySQLConnection mysqlCon = (MySQLConnection) conn;
-        packet.write(mysqlCon);
+        conn.setSession(session);
+        ((MySQLConnection) conn).sendQueryCmd(("KILL " + toKilled.getThreadId()), session.getSource().getCharset());
     }
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        toKilled.close("exception:" + e.toString());
+        if (conn != null) {
+            AlertUtil.alertSelf(AlarmCode.KILL_BACKEND_CONN_FAIL, Alert.AlertLevel.NOTICE, "get killer connection " + conn.toString() + " failed:" + e.getMessage(), null);
+            toKilled.close("exception:" + e.toString());
+        }
     }
 
     @Override
@@ -63,7 +65,7 @@ public class KillConnectionHandler implements ResponseHandler {
         LOGGER.info("unexpected packet for " +
                 conn + " bound by " + session.getSource() +
                 ": field's eof");
-        conn.quit();
+        conn.close("close unexpected packet of killConnection");
         toKilled.close("killed");
     }
 
@@ -78,6 +80,7 @@ public class KillConnectionHandler implements ResponseHandler {
             msg = new String(err.getMessage());
         }
         LOGGER.info("kill backend connection " + toKilled + " failed: " + msg + " con:" + conn);
+        AlertUtil.alertSelf(AlarmCode.KILL_BACKEND_CONN_FAIL, Alert.AlertLevel.NOTICE, "get killer connection " + conn.toString() + " failed: " + msg, null);
         conn.release();
         toKilled.close("exception:" + msg);
     }
@@ -99,5 +102,7 @@ public class KillConnectionHandler implements ResponseHandler {
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
+        AlertUtil.alertSelf(AlarmCode.KILL_BACKEND_CONN_FAIL, Alert.AlertLevel.NOTICE, "get killer connection " + conn.toString() + " failed: connectionClosed", null);
+        toKilled.close("exception:" + reason);
     }
 }

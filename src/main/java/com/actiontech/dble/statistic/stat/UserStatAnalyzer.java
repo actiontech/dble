@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -44,7 +44,7 @@ public final class UserStatAnalyzer implements QueryResultListener {
                 long netOutBytes = query.getNetOutBytes();
                 long startTime = query.getStartTime();
                 long endTime = query.getEndTime();
-                int resultSetSize = query.getResultSize();
+                long resultSetSize = query.getResultSize();
                 UserStat userStat = userStatMap.get(user);
                 if (userStat == null) {
                     userStat = new UserStat(user);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -32,6 +32,7 @@ public abstract class OwnThreadDMLHandler extends BaseDMLHandler {
     public final void onTerminate() throws Exception {
         if (ownJobFlag.compareAndSet(false, true)) {
             // terminated before the thread started
+            recycleConn();
             recycleResources();
         } else { // thread started
             synchronized (ownThreadLock) {
@@ -44,6 +45,9 @@ public abstract class OwnThreadDMLHandler extends BaseDMLHandler {
 
     protected final void startEasyMerge() {
         ownJobFlag.compareAndSet(false, true);
+    }
+
+    protected void recycleConn() {
     }
 
     /**
@@ -60,6 +64,7 @@ public abstract class OwnThreadDMLHandler extends BaseDMLHandler {
                         ownThreadJob(objects);
                     } finally {
                         synchronized (ownThreadLock) {
+                            recycleConn();
                             preparedToRecycle = true;
                         }
                         recycleResources();

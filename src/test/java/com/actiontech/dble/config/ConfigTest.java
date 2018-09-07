@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -37,7 +37,7 @@ public class ConfigTest {
         String ruleFile = "/config/rule.xml";
 
         XMLSchemaLoader schemaLoader = new XMLSchemaLoader(schemaFile, ruleFile);
-        XMLConfigLoader configLoader = new XMLConfigLoader( false);
+        XMLConfigLoader configLoader = new XMLConfigLoader();
 
         this.system = configLoader.getSystemConfig();
         this.users = configLoader.getUserConfigs();
@@ -141,15 +141,7 @@ public class ConfigTest {
         Assert.assertTrue(hostConfig.isTempReadHostAvailable() == true);
     }
 
-    /**
-     * testReadUserBenchmark
-     */
-    @Test
-    public void testReadUserBenchmark() {
-        UserConfig userConfig = this.users.get("test");
-        int benchmark = userConfig.getBenchmark();
-        Assert.assertTrue(benchmark == 11111);
-    }
+    
 
 
     /**
@@ -202,7 +194,7 @@ public class ConfigTest {
             readSourcesMap.put(entry.getKey(), readSources);
         }
         PhysicalDBPool pool = new PhysicalDBPool(conf.getName(), conf, writeSources,
-                readSourcesMap, conf.getBalance());
+                readSourcesMap, new HashMap<Integer, PhysicalDatasource[]>(), conf.getBalance());
         return pool;
     }
 

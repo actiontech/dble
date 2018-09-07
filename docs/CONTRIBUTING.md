@@ -118,7 +118,11 @@ git fetch upstream
 git rebase upstream/master
 ```
 
-### Step 5: Commit
+### Step 5: CheckCodeStyle
+
+see [developer Notice](./DeveloperNotice.md)  
+
+### Step 6: Commit
 
 Commit your changes.
 
@@ -129,7 +133,7 @@ git commit
 Likely you'll go back and edit/build/test some more than `commit --amend`
 in a few cycles.
 
-### Step 6: Push
+### Step 7: Push
 
 When ready to review (or just to establish an off-site backup or your work),
 push your branch to your fork on `github.com`:
@@ -138,12 +142,12 @@ push your branch to your fork on `github.com`:
 git push -f origin yours-issue
 ```
 
-### Step 7: Create a pull request
+### Step 8: Create a pull request
 
 1. Visit your fork at https://github.com/$user/dble (replace `$user` obviously).
 2. Click the `Compare & pull request` button next to your `yours-issue` branch.
 
-#### Step 8: get a code review
+#### Step 9: get a code review
 
 Once your pull request has been opened, it will be assigned to at least one
 reviewers. Those reviewers will do a thorough code review, looking for

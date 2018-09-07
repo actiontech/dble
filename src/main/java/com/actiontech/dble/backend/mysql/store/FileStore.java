@@ -1,17 +1,20 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.backend.mysql.store;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.mysql.store.fs.FilePath;
 import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.util.exception.TmpFileException;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -22,7 +25,7 @@ import java.util.List;
 
 public class FileStore {
     private static final String SUFFIX_TEMP_FILE = ".temp.db";
-    private static Logger logger = Logger.getLogger(FileStore.class);
+    private static Logger logger = LoggerFactory.getLogger(FileStore.class);
 
     /**
      * The file path name.
@@ -238,7 +241,8 @@ public class FileStore {
                 this.files.add(path.open(mode));
                 this.fileNames.add(path.toString());
             } else {
-                logger.warn(AlarmCode.CORE_FILE_WRITE_WARN + "create file error :", e);
+                logger.warn("create file error :", e);
+                AlertUtil.alertSelf(AlarmCode.WRITE_TEMP_RESULT_FAIL, Alert.AlertLevel.WARN, "create file error:" + e.getMessage(), null);
                 throw e;
             }
         }

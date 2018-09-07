@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -30,174 +30,129 @@ public final class SystemConfig {
      */
     public static final String[] MYSQL_VERSIONS = {"5.5", "5.6", "5.7"};
 
-    private static final int DEFAULT_PORT = 8066;
-    private static final int DEFAULT_MANAGER_PORT = 9066;
-    private static final int DEFAULT_BACK_LOG_SIZE = 2048;
-    private static final String DEFAULT_CHARSET = "utf8";
-    private static final short DEFAULT_BUFFER_CHUNK_SIZE = 4096;
-    private static final int DEFAULT_BUFFER_POOL_PAGE_SIZE = 512 * 1024 * 4;
     private static final int DEFAULT_PROCESSORS = Runtime.getRuntime().availableProcessors();
-    private static final String MEMORY_PAGE_SIZE = "1m";
-    private static final String SPILLS_FILE_BUFFER_SIZE = "2K";
-    private static final long DEFAULT_PROCESSOR_CHECK_PERIOD = 1000L;
-    private static final long DEFAULT_XA_SESSION_CHECK_PERIOD = 1000L;
-    private static final long DEFAULT_XA_LOG_CLEAN_PERIOD = 1000L;
-    private static final long DEFAULT_DATA_NODE_IDLE_CHECK_PERIOD = 5 * 60 * 1000L;
-    private static final long DEFAULT_DATA_NODE_HEARTBEAT_PERIOD = 10 * 1000L;
-    private static final String DEFAULT_CLUSTER_HEARTBEAT_USER = "_HEARTBEAT_USER_";
-    private static final String DEFAULT_CLUSTER_HEARTBEAT_PASS = "_HEARTBEAT_PASS_";
-    private static final int DEFAULT_SQL_RECORD_COUNT = 10;
-    private static final boolean DEFAULT_USE_ZK_SWITCH = true;
-    private static final String DEFAULT_TRANSACTION_BASE_DIR = "txlogs";
-    private static final String DEFAULT_TRANSACTION_BASE_NAME = "server-tx";
-    private static final int DEFAULT_TRANSACTION_ROTATE_SIZE = 16;
-    private static final long CHECK_TABLE_CONSISTENCY_PERIOD = 30 * 60 * 1000;
-    private static final long DEFAULT_GLOBAL_TABLE_CHECK_PERIOD = 24 * 60 * 60 * 1000L;
-    private static final int DEFAULT_MERGE_QUEUE_SIZE = 1024;
-    private static final int DEFAULT_ORDER_BY_QUEUE_SIZE = 1024;
-    private static final int DEFAULT_JOIN_QUEUE_SIZE = 1024;
-    private static final int DEFAULT_NEST_LOOP_ROWS_SIZE = 2000;
-    private static final int DEFAULT_NEST_LOOP_CONN_SIZE = 4;
-    private static final int DEFAULT_MAPPED_FILE_SIZE = 1024 * 1024 * 64;
-    private static final boolean DEFAULT_USE_JOIN_STRATEGY = false;
 
-    private int frontSocketSoRcvbuf = 1024 * 1024;
-    private int frontSocketSoSndbuf = 4 * 1024 * 1024;
-    // mysql 5.6 net_buffer_length default 4M
-    private int backSocketSoRcvbuf = 4 * 1024 * 1024;
-    private int backSocketSoSndbuf = 1024 * 1024;
-    private int frontSocketNoDelay = 1; // 0=false
-    private int backSocketNoDelay = 1; // 1=true
+    // base config
     private String bindIp = "0.0.0.0";
+    private int serverPort = 8066;
+    private int managerPort = 9066;
+    private int processors = DEFAULT_PROCESSORS;
+    private int backendProcessors = DEFAULT_PROCESSORS;
+    private int processorExecutor = (DEFAULT_PROCESSORS != 1) ? DEFAULT_PROCESSORS : 2;
+    private int backendProcessorExecutor = (DEFAULT_PROCESSORS != 1) ? DEFAULT_PROCESSORS : 2;
+    private int complexExecutor = processorExecutor > 8 ? 8 : processorExecutor;
+    private int writeToBackendExecutor = (DEFAULT_PROCESSORS != 1) ? DEFAULT_PROCESSORS : 2;
     private String fakeMySQLVersion = null;
-    private int serverPort;
-    private int managerPort;
-    private int serverBacklog;
-    private String charset;
-    private int processors;
-    private int processorExecutor;
-    private long idleTimeout;
+    private int sequnceHandlerType = SEQUENCE_HANDLER_LOCAL_TIME;
+    private int serverBacklog = 2048;
+    private int serverNodeId = 1;
+    private long showBinlogStatusTimeout = 60 * 1000;
+    private int maxCon = 1024;
+    //option
+    private int useCompression = 0;
+    private int usingAIO = 0;
+    private boolean useZKSwitch = true;
+    private int useThreadUsageStat = 0;
+    private int usePerformanceMode = 0;
+
+    //query time cost statistics
+    private int useCostTimeStat = 0;
+    private int maxCostStatSize = 100;
+    private int costSamplePercent = 1;
+    //connection
+    private String charset = "utf8";
+    private int maxPacketSize = 16 * 1024 * 1024;
+    private int txIsolation = Isolations.REPEATABLE_READ;
+
+    //consistency
+    private int checkTableConsistency = 0;
+    private long checkTableConsistencyPeriod = 30 * 60 * 1000;
+    private int useGlobleTableCheck = 1;
+    private long glableTableCheckPeriod = 24 * 60 * 60 * 1000L;
+
+    //heartbeat check period
+    private long dataNodeIdleCheckPeriod = 5 * 60 * 1000L;
+    private long dataNodeHeartbeatPeriod = 10 * 1000L;
+
+    //processor check conn
+    private long processorCheckPeriod = 1000L;
+    private long idleTimeout = DEFAULT_IDLE_TIMEOUT;
     // sql execute timeout (second)
     private long sqlExecuteTimeout = 300;
-    private long showBinlogStatusTimeout = 60 * 1000;
-    private long processorCheckPeriod;
-    private long xaSessionCheckPeriod;
-    private long xaLogCleanPeriod;
-    private long dataNodeIdleCheckPeriod;
-    private long dataNodeHeartbeatPeriod;
-    private String clusterHeartbeatUser;
-    private String clusterHeartbeatPass;
-    private int txIsolation;
-    private int sqlRecordCount;
+
+    //transaction log
     private int recordTxn = 0;
+    private String transactionLogBaseDir = SystemConfig.getHomePath() + File.separatorChar + "txlogs" + File.separatorChar;
+    private String transactionLogBaseName = "server-tx";
+    private int transactionRatateSize = 16; // M
+
+    //XA transaction
+    private long xaSessionCheckPeriod = 1000L;
+    private long xaLogCleanPeriod = 1000L;
+    private String xaRecoveryLogBaseDir = SystemConfig.getHomePath() + File.separatorChar + "tmlogs" + File.separatorChar;
+    private String xaRecoveryLogBaseName = "tmlog";
+
+    //use JoinStrategy
+    private boolean useJoinStrategy = false;
+    private int nestLoopRowsSize = 2000;
+    private int nestLoopConnSize = 4;
+
+    //query memory used for per session,unit is M
+    private int otherMemSize = 4;
+    private int orderMemSize = 4;
+    private int joinMemSize = 4;
+
+    // off Heap unit:bytes
     // a page size
-    private int bufferPoolPageSize;
+    private int bufferPoolPageSize = 512 * 1024 * 4;
     //minimum allocation unit
-    private short bufferPoolChunkSize;
+    private short bufferPoolChunkSize = 4096;
     // buffer pool page number
-    private short bufferPoolPageNumber;
+    private short bufferPoolPageNumber = (short) (DEFAULT_PROCESSORS * 20);
+    private int mappedFileSize = 1024 * 1024 * 64;
+
+    // sql statistics
+    private int useSqlStat = 1;
+    private int sqlRecordCount = 10;
     //Threshold of big result ,default512kb
     private int maxResultSet = 512 * 1024;
     //Threshold of Usage Percent of buffer pool,if reached the Threshold,big result will be clean up,default 80%
     private int bufferUsagePercent = 80;
     //period of clear the big result
     private long clearBigSqLResultSetMapMs = 10 * 60 * 1000;
-    private int sequnceHandlerType = SEQUENCE_HANDLER_LOCAL_TIME;
-    private int usingAIO = 0;
-    private int maxPacketSize = 16 * 1024 * 1024;
-    private int serverNodeId = 1;
-    private int useCompression = 0;
-    private int useSqlStat = 1;
 
-    private int checkTableConsistency = 0;
-    private long checkTableConsistencyPeriod = CHECK_TABLE_CONSISTENCY_PERIOD;
-    private int useGlobleTableCheck = 1;
-    private long glableTableCheckPeriod;
+    //frontSocket unit:bytes
+    private int frontSocketSoRcvbuf = 1024 * 1024;
+    private int frontSocketSoSndbuf = 4 * 1024 * 1024;
+    private int frontSocketNoDelay = 1; // 0=false
 
-    /*
-     * memoryPageSize the unit is M
-     */
-    private String memoryPageSize;
-    private String spillsFileBufferSize;
+    // backSocket unit:bytes
+    private int backSocketSoRcvbuf = 4 * 1024 * 1024;
+    private int backSocketSoSndbuf = 1024 * 1024;
+    private int backSocketNoDelay = 1; // 1=true
 
-    /*
-     * tmp dir for big result sorted
-     */
-    private String dataNodeSortedTempDir;
+    //cluster
+    private String clusterHeartbeatUser = "_HEARTBEAT_USER_";
+    private String clusterHeartbeatPass = "_HEARTBEAT_PASS_";
 
-    private String xaRecoveryLogBaseDir;
-    private String xaRecoveryLogBaseName;
-    private String transactionLogBaseDir;
-    private String transactionLogBaseName;
-    private String viewPersistenceConfBaseDir;
-    private String viewPersistenceConfBaseName;
-    private int transactionRatateSize;
+    //view
+    private String viewPersistenceConfBaseDir = SystemConfig.getHomePath() + File.separatorChar + "viewConf" + File.separatorChar;
+    private String viewPersistenceConfBaseName = "viewJson";
 
-    private int mergeQueueSize;
-    private int orderByQueueSize;
-    private int joinQueueSize;
-    private int nestLoopRowsSize;
-    private int nestLoopConnSize;
-    private int mappedFileSize;
-    private boolean useZKSwitch = DEFAULT_USE_ZK_SWITCH;
-
-    private boolean useJoinStrategy;
-
-
+    // for join tmp results
+    private int mergeQueueSize = 1024;
+    private int orderByQueueSize = 1024;
+    private int joinQueueSize = 1024;
+    //slow log
+    private int enableSlowLog = 0;
+    private String slowLogBaseDir = SystemConfig.getHomePath() + File.separatorChar + "slowlogs" + File.separatorChar;
+    private String slowLogBaseName = "slow-query";
+    private int flushSlowLogPeriod = 1; //second
+    private int flushSlowLogSize = 1000; //row
+    private int sqlSlowTime = 100; //ms
 
     public SystemConfig() {
-        this.serverPort = DEFAULT_PORT;
-        this.managerPort = DEFAULT_MANAGER_PORT;
-        this.serverBacklog = DEFAULT_BACK_LOG_SIZE;
-        this.charset = DEFAULT_CHARSET;
-        this.processors = DEFAULT_PROCESSORS;
-        this.bufferPoolPageSize = DEFAULT_BUFFER_POOL_PAGE_SIZE;
-        this.bufferPoolChunkSize = DEFAULT_BUFFER_CHUNK_SIZE;
-        // if always big result,need large network buffer pool pages.
-        this.bufferPoolPageNumber = (short) (DEFAULT_PROCESSORS * 20);
-
-        this.processorExecutor = (DEFAULT_PROCESSORS != 1) ? DEFAULT_PROCESSORS * 2 : 4;
-
-        this.idleTimeout = DEFAULT_IDLE_TIMEOUT;
-        this.processorCheckPeriod = DEFAULT_PROCESSOR_CHECK_PERIOD;
-        this.xaSessionCheckPeriod = DEFAULT_XA_SESSION_CHECK_PERIOD;
-        this.xaLogCleanPeriod = DEFAULT_XA_LOG_CLEAN_PERIOD;
-        this.dataNodeIdleCheckPeriod = DEFAULT_DATA_NODE_IDLE_CHECK_PERIOD;
-        this.dataNodeHeartbeatPeriod = DEFAULT_DATA_NODE_HEARTBEAT_PERIOD;
-        this.clusterHeartbeatUser = DEFAULT_CLUSTER_HEARTBEAT_USER;
-        this.clusterHeartbeatPass = DEFAULT_CLUSTER_HEARTBEAT_PASS;
-        this.txIsolation = Isolations.REPEATED_READ;
-        this.sqlRecordCount = DEFAULT_SQL_RECORD_COUNT;
-        this.glableTableCheckPeriod = DEFAULT_GLOBAL_TABLE_CHECK_PERIOD;
-        this.memoryPageSize = MEMORY_PAGE_SIZE;
-        this.spillsFileBufferSize = SPILLS_FILE_BUFFER_SIZE;
-        this.xaRecoveryLogBaseDir = SystemConfig.getHomePath() + "/tmlogs/";
-        this.xaRecoveryLogBaseName = "tmlog";
-        this.viewPersistenceConfBaseDir = SystemConfig.getHomePath() + "/viewConf/";
-        this.viewPersistenceConfBaseName = "viewJson";
-        this.transactionLogBaseDir = SystemConfig.getHomePath() + File.separatorChar + DEFAULT_TRANSACTION_BASE_DIR;
-        this.transactionLogBaseName = DEFAULT_TRANSACTION_BASE_NAME;
-        this.transactionRatateSize = DEFAULT_TRANSACTION_ROTATE_SIZE;
-        this.mergeQueueSize = DEFAULT_MERGE_QUEUE_SIZE;
-        this.orderByQueueSize = DEFAULT_ORDER_BY_QUEUE_SIZE;
-        this.joinQueueSize = DEFAULT_JOIN_QUEUE_SIZE;
-        this.nestLoopRowsSize = DEFAULT_NEST_LOOP_ROWS_SIZE;
-        this.nestLoopConnSize = DEFAULT_NEST_LOOP_CONN_SIZE;
-        this.mappedFileSize = DEFAULT_MAPPED_FILE_SIZE;
-        this.useJoinStrategy = DEFAULT_USE_JOIN_STRATEGY;
-        this.dataNodeSortedTempDir = SystemConfig.getHomePath() + "/sortDirs";
     }
-
-
-    public String getDataNodeSortedTempDir() {
-        return dataNodeSortedTempDir;
-    }
-
-    @SuppressWarnings("unused")
-    public void setDataNodeSortedTempDir(String dataNodeSortedTempDir) {
-        this.dataNodeSortedTempDir = dataNodeSortedTempDir;
-    }
-
 
     public int getTransactionRatateSize() {
         return transactionRatateSize;
@@ -224,24 +179,6 @@ public final class SystemConfig {
     @SuppressWarnings("unused")
     public void setTransactionLogBaseName(String transactionLogBaseName) {
         this.transactionLogBaseName = transactionLogBaseName;
-    }
-
-    public String getMemoryPageSize() {
-        return memoryPageSize;
-    }
-
-    @SuppressWarnings("unused")
-    public void setMemoryPageSize(String memoryPageSize) {
-        this.memoryPageSize = memoryPageSize;
-    }
-
-    public String getSpillsFileBufferSize() {
-        return spillsFileBufferSize;
-    }
-
-    @SuppressWarnings("unused")
-    public void setSpillsFileBufferSize(String spillsFileBufferSize) {
-        this.spillsFileBufferSize = spillsFileBufferSize;
     }
 
     public boolean isUseZKSwitch() {
@@ -431,13 +368,40 @@ public final class SystemConfig {
         this.processors = processors;
     }
 
+    public int getBackendProcessors() {
+        return backendProcessors;
+    }
+
+    @SuppressWarnings("unused")
+    public void setBackendProcessors(int backendProcessors) {
+        this.backendProcessors = backendProcessors;
+    }
+
     public int getProcessorExecutor() {
         return processorExecutor;
     }
 
     @SuppressWarnings("unused")
     public void setProcessorExecutor(int processorExecutor) {
-        this.processorExecutor = processorExecutor < 4 ? 4 : processorExecutor;
+        this.processorExecutor = processorExecutor;
+    }
+
+    public int getBackendProcessorExecutor() {
+        return backendProcessorExecutor;
+    }
+
+    @SuppressWarnings("unused")
+    public void setBackendProcessorExecutor(int backendProcessorExecutor) {
+        this.backendProcessorExecutor = backendProcessorExecutor;
+    }
+
+    public int getComplexExecutor() {
+        return complexExecutor;
+    }
+
+    @SuppressWarnings("unused")
+    public void setComplexExecutor(int complexExecutor) {
+        this.complexExecutor = complexExecutor;
     }
 
     public long getIdleTimeout() {
@@ -730,6 +694,33 @@ public final class SystemConfig {
         this.mergeQueueSize = mergeQueueSize;
     }
 
+    public int getOtherMemSize() {
+        return otherMemSize;
+    }
+
+    @SuppressWarnings("unused")
+    public void setOtherMemSize(int otherMemSize) {
+        this.otherMemSize = otherMemSize;
+    }
+
+    public int getOrderMemSize() {
+        return orderMemSize;
+    }
+
+    @SuppressWarnings("unused")
+    public void setOrderMemSize(int orderMemSize) {
+        this.orderMemSize = orderMemSize;
+    }
+
+    public int getJoinMemSize() {
+        return joinMemSize;
+    }
+
+    @SuppressWarnings("unused")
+    public void setJoinMemSize(int joinMemSize) {
+        this.joinMemSize = joinMemSize;
+    }
+
     public int getMappedFileSize() {
         return mappedFileSize;
     }
@@ -776,46 +767,199 @@ public final class SystemConfig {
         this.viewPersistenceConfBaseName = viewPersistenceConfBaseName;
     }
 
+    public int getUseCostTimeStat() {
+        return useCostTimeStat;
+    }
+    @SuppressWarnings("unused")
+    public void setUseCostTimeStat(int useCostTimeStat) {
+        this.useCostTimeStat = useCostTimeStat;
+    }
+
+    public int getMaxCostStatSize() {
+        return maxCostStatSize;
+    }
+    @SuppressWarnings("unused")
+    public void setMaxCostStatSize(int maxCostStatSize) {
+        this.maxCostStatSize = maxCostStatSize;
+    }
+
+    public int getCostSamplePercent() {
+        return costSamplePercent;
+    }
+    @SuppressWarnings("unused")
+    public void setCostSamplePercent(int costSamplePercent) {
+        this.costSamplePercent = costSamplePercent;
+    }
+
+
+    public int getUseThreadUsageStat() {
+        return useThreadUsageStat;
+    }
+
+    @SuppressWarnings("unused")
+    public void setUseThreadUsageStat(int useThreadUsageStat) {
+        this.useThreadUsageStat = useThreadUsageStat;
+    }
+
+
+    public int getUsePerformanceMode() {
+        return usePerformanceMode;
+    }
+
+    @SuppressWarnings("unused")
+    public void setUsePerformanceMode(int usePerformanceMode) {
+        this.usePerformanceMode = usePerformanceMode;
+    }
+
+    public int getWriteToBackendExecutor() {
+        return writeToBackendExecutor;
+    }
+
+    @SuppressWarnings("unused")
+    public void setWriteToBackendExecutor(int writeToBackendExecutor) {
+        this.writeToBackendExecutor = writeToBackendExecutor;
+    }
+
+    public int getEnableSlowLog() {
+        return enableSlowLog;
+    }
+
+    @SuppressWarnings("unused")
+    public void setEnableSlowLog(int enableSlowLog) {
+        this.enableSlowLog = enableSlowLog;
+    }
+
+    public String getSlowLogBaseDir() {
+        return slowLogBaseDir;
+    }
+
+    @SuppressWarnings("unused")
+    public void setSlowLogBaseDir(String slowLogBaseDir) {
+        this.slowLogBaseDir = slowLogBaseDir;
+    }
+
+    public String getSlowLogBaseName() {
+        return slowLogBaseName;
+    }
+
+    @SuppressWarnings("unused")
+    public void setSlowLogBaseName(String slowLogBaseName) {
+        this.slowLogBaseName = slowLogBaseName;
+    }
+
+    public int getFlushSlowLogPeriod() {
+        return flushSlowLogPeriod;
+    }
+
+    @SuppressWarnings("unused")
+    public void setFlushSlowLogPeriod(int flushSlowLogPeriod) {
+        this.flushSlowLogPeriod = flushSlowLogPeriod;
+    }
+
+    public int getFlushSlowLogSize() {
+        return flushSlowLogSize;
+    }
+
+    @SuppressWarnings("unused")
+    public void setFlushSlowLogSize(int flushSlowLogSize) {
+        this.flushSlowLogSize = flushSlowLogSize;
+    }
+
+    public int getSqlSlowTime() {
+        return sqlSlowTime;
+    }
+
+    @SuppressWarnings("unused")
+    public void setSqlSlowTime(int sqlSlowTime) {
+        this.sqlSlowTime = sqlSlowTime;
+    }
+
     @Override
     public String toString() {
         return "SystemConfig [" +
-                "  frontSocketSoRcvbuf=" + frontSocketSoRcvbuf +
-                ", frontSocketSoSndbuf=" + frontSocketSoSndbuf +
-                ", backSocketSoRcvbuf=" + backSocketSoRcvbuf +
-                ", backSocketSoSndbuf=" + backSocketSoSndbuf +
-                ", frontSocketNoDelay=" + frontSocketNoDelay +
-                ", backSocketNoDelay=" + backSocketNoDelay +
                 ", bindIp=" + bindIp +
                 ", serverPort=" + serverPort +
                 ", managerPort=" + managerPort +
-                ", charset=" + charset +
                 ", processors=" + processors +
+                ", backendProcessors=" + backendProcessors +
                 ", processorExecutor=" + processorExecutor +
-                ", idleTimeout=" + idleTimeout +
-                ", sqlExecuteTimeout=" + sqlExecuteTimeout +
+                ", backendProcessorExecutor=" + backendProcessorExecutor +
+                ", complexExecutor=" + complexExecutor +
+                ", writeToBackendExecutor=" + writeToBackendExecutor +
+                ", fakeMySQLVersion=" + fakeMySQLVersion +
+                ", sequnceHandlerType=" + sequnceHandlerType +
+                ", serverBacklog=" + serverBacklog +
+                ", serverNodeId=" + serverNodeId +
                 ", showBinlogStatusTimeout=" + showBinlogStatusTimeout +
-                ", processorCheckPeriod=" + processorCheckPeriod +
+                ", maxCon=" + maxCon +
+                ", useCompression=" + useCompression +
+                ", usingAIO=" + usingAIO +
+                ", useZKSwitch=" + useZKSwitch +
+                ", useThreadUsageStat=" + useThreadUsageStat +
+                ", usePerformanceMode=" + usePerformanceMode +
+                ", useCostTimeStat=" + useCostTimeStat +
+                ", maxCostStatSize=" + maxCostStatSize +
+                ", costSamplePercent=" + costSamplePercent +
+                ", charset=" + charset +
+                ", maxPacketSize=" + maxPacketSize +
+                ", txIsolation=" + txIsolation +
+                ", checkTableConsistency=" + checkTableConsistency +
+                ", checkTableConsistencyPeriod=" + checkTableConsistencyPeriod +
+                ", useGlobleTableCheck=" + useGlobleTableCheck +
+                ", glableTableCheckPeriod=" + glableTableCheckPeriod +
                 ", dataNodeIdleCheckPeriod=" + dataNodeIdleCheckPeriod +
                 ", dataNodeHeartbeatPeriod=" + dataNodeHeartbeatPeriod +
-                ", xaSessionCheckPeriod=" + xaSessionCheckPeriod +
-                ", xaLogCleanPeriod=" + xaLogCleanPeriod +
+                ", processorCheckPeriod=" + processorCheckPeriod +
+                ", idleTimeout=" + idleTimeout +
+                ", sqlExecuteTimeout=" + sqlExecuteTimeout +
+                ", recordTxn=" + recordTxn +
                 ", transactionLogBaseDir=" + transactionLogBaseDir +
                 ", transactionLogBaseName=" + transactionLogBaseName +
-                ", clusterHeartbeatUser=" + clusterHeartbeatUser +
-                ", clusterHeartbeatPass=" + clusterHeartbeatPass +
-                ", txIsolation=" + txIsolation +
-                ", sqlRecordCount=" + sqlRecordCount +
-                ", bufferPoolPageSize=" + bufferPoolPageSize +
+                ", xaRecoveryLogBaseDir=" + xaRecoveryLogBaseDir +
+                ", xaRecoveryLogBaseName=" + xaRecoveryLogBaseName +
+                ", xaSessionCheckPeriod=" + xaSessionCheckPeriod +
+                ", xaLogCleanPeriod=" + xaLogCleanPeriod +
+                ", useJoinStrategy=" + useJoinStrategy +
+                ", nestLoopConnSize=" + nestLoopConnSize +
+                ", nestLoopRowsSize=" + nestLoopRowsSize +
+                ", otherMemSize=" + otherMemSize +
+                ", orderMemSize=" + orderMemSize +
+                ", joinMemSize=" + joinMemSize +
                 ", bufferPoolChunkSize=" + bufferPoolChunkSize +
+                ", bufferPoolPageSize=" + bufferPoolPageSize +
                 ", bufferPoolPageNumber=" + bufferPoolPageNumber +
+                ", useSqlStat=" + useSqlStat +
+                ", sqlRecordCount=" + sqlRecordCount +
                 ", maxResultSet=" + maxResultSet +
                 ", bufferUsagePercent=" + bufferUsagePercent +
                 ", clearBigSqLResultSetMapMs=" + clearBigSqLResultSetMapMs +
-                ", sequnceHandlerType=" + sequnceHandlerType +
-                ", usingAIO=" + usingAIO +
-                ", maxPacketSize=" + maxPacketSize +
-                ", serverNodeId=" + serverNodeId +
-                ", dataNodeSortedTempDir=" + dataNodeSortedTempDir +
+                "  frontSocketSoRcvbuf=" + frontSocketSoRcvbuf +
+                ", frontSocketSoSndbuf=" + frontSocketSoSndbuf +
+                ", frontSocketNoDelay=" + frontSocketNoDelay +
+                ", backSocketSoRcvbuf=" + backSocketSoRcvbuf +
+                ", backSocketSoSndbuf=" + backSocketSoSndbuf +
+                ", backSocketNoDelay=" + backSocketNoDelay +
+                ", clusterHeartbeatUser=" + clusterHeartbeatUser +
+                ", clusterHeartbeatPass=" + clusterHeartbeatPass +
+                ", viewPersistenceConfBaseDir=" + viewPersistenceConfBaseDir +
+                ", viewPersistenceConfBaseName=" + viewPersistenceConfBaseName +
+                ", joinQueueSize=" + joinQueueSize +
+                ", mergeQueueSize=" + mergeQueueSize +
+                ", orderByQueueSize=" + orderByQueueSize +
+                ", enableSlowLog=" + enableSlowLog +
+                ", slowLogBaseDir=" + slowLogBaseDir +
+                ", slowLogBaseName=" + slowLogBaseName +
+                ", flushSlowLogPeriod=" + flushSlowLogPeriod +
+                ", flushSlowLogSize=" + flushSlowLogSize +
+                ", sqlSlowTime=" + sqlSlowTime +
                 "]";
+    }
+
+    public int getMaxCon() {
+        return maxCon;
+    }
+
+    public void setMaxCon(int maxCon) {
+        this.maxCon = maxCon;
     }
 }

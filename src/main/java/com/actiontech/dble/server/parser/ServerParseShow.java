@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -7,8 +7,9 @@ package com.actiontech.dble.server.parser;
 
 import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.response.ShowColumns;
-import com.actiontech.dble.server.response.ShowCreateStmtInfo;
 import com.actiontech.dble.server.response.ShowIndex;
+import com.actiontech.dble.server.response.ShowTableStatus;
+import com.actiontech.dble.server.response.ShowTablesStmtInfo;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -22,7 +23,9 @@ public final class ServerParseShow {
 
     public static final int OTHER = -1;
     public static final int DATABASES = 1;
+    public static final int TRACE = 2;
     public static final int TABLES = 5;
+    public static final int TABLE_STATUS = 6;
     public static final int CHARSET = 7;
     public static final int COLUMNS = 8;
     public static final int INDEX = 9;
@@ -42,6 +45,9 @@ public final class ServerParseShow {
                 case 'F':
                 case 'f':
                     return showFCheck(stmt, i);
+                case 'A':
+                case 'a':
+                    return showACheck(stmt, i);
                 case '/':
                 case '#':
                     i = ParseUtil.comment(stmt, i);
@@ -54,7 +60,7 @@ public final class ServerParseShow {
                     return showGCheck(stmt, i);
                 case 'T':
                 case 't':
-                    return showTableType(stmt);
+                    return showTCheck(stmt, i);
                 case 'S':
                 case 's':
                     return showSCheck(stmt, i);
@@ -121,7 +127,32 @@ public final class ServerParseShow {
                             return showTableType(stmt);
                         case 'C':
                         case 'c':
+                        case 'F':
+                        case 'f':
                             return showColumns(stmt);
+                        default:
+                            return OTHER;
+                    }
+                }
+            }
+        }
+        return OTHER;
+    }
+
+    private static int showACheck(String stmt, int offset) {
+        if (stmt.length() > offset + "ll ?".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            if ((c1 == 'L' || c1 == 'l') &&
+                    (c2 == 'L' || c2 == 'l') && ParseUtil.isSpace(stmt.charAt(++offset))) {
+                while (stmt.length() > ++offset) {
+                    if (ParseUtil.isSpace(stmt.charAt(offset))) {
+                        continue;
+                    }
+                    switch (stmt.charAt(offset)) {
+                        case 'T':
+                        case 't':
+                            return showTableType(stmt);
                         default:
                             return OTHER;
                     }
@@ -309,11 +340,41 @@ public final class ServerParseShow {
         return OTHER;
     }
 
+    private static int showTCheck(String stmt, int offset) {
+        if (stmt.length() > offset++) {
+            char c1 = stmt.charAt(offset);
+            if (c1 == 'A' || c1 == 'a') {
+                return showTableType(stmt);
+            } else if (c1 == 'R' || c1 == 'r') {
+                return showTrace(stmt, offset);
+            } else {
+                return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int showTrace(String stmt, int offset) {
+        if (stmt.length() > offset + "ace".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            if ((c1 == 'A' || c1 == 'a') && (c2 == 'C' || c2 == 'c') && (c3 == 'E' || c3 == 'e') && (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
+                return TRACE;
+            }
+        }
+        return OTHER;
+    }
+
     public static int showTableType(String sql) {
-        Pattern pattern = ShowCreateStmtInfo.PATTERN;
+        Pattern pattern = ShowTablesStmtInfo.PATTERN;
         Matcher ma = pattern.matcher(sql);
+        Pattern pattern1 = ShowTableStatus.PATTERN;
+        Matcher tableStatus = pattern1.matcher(sql);
         if (ma.matches()) {
             return TABLES;
+        } else if (tableStatus.matches()) {
+            return TABLE_STATUS;
         } else {
             return OTHER;
         }
@@ -352,7 +413,7 @@ public final class ServerParseShow {
             char c9 = stmt.charAt(++offset);
             if ((c1 == 'V' || c1 == 'v') && (c2 == 'A' || c2 == 'a') && (c3 == 'R' || c3 == 'r') && (c4 == 'I' || c4 == 'i') &&
                     (c5 == 'A' || c5 == 'a') && (c6 == 'B' || c6 == 'b') && (c7 == 'L' || c7 == 'l') && (c8 == 'E' || c8 == 'e') &&
-                    (c9 == 'S' || c9 == 's')) {
+                    (c9 == 'S' || c9 == 's') && (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
                 return VARIABLES;
             }
         }

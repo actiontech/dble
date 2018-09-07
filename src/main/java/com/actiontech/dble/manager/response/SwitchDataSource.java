@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -33,7 +33,7 @@ public final class SwitchDataSource {
             if (dn != null) {
                 int m = dn.getActiveIndex();
                 int n = (idx == null) ? dn.next(m) : idx;
-                if (dn.switchSource(n, false, "MANAGER")) {
+                if (dn.switchSource(n, "MANAGER")) {
                     ++count;
                 }
                 //TODO:ELSE?

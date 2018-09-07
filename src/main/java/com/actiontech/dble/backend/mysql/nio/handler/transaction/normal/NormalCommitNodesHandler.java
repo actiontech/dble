@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.backend.mysql.nio.handler.transaction.normal;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AbstractCommitNodesHandler;
@@ -13,6 +14,7 @@ import com.actiontech.dble.server.NonBlockingSession;
 
 public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     protected byte[] sendData;
+
     @Override
     public void clearResources() {
         sendData = null;
@@ -36,7 +38,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
         this.waitUntilSendFinish();
         if (decrementCountBy(1)) {
             if (sendData == null) {
-                sendData = ok;
+                sendData = session.getOkByteArray();
             }
             cleanAndFeedback();
         }
@@ -49,7 +51,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
         errPacket.read(err);
         String errMsg = new String(errPacket.getMessage());
         this.setFail(errMsg);
-        conn.quit();
+        conn.close("commit response error");
         if (decrementCountBy(1)) {
             cleanAndFeedback();
         }
@@ -60,20 +62,30 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
         this.waitUntilSendFinish();
         LOGGER.info("backend connect", e);
         this.setFail(e.getMessage());
-        conn.quit();
+        conn.close("Commit connection Error");
         if (decrementCountBy(1)) {
             cleanAndFeedback();
         }
     }
 
     @Override
-    public void connectionClose(BackendConnection conn, String reason) {
+    public void connectionClose(final BackendConnection conn, final String reason) {
+        final NormalCommitNodesHandler thisHandler = this;
+        DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                thisHandler.connectionCloseLocal(conn, reason);
+            }
+        });
+    }
+
+    private void connectionCloseLocal(BackendConnection conn, String reason) {
         this.waitUntilSendFinish();
         if (checkClosedConn(conn)) {
             return;
         }
         this.setFail(reason);
-        conn.quit();
+        conn.close("commit connection closed");
         if (decrementCountBy(1)) {
             cleanAndFeedback();
         }
@@ -86,10 +98,16 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
         if (session.closed()) {
             return;
         }
+        setResponseTime();
         if (this.isFail()) {
             createErrPkg(error).write(session.getSource());
         } else {
+            boolean multiStatementFlag = session.getIsMultiStatement().get();
             session.getSource().write(send);
+            session.multiStatementNextSql(multiStatementFlag);
         }
+    }
+
+    protected void setResponseTime() {
     }
 }

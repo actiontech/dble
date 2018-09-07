@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -9,6 +9,8 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.util.Map;
 
 public class PartitionByFileMapTest {
     @Rule
@@ -25,6 +27,9 @@ public class PartitionByFileMapTest {
         Assert.assertEquals(true, 1 == partition.calculate(idVal));
         idVal = "10020";
         Assert.assertEquals(true, null == partition.calculate(idVal));
+        Map<String, String> map = partition.getAllProperties();
+        Assert.assertEquals(true, map.get("mapFile").equals("{\"10000\":\"0\"," +
+                "\"10010\":\"1\"}") );
     }
 
     @Test

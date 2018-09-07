@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -38,12 +38,12 @@ public class WhereHandler extends BaseDMLHandler {
 
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
                                  byte[] eofNull, boolean isLeft, BackendConnection conn) {
+        session.setHandlerStart(this);
         if (terminate.get())
             return;
         this.fieldPackets = fieldPackets;
         this.sourceFields = HandlerTool.createFields(this.fieldPackets);
-        whereItem = HandlerTool.createItem(this.where, this.sourceFields, 0, this.isAllPushDown(), this.type()
-        );
+        whereItem = HandlerTool.createItem(this.where, this.sourceFields, 0, this.isAllPushDown(), this.type());
         nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, conn);
     }
 
@@ -68,6 +68,7 @@ public class WhereHandler extends BaseDMLHandler {
     public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
         if (terminate.get())
             return;
+        session.setHandlerEnd(this);
         nextHandler.rowEofResponse(data, isLeft, conn);
     }
 

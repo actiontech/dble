@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -19,14 +19,15 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.util.TimeUtil;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
 public class OrderByHandler extends OwnThreadDMLHandler {
-    private static final Logger LOGGER = Logger.getLogger(OrderByHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(OrderByHandler.class);
 
     private List<Order> orders;
     private BlockingQueue<RowDataPacket> queue;
@@ -49,6 +50,7 @@ public class OrderByHandler extends OwnThreadDMLHandler {
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
                                  byte[] eofNull, boolean isLeft, final BackendConnection conn) {
+        session.setHandlerStart(this);
         if (terminate.get())
             return;
         if (this.pool == null)
@@ -121,6 +123,7 @@ public class OrderByHandler extends OwnThreadDMLHandler {
                     break;
             }
             recordElapsedTime("order read end:");
+            session.setHandlerEnd(this);
             nextHandler.rowEofResponse(null, this.isLeft, conn);
         } catch (Exception e) {
             String msg = "OrderBy thread error, " + e.getLocalizedMessage();
@@ -130,8 +133,8 @@ public class OrderByHandler extends OwnThreadDMLHandler {
     }
 
     private void recordElapsedTime(String prefix) {
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info(prefix + TimeUtil.currentTimeMillis());
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(prefix + TimeUtil.currentTimeMillis());
         }
     }
 

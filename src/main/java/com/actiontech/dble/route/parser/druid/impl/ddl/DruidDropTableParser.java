@@ -1,11 +1,13 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.route.parser.druid.impl.ddl;
 
 import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.druid.impl.DefaultDruidParser;
@@ -18,6 +20,7 @@ import com.alibaba.druid.sql.ast.statement.SQLDropTableStatement;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
+import java.util.Map;
 
 public class DruidDropTableParser extends DefaultDruidParser {
     @Override
@@ -32,11 +35,19 @@ public class DruidDropTableParser extends DefaultDruidParser {
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, dropTable.getTableSources().get(0));
         String statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema());
         rrs.setStatement(statement);
-        if (RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable())) {
-            RouterUtil.routeToSingleDDLNode(schemaInfo, rrs);
+        String noShardingNode = RouterUtil.isNoSharding(schema, schemaInfo.getTable());
+        if (noShardingNode != null) {
+            RouterUtil.routeToSingleDDLNode(schemaInfo, rrs, noShardingNode);
             return schemaInfo.getSchemaConfig();
         }
-        RouterUtil.routeToDDLNode(schemaInfo, rrs);
+        Map<String, TableConfig> tables = schemaInfo.getSchemaConfig().getTables();
+        TableConfig tc = tables.get(schemaInfo.getTable());
+        if (tc == null) {
+            sc.write(sc.writeToBuffer(OkPacket.OK, sc.allocate()));
+            rrs.setFinishedExecute(true);
+        } else {
+            RouterUtil.routeToDDLNode(schemaInfo, rrs);
+        }
         return schemaInfo.getSchemaConfig();
     }
 }

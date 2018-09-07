@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -7,26 +7,30 @@ package com.actiontech.dble.route.parser.druid.impl;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cache.LayerCachePool;
+import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.DruidParser;
 import com.actiontech.dble.route.parser.druid.DruidShardingParseInfo;
 import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
+import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.sqlengine.mpp.IsValue;
 import com.actiontech.dble.sqlengine.mpp.RangeValue;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
 import com.alibaba.druid.stat.TableStat.Condition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * DefaultDruidParser
@@ -91,6 +95,18 @@ public class DefaultDruidParser implements DruidParser {
                     value = value.toLowerCase();
                 }
             }
+            if (key != null) {
+                int pos = key.indexOf(".");
+                if (pos > 0) {
+                    key = key.substring(pos + 1);
+                }
+            }
+            if (value != null) {
+                int pos = value.indexOf(".");
+                if (pos > 0) {
+                    value = value.substring(pos + 1);
+                }
+            }
             if (key != null && key.charAt(0) == '`') {
                 key = key.substring(1, key.length() - 1);
             }
@@ -102,10 +118,6 @@ public class DefaultDruidParser implements DruidParser {
                 boolean needAddTable = false;
                 if (key.equals(value)) {
                     needAddTable = true;
-                }
-                int pos = key.indexOf(".");
-                if (pos > 0) {
-                    key = key.substring(pos + 1);
                 }
                 if (needAddTable) {
                     ctx.addTable(key);
@@ -149,6 +161,9 @@ public class DefaultDruidParser implements DruidParser {
                         routeCalculateUnit.addShardingExpr(tableName, columnName, rv);
                     } else if (operator.equals("=") || operator.toLowerCase().equals("in")) {
                         routeCalculateUnit.addShardingExpr(tableName, columnName, values.toArray());
+                    } else if (operator.equals("IS")) {
+                        IsValue isValue = new IsValue(values.toArray());
+                        routeCalculateUnit.addShardingExpr(tableName, columnName, isValue);
                     }
                 }
             }
@@ -168,5 +183,45 @@ public class DefaultDruidParser implements DruidParser {
 
     public DruidShardingParseInfo getCtx() {
         return ctx;
+    }
+
+
+    void checkTableExists(TableConfig tc, String schemaName, String tableName, ServerPrivileges.CheckType chekcType) throws SQLException {
+        if (tc == null) {
+            if (DbleServer.getInstance().getTmManager().getSyncView(schemaName, tableName) != null) {
+                String msg = "View '" + schemaName + "." + tableName + "' Not Support " + chekcType;
+                throw new SQLException(msg, "HY000", ErrorCode.ERR_NOT_SUPPORTED);
+            }
+            String msg = "Table '" + schemaName + "." + tableName + "' doesn't exist";
+            throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
+        } else {
+            //it is strict
+            if (DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaName, tableName) == null) {
+                String msg = "Table meta '" + schemaName + "." + tableName + "' is lost,PLEASE reload @@metadata";
+                LOGGER.warn(msg);
+                throw new SQLException(msg, "HY000", ErrorCode.ERR_HANDLE_DATA);
+            }
+        }
+    }
+
+    SchemaConfig routeToNoSharding(SchemaConfig schema, RouteResultset rrs, Set<String> schemas, StringPtr dataNode) {
+        String statement = rrs.getStatement();
+        for (String realSchema : schemas) {
+            statement = RouterUtil.removeSchema(statement, realSchema);
+        }
+        rrs.setStatement(statement);
+        RouterUtil.routeToSingleNode(rrs, dataNode.get());
+        rrs.setFinishedRoute(true);
+        return schema;
+    }
+
+    // avoid druid error ,default shardingSupport is true and table name like testTable_number will be parser to testTable
+    //eg: testDb.testTb_1->testDb.testTb ,testDb.testTb_1_2->testDb.testTb
+    String statementToString(SQLStatement statement) {
+        StringBuffer buf = new StringBuffer();
+        MySqlOutputVisitor visitor = new MySqlOutputVisitor(buf);
+        visitor.setShardingSupport(false);
+        statement.accept(visitor);
+        return buf.toString();
     }
 }

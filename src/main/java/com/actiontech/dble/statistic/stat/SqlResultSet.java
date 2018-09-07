@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -10,8 +10,8 @@ package com.actiontech.dble.statistic.stat;
  */
 public class SqlResultSet {
     private String sql;
-    private int resultSetSize = 0;
-    private int count;
+    private long resultSetSize = 0;
+    private int count = 1;
 
     public String getSql() {
         return sql;
@@ -21,11 +21,11 @@ public class SqlResultSet {
         this.sql = sql;
     }
 
-    public int getResultSetSize() {
+    public long getResultSetSize() {
         return resultSetSize;
     }
 
-    public void setResultSetSize(int resultSetSize) {
+    public void setResultSetSize(long resultSetSize) {
         this.resultSetSize = resultSetSize;
     }
 

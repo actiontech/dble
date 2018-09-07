@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -32,29 +32,42 @@ public class SQLJob implements ResponseHandler, Runnable {
     public static final Logger LOGGER = LoggerFactory.getLogger(SQLJob.class);
 
     private final String sql;
-    private final String dataNodeOrDatabase;
+    private final String dataNode;
+    private final String schema;
     private BackendConnection connection;
     private final SQLJobHandler jobHandler;
     private final PhysicalDatasource ds;
+    private boolean isMustWriteNode;
     private volatile boolean finished;
 
-    public SQLJob(String sql, String databaseName, SQLJobHandler jobHandler, PhysicalDatasource ds) {
+    public SQLJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDatasource ds) {
         super();
         this.sql = sql;
-        this.dataNodeOrDatabase = databaseName;
         this.jobHandler = jobHandler;
         this.ds = ds;
+        this.schema = schema;
+        this.dataNode = null;
+    }
+
+    public SQLJob(String sql, String dataNode, SQLJobHandler jobHandler, boolean isMustWriteNode) {
+        super();
+        this.sql = sql;
+        this.jobHandler = jobHandler;
+        this.ds = null;
+        this.dataNode = dataNode;
+        this.schema = null;
+        this.isMustWriteNode = isMustWriteNode;
     }
 
     public void run() {
         try {
             if (ds == null) {
-                RouteResultsetNode node = new RouteResultsetNode(dataNodeOrDatabase, ServerParse.SELECT, sql);
+                RouteResultsetNode node = new RouteResultsetNode(dataNode, ServerParse.SELECT, sql);
                 // create new connection
                 PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
-                dn.getConnection(dn.getDatabase(), true, true, node, this, node);
+                dn.getConnection(dn.getDatabase(), isMustWriteNode, true, node, this, node);
             } else {
-                ds.getConnection(dataNodeOrDatabase, true, this, null);
+                ds.getConnection(schema, true, this, null);
             }
         } catch (Exception e) {
             LOGGER.info("can't get connection for sql ,error:" + e);
@@ -74,7 +87,6 @@ public class SQLJob implements ResponseHandler, Runnable {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("con query sql:" + sql + " to con:" + conn);
         }
-        LOGGER.info("con query sql:" + sql + " to con:" + conn);
         conn.setResponseHandler(this);
         ((MySQLConnection) conn).setComplexQuery(true);
         try {
@@ -92,12 +104,12 @@ public class SQLJob implements ResponseHandler, Runnable {
 
     private void doFinished(boolean failed) {
         finished = true;
-        jobHandler.finished(dataNodeOrDatabase, failed);
+        jobHandler.finished(dataNode == null ? schema : dataNode, failed);
     }
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        LOGGER.info("can't get connection for sql :" + sql);
+        LOGGER.info("can't get connection for sql :" + sql, e);
         doFinished(true);
     }
 
@@ -121,7 +133,11 @@ public class SQLJob implements ResponseHandler, Runnable {
         } else {
             LOGGER.info(errMsg);
         }
-        conn.release();
+        if (conn.syncAndExecute()) {
+            conn.release();
+        } else {
+            ((MySQLConnection) conn).quit();
+        }
         doFinished(true);
     }
 
@@ -142,7 +158,7 @@ public class SQLJob implements ResponseHandler, Runnable {
 
     @Override
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
-        boolean finish = jobHandler.onRowData(dataNodeOrDatabase, row);
+        boolean finish = jobHandler.onRowData(row);
         if (finish) {
             conn.release();
             doFinished(false);
@@ -167,8 +183,9 @@ public class SQLJob implements ResponseHandler, Runnable {
     }
     @Override
     public String toString() {
-        return "SQLJob [dataNodeOrDatabase=" +
-                dataNodeOrDatabase + ",sql=" + sql + ",  jobHandler=" +
+        return "SQLJob [dataNode=" +
+                dataNode + ",schema=" +
+                schema + ",sql=" + sql + ",  jobHandler=" +
                 jobHandler + "]";
     }
 

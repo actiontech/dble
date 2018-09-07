@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -18,7 +18,7 @@ public class SqlResultSizeRecorder {
     private ConcurrentMap<String, SqlResultSet> sqlResultSetMap = new ConcurrentHashMap<>();
 
 
-    public void addSql(String sql, int resultSetSize) {
+    public void addSql(String sql, long resultSetSize) {
         SqlResultSet sqlResultSet;
         SqlParser sqlParserHigh = new SqlParser();
         sql = sqlParserHigh.mergeSql(sql);

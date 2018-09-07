@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -28,7 +28,7 @@ public class QueryNode extends PlanNode {
         this.whereFilter = filter;
         this.setChild(child);
         if (child != null) {
-            child.setSubQuery(true); // the default is subQuery
+            child.setWithSubQuery(true); // the default is subQuery
         }
     }
 

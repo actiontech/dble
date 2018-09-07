@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -115,6 +115,9 @@ public final class ShowDatasourceSynDetail {
         Map<String, PhysicalDBPool> dataHosts = conf.getDataHosts();
         for (PhysicalDBPool pool : dataHosts.values()) {
             for (PhysicalDatasource ds : pool.getAllDataSources()) {
+                if (ds.getConfig().isDisabled()) {
+                    continue;
+                }
                 DBHeartbeat hb = ds.getHeartbeat();
                 DataSourceSyncRecorder record = hb.getAsyncRecorder();
                 Map<String, String> states = record.getRecords();

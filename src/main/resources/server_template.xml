@@ -14,8 +14,14 @@
         <!--<property name="bindIp">0.0.0.0</property>-->
         <!-- property name="serverPort">8066</property> -->
         <!--<property name="managerPort">9066</property> -->
-        <!-- <property name="processors">1</property>-->
-        <!--<property name="processorExecutor">32</property> -->
+        <!--<property name="maxCon">1024</property> -->
+        <!-- <property name="processors">4</property>-->
+        <!-- <property name="backendProcessors">12</property>-->
+        <!--<property name="processorExecutor">4</property> -->
+        <!--<property name="backendProcessorExecutor">12</property> -->
+        <!--<property name="complexExecutor">8</property> -->
+        <!--<property name="writeToBackendExecutor">4</property> -->
+
         <!--<property name="fakeMySQLVersion">5.6.20</property>-->
         <property name="sequnceHandlerType">2</property>
         <!-- serverBacklog size,default 2048-->
@@ -27,6 +33,13 @@
         <!--<property name="useCompression">1</property>-->
         <!--<property name="usingAIO">0</property>-->
         <!--<property name="useZKSwitch">true</property>-->
+        <!--<property name="useThreadUsageStat">0</property>-->
+        <!--<property name="usePerformanceMode">0</property>-->
+
+        <!-- query time cost statistics-->
+        <!--<property name="useCostTimeStat">0</property>-->
+        <!--<property name="maxCostStatSize">100</property>-->
+        <!--<property name="costSamplePercent">1</property>-->
 
         <!--connection -->
         <!--<property name="charset">utf-8</property>-->
@@ -56,7 +69,7 @@
         <property name="recordTxn">0</property>
         <!--<property name="transactionLogBaseDir">/txlogs</property>-->
         <!--<property name="transactionLogBaseName">server-tx</property>-->
-        <!--<property name="transactionRatateSize">16</property>&lt;!&ndash; unit M &ndash;&gt;-->
+        <!--<property name="transactionRatateSize">16</property>--><!-- unit M -->
 
         <!-- XA transaction -->
         <!-- use XA transaction ,if the mysql service crash,the unfinished XA commit/rollback will retry for several times
@@ -74,15 +87,16 @@
         <property name="nestLoopConnSize">4</property>
         <property name="nestLoopRowsSize">2000</property>
 
+        <!-- query memory used for per session,unit is M-->
+        <property name="otherMemSize">4</property>
+        <property name="orderMemSize">4</property>
+        <property name="joinMemSize">4</property>
+
         <!-- off Heap unit:bytes-->
-        <property name="bufferPoolChunkSize ">4096</property>
-        <property name="bufferPoolPageNumber ">512</property>
-        <property name="bufferPoolPageSize ">2097152</property>
-        <!-- off heap for merge/order/group/limit  1:enable,0:disable-->
-        <property name="useOffHeapForMerge">1</property>
-        <!--<property name="memoryPageSize">1m</property>-->
-        <!--<property name="spillsFileBufferSize">2K</property>-->
-        <!--<property name="dataNodeSortedTempDir">/sortDirs</property>-->
+        <property name="bufferPoolChunkSize">4096</property>
+        <property name="bufferPoolPageNumber">512</property>
+        <property name="bufferPoolPageSize">2097152</property>
+        <!--<property name="bufferPoolPageSize">mappedFileSize</property>-->
 
         <!-- sql statistics-->
         <!-- 1 means use SQL statistics, 0 means not -->
@@ -93,14 +107,31 @@
         <!--<property name="maxResultSet">524288</property>-->
 
         <!-- backSocket unit:bytes-->
-        <!--<property name="backSocketSoRcvbuf ">4194304</property>-->
+        <!--<property name="backSocketSoRcvbuf">4194304</property>-->
         <!--<property name="backSocketSoSndbuf">1048576</property>-->
-        <!--<property name="backSocketNoDelay ">1</property>-->
+        <!--<property name="backSocketNoDelay">1</property>-->
 
         <!-- frontSocket-->
-        <!--<property name="frontSocketSoRcvbuf ">1048576</property>-->
+        <!--<property name="frontSocketSoRcvbuf">1048576</property>-->
         <!--<property name="frontSocketSoSndbuf">4194304</property>-->
-        <!--<property name="frontSocketNoDelay ">1</property>-->
+        <!--<property name="frontSocketNoDelay">1</property>-->
+
+        <!-- for join tmp results -->
+        <!--<property name="mergeQueueSize">1024</property>-->
+        <!--<property name="orderByQueueSize">1024</property>-->
+        <!--<property name="joinQueueSize">1024</property>-->
+
+        <!-- if enable the slow query log -->
+        <property name="enableSlowLog">0</property>
+        <!-- the slow query log location -->
+        <!--<property name="slowLogBaseDir">./slowlogs</property>-->
+        <!--<property name="slowLogBaseName">slow-query</property>-->
+        <!-- the max period for flushing the slow query log from memory to disk  after last time , unit is second -->
+        <property name="flushSlowLogPeriod">1</property>
+        <!-- the max records for flushing the slow query log from memory to disk after last time -->
+        <property name="flushSlowLogSize">1000</property>
+        <!-- the threshold for judging if the query is slow , unit is millisecond -->
+        <property name="sqlSlowTime">100</property>
 
 
     </system>

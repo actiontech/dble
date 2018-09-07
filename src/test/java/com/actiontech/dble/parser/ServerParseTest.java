@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.parser;
 
+import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.parser.ServerParse;
 import org.junit.Assert;
 import org.junit.Test;
@@ -33,7 +34,7 @@ public class ServerParseTest {
      * public static final int MYSQL_COMMENT = 19;
      * public static final int CALL = 20;
      * public static final int DESCRIBE = 21;
-     *
+     * <p>
      * public static final int SCRIPT_PREPARE = 101;
      */
 
@@ -292,5 +293,55 @@ public class ServerParseTest {
         String sql = "COMMIT 'nihao'";
         int result = ServerParse.parse(sql);
         Assert.assertEquals(ServerParse.OTHER, result);
+    }
+
+
+    @Test
+    public void testDivide() {
+        String sql = "delete from tablex where name = '''sdfsd;f''';";
+        Assert.assertEquals(45, ParseUtil.findNextBreak(sql));
+
+        sql = "delete from tablex where name = '\\'sdfsd;f\\'';";
+        Assert.assertEquals(45, ParseUtil.findNextBreak(sql));
+
+        sql = "delete from tablex where name = \"sdfsd;f\";";
+        Assert.assertEquals(41, ParseUtil.findNextBreak(sql));
+
+        sql = "delete from tablex where name = \"sdfsd';'f\";";
+        Assert.assertEquals(43, ParseUtil.findNextBreak(sql));
+
+        sql = "delete from tablex where name = \"sdfsd\\\";'f\";";
+        Assert.assertEquals(44, ParseUtil.findNextBreak(sql));
+
+        sql = "delete from tablex where name = 'sdfsd\";\"f';";
+        Assert.assertEquals(43, ParseUtil.findNextBreak(sql));
+
+        sql = "delete from tablex where name = 'sdfsd\";f';";
+        Assert.assertEquals(42, ParseUtil.findNextBreak(sql));
+
+        sql = "delete from tablex where name = '''sdfsd;f''';commit;";
+        Assert.assertEquals(45, ParseUtil.findNextBreak(sql));
+
+        sql = "commit;delete from tablex where name = '''sdfsd;f''';";
+        Assert.assertEquals(6, ParseUtil.findNextBreak(sql));
+
+        sql = "sdfsdf\\' ;delete from tablex where name = '''sdfsd;f''';";
+        Assert.assertEquals(9, ParseUtil.findNextBreak(sql));
+
+        sql = "delete from tablex where name = 'sdfsd;f';";
+        Assert.assertEquals(41, ParseUtil.findNextBreak(sql));
+        sql = "delete from tablex where name = 'sdfsdf';";
+        Assert.assertEquals(40, ParseUtil.findNextBreak(sql));
+
+        sql = "delete from tablex where name = \"sdfsd\\\\\\\";'f\";";
+        Assert.assertEquals(46, ParseUtil.findNextBreak(sql));
+
+        sql = "update char_columns set c_char ='1',c_char2=\"2\";";
+        Assert.assertEquals(47, ParseUtil.findNextBreak(sql));
+
+        sql = "update char_columns set c_char ='1;',c_char2=\";2\";";
+        Assert.assertEquals(49, ParseUtil.findNextBreak(sql));
+
+
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -47,9 +47,9 @@ public final class ShowTables {
     }
 
     public static void response(ServerConnection c, String stmt) {
-        ShowCreateStmtInfo info;
+        ShowTablesStmtInfo info;
         try {
-            info = new ShowCreateStmtInfo(stmt);
+            info = new ShowTablesStmtInfo(stmt);
         } catch (Exception e) {
             c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.toString());
             return;
@@ -88,9 +88,9 @@ public final class ShowTables {
         }
     }
 
-    private static void parserAndExecuteShowTables(ServerConnection c, String originSql, String node, ShowCreateStmtInfo info) throws Exception {
+    private static void parserAndExecuteShowTables(ServerConnection c, String originSql, String node, ShowTablesStmtInfo info) throws Exception {
         RouteResultset rrs = new RouteResultset(originSql, ServerParse.SHOW);
-        if (info.getSchema() != null) {
+        if (info.getSchema() != null || info.isAll()) {
             StringBuilder sql = new StringBuilder();
             sql.append("SHOW ");
             if (info.isFull()) {
@@ -107,7 +107,7 @@ public final class ShowTables {
         showTablesHandler.execute();
     }
 
-    private static void responseDirect(ServerConnection c, String cSchema, ShowCreateStmtInfo info) {
+    private static void responseDirect(ServerConnection c, String cSchema, ShowTablesStmtInfo info) {
         ByteBuffer buffer = c.allocate();
         Map<String, String> tableMap = getTableSet(cSchema, info);
         PackageBufINf bufInf;
@@ -115,7 +115,7 @@ public final class ShowTables {
             List<FieldPacket> fieldPackets = new ArrayList<>(2);
             bufInf = writeFullTablesHeader(buffer, c, cSchema, fieldPackets);
             if (info.getWhere() != null) {
-                MySQLItemVisitor mev = new MySQLItemVisitor(c.getSchema(), c.getCharset().getResultsIndex());
+                MySQLItemVisitor mev = new MySQLItemVisitor(c.getSchema(), c.getCharset().getResultsIndex(), DbleServer.getInstance().getTmManager());
                 info.getWhereExpr().accept(mev);
                 List<Field> sourceFields = HandlerTool.createFields(fieldPackets);
                 Item whereItem = HandlerTool.createItem(mev.getItem(), sourceFields, 0, false, DMLResponseHandler.HandlerType.WHERE);
@@ -162,7 +162,11 @@ public final class ShowTables {
     public static PackageBufINf writeFullTablesRow(ByteBuffer buffer, ServerConnection c, Map<String, String> tableMap, byte packetId, Item whereItem, List<Field> sourceFields) {
         for (Map.Entry<String, String> entry : tableMap.entrySet()) {
             RowDataPacket row = new RowDataPacket(2);
-            row.add(StringUtil.encode(entry.getKey().toLowerCase(), c.getCharset().getResults()));
+            String name = entry.getKey();
+            if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+                name = name.toLowerCase();
+            }
+            row.add(StringUtil.encode(name, c.getCharset().getResults()));
             row.add(StringUtil.encode(entry.getValue(), c.getCharset().getResults()));
             if (whereItem != null) {
                 HandlerTool.initFields(sourceFields, row.fieldValues);
@@ -204,7 +208,10 @@ public final class ShowTables {
         eof.write(buffer, c, true);
         for (String name : tableMap.keySet()) {
             RowDataPacket row = new RowDataPacket(fieldCount);
-            row.add(StringUtil.encode(name.toLowerCase(), c.getCharset().getResults()));
+            if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+                name = name.toLowerCase();
+            }
+            row.add(StringUtil.encode(name, c.getCharset().getResults()));
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
         }
@@ -224,7 +231,7 @@ public final class ShowTables {
         c.write(buffer);
     }
 
-    public static Map<String, String> getTableSet(String cSchema, ShowCreateStmtInfo info) {
+    public static Map<String, String> getTableSet(String cSchema, ShowTablesStmtInfo info) {
         //remove the table which is not created but configured
         SchemaMeta schemata = DbleServer.getInstance().getTmManager().getCatalogs().get(cSchema);
         if (schemata == null) {
@@ -242,7 +249,10 @@ public final class ShowTables {
                 String tbName = tbConfig.getName();
                 maLike = pattern.matcher(tbName);
                 if (maLike.matches() && meta.get(tbName) != null) {
-                    String tbType = tbConfig.getTableType() == TableConfig.TableTypeEnum.TYPE_GLOBAL_TABLE ? "GLOBAL TABLE" : "SHARDING TABLE";
+                    String tbType = "BASE TABLE";
+                    if (info.isAll()) {
+                        tbType = tbConfig.getTableType() == TableConfig.TableTypeEnum.TYPE_GLOBAL_TABLE ? "GLOBAL TABLE" : "SHARDING TABLE";
+                    }
                     tableMap.put(tbName, tbType);
                 }
             }
@@ -250,7 +260,10 @@ public final class ShowTables {
             for (TableConfig tbConfig : schemas.get(cSchema).getTables().values()) {
                 String tbName = tbConfig.getName();
                 if (meta.get(tbName) != null) {
-                    String tbType = tbConfig.getTableType() == TableConfig.TableTypeEnum.TYPE_GLOBAL_TABLE ? "GLOBAL TABLE" : "SHARDING TABLE";
+                    String tbType = "BASE TABLE";
+                    if (info.isAll()) {
+                        tbType = tbConfig.getTableType() == TableConfig.TableTypeEnum.TYPE_GLOBAL_TABLE ? "GLOBAL TABLE" : "SHARDING TABLE";
+                    }
                     tableMap.put(tbName, tbType);
                 }
             }

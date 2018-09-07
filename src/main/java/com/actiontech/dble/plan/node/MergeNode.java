@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -94,7 +94,7 @@ public class MergeNode extends PlanNode {
         outerFields.clear();
         Set<NamedField> checkDup = new HashSet<>(firstNode.getOuterFields().size(), 1);
         for (NamedField coutField : firstNode.getOuterFields().keySet()) {
-            ItemField column = new ItemField(null, null, coutField.getName());
+            ItemField column = new ItemField(null, coutField.getTable(), coutField.getName());
             NamedField tmpField = new NamedField(coutField.getTable(), coutField.getName(), this);
             NamedField testDupField = new NamedField(null, coutField.getName(), this);
             if (checkDup.contains(testDupField) && getParent() != null) {

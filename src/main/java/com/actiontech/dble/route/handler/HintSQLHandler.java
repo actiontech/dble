@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -25,6 +25,7 @@ import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 
 import java.sql.SQLException;
+import java.sql.SQLSyntaxErrorException;
 import java.sql.Types;
 import java.util.HashSet;
 import java.util.List;
@@ -50,6 +51,9 @@ public class HintSQLHandler implements HintHandler {
         RouteResultset rrs = routeStrategy.route(schema, hintSqlType,
                 hintSQLValue, sc, cachePool);
 
+        if (rrs.isNeedOptimizer()) {
+            throw new SQLSyntaxErrorException("Complex SQL not supported in hint");
+        }
         // replace the sql of RRS
         RouteResultsetNode[] oldRsNodes = rrs.getNodes();
         RouteResultsetNode[] newRrsNodes = new RouteResultsetNode[oldRsNodes.length];

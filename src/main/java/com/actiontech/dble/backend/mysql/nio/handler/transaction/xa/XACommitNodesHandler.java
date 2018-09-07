@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -14,7 +14,6 @@ import com.actiontech.dble.backend.mysql.xa.ParticipantLogEntry;
 import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.backend.mysql.xa.XAStateLog;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -85,9 +84,9 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             commitPhase(mysqlCon);
         } else if (state == TxState.TX_PREPARE_UNCONNECT_STATE) {
             final String errorMsg = this.error;
-            LOGGER.warn(AlarmCode.CORE_XA_WARN + "commit error and rollback the xa");
+            LOGGER.warn("commit error and rollback the xa");
             if (decrementCountBy(1)) {
-                DbleServer.getInstance().getBusinessExecutor().execute(new Runnable() {
+                DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
                     @Override
                     public void run() {
                         ErrorPacket error = new ErrorPacket();
@@ -295,6 +294,8 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         }
     }
 
+    protected void setResponseTime() {
+    }
 
     protected void nextParse() {
         if (this.isFail() && session.getXaState() != TxState.TX_PREPARE_UNCONNECT_STATE) {
@@ -310,11 +311,12 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         if (session.getXaState() == TxState.TX_INITIALIZE_STATE) { // clear all resources
             XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_COMMITTED_STATE);
             session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_INIT);
-            byte[] send = sendData;
             session.clearResources(false);
             if (session.closed()) {
                 return;
             }
+            setResponseTime();
+            byte[] send = sendData;
             session.getSource().write(send);
 
             // partially committed,must commit again
@@ -337,6 +339,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 byte[] toSend = sendData;
                 session.clearResources(false);
                 if (!session.closed()) {
+                    setResponseTime();
                     session.getSource().write(toSend);
                 }
             }
@@ -344,6 +347,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             // need to rollback;
         } else {
             XAStateLog.saveXARecoveryLog(session.getSessionXaID(), session.getXaState());
+            setResponseTime();
             session.getSource().write(sendData);
             LOGGER.info("cleanAndFeedback:" + error);
 

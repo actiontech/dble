@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -32,8 +32,9 @@ public class DruidCreateIndexParser extends DefaultDruidParser {
             SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, (SQLExprTableSource) tableSource);
             String statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema());
             rrs.setStatement(statement);
-            if (RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable())) {
-                RouterUtil.routeToSingleDDLNode(schemaInfo, rrs);
+            String noShardingNode = RouterUtil.isNoSharding(schema, schemaInfo.getTable());
+            if (noShardingNode != null) {
+                RouterUtil.routeToSingleDDLNode(schemaInfo, rrs, noShardingNode);
                 return schemaInfo.getSchemaConfig();
             }
             RouterUtil.routeToDDLNode(schemaInfo, rrs);

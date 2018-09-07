@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -76,11 +76,11 @@ public class ManagerParserTest {
         Assert.assertEquals(ManagerParseShow.DATA_NODE, ManagerParseShow.parse("SHOW @@DATANODE", 5));
         Assert.assertEquals(ManagerParseShow.DATA_NODE, ManagerParseShow.parse("show @@DATANODE", 5));
         Assert.assertEquals(ManagerParseShow.DATA_NODE, ManagerParseShow.parse("show @@DATANODE   ", 5));
-        Assert.assertEquals(ManagerParseShow.DATANODE_WHERE,
+        Assert.assertEquals(ManagerParseShow.DATANODE_SCHEMA,
                 0xff & ManagerParseShow.parse("show @@DATANODE WHERE SCHEMA=1", 5));
-        Assert.assertEquals(ManagerParseShow.DATANODE_WHERE,
+        Assert.assertEquals(ManagerParseShow.DATANODE_SCHEMA,
                 0xff & ManagerParseShow.parse("show @@DATANODE WHERE schema =1", 5));
-        Assert.assertEquals(ManagerParseShow.DATANODE_WHERE,
+        Assert.assertEquals(ManagerParseShow.DATANODE_SCHEMA,
                 0xff & ManagerParseShow.parse("show @@DATANODE WHERE SCHEMA= 1", 5));
         Assert.assertEquals(ManagerParseShow.OTHER,
                 ManagerParseShow.parse("show @@DATANODEWHERE SCHEMA= 1", 5));
@@ -252,7 +252,7 @@ public class ManagerParserTest {
         Assert.assertEquals(0, parser1.getMode());
 
         ManagerParseConfig parser2 = new ManagerParseConfig();
-        Assert.assertEquals(ManagerParseConfig.CONFIG_ALL, parser2.parse("reload @@config_all -t", 14));
+        Assert.assertEquals(ManagerParseConfig.CONFIG_ALL, parser2.parse("reload @@config_all -s", 14));
         Assert.assertEquals(1, parser2.getMode());
 
         ManagerParseConfig parser3 = new ManagerParseConfig();
@@ -260,7 +260,7 @@ public class ManagerParserTest {
         Assert.assertEquals(2, parser3.getMode());
 
         ManagerParseConfig parser4 = new ManagerParseConfig();
-        Assert.assertEquals(ManagerParseConfig.CONFIG_ALL, parser4.parse("reload @@config_all -t -f", 14));
+        Assert.assertEquals(ManagerParseConfig.CONFIG_ALL, parser4.parse("reload @@config_all -s -f", 14));
         Assert.assertEquals(3, parser4.getMode());
     }
 

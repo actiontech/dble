@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -25,7 +25,7 @@ import java.util.Set;
 public class ServerPrivileges implements FrontendPrivileges {
     private static ServerPrivileges instance = new ServerPrivileges();
 
-    private static final Logger ALARM = LoggerFactory.getLogger("alarm");
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerPrivileges.class);
 
     public static ServerPrivileges instance() {
         return instance;
@@ -83,11 +83,11 @@ public class ServerPrivileges implements FrontendPrivileges {
     }
 
     @Override
-    public int getBenchmark(String user) {
+    public int getMaxCon(String user) {
         ServerConfig conf = DbleServer.getInstance().getConfig();
         UserConfig uc = conf.getUsers().get(user);
         if (uc != null) {
-            return uc.getBenchmark();
+            return uc.getMaxCon();
         } else {
             return 0;
         }
@@ -125,8 +125,7 @@ public class ServerPrivileges implements FrontendPrivileges {
         }
 
         if (!isPassed) {
-            ALARM.error(Alarms.FIREWALL_ATTACK + "[host=" + host +
-                    ",user=" + user + ']');
+            LOGGER.warn("checkFirewallWhiteHostPolicy for [host=" + host + ",user=" + user + "],but not passed");
             return false;
         }
         return true;
@@ -149,7 +148,7 @@ public class ServerPrivileges implements FrontendPrivileges {
             WallCheckResult result = firewallConfig.getProvider().check(sql);
             if (!result.getViolations().isEmpty()) {
                 isPassed = false;
-                ALARM.warn("Firewall to intercept the '" + user + "' unsafe SQL , errMsg:" +
+                LOGGER.warn("Firewall to intercept the '" + user + "' unsafe SQL , errMsg:" +
                         result.getViolations().get(0).getMessage() + " \r\n " + sql);
             }
         }

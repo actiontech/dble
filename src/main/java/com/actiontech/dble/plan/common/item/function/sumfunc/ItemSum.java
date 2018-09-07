@@ -1,12 +1,11 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.plan.common.item.function.sumfunc;
 
 import com.actiontech.dble.net.mysql.RowDataPacket;
-import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.common.context.NameResolutionContext;
 import com.actiontech.dble.plan.common.context.ReferContext;
 import com.actiontech.dble.plan.common.external.ResultStore;
@@ -16,6 +15,7 @@ import com.actiontech.dble.plan.common.item.ItemResultField;
 import com.actiontech.dble.plan.common.item.function.sumfunc.Aggregator.AggregatorType;
 import com.actiontech.dble.plan.common.ptr.DoublePtr;
 import com.actiontech.dble.plan.common.ptr.LongPtr;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.util.PlanUtil;
 import org.apache.commons.lang.StringUtils;
 
@@ -296,12 +296,17 @@ public abstract class ItemSum extends ItemResultField {
     @Override
     public final ItemSum fixFields(NameResolutionContext context) {
         getReferTables().clear();
-        for (int index = 0; index < getArgCount(); index++) {
+        int argSize = getArgCount();
+        for (int index = 0; index < argSize; index++) {
             Item arg = args.get(index);
             Item fixedArg = arg.fixFields(context);
             if (fixedArg == null)
                 return null;
-            args.set(index, fixedArg);
+            if (fixedArg.getClass().equals(this.getClass()) && argSize == 1) {
+                args.set(index, fixedArg.arguments().get(0)); //select sum(a.column) column having sum(a.column)
+            } else {
+                args.set(index, fixedArg);
+            }
             getReferTables().addAll(fixedArg.getReferTables());
             withIsNull = withIsNull || fixedArg.isWithIsNull();
             withSubQuery = withSubQuery || fixedArg.isWithSubQuery();

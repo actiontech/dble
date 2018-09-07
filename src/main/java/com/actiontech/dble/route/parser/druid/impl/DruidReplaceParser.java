@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -29,6 +29,8 @@ import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
+import com.alibaba.druid.sql.ast.statement.SQLSelect;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlReplaceStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
@@ -72,10 +74,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
 
         //check the config of target table
         TableConfig tc = schema.getTables().get(tableName);
-        if (tc == null) {
-            String msg = "Table '" + schema.getName() + "." + tableName + "' doesn't exist";
-            throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
-        }
+        checkTableExists(tc, schema.getName(), tableName, ServerPrivileges.CheckType.INSERT);
 
         //if the target table is global table than
         if (tc.isGlobalTable()) {
@@ -133,16 +132,19 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
      * @throws SQLException
      */
     private boolean parserNoSharding(ServerConnection sc, String contextSchema, SchemaInfo schemaInfo, RouteResultset rrs, MySqlReplaceStatement replace) throws SQLException {
-        if (RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable())) {
+        String noShardingNode = RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable());
+        if (noShardingNode != null) {
+            StringPtr noShardingNodePr = new StringPtr(noShardingNode);
+            Set<String> schemas = new HashSet<>();
             if (replace.getQuery() != null) {
-                StringPtr sqlSchema = new StringPtr(schemaInfo.getSchema());
                 //replace into ...select  if the both table is nosharding table
-                if (!SchemaUtil.isNoSharding(sc, replace.getQuery(), contextSchema, sqlSchema)) {
+                SQLSelect select = replace.getQuery().getSubQuery();
+                SQLSelectStatement selectStmt = new SQLSelectStatement(select);
+                if (!SchemaUtil.isNoSharding(sc, select.getQuery(), replace, selectStmt, contextSchema, schemas, noShardingNodePr)) {
                     return false;
                 }
             }
-            rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
-            RouterUtil.routeToSingleNode(rrs, schemaInfo.getSchemaConfig().getDataNode());
+            routeToNoSharding(schemaInfo.getSchemaConfig(), rrs, schemas, noShardingNodePr);
             return true;
         }
         return false;
@@ -300,7 +302,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         int joinKeyIndex = getJoinKeyIndex(schemaInfo, replace, joinKey);
         final String joinKeyVal = replace.getValuesList().get(0).getValues().get(joinKeyIndex).toString();
         String realVal = StringUtil.removeApostrophe(joinKeyVal);
-        final String sql = RouterUtil.removeSchema(replace.toString(), schemaInfo.getSchema());
+        final String sql = RouterUtil.removeSchema(statementToString(replace), schemaInfo.getSchema());
         rrs.setStatement(sql);
         // try to route by ER parent partition key
         RouteResultset theRrs = routeByERParentKey(rrs, tc, realVal);
@@ -313,7 +315,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
                 @Override
                 public void run() {
                     // route by sql query root parent's data node
-                    String findRootTBSql = tc.getLocateRTableKeySql().toLowerCase() + joinKeyVal;
+                    String findRootTBSql = tc.getLocateRTableKeySql() + joinKeyVal;
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("to find root parent's node sql :" + findRootTBSql);
                     }
@@ -415,7 +417,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             ReplaceTemp temp = new ReplaceTemp(replace);
             temp.setValuesList(valuesList);
             nodes[count] = new RouteResultsetNode(tableConfig.getDataNodes().get(nodeIndex), rrs.getSqlType(),
-                    RouterUtil.removeSchema(temp.toString(), schemaInfo.getSchema()));
+                    RouterUtil.removeSchema(statementToString(temp), schemaInfo.getSchema()));
             count++;
         }
         rrs.setNodes(nodes);
@@ -447,7 +449,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         }
         RouteResultsetNode[] nodes = new RouteResultsetNode[1];
         nodes[0] = new RouteResultsetNode(tableConfig.getDataNodes().get(nodeIndex),
-                rrs.getSqlType(), RouterUtil.removeSchema(replaceStatement.toString(), schemaInfo.getSchema()));
+                rrs.getSqlType(), RouterUtil.removeSchema(statementToString(replaceStatement), schemaInfo.getSchema()));
 
         rrs.setNodes(nodes);
         rrs.setFinishedRoute(true);

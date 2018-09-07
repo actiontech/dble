@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -9,9 +9,9 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.SecurityUtil;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOHandler;
-import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.mysql.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,18 +77,12 @@ public class FrontendAuthenticator implements NIOHandler {
             return;
         }
 
-        // check degrade
-        if (isDegrade(auth.getUser())) {
-            failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + auth.getUser() + "', because service be degraded ");
-            return;
-        }
 
         // check dataHost without writeHost flag
         if (DbleServer.getInstance().getConfig().isDataHostWithoutWR() && !(this instanceof ManagerAuthenticator)) {
-            failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + auth.getUser() + "', because there have dataHost without writeHost ");
+            failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + auth.getUser() + "', because there are some dataHost is empty ");
             return;
         }
-
 
         // check schema
         switch (checkSchema(auth.getDatabase(), auth.getUser())) {
@@ -100,28 +94,24 @@ public class FrontendAuthenticator implements NIOHandler {
                 failure(ErrorCode.ER_DBACCESS_DENIED_ERROR, s);
                 break;
             default:
+                break;
+        }
+
+        //check maxconnection
+        switch (DbleServer.getInstance().getUserManager().maxConnectionCheck(auth.getUser(), source.getPrivileges().getMaxCon(auth.getUser()), (source instanceof ManagerConnection))) {
+            case SERVER_MAX:
+                String s = "Access denied for user '" + auth.getUser() + "',too many connections for dble server";
+                failure(ErrorCode.ER_ACCESS_DENIED_ERROR, s);
+                break;
+            case USER_MAX:
+                String s1 = "Access denied for user '" + auth.getUser() + "',too many connections for this user";
+                failure(ErrorCode.ER_ACCESS_DENIED_ERROR, s1);
+                break;
+            default:
                 success(auth);
         }
-    }
 
-    //frontend connection reached the user threshold. service degrade
-    protected boolean isDegrade(String user) {
 
-        int benchmark = source.getPrivileges().getBenchmark(user);
-        if (benchmark > 0) {
-
-            int frontendsLength = 0;
-            NIOProcessor[] processors = DbleServer.getInstance().getProcessors();
-            for (NIOProcessor p : processors) {
-                frontendsLength += p.getFrontendsLength();
-            }
-
-            if (frontendsLength >= benchmark) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     protected boolean checkUser(String user, String host) {

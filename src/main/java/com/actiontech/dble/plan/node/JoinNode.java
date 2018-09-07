@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -94,6 +94,7 @@ public class JoinNode extends PlanNode {
         buildOtherJoinOn();
         buildJoinKeys(false);
     }
+
     @Override
     protected void setUpInnerFields() {
         super.setUpInnerFields();
@@ -102,6 +103,7 @@ public class JoinNode extends PlanNode {
         }
 
     }
+
     private void buildJoinFilters() {
         nameContext.setFindInSelect(false);
         nameContext.setSelectFirst(false);
@@ -204,16 +206,56 @@ public class JoinNode extends PlanNode {
         } else {
             PlanNode driverNode = this.isRightOuterJoin() ? this.getRightNode() : this.getLeftNode();
             String table = findTbNameByUsing(driverNode, usingFields.get(0));
-            for (String fieldName : usingFields) {
-                ItemField col = new ItemField(null, table, fieldName);
-                newSels.add(col);
-            }
-            for (NamedField field : innerFields.keySet()) {
-                if (usingFields.contains(field.getName())) {
-                    continue;
+            if (isNatural) {
+                //is the join is a natural join,the fields order is driverNode's column order
+                for (NamedField field : driverNode.getInnerFields().keySet()) {
+                    String name = field.getName();
+                    for (String fieldName : usingFields) {
+                        if (name.equals(fieldName)) {
+                            ItemField col = new ItemField(null, table, fieldName);
+                            newSels.add(col);
+                        }
+                    }
                 }
-                ItemField col = new ItemField(null, field.getTable(), field.getName());
-                newSels.add(col);
+
+                for (NamedField field : driverNode.getInnerFields().keySet()) {
+                    if (usingFields.contains(field.getName())) {
+                        continue;
+                    }
+                    ItemField col = new ItemField(null, field.getTable(), field.getName());
+                    newSels.add(col);
+                }
+
+                // add Remaining innerFields
+                for (NamedField field : innerFields.keySet()) {
+                    ItemField col = new ItemField(null, field.getTable(), field.getName());
+                    boolean contians = false;
+                    for (Item f : newSels) {
+                        if (f instanceof ItemField) {
+                            if (f.getItemName().equals(field.getName())) {
+                                contians = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!contians) {
+                        newSels.add(col);
+                    }
+                }
+
+            } else {
+                for (String fieldName : usingFields) {
+                    ItemField col = new ItemField(null, table, fieldName);
+                    newSels.add(col);
+                }
+
+                for (NamedField field : innerFields.keySet()) {
+                    if (usingFields.contains(field.getName())) {
+                        continue;
+                    }
+                    ItemField col = new ItemField(null, field.getTable(), field.getName());
+                    newSels.add(col);
+                }
             }
         }
     }

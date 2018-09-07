@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -58,7 +58,8 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             MergeBuilder mergeBuilder = new MergeBuilder(session, node, needCommon, pdVisitor);
             String sql = null;
             if (node.getAst() != null && node.getParent() == null) { // it's root
-                sql = node.getSql();
+                pdVisitor.visit();
+                sql = pdVisitor.getSql().toString();
             }
             RouteResultsetNode[] rrssArray;
             // maybe some node is view
@@ -70,7 +71,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
             this.needCommon = mergeBuilder.getNeedCommonFlag();
             buildMergeHandler(node, rrssArray);
         } catch (Exception e) {
-            throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "join node mergebuild exception!", e);
+            throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "join node mergebuild exception! Error:" + e.getMessage(), e);
         }
     }
 

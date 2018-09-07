@@ -31,10 +31,8 @@
     </Appenders>
     <Loggers>
         <asyncRoot level="info" includeLocation="true">
-
             <!--<AppenderRef ref="Console" />-->
             <AppenderRef ref="RollingFile"/>
-
         </asyncRoot>
     </Loggers>
 </Configuration>

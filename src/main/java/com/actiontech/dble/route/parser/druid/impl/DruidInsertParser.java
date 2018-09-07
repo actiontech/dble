@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -67,10 +67,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         }
 
         TableConfig tc = schema.getTables().get(tableName);
-        if (tc == null) {
-            String msg = "Table '" + schema.getName() + "." + tableName + "' doesn't exist";
-            throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
-        }
+        checkTableExists(tc, schema.getName(), tableName, CheckType.INSERT);
         if (tc.isGlobalTable()) {
             String sql = rrs.getStatement();
             if (tc.isAutoIncrement() || GlobalTableUtil.useGlobalTableCheck()) {
@@ -112,17 +109,17 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
 
     private boolean parserNoSharding(ServerConnection sc, String contextSchema, SchemaInfo schemaInfo, RouteResultset rrs,
                                      MySqlInsertStatement insert) throws SQLException {
-
-        if (RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable())) {
+        String noShardingNode = RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable());
+        if (noShardingNode != null) {
+            StringPtr noShardingNodePr = new StringPtr(noShardingNode);
+            Set<String> schemas = new HashSet<>();
             if (insert.getQuery() != null) {
                 SQLSelectStatement selectStmt = new SQLSelectStatement(insert.getQuery());
-                StringPtr sqlSchema = new StringPtr(schemaInfo.getSchema());
-                if (!SchemaUtil.isNoSharding(sc, insert.getQuery().getQuery(), selectStmt, contextSchema, sqlSchema)) {
+                if (!SchemaUtil.isNoSharding(sc, insert.getQuery().getQuery(), insert, selectStmt, contextSchema, schemas, noShardingNodePr)) {
                     return false;
                 }
             }
-            rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
-            RouterUtil.routeToSingleNode(rrs, schemaInfo.getSchemaConfig().getDataNode());
+            routeToNoSharding(schemaInfo.getSchemaConfig(), rrs, schemas, noShardingNodePr);
             return true;
         }
         return false;
@@ -153,7 +150,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         int joinKeyIndex = getJoinKeyIndex(schemaInfo, insertStmt, joinKey);
         final String joinKeyVal = insertStmt.getValues().getValues().get(joinKeyIndex).toString();
         String realVal = StringUtil.removeApostrophe(joinKeyVal);
-        final String sql = RouterUtil.removeSchema(insertStmt.toString(), schemaInfo.getSchema());
+        final String sql = RouterUtil.removeSchema(statementToString(insertStmt), schemaInfo.getSchema());
         rrs.setStatement(sql);
         // try to route by ER parent partion key
         RouteResultset theRrs = routeByERParentKey(rrs, tc, realVal);
@@ -166,7 +163,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
                 @Override
                 public void run() {
                     // route by sql query root parent's data node
-                    String findRootTBSql = tc.getLocateRTableKeySql().toLowerCase() + joinKeyVal;
+                    String findRootTBSql = tc.getLocateRTableKeySql() + joinKeyVal;
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug("to find root parent's node sql :" + findRootTBSql);
                     }
@@ -211,7 +208,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
 
         RouteResultsetNode[] nodes = new RouteResultsetNode[1];
         nodes[0] = new RouteResultsetNode(tableConfig.getDataNodes().get(nodeIndex), rrs.getSqlType(),
-                                          RouterUtil.removeSchema(insertStmt.toString(), schemaInfo.getSchema()));
+                                          RouterUtil.removeSchema(statementToString(insertStmt), schemaInfo.getSchema()));
 
         // insert into .... on duplicateKey
         //such as :INSERT INTO TABLEName (a,b,c) VALUES (1,2,3) ON DUPLICATE KEY UPDATE b=VALUES(b);
@@ -281,7 +278,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             List<ValuesClause> valuesList = node.getValue();
             insertStmt.setValuesList(valuesList);
             nodes[count] = new RouteResultsetNode(tableConfig.getDataNodes().get(nodeIndex), rrs.getSqlType(),
-                    RouterUtil.removeSchema(insertStmt.toString(), schemaInfo.getSchema()));
+                    RouterUtil.removeSchema(statementToString(insertStmt), schemaInfo.getSchema()));
             count++;
 
         }
@@ -484,5 +481,4 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         }
         return sb.append(")");
     }
-
 }

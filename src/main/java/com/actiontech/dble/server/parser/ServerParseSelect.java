@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -24,11 +24,11 @@ public final class ServerParseSelect {
     public static final int VERSION = 6;
     public static final int SESSION_INCREMENT = 7;
     public static final int SESSION_ISOLATION = 8;
-
     public static final int SELECT_VAR_ALL = 9;
-
     public static final int SESSION_TX_READ_ONLY = 10;
+    public static final int TRACE = 11;
 
+    private static final char[] TRACE_STR = "TRACE".toCharArray();
     private static final char[] VERSION_COMMENT_STR = "VERSION_COMMENT".toCharArray();
     private static final char[] IDENTITY_STR = "IDENTITY".toCharArray();
     private static final char[] LAST_INSERT_ID_STR = "LAST_INSERT_ID".toCharArray();
@@ -69,6 +69,21 @@ public final class ServerParseSelect {
         return OTHER;
     }
 
+
+    /**
+     * SELECT @@trace
+     */
+    static int traceCheck(String stmt, int offset) {
+        int length = offset + TRACE_STR.length;
+        if (stmt.length() >= length && ParseUtil.compare(stmt, offset, TRACE_STR)) {
+            if (stmt.length() > length && stmt.charAt(length) != ' ') {
+                return OTHER;
+            } else {
+                return TRACE;
+            }
+        }
+        return OTHER;
+    }
     /**
      * SELECT @@session.auto_increment_increment
      *
@@ -430,6 +445,9 @@ public final class ServerParseSelect {
                 case 's':
                 case 'S':
                     return sessionVarCheck(stmt, offset);
+                case 't':
+                case 'T':
+                    return traceCheck(stmt, offset);
                 default:
                     return OTHER;
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 package com.actiontech.dble.backend.mysql.nio.handler;
@@ -23,10 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -43,12 +40,11 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
         super(rrs, session);
         this.queueSize = DbleServer.getInstance().getConfig().getSystem().getMergeQueueSize();
         this.queues = new ConcurrentHashMap<>();
-        outputHandler = new OutputHandler(BaseHandlerBuilder.getSequenceId(), session, false);
+        outputHandler = new OutputHandler(BaseHandlerBuilder.getSequenceId(), session);
     }
 
     @Override
     public void okResponse(byte[] data, BackendConnection conn) {
-        this.netOutBytes += data.length;
         boolean executeResponse = conn.syncAndExecute();
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("received ok response ,executeResponse:" + executeResponse + " from " + conn);
@@ -62,12 +58,14 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
-        this.netOutBytes += header.length;
-        this.netOutBytes += eof.length;
         queues.put(conn, new LinkedBlockingQueue<HeapItem>(queueSize));
         lock.lock();
         try {
             if (isFail()) {
+                if (--nodeCount > 0) {
+                    return;
+                }
+                session.resetMultiStatementStatus();
                 handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
             } else {
                 if (!fieldsReturned) {
@@ -88,6 +86,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
 
     @Override
     public void rowEofResponse(final byte[] eof, boolean isLeft, BackendConnection conn) {
+        session.setBackendResponseEndTime((MySQLConnection) conn);
         BlockingQueue<HeapItem> queue = queues.get(conn);
         if (queue == null)
             return;
@@ -125,7 +124,6 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
         fieldCount = fields.size();
         List<FieldPacket> fieldPackets = new ArrayList<>();
         for (byte[] field : fields) {
-            this.netOutBytes += field.length;
             FieldPacket fieldPacket = new FieldPacket();
             fieldPacket.read(field);
             if (rrs.getSchema() != null) {
@@ -213,8 +211,15 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
                     outputHandler.rowResponse(top.getRowData(), top.getRowPacket(), false, top.getIndex());
                 }
             }
-            outputHandler.rowEofResponse(null, false, queues.keySet().iterator().next());
-            doSqlStat(session.getSource());
+            Iterator<Map.Entry<BackendConnection, BlockingQueue<HeapItem>>> iterator = this.queues.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<BackendConnection, BlockingQueue<HeapItem>> entry = iterator.next();
+                entry.getValue().clear();
+                session.releaseConnectionIfSafe(entry.getKey(), false);
+                iterator.remove();
+            }
+            doSqlStat();
+            outputHandler.rowEofResponse(null, false, null);
         } catch (Exception e) {
             String msg = "Merge thread error, " + e.getLocalizedMessage();
             LOGGER.info(msg, e);

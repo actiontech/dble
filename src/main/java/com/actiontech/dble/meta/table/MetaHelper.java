@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -137,6 +137,7 @@ public final class MetaHelper {
         if (column.getDefaultExpr() != null) {
             StringBuilder builder = new StringBuilder();
             MySqlOutputVisitor visitor = new MySqlOutputVisitor(builder);
+            visitor.setShardingSupport(false);
             column.getDefaultExpr().accept(visitor);
             cmBuilder.setSdefault(builder.toString());
         }

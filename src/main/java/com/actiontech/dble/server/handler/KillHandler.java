@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -36,14 +36,14 @@ public final class KillHandler {
 
             // kill myself
             if (value == c.getId()) {
-                getOkPacket().write(c);
+                getOkPacket(c).write(c);
                 c.write(c.allocate());
                 return;
             }
 
             // get connection and close it
             FrontendConnection fc = null;
-            NIOProcessor[] processors = DbleServer.getInstance().getProcessors();
+            NIOProcessor[] processors = DbleServer.getInstance().getFrontProcessors();
             for (NIOProcessor p : processors) {
                 if ((fc = p.getFrontends().get(value)) != null) {
                     break;
@@ -55,18 +55,22 @@ public final class KillHandler {
                     return;
                 }
                 fc.killAndClose("killed");
-                getOkPacket().write(c);
+                boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+                getOkPacket(c).write(c);
+                c.getSession2().multiStatementNextSql(multiStatementFlag);
             } else {
                 c.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "Unknown connection id:" + id);
             }
         }
     }
 
-    private static OkPacket getOkPacket() {
+    private static OkPacket getOkPacket(ServerConnection c) {
+        byte packetId = (byte) c.getSession2().getPacketId().get();
         OkPacket packet = new OkPacket();
-        packet.setPacketId(1);
+        packet.setPacketId(packetId);
         packet.setAffectedRows(0);
         packet.setServerStatus(2);
+        c.getSession2().multiStatementPacket(packet, packetId);
         return packet;
     }
 

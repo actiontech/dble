@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -8,6 +8,7 @@ package com.actiontech.dble.route.parser.druid;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlReplaceStatement;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,9 +51,8 @@ public class ReplaceTemp extends MySqlReplaceStatement {
         this.setParent(statement.getParent());
         this.attributes = statement.getAttributes();
     }
-
-    public String toString() {
-        return super.toString();
+    public void accept0(MySqlASTVisitor visitor) {
+        super.accept0(visitor);
     }
 
 }

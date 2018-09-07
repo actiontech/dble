@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -10,9 +10,8 @@ import com.actiontech.dble.backend.mysql.xa.Deserializer;
 import com.actiontech.dble.backend.mysql.xa.Serializer;
 import com.actiontech.dble.backend.mysql.xa.recovery.DeserializationException;
 import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkParamCfg;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -39,7 +38,7 @@ public class KVStoreRepository implements Repository {
 
     @Override
     public void init() {
-        logPath = KVPathUtil.XALOG + ZkConfig.getInstance().getValue(ZkParamCfg.ZK_CFG_MYID);
+        logPath = KVPathUtil.XALOG + ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
     }
 
     @Override
@@ -58,7 +57,7 @@ public class KVStoreRepository implements Repository {
     }
 
     @Override
-    public Collection<CoordinatorLogEntry> getAllCoordinatorLogEntries() {
+    public Collection<CoordinatorLogEntry> getAllCoordinatorLogEntries(boolean first) {
         String data = null;
         try {
             if (zkConn.checkExists().forPath(logPath) != null) {
@@ -68,11 +67,13 @@ public class KVStoreRepository implements Repository {
                         data = new String(raw, StandardCharsets.UTF_8);
                     }
                 } catch (Exception e) {
-                    LOGGER.warn(AlarmCode.CORE_ZK_WARN + "KVStoreRepository.getAllCoordinatorLogEntries error", e);
+                    if (!first) {
+                        LOGGER.warn("KVStoreRepository.getAllCoordinatorLogEntries error", e);
+                    }
                 }
             }
         } catch (Exception e2) {
-            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "KVStoreRepository error", e2);
+            LOGGER.warn("KVStoreRepository error", e2);
         }
         if (data == null) {
             return Collections.emptyList();
@@ -84,7 +85,7 @@ public class KVStoreRepository implements Repository {
                 CoordinatorLogEntry coordinatorLogEntry = Deserializer.fromJson(log);
                 coordinatorLogEntries.put(coordinatorLogEntry.getId(), coordinatorLogEntry);
             } catch (DeserializationException e) {
-                LOGGER.warn(AlarmCode.CORE_ZK_WARN + "Unexpected EOF - logfile not closed properly last time? ", e);
+                LOGGER.warn("Unexpected EOF - logfile not closed properly last time? ", e);
             }
         }
         return coordinatorLogEntries.values();
@@ -104,7 +105,7 @@ public class KVStoreRepository implements Repository {
             zkConn.setData().forPath(logPath, data);
             return true;
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.CORE_ZK_WARN + "Failed to write checkpoint", e);
+            LOGGER.warn("Failed to write checkpoint", e);
             return false;
         }
     }

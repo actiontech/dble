@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -8,17 +8,17 @@ package com.actiontech.dble.backend.mysql.nio.handler.builder;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeMergeHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandler;
-import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Set;
 
 public class HandlerBuilder {
-    private static Logger logger = Logger.getLogger(HandlerBuilder.class);
+    private static Logger logger = LoggerFactory.getLogger(HandlerBuilder.class);
 
     private PlanNode node;
     private NonBlockingSession session;
@@ -48,16 +48,6 @@ public class HandlerBuilder {
         }
     }
 
-    /**
-     * generate node handler chain, and return endHandler
-     *
-     * @param planNode
-     * @return
-     */
-    public DMLResponseHandler buildNode(NonBlockingSession nonBlockingSession, PlanNode planNode, boolean isExplain) {
-        BaseHandlerBuilder builder = getBuilder(nonBlockingSession, planNode, isExplain);
-        return builder.getEndHandler();
-    }
 
     public BaseHandlerBuilder getBuilder(NonBlockingSession nonBlockingSession, PlanNode planNode, boolean isExplain) {
         BaseHandlerBuilder builder = createBuilder(nonBlockingSession, planNode, isExplain);
@@ -65,14 +55,16 @@ public class HandlerBuilder {
         return builder;
     }
 
-    public void build(boolean hasNext) throws Exception {
+    public BaseHandlerBuilder build() throws Exception {
         final long startTime = System.nanoTime();
-        DMLResponseHandler endHandler = buildNode(session, node, false);
-        OutputHandler fh = new OutputHandler(BaseHandlerBuilder.getSequenceId(), session, hasNext);
+        BaseHandlerBuilder builder = getBuilder(session, node, false);
+        DMLResponseHandler endHandler = builder.getEndHandler();
+        OutputHandler fh = new OutputHandler(BaseHandlerBuilder.getSequenceId(), session);
         endHandler.setNextHandler(fh);
         HandlerBuilder.startHandler(fh);
         long endTime = System.nanoTime();
-        logger.info("HandlerBuilder.build cost:" + (endTime - startTime));
+        logger.debug("HandlerBuilder.build cost:" + (endTime - startTime));
+        return builder;
     }
 
     private BaseHandlerBuilder createBuilder(final NonBlockingSession nonBlockingSession, PlanNode planNode, boolean isExplain) {

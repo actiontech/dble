@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -13,6 +13,7 @@ import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.server.ServerConnection;
 
 import java.nio.ByteBuffer;
 
@@ -28,16 +29,14 @@ public final class SelectVersionComment {
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
 
-    static {
-        int i = 0;
-        byte packetId = 0;
-        HEADER.setPacketId(++packetId);
-        FIELDS[i] = PacketUtil.getField("@@VERSION_COMMENT", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i].setPacketId(++packetId);
-        EOF.setPacketId(++packetId);
-    }
-
     public static void response(FrontendConnection c) {
+
+        byte packetId = setCurrentPacket(c);
+        HEADER.setPacketId(++packetId);
+        FIELDS[0] = PacketUtil.getField("@@VERSION_COMMENT", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[0].setPacketId(++packetId);
+        EOF.setPacketId(++packetId);
+
         ByteBuffer buffer = c.allocate();
 
         // write header
@@ -52,7 +51,7 @@ public final class SelectVersionComment {
         buffer = EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = EOF.getPacketId();
+
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(Versions.VERSION_COMMENT);
         row.setPacketId(++packetId);
@@ -61,10 +60,27 @@ public final class SelectVersionComment {
         // write last eof
         EOFPacket lastEof = new EOFPacket();
         lastEof.setPacketId(++packetId);
+        boolean multiStatementFlag = false;
+        if (c instanceof ServerConnection) {
+            multiStatementFlag = ((ServerConnection) c).getSession2().getIsMultiStatement().get();
+            ((ServerConnection) c).getSession2().multiStatementPacket(lastEof, packetId);
+        }
         buffer = lastEof.write(buffer, c, true);
 
         // post write
         c.write(buffer);
+        if (c instanceof ServerConnection) {
+            ((ServerConnection) c).getSession2().multiStatementNextSql(multiStatementFlag);
+        }
+
+    }
+
+
+    public static byte setCurrentPacket(FrontendConnection c) {
+        if (c instanceof ServerConnection) {
+            return (byte) ((ServerConnection) c).getSession2().getPacketId().get();
+        }
+        return 0;
     }
 
 }

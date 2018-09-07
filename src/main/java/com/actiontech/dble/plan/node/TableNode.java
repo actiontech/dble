@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -10,6 +10,7 @@ import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.model.TableConfig.TableTypeEnum;
+import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.plan.NamedField;
 import com.actiontech.dble.plan.common.item.Item;
@@ -17,6 +18,7 @@ import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.util.ToStringUtil;
 import com.alibaba.druid.sql.ast.SQLHint;
 
+import java.sql.SQLNonTransientException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -32,12 +34,16 @@ public class TableNode extends PlanNode {
     private String tableName;
     private StructureMeta.TableMeta tableMeta;
     private List<SQLHint> hintList;
+    private ProxyMetaManager metaManager;
 
-    public TableNode(String catalog, String tableName) {
+    private TableNode() {
+    }
+    public TableNode(String catalog, String tableName, ProxyMetaManager metaManager) throws SQLNonTransientException {
         if (catalog == null || tableName == null)
             throw new RuntimeException("Table db or name is null error!");
         this.schema = catalog;
         this.tableName = tableName;
+        this.metaManager = metaManager;
         ServerConfig config = DbleServer.getInstance().getConfig();
         if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             this.schema = this.schema.toLowerCase();
@@ -47,7 +53,7 @@ public class TableNode extends PlanNode {
         if (schemaConfig == null) {
             throw new RuntimeException("schema " + this.schema + " is not exists!");
         }
-        this.tableMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(this.schema, this.tableName);
+        this.tableMeta = metaManager.getSyncTableMeta(this.schema, this.tableName);
         TableConfig tableConfig = schemaConfig.getTables().get(this.tableName);
         if (this.tableMeta == null) {
             String errorMsg = "table " + this.tableName + " is not exists!";
@@ -109,7 +115,14 @@ public class TableNode extends PlanNode {
     }
 
     public TableNode copy() {
-        TableNode newTableNode = new TableNode(schema, tableName);
+        TableNode newTableNode = new TableNode();
+        newTableNode.schema = this.schema;
+        newTableNode.tableName = this.tableName;
+        newTableNode.metaManager = this.metaManager;
+        newTableNode.tableMeta = this.tableMeta.toBuilder().build();
+        newTableNode.referedTableNodes.add(newTableNode);
+        newTableNode.setNoshardNode(this.getNoshardNode());
+
         this.copySelfTo(newTableNode);
         newTableNode.setHintList(this.hintList);
         return newTableNode;

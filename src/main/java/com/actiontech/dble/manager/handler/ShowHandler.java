@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -9,6 +9,7 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.manager.response.*;
 import com.actiontech.dble.route.parser.ManagerParseShow;
+import com.actiontech.dble.server.status.SlowQueryLog;
 import com.actiontech.dble.util.StringUtil;
 
 
@@ -53,7 +54,7 @@ public final class ShowHandler {
             case ManagerParseShow.DATA_NODE:
                 ShowDataNode.execute(c, null);
                 break;
-            case ManagerParseShow.DATANODE_WHERE: {
+            case ManagerParseShow.DATANODE_SCHEMA: {
                 String name = stmt.substring(rs >>> 8).trim();
                 if (StringUtil.isEmpty(name)) {
                     c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
@@ -74,6 +75,14 @@ public final class ShowHandler {
                 }
                 break;
             }
+            case ManagerParseShow.TABLE_DATA_NODE: {
+                String tableInfo = stmt.substring(rs >>> 8).trim();
+                ShowTableDataNode.execute(c, tableInfo);
+                break;
+            }
+            case ManagerParseShow.PAUSE_DATANDE:
+                ShowPauseInfo.execute(c);
+                break;
             case ManagerParseShow.HELP:
                 ShowHelp.execute(c);
                 break;
@@ -163,6 +172,29 @@ public final class ShowHandler {
                 break;
             case ManagerParseShow.BACKEND_STAT:
                 ShowBackendStat.execute(c);
+                break;
+            case ManagerParseShow.COST_TIME:
+                ShowCostTimeStat.execute(c);
+                break;
+            case ManagerParseShow.THREAD_USED:
+                ShowThreadUsed.execute(c);
+                break;
+            case ManagerParseShow.TABLE_ALGORITHM: {
+                String tableInfo = stmt.substring(rs >>> 8).trim();
+                ShowTableAlgorithm.execute(c, tableInfo);
+                break;
+            }
+            case ManagerParseShow.SLOW_QUERY_LOG:
+                ShowSingleValue.execute(c, "@@slow_query_log", SlowQueryLog.getInstance().isEnableSlowLog() ? 1L : 0L);
+                break;
+            case ManagerParseShow.SLOW_QUERY_TIME:
+                ShowSingleValue.execute(c, "@@slow_query.time", SlowQueryLog.getInstance().getSlowTime());
+                break;
+            case ManagerParseShow.SLOW_QUERY_FLUSH_PERIOD:
+                ShowSingleValue.execute(c, "@@slow_query.flushperiod", SlowQueryLog.getInstance().getFlushPeriod());
+                break;
+            case ManagerParseShow.SLOW_QUERY_FLUSH_SIZE:
+                ShowSingleValue.execute(c, "@@slow_query.flushsize", SlowQueryLog.getInstance().getFlushSize());
                 break;
             default:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -26,6 +26,22 @@ import java.util.List;
 public class DefaultRouteStrategy extends AbstractRouteStrategy {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(DefaultRouteStrategy.class);
+
+
+    public SQLStatement parserSQL(String originSql, ServerConnection c) throws SQLSyntaxErrorException {
+        SQLStatementParser parser;
+        parser = new MySqlStatementParser(originSql);
+        try {
+            return parser.parseStatement(true);
+        } catch (Exception t) {
+            LOGGER.info("routeNormalSqlWithAST", t);
+            if (t.getMessage() != null) {
+                throw new SQLSyntaxErrorException(t.getMessage());
+            } else {
+                throw new SQLSyntaxErrorException(t);
+            }
+        }
+    }
 
     @Override
     public SQLStatement parserSQL(String originSql) throws SQLSyntaxErrorException {
@@ -54,7 +70,13 @@ public class DefaultRouteStrategy extends AbstractRouteStrategy {
     public RouteResultset routeNormalSqlWithAST(SchemaConfig schema,
                                                 String originSql, RouteResultset rrs,
                                                 LayerCachePool cachePool, ServerConnection sc) throws SQLException {
-        SQLStatement statement = parserSQL(originSql);
+        SQLStatement statement = parserSQL(originSql, sc);
+        if (sc.getSession2().getIsMultiStatement().get()) {
+            originSql = statement.toString();
+            rrs.setStatement(originSql);
+            rrs.setSrcStatement(originSql);
+        }
+        sc.getSession2().endParse();
         DruidParser druidParser = DruidParserFactory.create(statement, rrs.getSqlType());
         return RouterUtil.routeFromParser(druidParser, schema, rrs, statement, originSql, cachePool, new ServerSchemaStatVisitor(), sc);
 

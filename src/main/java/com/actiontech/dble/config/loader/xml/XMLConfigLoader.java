@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -23,8 +23,8 @@ public class XMLConfigLoader {
     private final Map<String, UserConfig> users;
     private final FirewallConfig firewall;
 
-    public XMLConfigLoader(boolean isLowerCaseTableNames) {
-        XMLServerLoader serverLoader = new XMLServerLoader(isLowerCaseTableNames);
+    public XMLConfigLoader() {
+        XMLServerLoader serverLoader = new XMLServerLoader();
         this.system = serverLoader.getSystem();
         this.users = serverLoader.getUsers();
         this.firewall = serverLoader.getFirewall();

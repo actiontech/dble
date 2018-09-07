@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -185,7 +185,8 @@ public class ERJoinChooser {
         ret.having(jn.getHavingFilter());
         ret.setWhereFilter(jn.getWhereFilter());
         ret.setAlias(jn.getAlias());
-        ret.setSubQuery(jn.isSubQuery());
+        ret.setWithSubQuery(jn.isWithSubQuery());
+        ret.setContainsSubQuery(jn.isContainsSubQuery());
         ret.setSql(jn.getSql());
         ret.setUpFields();
         return ret;
@@ -389,7 +390,7 @@ public class ERJoinChooser {
     private boolean isUnit(PlanNode node) {
         if (isGlobalTree(node))
             return true;
-        else return node.type() != PlanNode.PlanNodeType.JOIN || node.isSubQuery() || !((JoinNode) node).isInnerJoin();
+        else return node.type() != PlanNode.PlanNodeType.JOIN || node.isWithSubQuery() || !((JoinNode) node).isInnerJoin();
     }
 
     /**

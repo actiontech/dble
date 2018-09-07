@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -9,7 +9,6 @@ import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.util.ConfigUtil;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -176,7 +175,7 @@ public final class ConfFileHandler {
             buff.flush();
 
         } catch (Exception e) {
-            LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "write file err " + e);
+            LOGGER.warn("write file err " + e);
             return showInfo(c, buffer, packetId, "write file err " + e);
 
         } finally {
@@ -185,7 +184,7 @@ public final class ConfFileHandler {
                     buff.close();
                     suc = true;
                 } catch (IOException e) {
-                    LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + "save config file err " + e);
+                    LOGGER.warn("save config file err " + e);
                 }
             }
         }
@@ -198,14 +197,14 @@ public final class ConfFileHandler {
                         System.currentTimeMillis() + "_auto");
                 if (!oldFile.renameTo(backUP)) {
                     String msg = "rename old file failed";
-                    LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + msg + " for upload file " + oldFile.getAbsolutePath());
+                    LOGGER.warn(msg + " for upload file " + oldFile.getAbsolutePath());
                     return showInfo(c, buffer, packetId, msg);
                 }
             }
             File dst = new File(SystemConfig.getHomePath(), "conf" + File.separator + fileName);
             if (!tempFile.renameTo(dst)) {
                 String msg = "rename file failed";
-                LOGGER.warn(AlarmCode.CORE_FILE_WRITE_WARN + msg + " for upload file " + tempFile.getAbsolutePath());
+                LOGGER.warn(msg + " for upload file " + tempFile.getAbsolutePath());
                 return showInfo(c, buffer, packetId, msg);
             }
             return showInfo(c, buffer, packetId, "SUCCESS SAVED FILE:" + fileName);

@@ -1,9 +1,11 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
 package com.actiontech.dble.sqlengine.mpp;
+
+import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
 
 /**
  * column ->node index
@@ -13,6 +15,7 @@ package com.actiontech.dble.sqlengine.mpp;
 public class ColumnRoutePair {
     public final String colValue;
     public final RangeValue rangeValue;
+    public final boolean isRange;
     private Integer nodeId;
 
     private int slot = -2;
@@ -29,12 +32,27 @@ public class ColumnRoutePair {
         super();
         this.colValue = colValue;
         this.rangeValue = null;
+        this.isRange = false;
     }
 
     public ColumnRoutePair(RangeValue rangeValue) {
         super();
         this.rangeValue = rangeValue;
         this.colValue = null;
+        this.isRange = false;
+    }
+
+    public ColumnRoutePair(IsValue value, boolean isRange) {
+        super();
+        String stringValue = null;
+        if (value.getValueList() != null) {
+            if (value.getValueList()[0] instanceof SQLNullExpr) {
+                stringValue = "null";
+            }
+        }
+        this.colValue = stringValue;
+        this.rangeValue = null;
+        this.isRange = isRange;
     }
 
     public Integer getNodeId() {

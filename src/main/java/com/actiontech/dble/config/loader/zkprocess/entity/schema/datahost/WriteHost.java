@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -32,7 +32,11 @@ public class WriteHost {
     @XmlAttribute(required = true)
     protected String user;
     @XmlAttribute
-    protected Boolean usingDecrypt;
+    protected String usingDecrypt;
+    @XmlAttribute
+    protected String disabled;
+    @XmlAttribute
+    protected String id;
 
     private List<ReadHost> readHost;
 
@@ -68,12 +72,29 @@ public class WriteHost {
         this.user = user;
     }
 
-    public Boolean isUsingDecrypt() {
+    public String getUsingDecrypt() {
         return usingDecrypt;
     }
 
-    public void setUsingDecrypt(Boolean usingDecrypt) {
+    public void setUsingDecrypt(String usingDecrypt) {
         this.usingDecrypt = usingDecrypt;
+    }
+
+
+    public String getDisabled() {
+        return disabled;
+    }
+
+    public void setDisabled(String disabled) {
+        this.disabled = disabled;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public List<ReadHost> getReadHost() {
@@ -89,7 +110,7 @@ public class WriteHost {
 
     @Override
     public String toString() {
-        String builder = "WriteHost [host=" +
+        return "WriteHost [host=" +
                 host +
                 ", url=" +
                 url +
@@ -97,12 +118,15 @@ public class WriteHost {
                 password +
                 ", user=" +
                 user +
+                ", disabled=" +
+                disabled +
+                ", id=" +
+                id +
                 ", usingDecrypt=" +
                 usingDecrypt +
                 ", readHost=" +
                 readHost +
                 "]";
-        return builder;
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -13,7 +13,8 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.server.NonBlockingSession;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
@@ -24,7 +25,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author ActionTech
  */
 public class HavingHandler extends BaseDMLHandler {
-    private static final Logger LOGGER = Logger.getLogger(HavingHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(HavingHandler.class);
 
     public HavingHandler(long id, NonBlockingSession session, Item having) {
         super(id, session);
@@ -44,6 +45,7 @@ public class HavingHandler extends BaseDMLHandler {
 
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
                                  byte[] eofNull, boolean isLeft, BackendConnection conn) {
+        session.setHandlerStart(this);
         if (terminate.get())
             return;
         this.fieldPackets = fieldPackets;
@@ -78,6 +80,7 @@ public class HavingHandler extends BaseDMLHandler {
         LOGGER.debug("roweof");
         if (terminate.get())
             return;
+        session.setHandlerEnd(this);
         nextHandler.rowEofResponse(data, isLeft, conn);
     }
 

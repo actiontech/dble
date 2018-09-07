@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -15,7 +15,8 @@ import com.actiontech.dble.plan.common.item.FieldTypes;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.time.MySQLTime;
 import com.actiontech.dble.plan.common.time.MyTime;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
@@ -40,6 +41,8 @@ public abstract class Field {
                                      int decimals, long flags) {
         FieldTypes fieldType = FieldTypes.valueOf(type);
         switch (fieldType) {
+            case MYSQL_TYPE_JSON:
+                return new FieldJson(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_NEWDECIMAL:  // mysql use newdecimal after some version
                 return new FieldNewdecimal(name, dbName, table, orgTable, charsetIndex, fieldLength, decimals, flags);
             case MYSQL_TYPE_DECIMAL:
@@ -94,7 +97,7 @@ public abstract class Field {
         }
     }
 
-    protected static final Logger LOGGER = Logger.getLogger(Field.class);
+    protected static final Logger LOGGER = LoggerFactory.getLogger(Field.class);
 
     protected String name;
     protected String table;

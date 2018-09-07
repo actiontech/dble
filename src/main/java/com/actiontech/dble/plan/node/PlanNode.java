@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -20,13 +20,14 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 public abstract class PlanNode {
-    private static final Logger LOGGER = Logger.getLogger(PlanNode.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PlanNode.class);
 
 
     /**
@@ -37,7 +38,7 @@ public abstract class PlanNode {
     }
 
     public enum PlanNodeType {
-        NONAME, TABLE, JOIN, MERGE, QUERY, VIEW
+        NONAME, TABLE, JOIN, MERGE, QUERY
     }
 
     public abstract PlanNodeType type();
@@ -68,7 +69,6 @@ public abstract class PlanNode {
     Item havingFilter;
     /**
      * parent node ,eg:subquery may use parent's info
-     * TODO:NEED?
      * http://dev.mysql.com/doc/refman/5.0/en/correlated-subqueries.html
      */
     private PlanNode parent;
@@ -97,11 +97,14 @@ public abstract class PlanNode {
      * alias for table node ,used for named subNode when join.
      */
     protected String alias;
-
     /**
      * is this node is subQuery
      */
-    private boolean subQuery;
+    private boolean withSubQuery;
+    /**
+     * is this node contains subQuery
+     */
+    private boolean containsSubQuery;
     private boolean correlatedSubQuery;
 
     private boolean existView = false;
@@ -275,7 +278,8 @@ public abstract class PlanNode {
         to.setLimitFrom(this.limitFrom);
         to.setLimitTo(this.limitTo);
         to.setSql(this.getSql());
-        to.setSubQuery(subQuery);
+        to.setWithSubQuery(withSubQuery);
+        to.setContainsSubQuery(containsSubQuery);
         to.setCorrelatedSubQuery(correlatedSubQuery);
         to.setUnGlobalTableCount(unGlobalTableCount);
         to.setNoshardNode(noshardNode);
@@ -312,6 +316,17 @@ public abstract class PlanNode {
         outerFields.clear();
         nameContext.setFindInSelect(false);
         nameContext.setSelectFirst(false);
+        if (parent instanceof MergeNode) {
+            if (parent.getChildren().get(1) != null && parent.getChildren().get(1) == this) {
+                List<Item> alaisList = parent.getChildren().get(0).getColumnsSelected();
+                for (int i = 0; i < columnsSelected.size(); i++) {
+                    Item sel = columnsSelected.get(i);
+                    Item beforeUnion = alaisList.get(i);
+                    sel.setAlias(beforeUnion.getAlias() == null ? beforeUnion.getItemName() : beforeUnion.getAlias());
+                }
+            }
+        }
+
         for (Item sel : columnsSelected) {
             setUpItem(sel);
             NamedField field = makeOutNamedField(sel);
@@ -544,17 +559,27 @@ public abstract class PlanNode {
      * setAlias for table
      */
     public PlanNode setAlias(String aliasName) {
+        if (aliasName != null && aliasName.charAt(0) == '`') {
+            aliasName = aliasName.substring(1, aliasName.length() - 1);
+        }
         this.alias = aliasName;
         return this;
     }
 
-    public boolean isSubQuery() {
-        return subQuery;
+    public boolean isWithSubQuery() {
+        return withSubQuery;
     }
 
-    public PlanNode setSubQuery(boolean isSubQuery) {
-        this.subQuery = isSubQuery;
-        return this;
+    public void setWithSubQuery(boolean withSubQuery) {
+        this.withSubQuery = withSubQuery;
+    }
+
+    public boolean isContainsSubQuery() {
+        return containsSubQuery;
+    }
+
+    public void setContainsSubQuery(boolean containsSubQuery) {
+        this.containsSubQuery = containsSubQuery;
     }
 
 
@@ -631,7 +656,7 @@ public abstract class PlanNode {
      * @return the exsitView
      */
     public boolean isExistView() {
-        return existView;
+        return this.type() == PlanNode.PlanNodeType.QUERY || existView;
     }
 
     public boolean existUnPushDownGroup() {

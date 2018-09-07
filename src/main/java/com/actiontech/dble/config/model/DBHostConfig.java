@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -17,9 +17,12 @@ public class DBHostConfig {
     private int maxCon;
     private int minCon;
     private int weight;
+    private String id;
+
+    private boolean disabled = false;
 
     public DBHostConfig(String hostName, String ip, int port, String url,
-                        String user, String password) {
+                        String user, String password, boolean disabled) {
         super();
         this.hostName = hostName;
         this.ip = ip;
@@ -27,6 +30,7 @@ public class DBHostConfig {
         this.url = url;
         this.user = user;
         this.password = password;
+        this.disabled = disabled;
     }
 
     public long getIdleTimeout() {
@@ -83,6 +87,18 @@ public class DBHostConfig {
 
     public void setWeight(int weight) {
         this.weight = weight;
+    }
+
+    public boolean isDisabled() {
+        return disabled;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     @Override

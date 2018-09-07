@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -9,7 +9,6 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.model.UserConfig;
@@ -36,9 +35,7 @@ import java.sql.SQLNonTransientException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
 
 
 /**
@@ -171,6 +168,17 @@ public class ServerConnection extends FrontendConnection {
         this.contextTask = contextTask;
     }
 
+    @Override
+    protected void setRequestTime() {
+        session.setRequestTime();
+
+    }
+
+    @Override
+    public void startProcess() {
+        session.startProcess();
+    }
+
     public void executeTask() {
         for (Pair<SetHandler.KeyType, Pair<String, String>> task : contextTask) {
             switch (task.getKey()) {
@@ -236,6 +244,7 @@ public class ServerConnection extends FrontendConnection {
             writeErrMessage(ErrorCode.ER_YES, txInterruptMsg);
             return;
         }
+        session.setQueryStartTime(System.currentTimeMillis());
 
         String db = this.schema;
 
@@ -283,8 +292,9 @@ public class ServerConnection extends FrontendConnection {
         }
         RouteResultset rrs = new RouteResultset(stmt, sqlType);
         try {
-            if (RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable())) {
-                RouterUtil.routeToSingleNode(rrs, schemaInfo.getSchemaConfig().getDataNode());
+            String noShardingNode = RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable());
+            if (noShardingNode != null) {
+                RouterUtil.routeToSingleNode(rrs, noShardingNode);
             } else {
                 TableConfig tc = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
                 if (tc == null) {
@@ -307,7 +317,7 @@ public class ServerConnection extends FrontendConnection {
             if (rrs == null) {
                 return;
             }
-            if (rrs.getSqlType() == ServerParse.DDL) {
+            if (rrs.getSqlType() == ServerParse.DDL && rrs.getSchema() != null) {
                 addTableMetaLock(rrs);
                 if (DbleServer.getInstance().getTmManager().getCatalogs().get(rrs.getSchema()).getView(rrs.getTable()) != null) {
                     DbleServer.getInstance().getTmManager().removeMetaLock(rrs.getSchema(), rrs.getTable());
@@ -320,6 +330,7 @@ public class ServerConnection extends FrontendConnection {
             executeException(e, sql);
             return;
         }
+        session.endRoute(rrs);
         session.execute(rrs);
     }
 
@@ -327,23 +338,24 @@ public class ServerConnection extends FrontendConnection {
         String schema = rrs.getSchema();
         String table = rrs.getTable();
         try {
+            //lock self meta
             DbleServer.getInstance().getTmManager().addMetaLock(schema, table);
             if (DbleServer.getInstance().isUseZK()) {
                 String nodeName = StringUtil.getFullName(schema, table);
                 String ddlPath = KVPathUtil.getDDLPath();
                 String nodePth = ZKPaths.makePath(ddlPath, nodeName);
                 CuratorFramework zkConn = ZKUtils.getConnection();
-                int times = 0;
-                while (zkConn.checkExists().forPath(KVPathUtil.getSyncMetaLockPath()) != null || zkConn.checkExists().forPath(nodePth) != null) {
-                    LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-                    if (times % 60 == 0) {
-                        LOGGER.info("waiting for syncMeta.lock or metaLock about " + nodeName + " in " + ddlPath);
-                        times = 0;
-                    }
-                    times++;
+                if (zkConn.checkExists().forPath(KVPathUtil.getSyncMetaLockPath()) != null || zkConn.checkExists().forPath(nodePth) != null) {
+                    String msg = "The syncMeta.lock or metaLock about " + nodeName + " in " + ddlPath + "is Exists";
+                    LOGGER.info(msg);
+                    throw new Exception(msg);
                 }
-                DbleServer.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement(), DDLInfo.DDLStatus.INIT, true);
+                DbleServer.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement());
+            } else if (DbleServer.getInstance().isUseUcore()) {
+                DbleServer.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement());
             }
+        } catch (SQLNonTransientException e) {
+            throw e;
         } catch (Exception e) {
             DbleServer.getInstance().getTmManager().removeMetaLock(schema, table);
             throw new SQLNonTransientException(e.toString() + ",sql:" + rrs.getStatement());

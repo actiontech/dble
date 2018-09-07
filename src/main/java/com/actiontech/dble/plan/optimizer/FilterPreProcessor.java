@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -120,7 +120,7 @@ public final class FilterPreProcessor {
         if (root instanceof ItemBoolFunc2) {
             Item a = root.arguments().get(0);
             Item b = root.arguments().get(1);
-            if (a.basicConstItem() && !b.basicConstItem()) {
+            if (a.basicConstItem() && !b.basicConstItem() && !b.isWithSubQuery()) {
                 if (root instanceof ItemFuncGe) {
                     newRoot = new ItemFuncLe(b, a);
                 } else if (root instanceof ItemFuncGt) {

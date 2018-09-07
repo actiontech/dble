@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -14,9 +14,11 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -26,7 +28,7 @@ import java.util.List;
  * for execute Sql,transform the response data to next handler
  */
 public class BaseSelectHandler extends BaseDMLHandler {
-    private static final Logger LOGGER = Logger.getLogger(BaseSelectHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BaseSelectHandler.class);
 
     private final boolean autocommit;
     private volatile int fieldCounts = -1;
@@ -52,7 +54,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
         } else {
             PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(rrss.getName());
             //autocommit is session.getSource().isAutocommit() && !session.getSource().isTxStart()
-            final BackendConnection newConn = dn.getConnection(dn.getDatabase(), autocommit, autocommit);
+            final BackendConnection newConn = dn.getConnection(dn.getDatabase(), autocommit, autocommit, rrss);
             session.bindConnection(rrss, newConn);
             return (MySQLConnection) newConn;
         }
@@ -64,8 +66,9 @@ public class BaseSelectHandler extends BaseDMLHandler {
             return;
         }
         conn.setResponseHandler(this);
-        if (LOGGER.isInfoEnabled()) {
-            LOGGER.info(conn.toString() + " send sql:" + rrss.getStatement());
+        conn.setSession(session);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(conn.toString() + " send sql:" + rrss.getStatement());
         }
         if (session.closed()) {
             session.onQueryError("failed or cancelled by other thread".getBytes());
@@ -86,9 +89,11 @@ public class BaseSelectHandler extends BaseDMLHandler {
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
+        session.setHandlerEnd(this); //base start receive
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(conn.toString() + "'s field is reached.");
         }
+        ((MySQLConnection) conn).setRunning(true);
         if (terminate.get()) {
             return;
         }
@@ -120,9 +125,12 @@ public class BaseSelectHandler extends BaseDMLHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(conn.toString() + " 's rowEof is reached.");
         }
+        session.setBackendResponseEndTime((MySQLConnection) conn);
         ((MySQLConnection) conn).setRunning(false);
-        if (this.terminate.get())
+        ((MySQLConnection) conn).singal();
+        if (this.terminate.get()) {
             return;
+        }
         nextHandler.rowEofResponse(data, this.isLeft, conn);
     }
 
@@ -134,13 +142,30 @@ public class BaseSelectHandler extends BaseDMLHandler {
     public void connectionError(Throwable e, BackendConnection conn) {
         if (terminate.get())
             return;
-        LOGGER.info(conn.toString() + "|connectionError()|" + e.getMessage());
-        session.onQueryError(e.getMessage().getBytes());
+        String errMsg;
+        if (e instanceof MySQLOutPutException) {
+            errMsg = e.getMessage() == null ? e.toString() : e.getMessage();
+        } else {
+            LOGGER.warn("Backend connect Error, Connection info:" + conn, e);
+            errMsg = "Backend connect Error, Connection{DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
+        }
+        session.onQueryError(errMsg.getBytes());
+    }
+
+    @Override
+    public void connectionClose(BackendConnection conn, String reason) {
+        if (terminate.get())
+            return;
+        LOGGER.warn(conn.toString() + "|connectionClose()|" + reason);
+        reason = "Connection {DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
+                ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
+        session.onQueryError(reason.getBytes());
     }
 
     @Override
     public void errorResponse(byte[] err, BackendConnection conn) {
         ((MySQLConnection) conn).setRunning(false);
+        ((MySQLConnection) conn).singal();
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);
         String errMsg;

@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -7,7 +7,7 @@ package com.actiontech.dble.server;
 
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.handler.FrontendQueryHandler;
-import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.handler.*;
 import com.actiontech.dble.server.parser.ServerParse;
 import org.slf4j.Logger;
@@ -22,6 +22,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
     private final ServerConnection source;
     private Boolean readOnly = true;
     private boolean sessionReadOnly = true;
+
     @Override
     public void setReadOnly(Boolean readOnly) {
         this.readOnly = readOnly;
@@ -38,12 +39,20 @@ public class ServerQueryHandler implements FrontendQueryHandler {
 
     @Override
     public void query(String sql) {
-
         ServerConnection c = this.source;
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(String.valueOf(c) + sql);
         }
-        //
+
+        if (source.getSession2().getRemingSql() != null) {
+            sql = source.getSession2().getRemingSql();
+        }
+        //Preliminary judgment of multi statement
+        if (source.getSession2().generalNextStatement(sql)) {
+            sql = sql.substring(0, ParseUtil.findNextBreak(sql));
+        }
+        source.setExecuteSql(sql);
+
         int rs = ServerParse.parse(sql);
         int sqlType = rs & 0xff;
         switch (sqlType) {
@@ -100,10 +109,14 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                 c.writeErrMessage(ErrorCode.ER_SYNTAX_ERROR, "Unsupported command");
                 break;
             case ServerParse.MYSQL_CMD_COMMENT:
-                c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+                boolean multiStatementFlag = source.getSession2().getIsMultiStatement().get();
+                c.write(c.writeToBuffer(source.getSession2().getOkByteArray(), c.allocate()));
+                c.getSession2().multiStatementNextSql(multiStatementFlag);
                 break;
             case ServerParse.MYSQL_COMMENT:
-                c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+                boolean multiStatementFlag2 = source.getSession2().getIsMultiStatement().get();
+                c.write(c.writeToBuffer(source.getSession2().getOkByteArray(), c.allocate()));
+                c.getSession2().multiStatementNextSql(multiStatementFlag2);
                 break;
             case ServerParse.LOAD_DATA_INFILE_SQL:
                 c.loadDataInfileStart(sql);

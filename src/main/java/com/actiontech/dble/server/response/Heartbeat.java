@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -33,8 +33,8 @@ public final class Heartbeat {
             ok.setAffectedRows(hp.getId());
             ok.setServerStatus(2);
             ok.write(c);
-            if (HEARTBEAT.isInfoEnabled()) {
-                HEARTBEAT.info(responseMessage("OK", c, hp.getId()));
+            if (HEARTBEAT.isDebugEnabled()) {
+                HEARTBEAT.debug(responseMessage("OK", c, hp.getId()));
             }
         } else {
             ErrorPacket error = new ErrorPacket();

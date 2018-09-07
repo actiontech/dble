@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -49,12 +49,8 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
             MergeBuilder mergeBuilder = new MergeBuilder(session, node, needCommon, pdVisitor);
             String sql = null;
             if (node.getAst() != null && node.getParent() == null) { // it's root
-                if (node.getSumFuncs().size() == 0) {
-                    sql = node.getSql();
-                } else {
-                    pdVisitor.visit();
-                    sql = pdVisitor.getSql().toString();
-                }
+                pdVisitor.visit();
+                sql = pdVisitor.getSql().toString();
             }
             RouteResultsetNode[] rrssArray;
             // maybe some node is view
@@ -66,7 +62,7 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
             this.needCommon = mergeBuilder.getNeedCommonFlag();
             buildMergeHandler(node, rrssArray);
         } catch (Exception e) {
-            throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "table node buildOwn exception!", e);
+            throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "table node buildOwn exception! Error:" + e.getMessage(), e);
         }
     }
 
@@ -104,7 +100,7 @@ class TableNodeHandlerBuilder extends BaseHandlerBuilder {
             rrssArray = rrssList.toArray(rrssArray);
             buildMergeHandler(node, rrssArray);
         } catch (Exception e) {
-            throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", "", e);
+            throw new MySQLOutPutException(ErrorCode.ER_QUERYHANDLER, "", e.getMessage(), e);
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -12,7 +12,7 @@ public abstract class Versions {
 
     public static final byte PROTOCOL_VERSION = 10;
 
-    private static byte[] serverVersion = "5.6.29-dble-2.17.11.0-dev-20171130105502".getBytes();
+    private static byte[] serverVersion = "5.6.29-dble-9.9.9.9-0f1666c-20180823180745".getBytes();
     public static final byte[] VERSION_COMMENT = "dble Server (ActionTech)".getBytes();
     public static final String ANNOTATION_NAME = "dble:";
     public static final String ROOT_PREFIX = "dble";

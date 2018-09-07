@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -26,8 +26,8 @@ public class MultiRowSQLQueryResultHandler extends OneRawSQLQueryResultHandler {
     }
 
     @Override
-    public boolean onRowData(String dataNode, byte[] rowData) {
-        super.onRowData(dataNode, rowData);
+    public boolean onRowData(byte[] rowData) {
+        super.onRowData(rowData);
         resultRows.add(getResult());
 
         return false;

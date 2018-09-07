@@ -1,16 +1,15 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor;
 
 import com.actiontech.dble.plan.Order;
-import com.actiontech.dble.plan.node.PlanNode;
-import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.Item.ItemType;
 import com.actiontech.dble.plan.node.*;
+import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 
 
 /**
@@ -57,10 +56,10 @@ public class GlobalVisitor extends MysqlVisitor {
 
     protected void visit(TableNode query) {
         boolean parentIsQuery = query.getParent() != null && query.getParent().type() == PlanNodeType.QUERY;
-        if (query.isSubQuery() && !parentIsQuery && !isTopQuery) {
+        if (query.isWithSubQuery() && !parentIsQuery && !isTopQuery) {
             sqlBuilder.append(" ( ");
         }
-        if (query.isSubQuery() || isTopQuery) {
+        if (query.isWithSubQuery() || isTopQuery) {
             buildSelect(query);
 
             if (query.getTableName() == null)
@@ -68,7 +67,7 @@ public class GlobalVisitor extends MysqlVisitor {
             sqlBuilder.append(" from ");
         }
         buildTableName(query, sqlBuilder);
-        if (query.isSubQuery() || isTopQuery) {
+        if (query.isWithSubQuery() || isTopQuery) {
             buildWhere(query);
             buildGroupBy(query);
             buildHaving(query);
@@ -78,7 +77,7 @@ public class GlobalVisitor extends MysqlVisitor {
             whereFilter = query.getWhereFilter();
         }
 
-        if (query.isSubQuery() && !parentIsQuery && !isTopQuery) {
+        if (query.isWithSubQuery() && !parentIsQuery && !isTopQuery) {
             sqlBuilder.append(" ) ");
             if (query.getAlias() != null) {
                 sqlBuilder.append(" ").append(query.getAlias()).append(" ");
@@ -88,7 +87,6 @@ public class GlobalVisitor extends MysqlVisitor {
     }
 
     protected void visit(NoNameNode query) {
-        //FIXME:如果在viewoptimizr时,将noname的where和select进行了修改,则需要改成和tablenode类似的做法
         if (!isTopQuery) {
             sqlBuilder.append(" ( ");
         }
@@ -102,10 +100,10 @@ public class GlobalVisitor extends MysqlVisitor {
     }
 
     protected void visit(QueryNode query) {
-        if (query.isSubQuery() && !isTopQuery) {
+        if (query.isWithSubQuery() && !isTopQuery) {
             sqlBuilder.append(" ( ");
         }
-        if (query.isSubQuery() || isTopQuery) {
+        if (query.isWithSubQuery() || isTopQuery) {
             buildSelect(query);
             sqlBuilder.append(" from ");
         }
@@ -114,7 +112,7 @@ public class GlobalVisitor extends MysqlVisitor {
         MysqlVisitor childVisitor = new GlobalVisitor(child, true);
         childVisitor.visit();
         sqlBuilder.append(childVisitor.getSql()).append(") ").append(query.getAlias());
-        if (query.isSubQuery() || isTopQuery) {
+        if (query.isWithSubQuery() || isTopQuery) {
             buildWhere(query);
             buildGroupBy(query);
             buildHaving(query);
@@ -122,7 +120,7 @@ public class GlobalVisitor extends MysqlVisitor {
             buildLimit(query);
         }
 
-        if (query.isSubQuery() && !isTopQuery) {
+        if (query.isWithSubQuery() && !isTopQuery) {
             sqlBuilder.append(" ) ");
             if (query.getAlias() != null) {
                 sqlBuilder.append(" ").append(query.getAlias()).append(" ");
@@ -134,13 +132,36 @@ public class GlobalVisitor extends MysqlVisitor {
         boolean isUnion = merge.isUnion();
         boolean isFirst = true;
         for (PlanNode child : merge.getChildren()) {
-            if (isFirst)
-                isFirst = false;
-            else
-                sqlBuilder.append(isUnion ? " UNION " : " UNION ALL ");
             MysqlVisitor childVisitor = new GlobalVisitor(child, true);
             childVisitor.visit();
-            sqlBuilder.append("(").append(childVisitor.getSql()).append(")");
+            if (isFirst) {
+                isFirst = false;
+            } else {
+                sqlBuilder.append(isUnion ? " UNION " : " UNION ALL ");
+            }
+            if (child.getChildren().size() == 0) {
+                sqlBuilder.append("(");
+            }
+            sqlBuilder.append(childVisitor.getSql());
+            if (child.getChildren().size() == 0) {
+                sqlBuilder.append(")");
+            }
+        }
+
+        if (merge.getOrderBys() != null && merge.getOrderBys().size() > 0) {
+            sqlBuilder.append(" ORDER BY ");
+            for (Order order : merge.getOrderBys()) {
+                sqlBuilder.append(order.getItem().getItemName() + " " + order.getSortOrder() + ",");
+            }
+            sqlBuilder.setLength(sqlBuilder.length() - 1);
+        }
+
+        if (merge.getLimitTo() != -1) {
+            sqlBuilder.append(" LIMIT ");
+            if (merge.getLimitFrom() != -1) {
+                sqlBuilder.append(merge.getLimitFrom() + ",");
+            }
+            sqlBuilder.append(merge.getLimitTo());
         }
     }
 
@@ -148,7 +169,7 @@ public class GlobalVisitor extends MysqlVisitor {
         if (!isTopQuery) {
             sqlBuilder.append(" ( ");
         }
-        if (join.isSubQuery() || isTopQuery) {
+        if (join.isWithSubQuery() || isTopQuery) {
             buildSelect(join);
             sqlBuilder.append(" from ");
         }
@@ -191,7 +212,7 @@ public class GlobalVisitor extends MysqlVisitor {
             joinOnFilterStr.append(join.getOtherJoinOnFilter());
         }
         sqlBuilder.append(joinOnFilterStr.toString());
-        if (join.isSubQuery() || isTopQuery) {
+        if (join.isWithSubQuery() || isTopQuery) {
             buildWhere(join);
             buildGroupBy(join);
             buildHaving(join);

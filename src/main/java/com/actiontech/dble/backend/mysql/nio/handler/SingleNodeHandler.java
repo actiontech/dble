@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.LoadDataUtil;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
@@ -42,10 +43,9 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     // only one thread access at one time no need lock
     protected volatile byte packetId;
     protected volatile ByteBuffer buffer;
-    private long startTime;
-    private long netInBytes;
     protected long netOutBytes;
-    protected long selectRows;
+    private long resultSize;
+    long selectRows;
 
     private String primaryKeyTable = null;
     private int primaryKeyIndex = -1;
@@ -53,10 +53,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     private boolean prepared;
     private int fieldCount;
     private List<FieldPacket> fieldPackets = new ArrayList<>();
-
-
-    private volatile boolean waitingResponse;
-
+    private volatile boolean connClosed = false;
     public SingleNodeHandler(RouteResultset rrs, NonBlockingSession session) {
         this.rrs = rrs;
         this.node = rrs.getNodes()[0];
@@ -71,19 +68,16 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
 
     public void execute() throws Exception {
-        startTime = System.currentTimeMillis();
         ServerConnection sc = session.getSource();
-        waitingResponse = true;
-        this.packetId = 0;
+        connClosed = false;
+        this.packetId = (byte) session.getPacketId().get();
         final BackendConnection conn = session.getTarget(node);
         node.setRunOnSlave(rrs.getRunOnSlave());
-
         if (session.tryExistsCon(conn, node)) {
             execute(conn);
         } else {
             // create new connection
             node.setRunOnSlave(rrs.getRunOnSlave());
-
             ServerConfig conf = DbleServer.getInstance().getConfig();
             PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
             dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), sc.isAutocommit(), node, this, node);
@@ -93,15 +87,17 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
     private void execute(BackendConnection conn) {
         if (session.closed()) {
-            waitingResponse = false;
             session.clearResources(true);
             return;
         }
         conn.setResponseHandler(this);
+        conn.setSession(session);
         boolean isAutocommit = session.getSource().isAutocommit() && !session.getSource().isTxStart();
         if (!isAutocommit && node.isModifySQL()) {
             TxnLogHelper.putTxnLog(session.getSource(), node.getStatement());
         }
+        session.readyToDeliver();
+        session.setPreExecuteEnd();
         conn.execute(node, session.getSource(), isAutocommit);
     }
 
@@ -114,9 +110,13 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        session.handleSpecial(rrs, session.getSource().getSchema(), true);
-        recycleResources();
-        session.getSource().close(e.getMessage());
+        LOGGER.warn("Backend connect Error, Connection info:" + conn, e);
+        ErrorPacket errPacket = new ErrorPacket();
+        errPacket.setPacketId(++packetId);
+        errPacket.setErrNo(ErrorCode.ER_DATA_HOST_ABORTING_CONNECTION);
+        String errMsg = "Backend connect Error, Connection{DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
+        errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
+        backConnectionErr(errPacket, conn, true);
     }
 
     @Override
@@ -124,10 +124,11 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         ErrorPacket err = new ErrorPacket();
         err.read(data);
         err.setPacketId(++packetId);
-        backConnectionErr(err, conn);
+        backConnectionErr(err, conn, conn.syncAndExecute());
+        session.resetMultiStatementStatus();
     }
 
-    private void backConnectionErr(ErrorPacket errPkg, BackendConnection conn) {
+    private void backConnectionErr(ErrorPacket errPkg, BackendConnection conn, boolean syncFinished) {
         ServerConnection source = session.getSource();
         String errUser = source.getUser();
         String errHost = source.getHost();
@@ -137,31 +138,24 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         LOGGER.info("execute sql err :" + errMsg + " con:" + conn +
                 " frontend host:" + errHost + "/" + errPort + "/" + errUser);
 
-        session.releaseConnectionIfSafe(conn, false);
-
+        if (syncFinished) {
+            session.releaseConnectionIfSafe(conn, false);
+        } else {
+            ((MySQLConnection) conn).quit();
+        }
         source.setTxInterrupt(errMsg);
         session.handleSpecial(rrs, session.getSource().getSchema(), false);
 
-        /**
-         *
-         * BUG:
-         * 1. MysqlClient:  SELECT 9223372036854775807 + 1;
-         * 2. MyCatServer:  ERROR 1690 (22003): BIGINT value is out of range in '(9223372036854775807 + 1)'
-         * 3. MysqlClient: ERROR 2013 (HY000): Lost connection to MySQL server during query
-         * because of  pakcetId != 1
-         * Fixed:
-         * 1. MysqlClient:  SELECT 9223372036854775807 + 1;
-         * 2. MyCatServer:  ERROR 1690 (22003): BIGINT value is out of range in '(9223372036854775807 + 1)'
-         * 3. MysqlClient: ERROR 1690 (22003): BIGINT value is out of range in '(9223372036854775807 + 1)'
-         *
-         */
-        //
-        if (waitingResponse) {
-            errPkg.setPacketId(1);
+
+        if (buffer != null) {
+            /* SELECT 9223372036854775807 + 1;    response: field_count, field, eof, err */
+            buffer = source.writeToBuffer(errPkg.toBytes(), allocBuffer());
+            session.setResponseTime();
+            source.write(buffer);
+
+        } else {
             errPkg.write(source);
-            waitingResponse = false;
         }
-        recycleResources();
     }
 
 
@@ -173,11 +167,11 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
      */
     @Override
     public void okResponse(byte[] data, BackendConnection conn) {
-        //
         this.netOutBytes += data.length;
 
         boolean executeResponse = conn.syncAndExecute();
         if (executeResponse) {
+            this.resultSize += data.length;
             session.handleSpecial(rrs, session.getSource().getSchema(), true);
             ServerConnection source = session.getSource();
             OkPacket ok = new OkPacket();
@@ -190,12 +184,18 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             } else {
                 ok.setPacketId(++packetId); // OK_PACKET
             }
+            ok.setMessage(null);
             ok.setServerStatus(source.isAutocommit() ? 2 : 1);
             source.setLastInsertId(ok.getInsertId());
             //handleSpecial
+            session.setBackendResponseEndTime((MySQLConnection) conn);
             session.releaseConnectionIfSafe(conn, false);
+            session.setResponseTime();
+            session.multiStatementPacket(ok, packetId);
+            boolean multiStatementFlag = session.getIsMultiStatement().get();
+            doSqlStat();
             ok.write(source);
-            waitingResponse = false;
+            session.multiStatementNextSql(multiStatementFlag);
         }
     }
 
@@ -207,46 +207,46 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
      */
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
-
         this.netOutBytes += eof.length;
-
-        ServerConnection source = session.getSource();
+        this.resultSize += eof.length;
+        session.setBackendResponseEndTime((MySQLConnection) conn);
         // if it's call statement,it will not release connection
         if (!rrs.isCallStatement() || rrs.getProcedure().isResultSimpleValue()) {
             session.releaseConnectionIfSafe(conn, false);
         }
 
-        eof[3] = ++packetId;
-        buffer = source.writeToBuffer(eof, allocBuffer());
-        int resultSize = source.getWriteQueue().size() * DbleServer.getInstance().getConfig().getSystem().getBufferPoolPageSize();
-        resultSize = resultSize + buffer.position();
-        source.write(buffer);
-        waitingResponse = false;
 
-        if (DbleServer.getInstance().getConfig().getSystem().getUseSqlStat() == 1) {
-            if (rrs.getStatement() != null) {
-                netInBytes += rrs.getStatement().getBytes().length;
-            }
-            QueryResult queryResult = new QueryResult(session.getSource().getUser(), rrs.getSqlType(), rrs.getStatement(), selectRows,
-                    netInBytes, netOutBytes, startTime, System.currentTimeMillis(), resultSize);
-            QueryResultDispatcher.dispatchQuery(queryResult);
-        }
+        eof[3] = ++packetId;
+        session.multiStatementPacket(eof, packetId);
+        ServerConnection source = session.getSource();
+        buffer = source.writeToBuffer(eof, allocBuffer());
+        session.setResponseTime();
+        boolean multiStatementFlag = session.getIsMultiStatement().get();
+        doSqlStat();
+        source.write(buffer);
+        session.multiStatementNextSql(multiStatementFlag);
     }
 
-    private void recycleResources() {
-        ByteBuffer buf = buffer;
-        if (buf != null) {
-            session.getSource().recycle(buffer);
-            buffer = null;
+    private void doSqlStat() {
+        if (DbleServer.getInstance().getConfig().getSystem().getUseSqlStat() == 1) {
+            long netInBytes = 0;
+            if (rrs.getStatement() != null) {
+                netInBytes = rrs.getStatement().getBytes().length;
+            }
+            QueryResult queryResult = new QueryResult(session.getSource().getUser(), rrs.getSqlType(), rrs.getStatement(), selectRows,
+                    netInBytes, netOutBytes, session.getQueryStartTime(), System.currentTimeMillis(), resultSize);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("try to record sql:" + rrs.getStatement());
+            }
+            QueryResultDispatcher.dispatchQuery(queryResult);
         }
     }
 
     /**
      * lazy create ByteBuffer only when needed
      *
-     * @return
      */
-    protected ByteBuffer allocBuffer() {
+    ByteBuffer allocBuffer() {
         if (buffer == null) {
             buffer = session.getSource().allocate();
         }
@@ -257,9 +257,14 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
         this.netOutBytes += header.length;
+        this.resultSize += header.length;
         for (byte[] field : fields) {
             this.netOutBytes += field.length;
+            this.resultSize += field.length;
         }
+        this.netOutBytes += eof.length;
+        this.resultSize += eof.length;
+
 
         String primaryKey = null;
         if (rrs.hasPrimaryKeyToCache()) {
@@ -311,6 +316,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
 
         this.netOutBytes += row.length;
+        this.resultSize += row.length;
         this.selectRows++;
         row[3] = ++packetId;
 
@@ -350,12 +356,18 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
+        if (connClosed) {
+            return;
+        }
+        connClosed = true;
+        LOGGER.warn("Backend connect Closed, reason is [" + reason + "], Connection info:" + conn);
+        reason = "Connection {DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
+                ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
         ErrorPacket err = new ErrorPacket();
         err.setPacketId(++packetId);
         err.setErrNo(ErrorCode.ER_ERROR_ON_CLOSE);
         err.setMessage(StringUtil.encode(reason, session.getSource().getCharset().getResults()));
-        this.backConnectionErr(err, conn);
-        session.getSource().close(reason);
+        this.backConnectionErr(err, conn, true);
     }
 
     @Override

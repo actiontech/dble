@@ -1,11 +1,12 @@
 /*
-* Copyright (C) 2016-2017 ActionTech.
+* Copyright (C) 2016-2018 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
 package com.actiontech.dble.config.model;
 
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
+import com.actiontech.dble.config.util.ConfigException;
 
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -29,6 +30,7 @@ public class DataHostConfig {
     private int balance = PhysicalDBPool.BALANCE_NONE;
     private final DBHostConfig[] writeHosts;
     private final Map<Integer, DBHostConfig[]> readHosts;
+    private final Map<Integer, DBHostConfig[]> standbyReadHosts;
     private String hearbeatSQL;
     private boolean isShowSlaveSql = false;
     private boolean isShowClusterSql = false;
@@ -37,11 +39,12 @@ public class DataHostConfig {
     private boolean tempReadHostAvailable = false;
 
     public DataHostConfig(String name,
-                          DBHostConfig[] writeHosts, Map<Integer, DBHostConfig[]> readHosts, int switchType, int slaveThreshold, boolean tempReadHostAvailable) {
+                          DBHostConfig[] writeHosts, Map<Integer, DBHostConfig[]> readHosts, Map<Integer, DBHostConfig[]> standbyReadHosts, int switchType, int slaveThreshold, boolean tempReadHostAvailable) {
         super();
         this.name = name;
         this.writeHosts = writeHosts;
         this.readHosts = readHosts;
+        this.standbyReadHosts = standbyReadHosts;
         this.switchType = switchType;
         this.slaveThreshold = slaveThreshold;
         this.tempReadHostAvailable = tempReadHostAvailable;
@@ -100,6 +103,10 @@ public class DataHostConfig {
         return readHosts;
     }
 
+    public Map<Integer, DBHostConfig[]> getStandbyReadHosts() {
+        return standbyReadHosts;
+    }
+
     public String getHearbeatSQL() {
         return hearbeatSQL;
     }
@@ -113,6 +120,12 @@ public class DataHostConfig {
         Matcher matcher2 = PATTERN_CLUSTER.matcher(heartbeatSQL);
         if (matcher2.find()) {
             isShowClusterSql = true;
+        }
+        if (switchType == SYN_STATUS_SWITCH_DS && !isShowSlaveSql) {
+            throw new ConfigException("if switchType =2 ,the heartbeat must be \"show slave status\"");
+        }
+        if (switchType == CLUSTER_STATUS_SWITCH_DS && !isShowClusterSql) {
+            throw new ConfigException("if switchType =3 ,the heartbeat must be \"show status like 'wsrep%'\"");
         }
     }
 

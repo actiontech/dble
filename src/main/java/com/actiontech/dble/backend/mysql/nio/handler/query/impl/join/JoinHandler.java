@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -23,7 +23,8 @@ import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.util.FairLinkedBlockingDeque;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -37,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author ActionTech
  */
 public class JoinHandler extends OwnThreadDMLHandler {
-    protected Logger logger = Logger.getLogger(JoinHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(JoinHandler.class);
 
     protected boolean isLeftJoin = false;
     protected FairLinkedBlockingDeque<LocalResult> leftQueue;
@@ -83,6 +84,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
     @Override
     public void fieldEofResponse(byte[] headerNull, List<byte[]> fieldsNull, final List<FieldPacket> fieldPackets,
                                  byte[] eofNull, boolean isLeft, final BackendConnection conn) {
+        session.setHandlerStart(this);
         if (this.pool == null)
             this.pool = DbleServer.getInstance().getBufferPool();
 
@@ -117,7 +119,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
 
     @Override
     public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
-        logger.debug("rowresponse");
+        LOGGER.debug("rowresponse");
         if (terminate.get()) {
             return true;
         }
@@ -138,7 +140,7 @@ public class JoinHandler extends OwnThreadDMLHandler {
                 }
             }
         } catch (InterruptedException e) {
-            logger.info("join row response exception", e);
+            LOGGER.info("join row response exception", e);
             return true;
         }
         return false;
@@ -146,21 +148,21 @@ public class JoinHandler extends OwnThreadDMLHandler {
 
     @Override
     public void rowEofResponse(byte[] data, boolean isLeft, BackendConnection conn) {
-        logger.debug("roweof");
+        LOGGER.debug("roweof");
         if (terminate.get()) {
             return;
         }
         RowDataPacket eofRow = new RowDataPacket(0);
         try {
             if (isLeft) {
-                logger.debug("row eof left");
+                LOGGER.debug("row eof left");
                 addRowToDeque(eofRow, leftFieldPackets.size(), leftQueue, leftComparator);
             } else {
-                logger.debug("row eof right");
+                LOGGER.debug("row eof right");
                 addRowToDeque(eofRow, rightFieldPackets.size(), rightQueue, rightComparator);
             }
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            LOGGER.warn("JoinHandler rowEofResponse InterruptedException ", e);
         }
     }
 
@@ -214,11 +216,12 @@ public class JoinHandler extends OwnThreadDMLHandler {
                     rightLocal = takeFirst(rightQueue);
                 }
             }
+            session.setHandlerEnd(this);
             nextHandler.rowEofResponse(null, isLeft, conn);
             HandlerTool.terminateHandlerTree(this);
         } catch (Exception e) {
             String msg = "join thread error, " + e.getLocalizedMessage();
-            logger.info(msg, e);
+            LOGGER.info(msg, e);
             session.onQueryError(msg.getBytes());
         } finally {
             if (leftLocal != null)

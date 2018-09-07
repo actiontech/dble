@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -9,6 +9,7 @@ import com.alibaba.druid.DruidRuntimeException;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLObject;
 import com.alibaba.druid.sql.ast.expr.SQLBinaryExpr;
+import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
 import com.alibaba.druid.sql.visitor.SQLEvalVisitorUtils;
 import com.alibaba.druid.util.Utils;
 
@@ -19,6 +20,9 @@ import static com.alibaba.druid.sql.visitor.SQLEvalVisitor.EVAL_VALUE;
 
 public class ActionSQLEvalVisitorUtils extends SQLEvalVisitorUtils {
     public static Object eval(String dbType, SQLObject sqlObject, List<Object> parameters, boolean throwError) {
+        if (sqlObject instanceof SQLNullExpr) {
+            return sqlObject;
+        }
         ActionMySqlEvalVisitorImpl visitor = new ActionMySqlEvalVisitorImpl();
         visitor.setParameters(parameters);
         sqlObject.accept(visitor);
@@ -29,6 +33,7 @@ public class ActionSQLEvalVisitorUtils extends SQLEvalVisitorUtils {
             return value;
         }
     }
+
     public static boolean visit(ActionMySqlEvalVisitorImpl visitor, SQLBinaryExpr x) {
         String text = x.getValue();
 

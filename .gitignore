@@ -76,6 +76,7 @@ local.properties
 
 # IntelliJ
 /out/
+.idea/
 
 # mpeltonen/sbt-idea plugin
 .idea_modules/
@@ -112,6 +113,7 @@ hs_err_pid*
 /target/
 /tmlogs/
 /txlogs/
+/slowlogs/
 /viewConf/
 src/main/resources/server.xml
 src/main/resources/schema.xml 
@@ -121,6 +123,5 @@ src/main/resources/zkconf/schema.xml
 src/main/resources/zkconf/rule.xml
 conf/dnindex.properties
 version.txt
-copyResources.bat
 dependency-reduced-pom.xml
 checkstyle-result.out

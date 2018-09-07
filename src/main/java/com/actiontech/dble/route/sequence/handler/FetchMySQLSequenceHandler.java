@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -11,7 +11,6 @@ import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.log.alarm.AlarmCode;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
@@ -78,7 +77,12 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
         String errMsg = new String(err.getMessage());
         LOGGER.info("errorResponse " + err.getErrNo() + " " + errMsg);
         IncrSequenceMySQLHandler.LATEST_ERRORS.put(seqVal.seqName, errMsg);
-        conn.release();
+        boolean executeResponse = conn.syncAndExecute();
+        if (executeResponse) {
+            conn.release();
+        } else {
+            ((MySQLConnection) conn).quit();
+        }
 
     }
 
@@ -101,7 +105,7 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
         SequenceVal seqVal = (SequenceVal) conn.getAttachment();
         if (IncrSequenceMySQLHandler.ERR_SEQ_RESULT.equals(columnVal)) {
             seqVal.dbretVal = IncrSequenceMySQLHandler.ERR_SEQ_RESULT;
-            LOGGER.warn(AlarmCode.CORE_SEQUENCE_WARN + " sequnce sql returned err value ,sequence:" +
+            LOGGER.warn(" sequnce sql returned err value ,sequence:" +
                     seqVal.seqName + " " + columnVal + " sql:" + seqVal.sql);
         } else {
             seqVal.dbretVal = columnVal;
@@ -120,7 +124,7 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
         seqVal.dbfinished = true;
         String errMgs = e.toString();
         IncrSequenceMySQLHandler.LATEST_ERRORS.put(seqVal.seqName, errMgs);
-        LOGGER.warn(AlarmCode.CORE_SEQUENCE_WARN + "executeException   " + errMgs);
+        LOGGER.warn("executeException   " + errMgs);
         c.close("exception:" + errMgs);
 
     }

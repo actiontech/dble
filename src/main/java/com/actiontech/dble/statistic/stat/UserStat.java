@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 ActionTech.
+ * Copyright (C) 2016-2018 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class UserStat {
 
-    private long sqlSlowTime = 100;
+    private volatile int sqlSlowTime = DbleServer.getInstance().getConfig().getSystem().getSqlSlowTime();
 
     private String user;
 
@@ -102,7 +102,7 @@ public class UserStat {
     }
 
 
-    public void setSlowTime(long time) {
+    public void setSlowTime(int time) {
         this.sqlSlowTime = time;
         this.sqlRecorder.clear();
     }
@@ -136,7 +136,7 @@ public class UserStat {
      * @param startTime
      */
     public void update(int sqlType, String sql, long sqlRows,
-                       long netInBytes, long netOutBytes, long startTime, long endTime, int resultSetSize) {
+                       long netInBytes, long netOutBytes, long startTime, long endTime, long resultSetSize) {
 
         //-----------------------------------------------------
         int invoking = runningCount.incrementAndGet();

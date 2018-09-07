@@ -7,28 +7,24 @@ import org.rocksdb.RocksDB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Serializable;
-
 public class RocksDBPool implements CachePool {
     private static final Logger LOGGER = LoggerFactory.getLogger(RocksDBPool.class);
-    private FSTConfiguration fst=FSTConfiguration.createDefaultConfiguration();
+    private FSTConfiguration fst = FSTConfiguration.createDefaultConfiguration();
     private final RocksDB cache;
     private final CacheStatic cacheStatistics = new CacheStatic();
     private final String name;
     private final long maxSize;
-    private final long expire;
 
-    public RocksDBPool(RocksDB cache, String name, long maxSize,long expire) {
+    public RocksDBPool(RocksDB cache, String name, long maxSize) {
         this.cache = cache;
         this.name = name;
         this.maxSize = maxSize;
-        this.expire=expire*1000;
     }
 
     @Override
     public void putIfAbsent(Object key, Object value) {
         try{
-            cache.put(fst.asByteArray(key), fst.asByteArray(new Cached(value)));
+            cache.put(fst.asByteArray(key), fst.asByteArray(value));
             cacheStatistics.incPutTimes();
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(name + " add leveldb cache ,key:" + key + " value:" + value);
@@ -41,23 +37,16 @@ public class RocksDBPool implements CachePool {
     @Override
     public Object get(Object key) {
         try{
-            byte[] keyBytes=fst.asByteArray(key);
-            byte[] bytes=cache.get(fst.asByteArray(keyBytes));
+            byte[] keyBytes = fst.asByteArray(key);
+            byte[] bytes = cache.get(fst.asByteArray(keyBytes));
             if (bytes != null) {
-                Cached cached=(Cached)fst.asObject(bytes);
-                if(System.currentTimeMillis()>=expire+cached.stored){
-                    cache.delete(keyBytes);
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug(name + "  cache expired ,key:" + key);
-                    }
-                    cacheStatistics.incAccessTimes();
-                    return null;
-                }
+                Object cached = fst.asObject(bytes);
+
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug(name + " hit cache ,key:" + key);
                 }
                 cacheStatistics.incHitTimes();
-                return cached.data;
+                return cached;
             } else {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug(name + "  miss cache ,key:" + key);
@@ -91,17 +80,6 @@ public class RocksDBPool implements CachePool {
     public static class RocksDBPoolException extends RuntimeException{
         public RocksDBPoolException(Throwable cause) {
             super(cause);
-        }
-    }
-    private static class Cached implements Serializable{
-        public long stored=System.currentTimeMillis();
-        public Object data;
-
-        public Cached() {
-        }
-
-        public Cached(Object data) {
-            this.data = data;
         }
     }
 }

@@ -2,10 +2,7 @@ package com.actiontech.dble.cache.impl;
 
 import com.actiontech.dble.cache.CachePool;
 import com.actiontech.dble.cache.CachePoolFactory;
-import org.rocksdb.FlushOptions;
-import org.rocksdb.Options;
-import org.rocksdb.RocksDB;
-import org.rocksdb.RocksDBException;
+import org.rocksdb.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,17 +11,20 @@ public class RocksDBCachePoolFactory extends CachePoolFactory {
     @Override
     public CachePool createCachePool(String poolName, int cacheSize, int expireSeconds) {
         final Options options=new Options();
-        options.setAllowMmapReads(true)
-                .setAllowMmapWrites(true)
-                .setCreateIfMissing(true)
-                .setCreateMissingColumnFamilies(true)
-                .setCreateIfMissing(true)
-                .setCreateMissingColumnFamilies(true)
-                .setMaxTotalWalSize(cacheSize)
-                .setWalSizeLimitMB(cacheSize);
+        options.setAllowMmapReads(true).
+                setAllowMmapWrites(true).
+                setCreateIfMissing(true).
+                setCreateMissingColumnFamilies(true).
+                setCreateIfMissing(true).
+                setCreateMissingColumnFamilies(true).
+                setWalSizeLimitMB(cacheSize).
+                setWalTtlSeconds(expireSeconds);
+        CompactionOptionsFIFO fifo=new CompactionOptionsFIFO();
+        fifo.setMaxTableFilesSize(cacheSize);
+        options.setCompactionOptionsFIFO(fifo);
         String path="rocksdb/"+poolName;
         try{
-            final RocksDB db= RocksDB.open(options,path);
+            final RocksDB db= TtlDB.open(options,path,expireSeconds,false);
             Runtime.getRuntime().addShutdownHook(new Thread(){
                 public void run(){
                     FlushOptions fo=new FlushOptions();
@@ -40,7 +40,7 @@ public class RocksDBCachePoolFactory extends CachePoolFactory {
                     }
                 }
             });
-            return new RocksDBPool(db,poolName,cacheSize,expireSeconds);
+            return new RocksDBPool(db,poolName,cacheSize);
         }catch(RocksDBException e){
             throw new InitStoreException(e);
         }

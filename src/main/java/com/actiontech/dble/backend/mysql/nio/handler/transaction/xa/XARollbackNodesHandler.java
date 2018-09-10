@@ -19,6 +19,10 @@ import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 /**
  * @author mycat
  */
@@ -27,6 +31,10 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
     private int tryRollbackTimes = 0;
     private ParticipantLogEntry[] participantLogEntry = null;
     byte[] sendData = OkPacket.OK;
+
+    private volatile boolean sendFinishedFlag = false;
+    private Lock lockForErrorHandle = new ReentrantLock();
+    private Condition sendFinished = lockForErrorHandle.newCondition();
 
     public XARollbackNodesHandler(NonBlockingSession session) {
         super(session);

@@ -198,7 +198,7 @@
     </Match>
 	<Match>
         <Bug category="MT_CORRECTNESS"/>
-        <Class name="com.actiontech.dble.backend.mysql.nio.handler.transaction.AbstractCommitNodesHandler"/>
+        <Class name="com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XACommitNodesHandler"/>
 		<Method name="waitUntilSendFinish"/>
         <Bug pattern="WA_AWAIT_NOT_IN_LOOP"/>
     </Match>

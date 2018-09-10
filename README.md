@@ -46,7 +46,7 @@ Read the [Roadmap](./docs/ROADMAP.md).
 Read the [Quick Start](./docs/QUICKSTART.md).
 
 ## Documentation
-+ [简体中文](https://github.com/actiontech/dble-docs-cn)
++ [简体中文](https://actiontech.github.io/dble-docs-cn/)
 + English(Comming soon)
 
 ## Contributing

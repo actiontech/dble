@@ -636,7 +636,6 @@ public class PhysicalDBPool {
     }
 
     /**
-     * TODO: modify by zhuam
      * <p>
      * randomSelect by weight
      *

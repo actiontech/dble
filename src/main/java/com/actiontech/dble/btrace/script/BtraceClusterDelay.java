@@ -79,7 +79,7 @@ public final class BtraceClusterDelay {
             method = "beforeDeleteViewNotic"
     )
     public static void beforeDeleteViewNotic(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod) throws Exception {
-        BTraceUtils.print("get into delayAfterGetLock ");
+        BTraceUtils.print("get into beforeDeleteViewNotic ");
         BTraceUtils.print(" for order __________________________ ");
         Thread.sleep(10000L);
     }

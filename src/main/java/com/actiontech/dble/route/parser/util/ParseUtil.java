@@ -5,6 +5,8 @@
 */
 package com.actiontech.dble.route.parser.util;
 
+import com.actiontech.dble.config.Versions;
+
 /**
  * @author mycat
  */
@@ -272,6 +274,55 @@ public final class ParseUtil {
         }
         return offset;
     }
+
+
+    /**
+     * return the index of the end of hint in stmt
+     * return -1 if the comment is a dble hint
+     *
+     * @param stmt
+     * @param offset
+     * @return
+     */
+    public static int commentHint(String stmt, int offset) {
+        int len = stmt.length();
+        int n = offset;
+        char[] annotation = Versions.ANNOTATION_NAME.toCharArray();
+        switch (stmt.charAt(n)) {
+            case '/':
+                if (len > ++n && stmt.charAt(n++) == '*' && len > n + 1) {
+                    if (stmt.length() > n + 6) {
+                        int x = n;
+                        char ch1 = stmt.charAt(x);
+                        if ((ch1 == '!' || ch1 == '#')) {
+                            boolean flag = true;
+                            for (char y : annotation) {
+                                if (stmt.charAt(++x) != y) {
+                                    flag = false;
+                                    break;
+                                }
+                            }
+                            if (flag) {
+                                return -1;
+                            }
+                        }
+                    }
+                    for (int i = n; i < len; ++i) {
+                        if (stmt.charAt(i) == '*') {
+                            int m = i + 1;
+                            if (len > m && stmt.charAt(m) == '/') {
+                                return m;
+                            }
+                        }
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+        return offset;
+    }
+
 
     public static boolean currentCharIsSep(String stmt, int offset) {
         if (stmt.length() > offset) {

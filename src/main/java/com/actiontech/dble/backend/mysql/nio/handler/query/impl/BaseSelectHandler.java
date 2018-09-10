@@ -54,7 +54,8 @@ public class BaseSelectHandler extends BaseDMLHandler {
         } else {
             PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(rrss.getName());
             //autocommit is session.getSource().isAutocommit() && !session.getSource().isTxStart()
-            final BackendConnection newConn = dn.getConnection(dn.getDatabase(), autocommit, autocommit, rrss);
+            boolean masterSlaveFlag = rrss.getRunOnSlave() == null ? autocommit : rrss.getRunOnSlave();
+            final BackendConnection newConn = dn.getConnection(dn.getDatabase(), autocommit, masterSlaveFlag, rrss);
             session.bindConnection(rrss, newConn);
             return (MySQLConnection) newConn;
         }

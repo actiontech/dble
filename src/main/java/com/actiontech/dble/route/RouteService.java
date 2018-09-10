@@ -73,7 +73,7 @@ public class RouteService {
                 String hintSplit = "=";
                 int firstSplitPos = hint.indexOf(hintSplit);
                 if (firstSplitPos > 0) {
-                    Map hintMap = parseHint(hint);
+                    Map hintMap = parseKeyValue(hint);
                     String hintType = (String) hintMap.get(HINT_TYPE);
                     String hintSql = (String) hintMap.get(hintType);
                     if (hintSql.length() == 0) {
@@ -126,8 +126,11 @@ public class RouteService {
         if (sql.charAt(j++) == '/' && sql.charAt(j++) == '*') {
             char c = sql.charAt(j);
             // support: "/*#dble: */" for mybatis and "/*!dble: */"  for mysql
-            while (j < len && c != '!' && c != '#' && (c == ' ' || c == '*')) {
+            while (c == ' ') {
                 c = sql.charAt(++j);
+            }
+            if (c != '!' && c != '#') {
+                return -1;
             }
             if (sql.charAt(j) == annotation[0]) {
                 j--;
@@ -148,31 +151,8 @@ public class RouteService {
         return -1;    // false
     }
 
-    private Map parseHint(String sql) {
+    private Map parseKeyValue(String substring) {
         Map<String, String> map = new HashMap<>();
-        int y = 0;
-        int begin = 0;
-        for (int i = 0; i < sql.length(); i++) {
-            char cur = sql.charAt(i);
-            if (cur == ',' && y % 2 == 0) {
-                String substring = sql.substring(begin, i);
-
-                parseKeyValue(map, substring);
-                begin = i + 1;
-            } else if (cur == '\'') {
-                y++;
-            }
-            if (i == sql.length() - 1) {
-                parseKeyValue(map, sql.substring(begin));
-
-            }
-
-
-        }
-        return map;
-    }
-
-    private void parseKeyValue(Map<String, String> map, String substring) {
         int indexOf = substring.indexOf('=');
         if (indexOf != -1) {
 
@@ -187,5 +167,6 @@ public class RouteService {
             map.put(key, value.trim());
 
         }
+        return map;
     }
 }

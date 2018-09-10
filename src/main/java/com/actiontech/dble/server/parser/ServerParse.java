@@ -58,6 +58,35 @@ public final class ServerParse {
     private static final Pattern PATTERN = Pattern.compile("(load)+\\s+(data)+\\s+\\w*\\s*(infile)+", Pattern.CASE_INSENSITIVE);
     private static final Pattern CALL_PATTERN = Pattern.compile("\\w*\\;\\s*\\s*(call)+\\s+\\w*\\s*", Pattern.CASE_INSENSITIVE);
 
+    public static boolean startWithHint(String stmt) {
+        int length = stmt.length();
+        for (int i = 0; i < length; ++i) {
+            switch (stmt.charAt(i)) {
+                case ' ':
+                case '\t':
+                case '\r':
+                case '\n':
+                    continue;
+                case '/':
+                    if (i == 0 && stmt.charAt(1) == '*' && stmt.charAt(2) == '!' && stmt.charAt(length - 2) == '*' &&
+                            stmt.charAt(length - 1) == '/') {
+                        return false;
+                    }
+                    //fall through
+                case '#':
+                    i = ParseUtil.commentHint(stmt, i);
+                    if (i == -1) {
+                        return true;
+                    }
+                    continue;
+                default:
+                    break;
+            }
+            break;
+        }
+        return false;
+    }
+
     public static int parse(String stmt) {
         int length = stmt.length();
         //FIX BUG FOR SQL SUCH AS /XXXX/SQL

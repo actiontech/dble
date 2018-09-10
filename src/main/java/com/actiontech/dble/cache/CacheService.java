@@ -1,13 +1,14 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2018 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.cache;
 
 import com.actiontech.dble.cache.impl.EnchachePooFactory;
 import com.actiontech.dble.cache.impl.LevelDBCachePooFactory;
 import com.actiontech.dble.cache.impl.MapDBCachePooFactory;
+import com.actiontech.dble.cache.impl.RocksDBCachePoolFactory;
 import com.actiontech.dble.util.ResourceUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -168,6 +169,9 @@ public class CacheService {
                 break;
             case "mapdb":
                 poolFactories.put(factoryType, new MapDBCachePooFactory());
+                break;
+            case "rocksdb":
+                poolFactories.put(factoryType, new RocksDBCachePoolFactory());
                 break;
             default:
                 CachePoolFactory factry = (CachePoolFactory) Class.forName(factryClassName).newInstance();

@@ -17,6 +17,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 import static com.actiontech.dble.cluster.ClusterController.GENERAL_GRPC_TIMEOUT;
 import static com.actiontech.dble.cluster.ClusterController.GRPC_SUBTIMEOUT;
@@ -379,9 +380,11 @@ public final class ClusterUcoreSender {
         Map<String, String> expectedMap = UcoreToXml.getOnlineMap();
         StringBuffer errorMsg = new StringBuffer();
         for (; ; ) {
+            errorMsg.setLength(0);
             if (checkResponseForOneTime(checkString, path, expectedMap, errorMsg)) {
                 break;
             }
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));
         }
         return errorMsg.length() <= 0 ? null : errorMsg.toString();
     }

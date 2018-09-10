@@ -156,7 +156,7 @@ public final class RollbackConfig {
             List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
             // TODO: While waiting, a new instance of MyCat is upping and working.
             while (preparedList.size() < onlineList.size()) {
-                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));
                 onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
                 preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
             }

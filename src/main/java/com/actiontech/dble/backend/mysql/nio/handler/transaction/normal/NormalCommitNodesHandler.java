@@ -5,16 +5,36 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.transaction.normal;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AbstractCommitNodesHandler;
 import com.actiontech.dble.net.mysql.ErrorPacket;
+import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 
 public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     protected byte[] sendData;
 
+    @Override
+    public void commit() {
+        final int initCount = session.getTargetCount();
+        lock.lock();
+        try {
+            reset(initCount);
+        } finally {
+            lock.unlock();
+        }
+        int position = 0;
+
+        for (RouteResultsetNode rrn : session.getTargetKeys()) {
+            final BackendConnection conn = session.getTarget(rrn);
+            conn.setResponseHandler(this);
+            if (!executeCommit((MySQLConnection) conn, position++)) {
+                break;
+            }
+        }
+
+    }
     @Override
     public void clearResources() {
         sendData = null;
@@ -35,7 +55,6 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
 
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
-        this.waitUntilSendFinish();
         if (decrementCountBy(1)) {
             if (sendData == null) {
                 sendData = session.getOkByteArray();
@@ -46,7 +65,6 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
 
     @Override
     public void errorResponse(byte[] err, BackendConnection conn) {
-        this.waitUntilSendFinish();
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);
         String errMsg = new String(errPacket.getMessage());
@@ -59,7 +77,6 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        this.waitUntilSendFinish();
         LOGGER.info("backend connect", e);
         this.setFail(e.getMessage());
         conn.close("Commit connection Error");
@@ -70,17 +87,6 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
 
     @Override
     public void connectionClose(final BackendConnection conn, final String reason) {
-        final NormalCommitNodesHandler thisHandler = this;
-        DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
-            @Override
-            public void run() {
-                thisHandler.connectionCloseLocal(conn, reason);
-            }
-        });
-    }
-
-    private void connectionCloseLocal(BackendConnection conn, String reason) {
-        this.waitUntilSendFinish();
         if (checkClosedConn(conn)) {
             return;
         }

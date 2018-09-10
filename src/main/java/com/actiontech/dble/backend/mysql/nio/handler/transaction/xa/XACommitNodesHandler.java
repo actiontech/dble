@@ -16,8 +16,13 @@ import com.actiontech.dble.backend.mysql.xa.XAStateLog;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.util.StringUtil;
+
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static com.actiontech.dble.config.ErrorCode.ER_ERROR_DURING_COMMIT;
 
@@ -27,10 +32,51 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     private ParticipantLogEntry[] participantLogEntry = null;
     byte[] sendData = OkPacket.OK;
 
+    private Lock lockForErrorHandle = new ReentrantLock();
+    private Condition sendFinished = lockForErrorHandle.newCondition();
+    private volatile boolean sendFinishedFlag = false;
     public XACommitNodesHandler(NonBlockingSession session) {
         super(session);
     }
 
+    @Override
+    public void commit() {
+        final int initCount = session.getTargetCount();
+        lock.lock();
+        try {
+            reset(initCount);
+        } finally {
+            lock.unlock();
+        }
+        int position = 0;
+        //get session's lock before sending commit(in fact, after ended)
+        //then the XA transaction will be not killed, if killed ,then we will not commit
+        if (session.getXaState() != null && session.getXaState() == TxState.TX_ENDED_STATE) {
+            if (!session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_COMMITTING)) {
+                return;
+            }
+        }
+
+        try {
+            sendFinishedFlag = false;
+            for (RouteResultsetNode rrn : session.getTargetKeys()) {
+                final BackendConnection conn = session.getTarget(rrn);
+                conn.setResponseHandler(this);
+                if (!executeCommit((MySQLConnection) conn, position++)) {
+                    break;
+                }
+            }
+        } finally {
+            lockForErrorHandle.lock();
+            try {
+                sendFinishedFlag = true;
+                sendFinished.signalAll();
+            } finally {
+                lockForErrorHandle.unlock();
+            }
+        }
+
+    }
     @Override
     public void clearResources() {
         tryCommitTimes = 0;
@@ -243,17 +289,6 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 
     @Override
     public void connectionClose(final BackendConnection conn, final String reason) {
-        final XACommitNodesHandler thisHandler = this;
-        DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
-            @Override
-            public void run() {
-                thisHandler.connectionCloseLocal(conn, reason);
-            }
-        });
-    }
-
-
-    private void connectionCloseLocal(BackendConnection conn, String reason) {
         this.waitUntilSendFinish();
         if (checkClosedConn(conn)) {
             return;
@@ -382,4 +417,20 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         }
 
     }
+
+
+
+    private void waitUntilSendFinish() {
+        this.lockForErrorHandle.lock();
+        try {
+            if (!this.sendFinishedFlag) {
+                this.sendFinished.await();
+            }
+        } catch (Exception e) {
+            LOGGER.info("back Response is closed by thread interrupted");
+        } finally {
+            lockForErrorHandle.unlock();
+        }
+    }
+
 }

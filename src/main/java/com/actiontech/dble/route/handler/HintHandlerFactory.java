@@ -19,7 +19,6 @@ public final class HintHandlerFactory {
 
     private static void init() {
         hintHandlerMap.put("sql", new HintSQLHandler());
-        hintHandlerMap.put("schema", new HintSchemaHandler());
         hintHandlerMap.put("datanode", new HintDataNodeHandler());
         // force master or force slave
         hintHandlerMap.put("db_type", new HintMasterDBHandler());

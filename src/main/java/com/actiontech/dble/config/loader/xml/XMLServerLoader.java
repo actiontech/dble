@@ -31,10 +31,10 @@ public class XMLServerLoader {
         this.system = new SystemConfig();
         this.users = new HashMap<>();
         this.firewall = new FirewallConfig();
-
-        this.load(new SystemConfigLoader());
-        this.load(new UserConfigLoader());
-        this.load(new FirewallConfigLoader());
+        Element root = loadXml();
+        this.load(root, new SystemConfigLoader());
+        this.load(root, new UserConfigLoader());
+        this.load(root, new FirewallConfigLoader());
     }
 
     public SystemConfig getSystem() {
@@ -51,15 +51,14 @@ public class XMLServerLoader {
         return firewall;
     }
 
-    public void load(Loader loader) {
+    public Element loadXml() {
         //read server.xml
         InputStream dtd = null;
         InputStream xml = null;
         try {
             dtd = ResourceUtil.getResourceAsStream("/server.dtd");
             xml = ResourceUtil.getResourceAsStream("/server.xml");
-            Element root = ConfigUtil.getDocument(dtd, xml).getDocumentElement();
-            loader.load(root, this);
+            return ConfigUtil.getDocument(dtd, xml).getDocumentElement();
         } catch (ConfigException e) {
             throw e;
         } catch (Exception e) {
@@ -79,6 +78,16 @@ public class XMLServerLoader {
                     //ignore error
                 }
             }
+        }
+    }
+
+    public void load(Element root, Loader loader) {
+        try {
+            loader.load(root, this);
+        } catch (ConfigException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ConfigException(e);
         }
     }
 }

@@ -874,6 +874,14 @@ public final class SystemConfig {
         this.sqlSlowTime = sqlSlowTime;
     }
 
+
+    public int getMaxCon() {
+        return maxCon;
+    }
+
+    public void setMaxCon(int maxCon) {
+        this.maxCon = maxCon;
+    }
     @Override
     public String toString() {
         return "SystemConfig [" +
@@ -955,11 +963,15 @@ public final class SystemConfig {
                 "]";
     }
 
-    public int getMaxCon() {
-        return maxCon;
+    //tmp
+    public int getUseOldMetaInit() {
+        return useOldMetaInit;
     }
 
-    public void setMaxCon(int maxCon) {
-        this.maxCon = maxCon;
+    public void setUseOldMetaInit(int useOldMetaInit) {
+        this.useOldMetaInit = useOldMetaInit;
     }
+
+    private int useOldMetaInit = 0;
+
 }

@@ -5,9 +5,11 @@
 
 package com.actiontech.dble.meta.table;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.meta.ProxyMetaManager;
+import com.actiontech.dble.meta.table.old.MultiTableMetaHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,8 +40,13 @@ public class SchemaMetaHandler {
 
     public void execute() {
         for (Entry<String, SchemaConfig> entry : config.getSchemas().entrySet()) {
-            MultiTableMetaHandler multiTableMeta = new MultiTableMetaHandler(this, entry.getValue(), selfNode);
-            multiTableMeta.execute();
+            if (DbleServer.getInstance().getConfig().getSystem().getUseOldMetaInit() == 1) {
+                MultiTableMetaHandler multiTableMeta = new MultiTableMetaHandler(this, entry.getValue(), selfNode);
+                multiTableMeta.execute();
+            } else {
+                MultiTablesMetaHandler multiTableMeta = new MultiTablesMetaHandler(this, entry.getValue(), selfNode);
+                multiTableMeta.execute();
+            }
         }
         waitAllNodeDone();
     }

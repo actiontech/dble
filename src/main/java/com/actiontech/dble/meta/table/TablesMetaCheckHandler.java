@@ -9,18 +9,19 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
-import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 
 import java.sql.SQLNonTransientException;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-public class TableMetaCheckHandler extends AbstractTableMetaHandler {
+public class TablesMetaCheckHandler extends AbstractTablesMetaHandler {
     private final ProxyMetaManager tmManager;
 
-    public TableMetaCheckHandler(ProxyMetaManager tmManager, String schema, TableConfig tbConfig, Set<String> selfNode) {
-        super(schema, tbConfig, selfNode);
+    public TablesMetaCheckHandler(ProxyMetaManager tmManager, String schema, Map<String, List<String>> dataNodeMap, Set<String> selfNode) {
+        super(schema, dataNodeMap, selfNode);
         this.tmManager = tmManager;
     }
 
@@ -29,7 +30,8 @@ public class TableMetaCheckHandler extends AbstractTableMetaHandler {
     }
 
     @Override
-    protected void handlerTable(StructureMeta.TableMeta tableMeta) {
+    protected void handlerTable(String table, String dataNode, String sql) {
+        StructureMeta.TableMeta tableMeta = MetaHelper.initTableMeta(table, sql, System.currentTimeMillis());
         if (tableMeta != null) {
             String tableId = schema + "." + tableMeta.getTableName();
             if (isTableModify(schema, tableMeta)) {

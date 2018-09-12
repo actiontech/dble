@@ -180,12 +180,11 @@ public abstract class FrontendConnection extends AbstractConnection {
         return seed;
     }
 
-    public boolean setCharsetIndex(int ci) {
+    public void initCharsetIndex(int ci) {
         String name = CharsetUtil.getCharset(ci);
         charsetName.setClient(name);
         charsetName.setResults(name);
-        charsetName.setCollation(DbleServer.getInstance().getSystemVariables().getDefaultValue("collation_database"));
-        return true;
+        charsetName.setCollation(CharsetUtil.getDefaultCollation(name));
     }
 
     public void writeErrMessage(String sqlState, String msg, int vendorCode) {

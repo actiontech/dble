@@ -6,6 +6,7 @@
 package com.actiontech.dble.net;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.CharsetNames;
@@ -114,6 +115,13 @@ public abstract class AbstractConnection implements NIOConnection {
         charsetName.setClient(name);
         charsetName.setResults(name);
         charsetName.setCollation(DbleServer.getInstance().getSystemVariables().getDefaultValue("collation_database"));
+    }
+
+
+    public void initCharacterSet(String name) {
+        charsetName.setClient(name);
+        charsetName.setResults(name);
+        charsetName.setCollation(CharsetUtil.getDefaultCollation(name));
     }
 
     public void setNames(String name, String collationName) {
@@ -629,7 +637,7 @@ public abstract class AbstractConnection implements NIOConnection {
 
         this.setMaxPacketSize(system.getMaxPacketSize());
         this.setIdleTimeout(system.getIdleTimeout());
-        this.setCharacterSet(system.getCharset());
+        this.initCharacterSet(system.getCharset());
         this.setReadBufferChunk(soRcvBuf);
     }
 }

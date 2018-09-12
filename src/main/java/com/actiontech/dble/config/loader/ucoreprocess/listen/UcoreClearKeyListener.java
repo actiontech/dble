@@ -99,10 +99,11 @@ public class UcoreClearKeyListener implements Runnable {
             UcoreInterface.SubscribeKvPrefixInput input
                     = UcoreInterface.SubscribeKvPrefixInput.newBuilder().setIndex(0).setDuration(60).setKeyPrefix(UcorePathUtil.BASE_PATH).build();
             UcoreInterface.SubscribeKvPrefixOutput output = ClusterUcoreSender.subscribeKvPrefix(input);
-
+            index = output.getIndex();
             Map<String, UKvBean> diffMap = new HashMap<String, UKvBean>();
             for (int i = 0; i < output.getKeysCount(); i++) {
                 diffMap.put(output.getKeys(i), new UKvBean(output.getKeys(i), output.getValues(i), UKvBean.ADD));
+                cache.put(output.getKeys(i), output.getValues(i));
             }
             handle(diffMap);
         } catch (Exception e) {

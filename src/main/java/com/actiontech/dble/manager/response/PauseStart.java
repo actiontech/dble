@@ -41,8 +41,18 @@ public final class PauseStart {
         OK.setServerStatus(2);
     }
 
-    public static void execute(ManagerConnection c, String sql) {
+    public static void execute(final ManagerConnection c, final String sql) {
+        DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                pause(c, sql);
+            }
+        });
 
+    }
+
+
+    public static void pause(ManagerConnection c, String sql) {
 
         Matcher ma = PATTERN_FOR_PAUSE.matcher(sql);
         if (!ma.matches()) {

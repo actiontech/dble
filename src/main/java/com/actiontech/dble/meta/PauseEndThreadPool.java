@@ -183,7 +183,7 @@ public class PauseEndThreadPool {
 
         void timeOut() {
             queueNumber.decrementAndGet();
-            con.writeErrMessage(ER_YES, "wait for backend dataNode timeout ");
+            con.writeErrMessage(ER_YES, "waiting time exceeded wait_limit from pause dataNode");
         }
 
         long waitTime() {

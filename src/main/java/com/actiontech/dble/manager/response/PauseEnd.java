@@ -31,7 +31,18 @@ public final class PauseEnd {
         OK.setServerStatus(2);
     }
 
-    public static void execute(ManagerConnection c) {
+    public static void execute(final ManagerConnection c) {
+        DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                resume(c);
+            }
+        });
+
+    }
+
+
+    public static void resume(ManagerConnection c) {
 
         if (DbleServer.getInstance().isUseUcore()) {
             try {

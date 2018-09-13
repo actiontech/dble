@@ -31,11 +31,11 @@ public abstract class AbstractTablesMetaHandler {
             "Create Table"};
     private static final String SQL = "show create table {0};";
 
-    protected Map<String, List<String>> dataNodeMap = new HashMap<>();
+    private Map<String, List<String>> dataNodeMap = new HashMap<>();
     protected String schema;
     private Set<String> selfNode;
 
-    public AbstractTablesMetaHandler(String schema, Map<String, List<String>> dataNodeMap, Set<String> selfNode) {
+    AbstractTablesMetaHandler(String schema, Map<String, List<String>> dataNodeMap, Set<String> selfNode) {
         this.dataNodeMap = dataNodeMap;
         this.schema = schema;
         this.selfNode = selfNode;
@@ -56,11 +56,11 @@ public abstract class AbstractTablesMetaHandler {
             PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
             PhysicalDatasource ds = dn.getDbPool().getSource();
             if (ds.isAlive()) {
-                MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLShowCreateTablesListener(tables, dataNode, System.currentTimeMillis(), ds));
+                MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLShowCreateTablesListener(tables, dataNode, ds));
                 MultiSQLJob sqlJob = new MultiSQLJob(sbSql.toString(), dn.getDatabase(), resultHandler, ds);
                 sqlJob.run();
             } else {
-                MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLShowCreateTablesListener(tables, dataNode, System.currentTimeMillis(), null));
+                MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLShowCreateTablesListener(tables, dataNode, null));
                 MultiSQLJob sqlJob = new MultiSQLJob(sbSql.toString(), dataNode, resultHandler, false);
                 sqlJob.run();
             }
@@ -74,13 +74,11 @@ public abstract class AbstractTablesMetaHandler {
     private class MySQLShowCreateTablesListener implements SQLQueryResultListener<SQLQueryResult<List<Map<String, String>>>> {
         private List<String> tables;
         private String dataNode;
-        private long version;
         private PhysicalDatasource ds;
 
-        MySQLShowCreateTablesListener(List<String> tables, String dataNode, long version, PhysicalDatasource ds) {
+        MySQLShowCreateTablesListener(List<String> tables, String dataNode, PhysicalDatasource ds) {
             this.tables = tables;
             this.dataNode = dataNode;
-            this.version = version;
             this.ds = ds;
         }
 

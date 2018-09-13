@@ -101,13 +101,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
         source.setHandshake(packet);
         source.setThreadId(packet.getThreadId());
 
-        int charsetIndex = (packet.getServerCharsetIndex() & 0xff);
-        String charset = CharsetUtil.getCharset(charsetIndex);
-        if (charset != null) {
-            source.initCharacterSet(charset);
-        } else {
-            throw new RuntimeException("Unknown charsetIndex:" + charsetIndex);
-        }
+        source.initCharacterSet(DbleServer.getInstance().getConfig().getSystem().getCharset());
     }
 
     private void auth323(byte packetId) {

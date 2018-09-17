@@ -108,8 +108,8 @@ public class PhysicalDBNode {
         }
     }
 
-    public BackendConnection getConnection(String schema, boolean autoCommit, boolean canRunINReadDB, Object attachment) throws Exception {
-        if (canRunINReadDB) {
+    public BackendConnection getConnection(String schema, boolean autoCommit, Boolean runOnSlave, Object attachment) throws Exception {
+        if (runOnSlave == null) {
             PhysicalDatasource readSource = dbPool.getRWBalanceNode();
             if (!readSource.isAlive()) {
                 String heartbeatError = "the data source[" + readSource.getConfig().getUrl() + "] can't reached, please check the dataHost";
@@ -119,6 +119,9 @@ public class PhysicalDBNode {
                 throw new IOException(heartbeatError);
             }
             return readSource.getConnection(schema, autoCommit, attachment);
+        } else if (runOnSlave) {
+            PhysicalDatasource source = dbPool.getReadNode();
+            return source.getConnection(schema, autoCommit, attachment);
         } else {
             checkRequest(schema);
             if (dbPool.isInitSuccess()) {

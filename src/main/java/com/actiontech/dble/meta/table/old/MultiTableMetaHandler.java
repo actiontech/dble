@@ -3,11 +3,12 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.meta.table;
+package com.actiontech.dble.meta.table.old;
 
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.ProxyMetaManager;
+import com.actiontech.dble.meta.table.SchemaMetaHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +35,7 @@ public class MultiTableMetaHandler {
     private Lock singleTableLock = new ReentrantLock();
     private Condition collectTables = singleTableLock.newCondition();
 
-    MultiTableMetaHandler(SchemaMetaHandler schemaMetaHandler, SchemaConfig config, Set<String> selfNode) {
+    public MultiTableMetaHandler(SchemaMetaHandler schemaMetaHandler, SchemaConfig config, Set<String> selfNode) {
         this.schemaMetaHandler = schemaMetaHandler;
         this.config = config;
         this.schema = config.getName();
@@ -46,7 +47,7 @@ public class MultiTableMetaHandler {
     public void execute() {
         this.schemaMetaHandler.getTmManager().createDatabase(schema);
         boolean existTable = false;
-        if (config.getDataNode() != null) {
+        if (config.getDataNode() != null && (selfNode == null || !selfNode.contains(config.getDataNode()))) {
             List<String> tables = getSingleTables();
             singleTableCnt.set(tables.size());
             for (String table : tables) {

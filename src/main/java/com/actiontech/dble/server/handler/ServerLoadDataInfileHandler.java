@@ -6,6 +6,7 @@
 package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SchemaConfig;
@@ -117,7 +118,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         String escaped = escapedExpr == null ? "\\" : escapedExpr.getText();
         loadData.setEscape(escaped);
         String charset = statement.getCharset() != null ? statement.getCharset() : DbleServer.getInstance().getSystemVariables().getDefaultValue("character_set_database");
-        loadData.setCharset(charset);
+        loadData.setCharset(CharsetUtil.getJavaCharset(charset));
         loadData.setFileName(fileName);
     }
 

@@ -30,6 +30,8 @@ import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.meta.table.*;
 import com.actiontech.dble.meta.table.MetaHelper.IndexType;
+import com.actiontech.dble.meta.table.old.AbstractTableMetaHandler;
+import com.actiontech.dble.meta.table.old.TableMetaCheckHandler;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
@@ -276,11 +278,13 @@ public class ProxyMetaManager {
 
 
     public void init(ServerConfig config) throws Exception {
+        LOGGER.info("init metaData start");
         if (DbleServer.getInstance().isUseZK()) {
             this.metaZKinit(config);
         } else {
             initMeta(config);
         }
+        LOGGER.info("init metaData end");
     }
 
     private void metaZKinit(ServerConfig config) throws Exception {
@@ -384,7 +388,7 @@ public class ProxyMetaManager {
         SystemConfig system = config.getSystem();
         if (system.getCheckTableConsistency() == 1) {
             scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("MetaDataChecker-%d").build());
-            checkTaskHandler = scheduler.scheduleWithFixedDelay(tableStructureCheckTask(selfNode), 0L, system.getCheckTableConsistencyPeriod(), TimeUnit.MILLISECONDS);
+            checkTaskHandler = scheduler.scheduleWithFixedDelay(tableStructureCheckTask(selfNode), system.getCheckTableConsistencyPeriod(), system.getCheckTableConsistencyPeriod(), TimeUnit.MILLISECONDS);
         }
     }
 
@@ -413,12 +417,31 @@ public class ProxyMetaManager {
             if (!checkDbExists(schema.getName())) {
                 continue;
             }
-            for (TableConfig table : schema.getTables().values()) {
-                if (!checkTableExists(schema.getName(), table.getName())) {
-                    continue;
+            if (DbleServer.getInstance().getConfig().getSystem().getUseOldMetaInit() == 1) {
+                for (TableConfig table : schema.getTables().values()) {
+                    if (!checkTableExists(schema.getName(), table.getName())) {
+                        continue;
+                    }
+                    AbstractTableMetaHandler handler = new TableMetaCheckHandler(this, schema.getName(), table, selfNode);
+                    handler.execute();
                 }
-                AbstractTableMetaHandler handler = new TableMetaCheckHandler(this, schema.getName(), table, selfNode);
-                handler.execute();
+            } else {
+                Map<String, List<String>> dataNodeMap = new HashMap<>();
+                for (Map.Entry<String, TableConfig> entry : schema.getTables().entrySet()) {
+                    String tableName = entry.getKey();
+                    TableConfig tbConfig = entry.getValue();
+                    for (String dataNode : tbConfig.getDataNodes()) {
+                        List<String> tables = dataNodeMap.get(dataNode);
+                        if (tables == null) {
+                            tables = new ArrayList<>();
+                            dataNodeMap.put(dataNode, tables);
+                        }
+                        tables.add(tableName);
+                    }
+                }
+
+                AbstractTablesMetaHandler tableHandler = new TablesMetaCheckHandler(this, schema.getName(), dataNodeMap, selfNode);
+                tableHandler.execute();
             }
         }
     }

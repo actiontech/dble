@@ -5,7 +5,10 @@
 */
 package com.actiontech.dble.config.model;
 
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.config.Isolations;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,7 +19,7 @@ import java.io.IOException;
  * @author mycat
  */
 public final class SystemConfig {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(SystemConfig.class);
     public static final String SYS_HOME = "DBLE_HOME";
     static final long DEFAULT_IDLE_TIMEOUT = 30 * 60 * 1000L;
     public static final int SEQUENCE_HANDLER_MYSQL = 1;
@@ -223,7 +226,11 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setUseGlobleTableCheck(int useGlobleTableCheck) {
-        this.useGlobleTableCheck = useGlobleTableCheck;
+        if (useGlobleTableCheck >= 0 && useGlobleTableCheck <= 1) {
+            this.useGlobleTableCheck = useGlobleTableCheck;
+        } else {
+            LOGGER.warn("useGlobleTableCheck " + useGlobleTableCheck + " in server.xml is not recognized ,use " + this.useGlobleTableCheck + " replaced");
+        }
     }
 
     public long getGlableTableCheckPeriod() {
@@ -241,7 +248,11 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setSequnceHandlerType(int sequnceHandlerType) {
-        this.sequnceHandlerType = sequnceHandlerType;
+        if (sequnceHandlerType >= 1 && sequnceHandlerType <= 4) {
+            this.sequnceHandlerType = sequnceHandlerType;
+        } else {
+            LOGGER.warn("sequnceHandlerType " + sequnceHandlerType + " in server.xml is not recognized ,use " + this.sequnceHandlerType + " replaced");
+        }
     }
 
 
@@ -302,7 +313,11 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setUseSqlStat(int useSqlStat) {
-        this.useSqlStat = useSqlStat;
+        if (useSqlStat >= 0 && useSqlStat <= 1) {
+            this.useSqlStat = useSqlStat;
+        } else {
+            LOGGER.warn("useSqlStat " + useSqlStat + " in server.xml is not recognized ,use " + this.useSqlStat + " replaced");
+        }
     }
 
     public int getUseCompression() {
@@ -311,7 +326,11 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setUseCompression(int useCompression) {
-        this.useCompression = useCompression;
+        if (useCompression >= 0 && useCompression <= 1) {
+            this.useCompression = useCompression;
+        } else {
+            LOGGER.warn("useCompression " + useCompression + " in server.xml is not recognized ,use " + this.useCompression + " replaced");
+        }
     }
 
     public String getCharset() {
@@ -320,7 +339,11 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setCharset(String charset) {
-        this.charset = charset;
+        if (CharsetUtil.getCharsetDefaultIndex(charset) > 0) {
+            this.charset = charset;
+        } else {
+            LOGGER.warn("Character set " + charset + " in server.xml is not recognized ,use " + this.charset + " replaced");
+        }
     }
 
     public String getFakeMySQLVersion() {
@@ -502,7 +525,11 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setTxIsolation(int txIsolation) {
-        this.txIsolation = txIsolation;
+        if (txIsolation >= 1 && txIsolation <= 4) {
+            this.txIsolation = txIsolation;
+        } else {
+            LOGGER.warn("txIsolation " + txIsolation + " in server.xml is not recognized ,use " + this.txIsolation + " replaced");
+        }
     }
 
     public int getSqlRecordCount() {
@@ -520,7 +547,11 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setRecordTxn(int recordTxn) {
-        this.recordTxn = recordTxn;
+        if (recordTxn >= 0 && recordTxn <= 1) {
+            this.recordTxn = recordTxn;
+        } else {
+            LOGGER.warn("recordTxn " + recordTxn + " in server.xml is not recognized ,use " + this.recordTxn + " replaced");
+        }
     }
 
     public short getBufferPoolChunkSize() {
@@ -547,7 +578,11 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setBufferUsagePercent(int bufferUsagePercent) {
-        this.bufferUsagePercent = bufferUsagePercent;
+        if (bufferUsagePercent >= 0 && bufferUsagePercent <= 100) {
+            this.bufferUsagePercent = bufferUsagePercent;
+        } else {
+            LOGGER.warn("bufferUsagePercent " + bufferUsagePercent + " in server.xml is not recognized ,use " + this.bufferUsagePercent + " replaced");
+        }
     }
 
     public long getClearBigSqLResultSetMapMs() {
@@ -619,7 +654,11 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setFrontSocketNoDelay(int frontSocketNoDelay) {
-        this.frontSocketNoDelay = frontSocketNoDelay;
+        if (frontSocketNoDelay >= 0 && frontSocketNoDelay <= 1) {
+            this.frontSocketNoDelay = frontSocketNoDelay;
+        } else {
+            LOGGER.warn("frontSocketNoDelay " + frontSocketNoDelay + " in server.xml is not recognized ,use " + this.frontSocketNoDelay + " replaced");
+        }
     }
 
     public int getBackSocketNoDelay() {
@@ -628,7 +667,11 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setBackSocketNoDelay(int backSocketNoDelay) {
-        this.backSocketNoDelay = backSocketNoDelay;
+        if (backSocketNoDelay >= 0 && backSocketNoDelay <= 1) {
+            this.backSocketNoDelay = backSocketNoDelay;
+        } else {
+            LOGGER.warn("backSocketNoDelay " + backSocketNoDelay + " in server.xml is not recognized ,use " + this.backSocketNoDelay + " replaced");
+        }
     }
 
     public int getUsingAIO() {
@@ -637,7 +680,11 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setUsingAIO(int usingAIO) {
-        this.usingAIO = usingAIO;
+        if (usingAIO >= 0 && usingAIO <= 1) {
+            this.usingAIO = usingAIO;
+        } else {
+            LOGGER.warn("usingAIO " + usingAIO + " in server.xml is not recognized ,use " + this.usingAIO + " replaced");
+        }
     }
 
     public int getServerNodeId() {
@@ -655,7 +702,11 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setCheckTableConsistency(int checkTableConsistency) {
-        this.checkTableConsistency = checkTableConsistency;
+        if (checkTableConsistency >= 0 && checkTableConsistency <= 1) {
+            this.checkTableConsistency = checkTableConsistency;
+        } else {
+            LOGGER.warn("checkTableConsistency " + checkTableConsistency + " in server.xml is not recognized ,use " + this.checkTableConsistency + " replaced");
+        }
     }
 
     public long getCheckTableConsistencyPeriod() {
@@ -772,7 +823,11 @@ public final class SystemConfig {
     }
     @SuppressWarnings("unused")
     public void setUseCostTimeStat(int useCostTimeStat) {
-        this.useCostTimeStat = useCostTimeStat;
+        if (useCostTimeStat >= 0 && useCostTimeStat <= 1) {
+            this.useCostTimeStat = useCostTimeStat;
+        } else {
+            LOGGER.warn("useCostTimeStat " + useCostTimeStat + " in server.xml is not recognized ,use " + this.useCostTimeStat + " replaced");
+        }
     }
 
     public int getMaxCostStatSize() {
@@ -798,7 +853,11 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setUseThreadUsageStat(int useThreadUsageStat) {
-        this.useThreadUsageStat = useThreadUsageStat;
+        if (useThreadUsageStat >= 0 && useThreadUsageStat <= 1) {
+            this.useThreadUsageStat = useThreadUsageStat;
+        } else {
+            LOGGER.warn("useThreadUsageStat " + useThreadUsageStat + " in server.xml is not recognized ,use " + this.useThreadUsageStat + " replaced");
+        }
     }
 
 
@@ -808,7 +867,11 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setUsePerformanceMode(int usePerformanceMode) {
-        this.usePerformanceMode = usePerformanceMode;
+        if (usePerformanceMode >= 0 && usePerformanceMode <= 1) {
+            this.usePerformanceMode = usePerformanceMode;
+        } else {
+            LOGGER.warn("usePerformanceMode " + usePerformanceMode + " in server.xml is not recognized ,use " + this.usePerformanceMode + " replaced");
+        }
     }
 
     public int getWriteToBackendExecutor() {
@@ -826,7 +889,11 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setEnableSlowLog(int enableSlowLog) {
-        this.enableSlowLog = enableSlowLog;
+        if (enableSlowLog >= 0 && enableSlowLog <= 1) {
+            this.enableSlowLog = enableSlowLog;
+        } else {
+            LOGGER.warn("enableSlowLog " + enableSlowLog + " in server.xml is not recognized ,use " + this.enableSlowLog + " replaced");
+        }
     }
 
     public String getSlowLogBaseDir() {
@@ -874,6 +941,14 @@ public final class SystemConfig {
         this.sqlSlowTime = sqlSlowTime;
     }
 
+
+    public int getMaxCon() {
+        return maxCon;
+    }
+
+    public void setMaxCon(int maxCon) {
+        this.maxCon = maxCon;
+    }
     @Override
     public String toString() {
         return "SystemConfig [" +
@@ -955,11 +1030,15 @@ public final class SystemConfig {
                 "]";
     }
 
-    public int getMaxCon() {
-        return maxCon;
+    //tmp
+    public int getUseOldMetaInit() {
+        return useOldMetaInit;
     }
 
-    public void setMaxCon(int maxCon) {
-        this.maxCon = maxCon;
+    public void setUseOldMetaInit(int useOldMetaInit) {
+        this.useOldMetaInit = useOldMetaInit;
     }
+
+    private int useOldMetaInit = 0;
+
 }

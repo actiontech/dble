@@ -281,6 +281,7 @@ public final class DbleServer {
     private void pullVarAndMeta() throws IOException {
         tmManager = new ProxyMetaManager();
         if (!this.getConfig().isDataHostWithoutWR()) {
+            LOGGER.info("get variables Data start");
             //init for sys VAR
             VarsExtractorHandler handler = new VarsExtractorHandler(config.getDataHosts());
             SystemVariables newSystemVariables = handler.execute();
@@ -291,6 +292,7 @@ public final class DbleServer {
             }
             reviseSchemas();
             initDataHost();
+            LOGGER.info("get variables Data end");
             //init tmManager
             try {
                 tmManager.init(this.getConfig());
@@ -450,7 +452,6 @@ public final class DbleServer {
 
         sequenceHandler = initSequenceHandler(config.getSystem().getSequnceHandlerType());
         //XA Init recovery Log
-        LOGGER.info("===============================================");
         LOGGER.info("Perform XA recovery log ...");
         performXARecoveryLog();
 

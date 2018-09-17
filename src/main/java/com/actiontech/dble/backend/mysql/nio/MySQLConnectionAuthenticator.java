@@ -6,7 +6,6 @@
 package com.actiontech.dble.backend.mysql.nio;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.SecurityUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.Capabilities;
@@ -101,13 +100,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
         source.setHandshake(packet);
         source.setThreadId(packet.getThreadId());
 
-        int charsetIndex = (packet.getServerCharsetIndex() & 0xff);
-        String charset = CharsetUtil.getCharset(charsetIndex);
-        if (charset != null) {
-            source.setCharacterSet(charset);
-        } else {
-            throw new RuntimeException("Unknown charsetIndex:" + charsetIndex);
-        }
+        source.initCharacterSet(DbleServer.getInstance().getConfig().getSystem().getCharset());
     }
 
     private void auth323(byte packetId) {

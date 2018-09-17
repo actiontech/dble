@@ -3,7 +3,7 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.meta.table;
+package com.actiontech.dble.meta.table.old;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
@@ -14,12 +14,11 @@ import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.protocol.StructureMeta;
+import com.actiontech.dble.meta.table.MetaHelper;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.sqlengine.SQLQueryResultListener;
-import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
-import com.alibaba.druid.sql.parser.SQLStatementParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +64,7 @@ public abstract class AbstractTableMetaHandler {
             String sql = SQL_PREFIX + tableName;
             if (ds.isAlive()) {
                 OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLTableStructureListener(dataNode, System.currentTimeMillis(), ds));
-                SQLJob sqlJob = new SQLJob(sql, dataNode, resultHandler, false);
+                SQLJob sqlJob = new SQLJob(sql, dn.getDatabase(), resultHandler, ds);
                 sqlJob.run();
             } else {
                 OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLTableStructureListener(dataNode, System.currentTimeMillis(), null));
@@ -145,7 +144,7 @@ public abstract class AbstractTableMetaHandler {
                 // for example: autoIncrement number
                 Set<StructureMeta.TableMeta> tableMetas = new HashSet<>();
                 for (String sql : dataNodeTableStructureSQLMap.keySet()) {
-                    tableMeta = initTableMeta(tableName, sql, version);
+                    tableMeta = MetaHelper.initTableMeta(tableName, sql, version);
                     tableMetas.add(tableMeta);
                 }
                 String tableId = schema + "." + tableName;
@@ -162,7 +161,7 @@ public abstract class AbstractTableMetaHandler {
                         AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
                     ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.remove(tableId);
                 }
-                tableMeta = initTableMeta(tableName, dataNodeTableStructureSQLMap.keySet().iterator().next(), version);
+                tableMeta = MetaHelper.initTableMeta(tableName, dataNodeTableStructureSQLMap.keySet().iterator().next(), version);
             }
             return tableMeta;
         }
@@ -180,19 +179,6 @@ public abstract class AbstractTableMetaHandler {
                 }
                 stringBuilder.append(":").append(entry);
                 LOGGER.info(stringBuilder.toString());
-            }
-        }
-
-        private StructureMeta.TableMeta initTableMeta(String table, String sql, long timeStamp) {
-            try {
-                SQLStatementParser parser = new CreateTableParserImp(sql);
-                SQLCreateTableStatement createStatement = parser.parseCreateTable();
-                return MetaHelper.initTableMeta(table, createStatement, timeStamp);
-
-            } catch (Exception e) {
-                LOGGER.warn("sql[" + sql + "] parser error:", e);
-                AlertUtil.alertSelf(AlarmCode.GET_TABLE_META_FAIL, Alert.AlertLevel.WARN, "sql[" + sql + "] parser error:" + e.getMessage(), null);
-                return null;
             }
         }
     }

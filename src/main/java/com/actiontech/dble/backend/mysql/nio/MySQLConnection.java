@@ -134,7 +134,7 @@ public class MySQLConnection extends BackendAIOConnection {
     public void resetContextStatus() {
         this.txIsolation = -1;
         this.autocommit = true;
-        this.setCharacterSet(DbleServer.getInstance().getConfig().getSystem().getCharset());
+        this.initCharacterSet(DbleServer.getInstance().getConfig().getSystem().getCharset());
         this.usrVariables.clear();
         this.sysVariables.clear();
     }

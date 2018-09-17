@@ -5,6 +5,9 @@
 
 package com.actiontech.dble.meta.table;
 
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
@@ -18,6 +21,9 @@ import com.alibaba.druid.sql.dialect.mysql.ast.MySqlUnique;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlTableIndex;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
+import com.alibaba.druid.sql.parser.SQLStatementParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -30,6 +36,19 @@ public final class MetaHelper {
     }
 
     public static final String PRIMARY = "PRIMARY";
+    private static final Logger LOGGER = LoggerFactory.getLogger(MetaHelper.class);
+
+    public static StructureMeta.TableMeta initTableMeta(String table, String sql, long timeStamp) {
+        try {
+            SQLStatementParser parser = new CreateTableParserImp(sql);
+            SQLCreateTableStatement createStatement = parser.parseCreateTable();
+            return MetaHelper.initTableMeta(table, createStatement, timeStamp);
+        } catch (Exception e) {
+            LOGGER.warn("sql[" + sql + "] parser error:", e);
+            AlertUtil.alertSelf(AlarmCode.GET_TABLE_META_FAIL, Alert.AlertLevel.WARN, "sql[" + sql + "] parser error:" + e.getMessage(), null);
+            return null;
+        }
+    }
 
     public static StructureMeta.TableMeta initTableMeta(String table, SQLCreateTableStatement createStatement, long timeStamp) {
         StructureMeta.TableMeta.Builder tmBuilder = StructureMeta.TableMeta.newBuilder();

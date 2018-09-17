@@ -79,15 +79,6 @@ public final class RouteResultset implements Serializable {
         this.runOnSlave = runOnSlave;
     }
 
-    private Procedure procedure;
-
-    public Procedure getProcedure() {
-        return procedure;
-    }
-
-    public void setProcedure(Procedure procedure) {
-        this.procedure = procedure;
-    }
 
     public boolean isLoadData() {
         return isLoadData;

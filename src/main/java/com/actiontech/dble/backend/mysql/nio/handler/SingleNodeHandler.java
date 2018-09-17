@@ -54,6 +54,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     private int fieldCount;
     private List<FieldPacket> fieldPackets = new ArrayList<>();
     private volatile boolean connClosed = false;
+
     public SingleNodeHandler(RouteResultset rrs, NonBlockingSession session) {
         this.rrs = rrs;
         this.node = rrs.getNodes()[0];
@@ -211,7 +212,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         this.resultSize += eof.length;
         session.setBackendResponseEndTime((MySQLConnection) conn);
         // if it's call statement,it will not release connection
-        if (!rrs.isCallStatement() || rrs.getProcedure().isResultSimpleValue()) {
+        if (!rrs.isCallStatement()) {
             session.releaseConnectionIfSafe(conn, false);
         }
 
@@ -244,7 +245,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
     /**
      * lazy create ByteBuffer only when needed
-     *
      */
     ByteBuffer allocBuffer() {
         if (buffer == null) {

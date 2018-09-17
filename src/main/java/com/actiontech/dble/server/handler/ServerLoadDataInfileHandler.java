@@ -25,6 +25,7 @@ import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.sqlengine.mpp.LoadData;
 import com.actiontech.dble.util.ObjectUtil;
+import com.actiontech.dble.util.SqlStringUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
@@ -422,7 +423,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         SQLLiteralExpr fn = new SQLCharExpr(fileName);    //druid will filter path, reset it now
         statement.setFileName(fn);
         //replace IGNORE X LINES in SQL to avoid  IGNORING X LINE in every node.
-        String srcStatement = this.ignoreLinesDelete(statement.toString());
+        String srcStatement = this.ignoreLinesDelete(SqlStringUtil.toSQLString(statement));
         RouteResultset rrs = new RouteResultset(srcStatement, ServerParse.LOAD_DATA_INFILE_SQL);
         rrs.setLoadData(true);
         rrs.setStatement(srcStatement);
@@ -807,5 +808,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         }
         fileDirToDel.delete();
     }
+
 
 }

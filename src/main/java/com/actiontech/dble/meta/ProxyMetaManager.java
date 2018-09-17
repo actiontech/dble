@@ -426,14 +426,14 @@ public class ProxyMetaManager {
                     handler.execute();
                 }
             } else {
-                Map<String, List<String>> dataNodeMap = new HashMap<>();
+                Map<String, Set<String>> dataNodeMap = new HashMap<>();
                 for (Map.Entry<String, TableConfig> entry : schema.getTables().entrySet()) {
                     String tableName = entry.getKey();
                     TableConfig tbConfig = entry.getValue();
                     for (String dataNode : tbConfig.getDataNodes()) {
-                        List<String> tables = dataNodeMap.get(dataNode);
+                        Set<String> tables = dataNodeMap.get(dataNode);
                         if (tables == null) {
-                            tables = new ArrayList<>();
+                            tables = new HashSet<>();
                             dataNodeMap.put(dataNode, tables);
                         }
                         tables.add(tableName);

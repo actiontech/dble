@@ -107,7 +107,7 @@ public abstract class MysqlVisitor {
     protected abstract String visitPushDownNameSel(Item o);
 
     // pushDown's name of not in select list
-    public final String visitUnSelPushDownName(Item item, boolean canUseAlias) {
+    protected String visitUnSelPushDownName(Item item, boolean canUseAlias) {
         if (item.isWithSubQuery()) {
             item = PlanUtil.rebuildSubQueryItem(item);
         }

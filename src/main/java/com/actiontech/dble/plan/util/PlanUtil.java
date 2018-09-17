@@ -363,7 +363,7 @@ public final class PlanUtil {
         }
     }
 
-    private static boolean isCmpFunc(Item filter) {
+    public static boolean isCmpFunc(Item filter) {
         return filter instanceof ItemFuncEqual || filter instanceof ItemFuncGt || filter instanceof ItemFuncGe ||
                 filter instanceof ItemFuncLt || filter instanceof ItemFuncLe || filter instanceof ItemFuncNe ||
                 filter instanceof ItemFuncStrictEqual || filter instanceof ItemFuncLike;
@@ -510,6 +510,7 @@ public final class PlanUtil {
         }
         return null;
     }
+
 
     public static void checkTablesPrivilege(ServerConnection source, PlanNode node, SQLSelectStatement stmt) {
         for (TableNode tn : node.getReferedTableNodes()) {

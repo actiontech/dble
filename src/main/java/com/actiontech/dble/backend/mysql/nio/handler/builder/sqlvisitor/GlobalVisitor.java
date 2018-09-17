@@ -8,8 +8,16 @@ package com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.Item.ItemType;
+import com.actiontech.dble.plan.common.item.function.operator.ItemBoolFunc2;
+import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
+import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondOr;
+import com.actiontech.dble.plan.common.item.subquery.ItemAllAnySubQuery;
+import com.actiontech.dble.plan.common.item.subquery.ItemExistsSubQuery;
+import com.actiontech.dble.plan.common.item.subquery.ItemInSubQuery;
+import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
 import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
+import com.actiontech.dble.plan.util.PlanUtil;
 
 
 /**
@@ -312,7 +320,12 @@ public class GlobalVisitor extends MysqlVisitor {
     /* -------------------------- help method ------------------------ */
     @Override
     protected String visitPushDownNameSel(Item item) {
-        String orgPushDownName = item.getItemName();
+        String orgPushDownName;
+        if (item.isWithSubQuery()) {
+            orgPushDownName = buildSubQueryItem(item, false);
+        } else {
+            orgPushDownName = item.getItemName();
+        }
         if (item.type().equals(ItemType.FIELD_ITEM)) {
             orgPushDownName = "`" + item.getTableName() + "`.`" + orgPushDownName + "`";
         }
@@ -341,4 +354,121 @@ public class GlobalVisitor extends MysqlVisitor {
             return orgPushDownName + " as `" + pushAlias + "`";
         }
     }
+    // pushDown's name of not in select list
+    protected final String visitUnSelPushDownName(Item item, boolean canUseAlias) {
+        if (item.isWithSubQuery()) {
+            return buildSubQueryItem(item, canUseAlias);
+        }
+        String selName = item.getItemName();
+        if (item.type().equals(ItemType.FIELD_ITEM)) {
+            selName = "`" + item.getTableName() + "`.`" + selName + "`";
+        }
+        String nameInMap = pushNameMap.get(selName);
+        if (nameInMap != null) {
+            item.setPushDownName(nameInMap);
+            if (canUseAlias && !(query.type() == PlanNodeType.JOIN && item.type().equals(ItemType.FIELD_ITEM))) {
+                // join: select t1.id,t2.id from t1,t2 order by t1.id
+                // try to use the origin group by,order by
+                selName = nameInMap;
+            }
+        }
+        return selName;
+    }
+
+    private String buildSubQueryItem(Item item, boolean canUseAlias) {
+        if (!item.isWithSubQuery()) {
+            return visitUnSelPushDownName(item, canUseAlias);
+        }
+        if (PlanUtil.isCmpFunc(item)) {
+            return buildCmpSubQueryItem((ItemBoolFunc2) item, canUseAlias);
+        } else if (item instanceof ItemInSubQuery) {
+            ItemInSubQuery inSubItem = (ItemInSubQuery) item;
+            StringBuilder builder = new StringBuilder();
+            builder.append(visitUnSelPushDownName(inSubItem.getLeftOperand(), canUseAlias));
+            builder.append(" in ");
+            PlanNode child = inSubItem.getPlanNode();
+            MysqlVisitor childVisitor = new GlobalVisitor(child, true);
+            childVisitor.visit();
+            builder.append("(");
+            builder.append(childVisitor.getSql());
+            builder.append(")");
+            return builder.toString();
+        } else if (item instanceof ItemExistsSubQuery) {
+            ItemExistsSubQuery existsSubQuery = (ItemExistsSubQuery) item;
+            StringBuilder builder = new StringBuilder();
+            if (existsSubQuery.isNot()) {
+                builder.append(" not ");
+            }
+            builder.append(" exists ");
+            PlanNode child = existsSubQuery.getPlanNode();
+            MysqlVisitor childVisitor = new GlobalVisitor(child, true);
+            childVisitor.visit();
+            builder.append("(");
+            builder.append(childVisitor.getSql());
+            builder.append(")");
+            return builder.toString();
+        } else if (item instanceof ItemCondAnd || item instanceof ItemCondOr) {
+            String cond;
+            if (item instanceof ItemCondAnd) {
+                cond = " and ";
+            } else {
+                cond = " or ";
+            }
+            StringBuilder builder = new StringBuilder();
+            for (int index = 0; index < item.getArgCount(); index++) {
+                if (index > 0) {
+                    builder.append(cond);
+                }
+                builder.append(buildSubQueryItem(item.arguments().get(index), canUseAlias));
+            }
+            return builder.toString();
+        } else if (item instanceof ItemScalarSubQuery) {
+            return buildScalarSubQuery((ItemScalarSubQuery) item);
+        }
+        return visitUnSelPushDownName(item, canUseAlias);
+    }
+
+    private String buildScalarSubQuery(ItemScalarSubQuery item) {
+        PlanNode child = item.getPlanNode();
+        MysqlVisitor childVisitor = new GlobalVisitor(child, true);
+        childVisitor.visit();
+        StringBuilder builder = new StringBuilder();
+        builder.append("(");
+        builder.append(childVisitor.getSql());
+        builder.append(")");
+        return builder.toString();
+    }
+
+    private String buildCmpSubQueryItem(ItemBoolFunc2 item, boolean canUseAlias) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(buildCmpArgSubQueryItem(item.arguments().get(0), canUseAlias));
+        builder.append(item.funcName());
+        builder.append(buildCmpArgSubQueryItem(item.arguments().get(1), canUseAlias));
+        return builder.toString();
+    }
+
+    private String buildCmpArgSubQueryItem(Item arg, boolean canUseAlias) {
+        if (arg.type().equals(ItemType.SUBSELECT_ITEM)) {
+            if (arg instanceof ItemScalarSubQuery) {
+                return buildScalarSubQuery((ItemScalarSubQuery) arg);
+            } else if (arg instanceof ItemAllAnySubQuery) {
+                StringBuilder builder = new StringBuilder();
+                ItemAllAnySubQuery allAnySubItem = (ItemAllAnySubQuery) arg;
+                if (allAnySubItem.isAll()) {
+                    builder.append(" all ");
+                } else {
+                    builder.append(" any ");
+                }
+                PlanNode child = allAnySubItem.getPlanNode();
+                MysqlVisitor childVisitor = new GlobalVisitor(child, true);
+                childVisitor.visit();
+                builder.append("(");
+                builder.append(childVisitor.getSql());
+                builder.append(")");
+                return builder.toString();
+            }
+        }
+        return buildSubQueryItem(arg, canUseAlias);
+    }
+
 }

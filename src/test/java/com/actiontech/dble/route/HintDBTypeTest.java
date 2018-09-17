@@ -56,7 +56,26 @@ public class HintDBTypeTest {
         //(new hint,/*dble*/),runOnSlave=false force master
         sql = "/*dble:db_type=master*/select * from employee where sharding_id=1";
         rrs = routerService.route(schema, ServerParse.SELECT, sql, null);
+        Assert.assertTrue(rrs.getRunOnSlave() == null);
+
+
+        //(new hint,/*dble*/),runOnSlave=false force master
+        sql = "/*^dble:db_type=master*/select * from employee where sharding_id=1";
+        rrs = routerService.route(schema, ServerParse.SELECT, sql, null);
+        Assert.assertTrue(rrs.getRunOnSlave() == null);
+
+
+        //(new hint,/*dble*/),runOnSlave=false force master
+        sql = "/*%dble:db_type=master*/select * from employee where sharding_id=1";
+        rrs = routerService.route(schema, ServerParse.SELECT, sql, null);
+        Assert.assertTrue(rrs.getRunOnSlave() == null);
+
+
+        //(new hint,/*dble*/),runOnSlave=false force master
+        sql = "/* !dble:db_type=master*/select * from employee where sharding_id=1";
+        rrs = routerService.route(schema, ServerParse.SELECT, sql, null);
         Assert.assertTrue(!rrs.getRunOnSlave());
+
 
         //no hint ,runOnSlave=null
         sql = "select * from employee where sharding_id=1";

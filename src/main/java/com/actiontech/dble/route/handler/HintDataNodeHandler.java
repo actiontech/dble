@@ -12,6 +12,7 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.server.parser.ServerParse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +37,9 @@ public class HintDataNodeHandler implements HintHandler {
         }
 
         RouteResultset rrs = new RouteResultset(realSQL, sqlType);
+        if (ServerParse.CALL == sqlType) {
+            rrs.setCallStatement(true);
+        }
         PhysicalDBNode dataNode = DbleServer.getInstance().getConfig().getDataNodes().get(hintSQLValue);
         if (dataNode != null) {
             rrs = RouterUtil.routeToSingleNode(rrs, dataNode.getName());

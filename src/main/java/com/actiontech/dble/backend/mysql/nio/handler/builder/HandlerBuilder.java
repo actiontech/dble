@@ -6,6 +6,7 @@
 package com.actiontech.dble.backend.mysql.nio.handler.builder;
 
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.BaseSelectHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeMergeHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandler;
 import com.actiontech.dble.plan.node.*;
@@ -61,6 +62,13 @@ public class HandlerBuilder {
         DMLResponseHandler endHandler = builder.getEndHandler();
         OutputHandler fh = new OutputHandler(BaseHandlerBuilder.getSequenceId(), session);
         endHandler.setNextHandler(fh);
+        //set slave only into rrsNode
+        for (DMLResponseHandler startHandler : fh.getMerges()) {
+            MultiNodeMergeHandler mergeHandler = (MultiNodeMergeHandler) startHandler;
+            for (BaseSelectHandler bshandler : mergeHandler.getExeHandlers()) {
+                bshandler.getRrss().setRunOnSlave(this.session.getComplexRrs().getRunOnSlave());
+            }
+        }
         HandlerBuilder.startHandler(fh);
         long endTime = System.nanoTime();
         logger.debug("HandlerBuilder.build cost:" + (endTime - startTime));

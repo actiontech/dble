@@ -572,16 +572,7 @@ public class PhysicalDBPool {
     }
 
 
-    /**
-     * get a random readHost connection from writeHost, used by slave hint
-     *
-     * @param schema     schema
-     * @param autocommit autocommit
-     * @param handler    handler
-     * @param attachment attachment
-     * @throws Exception Exception
-     */
-    boolean getReadCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
+    PhysicalDatasource getReadNode() throws Exception {
 
         PhysicalDatasource theNode = null;
         Map<Integer, PhysicalDatasource[]> rs;
@@ -616,6 +607,33 @@ public class PhysicalDBPool {
                     }
                 }
             }
+        }
+        return theNode;
+    }
+
+    /**
+     * get a random readHost connection from writeHost, used by slave hint
+     *
+     * @param schema     schema
+     * @param autocommit autocommit
+     * @param handler    handler
+     * @param attachment attachment
+     * @throws Exception Exception
+     */
+    boolean getReadCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
+
+        PhysicalDatasource theNode = null;
+        Map<Integer, PhysicalDatasource[]> rs;
+        adjustLock.readLock().lock();
+        try {
+            rs = this.readSources;
+        } finally {
+            adjustLock.readLock().unlock();
+        }
+
+        LOGGER.debug("!readSources.isEmpty() " + !rs.isEmpty());
+        if (!rs.isEmpty()) {
+            theNode = getReadNode();
             if (theNode != null) {
                 theNode.setReadCount();
                 theNode.getConnection(schema, autocommit, handler, attachment);

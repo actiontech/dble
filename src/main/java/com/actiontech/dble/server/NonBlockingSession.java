@@ -306,6 +306,7 @@ public class NonBlockingSession implements Session {
             traceResult.setAdtCommitBegin(new TraceRecord(System.nanoTime()));
         }
     }
+
     public void setFinishedCommitTime() {
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             traceResult.setAdtCommitEnd(new TraceRecord(System.nanoTime()));
@@ -924,7 +925,7 @@ public class NonBlockingSession implements Session {
     public void handleSpecial(RouteResultset rrs, String schema, boolean isSuccess) {
         if (rrs.getSchema() != null) {
             handleSpecial(rrs, schema, isSuccess, null);
-        }else{
+        } else {
             LOGGER.info("Hint ddl do not update the meta");
         }
     }

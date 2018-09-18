@@ -306,6 +306,7 @@ public class NonBlockingSession implements Session {
             traceResult.setAdtCommitBegin(new TraceRecord(System.nanoTime()));
         }
     }
+
     public void setFinishedCommitTime() {
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             traceResult.setAdtCommitEnd(new TraceRecord(System.nanoTime()));
@@ -922,11 +923,15 @@ public class NonBlockingSession implements Session {
     }
 
     public void handleSpecial(RouteResultset rrs, String schema, boolean isSuccess) {
-        handleSpecial(rrs, schema, isSuccess, null);
+        if (rrs.getSchema() != null) {
+            handleSpecial(rrs, schema, isSuccess, null);
+        } else {
+            LOGGER.info("Hint ddl do not update the meta");
+        }
     }
 
     public void handleSpecial(RouteResultset rrs, String schema, boolean isSuccess, String errInfo) {
-        if (rrs.getSqlType() == ServerParse.DDL) {
+        if (rrs.getSqlType() == ServerParse.DDL && rrs.getSchema() != null) {
             String sql = rrs.getSrcStatement();
             if (source.isTxStart()) {
                 source.setTxStart(false);

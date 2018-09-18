@@ -5,14 +5,13 @@
 
 package com.actiontech.dble.meta.table;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public class TablesMetaInitHandler extends AbstractTablesMetaHandler {
     private MultiTablesMetaHandler multiTablesMetaHandler;
 
-    public TablesMetaInitHandler(MultiTablesMetaHandler multiTablesMetaHandler, String schema, Map<String, List<String>> dataNodeMap, Set<String> selfNode) {
+    public TablesMetaInitHandler(MultiTablesMetaHandler multiTablesMetaHandler, String schema, Map<String, Set<String>> dataNodeMap, Set<String> selfNode) {
         super(schema, dataNodeMap, selfNode);
         this.multiTablesMetaHandler = multiTablesMetaHandler;
     }

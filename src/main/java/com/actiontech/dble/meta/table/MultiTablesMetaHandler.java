@@ -30,17 +30,17 @@ public class MultiTablesMetaHandler {
     private AtomicInteger singleTableCnt;
     private AtomicBoolean countDownFlag = new AtomicBoolean(false);
     private String schema;
-    private SchemaConfig config;
+    private SchemaConfig schemaConfig;
     private SchemaMetaHandler schemaMetaHandler;
     private Set<String> selfNode;
     private Lock singleTableLock = new ReentrantLock();
     private Condition collectTables = singleTableLock.newCondition();
     private Map<String, Map<String, List<String>>> tablesStructMap = new HashMap<>();
 
-    public MultiTablesMetaHandler(SchemaMetaHandler schemaMetaHandler, SchemaConfig config, Set<String> selfNode) {
+    public MultiTablesMetaHandler(SchemaMetaHandler schemaMetaHandler, SchemaConfig schemaConfig, Set<String> selfNode) {
         this.schemaMetaHandler = schemaMetaHandler;
-        this.config = config;
-        this.schema = config.getName();
+        this.schemaConfig = schemaConfig;
+        this.schema = schemaConfig.getName();
         this.selfNode = selfNode;
         this.singleTableCnt = new AtomicInteger(0);
     }
@@ -48,24 +48,24 @@ public class MultiTablesMetaHandler {
     public void execute() {
         this.schemaMetaHandler.getTmManager().createDatabase(schema);
         boolean existTable = false;
-        if (config.getDataNode() != null && (selfNode == null || !selfNode.contains(config.getDataNode()))) {
+        if (schemaConfig.getDataNode() != null && (selfNode == null || !selfNode.contains(schemaConfig.getDataNode()))) {
             List<String> tables = getSingleTables();
             if (tables.size() > 0) {
                 existTable = true;
                 singleTableCnt.set(1);
-                SingleNodeTablesMetaInitHandler tableHandler = new SingleNodeTablesMetaInitHandler(this, schema, tables, config.getDataNode());
+                SingleNodeTablesMetaInitHandler tableHandler = new SingleNodeTablesMetaInitHandler(this, schema, tables, schemaConfig.getDataNode());
                 tableHandler.execute();
             }
         }
-        Map<String, List<String>> dataNodeMap = new HashMap<>();
-        for (Entry<String, TableConfig> entry : config.getTables().entrySet()) {
+        Map<String, Set<String>> dataNodeMap = new HashMap<>();
+        for (Entry<String, TableConfig> entry : schemaConfig.getTables().entrySet()) {
             existTable = true;
             String tableName = entry.getKey();
             TableConfig tbConfig = entry.getValue();
             for (String dataNode : tbConfig.getDataNodes()) {
-                List<String> tables = dataNodeMap.get(dataNode);
+                Set<String> tables = dataNodeMap.get(dataNode);
                 if (tables == null) {
-                    tables = new ArrayList<>();
+                    tables = new HashSet<>();
                     dataNodeMap.put(dataNode, tables);
                 }
                 tables.add(tableName);
@@ -81,7 +81,7 @@ public class MultiTablesMetaHandler {
     }
 
     private List<String> getSingleTables() {
-        GetSchemaDefaultNodeTablesHandler showTablesHandler = new GetSchemaDefaultNodeTablesHandler(this, config);
+        GetSchemaDefaultNodeTablesHandler showTablesHandler = new GetSchemaDefaultNodeTablesHandler(this, schemaConfig);
         showTablesHandler.execute();
         singleTableLock.lock();
         try {

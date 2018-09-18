@@ -19,10 +19,10 @@ import com.actiontech.dble.sqlengine.SQLQueryResultListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class AbstractTablesMetaHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractTablesMetaHandler.class);
@@ -31,39 +31,71 @@ public abstract class AbstractTablesMetaHandler {
             "Create Table"};
     private static final String SQL = "show create table {0};";
 
-    private Map<String, List<String>> dataNodeMap = new HashMap<>();
+    private Map<String, Set<String>> dataNodeMap = new HashMap<>();
     protected String schema;
     private Set<String> selfNode;
+    private Lock showTablesLock = new ReentrantLock();
+    private Condition collectTables = showTablesLock.newCondition();
 
-    AbstractTablesMetaHandler(String schema, Map<String, List<String>> dataNodeMap, Set<String> selfNode) {
+    AbstractTablesMetaHandler(String schema, Map<String, Set<String>> dataNodeMap, Set<String> selfNode) {
         this.dataNodeMap = dataNodeMap;
         this.schema = schema;
         this.selfNode = selfNode;
     }
 
     public void execute() {
-        StringBuilder sbSql = new StringBuilder();
-        for (Map.Entry<String, List<String>> dataNodeInfo : dataNodeMap.entrySet()) {
+        for (Map.Entry<String, Set<String>> dataNodeInfo : dataNodeMap.entrySet()) {
             String dataNode = dataNodeInfo.getKey();
             if (selfNode != null && selfNode.contains(dataNode)) {
                 this.countdown();
                 continue;
             }
-            List<String> tables = dataNodeInfo.getValue();
-            for (String table : tables) {
+            Set<String> existTables = listExistTables(dataNode, dataNodeInfo.getValue());
+            if (existTables.size() == 0) {
+                this.countdown();
+                continue;
+            }
+            StringBuilder sbSql = new StringBuilder();
+            for (String table : existTables) {
                 sbSql.append(SQL.replace("{0}", table));
             }
             PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
             PhysicalDatasource ds = dn.getDbPool().getSource();
             if (ds.isAlive()) {
-                MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLShowCreateTablesListener(tables, dataNode, ds));
+                MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLShowCreateTablesListener(existTables, dataNode, ds));
                 MultiSQLJob sqlJob = new MultiSQLJob(sbSql.toString(), dn.getDatabase(), resultHandler, ds);
                 sqlJob.run();
             } else {
-                MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLShowCreateTablesListener(tables, dataNode, null));
+                MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLShowCreateTablesListener(existTables, dataNode, null));
                 MultiSQLJob sqlJob = new MultiSQLJob(sbSql.toString(), dataNode, resultHandler, false);
                 sqlJob.run();
             }
+        }
+    }
+
+    private Set<String> listExistTables(String dataNode, Set<String> tables) {
+        GetSpecialNodeTablesHandler showTablesHandler = new GetSpecialNodeTablesHandler(this, tables, dataNode);
+        showTablesHandler.execute();
+        showTablesLock.lock();
+        try {
+            while (!showTablesHandler.isFinished()) {
+                collectTables.await();
+            }
+        } catch (InterruptedException e) {
+            LOGGER.info("getSingleTables " + e);
+            return new HashSet<>();
+        } finally {
+            showTablesLock.unlock();
+        }
+        return showTablesHandler.getExistsTables();
+    }
+
+    void showTablesFinished() {
+        showTablesLock.lock();
+        try {
+            collectTables.signal();
+        } finally {
+            showTablesLock.unlock();
         }
     }
 
@@ -72,11 +104,11 @@ public abstract class AbstractTablesMetaHandler {
     protected abstract void handlerTable(String table, String dataNode, String sql);
 
     private class MySQLShowCreateTablesListener implements SQLQueryResultListener<SQLQueryResult<List<Map<String, String>>>> {
-        private List<String> tables;
+        private Set<String> tables;
         private String dataNode;
         private PhysicalDatasource ds;
 
-        MySQLShowCreateTablesListener(List<String> tables, String dataNode, PhysicalDatasource ds) {
+        MySQLShowCreateTablesListener(Set<String> tables, String dataNode, PhysicalDatasource ds) {
             this.tables = tables;
             this.dataNode = dataNode;
             this.ds = ds;

@@ -13,14 +13,13 @@ import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 
 import java.sql.SQLNonTransientException;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public class TablesMetaCheckHandler extends AbstractTablesMetaHandler {
     private final ProxyMetaManager tmManager;
 
-    public TablesMetaCheckHandler(ProxyMetaManager tmManager, String schema, Map<String, List<String>> dataNodeMap, Set<String> selfNode) {
+    public TablesMetaCheckHandler(ProxyMetaManager tmManager, String schema, Map<String, Set<String>> dataNodeMap, Set<String> selfNode) {
         super(schema, dataNodeMap, selfNode);
         this.tmManager = tmManager;
     }

@@ -42,7 +42,7 @@ public final class MetaHelper {
         try {
             SQLStatementParser parser = new CreateTableParserImp(sql);
             SQLCreateTableStatement createStatement = parser.parseCreateTable();
-            return MetaHelper.initTableMeta(table, createStatement, timeStamp);
+            return MetaHelper.initTableMeta(table, sql, createStatement, timeStamp);
         } catch (Exception e) {
             LOGGER.warn("sql[" + sql + "] parser error:", e);
             AlertUtil.alertSelf(AlarmCode.GET_TABLE_META_FAIL, Alert.AlertLevel.WARN, "sql[" + sql + "] parser error:" + e.getMessage(), null);
@@ -50,10 +50,11 @@ public final class MetaHelper {
         }
     }
 
-    public static StructureMeta.TableMeta initTableMeta(String table, SQLCreateTableStatement createStatement, long timeStamp) {
+    public static StructureMeta.TableMeta initTableMeta(String table, String sql, SQLCreateTableStatement createStatement, long timeStamp) {
         StructureMeta.TableMeta.Builder tmBuilder = StructureMeta.TableMeta.newBuilder();
         tmBuilder.setTableName(table);
         tmBuilder.setVersion(timeStamp);
+        tmBuilder.setCreateSql(sql);
         Set<String> indexNames = new HashSet<>();
         for (SQLTableElement tableElement : createStatement.getTableElementList()) {
             if (tableElement instanceof SQLColumnDefinition) {

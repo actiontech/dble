@@ -91,10 +91,13 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
                 CreateDatabaseHandler.handle(sql, c);
                 break;
             case ManagerParse.ENABLE:
-                EnableHandler.handle(sql, c, 7);
+                EnableHandler.handle(sql, c, rs >>> SHIFT);
                 break;
             case ManagerParse.DISABLE:
-                DisableHandler.handle(sql, c, 8);
+                DisableHandler.handle(sql, c, rs >>> SHIFT);
+                break;
+            case ManagerParse.CHECK:
+                CheckHandler.handle(sql, c, rs >>> SHIFT);
                 break;
             default:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");

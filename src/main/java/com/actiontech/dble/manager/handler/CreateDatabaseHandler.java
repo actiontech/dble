@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
 public final class CreateDatabaseHandler {
 
     private static final OkPacket OK = new OkPacket();
-    private static final Pattern PATTERN = Pattern.compile("\\s*create\\s*database\\s*@@dataNode\\s*=\\s*(['\"])([a-zA-Z_0-9,\\$\\-]+)(['\"])\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN = Pattern.compile("^\\s*create\\s*database\\s*@@dataNode\\s*=\\s*(['\"])([a-zA-Z_0-9,$\\-]+)(['\"])\\s*$", Pattern.CASE_INSENSITIVE);
 
     static {
         OK.setPacketId(1);

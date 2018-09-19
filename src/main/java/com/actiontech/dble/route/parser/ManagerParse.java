@@ -26,6 +26,7 @@ public final class ManagerParse {
     public static final int ROLLBACK = 8;
     public static final int OFFLINE = 9;
     public static final int ONLINE = 10;
+    public static final int CHECK = 11;
     public static final int CONFIGFILE = 12;
     public static final int LOGFILE = 13;
     public static final int PAUSE = 14;
@@ -119,7 +120,7 @@ public final class ManagerParse {
     private static int disCheck(String stmt) {
         String thePart = stmt.toUpperCase();
         if (thePart.startsWith("DISABLE") && stmt.length() > 7 && ParseUtil.isSpace(stmt.charAt(7))) {
-            return DISABLE;
+            return (8 << 8) | DISABLE;
         }
         return OTHER;
     }
@@ -127,7 +128,7 @@ public final class ManagerParse {
     private static int eCheck(String stmt, int offset) {
         String thePart = stmt.substring(offset).toUpperCase();
         if (thePart.startsWith("ENABLE") && stmt.length() > 6 && ParseUtil.isSpace(stmt.charAt(6))) {
-            return ENABLE;
+            return (7 << 8) | ENABLE;
         }
         return OTHER;
     }
@@ -142,8 +143,32 @@ public final class ManagerParse {
     }
 
     private static int cCheck(String stmt, int offset) {
+        if (stmt.length() > ++offset) {
+            switch (stmt.charAt(offset)) {
+                case 'R':
+                case 'r':
+                    return crCheck(stmt, offset);
+                case 'H':
+                case 'h':
+                    return chCheck(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int chCheck(String stmt, int offset) {
         String thePart = stmt.substring(offset).toUpperCase();
-        if (thePart.startsWith("CREATE")) {
+        if (thePart.startsWith("HECK")) {
+            return (6 << 8) | CHECK;
+        }
+        return OTHER;
+    }
+
+    private static int crCheck(String stmt, int offset) {
+        String thePart = stmt.substring(offset).toUpperCase();
+        if (thePart.startsWith("REATE")) {
             return CREATE_DB;
         }
         return OTHER;

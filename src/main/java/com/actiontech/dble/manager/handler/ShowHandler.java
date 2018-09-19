@@ -5,6 +5,7 @@
 */
 package com.actiontech.dble.manager.handler;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.manager.response.*;
@@ -138,10 +139,10 @@ public final class ShowHandler {
                 ShowSession.execute(c);
                 break;
             case ManagerParseShow.TIME_CURRENT:
-                ShowTime.execute(c, ManagerParseShow.TIME_CURRENT);
+                ShowTime.execute(c, System.currentTimeMillis());
                 break;
             case ManagerParseShow.TIME_STARTUP:
-                ShowTime.execute(c, ManagerParseShow.TIME_STARTUP);
+                ShowTime.execute(c, DbleServer.getInstance().getStartupTime());
                 break;
             case ManagerParseShow.VERSION:
                 ShowVersion.execute(c);

@@ -38,7 +38,6 @@ public class GetSpecialNodeTablesHandler extends GetNodeTablesHandler {
 
     @Override
     protected void handleFinished() {
-        handler.showTablesFinished();
         if (tables.size() != existsTables.size()) {
             for (String table : tables) {
                 if (!existsTables.contains(table)) {
@@ -50,5 +49,6 @@ public class GetSpecialNodeTablesHandler extends GetNodeTablesHandler {
                 }
             }
         }
+        handler.showTablesFinished();
     }
 }

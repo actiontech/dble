@@ -75,10 +75,16 @@ public class ProxyMetaManager {
     private AtomicInteger metaCount = new AtomicInteger(0);
     private volatile Repository repository = null;
     private AtomicInteger version = new AtomicInteger(0);
+    private final long timestamp;
 
     public ProxyMetaManager() {
         this.catalogs = new ConcurrentHashMap<>();
         this.lockTables = new HashSet<>();
+        this.timestamp = System.currentTimeMillis();
+    }
+
+    public long getTimestamp() {
+        return timestamp;
     }
 
     private String genLockKey(String schema, String tbName) {
@@ -588,7 +594,7 @@ public class ProxyMetaManager {
                     }
                 }
             }
-            StructureMeta.TableMeta tblMeta = MetaHelper.initTableMeta(tableName, statement, System.currentTimeMillis());
+            StructureMeta.TableMeta tblMeta = MetaHelper.initTableMeta(tableName, sql, statement, System.currentTimeMillis());
             addTable(schemaInfo.getSchema(), tblMeta);
         } catch (Exception e) {
             LOGGER.warn("updateMetaData failed,sql is" + statement.toString(), e);

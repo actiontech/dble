@@ -6,6 +6,7 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
@@ -18,6 +19,7 @@ import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.util.FormatUtil;
+import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
@@ -36,13 +38,17 @@ public final class CheckFullMetaData {
     check full @@metadata where reload_time >= '2018-01-05 11:01:04'
     check full @@metadata where reload_time <= '2018-01-05 11:01:04'
     check full @@metadata where reload_time is null
+    check full @@metadata where consistent_in_data_nodes=0
+    check full @@metadata where consistent_in_data_nodes = 1
+    check full @@metadata where consistent_in_memory=0
+    check full @@metadata where consistent_in_memory = 1
     */
-    private static final Pattern PATTERN = Pattern.compile("^\\s*(check\\s+full\\s+@@metadata)(\\s+where\\s+((schema\\s*=\\s*(['\"])([a-zA-Z_0-9]+)(['\"])(\\s+and\\s+table\\s*=\\s*(['\"])([a-zA-Z_0-9]+)(['\"]))?)|(reload_time\\s*([><])?=\\s*(['\"])([0-9:\\-\\s]+)(['\"]))|(reload_time\\s+is\\s+null)))?\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN = Pattern.compile("^\\s*(check\\s+full\\s+@@metadata)(\\s+where\\s+((schema\\s*=\\s*(['\"])([a-zA-Z_0-9]+)(['\"])(\\s+and\\s+table\\s*=\\s*(['\"])([a-zA-Z_0-9]+)(['\"]))?)|(reload_time\\s*([><])?=\\s*(['\"])([0-9:\\-\\s]+)(['\"]))|(reload_time\\s+is\\s+null)|((consistent_in_data_nodes|consistent_in_memory)\\s*=\\s*([01]))))?\\s*$", Pattern.CASE_INSENSITIVE);
 
     private CheckFullMetaData() {
     }
 
-    private static final int FIELD_COUNT = 4;
+    private static final int FIELD_COUNT = 6;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
@@ -62,6 +68,12 @@ public final class CheckFullMetaData {
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("table_structure", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].setPacketId(++packetId);
+
+        FIELDS[i] = PacketUtil.getField("consistent_in_data_nodes", Fields.FIELD_TYPE_LONG);
+        FIELDS[i++].setPacketId(++packetId);
+
+        FIELDS[i] = PacketUtil.getField("consistent_in_memory", Fields.FIELD_TYPE_LONG);
         FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
@@ -70,7 +82,7 @@ public final class CheckFullMetaData {
     public static void execute(ManagerConnection c, String stmt) {
         Matcher ma = PATTERN.matcher(stmt);
         if (!ma.matches()) {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql did not match: check full @@metadata [ where [schema='testSchema' [and table ='testTable']] || [reload_time [<>]= 'dateTime']]");
+            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql did not match: check full @@metadata [ where [schema='testSchema' [and table ='testTable']] | [reload_time [<>]= 'dateTime']] | [reload_time is null] | [consistent_in_data_nodes =0|1] | [consistent_in_memory =0|1]");
             return;
         }
 
@@ -107,8 +119,12 @@ public final class CheckFullMetaData {
                     return;
                 }
                 rows = getCmpRows(cmpOperator, timeToCmp, c.getCharset().getResults());
-            } else { //ma.group(17) != null
+            } else if (ma.group(17) != null) {
                 rows = getAllNullRows(c.getCharset().getResults());
+            } else { //if (ma.group(18) != null)
+                String filterKey = ma.group(19);
+                String filterValue = ma.group(20);
+                rows = getConsistentRows(filterKey, filterValue, c.getCharset().getResults());
             }
         } else {
             rows = getAllRows(c.getCharset().getResults());
@@ -175,6 +191,17 @@ public final class CheckFullMetaData {
                     row.add(StringUtil.encode(tableName, charset));
                     row.add(StringUtil.encode(FormatUtil.formatDate(timeStamp), charset));
                     row.add(StringUtil.encode(createQuery, charset));
+                    String tableID = schemaName + "." + tableName;
+                    if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(tableID)) {
+                        row.add(LongUtil.toBytes(0L));
+                    } else {
+                        row.add(LongUtil.toBytes(1L));
+                    }
+                    if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY.contains(tableID)) {
+                        row.add(LongUtil.toBytes(0L));
+                    } else {
+                        row.add(LongUtil.toBytes(1L));
+                    }
                     list.add(row);
                 }
             }
@@ -255,7 +282,73 @@ public final class CheckFullMetaData {
         row.add(StringUtil.encode(tableName, charset));
         row.add(StringUtil.encode(FormatUtil.formatDate(timeStamp), charset));
         row.add(StringUtil.encode(createQuery, charset));
+        String tableID = schemaName + "." + tableName;
+        if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(tableID)) {
+            row.add(LongUtil.toBytes(0L));
+        } else {
+            row.add(LongUtil.toBytes(1L));
+        }
+        if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY.contains(tableID)) {
+            row.add(LongUtil.toBytes(0L));
+        } else {
+            row.add(LongUtil.toBytes(1L));
+        }
         return row;
+    }
+
+    private static List<RowDataPacket> getConsistentRows(String filterKey, String filterValue, String charset) {
+        List<RowDataPacket> list = new ArrayList<>();
+        Set<String> checkFilter;
+        boolean checkValue = filterValue.equals("1");
+        if (filterKey.equals("consistent_in_data_nodes")) {
+            checkFilter = ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS;
+        } else {
+            checkFilter = ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY;
+        }
+
+        Map<String, SchemaMeta> schemaMetaMap = DbleServer.getInstance().getTmManager().getCatalogs();
+        Map<String, SchemaConfig> schemaConfigMap = DbleServer.getInstance().getConfig().getSchemas();
+        Set<String> hasMetaSchemas = new HashSet<>();
+        for (Map.Entry<String, SchemaMeta> schemaMetaEntry : schemaMetaMap.entrySet()) {
+            String schemaName = schemaMetaEntry.getKey();
+            hasMetaSchemas.add(schemaName);
+            SchemaMeta schemaMeta = schemaMetaEntry.getValue();
+            Set<String> hasMetaTables = new HashSet<>();
+            for (Map.Entry<String, StructureMeta.TableMeta> tableMetaEntry : schemaMeta.getTableMetas().entrySet()) {
+                String tableName = tableMetaEntry.getKey();
+                hasMetaTables.add(tableName);
+                String tableID = schemaName + "." + tableName;
+                if (checkFilter.contains(tableID) ^ checkValue) {
+                    StructureMeta.TableMeta tableMeta = tableMetaEntry.getValue();
+                    RowDataPacket row = genNormalRowData(schemaName, tableName, tableMeta, charset);
+                    list.add(row);
+                }
+            }
+            if (!checkValue) {  //checkValue = 0  no metadata will show
+                for (String configTables : schemaConfigMap.get(schemaName).getTables().keySet()) {
+                    if (!hasMetaTables.contains(configTables)) {
+                        //null metadata
+                        RowDataPacket row = genNullRowData(charset, schemaName, configTables);
+                        list.add(row);
+                    }
+                }
+            }
+        }
+        if (!checkValue) { //checkValue = 0  no metadata will show
+            if (hasMetaSchemas.size() < schemaConfigMap.size()) {
+                for (Map.Entry<String, SchemaConfig> schemaConfigEntry : schemaConfigMap.entrySet()) {
+                    String configSchema = schemaConfigEntry.getKey();
+                    if (!hasMetaSchemas.contains(configSchema)) {
+                        for (String configTables : schemaConfigMap.get(configSchema).getTables().keySet()) {
+                            //null metadata
+                            RowDataPacket row = genNullRowData(charset, configSchema, configTables);
+                            list.add(row);
+                        }
+                    }
+                }
+            }
+        }
+        return list;
     }
 
     private static List<RowDataPacket> getAllRows(String charset) {
@@ -339,6 +432,8 @@ public final class CheckFullMetaData {
         row.add(StringUtil.encode(configTables, charset));
         row.add(StringUtil.encode("null", charset));
         row.add(StringUtil.encode("null", charset));
+        row.add(LongUtil.toBytes(0L));
+        row.add(LongUtil.toBytes(0L));
         return row;
     }
 }

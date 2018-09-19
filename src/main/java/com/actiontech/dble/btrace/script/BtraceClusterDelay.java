@@ -256,4 +256,14 @@ public final class BtraceClusterDelay {
         BTraceUtils.print(" for order __________________________ ");
         Thread.sleep(10000L);
     }
+
+    @OnMethod(
+            clazz = "com.actiontech.dble.meta.table.GetSpecialNodeTablesHandler",
+            method = "handleFinished"
+    )
+    public static void getSpecialNodeTablesHandlerFinished(@ProbeClassName String probeClass, @ProbeMethodName String probeMethod) throws Exception {
+        BTraceUtils.print("get into getSpecialNodeTablesHandlerFinished ");
+        BTraceUtils.print(" for order __________________________ ");
+        Thread.sleep(10000L);
+    }
 }

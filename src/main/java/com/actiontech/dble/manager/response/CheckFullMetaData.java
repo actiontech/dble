@@ -27,6 +27,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -85,53 +86,58 @@ public final class CheckFullMetaData {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql did not match: check full @@metadata [ where [schema='testSchema' [and table ='testTable']] | [reload_time [<>]= 'dateTime']] | [reload_time is null] | [consistent_in_data_nodes =0|1] | [consistent_in_memory =0|1]");
             return;
         }
-
-
+        final ReentrantLock lock = DbleServer.getInstance().getTmManager().getMetaLock();
+        lock.lock();
         List<RowDataPacket> rows;
-
-        if (ma.group(2) != null) {
-            //  filter
-            if (ma.group(4) != null) {
-                String schema = ma.group(6);
-                if (DbleServer.getInstance().getConfig().getSchemas().get(schema) == null) {
-                    c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The schema [" + schema + "] is not exists");
-                    return;
-                }
-                if (ma.group(8) != null) {
-                    String table = ma.group(10);
-                    if (DbleServer.getInstance().getConfig().getSchemas().get(schema).getTables().get(table) == null &&
-                            DbleServer.getInstance().getTmManager().getCatalogs().get(schema) == null &&
-                            DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getTableMeta(table) == null) {
-                        c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The table [" + schema + "." + table + "] is not existed");
+        try {
+            if (ma.group(2) != null) {
+                //  filter
+                if (ma.group(4) != null) {
+                    String schema = ma.group(6);
+                    if (DbleServer.getInstance().getConfig().getSchemas().get(schema) == null) {
+                        c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The schema [" + schema + "] is not exists");
                         return;
                     }
-                    rows = getTableRows(schema, table, c.getCharset().getResults());
-                } else {
-                    rows = getSchemaRows(schema, c.getCharset().getResults());
+                    if (ma.group(8) != null) {
+                        String table = ma.group(10);
+                        if (DbleServer.getInstance().getConfig().getSchemas().get(schema).getTables().get(table) == null &&
+                                DbleServer.getInstance().getTmManager().getCatalogs().get(schema) == null &&
+                                DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getTableMeta(table) == null) {
+                            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The table [" + schema + "." + table + "] is not existed");
+                            return;
+                        }
+                        rows = getTableRows(schema, table, c.getCharset().getResults());
+                    } else {
+                        rows = getSchemaRows(schema, c.getCharset().getResults());
+                    }
+                } else if (ma.group(12) != null) {
+                    String cmpOperator = ma.group(13);
+                    String dateFilter = ma.group(15);
+                    long timeToCmp;
+                    DateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    try {
+                        timeToCmp = sdf.parse(dateFilter).getTime() / 1000;
+                    } catch (ParseException e) {
+                        c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The format of reload_time in sql must be yyyy-MM-dd HH:mm:ss");
+                        return;
+                    }
+                    rows = getCmpRows(cmpOperator, timeToCmp, c.getCharset().getResults());
+                } else if (ma.group(17) != null) {
+                    rows = getAllNullRows(c.getCharset().getResults());
+                } else { //if (ma.group(18) != null)
+                    String filterKey = ma.group(19);
+                    String filterValue = ma.group(20);
+                    rows = getConsistentRows(filterKey, filterValue, c.getCharset().getResults());
                 }
-            } else if (ma.group(12) != null) {
-                String cmpOperator = ma.group(13);
-                String dateFilter = ma.group(15);
-                long timeToCmp;
-                DateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                try {
-                    timeToCmp = sdf.parse(dateFilter).getTime() / 1000;
-                } catch (ParseException e) {
-                    c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The format of reload_time in sql must be yyyy-MM-dd HH:mm:ss");
-                    return;
-                }
-                rows = getCmpRows(cmpOperator, timeToCmp, c.getCharset().getResults());
-            } else if (ma.group(17) != null) {
-                rows = getAllNullRows(c.getCharset().getResults());
-            } else { //if (ma.group(18) != null)
-                String filterKey = ma.group(19);
-                String filterValue = ma.group(20);
-                rows = getConsistentRows(filterKey, filterValue, c.getCharset().getResults());
+            } else {
+                rows = getAllRows(c.getCharset().getResults());
             }
-        } else {
-            rows = getAllRows(c.getCharset().getResults());
+        } catch (Exception e) {
+            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "check full @@metadata failed, There is other session is doing reload");
+            return;
+        } finally {
+            lock.unlock();
         }
-
 
         ByteBuffer buffer = c.allocate();
 

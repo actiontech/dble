@@ -37,7 +37,7 @@ public class MultiTablesMetaHandler {
     private Condition collectTables = singleTableLock.newCondition();
     private Map<String, Map<String, List<String>>> tablesStructMap = new HashMap<>();
 
-    public MultiTablesMetaHandler(SchemaMetaHandler schemaMetaHandler, SchemaConfig schemaConfig, Set<String> selfNode) {
+    MultiTablesMetaHandler(SchemaMetaHandler schemaMetaHandler, SchemaConfig schemaConfig, Set<String> selfNode) {
         this.schemaMetaHandler = schemaMetaHandler;
         this.schemaConfig = schemaConfig;
         this.schema = schemaConfig.getName();

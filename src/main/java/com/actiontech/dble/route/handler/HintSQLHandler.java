@@ -10,6 +10,7 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.route.*;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.server.parser.ServerParse;
 
 import java.sql.SQLException;
 import java.sql.SQLSyntaxErrorException;
@@ -38,11 +39,14 @@ public class HintSQLHandler implements HintHandler {
             throw new SQLSyntaxErrorException("Complex SQL not supported in hint");
         }
         // replace the sql of RRS
+        if (ServerParse.CALL == sqlType) {
+            rrs.setCallStatement(true);
+        }
+
         RouteResultsetNode[] oldRsNodes = rrs.getNodes();
         RouteResultsetNode[] newRrsNodes = new RouteResultsetNode[oldRsNodes.length];
         for (int i = 0; i < newRrsNodes.length; i++) {
-            newRrsNodes[i] = new RouteResultsetNode(oldRsNodes[i].getName(),
-                    oldRsNodes[i].getSqlType(), realSQL);
+            newRrsNodes[i] = new RouteResultsetNode(oldRsNodes[i].getName(), sqlType, realSQL);
         }
         rrs.setNodes(newRrsNodes);
 

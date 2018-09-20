@@ -99,7 +99,9 @@ public final class CheckFullMetaData {
                 }
                 if (ma.group(8) != null) {
                     String table = ma.group(10);
-                    if (DbleServer.getInstance().getConfig().getSchemas().get(schema).getTables().get(table) == null) {
+                    if (DbleServer.getInstance().getConfig().getSchemas().get(schema).getTables().get(table) == null &&
+                            DbleServer.getInstance().getTmManager().getCatalogs().get(schema) == null &&
+                            DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getTableMeta(table) == null) {
                         c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The table [" + schema + "." + table + "] is not existed");
                         return;
                     }

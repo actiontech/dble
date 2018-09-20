@@ -44,8 +44,6 @@ public class DDLNotifyTableMetaHandler extends AbstractTableMetaHandler {
             DbleServer.getInstance().getTmManager().addTable(schema, tableMeta);
         }
         signalDone();
-        DbleServer.getInstance().getTmManager().removeMetaLock(schema, tableName);
-
     }
 
 

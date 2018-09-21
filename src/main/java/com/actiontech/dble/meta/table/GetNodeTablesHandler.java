@@ -25,7 +25,7 @@ import java.util.Map;
 public abstract class GetNodeTablesHandler {
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(GetNodeTablesHandler.class);
-    protected static final String SQL = "show tables ";
+    protected static final String SQL = "show full tables where Table_type ='BASE TABLE' ";
     protected String dataNode;
     private volatile boolean finished = false;
 

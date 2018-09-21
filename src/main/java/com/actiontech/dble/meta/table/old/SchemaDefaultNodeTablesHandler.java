@@ -26,7 +26,7 @@ import java.util.Map;
 
 public class SchemaDefaultNodeTablesHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractTableMetaHandler.class);
-    private static final String SQL = "show tables ";
+    private static final String SQL = "show full tables where Table_type ='BASE TABLE'  ";
     private SchemaConfig config;
     private String dataNode;
     private MultiTableMetaHandler multiTableMetaHandler;

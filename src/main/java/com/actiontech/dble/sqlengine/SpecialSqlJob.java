@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
@@ -27,7 +28,7 @@ public class SpecialSqlJob extends SQLJob {
     private final String schema;
     private final String sql;
     private final List<ErrorInfo> list;
-    private volatile boolean finished;
+    private final AtomicBoolean finished;
 
     public SpecialSqlJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDatasource ds, List<ErrorInfo> list) {
         super(sql, schema, jobHandler, ds);
@@ -37,6 +38,7 @@ public class SpecialSqlJob extends SQLJob {
         this.sql = sql;
         this.list = list;
         this.sqlJob = this;
+        this.finished = new AtomicBoolean(false);
     }
 
 
@@ -61,9 +63,12 @@ public class SpecialSqlJob extends SQLJob {
     }
 
 
-    private void doFinished(boolean failed) {
-        finished = true;
-        jobHandler.finished(schema, failed);
+    private boolean doFinished(boolean failed) {
+        if (finished.compareAndSet(false, true)) {
+            jobHandler.finished(schema, failed);
+            return true;
+        }
+        return false;
     }
 
 
@@ -102,8 +107,16 @@ public class SpecialSqlJob extends SQLJob {
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
-        list.add(new ErrorInfo("Meta", "WARNING", "Execute show tables in dataNode[" + ds.getName() + "." + schema + "] get connection closed"));
-        doFinished(true);
+        if (doFinished(true)) {
+            list.add(new ErrorInfo("Meta", "WARNING", "Execute show tables in dataNode[" + ds.getName() + "." + schema + "] get connection closed"));
+        }
+    }
+
+
+    @Override
+    public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
+        conn.close("dry run used connection");
+        doFinished(false);
     }
 
 }

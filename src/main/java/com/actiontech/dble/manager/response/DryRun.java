@@ -102,6 +102,8 @@ public final class DryRun {
             }
         }
 
+        handler.getUsedDataource().clearCons("dry run end");
+
         userCheck(list, serverConfig);
 
         if (DbleServer.getInstance().isUseUcore()) {
@@ -238,8 +240,6 @@ public final class DryRun {
             if (!hasManagerUser) {
                 list.add(new ErrorInfo("Xml", "ERROR", "There is No Manager User"));
             }
-        } else {
-            list.add(new ErrorInfo("Xml", "ERROR", "No user in server.xml"));
         }
     }
 }

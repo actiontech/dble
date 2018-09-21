@@ -75,7 +75,7 @@ public class ConfigInitializer {
         deleteRedundancyConf();
         checkWriteHost();
         if (dataHostWithoutWH) {
-            errorInfos.add(new ErrorInfo("Xml", "Error", "There still some dataHost without writeHost"));
+            errorInfos.add(new ErrorInfo("Xml", "ERROR", "There still some dataHost without writeHost"));
         }
     }
 
@@ -164,7 +164,7 @@ public class ConfigInitializer {
             }
             for (PhysicalDatasource ds : pool.getAllDataSources()) {
                 if (ds.getConfig().isDisabled()) {
-                    errorInfos.add(new ErrorInfo("BACKEND", "WARNING", "DataHost[" + pool.getHostName() + "," + ds.getName() + "] is disabled"));
+                    errorInfos.add(new ErrorInfo("Backend", "WARNING", "DataHost[" + pool.getHostName() + "," + ds.getName() + "] is disabled"));
                     LOGGER.info("DataHost[" + ds.getHostConfig().getName() + "] is disabled,just mark testing failed and skip it");
                     ds.setTestConnSuccess(false);
                     continue;
@@ -212,7 +212,7 @@ public class ConfigInitializer {
                 isConnectivity.set(false);
                 isAllDataSourceConnected.set(false);
                 errSourceKeys.add(dataSourceName);
-                errorInfos.add(new ErrorInfo("BACKEND", "WARNING", "Can't connect to [" + ds.getHostConfig().getName() + "," + ds.getName() + "]"));
+                errorInfos.add(new ErrorInfo("Backend", "WARNING", "Can't connect to [" + ds.getHostConfig().getName() + "," + ds.getName() + "]"));
                 markDataSourceSchemaFail(errNodeKeys, nodeList, dataSourceName);
             } else {
                 for (Pair<String, String> node : nodeList) {
@@ -229,7 +229,7 @@ public class ConfigInitializer {
                             isConnectivity.set(false);
                             errNodeKeys.add(key);
                             LOGGER.warn("SelfCheck### test " + key + " database connection failed ");
-                            errorInfos.add(new ErrorInfo("BACKEND", "WARNING", "Database [" + ds.getHostConfig().getName() +
+                            errorInfos.add(new ErrorInfo("Backend", "WARNING", "Database [" + ds.getHostConfig().getName() +
                                     "," + ds.getName() + "," + node.getValue() + "] not exists"));
                         }
                     } catch (InterruptedException e) {

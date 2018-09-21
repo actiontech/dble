@@ -74,9 +74,6 @@ public class ConfigInitializer {
 
         deleteRedundancyConf();
         checkWriteHost();
-        if (dataHostWithoutWH) {
-            errorInfos.add(new ErrorInfo("Xml", "ERROR", "There still some dataHost without writeHost"));
-        }
     }
 
     private void checkWriteHost() {

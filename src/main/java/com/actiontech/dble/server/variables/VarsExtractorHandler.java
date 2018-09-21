@@ -28,6 +28,8 @@ public class VarsExtractorHandler {
     private Condition done;
     private Map<String, PhysicalDBPool> dataHosts;
     private volatile SystemVariables systemVariables = null;
+    private PhysicalDatasource usedDataource = null;
+
     public VarsExtractorHandler(Map<String, PhysicalDBPool> dataHosts) {
         this.dataHosts = dataHosts;
         this.extracting = false;
@@ -38,6 +40,7 @@ public class VarsExtractorHandler {
     public SystemVariables execute() {
         OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_VARIABLES_COLS, new MysqlVarsListener(this));
         PhysicalDatasource ds = getPhysicalDatasource();
+        this.usedDataource = ds;
         if (ds != null) {
             SQLJob sqlJob = new SQLJob(MYSQL_SHOW_VARIABLES, null, resultHandler, ds);
             sqlJob.run();
@@ -111,5 +114,13 @@ public class VarsExtractorHandler {
         } finally {
             lock.unlock();
         }
+    }
+
+    public PhysicalDatasource getUsedDataource() {
+        return usedDataource;
+    }
+
+    public void setUsedDataource(PhysicalDatasource usedDataource) {
+        this.usedDataource = usedDataource;
     }
 }

@@ -642,13 +642,7 @@ public final class RouterUtil {
         for (ColumnRoutePair pair : partitionValue) {
             AbstractPartitionAlgorithm algorithm = tableConfig.getRule().getRuleAlgorithm();
             if (pnode != null && "null".equals(pair.colValue)) {
-                ArrayList<String> dataNodes = tableConfig.getDataNodes();
-                if (tablesRouteMap.get(tableName) == null) {
-                    tablesRouteMap.put(tableName, new HashSet<String>());
-                }
-                for (String node : dataNodes) {
-                    tablesRouteMap.get(tableName).add(node);
-                }
+                continue;
             } else if (pair.colValue != null) {
                 if (NEED_REPLACE.equals(pair.colValue)) {
                     return;

@@ -84,9 +84,7 @@ public class InSubQueryHandler extends SubQueryHandler {
             }
             sourceField.setPtr(row.getValue(0));
             Item value = itemSubQuery.getFiled().getResultItem();
-            if (value != null) {
-                itemSubQuery.getValue().add(value);
-            }
+            itemSubQuery.getValue().add(value);
         } finally {
             lock.unlock();
         }

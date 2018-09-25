@@ -36,6 +36,7 @@ public class ItemInSubQuery extends ItemMultiRowSubQuery {
     public Item fixFields(NameResolutionContext context) {
         super.fixFields(context);
         leftOperand = leftOperand.fixFields(context);
+        getReferTables().addAll(leftOperand.getReferTables());
         return this;
     }
 

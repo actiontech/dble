@@ -44,15 +44,13 @@ public abstract class ItemSubQuery extends ItemResultField {
         MySQLPlanNodeVisitor pv = new MySQLPlanNodeVisitor(currentDb, charsetIndex, metaManager, true);
         pv.visit(this.query);
         this.planNode = pv.getTableNode();
-        if (planNode.type() != PlanNode.PlanNodeType.NONAME) {
-            this.withSubQuery = true;
-            PlanNode test = this.planNode.copy();
-            try {
-                test.setUpFields();
-                planNode = test;
-            } catch (Exception e) {
-                this.correlatedSubQuery = true;
-            }
+        this.withSubQuery = true;
+        PlanNode test = this.planNode.copy();
+        try {
+            test.setUpFields();
+            planNode = test;
+        } catch (Exception e) {
+            this.correlatedSubQuery = true;
         }
     }
 

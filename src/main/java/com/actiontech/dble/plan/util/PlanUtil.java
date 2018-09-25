@@ -19,7 +19,10 @@ import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondOr;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum.SumFuncType;
-import com.actiontech.dble.plan.common.item.subquery.*;
+import com.actiontech.dble.plan.common.item.subquery.ItemAllAnySubQuery;
+import com.actiontech.dble.plan.common.item.subquery.ItemExistsSubQuery;
+import com.actiontech.dble.plan.common.item.subquery.ItemInSubQuery;
+import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.MergeNode;
@@ -155,11 +158,8 @@ public final class PlanUtil {
             return null;
         if (sel.basicConstItem())
             return sel;
-        if (!sel.isWithSubQuery() && sel instanceof ItemSubQuery) { //SUB_QUERY IS NO_NAME_NODE
-            return sel;
-        }
         if (sel.isWithSubQuery()) {
-            sel = rebuildSubQueryItem(sel);
+            return sel;
         }
         if (sel.getReferTables().size() > 1) {
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "can not pushdown sel when refer table's > 1!");

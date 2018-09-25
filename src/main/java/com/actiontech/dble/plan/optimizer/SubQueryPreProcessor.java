@@ -57,8 +57,12 @@ public final class SubQueryPreProcessor {
                 findComparisonsSubQueryToJoinNode(scalarSubQuery.getPlanNode(), childTransform);
             }
         }
+        if (qtn.type() == PlanNode.PlanNodeType.JOIN) {
+            //join on filter sub query
+            buildSubQuery(qtn, new SubQueryFilter(), ((JoinNode) qtn).getOtherJoinOnFilter(), true, childTransform);
+        }
         //having contains sub query
-        buildSubQuery(qtn, new SubQueryFilter(), qtn.getHavingFilter(), false, childTransform);
+        buildSubQuery(qtn, new SubQueryFilter(), qtn.getHavingFilter(), true, childTransform);
         bulidOrderSubQuery(qtn);
 
         SubQueryFilter find = new SubQueryFilter();

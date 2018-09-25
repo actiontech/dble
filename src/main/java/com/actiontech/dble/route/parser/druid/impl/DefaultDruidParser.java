@@ -210,7 +210,12 @@ public class DefaultDruidParser implements DruidParser {
             statement = RouterUtil.removeSchema(statement, realSchema);
         }
         rrs.setStatement(statement);
-        RouterUtil.routeToSingleNode(rrs, dataNode.get());
+        String dataNodeTarget = dataNode.get();
+        if (dataNodeTarget == null) {
+            //no_name node
+            dataNodeTarget = schema.getRandomDataNode();
+        }
+        RouterUtil.routeToSingleNode(rrs, dataNodeTarget);
         rrs.setFinishedRoute(true);
         return schema;
     }

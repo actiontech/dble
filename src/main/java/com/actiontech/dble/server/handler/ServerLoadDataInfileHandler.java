@@ -537,7 +537,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         //empty packet for end
         saveByteOrToFile(null, true);
 
-        List<SQLExpr> columns = statement.getColumns();
         if (isHasStoreToFile) {
             parseFileByLine(tempFile, loadData.getCharset(), loadData.getLineTerminatedBy());
         } else {

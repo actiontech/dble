@@ -601,8 +601,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
 
     private boolean parseFileByLine(String file, String encode, String split) {
-        List<SQLExpr> columns = statement.getColumns();
-
         CsvParserSettings settings = new CsvParserSettings();
         settings.setMaxColumns(65535);
         settings.setMaxCharsPerColumn(65535);

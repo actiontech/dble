@@ -91,6 +91,11 @@ public class DDLChildListener implements PathChildrenCacheListener {
         } else {
             //else get the lastest table meta from db
             DbleServer.getInstance().getTmManager().updateOnetableWithBackData(DbleServer.getInstance().getConfig(), ddlInfo.getSchema(), table);
+            try {
+                DbleServer.getInstance().getTmManager().notifyResponseClusterDDL(ddlInfo.getSchema(), table, ddlInfo.getSql(), DDLInfo.DDLStatus.SUCCESS, ddlInfo.getType(), false);
+            } catch (Exception e) {
+                LOGGER.info("Error when update the meta data of the DDL " + ddlInfo.toString());
+            }
         }
     }
 

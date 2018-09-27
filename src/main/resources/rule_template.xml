@@ -51,6 +51,13 @@
         </rule>
     </tableRule>
 
+	<tableRule name="sharding-by-mod2">
+        <rule>
+            <columns>id</columns>
+            <algorithm>hashmod2</algorithm>
+        </rule>
+    </tableRule>
+
     <tableRule name="sharding-by-hash-str">
         <rule>
             <columns>id</columns>
@@ -131,6 +138,12 @@
     <!-- eg:  mod 4 -->
     <function name="hashmod" class="Hash">
         <property name="partitionCount">4</property>
+        <property name="partitionLength">1</property>
+    </function>
+
+	<!-- eg:  mod 2 -->
+    <function name="hashmod2" class="Hash">
+        <property name="partitionCount">2</property>
         <property name="partitionLength">1</property>
     </function>
 

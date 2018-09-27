@@ -289,7 +289,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 try {
                     SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
                     for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
-                        RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, ctx, unit, rrs, false, tableId2DataNodeCache);
+                        RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, ctx, unit, rrs, false, tableId2DataNodeCache, null);
                         if (rrsTmp != null) {
                             Collections.addAll(nodeSet, rrsTmp.getNodes());
                         }

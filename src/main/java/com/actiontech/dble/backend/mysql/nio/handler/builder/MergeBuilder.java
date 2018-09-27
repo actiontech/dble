@@ -65,7 +65,7 @@ public class MergeBuilder {
         RouteResultset rrs = new RouteResultset(sql, ServerParse.SELECT);
         LayerCachePool pool = DbleServer.getInstance().getRouterService().getTableId2DataNodeCache();
         SchemaConfig schemaConfig = schemaConfigMap.get(node.getReferedTableNodes().get(0).getSchema());
-        return RouterUtil.routeFromParser(druidParser, schemaConfig, rrs, select, sql, pool, visitor, session.getSource());
+        return RouterUtil.routeFromParser(druidParser, schemaConfig, rrs, select, sql, pool, visitor, session.getSource(), node);
 
     }
 

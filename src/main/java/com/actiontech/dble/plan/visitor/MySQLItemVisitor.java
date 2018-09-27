@@ -182,7 +182,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                     // A LIKE B ESCAPE C ,A is "itemLeft"
                     SQLBinaryOpExpr like = (SQLBinaryOpExpr) (x.getLeft());
                     Item itemLikeLeft = getItem(like.getLeft());
-                    Item itemLikeRight = getItem(x.getRight());
+                    Item itemLikeRight = getItem(like.getRight());
                     boolean isNot = (like.getOperator() == SQLBinaryOperator.NotLike);
                     item = new ItemFuncLike(itemLikeLeft, itemLikeRight, itemRight, isNot);
                 } else {

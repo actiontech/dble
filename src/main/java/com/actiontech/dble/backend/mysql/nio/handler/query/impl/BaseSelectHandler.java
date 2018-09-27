@@ -145,6 +145,8 @@ public class BaseSelectHandler extends BaseDMLHandler {
         String errMsg;
         if (e instanceof MySQLOutPutException) {
             errMsg = e.getMessage() == null ? e.toString() : e.getMessage();
+        } else if (e instanceof NullPointerException) {
+            errMsg = e.getMessage() == null ? e.toString() : e.getMessage();
         } else {
             LOGGER.warn("Backend connect Error, Connection info:" + conn, e);
             errMsg = "Backend connect Error, Connection{DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";

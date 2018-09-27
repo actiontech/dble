@@ -120,24 +120,23 @@ public final class SchemaUtil {
 
     public static boolean isNoSharding(ServerConnection source, SQLTableSource tables, SQLStatement stmt, SQLStatement childSelectStmt, String contextSchema, Set<String> schemas, StringPtr dataNode)
             throws SQLException {
-
-        if (tables == null) {
-            return true;
-        } else if (tables instanceof SQLExprTableSource) {
-            if (!isNoSharding(source, (SQLExprTableSource) tables, stmt, childSelectStmt, contextSchema, schemas, dataNode)) {
+        if (tables != null) {
+            if (tables instanceof SQLExprTableSource) {
+                if (!isNoSharding(source, (SQLExprTableSource) tables, stmt, childSelectStmt, contextSchema, schemas, dataNode)) {
+                    return false;
+                }
+            } else if (tables instanceof SQLJoinTableSource) {
+                if (!isNoSharding(source, (SQLJoinTableSource) tables, stmt, childSelectStmt, contextSchema, schemas, dataNode)) {
+                    return false;
+                }
+            } else if (tables instanceof SQLSubqueryTableSource) {
+                SQLSelectQuery sqlSelectQuery = ((SQLSubqueryTableSource) tables).getSelect().getQuery();
+                if (!isNoSharding(source, sqlSelectQuery, stmt, new SQLSelectStatement(new SQLSelect(sqlSelectQuery)), contextSchema, schemas, dataNode)) {
+                    return false;
+                }
+            } else {
                 return false;
             }
-        } else if (tables instanceof SQLJoinTableSource) {
-            if (!isNoSharding(source, (SQLJoinTableSource) tables, stmt, childSelectStmt, contextSchema, schemas, dataNode)) {
-                return false;
-            }
-        } else if (tables instanceof SQLSubqueryTableSource) {
-            SQLSelectQuery sqlSelectQuery = ((SQLSubqueryTableSource) tables).getSelect().getQuery();
-            if (!isNoSharding(source, sqlSelectQuery, stmt, new SQLSelectStatement(new SQLSelect(sqlSelectQuery)), contextSchema, schemas, dataNode)) {
-                return false;
-            }
-        } else {
-            return false;
         }
         ServerSchemaStatVisitor queryTableVisitor = new ServerSchemaStatVisitor();
         childSelectStmt.accept(queryTableVisitor);

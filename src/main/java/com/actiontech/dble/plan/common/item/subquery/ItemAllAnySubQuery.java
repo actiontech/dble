@@ -63,5 +63,4 @@ public class ItemAllAnySubQuery extends ItemMultiRowSubQuery {
     public SQLBinaryOperator getOperator() {
         return operator;
     }
-
 }

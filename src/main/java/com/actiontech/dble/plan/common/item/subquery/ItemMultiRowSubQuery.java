@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public abstract class ItemMultiRowSubQuery extends ItemSubQuery {
+
+    protected boolean containNull = false;
     protected List<Item> value = new ArrayList<>();
     protected Item filed;
     protected Item select;
@@ -86,5 +88,14 @@ public abstract class ItemMultiRowSubQuery extends ItemSubQuery {
 
     public List<Item> getValue() {
         return value;
+    }
+
+
+    public boolean isContainNull() {
+        return containNull;
+    }
+
+    public void setContainNull(boolean containNull) {
+        this.containNull = containNull;
     }
 }

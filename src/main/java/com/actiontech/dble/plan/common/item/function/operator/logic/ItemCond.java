@@ -14,7 +14,6 @@ import java.util.List;
 
 
 public abstract class ItemCond extends ItemBoolFunc {
-    protected boolean abortOnNull = true;
     List<Item> list;
 
     public ItemCond(List<Item> args) {
@@ -44,5 +43,7 @@ public abstract class ItemCond extends ItemBoolFunc {
     public FieldTypes fieldType() {
         return FieldTypes.MYSQL_TYPE_LONGLONG;
     }
+
+
 
 }

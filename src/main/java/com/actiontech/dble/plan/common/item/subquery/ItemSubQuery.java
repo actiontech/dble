@@ -48,7 +48,7 @@ public abstract class ItemSubQuery extends ItemResultField {
         PlanNode test = this.planNode.copy();
         try {
             test.setUpFields();
-            planNode = test;
+            planNode.setUpFields();
         } catch (Exception e) {
             this.correlatedSubQuery = true;
         }

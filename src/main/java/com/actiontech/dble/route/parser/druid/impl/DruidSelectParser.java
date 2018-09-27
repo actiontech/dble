@@ -67,14 +67,9 @@ public class DruidSelectParser extends DefaultDruidParser {
             }
             SQLTableSource mysqlFrom = mysqlSelectQuery.getFrom();
             if (mysqlFrom == null) {
-                List<SQLSelectItem> selectList = mysqlSelectQuery.getSelectList();
-                for (SQLSelectItem item : selectList) {
-                    SQLExpr itemExpr = item.getExpr();
-                    if (itemExpr instanceof SQLQueryExpr) {
-                        rrs.setSqlStatement(selectStmt);
-                        rrs.setNeedOptimizer(true);
-                        return schema;
-                    }
+                super.visitorParse(schema, rrs, stmt, visitor, sc);
+                if (visitor.getSubQueryList().size() > 0) {
+                    return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc);
                 }
                 RouterUtil.routeNoNameTableToSingleNode(rrs, schema);
                 return schema;
@@ -528,7 +523,7 @@ public class DruidSelectParser extends DefaultDruidParser {
             return;
         }
         for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
-            RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, unit, table, rrs, true, cachePool);
+            RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, unit, table, rrs, true, cachePool, null);
             if (rrsTmp != null && rrsTmp.getNodes() != null) {
                 Collections.addAll(nodeSet, rrsTmp.getNodes());
                 if (rrsTmp.isGlobalTable()) {

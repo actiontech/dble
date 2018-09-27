@@ -12,6 +12,7 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.net.handler.LoadDataInfileHandler;
 import com.actiontech.dble.net.mysql.BinaryPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -38,6 +39,8 @@ import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -52,6 +55,7 @@ import java.util.regex.Pattern;
  * CHARACTER SET 'gbk' in load data sql  the charset need ', otherwise the druid will error
  */
 public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerLoadDataInfileHandler.class);
     private ServerConnection serverConnection;
     private String sql;
     private String fileName;
@@ -161,19 +165,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         tempFile = tempPath + "clientTemp.txt";
         tempByteBuffer = new ByteArrayOutputStream();
 
-        List<SQLExpr> columns = statement.getColumns();
-        if (tableConfig != null) {
-            String pColumn = getPartitionColumn();
-            if (pColumn != null && columns != null && columns.size() > 0) {
-                for (int i = 0, columnsSize = columns.size(); i < columnsSize; i++) {
-                    String column = StringUtil.removeBackQuote(columns.get(i).toString());
-                    if (pColumn.equalsIgnoreCase(column)) {
-                        partitionColumnIndex = i;
-                        break;
-                    }
-                }
-            }
-        }
+        trySetPartitionColumnIndex(statement);
 
         parseLoadDataPram();
         if (statement.isLocal()) {
@@ -217,6 +209,42 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             saveByteOrToFile(packet.getData(), false);
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * findout the index of the partition key
+     */
+    private void trySetPartitionColumnIndex(MySqlLoadDataInFileStatement sqlStatement) {
+        if (tableConfig != null) {
+            List<SQLExpr> columns = sqlStatement.getColumns();
+
+            String pColumn = getPartitionColumn();
+            if (columns != null && columns.size() > 0) {
+                for (int i = 0, columnsSize = columns.size(); i < columnsSize; i++) {
+                    String column = StringUtil.removeBackQuote(columns.get(i).toString());
+                    if (pColumn.equalsIgnoreCase(column)) {
+                        partitionColumnIndex = i;
+                        break;
+                    }
+                }
+            } else {
+                try {
+                    StructureMeta.TableMeta tbMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schema.getName(), tableName);
+                    if (tbMeta != null) {
+                        for (int i = 0; i < tbMeta.getColumnsCount(); i++) {
+                            if (pColumn.equalsIgnoreCase(tbMeta.getColumns(i).getName())) {
+                                partitionColumnIndex = i;
+                                break;
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    serverConnection.writeErrMessage(ErrorCode.ER_DOING_DDL, " table is doing DDL");
+                    clear();
+                    return;
+                }
+            }
         }
     }
 
@@ -277,36 +305,35 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             DruidShardingParseInfo ctx = new DruidShardingParseInfo();
             ctx.addTable(tableName);
 
-            if (partitionColumnIndex == -1 || partitionColumnIndex >= lineList.length) {
-                return null;
-            } else {
-                String value = lineList[partitionColumnIndex];
-                RouteCalculateUnit routeCalculateUnit = new RouteCalculateUnit();
-                routeCalculateUnit.addShardingExpr(tableName, getPartitionColumn(),
-                        parseFieldString(value, loadData.getEnclose(), loadData.getEscape()));
-                ctx.addRouteCalculateUnit(routeCalculateUnit);
+            if (partitionColumnIndex == -1) {
+                throw new RuntimeException("no partition Column in this Line " + StringUtil.join(lineList, loadData.getLineTerminatedBy()));
+            }
+            String value = lineList[partitionColumnIndex];
+            RouteCalculateUnit routeCalculateUnit = new RouteCalculateUnit();
+            routeCalculateUnit.addShardingExpr(tableName, getPartitionColumn(),
+                    parseFieldString(value, loadData.getEnclose(), loadData.getEscape()));
+            ctx.addRouteCalculateUnit(routeCalculateUnit);
 
-                try {
-                    SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
-                    for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
-                        RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, ctx, unit, rrs, false, tableId2DataNodeCache);
-                        if (rrsTmp != null) {
-                            Collections.addAll(nodeSet, rrsTmp.getNodes());
-                        }
+            try {
+                SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
+                for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
+                    RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, ctx, unit, rrs, false, tableId2DataNodeCache, null);
+                    if (rrsTmp != null) {
+                        Collections.addAll(nodeSet, rrsTmp.getNodes());
                     }
-
-                    RouteResultsetNode[] nodes = new RouteResultsetNode[nodeSet.size()];
-                    int i = 0;
-                    for (RouteResultsetNode aNodeSet : nodeSet) {
-                        nodes[i] = aNodeSet;
-                        i++;
-                    }
-
-                    rrs.setNodes(nodes);
-                    return rrs;
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
                 }
+
+                RouteResultsetNode[] nodes = new RouteResultsetNode[nodeSet.size()];
+                int i = 0;
+                for (RouteResultsetNode aNodeSet : nodeSet) {
+                    nodes[i] = aNodeSet;
+                    i++;
+                }
+
+                rrs.setNodes(nodes);
+                return rrs;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
         }
 
@@ -314,7 +341,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     }
 
 
-    private void parseOneLine(List<SQLExpr> columns, String table, String[] line, boolean toFile, String lineEnd) throws Exception {
+    private void parseOneLine(String[] line, boolean toFile) throws Exception {
         if (loadData.getEnclose() != null && loadData.getEnclose().charAt(0) > 0x0020) {
             for (int i = 0; i < line.length; i++) {
                 line[i] = line[i].trim();
@@ -322,17 +349,10 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         }
 
         RouteResultset rrs = tryDirectRoute(sql, line);
-        if (rrs == null || rrs.getNodes() == null || rrs.getNodes().length == 0) {
-            String insertSql = makeSimpleInsert(columns, line, table);
-            try {
-                rrs = DbleServer.getInstance().getRouterService().route(schema, ServerParse.INSERT, insertSql, serverConnection);
-            } catch (Exception e) {
-                throw e;
-            }
-        }
 
         if (rrs == null || rrs.getNodes() == null || rrs.getNodes().length == 0) {
             //do nothing
+            throw new Exception("record " + StringUtil.join(line, loadData.getLineTerminatedBy()) + "has no route result");
         } else {
             for (RouteResultsetNode routeResultsetNode : rrs.getNodes()) {
                 String name = routeResultsetNode.getName();
@@ -453,37 +473,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     }
 
 
-    private String makeSimpleInsert(List<SQLExpr> columns, String[] fields, String table) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(LoadData.LOAD_DATA_HINT).append("insert into ").append(table);
-        if (columns != null && columns.size() > 0) {
-            sb.append("(");
-            for (int i = 0, columnsSize = columns.size(); i < columnsSize; i++) {
-                SQLExpr column = columns.get(i);
-                sb.append(column.toString());
-                if (i != columnsSize - 1) {
-                    sb.append(",");
-                }
-            }
-            sb.append(") ");
-        }
-
-        sb.append(" values (");
-        for (int i = 0, columnsSize = fields.length; i < columnsSize; i++) {
-            String column = fields[i];
-
-            sb.append("'").append(parseFieldString(column, loadData.getEnclose(), loadData.getEscape())).append("'");
-
-            if (i != columnsSize - 1) {
-                sb.append(",");
-            }
-        }
-        sb.append(")");
-
-        return sb.toString();
-    }
-
-
     private String parseFieldString(String value, String enclose, String escape) {
         //avoid null point execption
         if (value == null) {
@@ -548,7 +537,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         //empty packet for end
         saveByteOrToFile(null, true);
 
-        List<SQLExpr> columns = statement.getColumns();
         if (isHasStoreToFile) {
             parseFileByLine(tempFile, loadData.getCharset(), loadData.getLineTerminatedBy());
         } else {
@@ -574,11 +562,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 settings.getFormat().setQuoteEscape(loadData.getEscape().charAt(0));
             }
             settings.getFormat().setNormalizedNewline(loadData.getLineTerminatedBy().charAt(0));
-            /*
-             *  fix bug #1074 : LOAD DATA local INFILE导入的所有Boolean类型全部变成了false
-             *  不可见字符将在CsvParser被当成whitespace过滤掉, 使用settings.trimValues(false)来避免被过滤掉
-             *  FIXME : 设置trimValues(false)之后, 会引起字段值前后的空白字符无法被过滤!
-             */
             settings.trimValues(false);
 
             CsvParser parser = new CsvParser(settings);
@@ -593,7 +576,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 while ((row = parser.parseNext()) != null) {
                     if (ignoreNumber == 0) {
                         try {
-                            parseOneLine(columns, tableName, row, true, loadData.getLineTerminatedBy());
+                            parseOneLine(row, true);
                         } catch (Exception e) {
                             clear();
                             serverConnection.writeErrMessage(++packId, ErrorCode.ER_WRONG_VALUE_COUNT_ON_ROW, "row data can't not calculate a sharding value," + e.getMessage());
@@ -617,8 +600,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
 
     private boolean parseFileByLine(String file, String encode, String split) {
-        List<SQLExpr> columns = statement.getColumns();
-
         CsvParserSettings settings = new CsvParserSettings();
         settings.setMaxColumns(65535);
         settings.setMaxCharsPerColumn(65535);
@@ -629,11 +610,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         }
         settings.getFormat().setNormalizedNewline(loadData.getLineTerminatedBy().charAt(0));
 
-        /*
-         *  fix #1074 : LOAD DATA local INFILE导入的所有Boolean类型全部变成了false
-         *  不可见字符将在CsvParser被当成whitespace过滤掉, 使用settings.trimValues(false)来避免被过滤掉
-         *  FIXME : 设置trimValues(false)之后, 会引起字段值前后的空白字符无法被过滤!
-         */
         settings.trimValues(false);
 
         CsvParser parser = new CsvParser(settings);
@@ -653,7 +629,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             while ((row = parser.parseNext()) != null) {
                 if (ignoreNumber == 0) {
                     try {
-                        parseOneLine(columns, tableName, row, true, loadData.getLineTerminatedBy());
+                        parseOneLine(row, true);
                     } catch (Exception e) {
                         clear();
                         serverConnection.writeErrMessage(ErrorCode.ER_WRONG_VALUE_COUNT_ON_ROW, "row data can't not calculate a sharding value," + e.getMessage());
@@ -771,7 +747,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
     private String getPartitionColumn() {
         String pColumn;
-        if (tableConfig.getDirectRouteTC() != null) {
+        if (tableConfig.getParentTC() != null) {
             pColumn = tableConfig.getJoinKey();
         } else {
             pColumn = tableConfig.getPartitionColumn();

@@ -52,9 +52,9 @@ public final class SubQueryPreProcessor {
             qtn.getChildren().set(i, findComparisonsSubQueryToJoinNode(child, childTransform));
         }
         for (Item itemSelect : qtn.getColumnsSelected()) {
-            if (itemSelect instanceof ItemScalarSubQuery) {
-                ItemScalarSubQuery scalarSubQuery = (ItemScalarSubQuery) itemSelect;
-                findComparisonsSubQueryToJoinNode(scalarSubQuery.getPlanNode(), childTransform);
+            if (itemSelect instanceof ItemSubQuery) {
+                ItemSubQuery subQuery = (ItemSubQuery) itemSelect;
+                findComparisonsSubQueryToJoinNode(subQuery.getPlanNode(), childTransform);
             }
         }
         if (qtn.type() == PlanNode.PlanNodeType.JOIN) {

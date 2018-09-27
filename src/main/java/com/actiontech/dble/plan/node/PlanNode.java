@@ -283,6 +283,7 @@ public abstract class PlanNode {
         to.setCorrelatedSubQuery(correlatedSubQuery);
         to.setUnGlobalTableCount(unGlobalTableCount);
         to.setNoshardNode(noshardNode);
+        to.getSubQueries().addAll(subQueries);
     }
 
     protected void setUpInnerFields() {

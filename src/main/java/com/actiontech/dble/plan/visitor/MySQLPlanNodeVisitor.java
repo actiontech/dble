@@ -13,6 +13,9 @@ import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
+import com.actiontech.dble.plan.common.item.subquery.ItemAllAnySubQuery;
+import com.actiontech.dble.plan.common.item.subquery.ItemExistsSubQuery;
+import com.actiontech.dble.plan.common.item.subquery.ItemInSubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.plan.node.*;
@@ -335,6 +338,19 @@ public class MySQLPlanNodeVisitor {
         if (selItem instanceof ItemScalarSubQuery) {
             ((ItemScalarSubQuery) selItem).setField(true);
             tableNode.getSubQueries().add((ItemScalarSubQuery) selItem);
+            tableNode.setWithSubQuery(true);
+            tableNode.setContainsSubQuery(true);
+        } else if (selItem instanceof ItemAllAnySubQuery) {
+            tableNode.getSubQueries().add((ItemAllAnySubQuery) selItem);
+            tableNode.setWithSubQuery(true);
+            tableNode.setContainsSubQuery(true);
+        } else if (selItem instanceof ItemInSubQuery) {
+            tableNode.getSubQueries().add((ItemInSubQuery) selItem);
+            tableNode.setWithSubQuery(true);
+            tableNode.setContainsSubQuery(true);
+        } else if (selItem instanceof ItemExistsSubQuery) {
+            ((ItemExistsSubQuery) selItem).setField(true);
+            tableNode.getSubQueries().add((ItemExistsSubQuery) selItem);
             tableNode.setWithSubQuery(true);
             tableNode.setContainsSubQuery(true);
         } else if (selItem instanceof ItemFunc) {

@@ -388,24 +388,22 @@ public final class PlanUtil {
         }
         BoolPtr reBuild = new BoolPtr(false);
         if (PlanUtil.isCmpFunc(item)) {
-            Item res1 = rebuildBoolSubQuery(item, 0, reBuild);
+            Item res1 = rebuildBoolSubQuery(item, 0, reBuild, new BoolPtr(false), new BoolPtr(false));
             if (res1 != null) {
                 return res1;
             }
-            Item res2 = rebuildBoolSubQuery(item, 1, reBuild);
+
+            BoolPtr needExecuteNull = new BoolPtr(false);
+            BoolPtr isAll = new BoolPtr(false);
+            Item res2 = rebuildBoolSubQuery(item, 1, reBuild, needExecuteNull, isAll);
             if (res2 != null) {
                 return res2;
             }
-        } else if (item instanceof ItemInSubQuery) {
-            ItemInSubQuery inSubItem = (ItemInSubQuery) item;
-            if (inSubItem.getValue().size() == 0) {
-                return genBoolItem(inSubItem.isNeg());
-            } else {
-                List<Item> args = new ArrayList<>(inSubItem.getValue().size() + 1);
-                args.add(inSubItem.getLeftOperand());
-                args.addAll(inSubItem.getValue());
-                return new ItemFuncIn(args, inSubItem.isNeg());
+            if (needExecuteNull.get()) {
+                return getForAllAnyWithNullItem(item, isAll);
             }
+        } else if (item instanceof ItemInSubQuery) {
+            return genInsubQueryItem((ItemInSubQuery) item);
         } else if (item instanceof ItemExistsSubQuery) {
             ItemExistsSubQuery existsSubQuery = (ItemExistsSubQuery) item;
             Item result = existsSubQuery.getValue();
@@ -424,9 +422,9 @@ public final class PlanUtil {
             Item result = ((ItemScalarSubQuery) item).getValue();
             if (result == null || result.getResultItem() == null) {
                 if (!((ItemScalarSubQuery) item).isOrderCondition()) {
-                    return new ItemFuncEqual(new ItemInt(1), new ItemInt(0));
+                    return genBoolItem(false);
                 } else {
-                    return new ItemString("null");
+                    return new ItemNull();
                 }
             }
             return result.getResultItem();
@@ -434,11 +432,45 @@ public final class PlanUtil {
         if (!reBuild.get() && item instanceof ItemFunc) {
             return rebuildSubQueryFuncItem(item);
         }
+        item.setWithSubQuery(false);
         return item;
+    }
+
+    public static Item genInsubQueryItem(ItemInSubQuery item) {
+        ItemInSubQuery inSubItem = item;
+        if (inSubItem.getValue().size() == 0 && !inSubItem.isContainNull()) {
+            return genBoolItem(inSubItem.isNeg());
+        } else if (inSubItem.getValue().size() == 0 && inSubItem.isContainNull()) {
+            return new ItemNull();
+        } else {
+            int argSize = inSubItem.getValue().size() + 1;
+            if (inSubItem.isContainNull()) {
+                argSize++;
+            }
+            List<Item> args = new ArrayList<>(argSize);
+            args.add(inSubItem.getLeftOperand());
+            if (inSubItem.isContainNull()) {
+                args.add(new ItemNull());
+            }
+            args.addAll(inSubItem.getValue());
+            return new ItemFuncIn(args, inSubItem.isNeg());
+        }
+    }
+
+    public static Item getForAllAnyWithNullItem(Item item, BoolPtr isAll) {
+        List<Item> args = new ArrayList<>(2);
+        args.add(item);
+        args.add(new ItemNull());
+        if (isAll.get()) {
+            return new ItemCondAnd(args);
+        } else {
+            return new ItemCondOr(args);
+        }
     }
 
     private static Item rebuildSubQueryFuncItem(Item item) {
         ItemFunc func = (ItemFunc) item;
+        item.setWithSubQuery(false);
         Item itemTmp = item.cloneItem();
         for (int index = 0; index < func.getArgCount(); index++) {
             Item arg = item.arguments().get(index);
@@ -451,11 +483,20 @@ public final class PlanUtil {
                 }
             } else if (arg instanceof ItemInSubQuery) {
                 ItemInSubQuery inSubItem = (ItemInSubQuery) arg;
-                if (inSubItem.getValue().size() == 0) {
-                    itemTmp.arguments().set(index, genBoolItem(inSubItem.isNeg()));
+                if (inSubItem.getValue().size() == 0 && !inSubItem.isContainNull()) {
+                    return genBoolItem(inSubItem.isNeg());
+                } else if (inSubItem.getValue().size() == 0 && inSubItem.isContainNull()) {
+                    return new ItemNull();
                 } else {
-                    List<Item> newArgs = new ArrayList<>(inSubItem.getValue().size() + 1);
+                    int argSize = inSubItem.getValue().size() + 1;
+                    if (inSubItem.isContainNull()) {
+                        argSize++;
+                    }
+                    List<Item> newArgs = new ArrayList<>(argSize);
                     newArgs.add(inSubItem.getLeftOperand());
+                    if (inSubItem.isContainNull()) {
+                        newArgs.add(new ItemNull());
+                    }
                     newArgs.addAll(inSubItem.getValue());
                     itemTmp.arguments().set(index, new ItemFuncIn(newArgs, inSubItem.isNeg()));
                 }
@@ -478,33 +519,52 @@ public final class PlanUtil {
         }
     }
 
-
-    private static Item rebuildBoolSubQuery(Item item, int index, BoolPtr reBuild) {
+    private static Item rebuildBoolSubQuery(Item item, int index, BoolPtr reBuild, BoolPtr needExecuteNull, BoolPtr isAll) {
         Item arg = item.arguments().get(index);
         if (arg.type().equals(ItemType.SUBSELECT_ITEM)) {
             if (arg instanceof ItemScalarSubQuery) {
                 Item result = ((ItemScalarSubQuery) arg).getValue();
                 if (result == null || result.getResultItem() == null) {
                     reBuild.set(true);
-                    return new ItemFuncEqual(new ItemInt(1), new ItemInt(0));
+                    return genBoolItem(false);
                 }
                 item.arguments().set(index, result.getResultItem());
                 item.setItemName(null);
             } else if (arg instanceof ItemAllAnySubQuery) {
                 ItemAllAnySubQuery allAnySubItem = (ItemAllAnySubQuery) arg;
-                if (allAnySubItem.getValue().size() == 0) {
+                if (allAnySubItem.getValue().size() == 0 && !allAnySubItem.isContainNull()) {
                     reBuild.set(true);
                     return genBoolItem(allAnySubItem.isAll());
-                } else if (allAnySubItem.getValue().size() == 1) {
+                } else if (allAnySubItem.getValue().size() == 0 && allAnySubItem.isContainNull()) {
+                    reBuild.set(true);
+                    return new ItemNull();
+                } else if (allAnySubItem.getValue().size() == 1 && !allAnySubItem.isContainNull()) {
                     Item value = allAnySubItem.getValue().get(0);
-                    if (value == null) {
-                        return new ItemFuncEqual(new ItemInt(1), new ItemInt(0));
-                    }
                     item.arguments().set(index, value.getResultItem());
                     item.setItemName(null);
+                } else if (allAnySubItem.getValue().size() == 1 && allAnySubItem.isContainNull()) {
+                    // item operator all (some_value,null)
+                    //  =>item operator some_value and item operator null
+                    //  =>item operator some_value and unknown
+
+                    // item operator any (some_value,null)
+                    //  =>item operator some_value or item operator null
+                    //  =>item operator some_value or unknown
+                    needExecuteNull.set(true);
+                    isAll.set(allAnySubItem.isAll());
+                    Item value = allAnySubItem.getValue().get(0);
+                    item.arguments().set(index, value.getResultItem());
                 } else {
                     reBuild.set(true);
+                    /* item = all (value1,value2,null)
+                      =>item = value1 and item = value2 and unknown
+                      =>false and unknown  =>false*/
+
+                    /* item <> any (value1,value2,null)
+                      =>item <> value1 or item <> value2 or unknown
+                      =>true or unknown  =>true*/
                     return genBoolItem(!allAnySubItem.isAll());
+
                 }
             }
         }

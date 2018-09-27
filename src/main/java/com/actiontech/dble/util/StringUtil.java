@@ -521,4 +521,16 @@ public final class StringUtil {
     public static String getUFullName(String schema, String tableName) {
         return String.format("%s.%s", schema, tableName);
     }
+
+    public static String join(String[] list, String flag) {
+        if (list.length < 1) {
+            return "";
+        }
+        StringBuffer sb = new StringBuffer();
+        for (int i = 0; i < list.length - 1; i++) {
+            sb.append(list[i]).append(flag);
+        }
+        sb.append(list[list.length - 1]);
+        return sb.toString();
+    }
 }

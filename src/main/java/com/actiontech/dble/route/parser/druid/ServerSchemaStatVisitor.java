@@ -351,6 +351,10 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
     @Override
     public boolean visit(SQLSelectQueryBlock x) {
+        List<SQLSelectItem> list = x.getSelectList();
+        for (SQLSelectItem item : list) {
+            item.accept(this);
+        }
         if (x.getFrom() == null) {
             return false;
         } else {

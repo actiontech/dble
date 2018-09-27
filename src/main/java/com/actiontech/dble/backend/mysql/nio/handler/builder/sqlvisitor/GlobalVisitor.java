@@ -98,7 +98,7 @@ public class GlobalVisitor extends MysqlVisitor {
         if (!isTopQuery) {
             sqlBuilder.append(" ( ");
         }
-        sqlBuilder.append(query.getSql());
+        buildSelect(query);
         if (!isTopQuery) {
             sqlBuilder.append(" ) ");
             if (query.getAlias() != null) {

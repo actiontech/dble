@@ -80,11 +80,11 @@ public final class HandlerTool {
      */
     public static Item createItem(Item sel, List<Field> fields, int startIndex, boolean allPushDown, HandlerType type) {
         Item ret;
-        if (sel.basicConstItem())
-            return sel;
         if (sel.isWithSubQuery()) {
             sel = PlanUtil.rebuildSubQueryItem(sel);
         }
+        if (sel.basicConstItem())
+            return sel;
         Item.ItemType i = sel.type();
         if (i == Item.ItemType.FUNC_ITEM || i == Item.ItemType.COND_ITEM) {
             ItemFunc func = (ItemFunc) sel;

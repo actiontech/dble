@@ -122,6 +122,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         Item left = getItem(x.getExpr());
         item = new ItemInSubQuery(currentDb, x.getSubQuery().getQuery(), left, isNeg, metaManager);
         initName(x);
+        item.setItemName(item.getItemName().replaceAll("\n\\t", " "));
     }
 
     @Override
@@ -141,6 +142,8 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         Item itemRight = getItem();
         if (itemRight instanceof ItemInSubQuery && (rightExpr instanceof SQLSomeExpr || rightExpr instanceof SQLAllExpr || rightExpr instanceof SQLAnyExpr)) {
             item = itemRight;
+            initName(x);
+            item.setItemName(item.getItemName().replaceAll("\n\\t", " "));
             return;
         }
         switch (x.getOperator()) {
@@ -281,6 +284,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         item.setWithSubQuery(itemLeft.isWithSubQuery() || itemRight.isWithSubQuery());
         item.setCorrelatedSubQuery(itemLeft.isCorrelatedSubQuery() || itemRight.isCorrelatedSubQuery());
         initName(x);
+        item.setItemName(item.getItemName().replaceAll("\n\\t", " "));
     }
 
     @Override
@@ -703,6 +707,8 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     public void endVisit(SQLExistsExpr x) {
         SQLSelectQuery sqlSelect = x.getSubQuery().getQuery();
         item = new ItemExistsSubQuery(currentDb, sqlSelect, x.isNot(), metaManager);
+        initName(x);
+        item.setItemName(item.getItemName().replaceAll("\n\\t", " "));
     }
 
     @Override

@@ -25,6 +25,7 @@ public class AllAnySubQueryHandler extends SubQueryHandler {
     private Field sourceField;
     private RowDataPacket tmpRow;
     private RowDataComparator rowComparator;
+
     public AllAnySubQueryHandler(long id, NonBlockingSession session, ItemAllAnySubQuery itemSubQuery) {
         super(id, session);
         this.itemSubQuery = itemSubQuery;
@@ -54,6 +55,7 @@ public class AllAnySubQueryHandler extends SubQueryHandler {
             lock.unlock();
         }
     }
+
     @Override
     public boolean rowResponse(byte[] rowNull, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
         lock.lock();
@@ -68,6 +70,10 @@ public class AllAnySubQueryHandler extends SubQueryHandler {
             }
             sourceField.setPtr(row.getValue(0));
             Item value = itemSubQuery.getFiled().getResultItem();
+            if (value == null) { //null will not cmp with other value
+                itemSubQuery.setContainNull(true);
+                return true;
+            }
             if (itemSubQuery.getValue().size() == 0) {
                 itemSubQuery.getValue().add(value);
                 tmpRow = row;

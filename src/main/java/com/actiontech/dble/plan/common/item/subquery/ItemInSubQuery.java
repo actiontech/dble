@@ -22,7 +22,6 @@ import java.util.List;
 public class ItemInSubQuery extends ItemMultiRowSubQuery {
     private boolean isNeg;
     protected Item leftOperand;
-
     public ItemInSubQuery(String currentDb, SQLSelectQuery query, Item leftOperand, boolean isNeg, ProxyMetaManager metaManager) {
         super(currentDb, query, metaManager);
         this.leftOperand = leftOperand;

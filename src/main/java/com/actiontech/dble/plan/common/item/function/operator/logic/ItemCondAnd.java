@@ -36,7 +36,7 @@ public class ItemCondAnd extends ItemCond {
         nullValue = false;
         for (Item item : list) {
             if (!item.valBool()) {
-                if (abortOnNull || !(nullValue = item.isNullValue()))
+                if (!(nullValue = item.isNullValue()))
                     return BigInteger.ZERO; // return FALSE
             }
         }

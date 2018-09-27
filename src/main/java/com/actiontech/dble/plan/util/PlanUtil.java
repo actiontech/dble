@@ -449,7 +449,9 @@ public final class PlanUtil {
             }
             List<Item> args = new ArrayList<>(argSize);
             args.add(inSubItem.getLeftOperand());
-            args.add(new ItemNull());
+            if (inSubItem.isContainNull()) {
+                args.add(new ItemNull());
+            }
             args.addAll(inSubItem.getValue());
             return new ItemFuncIn(args, inSubItem.isNeg());
         }
@@ -492,7 +494,9 @@ public final class PlanUtil {
                     }
                     List<Item> newArgs = new ArrayList<>(argSize);
                     newArgs.add(inSubItem.getLeftOperand());
-                    newArgs.add(new ItemNull());
+                    if (inSubItem.isContainNull()) {
+                        newArgs.add(new ItemNull());
+                    }
                     newArgs.addAll(inSubItem.getValue());
                     itemTmp.arguments().set(index, new ItemFuncIn(newArgs, inSubItem.isNeg()));
                 }

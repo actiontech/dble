@@ -432,6 +432,7 @@ public final class PlanUtil {
         if (!reBuild.get() && item instanceof ItemFunc) {
             return rebuildSubQueryFuncItem(item);
         }
+        item.setWithSubQuery(false);
         return item;
     }
 
@@ -467,6 +468,7 @@ public final class PlanUtil {
 
     private static Item rebuildSubQueryFuncItem(Item item) {
         ItemFunc func = (ItemFunc) item;
+        item.setWithSubQuery(false);
         Item itemTmp = item.cloneItem();
         for (int index = 0; index < func.getArgCount(); index++) {
             Item arg = item.arguments().get(index);
@@ -546,7 +548,6 @@ public final class PlanUtil {
                     //  =>item operator some_value or unknown
                     needExecuteNull.set(true);
                     isAll.set(allAnySubItem.isAll());
-                    item.setWithSubQuery(false);
                     Item value = allAnySubItem.getValue().get(0);
                     item.arguments().set(index, value.getResultItem());
                 } else {

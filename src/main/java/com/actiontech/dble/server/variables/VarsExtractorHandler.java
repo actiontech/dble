@@ -7,7 +7,6 @@ package com.actiontech.dble.server.variables;
 
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
-import com.actiontech.dble.backend.heartbeat.DBHeartbeat;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import org.slf4j.Logger;

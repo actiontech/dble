@@ -367,7 +367,7 @@ public abstract class Item {
         } else {
             String res;
             if ((res = valStr()) != null) {
-                return new ItemString(res);
+                return new ItemString(res, this.charsetIndex);
             } else {
                 assert (nullValue);
                 BigInteger bi = valInt();

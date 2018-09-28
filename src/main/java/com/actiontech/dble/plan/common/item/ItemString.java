@@ -17,6 +17,10 @@ import java.util.List;
 public class ItemString extends ItemBasicConstant {
     private String value;
 
+    public ItemString(String value, int charsetIndex) {
+        this(value);
+        this.charsetIndex = charsetIndex;
+    }
     public ItemString(String value) {
         this.value = value;
         maxLength = value.length();

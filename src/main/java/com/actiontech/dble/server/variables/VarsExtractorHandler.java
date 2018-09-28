@@ -56,7 +56,7 @@ public class VarsExtractorHandler {
         PhysicalDatasource ds = null;
         for (PhysicalDBPool dbPool : dataHosts.values()) {
             for (PhysicalDatasource dsTest : dbPool.getSources()) {
-                if (dsTest.isTestConnSuccess() && (!dbPool.isInitSuccess() || dsTest.getHeartbeat().getStatus() == DBHeartbeat.OK_STATUS)) {
+                if (dsTest.isTestConnSuccess()) {
                     ds = dsTest;
                     break;
                 }

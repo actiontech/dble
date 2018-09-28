@@ -7,6 +7,7 @@ package com.actiontech.dble.server.variables;
 
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.heartbeat.DBHeartbeat;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import org.slf4j.Logger;
@@ -55,7 +56,7 @@ public class VarsExtractorHandler {
         PhysicalDatasource ds = null;
         for (PhysicalDBPool dbPool : dataHosts.values()) {
             for (PhysicalDatasource dsTest : dbPool.getSources()) {
-                if (dsTest.isTestConnSuccess()) {
+                if (dsTest.isTestConnSuccess() && (!dbPool.isInitSuccess() || dsTest.getHeartbeat().getStatus() == DBHeartbeat.OK_STATUS)) {
                     ds = dsTest;
                     break;
                 }

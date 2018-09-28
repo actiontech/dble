@@ -421,11 +421,7 @@ public final class PlanUtil {
         } else if (item instanceof ItemScalarSubQuery) {
             Item result = ((ItemScalarSubQuery) item).getValue();
             if (result == null || result.getResultItem() == null) {
-                if (!((ItemScalarSubQuery) item).isOrderCondition()) {
-                    return genBoolItem(false);
-                } else {
-                    return new ItemNull();
-                }
+                return new ItemNull();
             }
             return result.getResultItem();
         }
@@ -526,7 +522,7 @@ public final class PlanUtil {
                 Item result = ((ItemScalarSubQuery) arg).getValue();
                 if (result == null || result.getResultItem() == null) {
                     reBuild.set(true);
-                    return genBoolItem(false);
+                    return new ItemNull();
                 }
                 item.arguments().set(index, result.getResultItem());
                 item.setItemName(null);

@@ -18,9 +18,6 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 import java.util.List;
 
 public class ItemScalarSubQuery extends ItemSingleRowSubQuery {
-
-    protected boolean orderCondition;
-
     public ItemScalarSubQuery(String currentDb, SQLSelectQuery query, ProxyMetaManager metaManager) {
         super(currentDb, query, false, metaManager);
         if (this.planNode.getColumnsSelected().size() > 1) {
@@ -55,14 +52,6 @@ public class ItemScalarSubQuery extends ItemSingleRowSubQuery {
     @Override
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fieldList) {
         return new ItemScalarSubQuery(this.currentDb, this.query, this.metaManager);
-    }
-
-    public boolean isOrderCondition() {
-        return orderCondition;
-    }
-
-    public void setOrderCondition(boolean orderCondition) {
-        this.orderCondition = orderCondition;
     }
 
 }

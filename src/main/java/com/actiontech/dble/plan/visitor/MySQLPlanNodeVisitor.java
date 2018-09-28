@@ -81,7 +81,7 @@ public class MySQLPlanNodeVisitor {
         MySQLPlanNodeVisitor mtvLeft = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
         mtvLeft.visit(left);
         mergeNode.addChild(mtvLeft.getTableNode());
-
+        mergeNode.setContainsSubQuery(mtvLeft.getTableNode().isContainsSubQuery());
         BoolPtr containSchemaPtr = new BoolPtr(mtvLeft.isContainSchema());
         mergeNode = checkRightChild(mergeNode, sqlSelectQuery.getRight(), isUnion(sqlSelectQuery.getOperator()), containSchemaPtr);
         this.tableNode = mergeNode;
@@ -211,6 +211,7 @@ public class MySQLPlanNodeVisitor {
         MySQLPlanNodeVisitor mtvRight = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
         mtvRight.visit(right);
         JoinNode joinNode = new JoinNode(mtvLeft.getTableNode(), mtvRight.getTableNode());
+        joinNode.setContainsSubQuery(mtvLeft.getTableNode().isContainsSubQuery() || mtvRight.getTableNode().isContainsSubQuery());
         switch (joinTables.getJoinType()) {
             case JOIN:
             case CROSS_JOIN:
@@ -299,6 +300,7 @@ public class MySQLPlanNodeVisitor {
             MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
             mtv.visit(unionTables);
             this.tableNode = new QueryNode(mtv.getTableNode());
+            this.tableNode.setContainsSubQuery(mtv.getTableNode().isContainsSubQuery());
             this.containSchema = mtv.isContainSchema();
         } else if (tables instanceof SQLSubqueryTableSource) {
             if (tables.getAlias() == null) {
@@ -308,6 +310,7 @@ public class MySQLPlanNodeVisitor {
             MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
             mtv.visit(subQueryTables);
             this.tableNode = new QueryNode(mtv.getTableNode());
+            this.tableNode.setContainsSubQuery(mtv.getTableNode().isContainsSubQuery());
             this.containSchema = mtv.isContainSchema();
         }
         if (tables.getAlias() != null) {
@@ -426,6 +429,7 @@ public class MySQLPlanNodeVisitor {
 
             MergeNode mergeParentNode = new MergeNode();
             mergeParentNode.addChild(mergeNode);
+            mergeParentNode.setContainsSubQuery(mergeNode.isContainsSubQuery());
             return checkRightChild(mergeParentNode, subUnion.getRight(), isUnion(subUnion.getOperator()), containSchemaPtr);
 
         } else {

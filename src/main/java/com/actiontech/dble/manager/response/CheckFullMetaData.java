@@ -83,7 +83,7 @@ public final class CheckFullMetaData {
     public static void execute(ManagerConnection c, String stmt) {
         Matcher ma = PATTERN.matcher(stmt);
         if (!ma.matches()) {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql did not match: check full @@metadata [ where [schema='testSchema' [and table ='testTable']] | [reload_time [<>]= 'dateTime']] | [reload_time is null] | [consistent_in_data_nodes =0|1] | [consistent_in_memory =0|1]");
+            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql did not match: check full @@metadata [ where [schema='testSchema' [and table ='testTable']] | [reload_time [>|<]= 'yyyy-MM-dd HH:mm:ss']] | [reload_time is null] | [consistent_in_data_nodes =0|1] | [consistent_in_memory =0|1]");
             return;
         }
         final ReentrantLock lock = DbleServer.getInstance().getTmManager().getMetaLock();

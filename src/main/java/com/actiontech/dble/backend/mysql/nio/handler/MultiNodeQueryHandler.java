@@ -237,7 +237,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
                     return;
                 }
-                session.handleSpecial(rrs, source.getSchema(), true);
+                boolean metaInited = session.handleSpecial(rrs, source.getSchema(), true);
+                if (!metaInited) {
+                    executeMetaDataFailed(conn);
+                    return;
+                }
                 if (rrs.isLoadData()) {
                     byte lastPackId = source.getLoadDataInfileHandler().getLastPackId();
                     ok.setPacketId(++lastPackId); // OK_PACKET
@@ -263,6 +267,19 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 lock.unlock();
             }
         }
+    }
+
+    private void executeMetaDataFailed(BackendConnection conn) {
+        ErrorPacket errPacket = new ErrorPacket();
+        errPacket.setPacketId(++packetId);
+        errPacket.setErrNo(ErrorCode.ER_META_DATA);
+        String errMsg = "CREATE TABLE OK, BUT GENERATE METADATA FAILED";
+        errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
+        session.multiStatementPacket(errPacket, packetId);
+        boolean multiStatementFlag = session.getIsMultiStatement().get();
+        doSqlStat();
+        handleEndPacket(errPacket.toBytes(), AutoTxOperation.COMMIT, conn);
+        session.multiStatementNextSql(multiStatementFlag);
     }
 
     @Override

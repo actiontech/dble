@@ -173,7 +173,12 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         boolean executeResponse = conn.syncAndExecute();
         if (executeResponse) {
             this.resultSize += data.length;
-            session.handleSpecial(rrs, session.getSource().getSchema(), true);
+            //handleSpecial
+            boolean metaInited = session.handleSpecial(rrs, session.getSource().getSchema(), true);
+            if (!metaInited) {
+                executeMetaDataFailed(conn);
+                return;
+            }
             ServerConnection source = session.getSource();
             OkPacket ok = new OkPacket();
             ok.read(data);
@@ -188,7 +193,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             ok.setMessage(null);
             ok.setServerStatus(source.isAutocommit() ? 2 : 1);
             source.setLastInsertId(ok.getInsertId());
-            //handleSpecial
             session.setBackendResponseEndTime((MySQLConnection) conn);
             session.releaseConnectionIfSafe(conn, false);
             session.setResponseTime();
@@ -198,6 +202,24 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             ok.write(source);
             session.multiStatementNextSql(multiStatementFlag);
         }
+    }
+
+    private void executeMetaDataFailed(BackendConnection conn) {
+        ServerConnection source = session.getSource();
+        ErrorPacket errPacket = new ErrorPacket();
+        errPacket.setPacketId(++packetId);
+        errPacket.setErrNo(ErrorCode.ER_META_DATA);
+        String errMsg = "CREATE TABLE OK, BUT GENERATE METADATA FAILED";
+        errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
+
+        session.setBackendResponseEndTime((MySQLConnection) conn);
+        session.releaseConnectionIfSafe(conn, false);
+        session.setResponseTime();
+        session.multiStatementPacket(errPacket, packetId);
+        boolean multiStatementFlag = session.getIsMultiStatement().get();
+        doSqlStat();
+        errPacket.write(source);
+        session.multiStatementNextSql(multiStatementFlag);
     }
 
 

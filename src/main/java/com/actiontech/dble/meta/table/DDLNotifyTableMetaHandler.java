@@ -20,6 +20,7 @@ public class DDLNotifyTableMetaHandler extends AbstractTableMetaHandler {
     private Lock lock;
     private Condition done;
     private boolean extracting = false;
+    private volatile boolean metaInited = false;
 
     public DDLNotifyTableMetaHandler(String schema, String tableName, List<String> dataNodes, Set<String> selfNode) {
         super(schema, tableName, dataNodes, selfNode);
@@ -42,6 +43,7 @@ public class DDLNotifyTableMetaHandler extends AbstractTableMetaHandler {
     public void handlerTable(StructureMeta.TableMeta tableMeta) {
         if (tableMeta != null) {
             DbleServer.getInstance().getTmManager().addTable(schema, tableMeta);
+            metaInited = true;
         }
         signalDone();
     }
@@ -69,4 +71,9 @@ public class DDLNotifyTableMetaHandler extends AbstractTableMetaHandler {
             lock.unlock();
         }
     }
+
+    public boolean isMetaInited() {
+        return metaInited;
+    }
+
 }

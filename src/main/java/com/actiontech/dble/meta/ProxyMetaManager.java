@@ -169,25 +169,21 @@ public class ProxyMetaManager {
     /**
      * In fact, it only have single table
      */
-    private void dropTable(String schema, String sql, SQLDropTableStatement statement, boolean isSuccess, boolean needNotifyOther) {
+    private boolean dropTable(String schema, String sql, SQLDropTableStatement statement, boolean isSuccess, boolean needNotifyOther) {
         for (SQLExprTableSource table : statement.getTableSources()) {
             SchemaInfo schemaInfo = getSchemaInfo(schema, table);
-            try {
-                if (!isSuccess) {
-                    return;
-                }
-                dropTable(schemaInfo.getSchema(), schemaInfo.getTable());
-            } catch (Exception e) {
-                LOGGER.warn("updateMetaData failed,sql is" + statement.toString(), e);
-            } finally {
-                try {
-                    notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.DROP_TABLE, needNotifyOther);
-                } catch (Exception e) {
-                    LOGGER.warn("notifyResponseZKDdl error", e);
-                }
-                removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
+            if (!isSuccess) {
+                return false;
             }
+            dropTable(schemaInfo.getSchema(), schemaInfo.getTable());
+            try {
+                notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.DROP_TABLE, needNotifyOther);
+            } catch (Exception e) {
+                LOGGER.warn("notifyResponseZKDdl error", e);
+            }
+            removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
         }
+        return true;
     }
 
     public StructureMeta.TableMeta getSyncTableMeta(String schema, String tbName) throws SQLNonTransientException {
@@ -449,22 +445,23 @@ public class ProxyMetaManager {
         }
     }
 
-    public void updateMetaData(String schema, String sql, boolean isSuccess, boolean needNotifyOther) {
+    public boolean updateMetaData(String schema, String sql, boolean isSuccess, boolean needNotifyOther) {
         SQLStatementParser parser = new MySqlStatementParser(sql);
         SQLStatement statement = parser.parseStatement();
         if (statement instanceof SQLDropTableStatement) {
-            dropTable(schema, sql, (SQLDropTableStatement) statement, isSuccess, needNotifyOther);
+            return dropTable(schema, sql, (SQLDropTableStatement) statement, isSuccess, needNotifyOther);
         } else if (statement instanceof MySqlCreateTableStatement) {
-            createTable(schema, sql, (MySqlCreateTableStatement) statement, isSuccess, needNotifyOther);
+            return createTable(schema, sql, (MySqlCreateTableStatement) statement, isSuccess, needNotifyOther);
         } else if (statement instanceof SQLAlterTableStatement) {
-            alterTable(schema, sql, (SQLAlterTableStatement) statement, isSuccess, needNotifyOther);
+            return alterTable(schema, sql, (SQLAlterTableStatement) statement, isSuccess, needNotifyOther);
         } else if (statement instanceof SQLTruncateStatement) {
-            truncateTable(schema, sql, (SQLTruncateStatement) statement, isSuccess, needNotifyOther);
+            return truncateTable(schema, sql, (SQLTruncateStatement) statement, isSuccess, needNotifyOther);
         } else if (statement instanceof SQLCreateIndexStatement) {
-            createIndex(schema, sql, (SQLCreateIndexStatement) statement, isSuccess, needNotifyOther);
+            return createIndex(schema, sql, (SQLCreateIndexStatement) statement, isSuccess, needNotifyOther);
         } else if (statement instanceof SQLDropIndexStatement) {
-            dropIndex(schema, sql, (SQLDropIndexStatement) statement, isSuccess, needNotifyOther);
+            return dropIndex(schema, sql, (SQLDropIndexStatement) statement, isSuccess, needNotifyOther);
         } else {
+            return true;
             // TODO: further
         }
 
@@ -576,58 +573,50 @@ public class ProxyMetaManager {
     }
 
 
-    private void createTable(String schema, String sql, MySqlCreateTableStatement statement, boolean isSuccess, boolean needNotifyOther) {
+    private boolean createTable(String schema, String sql, MySqlCreateTableStatement statement, boolean isSuccess, boolean needNotifyOther) {
         SchemaInfo schemaInfo = getSchemaInfo(schema, statement.getTableSource());
-        try {
-            if (!isSuccess) {
-                return;
-            }
-            String tableName = schemaInfo.getTable();
-            TableConfig tbConfig = schemaInfo.getSchemaConfig().getTables().get(tableName);
-            String showDataNode = schemaInfo.getSchemaConfig().getDataNode();
-            if (tbConfig != null) {
-                for (String dataNode : tbConfig.getDataNodes()) {
-                    showDataNode = dataNode;
-                    String tableId = "DataNode[" + dataNode + "]:Table[" + tableName + "]";
-                    if (ToResolveContainer.TABLE_LACK.contains(tableId) && AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
-                        ToResolveContainer.TABLE_LACK.remove(tableId);
-                    }
+        if (!isSuccess) {
+            return false;
+        }
+        String tableName = schemaInfo.getTable();
+        TableConfig tbConfig = schemaInfo.getSchemaConfig().getTables().get(tableName);
+        String showDataNode = schemaInfo.getSchemaConfig().getDataNode();
+        if (tbConfig != null) {
+            for (String dataNode : tbConfig.getDataNodes()) {
+                showDataNode = dataNode;
+                String tableId = "DataNode[" + dataNode + "]:Table[" + tableName + "]";
+                if (ToResolveContainer.TABLE_LACK.contains(tableId) && AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
+                    ToResolveContainer.TABLE_LACK.remove(tableId);
                 }
             }
-            DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schemaInfo.getSchema(), tableName, Collections.singletonList(showDataNode), null);
-            handler.execute();
-        } catch (Exception e) {
-            LOGGER.warn("updateMetaData failed,sql is" + statement.toString(), e);
-        } finally {
-            try {
-                notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.CREATE_TABLE, needNotifyOther);
-            } catch (Exception e) {
-                LOGGER.warn("notifyResponseZKDdl error", e);
-            }
-            removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
         }
-    }
-
-    private void alterTable(String schema, String sql, SQLAlterTableStatement alterStatement, boolean isSuccess, boolean needNotifyOther) {
-        SchemaInfo schemaInfo = getSchemaInfo(schema, alterStatement.getTableSource());
+        DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schemaInfo.getSchema(), tableName, Collections.singletonList(showDataNode), null);
+        handler.execute();
         try {
-            if (!isSuccess) {
-                return;
-            }
-            genTableMetaByShow(schemaInfo);
+            notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.CREATE_TABLE, needNotifyOther);
         } catch (Exception e) {
-            LOGGER.warn("updateMetaData alterTable failed,sql is" + alterStatement.toString(), e);
-        } finally {
-            try {
-                notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.ALTER_TABLE, needNotifyOther);
-            } catch (Exception e) {
-                LOGGER.warn("notifyResponseZKDdl error", e);
-            }
-            removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
+            LOGGER.warn("notifyResponseClusterDDL error", e);
         }
+        removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
+        return handler.isMetaInited();
     }
 
-    private void truncateTable(String schema, String sql, SQLTruncateStatement statement, boolean isSuccess, boolean needNotifyOther) {
+    private boolean alterTable(String schema, String sql, SQLAlterTableStatement alterStatement, boolean isSuccess, boolean needNotifyOther) {
+        SchemaInfo schemaInfo = getSchemaInfo(schema, alterStatement.getTableSource());
+        if (!isSuccess) {
+            return false;
+        }
+        boolean metaInited = genTableMetaByShow(schemaInfo);
+        try {
+            notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.ALTER_TABLE, needNotifyOther);
+        } catch (Exception e) {
+            LOGGER.warn("notifyResponseClusterDDL error", e);
+        }
+        removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
+        return metaInited;
+    }
+
+    private boolean truncateTable(String schema, String sql, SQLTruncateStatement statement, boolean isSuccess, boolean needNotifyOther) {
         //TODO:reset Sequence?
         SQLExprTableSource exprTableSource = statement.getTableSources().get(0);
         SchemaInfo schemaInfo = getSchemaInfo(schema, exprTableSource);
@@ -637,51 +626,48 @@ public class ProxyMetaManager {
             LOGGER.warn("notifyResponseZKDdl error", e);
         }
         removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
+        return true;
     }
 
-    private void createIndex(String schema, String sql, SQLCreateIndexStatement statement, boolean isSuccess, boolean needNotifyOther) {
+    private boolean createIndex(String schema, String sql, SQLCreateIndexStatement statement, boolean isSuccess, boolean needNotifyOther) {
         SQLTableSource tableSource = statement.getTable();
         if (tableSource instanceof SQLExprTableSource) {
             SQLExprTableSource exprTableSource = (SQLExprTableSource) tableSource;
             SchemaInfo schemaInfo = getSchemaInfo(schema, exprTableSource);
-            try {
-                if (!isSuccess) {
-                    return;
-                }
-                genTableMetaByShow(schemaInfo);
-            } catch (Exception e) {
-                LOGGER.warn("updateMetaData failed,sql is" + statement.toString(), e);
-            } finally {
-                try {
-                    notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.CREATE_INDEX, needNotifyOther);
-                } catch (Exception e) {
-                    LOGGER.warn("notifyResponseZKDdl error", e);
-                }
-                removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
-            }
-        }
-    }
 
-    private void dropIndex(String schema, String sql, SQLDropIndexStatement dropIndexStatement, boolean isSuccess, boolean needNotifyOther) {
-        SchemaInfo schemaInfo = getSchemaInfo(schema, dropIndexStatement.getTableName());
-        try {
             if (!isSuccess) {
-                return;
+                return false;
             }
-            genTableMetaByShow(schemaInfo);
-        } catch (Exception e) {
-            LOGGER.warn("updateMetaData failed,sql is" + dropIndexStatement.toString(), e);
-        } finally {
+            boolean metaInited = genTableMetaByShow(schemaInfo);
+
             try {
-                notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.DROP_INDEX, needNotifyOther);
+                notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.CREATE_INDEX, needNotifyOther);
             } catch (Exception e) {
                 LOGGER.warn("notifyResponseZKDdl error", e);
             }
             removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
+            return metaInited;
         }
+        return true;
     }
 
-    private void genTableMetaByShow(SchemaInfo schemaInfo) {
+    private boolean dropIndex(String schema, String sql, SQLDropIndexStatement dropIndexStatement, boolean isSuccess, boolean needNotifyOther) {
+        SchemaInfo schemaInfo = getSchemaInfo(schema, dropIndexStatement.getTableName());
+        if (!isSuccess) {
+            return false;
+        }
+        boolean metaInited = genTableMetaByShow(schemaInfo);
+
+        try {
+            notifyResponseClusterDDL(schemaInfo.getSchema(), schemaInfo.getTable(), sql, isSuccess ? DDLInfo.DDLStatus.SUCCESS : DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.DROP_INDEX, needNotifyOther);
+        } catch (Exception e) {
+            LOGGER.warn("notifyResponseZKDdl error", e);
+        }
+        removeMetaLock(schemaInfo.getSchema(), schemaInfo.getTable());
+        return metaInited;
+    }
+
+    private boolean genTableMetaByShow(SchemaInfo schemaInfo) {
         String tableName = schemaInfo.getTable();
         TableConfig tbConfig = schemaInfo.getSchemaConfig().getTables().get(tableName);
         String showDataNode = schemaInfo.getSchemaConfig().getDataNode();
@@ -693,6 +679,7 @@ public class ProxyMetaManager {
         }
         DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schemaInfo.getSchema(), tableName, Collections.singletonList(showDataNode), null);
         handler.execute();
+        return handler.isMetaInited();
     }
 
     public Repository getRepository() {

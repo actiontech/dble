@@ -922,15 +922,16 @@ public class NonBlockingSession implements Session {
         return errConn;
     }
 
-    public void handleSpecial(RouteResultset rrs, String schema, boolean isSuccess) {
+    public boolean handleSpecial(RouteResultset rrs, String schema, boolean isSuccess) {
         if (rrs.getSchema() != null) {
-            handleSpecial(rrs, schema, isSuccess, null);
+            return handleSpecial(rrs, schema, isSuccess, null);
         } else {
             LOGGER.info("Hint ddl do not update the meta");
+            return true;
         }
     }
 
-    public void handleSpecial(RouteResultset rrs, String schema, boolean isSuccess, String errInfo) {
+    public boolean handleSpecial(RouteResultset rrs, String schema, boolean isSuccess, String errInfo) {
         if (rrs.getSqlType() == ServerParse.DDL && rrs.getSchema() != null) {
             String sql = rrs.getSrcStatement();
             if (source.isTxStart()) {
@@ -941,8 +942,9 @@ public class NonBlockingSession implements Session {
                 LOGGER.warn("DDL execute failed or Session closed," +
                         "Schema[" + schema + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
             }
-            DbleServer.getInstance().getTmManager().updateMetaData(schema, sql, isSuccess, true);
+            return DbleServer.getInstance().getTmManager().updateMetaData(schema, sql, isSuccess, true);
         }
+        return true;
     }
 
 

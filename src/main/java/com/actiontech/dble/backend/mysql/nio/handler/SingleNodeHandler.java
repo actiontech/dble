@@ -205,7 +205,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     }
 
     private void executeMetaDataFailed(BackendConnection conn) {
-        ServerConnection source = session.getSource();
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
         errPacket.setErrNo(ErrorCode.ER_META_DATA);
@@ -218,7 +217,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         session.multiStatementPacket(errPacket, packetId);
         boolean multiStatementFlag = session.getIsMultiStatement().get();
         doSqlStat();
-        errPacket.write(source);
+        errPacket.write(session.getSource());
         session.multiStatementNextSql(multiStatementFlag);
     }
 

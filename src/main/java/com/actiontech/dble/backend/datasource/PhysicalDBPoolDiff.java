@@ -77,10 +77,14 @@ public class PhysicalDBPoolDiff {
                             if (!oldRHost[k].equals(readHost[k])) {
                                 sameFlag = false;
                                 break;
+                            } else {
+                                oldRHost[k].setTestConnSuccess(readHost[k].isTestConnSuccess());
                             }
                         }
                     }
                     if (sameFlag) {
+                        //update connection test result
+                        oldHost.setTestConnSuccess(writeHost.isTestConnSuccess());
                         orgHost = oldHost;
                         relatedHost = oldRHost;
                         break;

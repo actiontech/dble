@@ -6,7 +6,6 @@
 package com.actiontech.dble.route.parser.druid;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.route.parser.druid.sql.visitor.ActionSQLEvalVisitorUtils;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
@@ -17,6 +16,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
+import com.alibaba.druid.sql.visitor.SQLEvalVisitorUtils;
 import com.alibaba.druid.stat.TableStat.Column;
 import com.alibaba.druid.stat.TableStat.Condition;
 
@@ -152,7 +152,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         if (x.beginExpr instanceof SQLCharExpr) {
             begin = (String) ((SQLCharExpr) x.beginExpr).getValue();
         } else {
-            Object value = ActionSQLEvalVisitorUtils.eval(this.getDbType(), x.beginExpr, this.getParameters(), false);
+            Object value = SQLEvalVisitorUtils.eval(this.getDbType(), x.beginExpr, this.getParameters(), false);
             if (value != null) {
                 begin = value.toString();
             } else {
@@ -164,7 +164,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         if (x.endExpr instanceof SQLCharExpr) {
             end = (String) ((SQLCharExpr) x.endExpr).getValue();
         } else {
-            Object value = ActionSQLEvalVisitorUtils.eval(this.getDbType(), x.endExpr, this.getParameters(), false);
+            Object value = SQLEvalVisitorUtils.eval(this.getDbType(), x.endExpr, this.getParameters(), false);
             if (value != null) {
                 end = value.toString();
             } else {
@@ -448,7 +448,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                 SQLExpr item = var12[var8];
                 Column valueColumn = this.getColumn(item);
                 if (valueColumn == null) {
-                    Object value = ActionSQLEvalVisitorUtils.eval(this.getDbType(), item, this.getParameters(), false);
+                    Object value = SQLEvalVisitorUtils.eval(this.getDbType(), item, this.getParameters(), false);
                     condition.getValues().add(value);
                 }
             }

@@ -31,7 +31,7 @@ import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelect;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlReplaceStatement;
+import com.alibaba.druid.sql.ast.statement.SQLReplaceStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 
@@ -48,7 +48,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc)
             throws SQLException {
         //data & object prepare
-        MySqlReplaceStatement replace = (MySqlReplaceStatement) stmt;
+        SQLReplaceStatement replace = (SQLReplaceStatement) stmt;
         String schemaName = schema == null ? null : schema.getName();
         SQLExprTableSource tableSource = replace.getTableSource();
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, tableSource);
@@ -95,7 +95,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             rrs.setStatement(sql);
             SQLStatementParser parser = new MySqlStatementParser(sql);
             stmt = parser.parseStatement();
-            replace = (MySqlReplaceStatement) stmt;
+            replace = (SQLReplaceStatement) stmt;
         }
 
         // childTable can be route in this part
@@ -131,7 +131,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
      * @return
      * @throws SQLException
      */
-    private boolean parserNoSharding(ServerConnection sc, String contextSchema, SchemaInfo schemaInfo, RouteResultset rrs, MySqlReplaceStatement replace) throws SQLException {
+    private boolean parserNoSharding(ServerConnection sc, String contextSchema, SchemaInfo schemaInfo, RouteResultset rrs, SQLReplaceStatement replace) throws SQLException {
         String noShardingNode = RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable());
         if (noShardingNode != null) {
             StringPtr noShardingNodePr = new StringPtr(noShardingNode);
@@ -151,7 +151,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     }
 
 
-    private String convertReplaceSQL(SchemaInfo schemaInfo, MySqlReplaceStatement replace, String originSql, TableConfig tc, boolean isGlobalCheck, ServerConnection sc) throws SQLNonTransientException {
+    private String convertReplaceSQL(SchemaInfo schemaInfo, SQLReplaceStatement replace, String originSql, TableConfig tc, boolean isGlobalCheck, ServerConnection sc) throws SQLNonTransientException {
         StructureMeta.TableMeta orgTbMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
                 schemaInfo.getTable());
         if (orgTbMeta == null)
@@ -216,7 +216,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         return RouterUtil.removeSchema(sb.toString(), schemaInfo.getSchema());
     }
 
-    private boolean concatColumns(MySqlReplaceStatement replace, TableConfig tc, boolean isGlobalCheck, boolean isAutoIncrement, StringBuilder sb, List<SQLExpr> columns) throws SQLNonTransientException {
+    private boolean concatColumns(SQLReplaceStatement replace, TableConfig tc, boolean isGlobalCheck, boolean isAutoIncrement, StringBuilder sb, List<SQLExpr> columns) throws SQLNonTransientException {
         sb.append("(");
         boolean hasPkInSql = false;
         for (int i = 0; i < columns.size(); i++) {
@@ -287,7 +287,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     }
 
 
-    private void parserChildTable(SchemaInfo schemaInfo, final RouteResultset rrs, MySqlReplaceStatement replace, final ServerConnection sc) throws SQLNonTransientException {
+    private void parserChildTable(SchemaInfo schemaInfo, final RouteResultset rrs, SQLReplaceStatement replace, final ServerConnection sc) throws SQLNonTransientException {
         final SchemaConfig schema = schemaInfo.getSchemaConfig();
         String tableName = schemaInfo.getTable();
         final TableConfig tc = schema.getTables().get(tableName);
@@ -335,7 +335,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         }
     }
 
-    private boolean isMultiReplace(MySqlReplaceStatement insertStmt) {
+    private boolean isMultiReplace(SQLReplaceStatement insertStmt) {
         return (insertStmt.getValuesList() != null && insertStmt.getValuesList().size() > 1);
     }
 
@@ -348,7 +348,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
      * @return -1 means no join key,otherwise means the index
      * @throws SQLNonTransientException if not find
      */
-    private int getJoinKeyIndex(SchemaInfo schemaInfo, MySqlReplaceStatement replaceStmt, String joinKey) throws SQLNonTransientException {
+    private int getJoinKeyIndex(SchemaInfo schemaInfo, SQLReplaceStatement replaceStmt, String joinKey) throws SQLNonTransientException {
         return tryGetShardingColIndex(schemaInfo, replaceStmt, joinKey);
     }
 
@@ -356,12 +356,12 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     /**
      * find the index of the key in column list
      * @param schemaInfo SchemaInfo
-     * @param replaceStmt MySqlReplaceStatement
+     * @param replaceStmt SQLReplaceStatement
      * @param partitionColumn partitionColumn
      * @return the index of the partition column
      * @throws SQLNonTransientException if not find
      */
-    private int tryGetShardingColIndex(SchemaInfo schemaInfo, MySqlReplaceStatement replaceStmt, String partitionColumn) throws SQLNonTransientException {
+    private int tryGetShardingColIndex(SchemaInfo schemaInfo, SQLReplaceStatement replaceStmt, String partitionColumn) throws SQLNonTransientException {
         int shardingColIndex = getShardingColIndex(schemaInfo, replaceStmt.getColumns(), partitionColumn);
         if (shardingColIndex != -1) return shardingColIndex;
         throw new SQLNonTransientException("bad insert sql, sharding column/joinKey:" + partitionColumn + " not provided," + replaceStmt);
@@ -373,11 +373,11 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
      * @param schemaInfo SchemaInfo
      * @param rrs RouteResultset
      * @param partitionColumn partitionColumn
-     * @param replace MySqlReplaceStatement
+     * @param replace SQLReplaceStatement
      * @throws SQLNonTransientException  if the column size of values is not correct
      */
     private void parserBatchInsert(SchemaInfo schemaInfo, RouteResultset rrs, String partitionColumn,
-                                   MySqlReplaceStatement replace) throws SQLNonTransientException {
+                                   SQLReplaceStatement replace) throws SQLNonTransientException {
         // insert into table() values (),(),....
         SchemaConfig schema = schemaInfo.getSchemaConfig();
         String tableName = schemaInfo.getTable();
@@ -431,11 +431,11 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
      * @param schemaInfo SchemaInfo
      * @param rrs RouteResultset
      * @param partitionColumn partitionColumn
-     * @param replaceStatement MySqlReplaceStatement
+     * @param replaceStatement SQLReplaceStatement
      * @throws SQLNonTransientException if not find a valid data node
      */
     private void parserSingleInsert(SchemaInfo schemaInfo, RouteResultset rrs, String partitionColumn,
-                                    MySqlReplaceStatement replaceStatement) throws SQLNonTransientException {
+                                    SQLReplaceStatement replaceStatement) throws SQLNonTransientException {
         int shardingColIndex = tryGetShardingColIndex(schemaInfo, replaceStatement, partitionColumn);
         SQLExpr valueExpr = replaceStatement.getValuesList().get(0).getValues().get(shardingColIndex);
         String shardingValue = shardingValueToSting(valueExpr);

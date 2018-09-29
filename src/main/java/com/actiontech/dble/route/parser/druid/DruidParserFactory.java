@@ -32,7 +32,7 @@ public final class DruidParserFactory {
             parser = new DruidInsertParser();
         } else if (statement instanceof MySqlDeleteStatement) {
             parser = new DruidDeleteParser();
-        } else if (statement instanceof MySqlReplaceStatement) {
+        } else if (statement instanceof SQLReplaceStatement) {
             parser = new DruidReplaceParser();
         } else if (statement instanceof MySqlUpdateStatement) {
             parser = new DruidUpdateParser();

@@ -208,11 +208,12 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         }
     }
 
-    /* arriving here is impossible */
     @Override
     public void okResponse(byte[] data, BackendConnection conn) {
         if (!conn.syncAndExecute()) {
-            LOGGER.debug("MultiNodeDdlHandler should not arrive here(okResponse) !");
+            LOGGER.debug("MultiNodeDdlHandler syncAndExecute!");
+        } else {
+            LOGGER.debug("MultiNodeDdlHandler syncAndExecute finished!");
         }
     }
 

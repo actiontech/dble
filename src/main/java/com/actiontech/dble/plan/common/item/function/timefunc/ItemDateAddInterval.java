@@ -15,7 +15,7 @@ import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.plan.common.time.*;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
-import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlIntervalExpr;
+import com.alibaba.druid.sql.ast.expr.SQLIntervalExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntervalUnit;
 
 import java.util.ArrayList;
@@ -154,7 +154,7 @@ public class ItemDateAddInterval extends ItemTemporalHybridFunc {
         }
         SQLMethodInvokeExpr method = new SQLMethodInvokeExpr(funcName);
         method.addParameter(args.get(0).toExpression());
-        MySqlIntervalExpr intervalExpr = new MySqlIntervalExpr();
+        SQLIntervalExpr intervalExpr = new SQLIntervalExpr();
         intervalExpr.setValue(args.get(1).toExpression());
         intervalExpr.setUnit(intType);
         method.addParameter(intervalExpr);

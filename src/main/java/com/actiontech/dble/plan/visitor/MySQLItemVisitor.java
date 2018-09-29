@@ -51,7 +51,7 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlCharExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlExtractExpr;
-import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlIntervalExpr;
+import com.alibaba.druid.sql.ast.expr.SQLIntervalExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntervalUnit;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
@@ -334,7 +334,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     }
 
     @Override
-    public void endVisit(MySqlIntervalExpr x) {
+    public void endVisit(SQLIntervalExpr x) {
         //Just as  placeholder
         item = new ItemString(x.toString());
         item.setItemName(x.toString());
@@ -593,7 +593,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 }
                 // fallthrough
             case "DATE_ADD":
-                MySqlIntervalExpr intervalExpr = (MySqlIntervalExpr) (x.getParameters().get(1));
+                SQLIntervalExpr intervalExpr = (SQLIntervalExpr) (x.getParameters().get(1));
                 item = new ItemDateAddInterval(args.get(0), getItem(intervalExpr.getValue()), getIntervalUnit(x.getParameters().get(1)), false);
                 break;
             case "SUBDATE":
@@ -603,7 +603,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 }
                 // fallthrough
             case "DATE_SUB":
-                MySqlIntervalExpr valueExpr = (MySqlIntervalExpr) (x.getParameters().get(1));
+                SQLIntervalExpr valueExpr = (SQLIntervalExpr) (x.getParameters().get(1));
                 item = new ItemDateAddInterval(args.get(0), getItem(valueExpr.getValue()), getIntervalUnit(x.getParameters().get(1)), true);
                 break;
             case "TIMESTAMPADD":
@@ -886,7 +886,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     }
 
     private SQLIntervalUnit getIntervalUnit(SQLExpr expr) {
-        return ((MySqlIntervalExpr) expr).getUnit();
+        return ((SQLIntervalExpr) expr).getUnit();
     }
 
     private void initName(SQLExpr expr) {

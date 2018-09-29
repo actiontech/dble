@@ -7,7 +7,7 @@ package com.actiontech.dble.route.parser.druid;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlReplaceStatement;
+import com.alibaba.druid.sql.ast.statement.SQLReplaceStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitor;
 
 import java.util.ArrayList;
@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Created by szf on 2017/8/22.
  */
-public class ReplaceTemp extends MySqlReplaceStatement {
+public class ReplaceTemp extends SQLReplaceStatement {
 
     @Override
     public List<SQLInsertStatement.ValuesClause> getValuesList() {
@@ -41,7 +41,7 @@ public class ReplaceTemp extends MySqlReplaceStatement {
 
     private List<SQLExpr> columns = new ArrayList();
 
-    public ReplaceTemp(MySqlReplaceStatement statement) {
+    public ReplaceTemp(SQLReplaceStatement statement) {
         this.setLowPriority(statement.isLowPriority());
         this.setDelayed(statement.isDelayed());
         this.setValuesList(statement.getValuesList());

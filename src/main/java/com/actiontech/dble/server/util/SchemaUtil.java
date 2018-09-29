@@ -22,7 +22,7 @@ import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUnionQuery;
+import com.alibaba.druid.sql.ast.statement.SQLUnionQuery;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 
 import java.sql.SQLException;
@@ -104,14 +104,14 @@ public final class SchemaUtil {
         if (sqlSelectQuery instanceof MySqlSelectQueryBlock) {
             MySqlSelectQueryBlock mySqlSelectQueryBlock = (MySqlSelectQueryBlock) sqlSelectQuery;
             return isNoSharding(source, mySqlSelectQueryBlock.getFrom(), selectStmt, childSelectStmt, contextSchema, schemas, dataNode);
-        } else if (sqlSelectQuery instanceof MySqlUnionQuery) {
-            return isNoSharding(source, (MySqlUnionQuery) sqlSelectQuery, selectStmt, contextSchema, schemas, dataNode);
+        } else if (sqlSelectQuery instanceof SQLUnionQuery) {
+            return isNoSharding(source, (SQLUnionQuery) sqlSelectQuery, selectStmt, contextSchema, schemas, dataNode);
         } else {
             return false;
         }
     }
 
-    private static boolean isNoSharding(ServerConnection source, MySqlUnionQuery sqlSelectQuery, SQLStatement stmt, String contextSchema, Set<String> schemas, StringPtr dataNode)
+    private static boolean isNoSharding(ServerConnection source, SQLUnionQuery sqlSelectQuery, SQLStatement stmt, String contextSchema, Set<String> schemas, StringPtr dataNode)
             throws SQLException {
         SQLSelectQuery left = sqlSelectQuery.getLeft();
         SQLSelectQuery right = sqlSelectQuery.getRight();

@@ -16,7 +16,7 @@ import com.actiontech.dble.plan.common.time.*;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlIntervalExpr;
-import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlIntervalUnit;
+import com.alibaba.druid.sql.ast.expr.SQLIntervalUnit;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,10 +24,10 @@ import java.util.List;
 
 public class ItemDateAddInterval extends ItemTemporalHybridFunc {
     StringPtr strValue = new StringPtr("");
-    private MySqlIntervalUnit intType;
+    private SQLIntervalUnit intType;
     private boolean dateSubInterval;
 
-    public ItemDateAddInterval(Item a, Item b, MySqlIntervalUnit type, boolean neg) {
+    public ItemDateAddInterval(Item a, Item b, SQLIntervalUnit type, boolean neg) {
         super(new ArrayList<Item>());
         args.add(a);
         args.add(b);
@@ -58,11 +58,11 @@ public class ItemDateAddInterval extends ItemTemporalHybridFunc {
          */
         arg0FieldType = args.get(0).fieldType();
         int intervalDec = 0;
-        if (intType == MySqlIntervalUnit.MICROSECOND || intType == MySqlIntervalUnit.DAY_MICROSECOND ||
-                intType == MySqlIntervalUnit.HOUR_MICROSECOND || intType == MySqlIntervalUnit.MINUTE_MICROSECOND ||
-                intType == MySqlIntervalUnit.SECOND_MICROSECOND)
+        if (intType == SQLIntervalUnit.MICROSECOND || intType == SQLIntervalUnit.DAY_MICROSECOND ||
+                intType == SQLIntervalUnit.HOUR_MICROSECOND || intType == SQLIntervalUnit.MINUTE_MICROSECOND ||
+                intType == SQLIntervalUnit.SECOND_MICROSECOND)
             intervalDec = MyTime.DATETIME_MAX_DECIMALS;
-        else if (intType == MySqlIntervalUnit.SECOND && args.get(1).getDecimals() > 0)
+        else if (intType == SQLIntervalUnit.SECOND && args.get(1).getDecimals() > 0)
             intervalDec = Math.min(args.get(1).getDecimals(), MyTime.DATETIME_MAX_DECIMALS);
 
         if (arg0FieldType == FieldTypes.MYSQL_TYPE_DATETIME ||
@@ -71,9 +71,9 @@ public class ItemDateAddInterval extends ItemTemporalHybridFunc {
             fixLengthAndDecAndCharsetDatetime(MyTime.MAX_DATETIME_WIDTH, dec);
             cachedFieldType = FieldTypes.MYSQL_TYPE_DATETIME;
         } else if (arg0FieldType == FieldTypes.MYSQL_TYPE_DATE) {
-            if (intType == MySqlIntervalUnit.YEAR || intType == MySqlIntervalUnit.QUARTER ||
-                    intType == MySqlIntervalUnit.MONTH || intType == MySqlIntervalUnit.WEEK ||
-                    intType == MySqlIntervalUnit.DAY || intType == MySqlIntervalUnit.YEAR_MONTH) {
+            if (intType == SQLIntervalUnit.YEAR || intType == SQLIntervalUnit.QUARTER ||
+                    intType == SQLIntervalUnit.MONTH || intType == SQLIntervalUnit.WEEK ||
+                    intType == SQLIntervalUnit.DAY || intType == SQLIntervalUnit.YEAR_MONTH) {
                 cachedFieldType = FieldTypes.MYSQL_TYPE_DATE;
                 fixLengthAndDecAndCharsetDatetime(MyTime.MAX_DATE_WIDTH, 0);
             } else {

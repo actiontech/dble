@@ -14,16 +14,16 @@ import com.actiontech.dble.plan.common.time.MyTime;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
-import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlIntervalUnit;
+import com.alibaba.druid.sql.ast.expr.SQLIntervalUnit;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ItemFuncTimestampDiff extends ItemIntFunc {
-    private MySqlIntervalUnit intType;
+    private SQLIntervalUnit intType;
 
-    public ItemFuncTimestampDiff(Item a, Item b, MySqlIntervalUnit type) {
+    public ItemFuncTimestampDiff(Item a, Item b, SQLIntervalUnit type) {
         super(new ArrayList<Item>());
         args.add(a);
         args.add(b);
@@ -60,8 +60,8 @@ public class ItemFuncTimestampDiff extends ItemIntFunc {
             neg = -1;
 
         long seconds = lpseconds.get(), microseconds = lpmicroseconds.get();
-        if (intType == MySqlIntervalUnit.YEAR || intType == MySqlIntervalUnit.QUARTER ||
-                intType == MySqlIntervalUnit.MONTH) {
+        if (intType == SQLIntervalUnit.YEAR || intType == SQLIntervalUnit.QUARTER ||
+                intType == SQLIntervalUnit.MONTH) {
             long yearBeg, yearEnd, monthBeg, monthEnd, dayBeg, dayEnd;
             long years = 0;
             long secondBeg, secondEnd, microsecondBeg, microsecondEnd;

@@ -14,7 +14,7 @@ import com.actiontech.dble.plan.common.locale.MyLocales;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.plan.common.ptr.LongPtr;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
-import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlIntervalUnit;
+import com.alibaba.druid.sql.ast.expr.SQLIntervalUnit;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -1210,27 +1210,27 @@ public final class MyTime {
         return rc;
     }
 
-    public static boolean dateAddInterval(MySQLTime ltime, MySqlIntervalUnit intType, Interval interval) {
+    public static boolean dateAddInterval(MySQLTime ltime, SQLIntervalUnit intType, Interval interval) {
         long period, sign;
 
         ltime.setNeg(false);
 
         sign = (interval.isNeg() ? -1 : 1);
 
-        if (intType == MySqlIntervalUnit.SECOND ||
-                intType == MySqlIntervalUnit.SECOND_MICROSECOND ||
-                intType == MySqlIntervalUnit.MICROSECOND ||
-                intType == MySqlIntervalUnit.MINUTE ||
-                intType == MySqlIntervalUnit.HOUR ||
-                intType == MySqlIntervalUnit.MINUTE_MICROSECOND ||
-                intType == MySqlIntervalUnit.MINUTE_SECOND ||
-                intType == MySqlIntervalUnit.HOUR_MICROSECOND ||
-                intType == MySqlIntervalUnit.HOUR_SECOND ||
-                intType == MySqlIntervalUnit.HOUR_MINUTE ||
-                intType == MySqlIntervalUnit.DAY_MICROSECOND ||
-                intType == MySqlIntervalUnit.DAY_SECOND ||
-                intType == MySqlIntervalUnit.DAY_MINUTE ||
-                intType == MySqlIntervalUnit.DAY_HOUR) {
+        if (intType == SQLIntervalUnit.SECOND ||
+                intType == SQLIntervalUnit.SECOND_MICROSECOND ||
+                intType == SQLIntervalUnit.MICROSECOND ||
+                intType == SQLIntervalUnit.MINUTE ||
+                intType == SQLIntervalUnit.HOUR ||
+                intType == SQLIntervalUnit.MINUTE_MICROSECOND ||
+                intType == SQLIntervalUnit.MINUTE_SECOND ||
+                intType == SQLIntervalUnit.HOUR_MICROSECOND ||
+                intType == SQLIntervalUnit.HOUR_SECOND ||
+                intType == SQLIntervalUnit.HOUR_MINUTE ||
+                intType == SQLIntervalUnit.DAY_MICROSECOND ||
+                intType == SQLIntervalUnit.DAY_SECOND ||
+                intType == SQLIntervalUnit.DAY_MINUTE ||
+                intType == SQLIntervalUnit.DAY_HOUR) {
             long microseconds, extraSec;
             ltime.setTimeType(MySQLTimestampType.MYSQL_TIMESTAMP_DATETIME); // Return
             // full
@@ -1267,7 +1267,7 @@ public final class MyTime {
             ltime.setYear(ptrYear.get());
             ltime.setMonth(ptrMonth.get());
             ltime.setDay(ptrDay.get());
-        } else if (intType == MySqlIntervalUnit.DAY || intType == MySqlIntervalUnit.WEEK) {
+        } else if (intType == SQLIntervalUnit.DAY || intType == SQLIntervalUnit.WEEK) {
             period = (calcDaynr(ltime.getYear(), ltime.getMonth(), ltime.getDay()) + sign * interval.getDay());
     /* Daynumber from year 0 to 9999-12-31 */
             if (period > MAX_DAY_NUMBER)
@@ -1280,14 +1280,14 @@ public final class MyTime {
             ltime.setMonth(ptrMonth.get());
             ltime.setDay(ptrDay.get());
 
-        } else if (intType == MySqlIntervalUnit.YEAR) {
+        } else if (intType == SQLIntervalUnit.YEAR) {
             ltime.setYear(ltime.getYear() + sign * interval.getYear());
             if (ltime.getYear() >= 10000)
                 return true;
             if (ltime.getMonth() == 2 && ltime.getDay() == 29 && calcDaysInYear(ltime.getYear()) != 366)
                 ltime.setDay(28); // Was leap-year
 
-        } else if (intType == MySqlIntervalUnit.YEAR_MONTH || intType == MySqlIntervalUnit.QUARTER || intType == MySqlIntervalUnit.MONTH) {
+        } else if (intType == SQLIntervalUnit.YEAR_MONTH || intType == SQLIntervalUnit.QUARTER || intType == SQLIntervalUnit.MONTH) {
             period = (ltime.getYear() * 12 + sign * interval.getYear() * 12 + ltime.getMonth() - 1 + sign * interval.getMonth());
             if (period >= 120000L)
                 return true;
@@ -1938,7 +1938,7 @@ public final class MyTime {
         Interval interval = new Interval();
         interval.setSecond(1);
 
-        return dateAddInterval(ltime, MySqlIntervalUnit.SECOND, interval);
+        return dateAddInterval(ltime, SQLIntervalUnit.SECOND, interval);
     }
 
     private static void myTimeTrunc(MySQLTime ltime, int decimals) {
@@ -2038,13 +2038,13 @@ public final class MyTime {
      * To make code easy, allow interval objects without separators.
      */
 
-    public static boolean getIntervalValue(Item arg, MySqlIntervalUnit unit, StringPtr strValue,
+    public static boolean getIntervalValue(Item arg, SQLIntervalUnit unit, StringPtr strValue,
                                            Interval interval) {
         long[] array = new long[5];
         long value = 0;
         //        int int_type = unit.ordinal();
 
-        if (unit == MySqlIntervalUnit.SECOND && arg.getDecimals() != 0) {
+        if (unit == SQLIntervalUnit.SECOND && arg.getDecimals() != 0) {
             BigDecimal decimalValue = arg.valDecimal();
             if (decimalValue == null)
                 return false;
@@ -2060,10 +2060,10 @@ public final class MyTime {
                 interval.setSecondPart((long) ((-decimalValue.doubleValue() - interval.getSecond()) * 1000000));
             }
             return false;
-        } else if (unit == MySqlIntervalUnit.YEAR || unit == MySqlIntervalUnit.QUARTER ||
-                unit == MySqlIntervalUnit.MONTH || unit == MySqlIntervalUnit.WEEK || unit == MySqlIntervalUnit.DAY ||
-                unit == MySqlIntervalUnit.HOUR || unit == MySqlIntervalUnit.MINUTE ||
-                unit == MySqlIntervalUnit.SECOND || unit == MySqlIntervalUnit.MICROSECOND) {
+        } else if (unit == SQLIntervalUnit.YEAR || unit == SQLIntervalUnit.QUARTER ||
+                unit == SQLIntervalUnit.MONTH || unit == SQLIntervalUnit.WEEK || unit == SQLIntervalUnit.DAY ||
+                unit == SQLIntervalUnit.HOUR || unit == SQLIntervalUnit.MINUTE ||
+                unit == SQLIntervalUnit.SECOND || unit == SQLIntervalUnit.MICROSECOND) {
             value = arg.valInt().longValue();
             if (arg.isNullValue())
                 return true;
@@ -2074,53 +2074,53 @@ public final class MyTime {
         }
 
         BoolPtr negPtr = new BoolPtr(interval.isNeg());
-        if (unit == MySqlIntervalUnit.YEAR) {
+        if (unit == SQLIntervalUnit.YEAR) {
             interval.setYear(value);
 
-        } else if (unit == MySqlIntervalUnit.QUARTER) {
+        } else if (unit == SQLIntervalUnit.QUARTER) {
             interval.setMonth((value * 3));
 
-        } else if (unit == MySqlIntervalUnit.MONTH) {
+        } else if (unit == SQLIntervalUnit.MONTH) {
             interval.setMonth(value);
 
-        } else if (unit == MySqlIntervalUnit.WEEK) {
+        } else if (unit == SQLIntervalUnit.WEEK) {
             interval.setDay((value * 7));
 
-        } else if (unit == MySqlIntervalUnit.DAY) {
+        } else if (unit == SQLIntervalUnit.DAY) {
             interval.setDay(value);
 
-        } else if (unit == MySqlIntervalUnit.HOUR) {
+        } else if (unit == SQLIntervalUnit.HOUR) {
             interval.setHour(value);
 
-        } else if (unit == MySqlIntervalUnit.MINUTE) {
+        } else if (unit == SQLIntervalUnit.MINUTE) {
             interval.setMinute(value);
 
-        } else if (unit == MySqlIntervalUnit.SECOND) {
+        } else if (unit == SQLIntervalUnit.SECOND) {
             interval.setSecond(value);
 
-        } else if (unit == MySqlIntervalUnit.MICROSECOND) {
+        } else if (unit == SQLIntervalUnit.MICROSECOND) {
             interval.setSecondPart(value);
 
-        } else if (unit == MySqlIntervalUnit.YEAR_MONTH) {
+        } else if (unit == SQLIntervalUnit.YEAR_MONTH) {
             if (getIntervalInfo(arg, strValue, negPtr, 2, array, false))
                 return true;
             interval.setYear(array[0]);
             interval.setMonth(array[1]);
 
-        } else if (unit == MySqlIntervalUnit.DAY_HOUR) {
+        } else if (unit == SQLIntervalUnit.DAY_HOUR) {
             if (getIntervalInfo(arg, strValue, negPtr, 2, array, false))
                 return true;
             interval.setDay(array[0]);
             interval.setHour(array[1]);
 
-        } else if (unit == MySqlIntervalUnit.DAY_MINUTE) {
+        } else if (unit == SQLIntervalUnit.DAY_MINUTE) {
             if (getIntervalInfo(arg, strValue, negPtr, 3, array, false))
                 return true;
             interval.setDay(array[0]);
             interval.setHour(array[1]);
             interval.setMinute(array[2]);
 
-        } else if (unit == MySqlIntervalUnit.DAY_SECOND) {
+        } else if (unit == SQLIntervalUnit.DAY_SECOND) {
             if (getIntervalInfo(arg, strValue, negPtr, 4, array, false))
                 return true;
             interval.setDay(array[0]);
@@ -2128,26 +2128,26 @@ public final class MyTime {
             interval.setMinute(array[2]);
             interval.setSecond(array[3]);
 
-        } else if (unit == MySqlIntervalUnit.HOUR_MINUTE) {
+        } else if (unit == SQLIntervalUnit.HOUR_MINUTE) {
             if (getIntervalInfo(arg, strValue, negPtr, 2, array, false))
                 return true;
             interval.setHour(array[0]);
             interval.setMinute(array[1]);
 
-        } else if (unit == MySqlIntervalUnit.HOUR_SECOND) {
+        } else if (unit == SQLIntervalUnit.HOUR_SECOND) {
             if (getIntervalInfo(arg, strValue, negPtr, 3, array, false))
                 return true;
             interval.setHour(array[0]);
             interval.setMinute(array[1]);
             interval.setSecond(array[2]);
 
-        } else if (unit == MySqlIntervalUnit.MINUTE_SECOND) {
+        } else if (unit == SQLIntervalUnit.MINUTE_SECOND) {
             if (getIntervalInfo(arg, strValue, negPtr, 2, array, false))
                 return true;
             interval.setMinute(array[0]);
             interval.setSecond(array[1]);
 
-        } else if (unit == MySqlIntervalUnit.DAY_MICROSECOND) {
+        } else if (unit == SQLIntervalUnit.DAY_MICROSECOND) {
             if (getIntervalInfo(arg, strValue, negPtr, 5, array, true))
                 return true;
             interval.setDay(array[0]);
@@ -2156,7 +2156,7 @@ public final class MyTime {
             interval.setSecond(array[3]);
             interval.setSecondPart(array[4]);
 
-        } else if (unit == MySqlIntervalUnit.HOUR_MICROSECOND) {
+        } else if (unit == SQLIntervalUnit.HOUR_MICROSECOND) {
             if (getIntervalInfo(arg, strValue, negPtr, 4, array, true))
                 return true;
             interval.setHour(array[0]);
@@ -2164,14 +2164,14 @@ public final class MyTime {
             interval.setSecond(array[2]);
             interval.setSecondPart(array[3]);
 
-        } else if (unit == MySqlIntervalUnit.MINUTE_MICROSECOND) {
+        } else if (unit == SQLIntervalUnit.MINUTE_MICROSECOND) {
             if (getIntervalInfo(arg, strValue, negPtr, 3, array, true))
                 return true;
             interval.setMinute(array[0]);
             interval.setSecond(array[1]);
             interval.setSecondPart(array[2]);
 
-        } else if (unit == MySqlIntervalUnit.SECOND_MICROSECOND) {
+        } else if (unit == SQLIntervalUnit.SECOND_MICROSECOND) {
             if (getIntervalInfo(arg, strValue, negPtr, 2, array, true))
                 return true;
             interval.setSecond(array[0]);

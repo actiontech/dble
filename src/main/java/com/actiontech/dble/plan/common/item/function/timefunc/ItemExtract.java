@@ -16,16 +16,16 @@ import com.actiontech.dble.plan.common.time.MySQLTime;
 import com.actiontech.dble.plan.common.time.MyTime;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlExtractExpr;
-import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlIntervalUnit;
+import com.alibaba.druid.sql.ast.expr.SQLIntervalUnit;
 
 import java.math.BigInteger;
 import java.util.List;
 
 public class ItemExtract extends ItemIntFunc {
-    private MySqlIntervalUnit intType;
+    private SQLIntervalUnit intType;
     private boolean dateValue;
 
-    public ItemExtract(Item a, MySqlIntervalUnit intType) {
+    public ItemExtract(Item a, SQLIntervalUnit intType) {
         super(a);
         this.intType = intType;
     }

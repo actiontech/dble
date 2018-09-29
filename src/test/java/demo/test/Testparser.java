@@ -42,7 +42,7 @@ public class Testparser {
                 "\t@@time_zone AS time_zone,\n" +
                 "\t@@tx_isolation AS tx_isolation,\n" +
                 "\t@@wait_timeout AS wait_timeout;";
-        obj.test(strSetSql);
+//        obj.test(strSetSql);
         strSetSql = "SET SESSION sql_mode = 'TRADITIONAL';";
         obj.test(strSetSql);
         strSetSql = "SET SESSION sql_mode = `TRADITIONAL`;";

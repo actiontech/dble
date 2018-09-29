@@ -480,9 +480,9 @@ public final class PlanUtil {
             } else if (arg instanceof ItemInSubQuery) {
                 ItemInSubQuery inSubItem = (ItemInSubQuery) arg;
                 if (inSubItem.getValue().size() == 0 && !inSubItem.isContainNull()) {
-                    return genBoolItem(inSubItem.isNeg());
+                    itemTmp.arguments().set(index, genBoolItem(inSubItem.isNeg()));
                 } else if (inSubItem.getValue().size() == 0 && inSubItem.isContainNull()) {
-                    return new ItemNull();
+                    itemTmp.arguments().set(index, new ItemNull());
                 } else {
                     int argSize = inSubItem.getValue().size() + 1;
                     if (inSubItem.isContainNull()) {
@@ -496,8 +496,6 @@ public final class PlanUtil {
                     newArgs.addAll(inSubItem.getValue());
                     itemTmp.arguments().set(index, new ItemFuncIn(newArgs, inSubItem.isNeg()));
                 }
-                itemTmp.setItemName(null);
-                return itemTmp;
             } else if (arg instanceof ItemFunc) {
                 itemTmp.arguments().set(index, rebuildSubQueryItem(arg));
             }

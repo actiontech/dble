@@ -52,7 +52,7 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlCharExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlExtractExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlIntervalExpr;
-import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlIntervalUnit;
+import com.alibaba.druid.sql.ast.expr.SQLIntervalUnit;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
 import com.alibaba.druid.sql.parser.SQLExprParser;
@@ -588,7 +588,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 break;
             case "ADDDATE":
                 if (x.getParameters().get(1) instanceof SQLIntegerExpr) {
-                    item = new ItemDateAddInterval(args.get(0), args.get(1), MySqlIntervalUnit.DAY, false);
+                    item = new ItemDateAddInterval(args.get(0), args.get(1), SQLIntervalUnit.DAY, false);
                     break;
                 }
                 // fallthrough
@@ -598,7 +598,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 break;
             case "SUBDATE":
                 if (x.getParameters().get(1) instanceof SQLIntegerExpr) {
-                    item = new ItemDateAddInterval(args.get(0), args.get(1), MySqlIntervalUnit.DAY, true);
+                    item = new ItemDateAddInterval(args.get(0), args.get(1), SQLIntervalUnit.DAY, true);
                     break;
                 }
                 // fallthrough
@@ -608,11 +608,11 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 break;
             case "TIMESTAMPADD":
                 SQLIdentifierExpr addUnit = (SQLIdentifierExpr) x.getParameters().get(0);
-                item = new ItemDateAddInterval(args.get(2), args.get(1), MySqlIntervalUnit.valueOf(addUnit.getSimpleName()), false);
+                item = new ItemDateAddInterval(args.get(2), args.get(1), SQLIntervalUnit.valueOf(addUnit.getSimpleName()), false);
                 break;
             case "TIMESTAMPDIFF":
                 SQLIdentifierExpr diffUnit = (SQLIdentifierExpr) x.getParameters().get(0);
-                item = new ItemFuncTimestampDiff(args.get(1), args.get(2), MySqlIntervalUnit.valueOf(diffUnit.getSimpleName()));
+                item = new ItemFuncTimestampDiff(args.get(1), args.get(2), SQLIntervalUnit.valueOf(diffUnit.getSimpleName()));
                 break;
             case "VAR_SAMP":
                 item = new ItemSumVariance(args, 1, false, null);
@@ -885,7 +885,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         return args;
     }
 
-    private MySqlIntervalUnit getIntervalUnit(SQLExpr expr) {
+    private SQLIntervalUnit getIntervalUnit(SQLExpr expr) {
         return ((MySqlIntervalExpr) expr).getUnit();
     }
 

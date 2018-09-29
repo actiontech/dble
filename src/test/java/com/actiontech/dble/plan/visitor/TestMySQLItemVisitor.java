@@ -123,9 +123,9 @@ public class TestMySQLItemVisitor {
 
     }
 
-    //	private MySqlUnionQuery getUnionQuery(String sql){
+    //	private SQLUnionQuery getUnionQuery(String sql){
     //		SQLSelect select = getSelect(sql);
-    //		return (MySqlUnionQuery)select.getQuery();
+    //		return (SQLUnionQuery)select.getQuery();
     //	}
     private SQLSelect getSelect(String sql) {
         SQLSelectStatement stament = getSelectStatement(sql);

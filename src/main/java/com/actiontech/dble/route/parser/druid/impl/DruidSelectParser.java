@@ -35,7 +35,7 @@ import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUnionQuery;
+import com.alibaba.druid.sql.ast.statement.SQLUnionQuery;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlExprParser;
 
 import java.sql.SQLException;
@@ -133,7 +133,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                     mysqlFrom instanceof SQLUnionQueryTableSource) {
                 return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc);
             }
-        } else if (sqlSelectQuery instanceof MySqlUnionQuery) {
+        } else if (sqlSelectQuery instanceof SQLUnionQuery) {
             return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc);
         }
 

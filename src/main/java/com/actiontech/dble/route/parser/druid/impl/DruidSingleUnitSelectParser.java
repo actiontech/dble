@@ -18,7 +18,7 @@ import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUnionQuery;
+import com.alibaba.druid.sql.ast.statement.SQLUnionQuery;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
@@ -70,7 +70,7 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
             if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode()) && !sc.isAutocommit()) {
                 rrs.setCanRunInReadDB(false);
             }
-        } else if (sqlSelectQuery instanceof MySqlUnionQuery) {
+        } else if (sqlSelectQuery instanceof SQLUnionQuery) {
             StringPtr noShardingNode = new StringPtr(null);
             Set<String> schemas = new HashSet<>();
             if (SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, schemas, noShardingNode)) {

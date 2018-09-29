@@ -29,7 +29,7 @@ import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUnionQuery;
+import com.alibaba.druid.sql.ast.statement.SQLUnionQuery;
 
 import java.sql.SQLNonTransientException;
 import java.util.ArrayList;
@@ -70,8 +70,8 @@ public class MySQLPlanNodeVisitor {
     public void visit(SQLSelectQuery node) {
         if (node instanceof MySqlSelectQueryBlock) {
             visit((MySqlSelectQueryBlock) node);
-        } else if (node instanceof MySqlUnionQuery) {
-            visit((MySqlUnionQuery) node);
+        } else if (node instanceof SQLUnionQuery) {
+            visit((SQLUnionQuery) node);
         }
     }
 
@@ -90,11 +90,6 @@ public class MySQLPlanNodeVisitor {
         if (orderBy != null) {
             handleOrderBy(orderBy);
         }
-        return true;
-    }
-
-    public boolean visit(MySqlUnionQuery sqlSelectQuery) {
-        visit((SQLUnionQuery) sqlSelectQuery);
         SQLLimit limit = sqlSelectQuery.getLimit();
         if (limit != null) {
             handleLimit(limit);

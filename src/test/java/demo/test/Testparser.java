@@ -647,7 +647,7 @@ public class Testparser {
                        System.out.println("---------------------------");
                    }
                 }
-            } else if (sqlSelectQuery instanceof MySqlUnionQuery) {
+            } else if (sqlSelectQuery instanceof SQLUnionQuery) {
             }
 
         } else if (statement instanceof MySqlShowColumnsStatement) {

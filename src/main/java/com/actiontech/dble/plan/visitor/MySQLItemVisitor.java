@@ -713,7 +713,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 
     @Override
     public void endVisit(SQLBinaryExpr x) {
-        String binary = x.getValue();
+        String binary = x.getText();
         if (StringUtil.equals(binary, "")) {
             item = new ItemString(binary);
         } else {

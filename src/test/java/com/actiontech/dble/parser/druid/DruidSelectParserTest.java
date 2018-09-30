@@ -59,11 +59,9 @@ public class DruidSelectParserTest {
 
     public Object invokeGroupBy(String functionColumn) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         Map<String, String> aliaColumns = new TreeMap<>();
-        SQLIdentifierExpr sqlExpr = mock(SQLIdentifierExpr.class);
-        SQLIdentifierExpr expr = mock(SQLIdentifierExpr.class);
+        SQLIdentifierExpr sqlExpr = new SQLIdentifierExpr(functionColumn);
         List<SQLExpr> groupByItems = new ArrayList<>();
         groupByItems.add(sqlExpr);
-        when((sqlExpr).getName()).thenReturn(functionColumn);
         Class c = DruidSelectParser.class;
         Method method = c.getDeclaredMethod("buildGroupByCols", new Class[]{List.class, Map.class});
         method.setAccessible(true);

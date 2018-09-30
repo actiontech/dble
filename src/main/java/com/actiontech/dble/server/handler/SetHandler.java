@@ -24,8 +24,7 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.SQLAssignItem;
 import com.alibaba.druid.sql.ast.statement.SQLSetStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSetCharSetStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSetNamesStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlCharExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSetTransactionStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
@@ -36,6 +35,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 
 /**
  * SetHandler
@@ -98,36 +98,10 @@ public final class SetHandler {
         SQLStatement statement = parseSQL(stmt);
         if (statement instanceof SQLSetStatement) {
             List<SQLAssignItem> assignItems = ((SQLSetStatement) statement).getItems();
-            if (assignItems.size() == 1 && contextTask.size() == 0) {
+            if (assignItems.size() == 1) {
                 return handleSingleVariable(stmt, assignItems.get(0), c, contextTask);
             } else {
                 return handleSetMultiStatement(assignItems, c, contextTask);
-            }
-        } else if (statement instanceof MySqlSetNamesStatement) {
-            MySqlSetNamesStatement setNamesStatement = (MySqlSetNamesStatement) statement;
-            if (contextTask.size() > 0 || stmt.contains(",")) {
-                int index = stmt.indexOf(",");
-                if (handleSetNamesInMultiStmt(c, stmt.substring(0, index), setNamesStatement.isDefault(), setNamesStatement.getCharSet(), setNamesStatement.getCollate(), contextTask)) {
-                    String newStmt = "set " + stmt.substring(index + 1);
-                    return handleSetStatement(newStmt, c, contextTask);
-                } else {
-                    return false;
-                }
-            } else {
-                return handleSingleSetNames(stmt, c, setNamesStatement);
-            }
-        } else if (statement instanceof MySqlSetCharSetStatement) {
-            MySqlSetCharSetStatement setCharSetStatement = (MySqlSetCharSetStatement) statement;
-            if (contextTask.size() > 0 || stmt.contains(",")) {
-                if (handleCharsetInMultiStmt(c, setCharSetStatement.isDefault(), setCharSetStatement.getCharSet(), contextTask)) {
-                    int index = stmt.indexOf(",");
-                    String newStmt = "set " + stmt.substring(index + 1);
-                    return handleSetStatement(newStmt, c, contextTask);
-                } else {
-                    return false;
-                }
-            } else {
-                return handleSingleSetCharset(stmt, c, setCharSetStatement);
             }
         } else if (statement instanceof MySqlSetTransactionStatement) {
             return handleTransaction(c, (MySqlSetTransactionStatement) statement);
@@ -137,8 +111,8 @@ public final class SetHandler {
         }
     }
 
-    private static boolean handleSetNamesInMultiStmt(ServerConnection c, String stmt, boolean isDefault, String charset, String collate, List<Pair<KeyType, Pair<String, String>>> contextTask) {
-        NamesInfo charsetInfo = checkSetNames(stmt, isDefault, charset, collate);
+    private static boolean handleSetNamesInMultiStmt(ServerConnection c, String stmt, String charset, String collate, List<Pair<KeyType, Pair<String, String>>> contextTask) {
+        NamesInfo charsetInfo = checkSetNames(stmt, charset, collate);
         if (charsetInfo != null) {
             if (charsetInfo.charset == null) {
                 c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set  '" + charset + " or collate '" + collate + "'");
@@ -159,14 +133,15 @@ public final class SetHandler {
         }
     }
 
-    private static boolean handleSingleSetNames(String stmt, ServerConnection c, MySqlSetNamesStatement statement) {
-        NamesInfo charsetInfo = checkSetNames(stmt, statement.isDefault(), statement.getCharSet(), statement.getCollate());
+    private static boolean handleSingleSetNames(String stmt, ServerConnection c, SQLExpr valueExpr) {
+        String[] charsetAndCollate = parseNamesValue(valueExpr);
+        NamesInfo charsetInfo = checkSetNames(stmt, charsetAndCollate[0], charsetAndCollate[1]);
         if (charsetInfo != null) {
             if (charsetInfo.charset == null) {
                 c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set in statement '" + stmt + "");
                 return false;
             } else if (charsetInfo.collation == null) {
-                c.writeErrMessage(ErrorCode.ER_COLLATION_CHARSET_MISMATCH, "COLLATION '" + statement.getCollate() + "' is not valid for CHARACTER SET '" + statement.getCharSet() + "'");
+                c.writeErrMessage(ErrorCode.ER_COLLATION_CHARSET_MISMATCH, "COLLATION '" + charsetAndCollate[1] + "' is not valid for CHARACTER SET '" + charsetAndCollate[0] + "'");
                 return false;
             } else if (!charsetInfo.isSupport) {
                 c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of '" + charsetInfo.charset + "'");
@@ -182,8 +157,13 @@ public final class SetHandler {
         }
     }
 
-    private static boolean handleSingleSetCharset(String stmt, ServerConnection c, MySqlSetCharSetStatement statement) {
-        String charset = getCharset(statement.isDefault(), statement.getCharSet());
+    private static boolean handleSingleSetCharset(String stmt, ServerConnection c, SQLExpr valueExpr) {
+        String charsetValue = parseStringValue(valueExpr);
+        if (charsetValue == null || charsetValue.equalsIgnoreCase("null")) {
+            c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set null");
+            return false;
+        }
+        String charset = getCharset(charsetValue);
         if (charset != null) {
             if (!CharsetUtil.checkCharsetClient(charset)) {
                 c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of '" + charset + "'");
@@ -246,13 +226,13 @@ public final class SetHandler {
             case NAMES: {
                 String charset = parseStringValue(valueExpr);
                 //TODO:druid lost collation info
-                if (!handleSetNamesInMultiStmt(c, "SET NAMES " + charset, false, charset, null, contextTask))
+                if (!handleSetNamesInMultiStmt(c, "SET NAMES " + charset, charset, null, contextTask))
                     return false;
                 break;
             }
             case CHARSET: {
                 String charset = parseStringValue(valueExpr);
-                if (!handleCharsetInMultiStmt(c, false, charset, contextTask)) return false;
+                if (!handleCharsetInMultiStmt(c, charset, contextTask)) return false;
                 break;
             }
             case CHARACTER_SET_CLIENT:
@@ -292,8 +272,8 @@ public final class SetHandler {
         return true;
     }
 
-    private static boolean handleCharsetInMultiStmt(ServerConnection c, boolean isDefault, String charset, List<Pair<KeyType, Pair<String, String>>> contextTask) {
-        String charsetInfo = getCharset(isDefault, charset);
+    private static boolean handleCharsetInMultiStmt(ServerConnection c, String charset, List<Pair<KeyType, Pair<String, String>>> contextTask) {
+        String charsetInfo = getCharset(charset);
         if (charsetInfo != null) {
             if (!CharsetUtil.checkCharsetClient(charsetInfo)) {
                 c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of '" + charsetInfo + "'");
@@ -372,7 +352,7 @@ public final class SetHandler {
 
     private static boolean handleCharsetClientInMultiStmt(ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask, SQLExpr valueExpr) {
         String charsetClient = parseStringValue(valueExpr);
-        if (charsetClient.equals("null")) {
+        if (charsetClient.equalsIgnoreCase("null")) {
             c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of 'NULL'");
             return false;
         } else if (checkCharset(charsetClient)) {
@@ -399,6 +379,10 @@ public final class SetHandler {
             return false;
         }
         switch (keyType) {
+            case NAMES:
+                return handleSingleSetNames(stmt, c, valueExpr);
+            case CHARSET:
+                return handleSingleSetCharset(stmt, c, valueExpr);
             case XA:
                 return handleSingleXA(c, valueExpr);
             case TRACE:
@@ -529,7 +513,7 @@ public final class SetHandler {
 
     private static boolean handleSingleCharsetClient(ServerConnection c, SQLExpr valueExpr) {
         String charsetClient = parseStringValue(valueExpr);
-        if (charsetClient.equals("null")) {
+        if (charsetClient.equalsIgnoreCase("null")) {
             c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of 'NULL'");
             return false;
         }
@@ -662,10 +646,10 @@ public final class SetHandler {
         if (keyType == KeyType.USER_VARIABLES) {
             return !(valueExpr instanceof SQLQueryExpr);
         }
-        return (valueExpr instanceof SQLCharExpr) || (valueExpr instanceof SQLIdentifierExpr) ||
-                (valueExpr instanceof SQLIntegerExpr) || (valueExpr instanceof SQLNumberExpr) ||
-                (valueExpr instanceof SQLBooleanExpr) || (valueExpr instanceof SQLDefaultExpr) ||
-                (valueExpr instanceof SQLNullExpr);
+        return (valueExpr instanceof MySqlCharExpr) || (valueExpr instanceof SQLCharExpr) ||
+                (valueExpr instanceof SQLIdentifierExpr) || (valueExpr instanceof SQLIntegerExpr) ||
+                (valueExpr instanceof SQLNumberExpr) || (valueExpr instanceof SQLBooleanExpr) ||
+                (valueExpr instanceof SQLDefaultExpr) || (valueExpr instanceof SQLNullExpr);
     }
 
     private static KeyType parseKeyType(String key, boolean origin, KeyType defaultVariables) {
@@ -755,6 +739,16 @@ public final class SetHandler {
         return strValue;
     }
 
+    private static String[] parseNamesValue(SQLExpr valueExpr) {
+        if (valueExpr instanceof MySqlCharExpr) {
+            MySqlCharExpr value = (MySqlCharExpr) valueExpr;
+            return new String[]{value.getText().toLowerCase(), StringUtil.removeBackQuote(value.getCollate()).toLowerCase()};
+        } else {
+            String charset = parseStringValue(valueExpr);
+            return new String[]{charset, null};
+        }
+    }
+
     private static String parseStringValue(SQLExpr valueExpr) {
         String strValue = "";
         if (valueExpr instanceof SQLIdentifierExpr) {
@@ -824,8 +818,8 @@ public final class SetHandler {
         return ci > 0;
     }
 
-    private static String getCharset(boolean isDefault, String charset) {
-        if (isDefault || charset.toLowerCase().equals("default")) {
+    private static String getCharset(String charset) {
+        if (charset.toLowerCase().equals("default")) {
             charset = DbleServer.getInstance().getConfig().getSystem().getCharset();
         }
         charset = StringUtil.removeApostropheOrBackQuote(charset.toLowerCase());
@@ -844,11 +838,11 @@ public final class SetHandler {
         return ma.matches();
     }
 
-    private static NamesInfo checkSetNames(String stmt, boolean isDefault, String charset, String collate) {
+    private static NamesInfo checkSetNames(String stmt, String charset, String collate) {
         if (collate == null && !(checkSetNamesSyntax(stmt))) {
             return null;
         }
-        if (isDefault || charset.toLowerCase().equals("default")) {
+        if (charset.toLowerCase().equals("default")) {
             charset = DbleServer.getInstance().getConfig().getSystem().getCharset();
         } else {
             charset = StringUtil.removeApostropheOrBackQuote(charset.toLowerCase());

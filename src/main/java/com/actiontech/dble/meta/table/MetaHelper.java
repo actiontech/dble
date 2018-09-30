@@ -20,6 +20,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.MySqlPrimaryKey;
 import com.alibaba.druid.sql.dialect.mysql.ast.MySqlUnique;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlTableIndex;
+import com.alibaba.druid.sql.dialect.mysql.parser.MySqlCreateTableParser;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import org.slf4j.Logger;
@@ -40,7 +41,7 @@ public final class MetaHelper {
 
     public static StructureMeta.TableMeta initTableMeta(String table, String sql, long timeStamp) {
         try {
-            SQLStatementParser parser = new CreateTableParserImp(sql);
+            SQLStatementParser parser = new MySqlCreateTableParser(sql);
             SQLCreateTableStatement createStatement = parser.parseCreateTable();
             return MetaHelper.initTableMeta(table, sql, createStatement, timeStamp);
         } catch (Exception e) {

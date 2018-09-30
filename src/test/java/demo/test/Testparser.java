@@ -9,6 +9,7 @@ import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.MySqlPrimaryKey;
 import com.alibaba.druid.sql.dialect.mysql.ast.MySqlUnique;
 import com.alibaba.druid.sql.dialect.mysql.ast.MysqlForeignKey;
+import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlCharExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlExtractExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
@@ -20,6 +21,7 @@ public class Testparser {
         Testparser obj = new Testparser();
         //		obj.test("CREATE TABLE `char_columns_test` (`id` int(11) NOT NULL,`c_char` char(255) DEFAULT NULL,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
         //		obj.test("CREATE TABLE `xx`.`char_columns_test` (`id` int(11) NOT NULL,`c_char` char(255) DEFAULT NULL,PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
+        obj.test("CREATE TABLE `xx`.`char_columns_test` (`id` int(11) NOT NULL,`c_char` char(255) DEFAULT NULL,PRIMARY KEY (`id`),UNIQUE KEY c_charx (c_char) COMMENT '唯一性' ) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
         //		obj.test("drop table char_columns_test;");
         //		obj.test("truncate table char_columns_test;");
         String strSetSql = "SELECT\n" +
@@ -43,19 +45,44 @@ public class Testparser {
                 "\t@@tx_isolation AS tx_isolation,\n" +
                 "\t@@wait_timeout AS wait_timeout;";
 //        obj.test(strSetSql);
-        strSetSql = "SET SESSION sql_mode = 'TRADITIONAL';";
+//        strSetSql = "SET SESSION sql_mode = 'TRADITIONAL';";
+//        obj.test(strSetSql);
+//        strSetSql = "SET SESSION sql_mode = `TRADITIONAL`;";
+//        obj.test(strSetSql);
+//        strSetSql = "SET SESSION sql_mode = \"TRADITIONAL\";";
+//        obj.test(strSetSql);
+        //todo not support
+//        strSetSql = "SET CHARSET utf8;";
+//        obj.test(strSetSql);
+//        strSetSql = "SET CHARSET `utf8`;";
+//        obj.test(strSetSql);
+//        strSetSql = "SET CHARSET 'UTF8';";
+//        obj.test(strSetSql);
+//        strSetSql = "SET CHARSET \"UTF8\";";
+//        obj.test(strSetSql);
+//        strSetSql = "SET CHARSET DEFAULT;";
+//        obj.test(strSetSql);
+//        strSetSql = "SET names \"UTF8\";";
+//        obj.test(strSetSql);
+
+//        strSetSql = "set @@tx_read_only =0,names utf8,charset utf8;";
+//        obj.test(strSetSql);
+
+        strSetSql = "SET CHARACTER SET utf8;";
         obj.test(strSetSql);
-        strSetSql = "SET SESSION sql_mode = `TRADITIONAL`;";
+        strSetSql = "SET CHARACTER SET `utf8`;";
         obj.test(strSetSql);
-        strSetSql = "SET SESSION sql_mode = \"TRADITIONAL\";";
+        strSetSql = "SET CHARACTER SET 'UTF8';";
+        obj.test(strSetSql);
+        strSetSql = "SET CHARACTER SET \"UTF8\";";
+        obj.test(strSetSql);
+        strSetSql = "SET CHARACTER SET DEFAULT;";
         obj.test(strSetSql);
         strSetSql = "SET names utf8;";
         obj.test(strSetSql);
         strSetSql = "SET names `utf8`;";
         obj.test(strSetSql);
         strSetSql = "SET names 'UTF8';";
-        obj.test(strSetSql);
-        strSetSql = "SET names \"UTF8\";";
         obj.test(strSetSql);
         strSetSql = "SET names utf8 COLLATE default;";
         obj.test(strSetSql);
@@ -69,44 +96,42 @@ public class Testparser {
         obj.test(strSetSql);
         strSetSql = "set names utf8,@@tx_read_only =0;";
         obj.test(strSetSql);
+        strSetSql = "set @@tx_read_only =0,names utf8,character set utf8;";
+        obj.test(strSetSql);
         strSetSql = "set @@tx_read_only =0,names utf8;";
         obj.test(strSetSql);
-//        strSetSql = "set @@tx_read_only =0,names utf8,charset utf8;";
-//        obj.test(strSetSql);
-//        strSetSql = "set @@tx_read_only =0,names utf8 collation default;";
-//        obj.test(strSetSql);
-//        strSetSql = "set @@tx_read_only =0;";
-//        obj.test(strSetSql);
-//        strSetSql = "set @@GLOBAL.tx_read_only =0;";
-//        obj.test(strSetSql);
-//        strSetSql = "set @@Session.tx_read_only =0;";
-//        obj.test(strSetSql);
-//        strSetSql = "set tx_read_only =0;";
-//        obj.test(strSetSql);
-//        strSetSql = "set GLOBAL tx_read_only =0;";
-//        obj.test(strSetSql);
-//        strSetSql = "set Session tx_read_only =0;";
-//        obj.test(strSetSql);
-//        strSetSql = "set Session tx_isolation ='READ-COMMITTED';";
-//        obj.test(strSetSql);
-//        strSetSql = "set Session tx_isolation =`READ-COMMITTED`;";
-//        obj.test(strSetSql);
-//        strSetSql = "set Session tx_isolation =\"READ-COMMITTED\";";
-//        obj.test(strSetSql);
-//        strSetSql = "SET charset utf8;";
-//        obj.test(strSetSql);
-//        strSetSql = "SET GLOBAL TRANSACTION ISOLATION LEVEL REPEATABLE READ;";
-//        obj.test(strSetSql);
-//        strSetSql = "SET  SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;";
-//        obj.test(strSetSql);
-//        strSetSql = "SET TRANSACTION ISOLATION LEVEL READ COMMITTED ;";
-//        obj.test(strSetSql);
-//        strSetSql = "SET TRANSACTION READ WRITE;";
-//        obj.test(strSetSql);
-//        strSetSql = "SET TRANSACTION read only;";
-//        obj.test(strSetSql);
-//        strSetSql = "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;";
-//        obj.test(strSetSql);
+        strSetSql = "set @@tx_read_only =0,names utf8 collation default;";
+        obj.test(strSetSql);
+        strSetSql = "set @@tx_read_only =0;";
+        obj.test(strSetSql);
+        strSetSql = "set @@GLOBAL.tx_read_only =0;";
+        obj.test(strSetSql);
+        strSetSql = "set @@session.tx_read_only =0;";
+        obj.test(strSetSql);
+        strSetSql = "set tx_read_only =0;";
+        obj.test(strSetSql);
+        strSetSql = "set GLOBAL tx_read_only =0;";
+        obj.test(strSetSql);
+        strSetSql = "set Session tx_read_only =0;";
+        obj.test(strSetSql);
+        strSetSql = "set Session tx_isolation ='READ-COMMITTED';";
+        obj.test(strSetSql);
+        strSetSql = "set Session tx_isolation =`READ-COMMITTED`;";
+        obj.test(strSetSql);
+        strSetSql = "set Session tx_isolation =\"READ-COMMITTED\";";
+        obj.test(strSetSql);
+        strSetSql = "SET GLOBAL TRANSACTION ISOLATION LEVEL REPEATABLE READ;";
+        obj.test(strSetSql);
+        strSetSql = "SET  SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;";
+        obj.test(strSetSql);
+        strSetSql = "SET TRANSACTION ISOLATION LEVEL READ COMMITTED ;";
+        obj.test(strSetSql);
+        strSetSql = "SET TRANSACTION READ WRITE;";
+        obj.test(strSetSql);
+        strSetSql = "SET TRANSACTION read only;";
+        obj.test(strSetSql);
+        strSetSql = "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;";
+        obj.test(strSetSql);
 //        strSetSql = "SET @total_tax = (SELECT SUM(tax) FROM taxable_transactions);";
 //        obj.test(strSetSql);
 //
@@ -172,7 +197,7 @@ public class Testparser {
         //		obj.test("drop index  idx_test on char_columns_test;");
         String strAlterSql = "";
         		strAlterSql ="alter table char_columns_test add column id2 int(11) NOT NULL after x ALGORITHM = default LOCK =default;";
-        		obj.test(strAlterSql);
+//        		obj.test(strAlterSql);
         //		strAlterSql ="alter table char_columns_test add column id2 int(11) NOT NULL after x;";
         //		obj.test(strAlterSql);
         //		strAlterSql ="alter table char_columns_test add column id2 int(11) NOT NULL,id3 int(11) NOT NULL;";
@@ -282,10 +307,13 @@ public class Testparser {
         //		selectSQl = "SELECT 1 IS NULL,1 IS NOT UNKNOWN,1 IS TRUE, 0 IS FALSE,2 IN (0,3,5,7), 2 >= 2,1 = 0,2 BETWEEN 1 AND 3;";
         //		obj.test(selectSQl);
         //		selectSQl = "select CAST(expr AS datetime(6) ), CAST(expr AS date ), CAST(expr AS time(6) ) from char_columns where id =1  and name = 'x';";
-        //		TODO:NOT SUPPORTED
-        //		selectSQl = "select CAST(expr AS  nchar(2) CHARACTER SET utf8),CAST(expr AS  char(2)), CAST(expr AS  char(2) CHARACTER SET utf8 ),CAST(expr AS  char(2) CHARACTER SET latin1 )  from char_columns where id =1  and name = 'x';";
-        //		selectSQl = "select CAST(expr AS  char(2) CHARACTER SET utf8 ),CAST(expr AS  SIGNED INT ),CAST(expr AS unSIGNED INT )  from char_columns where id =1  and name = 'x';";
-        //		obj.test(selectSQl);
+        selectSQl = "select CAST(expr AS  nchar(2) CHARACTER SET utf8),CAST(expr AS  char(2)), CAST(expr AS  char(2) CHARACTER SET utf8 ),CAST(expr AS  char(2) CHARACTER SET latin1 )  from char_columns where id =1  and name = 'x';";
+        obj.test(selectSQl);
+        selectSQl = "select CAST(expr AS  char(2) CHARACTER SET utf8 ),CAST(expr AS  SIGNED ),CAST(expr AS unSIGNED )  from char_columns where id =1  and name = 'x';";
+        obj.test(selectSQl);
+//        // TODO:NOT SUPPORTED
+//        selectSQl = "select CAST(expr AS  char(2) CHARACTER SET utf8 ),CAST(expr AS  SIGNED INT ),CAST(expr AS unSIGNED INT )  from char_columns where id =1  and name = 'x';";
+//        obj.test(selectSQl);
         //		selectSQl = "select CONVERT(expr ,  char(2))   from char_columns where id =1  and name = 'x';";
         //		obj.test(selectSQl);
         //	    selectSQl = "SELECT CASE 1 WHEN 1 THEN 'one'  WHEN 2 THEN 'two' ELSE 'more' END, CASE WHEN 1>0 THEN 'true' ELSE 'false' END;";
@@ -670,23 +698,40 @@ public class Testparser {
         } else if (statement instanceof SQLSetStatement) {
             SQLSetStatement setStatement = (SQLSetStatement) statement;
             for(SQLAssignItem assignItem:setStatement.getItems()){
-                System.out.println("value is "+assignItem.getValue()+", class is "+assignItem.getValue().getClass());
                 if(assignItem.getTarget() instanceof SQLVariantRefExpr){
                     SQLVariantRefExpr target =  (SQLVariantRefExpr)assignItem.getTarget();
-                    System.out.println("target is " + target + ", global is " + target.isGlobal());
+                    System.out.println("target is " + target + ", global is " + target.isGlobal() + ", session is " + target.isSession());
                 }else if(assignItem.getTarget() instanceof SQLPropertyExpr){
                     SQLPropertyExpr target =  (SQLPropertyExpr)assignItem.getTarget();
                     System.out.println("target is " + target.getName() + ", Owner is " + target.getOwner());
+                } else if(assignItem.getTarget() instanceof SQLIdentifierExpr){
+                    SQLIdentifierExpr target =  (SQLIdentifierExpr)assignItem.getTarget();
+                    System.out.println("target is " + target.getName());
                 } else {
                     System.out.println("target is " + assignItem.getTarget() + ", class is " + assignItem.getTarget().getClass());
                 }
+                if(assignItem.getValue() instanceof SQLIdentifierExpr ){
+                    SQLIdentifierExpr value = (SQLIdentifierExpr)assignItem.getValue();
+                    System.out.println("value is " + value.getName() + ", class is " + assignItem.getValue().getClass());
+                } else if (assignItem.getValue() instanceof MySqlCharExpr) {
+                    MySqlCharExpr value = (MySqlCharExpr) assignItem.getValue();
+                    System.out.println("value is " + value.getText() + ",charset is " + value.getCharset() + ",collate is " + value.getCollate() + ", class is " + assignItem.getValue().getClass());
+                }  else if (assignItem.getValue() instanceof SQLCharExpr) {
+                    SQLCharExpr value = (SQLCharExpr) assignItem.getValue();
+                    System.out.println("value is " + value.getText() + ", class is " + assignItem.getValue().getClass());
+                } else if (assignItem.getValue() instanceof SQLDefaultExpr) {
+                    SQLDefaultExpr value = (SQLDefaultExpr) assignItem.getValue();
+                    System.out.println("value is " + value.toString() + ", class is " + assignItem.getValue().getClass());
+                }else {
+                    System.out.println("value is " + assignItem.getValue() + ", class is " + assignItem.getValue().getClass());
+                }
             }
-        } else if (statement instanceof MySqlSetNamesStatement) {
-            MySqlSetNamesStatement setStatement = (MySqlSetNamesStatement) statement;
-            System.out.println("charset ="+setStatement.getCharSet()+ ",Collate ="+setStatement.getCollate()+",default ="+setStatement.isDefault());
-        } else if (statement instanceof MySqlSetCharSetStatement) {
-            MySqlSetCharSetStatement setStatement = (MySqlSetCharSetStatement) statement;
-            System.out.println("charset ="+setStatement.getCharSet()+ ",Collate ="+setStatement.getCollate()+",default ="+setStatement.isDefault());
+//        } else if (statement instanceof MySqlSetNamesStatement) {
+//            MySqlSetNamesStatement setStatement = (MySqlSetNamesStatement) statement;
+//            System.out.println("charset ="+setStatement.getCharSet()+ ",Collate ="+setStatement.getCollate()+",default ="+setStatement.isDefault());
+//        } else if (statement instanceof MySqlSetCharSetStatement) {
+//            MySqlSetCharSetStatement setStatement = (MySqlSetCharSetStatement) statement;
+//            System.out.println("charset ="+setStatement.getCharSet()+ ",Collate ="+setStatement.getCollate()+",default ="+setStatement.isDefault());
         } else if (statement instanceof MySqlSetTransactionStatement) {
             MySqlSetTransactionStatement setStatement = (MySqlSetTransactionStatement) statement;
             System.out.println("global"+setStatement.getGlobal()+",IsolationLevel="+ setStatement.getIsolationLevel()+",access mode"+setStatement.getAccessModel());

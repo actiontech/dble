@@ -16,7 +16,6 @@ import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
-import com.actiontech.dble.route.parser.druid.ReplaceTemp;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
@@ -414,10 +413,10 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         for (Map.Entry<Integer, List<SQLInsertStatement.ValuesClause>> node : nodeValuesMap.entrySet()) {
             Integer nodeIndex = node.getKey();
             List<SQLInsertStatement.ValuesClause> valuesList = node.getValue();
-            ReplaceTemp temp = new ReplaceTemp(replace);
-            temp.setValuesList(valuesList);
+            replace.getValuesList().clear();
+            replace.getValuesList().addAll(valuesList);
             nodes[count] = new RouteResultsetNode(tableConfig.getDataNodes().get(nodeIndex), rrs.getSqlType(),
-                    RouterUtil.removeSchema(statementToString(temp), schemaInfo.getSchema()));
+                    RouterUtil.removeSchema(statementToString(replace), schemaInfo.getSchema()));
             count++;
         }
         rrs.setNodes(nodes);

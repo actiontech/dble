@@ -276,7 +276,8 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         for (Map.Entry<Integer, List<ValuesClause>> node : nodeValuesMap.entrySet()) {
             Integer nodeIndex = node.getKey();
             List<ValuesClause> valuesList = node.getValue();
-            insertStmt.setValuesList(valuesList);
+            insertStmt.getValuesList().clear();
+            insertStmt.getValuesList().addAll(valuesList);
             nodes[count] = new RouteResultsetNode(tableConfig.getDataNodes().get(nodeIndex), rrs.getSqlType(),
                     RouterUtil.removeSchema(statementToString(insertStmt), schemaInfo.getSchema()));
             count++;

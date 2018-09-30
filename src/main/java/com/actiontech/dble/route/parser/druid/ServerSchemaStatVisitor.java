@@ -20,10 +20,7 @@ import com.alibaba.druid.sql.visitor.SQLEvalVisitorUtils;
 import com.alibaba.druid.stat.TableStat.Column;
 import com.alibaba.druid.stat.TableStat.Condition;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -38,6 +35,8 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     private List<WhereUnit> storedWhereUnits = new CopyOnWriteArrayList<>();
     private boolean notInWhere = false;
     private List<SQLSelect> subQueryList = new ArrayList<>();
+    private Map<String, String> aliasMap = new LinkedHashMap<>();
+    private String currentTable;
 
     private void reset() {
         this.conditions.clear();
@@ -139,7 +138,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
     @Override
     public boolean visit(SQLSelectStatement x) {
-        setAliasMap();
+        aliasMap.clear();
         return true;
     }
 
@@ -185,9 +184,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         }
 
         if (condition == null) {
-            condition = new Condition();
-            condition.setColumn(column);
-            condition.setOperator("between");
+            condition = new Condition(column, "between");
             this.conditions.add(condition);
         }
 
@@ -252,7 +249,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     public boolean visit(MySqlInsertStatement x) {
         SQLName sqlName = x.getTableName();
         if (sqlName != null) {
-            setCurrentTable(sqlName.toString());
+            currentTable = sqlName.toString();
         }
         return false;
     }
@@ -260,7 +257,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     // DUAL
     @Override
     public boolean visit(MySqlDeleteStatement x) {
-        setAliasMap();
+        aliasMap.clear();
 
         accept(x.getFrom());
         accept(x.getUsing());
@@ -268,8 +265,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
         if (x.getTableSource() instanceof SQLExprTableSource) {
             SQLName tableName = (SQLName) ((SQLExprTableSource) x.getTableSource()).getExpr();
-            String ident = tableName.toString();
-            setCurrentTable(x, ident);
+            currentTable = tableName.toString();
         }
 
         accept(x.getWhere());
@@ -282,14 +278,13 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
     @Override
     public boolean visit(SQLUpdateStatement x) {
-        setAliasMap();
+        aliasMap.clear();
 
         SQLName identName = x.getTableName();
         if (identName != null) {
             String ident = identName.toString();
-            setCurrentTable(ident);
+            currentTable = ident;
 
-            Map<String, String> aliasMap = getAliasMap();
             aliasMap.put(ident, ident);
 
             String alias = x.getTableSource().getAlias();
@@ -310,31 +305,20 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     public boolean visit(SQLExprTableSource x) {
         if (this.isSimpleExprTableSource(x)) {
             String ident = x.getExpr().toString();
-            if (this.variants.containsKey(ident)) {
-                return false;
+
+            String alias = x.getAlias();
+            if (alias != null && !aliasMap.containsKey(alias)) {
+                putAliasToMap(alias, ident);
             }
 
-            if (this.containsSubQuery(ident)) {
-                return false;
-            }
-
-            Map<String, String> aliasMap = this.getAliasMap();
-            if (aliasMap != null) {
-                String alias = x.getAlias();
-                if (alias != null && !aliasMap.containsKey(alias)) {
-                    putAliasToMap(aliasMap, alias, ident);
-                }
-
-                if (!aliasMap.containsKey(ident)) {
-                    putAliasToMap(aliasMap, ident, ident);
-                }
+            if (!aliasMap.containsKey(ident)) {
+                putAliasToMap(ident, ident);
             }
         } else {
             this.accept(x.getExpr());
         }
         return false;
     }
-
 
 
     @Override
@@ -365,8 +349,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                 if (x.getFrom() instanceof SQLExprTableSource) {
                     SQLExprTableSource tableSource = (SQLExprTableSource) x.getFrom();
                     if (tableSource.getExpr() instanceof SQLName) {
-                        String ident = tableSource.getExpr().toString();
-                        this.setCurrentTable(ident);
+                        currentTable = tableSource.getExpr().toString();
                     }
                 }
                 if (x.getFrom() != null) {
@@ -396,21 +379,20 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
     @Override
     protected Column getColumn(SQLExpr expr) {
-        Map<String, String> aliasMap = getAliasMap();
         if (aliasMap == null) {
             return null;
         }
 
         if (expr instanceof SQLPropertyExpr) {
-            return getColumnByExpr((SQLPropertyExpr) expr, aliasMap);
+            return getColumnByExpr((SQLPropertyExpr) expr);
         }
 
         if (expr instanceof SQLIdentifierExpr) {
-            return getColumnByExpr((SQLIdentifierExpr) expr, aliasMap);
+            return getColumnByExpr((SQLIdentifierExpr) expr);
         }
 
         if (expr instanceof SQLBetweenExpr) {
-            return getColumnByExpr((SQLBetweenExpr) expr, aliasMap);
+            return getColumnByExpr((SQLBetweenExpr) expr);
         }
         return null;
     }
@@ -435,9 +417,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             }
 
             if (condition == null) {
-                condition = new Condition();
-                condition.setColumn(column);
-                condition.setOperator(operator);
+                condition = new Condition(column, operator);
                 this.conditions.add(condition);
             }
 
@@ -456,21 +436,17 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         }
     }
 
-    private Column getColumnByExpr(SQLBetweenExpr betweenExpr, Map<String, String> aliasMap) {
+    private Column getColumnByExpr(SQLBetweenExpr betweenExpr) {
         if (betweenExpr.getTestExpr() != null) {
             String tableName = null;
             String column = null;
             if (betweenExpr.getTestExpr() instanceof SQLPropertyExpr) { //field has alias
                 tableName = ((SQLIdentifierExpr) ((SQLPropertyExpr) betweenExpr.getTestExpr()).getOwner()).getName();
                 column = ((SQLPropertyExpr) betweenExpr.getTestExpr()).getName();
-                SQLObject query = this.subQueryMap.get(tableName);
-                if (query == null) {
-                    if (aliasMap.containsKey(tableName)) {
-                        tableName = aliasMap.get(tableName);
-                    }
-                    return new Column(tableName, column);
+                if (aliasMap.containsKey(tableName)) {
+                    tableName = aliasMap.get(tableName);
                 }
-                return handleSubQueryColumn(tableName, column);
+                return new Column(tableName, column);
             } else if (betweenExpr.getTestExpr() instanceof SQLIdentifierExpr) {
                 column = ((SQLIdentifierExpr) betweenExpr.getTestExpr()).getName();
                 tableName = getOwnerTableName(betweenExpr, column);
@@ -480,10 +456,6 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                 table = aliasMap.get(table);
             }
 
-            if (variants.containsKey(table)) {
-                return null;
-            }
-
             if (table != null && !"".equals(table)) {
                 return new Column(table, column);
             }
@@ -491,14 +463,9 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         return null;
     }
 
-    private Column getColumnByExpr(SQLIdentifierExpr expr, Map<String, String> aliasMap) {
-        Column attrColumn = (Column) expr.getAttribute(ATTR_COLUMN);
-        if (attrColumn != null) {
-            return attrColumn;
-        }
-
+    private Column getColumnByExpr(SQLIdentifierExpr expr) {
         String column = expr.getName();
-        String table = getCurrentTable();
+        String table = currentTable;
         if (table != null && aliasMap.containsKey(table)) {
             table = aliasMap.get(table);
             if (table == null) {
@@ -510,14 +477,10 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             return new Column(table, column);
         }
 
-        if (variants.containsKey(column)) {
-            return null;
-        }
-
         return new Column("UNKNOWN", column);
     }
 
-    private Column getColumnByExpr(SQLPropertyExpr expr, Map<String, String> aliasMap) {
+    private Column getColumnByExpr(SQLPropertyExpr expr) {
         SQLExpr owner = expr.getOwner();
         String column = expr.getName();
 
@@ -533,15 +496,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                 table = aliasMap.get(table);
             }
 
-            if (variants.containsKey(table)) {
-                return null;
-            }
-
-            if (table != null) {
-                return new Column(table, column);
-            }
-
-            return handleSubQueryColumn(tableName, column);
+            return new Column(table, column);
         }
 
         return null;
@@ -560,7 +515,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         } else if (aliasMap.size() == 0) { //no table
             return "";
         } else { // multi tables
-            for (Column col : columns.keySet()) {
+            for (Column col : columns.values()) {
                 if (col.getName().equals(column)) {
                     return col.getTable();
                 }
@@ -807,13 +762,21 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         return false;
     }
 
-    private void putAliasToMap(Map<String, String> aliasMap, String name, String value) {
-        if (aliasMap != null && name != null) {
+    private void putAliasToMap(String name, String value) {
+        if (name != null) {
             if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
                 name = name.toLowerCase();
             }
             aliasMap.put(name, value);
         }
+    }
+
+    public Map<String, String> getAliasMap() {
+        return aliasMap;
+    }
+
+    public String getCurrentTable() {
+        return currentTable;
     }
 
 }

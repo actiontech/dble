@@ -5,10 +5,10 @@
 
 package com.actiontech.dble.statistic.stat;
 
+import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
-import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
 import com.alibaba.druid.stat.TableStat.Condition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -168,7 +168,7 @@ public final class QueryConditionAnalyzer implements QueryResultListener {
                 MySqlStatementParser parser = new MySqlStatementParser(sql);
                 SQLStatement stmt = parser.parseStatement();
 
-                MySqlSchemaStatVisitor visitor = new MySqlSchemaStatVisitor();
+                ServerSchemaStatVisitor visitor = new ServerSchemaStatVisitor();
                 stmt.accept(visitor);
 
                 String currentTable = visitor.getCurrentTable();

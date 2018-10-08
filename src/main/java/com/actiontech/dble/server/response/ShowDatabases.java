@@ -34,20 +34,20 @@ public final class ShowDatabases {
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
 
-    static {
-        int i = 0;
-        byte packetId = 0;
-        HEADER.setPacketId(++packetId);
-        FIELDS[i] = PacketUtil.getField("DATABASE", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i].setPacketId(++packetId);
-        EOF.setPacketId(++packetId);
-    }
 
     public static void response(ServerConnection c) {
-        ByteBuffer buffer = c.allocate();
 
+
+        byte packetId = (byte) c.getSession2().getPacketId().get();
+        HEADER.setPacketId(++packetId);
+        FIELDS[0] = PacketUtil.getField("DATABASE", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[0].setPacketId(++packetId);
+        EOF.setPacketId(++packetId);
+
+        ByteBuffer buffer = c.allocate();
         // write header
         buffer = HEADER.write(buffer, c, true);
+
 
         // write fields
         for (FieldPacket field : FIELDS) {
@@ -58,7 +58,6 @@ public final class ShowDatabases {
         buffer = EOF.write(buffer, c, true);
 
         // write rows
-        byte packetId = EOF.getPacketId();
         ServerConfig conf = DbleServer.getInstance().getConfig();
         Map<String, UserConfig> users = conf.getUsers();
         UserConfig user = users == null ? null : users.get(c.getUser());
@@ -83,10 +82,11 @@ public final class ShowDatabases {
         // write last eof
         EOFPacket lastEof = new EOFPacket();
         lastEof.setPacketId(++packetId);
+        c.getSession2().multiStatementPacket(lastEof, packetId);
         buffer = lastEof.write(buffer, c, true);
-
-        // post write
+        boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
         c.write(buffer);
+        c.getSession2().multiStatementNextSql(multiStatementFlag);
     }
 
 }

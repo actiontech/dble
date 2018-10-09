@@ -508,4 +508,15 @@ public class ServerConnection extends FrontendConnection {
         return result.toString();
     }
 
+    @Override
+    public void writeErrMessage(String sqlState, String msg, int vendorCode) {
+        byte packetId = (byte) this.getSession2().getPacketId().get();
+        super.writeErrMessage(++packetId, vendorCode, sqlState, msg);
+    }
+
+    @Override
+    public void writeErrMessage(int vendorCode, String msg) {
+        byte packetId = (byte) this.getSession2().getPacketId().get();
+        super.writeErrMessage(++packetId, vendorCode, msg);
+    }
 }

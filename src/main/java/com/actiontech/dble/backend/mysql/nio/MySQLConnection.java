@@ -670,10 +670,12 @@ public class MySQLConnection extends BackendAIOConnection {
         }
     }
 
-    private void innerTerminate(String reason) {
-        isQuit.set(true);
-        super.close(reason);
-        pool.connectionClosed(this);
+    private synchronized void innerTerminate(String reason) {
+        if (!isClosed()) {
+            isQuit.set(true);
+            super.close(reason);
+            pool.connectionClosed(this);
+        }
     }
 
     public void commit() {
@@ -923,7 +925,6 @@ public class MySQLConnection extends BackendAIOConnection {
             conn.usrVariables = usrVariables;
         }
     }
-
 
 
 }

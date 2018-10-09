@@ -92,21 +92,6 @@ public class ConMap {
         return total;
     }
 
-    public int getActiveCountForDs(PhysicalDatasource dataSource) {
-        int total = 0;
-        for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
-            for (BackendConnection con : processor.getBackends().values()) {
-                if (con instanceof MySQLConnection) {
-                    MySQLConnection mysqlCon = (MySQLConnection) con;
-
-                    if (mysqlCon.getPool() == dataSource && mysqlCon.isBorrowed() && !mysqlCon.isClosed()) {
-                        total++;
-                    }
-                }
-            }
-        }
-        return total;
-    }
 
     public void clearConnections(String reason, PhysicalDatasource dataSource) {
         for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {

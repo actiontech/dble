@@ -31,7 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class PhysicalDatasource {
@@ -47,7 +47,7 @@ public abstract class PhysicalDatasource {
     private volatile long heartbeatRecoveryTime;
     private final DataHostConfig hostConfig;
     private PhysicalDBPool dbPool;
-    private AtomicBoolean dying = new AtomicBoolean(false);
+    private final AtomicInteger connectionCount;
 
     private AtomicLong readCount = new AtomicLong(0);
 
@@ -70,6 +70,7 @@ public abstract class PhysicalDatasource {
         this.hostConfig = hostConfig;
         heartbeat = this.createHeartBeat();
         this.readNode = isReadNode;
+        this.connectionCount = new AtomicInteger();
     }
 
     public boolean isMyConnection(BackendConnection con) {
@@ -80,15 +81,6 @@ public abstract class PhysicalDatasource {
         }
     }
 
-    public boolean getDying() {
-        return dying.get();
-    }
-
-    public void setDying() {
-        heartbeat.stop();
-        dying.compareAndSet(false, true);
-        closeByDyingAll();
-    }
 
     public long getReadCount() {
         return readCount.get();
@@ -177,11 +169,6 @@ public abstract class PhysicalDatasource {
     }
 
     public void connectionHeatBeatCheck(long conHeartBeatPeriod) {
-        // to die
-        if (dying.get()) {
-            closeByDyingAll();
-            return;
-        }
 
         long hearBeatTime = TimeUtil.currentTimeMillis() - conHeartBeatPeriod;
 
@@ -235,28 +222,6 @@ public abstract class PhysicalDatasource {
     }
 
 
-    private void closeByDyingAll() {
-        List<BackendConnection> readyCloseCons = new ArrayList<>(this.getIdleCount());
-
-        for (ConQueue queue : conMap.getAllConQueue()) {
-            readyCloseCons.addAll(queue.getIdleConsToClose());
-        }
-
-        for (BackendConnection idleCon : readyCloseCons) {
-            if (idleCon != null) {
-                if (idleCon.isBorrowed()) {
-                    LOGGER.info("find idle con is using " + idleCon);
-                }
-                idleCon.close("dying");
-            } else {
-                break;
-            }
-        }
-        if (this.conMap.getActiveCountForDs(this) == 0) {
-            this.dbPool.delRDs(this);
-        }
-    }
-
     private void closeByIdleMany(int idleCloseCount, int idleCons) {
         LOGGER.info("too many ilde cons ,close some for datasouce  " + name + " want close :" + idleCloseCount + " total idle " + idleCons);
         List<BackendConnection> readyCloseCons = new ArrayList<BackendConnection>(idleCloseCount);
@@ -304,17 +269,22 @@ public abstract class PhysicalDatasource {
     }
 
     public int getActiveCount() {
-        return this.conMap.getActiveCountForDs(this);
+        return this.connectionCount.get();
+    }
+
+    public boolean createNewCount() {
+        int result = this.connectionCount.incrementAndGet();
+        if (result > size) {
+            this.connectionCount.decrementAndGet();
+            return false;
+        }
+        return true;
     }
 
     public void clearCons(String reason) {
         this.conMap.clearConnections(reason, this);
     }
 
-    public void clearConsByDying() {
-        clearCons("smooth dying");
-        this.dbPool.delRDs(this);
-    }
 
     public void startHeartbeat() {
         if (!this.getConfig().isDisabled()) {
@@ -366,7 +336,7 @@ public abstract class PhysicalDatasource {
     }
 
     private void createNewConnection(final ResponseHandler handler, final Object attachment,
-                                    final String schema) throws IOException {
+                                     final String schema) throws IOException {
         // aysn create connection
         DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
             public void run() {
@@ -396,18 +366,12 @@ public abstract class PhysicalDatasource {
 
     public void getConnection(String schema, boolean autocommit, final ResponseHandler handler,
                               final Object attachment) throws IOException {
-        if (dying.get()) {
-            closeByDyingAll();
-            LOGGER.info(this.name + "will to die");
-            throw new IOException(this.name + "will to die");
-        }
 
         BackendConnection con = this.conMap.tryTakeCon(schema, autocommit);
         if (con != null) {
             takeCon(con, handler, attachment, schema);
         } else {
-            int activeCons = this.getActiveCount();
-            if (activeCons + 1 > size) {
+            if (!this.createNewCount()) {
                 String maxConError = "the max active Connections size can not be max than maxCon for data host[" + this.getHostConfig().getName() + "." + this.getName() + "]";
                 LOGGER.warn(maxConError);
                 Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
@@ -430,8 +394,7 @@ public abstract class PhysicalDatasource {
     public BackendConnection getConnection(String schema, boolean autocommit, final Object attachment) throws IOException {
         BackendConnection con = this.conMap.tryTakeCon(schema, autocommit);
         if (con == null) {
-            int activeCons = this.getActiveCount(); // the max active
-            if (activeCons + 1 > size) {
+            if (this.createNewCount()) {
                 String maxConError = "the max active Connections size can not be max than maxCon data host[" + this.getHostConfig().getName() + "." + this.getName() + "]";
                 LOGGER.warn(maxConError);
                 Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
@@ -473,15 +436,12 @@ public abstract class PhysicalDatasource {
                                   final Object attachment) throws IOException {
         LOGGER.info("create new connection for " +
                 this.name + " of schema " + schema);
-        createNewConnection(handler, attachment, schema);
+        if (this.createNewCount()) {
+            createNewConnection(handler, attachment, schema);
+        }
     }
 
     private void returnCon(BackendConnection c) {
-        if (dying.get()) {
-            c.close("dying");
-            closeByDyingAll();
-            return;
-        }
         if (c.isClosedOrQuit()) {
             return;
         }
@@ -516,6 +476,8 @@ public abstract class PhysicalDatasource {
     }
 
     public void connectionClosed(BackendConnection conn) {
+        //only used in mysqlConneciton synchronized function
+        this.connectionCount.decrementAndGet();
         if (conn.getSchema() != null) {
             ConQueue queue = this.conMap.getSchemaConQueue(conn.getSchema());
             if (queue != null) {
@@ -542,7 +504,7 @@ public abstract class PhysicalDatasource {
     }
 
     public boolean isAlive() {
-        return ((getHeartbeat().getStatus() == DBHeartbeat.OK_STATUS) && !getDying()) || (getHeartbeat().isStop() && testConnSuccess);
+        return (getHeartbeat().getStatus() == DBHeartbeat.OK_STATUS) || (getHeartbeat().isStop() && testConnSuccess);
     }
 
 

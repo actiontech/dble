@@ -48,7 +48,14 @@ public final class DropViewHandler {
                 }
             }
 
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+
+            byte packetId = (byte) c.getSession2().getPacketId().get();
+            OkPacket ok = new OkPacket();
+            ok.setPacketId(++packetId);
+            c.getSession2().multiStatementPacket(ok, packetId);
+            ok.write(c);
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
             return;
         } catch (Exception e) {
             c.writeErrMessage(ER_PARSE_ERROR, "Get Error when delete the view");

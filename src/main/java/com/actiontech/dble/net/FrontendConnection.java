@@ -199,7 +199,7 @@ public abstract class FrontendConnection extends AbstractConnection {
         writeErrMessage(id, vendorCode, "HY000", msg);
     }
 
-    private void writeErrMessage(byte id, int vendorCode, String sqlState, String msg) {
+    protected void writeErrMessage(byte id, int vendorCode, String sqlState, String msg) {
         ErrorPacket err = new ErrorPacket();
         err.setPacketId(id);
         err.setErrNo(vendorCode);

@@ -108,8 +108,8 @@ public class DailyRotateLogStore {
                 pos += channel.write(buffer);
             } else if (maxFileSize == pos) {
                 // create new file
-                indexRollOver();
                 pos = 0;
+                indexRollOver();
             } else {
                 int length = (int) (maxFileSize - pos);
                 int limit = buffer.limit();

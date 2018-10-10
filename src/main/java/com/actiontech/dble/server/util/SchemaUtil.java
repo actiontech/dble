@@ -51,6 +51,39 @@ public final class SchemaUtil {
         return null;
     }
 
+    public static SchemaInfo getSchemaInfo(String user, SchemaConfig schemaConfig, String fullTableName) throws SQLException {
+        SchemaInfo schemaInfo = new SchemaInfo();
+        String[] tableAndSchema = fullTableName.split("\\.");
+
+        if (tableAndSchema.length == 2) {
+            schemaInfo.schema = StringUtil.removeBackQuote(tableAndSchema[0]);
+            schemaInfo.table = StringUtil.removeBackQuote(tableAndSchema[1]);
+            SchemaConfig config = DbleServer.getInstance().getConfig().getSchemas().get(schemaInfo.schema);
+            if (config == null) {
+                String msg = "Table " + StringUtil.getFullName(schemaInfo.schema, schemaInfo.table) + " doesn't exist";
+                throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
+            }
+            schemaInfo.schemaConfig = config;
+            if (user != null) {
+                UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(user);
+                if (!userConfig.getSchemas().contains(schemaInfo.schema)) {
+                    String msg = " Access denied for user '" + user + "' to database '" + schemaInfo.schema + "'";
+                    throw new SQLException(msg, "HY000", ErrorCode.ER_DBACCESS_DENIED_ERROR);
+                }
+            }
+        } else {
+            schemaInfo.schema = schemaConfig.getName();
+            schemaInfo.table = StringUtil.removeBackQuote(tableAndSchema[0]);
+            schemaInfo.schemaConfig = schemaConfig;
+        }
+
+        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+            schemaInfo.table = schemaInfo.table.toLowerCase();
+            schemaInfo.schema = schemaInfo.schema.toLowerCase();
+        }
+        return schemaInfo;
+    }
+
     public static SchemaInfo getSchemaInfo(String user, String schema, SQLExpr expr, String tableAlias) throws SQLException {
         SchemaInfo schemaInfo = new SchemaInfo();
         if (expr instanceof SQLPropertyExpr) {

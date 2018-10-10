@@ -75,12 +75,7 @@ public class DQLRouteTest {
 
         stmt.accept(visitor);
 
-        List<List<Condition>> mergedConditionList = new ArrayList<List<Condition>>();
-        if (visitor.hasOrCondition()) {//contains or
-            mergedConditionList = visitor.splitConditions();
-        } else {
-            mergedConditionList.add(visitor.getConditions());
-        }
+        List<List<Condition>> mergedConditionList = visitor.getConditionList();
 
         if (visitor.getAliasMap() != null) {
             for (Map.Entry<String, String> entry : visitor.getAliasMap().entrySet()) {

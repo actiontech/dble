@@ -101,9 +101,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                 schema = schemaInfo.getSchemaConfig();
 
                 if (DbleServer.getInstance().getTmManager().getSyncView(schema.getName(), schemaInfo.getTable()) != null) {
-                    rrs.setNeedOptimizer(true);
-                    rrs.setSqlStatement(selectStmt);
-                    return schema;
+                    return tryRouteToOneNode(schema, rrs, sc, selectStmt);
                 }
 
                 super.visitorParse(schema, rrs, stmt, visitor, sc);
@@ -122,21 +120,41 @@ public class DruidSelectParser extends DefaultDruidParser {
                     String msg = "Table '" + schema.getName() + "." + schemaInfo.getTable() + "' doesn't exist";
                     throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
                 }
-
-                parseOrderAggGroupMysql(schema, stmt, rrs, mysqlSelectQuery, tc);
                 // select ...for update /in shard mode /in transaction
                 if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode()) && !sc.isAutocommit()) {
                     rrs.setCanRunInReadDB(false);
                 }
+                if (!canRouteTablesToOneNode(schema, stmt, rrs, mysqlSelectQuery, sc)) {
+                    parseOrderAggGroupMysql(schema, stmt, rrs, mysqlSelectQuery, tc);
+                }
             } else if (mysqlFrom instanceof SQLSubqueryTableSource ||
                     mysqlFrom instanceof SQLJoinTableSource ||
                     mysqlFrom instanceof SQLUnionQueryTableSource) {
+                super.visitorParse(schema, rrs, stmt, visitor, sc);
                 return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc);
             }
         } else if (sqlSelectQuery instanceof SQLUnionQuery) {
+            super.visitorParse(schema, rrs, stmt, visitor, sc);
             return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc);
         }
 
+        return schema;
+    }
+
+    private SchemaConfig tryRouteToOneNode(SchemaConfig schema, RouteResultset rrs, ServerConnection sc, SQLSelectStatement selectStmt) throws SQLException {
+        Set<String> schemaList = new HashSet<>();
+        String dataNode = RouterUtil.tryRouteTablesToOneNode(sc.getUser(), rrs.getStatement(), schema, ctx, schemaList);
+        if (dataNode != null) {
+            String sql = rrs.getStatement();
+            for (String toRemoveSchemaName : schemaList) {
+                sql = RouterUtil.removeSchema(sql, toRemoveSchemaName);
+            }
+            rrs.setStatement(sql);
+            RouterUtil.routeToSingleNode(rrs, dataNode);
+        } else {
+            rrs.setNeedOptimizer(true);
+            rrs.setSqlStatement(selectStmt);
+        }
         return schema;
     }
 
@@ -169,6 +187,34 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
         return false;
     }
+    private boolean canRouteTablesToOneNode(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
+                                         MySqlSelectQueryBlock mysqlSelectQuery, ServerConnection sc) throws SQLException {
+        Set<String> schemaList = new HashSet<>();
+        String dataNode = RouterUtil.tryRouteTablesToOneNode(sc.getUser(), rrs.getStatement(), schema, ctx, schemaList);
+        if (dataNode != null) {
+            String sql = rrs.getStatement();
+            assert schemaList.size() <= 1;
+            String schemaName = schema.getName();
+            if (schemaList.size() > 0) {
+                schemaName = schemaList.iterator().next();
+            }
+            boolean isNeedAddLimit = isNeedAddLimit(schema, rrs, mysqlSelectQuery, getAllConditions());
+            if (isNeedAddLimit) {
+                int limitSize = schema.getDefaultMaxLimit();
+                SQLLimit limit = new SQLLimit();
+                limit.setRowCount(new SQLIntegerExpr(limitSize));
+                mysqlSelectQuery.setLimit(limit);
+                rrs.setLimitSize(limitSize);
+                sql = getSql(rrs, stmt, isNeedAddLimit, schemaName);
+            } else {
+                sql = RouterUtil.removeSchema(sql, schemaName);
+            }
+            rrs.setStatement(sql);
+            RouterUtil.routeToSingleNode(rrs, dataNode);
+            return true;
+        }
+        return false;
+    }
 
     private void parseOrderAggGroupMysql(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
                                          MySqlSelectQueryBlock mysqlSelectQuery, TableConfig tc) throws SQLException {
@@ -187,7 +233,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         boolean hasPartitionColumn = false;
         for (SQLSelectItem selectItem : selectList) {
             SQLExpr itemExpr = selectItem.getExpr();
-            if (itemExpr instanceof SQLQueryExpr) {
+            if (itemExpr instanceof SQLQueryExpr) { // can not be reach
                 rrs.setNeedOptimizer(true);
                 return;
             } else if (itemExpr instanceof SQLAggregateExpr) {
@@ -329,16 +375,15 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
     }
 
-    private Map<String, String> parseAggGroupCommon(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
+    private void parseAggGroupCommon(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
                                                     MySqlSelectQueryBlock mysqlSelectQuery, TableConfig tc) throws SQLException {
         Map<String, String> aliaColumns = new HashMap<>();
-
         boolean isDistinct = (mysqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCT) || (mysqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCTROW);
         parseAggExprCommon(schema, rrs, mysqlSelectQuery, aliaColumns, tc, isDistinct);
         if (rrs.isNeedOptimizer()) {
             tryAddLimit(schema, tc, mysqlSelectQuery);
             rrs.setSqlStatement(stmt);
-            return aliaColumns;
+            return;
         }
 
         // distinct change to group by
@@ -361,7 +406,6 @@ public class DruidSelectParser extends DefaultDruidParser {
         if (isDistinct) {
             rrs.changeNodeSqlAfterAddLimit(statementToString(stmt), 0, -1);
         }
-        return aliaColumns;
     }
 
     private String getAliaColumn(Map<String, String> aliaColumns, String column) {
@@ -431,12 +475,10 @@ public class DruidSelectParser extends DefaultDruidParser {
             throws SQLException {
         StringPtr noShardingNode = new StringPtr(null);
         Set<String> schemas = new HashSet<>();
-        if (!SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, schemas, noShardingNode)) {
-            rrs.setSqlStatement(selectStmt);
-            rrs.setNeedOptimizer(true);
-            return schema;
-        } else {
+        if (SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, schemas, noShardingNode)) {
             return routeToNoSharding(schema, rrs, schemas, noShardingNode);
+        } else {
+            return tryRouteToOneNode(schema, rrs, sc, selectStmt);
         }
     }
 

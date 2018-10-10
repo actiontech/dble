@@ -356,7 +356,7 @@ public final class RouterUtil {
         return dataNode;
     }
 
-    public static Set<String> ruleByJoinValueCalculate(RouteResultset rrs, TableConfig tc,
+    public static Set<String> ruleByJoinValueCalculate(String sql, TableConfig tc,
                                                        Set<ColumnRoutePair> colRoutePairSet) throws SQLNonTransientException {
         Set<String> retNodeSet = new LinkedHashSet<>();
         if (tc.getDirectRouteTC() != null) {
@@ -365,7 +365,7 @@ public final class RouterUtil {
                 throw new SQLNonTransientException("parent key can't find  valid datanode ,expect 1 but found: " + nodeSet.size());
             }
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("found partion node (using parent partion rule directly) for child table to insert  " + nodeSet + " sql :" + rrs.getStatement());
+                LOGGER.debug("found partion node (using parent partion rule directly) for child table to insert  " + nodeSet + " sql :" + sql);
             }
             retNodeSet.addAll(nodeSet);
             return retNodeSet;
@@ -413,6 +413,124 @@ public final class RouterUtil {
         return routeNodeSet;
     }
 
+    public static String tryRouteTablesToOneNode(String user, String sql, SchemaConfig schemaConfig, DruidShardingParseInfo ctx, Set<String> schemaList) throws SQLException {
+        Set<String> resultNodes = new HashSet<>();
+        for (RouteCalculateUnit routeUnit : ctx.getRouteCalculateUnits()) {
+            Set<String> tmpResultNodes = new HashSet<>();
+            Set<TableConfig> globalTables = new HashSet<>();
+            Set<String> tablesSet = new HashSet<>(ctx.getTables());
+            Map<String, Map<String, Set<ColumnRoutePair>>> tablesAndConditions = routeUnit.getTablesAndConditions();
+            if (tablesAndConditions != null) {
+                for (Map.Entry<String, Map<String, Set<ColumnRoutePair>>> entry : tablesAndConditions.entrySet()) {
+                    String fullTable = entry.getKey();
+                    SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(user, schemaConfig, fullTable);
+                    SchemaConfig schema = schemaInfo.getSchemaConfig();
+                    String schemaName = schemaInfo.getSchema();
+                    String tableName = schemaInfo.getTable();
+                    schemaList.add(schemaName);
+                    TableConfig tableConfig = schema.getTables().get(tableName);
+                    if (tableConfig == null) {
+                        if (schema.getDataNode() == null) {
+                            String msg = " Table '" + schemaName + "." + tableName + "' doesn't exist";
+                            LOGGER.info(msg);
+                            throw new SQLNonTransientException(msg);
+                        } else {
+                            tmpResultNodes.add(schema.getDataNode());
+                            tablesSet.remove(tableName);
+                            if (tmpResultNodes.size() != 1) {
+                                return null;
+                            }
+                        }
+                    } else if (tableConfig.isGlobalTable()) {
+                        globalTables.add(tableConfig);
+                    } else if (schema.getTables().get(tableName).getDataNodes().size() == 1) {
+                        tmpResultNodes.add(schema.getTables().get(tableName).getDataNodes().get(0));
+                        tablesSet.remove(tableName);
+                        if (tmpResultNodes.size() != 1) {
+                            return null;
+                        }
+                    } else {
+                        if (!tryCalcNodeForShardingTable(sql, tmpResultNodes, tablesSet, entry, tableName, tableConfig)) {
+                            return null;
+                        }
+                    }
+                }
+            }
+            for (TableConfig tb : globalTables) {
+                tmpResultNodes.retainAll(tb.getDataNodes());
+                tablesSet.remove(tb.getName());
+            }
+            if (tmpResultNodes.size() != 1 || tablesSet.size() != 0) {
+                return null;
+            }
+            resultNodes.add(tmpResultNodes.iterator().next());
+        }
+
+        if (resultNodes.size() != 1) {
+            return null;
+        }
+        return resultNodes.iterator().next();
+    }
+
+    private static boolean tryCalcNodeForShardingTable(String sql, Set<String> resultNodes, Set<String> tablesSet, Map.Entry<String, Map<String, Set<ColumnRoutePair>>> entry, String tableName, TableConfig tableConfig) throws SQLNonTransientException {
+        Map<String, Set<ColumnRoutePair>> columnsMap = entry.getValue();
+        String joinKey = tableConfig.getJoinKey();
+        String partitionCol = tableConfig.getPartitionColumn();
+
+        // where filter contains partition column
+        if (partitionCol != null && columnsMap.get(partitionCol) != null) {
+            Set<ColumnRoutePair> partitionValue = columnsMap.get(partitionCol);
+            if (partitionValue.size() == 0) {
+                return false;
+            } else {
+                for (ColumnRoutePair pair : partitionValue) {
+                    AbstractPartitionAlgorithm algorithm = tableConfig.getRule().getRuleAlgorithm();
+                    if (pair.colValue != null && !"null".equals(pair.colValue)) {
+                        Integer nodeIndex = algorithm.calculate(pair.colValue);
+                        if (nodeIndex == null) {
+                            String msg = "can't find any valid data node :" + tableConfig.getName() +
+                                    " -> " + tableConfig.getPartitionColumn() + " -> " + pair.colValue;
+                            LOGGER.info(msg);
+                            throw new SQLNonTransientException(msg);
+                        }
+
+                        ArrayList<String> dataNodes = tableConfig.getDataNodes();
+                        String node;
+                        if (nodeIndex >= 0 && nodeIndex < dataNodes.size()) {
+                            node = dataNodes.get(nodeIndex);
+                        } else {
+                            String msg = "Can't find a valid data node for specified node index :" +
+                                    tableConfig.getName() + " -> " + tableConfig.getPartitionColumn() +
+                                    " -> " + pair.colValue + " -> " + "Index : " + nodeIndex;
+                            LOGGER.info(msg);
+                            throw new SQLNonTransientException(msg);
+                        }
+                        if (node != null) {
+                            resultNodes.add(node);
+                            tablesSet.remove(tableName);
+                            if (resultNodes.size() != 1) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+        } else if (joinKey != null && columnsMap.get(joinKey) != null && columnsMap.get(joinKey).size() != 0) {
+            Set<ColumnRoutePair> joinKeyValue = columnsMap.get(joinKey);
+            Set<String> dataNodeSet = ruleByJoinValueCalculate(sql, tableConfig, joinKeyValue);
+            if (dataNodeSet.size() > 1) {
+                return false;
+            }
+            resultNodes.addAll(dataNodeSet);
+            tablesSet.remove(tableName);
+            if (resultNodes.size() != 1) {
+                return false;
+            }
+        } else {
+            return false;
+        }
+        return true;
+    }
     /**
      * tryRouteFor multiTables
      */
@@ -592,7 +710,7 @@ public final class RouterUtil {
             TableConfig tableConfig = schema.getTables().get(tableName);
             if (tableConfig == null) {
                 if (isSingleTable) {
-                    String msg = "can't find table [" + tableName + "[ define in schema " + ":" + schema.getName();
+                    String msg = " Table '" + schema.getName() + "." + tableName + "' doesn't exist";
                     LOGGER.info(msg);
                     throw new SQLNonTransientException(msg);
                 } else {
@@ -703,7 +821,7 @@ public final class RouterUtil {
     private static void routerForJoinTable(RouteResultset rrs, TableConfig tableConfig, Map<String, Set<ColumnRoutePair>> columnsMap, String joinKey) throws SQLNonTransientException {
         //childTable  (if it's ER JOIN of select)must find root table,remove childTable, only left root table
         Set<ColumnRoutePair> joinKeyValue = columnsMap.get(joinKey);
-        Set<String> dataNodeSet = ruleByJoinValueCalculate(rrs, tableConfig, joinKeyValue);
+        Set<String> dataNodeSet = ruleByJoinValueCalculate(rrs.getStatement(), tableConfig, joinKeyValue);
 
         if (dataNodeSet.isEmpty()) {
             throw new SQLNonTransientException(

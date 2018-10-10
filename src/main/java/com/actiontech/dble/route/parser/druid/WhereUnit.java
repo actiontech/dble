@@ -8,9 +8,12 @@ package com.actiontech.dble.route.parser.druid;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
 import com.alibaba.druid.stat.TableStat.Condition;
+import com.alibaba.druid.stat.TableStat.Relationship;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * WhereUnit
@@ -44,11 +47,13 @@ public class WhereUnit {
     private List<SQLExpr> splitedExprList = new ArrayList<>();
 
     private List<List<Condition>> conditionList = new ArrayList<>();
-
     /**
      * whereExpris not contains all where condition,consider outConditions
      */
     private List<Condition> outConditions = new ArrayList<>();
+
+    private Set<Relationship> outRelationships = new HashSet<>();
+
 
     private List<WhereUnit> subWhereUnits = new ArrayList<>();
 
@@ -61,6 +66,15 @@ public class WhereUnit {
     public void addOutConditions(List<Condition> conditions) {
         this.outConditions.addAll(conditions);
     }
+
+    public Set<Relationship> getOutRelationships() {
+        return outRelationships;
+    }
+
+    public void addOutRelationships(Set<Relationship> relationships) {
+        this.outRelationships.addAll(relationships);
+    }
+
 
     public boolean isFinishedParse() {
         return finishedParse;

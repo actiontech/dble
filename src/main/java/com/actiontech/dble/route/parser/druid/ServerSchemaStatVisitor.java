@@ -19,6 +19,7 @@ import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
 import com.alibaba.druid.sql.visitor.SQLEvalVisitorUtils;
 import com.alibaba.druid.stat.TableStat.Column;
 import com.alibaba.druid.stat.TableStat.Condition;
+import com.alibaba.druid.stat.TableStat.Relationship;
 
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -39,6 +40,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     private String currentTable;
 
     private void reset() {
+        this.relationships.clear();
         this.conditions.clear();
         this.whereUnits.clear();
         this.hasOrCondition = false;
@@ -223,11 +225,13 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                         whereUnit = new WhereUnit();
                         whereUnit.setFinishedParse(true);
                         whereUnit.addOutConditions(getConditions());
+                        whereUnit.addOutRelationships(getRelationships());
                         WhereUnit innerWhereUnit = new WhereUnit(x);
                         whereUnit.addSubWhereUnit(innerWhereUnit);
                     } else {
                         whereUnit = new WhereUnit(x);
                         whereUnit.addOutConditions(getConditions());
+                        whereUnit.addOutRelationships(getRelationships());
                     }
                     whereUnits.add(whereUnit);
                 }
@@ -550,7 +554,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     /**
      * splitConditions
      */
-    public List<List<Condition>> splitConditions() {
+    private List<List<Condition>> splitConditions() {
         //split according to or expr
         for (WhereUnit whereUnit : whereUnits) {
             splitUntilNoOr(whereUnit);
@@ -586,6 +590,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                         whereUnit.addSubWhereUnit(subWhereUnit);
                         subWhereUnits.add(subWhereUnit);
                     } else {
+                        this.relationships.clear();
                         this.conditions.clear();
                     }
                 }
@@ -634,14 +639,25 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                         aMergedConditionList.addAll(whereUnit.getOutConditions());
                     }
                 }
-                whereUnit.setConditionList(mergedConditionList);
-            } else if (whereUnit.getSubWhereUnit().size() == 1) {
-                if (whereUnit.getOutConditions().size() > 0 && whereUnit.getSubWhereUnit().get(0).getConditionList().size() > 0) {
-                    for (int i = 0; i < whereUnit.getSubWhereUnit().get(0).getConditionList().size(); i++) {
-                        whereUnit.getSubWhereUnit().get(0).getConditionList().get(i).addAll(whereUnit.getOutConditions());
+                if (whereUnit.getOutRelationships().size() > 0) {
+                    for (List<Condition> aMergedConditionList : mergedConditionList) {
+                        extendConditionsFromRelations(aMergedConditionList, whereUnit.getOutRelationships());
                     }
                 }
-                whereUnit.getConditionList().addAll(whereUnit.getSubWhereUnit().get(0).getConditionList());
+                whereUnit.setConditionList(mergedConditionList);
+            } else if (whereUnit.getSubWhereUnit().size() == 1) {
+                List<List<Condition>> subConditionList = whereUnit.getSubWhereUnit().get(0).getConditionList();
+                if (whereUnit.getOutConditions().size() > 0 && subConditionList.size() > 0) {
+                    for (List<Condition> aSubConditionList : subConditionList) {
+                        aSubConditionList.addAll(whereUnit.getOutConditions());
+                    }
+                }
+                if (whereUnit.getOutRelationships().size() > 0 && subConditionList.size() > 0) {
+                    for (List<Condition> aSubConditionList : subConditionList) {
+                        extendConditionsFromRelations(aSubConditionList, whereUnit.getOutRelationships());
+                    }
+                }
+                whereUnit.getConditionList().addAll(subConditionList);
             }
         } else {
             //do nothing
@@ -696,14 +712,22 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         List<List<Condition>> retList = new ArrayList<>();
         List<Condition> outSideCondition = new ArrayList<>();
         outSideCondition.addAll(conditions);
+        List<Relationship> outSideRelationship = new ArrayList<>();
+        outSideRelationship.addAll(relationships);
         this.conditions.clear();
+        this.relationships.clear();
         for (SQLExpr sqlExpr : whereUnit.getSplitedExprList()) {
             sqlExpr.accept(this);
-            List<Condition> conditions = new ArrayList<>();
-            conditions.addAll(getConditions());
-            conditions.addAll(outSideCondition);
-            retList.add(conditions);
+            List<Condition> conds = new ArrayList<>();
+            conds.addAll(getConditions());
+            conds.addAll(outSideCondition);
+            Set<Relationship> relations = new HashSet<>();
+            relations.addAll(getRelationships());
+            relations.addAll(outSideRelationship);
+            extendConditionsFromRelations(conds, relations);
+            retList.add(conds);
             this.conditions.clear();
+            this.relationships.clear();
         }
         whereUnit.setConditionList(retList);
 
@@ -778,5 +802,47 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     public String getCurrentTable() {
         return currentTable;
     }
+    private void extendConditionsFromRelations(List<Condition> conds, Set<Relationship> relations) {
+        List<Condition> newConds = new ArrayList<>();
+        Iterator<Condition> iterator = conds.iterator();
+        while (iterator.hasNext()) {
+            Condition condition = iterator.next();
+            if (condition.getValues().size() == 0) {
+                iterator.remove();
+                continue;
+            }
+            if (!condition.getOperator().equals("=") && !condition.getOperator().equals("<=>")) {
+                continue;
+            }
+            Column column = condition.getColumn();
+            for (Relationship relation : relations) {
+                if (!condition.getOperator().equalsIgnoreCase(relation.getOperator())) {
+                    continue;
+                }
+                if (column.equals(relation.getLeft())) {
+                    Condition cond = new Condition(relation.getRight(), condition.getOperator());
+                    cond.getValues().addAll(condition.getValues());
+                    newConds.add(cond);
+                } else if (column.equals(relation.getRight())) {
+                    Condition cond = new Condition(relation.getLeft(), condition.getOperator());
+                    cond.getValues().addAll(condition.getValues());
+                    newConds.add(cond);
+                }
+            }
+        }
+        conds.addAll(newConds);
+    }
 
+    public List<List<Condition>> getConditionList() {
+        if (this.hasOrCondition()) {
+            return this.splitConditions();
+        } else {
+            List<Condition> conds = this.getConditions();
+            Set<Relationship> relations = getRelationships();
+            extendConditionsFromRelations(conds, relations);
+            List<List<Condition>> result = new ArrayList<>();
+            result.add(conds);
+            return result;
+        }
+    }
 }

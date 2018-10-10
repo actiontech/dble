@@ -37,7 +37,7 @@ public class ServerSchemaStatVisitorTest {
         Assert.assertEquals(list.get(0).size(), 2);
         Assert.assertEquals(list.get(1).size(), 2);
         Assert.assertEquals(list.get(2).size(), 3);
-        Assert.assertEquals(list.get(3).size(), 4);
+        Assert.assertEquals(list.get(3).size(), 2);
         Assert.assertEquals(list.get(4).size(), 3);
 
         Assert.assertEquals(list.get(0).get(0).toString(), "travelrecord.days = 5");
@@ -50,10 +50,8 @@ public class ServerSchemaStatVisitorTest {
         Assert.assertEquals(list.get(2).get(1).toString(), "travelrecord.traveldate = 2015-05-04 00:00:07.375");
         Assert.assertEquals(list.get(2).get(2).toString(), "travelrecord.id = (1, 2)");
 
-        Assert.assertEquals(list.get(3).get(0).toString(), "travelrecord.fee =");
-        Assert.assertEquals(list.get(3).get(1).toString(), "travelrecord.days =");
-        Assert.assertEquals(list.get(3).get(2).toString(), "travelrecord.traveldate = 2015-05-04 00:00:07.375");
-        Assert.assertEquals(list.get(3).get(3).toString(), "travelrecord.id = (1, 2)");
+        Assert.assertEquals(list.get(3).get(0).toString(), "travelrecord.traveldate = 2015-05-04 00:00:07.375");
+        Assert.assertEquals(list.get(3).get(1).toString(), "travelrecord.id = (1, 2)");
 
         Assert.assertEquals(list.get(4).get(0).toString(), "travelrecord.user_id = 2");
         Assert.assertEquals(list.get(4).get(1).toString(), "travelrecord.traveldate = 2015-05-04 00:00:07.375");
@@ -120,18 +118,11 @@ public class ServerSchemaStatVisitorTest {
         try {
             statement = parser.parseStatement();
             visitor = new ServerSchemaStatVisitor();
+            statement.accept(visitor);
+            return visitor.getConditionList();
         } catch (Exception e) {
             e.printStackTrace();
         }
-        statement.accept(visitor);
-
-        List<List<Condition>> mergedConditionList = new ArrayList<List<Condition>>();
-        if (visitor.hasOrCondition()) {//contains OR
-            mergedConditionList = visitor.splitConditions();
-        } else {
-            mergedConditionList.add(visitor.getConditions());
-        }
-
-        return mergedConditionList;
+        return  null;
     }
 }

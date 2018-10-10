@@ -97,7 +97,7 @@ public final class NIOReactor {
                     // Catch exceptions such as OOM so that the reactor can keep running!
                     // @author Uncle-pan
                     // @since 2016-03-30
-                    LOGGER.info("caught err: ", e);
+                    LOGGER.warn("caught Throwable err: ", e);
                 } finally {
                     if (keys != null) {
                         keys.clear();

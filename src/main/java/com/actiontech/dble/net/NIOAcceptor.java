@@ -68,6 +68,8 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor {
                             key.cancel();
                         }
                     }
+                } catch (final Throwable e) {
+                    LOGGER.warn("caught Throwable err: ", e);
                 } finally {
                     keys.clear();
                 }

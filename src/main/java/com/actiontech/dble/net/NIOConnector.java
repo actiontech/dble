@@ -65,8 +65,12 @@ public final class NIOConnector extends Thread implements SocketConnector {
                             key.cancel();
                         }
                     }
+                } catch (final Throwable e) {
+                    LOGGER.warn("caught Throwable err: ", e);
                 } finally {
-                    keys.clear();
+                    if (keys != null) {
+                        keys.clear();
+                    }
                 }
             } catch (Exception e) {
                 LOGGER.warn(name, e);

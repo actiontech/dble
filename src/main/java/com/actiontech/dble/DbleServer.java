@@ -109,10 +109,9 @@ public final class DbleServer {
         return INSTANCE;
     }
 
-    private final ServerConfig config;
-    private final ScheduledExecutorService scheduler;
-    private final AtomicBoolean isOnline;
-    private final long startupTime;
+    private ServerConfig config;
+    private AtomicBoolean isOnline;
+    private long startupTime;
     private NIOProcessor[] frontProcessors;
     private NIOProcessor[] backendProcessors;
     private SocketConnector connector;
@@ -122,7 +121,6 @@ public final class DbleServer {
     private ExecutorService complexQueryExecutor;
     private ExecutorService timerExecutor;
     private InterProcessMutex dnIndexLock;
-    private long totalNetWorkBufferSize = 0;
     private XASessionCheck xaSessionCheck;
     private Map<String, ThreadWorkUsage> threadUsedMap = new TreeMap<>();
     private BlockingQueue<FrontendCommandHandler> frontHandlerQueue;
@@ -133,32 +131,10 @@ public final class DbleServer {
 
     private FrontendUserManager userManager = new FrontendUserManager();
     private DbleServer() {
-        this.config = new ServerConfig();
-        scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("TimerScheduler-%d").build());
-
-        /*
-         * | offline | Change Server status to OFF |
-         * | online | Change Server status to ON |
-         */
-        this.isOnline = new AtomicBoolean(true);
-
-
-        // load data node active index from properties
-        dnIndexProperties = DnPropertyUtil.loadDnIndexProps();
-
-        this.startupTime = TimeUtil.currentTimeMillis();
-        if (isUseZkSwitch()) {
-            dnIndexLock = new InterProcessMutex(ZKUtils.getConnection(), KVPathUtil.getDnIndexLockPath());
-        }
-        xaSessionCheck = new XASessionCheck();
     }
 
     public SequenceHandler getSequenceHandler() {
         return sequenceHandler;
-    }
-
-    public long getTotalNetWorkBufferSize() {
-        return totalNetWorkBufferSize;
     }
 
     public BufferPool getBufferPool() {
@@ -256,16 +232,8 @@ public final class DbleServer {
         }
     }
 
-    public void setMetaChanging(boolean metaChanging) {
-        this.metaChanging = metaChanging;
-    }
-
     public ServerConfig getConfig() {
         return config;
-    }
-
-    public void beforeStart() {
-        SystemConfig.getHomePath();
     }
 
     private void reviseSchemas() {
@@ -303,6 +271,22 @@ public final class DbleServer {
     }
 
     public void startup() throws IOException {
+        this.config = new ServerConfig();
+        /*
+         * | offline | Change Server status to OFF |
+         * | online | Change Server status to ON |
+         */
+        this.isOnline = new AtomicBoolean(true);
+
+
+        // load data node active index from properties
+        this.dnIndexProperties = DnPropertyUtil.loadDnIndexProps();
+        this.startupTime = TimeUtil.currentTimeMillis();
+        if (isUseZkSwitch()) {
+            dnIndexLock = new InterProcessMutex(ZKUtils.getConnection(), KVPathUtil.getDnIndexLockPath());
+        }
+        xaSessionCheck = new XASessionCheck();
+
         SystemConfig system = config.getSystem();
 
         // server startup
@@ -340,8 +324,7 @@ public final class DbleServer {
         short bufferPoolPageNumber = system.getBufferPoolPageNumber();
         //minimum allocation unit
         short bufferPoolChunkSize = system.getBufferPoolChunkSize();
-        totalNetWorkBufferSize = bufferPoolPageSize * bufferPoolPageNumber;
-        if (totalNetWorkBufferSize > Platform.getMaxDirectMemory()) {
+        if (bufferPoolPageSize * bufferPoolPageNumber > Platform.getMaxDirectMemory()) {
             throw new IOException("Direct BufferPool size lager than MaxDirectMemory");
         }
         bufferPool = new DirectByteBufferPool(bufferPoolPageSize, bufferPoolChunkSize, bufferPoolPageNumber);
@@ -465,7 +448,7 @@ public final class DbleServer {
 
         LOGGER.info("===============================================");
 
-
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("TimerScheduler-%d").build());
         long dataNodeIdleCheckPeriod = system.getDataNodeIdleCheckPeriod();
         scheduler.scheduleAtFixedRate(updateTime(), 0L, TIME_UPDATE_PERIOD, TimeUnit.MILLISECONDS);
         scheduler.scheduleWithFixedDelay(processorCheck(), 0L, system.getProcessorCheckPeriod(), TimeUnit.MILLISECONDS);
@@ -531,7 +514,7 @@ public final class DbleServer {
     }
 
     public void reloadMetaData(ServerConfig conf) {
-        DbleServer.getInstance().setMetaChanging(true);
+        this.metaChanging = true;
         try {
             ProxyMetaManager tmpManager = tmManager;
             ProxyMetaManager newManager = new ProxyMetaManager();
@@ -539,7 +522,7 @@ public final class DbleServer {
             tmManager = newManager;
             tmpManager.terminate();
         } finally {
-            DbleServer.getInstance().setMetaChanging(false);
+            this.metaChanging = false;
         }
     }
 
@@ -1077,16 +1060,8 @@ public final class DbleServer {
         return miManager;
     }
 
-    public void setMiManager(PauseDatanodeManager miManager) {
-        this.miManager = miManager;
-    }
-
     public FrontendUserManager getUserManager() {
         return userManager;
-    }
-
-    public void setUserManager(FrontendUserManager userManager) {
-        this.userManager = userManager;
     }
 
 }

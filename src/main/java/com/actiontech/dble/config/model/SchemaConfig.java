@@ -52,7 +52,7 @@ public class SchemaConfig {
     public SchemaConfig(SchemaConfig oldSchemaConfig) {
         this.name = oldSchemaConfig.getName().toLowerCase();
         if (oldSchemaConfig.getDataNode() != null) {
-            this.dataNode = oldSchemaConfig.getDataNode().toLowerCase();
+            this.dataNode = oldSchemaConfig.getDataNode();
         } else {
             this.dataNode = null;
         }

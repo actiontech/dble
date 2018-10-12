@@ -61,7 +61,7 @@ public abstract class AbstractTableMetaHandler {
             }
             PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
             PhysicalDatasource ds = dn.getDbPool().getSource();
-            String sql = SQL_PREFIX + tableName;
+            String sql = SQL_PREFIX + "`" + tableName + "`";
             if (ds.isAlive()) {
                 OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLTableStructureListener(dataNode, System.currentTimeMillis(), ds));
                 SQLJob sqlJob = new SQLJob(sql, dn.getDatabase(), resultHandler, ds);

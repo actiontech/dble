@@ -24,7 +24,7 @@ public class SingleNodeTablesMetaInitHandler {
     private static final String[] MYSQL_SHOW_CREATE_TABLE_COLS = new String[]{
             "Table",
             "Create Table"};
-    private static final String SQL = "show create table {0};";
+    private static final String SQL = "show create table `{0}`;";
     private String dataNode;
     private String schema;
     private MultiTablesMetaHandler multiTablesMetaHandler;

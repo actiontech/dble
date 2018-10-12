@@ -29,7 +29,7 @@ public abstract class AbstractTablesMetaHandler {
     private static final String[] MYSQL_SHOW_CREATE_TABLE_COLS = new String[]{
             "Table",
             "Create Table"};
-    private static final String SQL = "show create table {0};";
+    private static final String SQL = "show create table `{0}`;";
 
     private Map<String, Set<String>> dataNodeMap = new HashMap<>();
     protected String schema;

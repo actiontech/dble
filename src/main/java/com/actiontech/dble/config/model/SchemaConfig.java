@@ -51,11 +51,7 @@ public class SchemaConfig {
 
     public SchemaConfig(SchemaConfig oldSchemaConfig) {
         this.name = oldSchemaConfig.getName().toLowerCase();
-        if (oldSchemaConfig.getDataNode() != null) {
-            this.dataNode = oldSchemaConfig.getDataNode().toLowerCase();
-        } else {
-            this.dataNode = null;
-        }
+        this.dataNode = oldSchemaConfig.getDataNode();
         this.tables = oldSchemaConfig.getLowerCaseTables();
         this.defaultMaxLimit = oldSchemaConfig.getDefaultMaxLimit();
         buildERMap();

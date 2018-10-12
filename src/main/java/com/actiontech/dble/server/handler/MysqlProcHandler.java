@@ -25,7 +25,7 @@ public final class MysqlProcHandler {
     }
 
     public static void handle(ServerConnection c) {
-        MysqlInformationSchemaHandler.doWrite(FIELD_COUNT, FIELDS, c);
+        MysqlSystemSchemaHandler.doWrite(FIELD_COUNT, FIELDS, null, c);
     }
 
 

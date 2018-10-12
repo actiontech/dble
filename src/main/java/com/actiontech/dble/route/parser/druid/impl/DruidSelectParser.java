@@ -23,9 +23,7 @@ import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.server.handler.MysqlInformationSchemaHandler;
-import com.actiontech.dble.server.handler.MysqlProcHandler;
-import com.actiontech.dble.server.response.InformationSchemaProfiling;
+import com.actiontech.dble.server.handler.MysqlSystemSchemaHandler;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 import com.actiontech.dble.sqlengine.mpp.ColumnRoutePair;
@@ -35,7 +33,6 @@ import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
-import com.alibaba.druid.sql.ast.statement.SQLUnionQuery;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlExprParser;
 
 import java.sql.SQLException;
@@ -82,7 +79,9 @@ public class DruidSelectParser extends DefaultDruidParser {
                     RouterUtil.routeNoNameTableToSingleNode(rrs, schema);
                     return schema;
                 }
-                if (matchSysTable(rrs, sc, schemaInfo)) {
+                if (SchemaUtil.MYSQL_SYS_SCHEMA.contains(schemaInfo.getSchema().toUpperCase())) {
+                    MysqlSystemSchemaHandler.handle(sc, schemaInfo, mysqlSelectQuery);
+                    rrs.setFinishedExecute(true);
                     return schema;
                 }
 
@@ -156,36 +155,6 @@ public class DruidSelectParser extends DefaultDruidParser {
             rrs.setSqlStatement(selectStmt);
         }
         return schema;
-    }
-
-    private boolean matchSysTable(RouteResultset rrs, ServerConnection sc, SchemaInfo schemaInfo) {
-        // support PhpAdmin
-        //TODO:refactor INFORMATION_SCHEMA,MYSQL
-        if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.getSchema())) {
-            MysqlInformationSchemaHandler.handle(schemaInfo, sc);
-            rrs.setFinishedExecute(true);
-            return true;
-        }
-
-        if (SchemaUtil.MYSQL_SCHEMA.equals(schemaInfo.getSchema()) &&
-                SchemaUtil.TABLE_PROC.equals(schemaInfo.getTable())) {
-            // support MySQLWorkbench
-            MysqlProcHandler.handle(sc);
-            rrs.setFinishedExecute(true);
-            return true;
-        }
-        // fix navicat SELECT STATE AS `State`, ROUND(SUM(DURATION),7) AS
-        // `Duration`, CONCAT(ROUND(SUM(DURATION)/*100,3), '%') AS
-        // `Percentage` FROM INFORMATION_SCHEMA.PROFILING WHERE QUERY_ID=
-        // GROUP BY STATE ORDER BY SEQ
-        if (SchemaUtil.INFORMATION_SCHEMA.equals(schemaInfo.getSchema()) &&
-                SchemaUtil.TABLE_PROFILING.equals(schemaInfo.getTable()) &&
-                rrs.getStatement().toUpperCase().contains("CONCAT(ROUND(SUM(DURATION)/*100,3)")) {
-            InformationSchemaProfiling.response(sc);
-            rrs.setFinishedExecute(true);
-            return true;
-        }
-        return false;
     }
     private boolean canRouteTablesToOneNode(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
                                          MySqlSelectQueryBlock mysqlSelectQuery, ServerConnection sc) throws SQLException {
@@ -477,6 +446,10 @@ public class DruidSelectParser extends DefaultDruidParser {
         Set<String> schemas = new HashSet<>();
         if (SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, schemas, noShardingNode)) {
             return routeToNoSharding(schema, rrs, schemas, noShardingNode);
+        } else if (SchemaUtil.MYSQL_SYS_SCHEMA.containsAll(schemas)) {
+            MysqlSystemSchemaHandler.handle(sc, null, selectStmt.getSelect().getQuery());
+            rrs.setFinishedExecute(true);
+            return schema;
         } else {
             return tryRouteToOneNode(schema, rrs, sc, selectStmt);
         }

@@ -27,6 +27,8 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -37,10 +39,11 @@ public final class SchemaUtil {
     private SchemaUtil() {
     }
 
-    public static final String MYSQL_SCHEMA = "mysql";
-    public static final String INFORMATION_SCHEMA = "information_schema";
-    public static final String TABLE_PROC = "proc";
-    public static final String TABLE_PROFILING = "PROFILING";
+    public static final HashSet<String> MYSQL_SYS_SCHEMA = new HashSet<>(4, 1);
+
+    static {
+        MYSQL_SYS_SCHEMA.addAll(Arrays.asList("MYSQL", "INFORMATION_SCHEMA", "PERFORMANCE_SCHEMA", "SYS"));
+    }
 
 
     public static String getRandomDb() {
@@ -108,9 +111,7 @@ public final class SchemaUtil {
             schemaInfo.table = schemaInfo.table.toLowerCase();
             schemaInfo.schema = schemaInfo.schema.toLowerCase();
         }
-        if (MYSQL_SCHEMA.equalsIgnoreCase(schemaInfo.schema) || INFORMATION_SCHEMA.equalsIgnoreCase(schemaInfo.schema)) {
-            return schemaInfo;
-        } else {
+        if (!MYSQL_SYS_SCHEMA.contains(schemaInfo.schema.toUpperCase())) {
             SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schemaInfo.schema);
             if (schemaConfig == null) {
                 String msg = "Table " + StringUtil.getFullName(schemaInfo.schema, schemaInfo.table) + " doesn't exist";
@@ -124,8 +125,8 @@ public final class SchemaUtil {
                 }
             }
             schemaInfo.schemaConfig = schemaConfig;
-            return schemaInfo;
         }
+        return schemaInfo;
     }
 
     public static SchemaInfo getSchemaInfo(String user, String schema, SQLExprTableSource tableSource) throws SQLException {
@@ -184,6 +185,12 @@ public final class SchemaUtil {
     private static boolean isNoSharding(ServerConnection source, SQLExprTableSource table, SQLStatement stmt, SQLStatement childSelectStmt, String contextSchema, Set<String> schemas, StringPtr dataNode)
             throws SQLException {
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(source.getUser(), contextSchema, table);
+        String currentSchema = schemaInfo.schema.toUpperCase();
+        if (SchemaUtil.MYSQL_SYS_SCHEMA.contains(currentSchema)) {
+            schemas.add(currentSchema);
+            return false;
+        }
+
         ServerPrivileges.CheckType checkType = ServerPrivileges.CheckType.SELECT;
         if (childSelectStmt instanceof MySqlUpdateStatement) {
             checkType = ServerPrivileges.CheckType.UPDATE;

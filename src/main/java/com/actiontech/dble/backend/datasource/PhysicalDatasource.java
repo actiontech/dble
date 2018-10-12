@@ -394,7 +394,7 @@ public abstract class PhysicalDatasource {
     public BackendConnection getConnection(String schema, boolean autocommit, final Object attachment) throws IOException {
         BackendConnection con = this.conMap.tryTakeCon(schema, autocommit);
         if (con == null) {
-            if (this.createNewCount()) {
+            if (!this.createNewCount()) {
                 String maxConError = "the max active Connections size can not be max than maxCon data host[" + this.getHostConfig().getName() + "." + this.getName() + "]";
                 LOGGER.warn(maxConError);
                 Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());

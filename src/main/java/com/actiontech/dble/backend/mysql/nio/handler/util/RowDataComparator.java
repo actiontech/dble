@@ -42,7 +42,7 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
                         continue;
                     }
                 }
-                Item cmpItem = this.createOrderItem(order.getItem(), sourceFields);
+                Item cmpItem = createOrderItem(order.getItem(), this.sourceFields, allPushDown, type);
                 if (cmpItem == null) {
                     continue;
                 }
@@ -75,7 +75,7 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
     }
 
 
-    public static Item createOrderItem(Item sel, List<Field> fields) {
+    private static Item createOrderItem(Item sel, List<Field> fields, boolean allPushDown, DMLResponseHandler.HandlerType type) {
         Item ret = null;
         if (sel.basicConstItem())
             return sel;
@@ -90,8 +90,7 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
             // in mysql even the subquery return a field name , the order would be ignored
             return ret;
         }
-        ret = HandlerTool.createFieldItem(sel, fields, 0);
-        ret.fixFields();
+        ret = HandlerTool.createItem(sel, fields, 0, allPushDown, type);
         return ret;
     }
 
@@ -114,8 +113,7 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
     @Override
     public int compare(RowDataPacket o1, RowDataPacket o2) {
         if (this.ascList != null && this.ascList.size() > 0) {
-            int cmpValue = cmp(o1, o2, 0);
-            return cmpValue;
+            return cmp(o1, o2, 0);
         } else {
             return 0;
         }

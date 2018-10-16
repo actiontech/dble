@@ -50,7 +50,7 @@ public class ItemFuncMinus extends ItemFuncAdditiveOp {
         BigDecimal v0 = args.get(0).valDecimal();
         BigDecimal v1 = args.get(1).valDecimal();
         if (this.nullValue = (args.get(0).isNull() || args.get(1).isNull()))
-            return null;
+            return BigDecimal.ZERO;
         return v0.subtract(v1);
     }
 

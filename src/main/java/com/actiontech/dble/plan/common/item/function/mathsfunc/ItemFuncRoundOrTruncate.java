@@ -29,7 +29,7 @@ public abstract class ItemFuncRoundOrTruncate extends ItemFuncNum1 {
     @Override
     public BigDecimal realOp() {
         BigDecimal val0 = args.get(0).valReal();
-        if (!(nullValue = args.get(0).isNull() || args.get(1).isNull())) {
+        if (!(nullValue = (args.get(0).isNull() || args.get(1).isNull()))) {
             int val1 = args.get(1).valInt().intValue();
             return getDecimalRound(val0, val1);
         }
@@ -43,7 +43,7 @@ public abstract class ItemFuncRoundOrTruncate extends ItemFuncNum1 {
          */
         BigInteger val0 = args.get(0).valInt();
         int val1 = args.get(1).valInt().intValue();
-        if ((nullValue = args.get(0).isNullValue() || args.get(1).isNullValue()))
+        if (nullValue = (args.get(0).isNullValue() || args.get(1).isNullValue()))
             return BigInteger.ZERO;
         return getIntRound(val0, val1);
     }
@@ -53,7 +53,7 @@ public abstract class ItemFuncRoundOrTruncate extends ItemFuncNum1 {
         hybridType = ItemResult.DECIMAL_RESULT;
         if (args.get(0).isNull() || args.get(1).isNull()) {
             this.nullValue = true;
-            return null;
+            return BigDecimal.ZERO;
         }
         BigDecimal val0 = args.get(0).valDecimal();
         int val1 = args.get(1).valInt().intValue();

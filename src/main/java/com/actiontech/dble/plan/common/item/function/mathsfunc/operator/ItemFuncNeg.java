@@ -33,12 +33,16 @@ public class ItemFuncNeg extends ItemFuncNum1 {
     @Override
     public BigInteger intOp() {
         BigInteger bi = args.get(0).valInt();
+        if (nullValue = args.get(0).isNull()) {
+            return BigInteger.ZERO;
+        }
         return bi.negate();
     }
 
     @Override
     public BigDecimal realOp() {
         BigDecimal bd = args.get(0).valReal();
+        nullValue = args.get(0).isNull();
         return bd.negate();
     }
 
@@ -46,7 +50,7 @@ public class ItemFuncNeg extends ItemFuncNum1 {
     public BigDecimal decimalOp() {
         BigDecimal bd = args.get(0).valDecimal();
         if (nullValue = args.get(0).isNullValue())
-            return null;
+            return BigDecimal.ZERO;
         return bd.negate();
     }
 

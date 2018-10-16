@@ -29,7 +29,7 @@ public class ItemFuncPeriodAdd extends ItemIntFunc {
         long period = args.get(0).valInt().longValue();
         long months = args.get(1).valInt().longValue();
 
-        if ((nullValue = args.get(0).isNullValue() || args.get(1).isNullValue()) || period == 0L)
+        if ((nullValue = (args.get(0).isNullValue() || args.get(1).isNullValue())) || period == 0L)
             return BigInteger.ZERO; /* purecov: inspected */
         return BigInteger.valueOf(MyTime.convertMonthToPeriod(MyTime.convertPeriodToMonth(period) + months));
     }

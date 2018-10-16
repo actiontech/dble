@@ -27,7 +27,7 @@ public class ItemFuncPow extends ItemDecFunc {
     public BigDecimal valReal() {
         double value = args.get(0).valReal().doubleValue();
         double val2 = args.get(1).valReal().doubleValue();
-        if ((nullValue = args.get(0).isNullValue() || args.get(1).isNullValue()))
+        if ((nullValue = (args.get(0).isNullValue() || args.get(1).isNullValue())))
             return BigDecimal.ZERO;
         return new BigDecimal(Math.pow(value, val2));
     }

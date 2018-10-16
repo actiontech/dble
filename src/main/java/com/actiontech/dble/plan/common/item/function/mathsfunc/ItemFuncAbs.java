@@ -26,21 +26,24 @@ public class ItemFuncAbs extends ItemFuncNum1 {
 
     public BigDecimal realOp() {
         BigDecimal bd = args.get(0).valReal();
+        nullValue = args.get(0).isNull();
         return bd.abs();
     }
 
     @Override
     public BigInteger intOp() {
         BigInteger bi = args.get(0).valInt();
-        return bi.abs();
+        if (!(nullValue = args.get(0).isNull()))
+            return bi.abs();
+        return BigInteger.ZERO;
     }
 
     @Override
     public BigDecimal decimalOp() {
         BigDecimal bd = args.get(0).valDecimal();
-        if (nullValue = !args.get(0).isNull())
+        if (!(nullValue = args.get(0).isNull()))
             return bd.abs();
-        return null;
+        return BigDecimal.ZERO;
     }
 
     @Override

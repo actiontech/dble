@@ -515,7 +515,7 @@ public abstract class FrontendConnection extends AbstractConnection {
     }
 
     @Override
-    public void close(String reason) {
+    public synchronized void close(String reason) {
         super.close(isAuthenticated ? reason : "");
     }
 

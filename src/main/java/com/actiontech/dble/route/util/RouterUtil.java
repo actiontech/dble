@@ -486,7 +486,12 @@ public final class RouterUtil {
                 for (ColumnRoutePair pair : partitionValue) {
                     AbstractPartitionAlgorithm algorithm = tableConfig.getRule().getRuleAlgorithm();
                     if (pair.colValue != null && !"null".equals(pair.colValue)) {
-                        Integer nodeIndex = algorithm.calculate(pair.colValue);
+                        Integer nodeIndex;
+                        try {
+                            nodeIndex = algorithm.calculate(pair.colValue);
+                        } catch (Exception e) {
+                            return false;
+                        }
                         if (nodeIndex == null) {
                             String msg = "can't find any valid data node :" + tableConfig.getName() +
                                     " -> " + tableConfig.getPartitionColumn() + " -> " + pair.colValue;

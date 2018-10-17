@@ -5,8 +5,10 @@
 
 package com.actiontech.dble.route.parser.druid.impl.ddl;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.druid.impl.DefaultDruidParser;
@@ -41,18 +43,28 @@ public class DruidCreateTableParser extends DefaultDruidParser {
             LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }
-        //disable create table select from
-        if (createStmt.getLike() != null) {
-            String msg = "create table like other table not supported :" + stmt;
-            LOGGER.info(msg);
-            throw new SQLNonTransientException(msg);
-        }
-
 
         String schemaName = schema == null ? null : schema.getName();
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, createStmt.getTableSource());
+        StructureMeta.TableMeta tableMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
+        if (tableMeta != null) {
+            String msg = "Table '" + schemaInfo.getSchema() + "." + schemaInfo.getTable() + "' already exists";
+            throw new SQLException(msg, "42S01", ErrorCode.ER_TABLE_EXISTS_ERROR);
+        }
 
-        String statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema());
+        String statement;
+        if (createStmt.getLike() != null) {
+            SchemaInfo likeSchemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, createStmt.getLike());
+            StructureMeta.TableMeta likeTableMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(likeSchemaInfo.getSchema(), likeSchemaInfo.getTable());
+            if (likeTableMeta == null) {
+                String msg = "Table '" + likeSchemaInfo.getSchema() + "." + likeSchemaInfo.getTable() + "' doesn't exist in the config of schema";
+                throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
+            }
+            statement = likeTableMeta.getCreateSql().replaceFirst("`" + likeSchemaInfo.getTable() + "`", "`" + schemaInfo.getTable() + "`");
+        } else {
+            statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema());
+        }
+
         rrs.setStatement(statement);
         String noShardingNode = RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable());
         if (noShardingNode != null) {

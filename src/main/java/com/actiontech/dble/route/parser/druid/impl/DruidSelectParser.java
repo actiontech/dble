@@ -66,7 +66,7 @@ public class DruidSelectParser extends DefaultDruidParser {
             if (mysqlFrom == null) {
                 super.visitorParse(schema, rrs, stmt, visitor, sc);
                 if (visitor.getSubQueryList().size() > 0) {
-                    return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc);
+                    return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size());
                 }
                 RouterUtil.routeNoNameTableToSingleNode(rrs, schema);
                 return schema;
@@ -100,12 +100,14 @@ public class DruidSelectParser extends DefaultDruidParser {
                 schema = schemaInfo.getSchemaConfig();
 
                 if (DbleServer.getInstance().getTmManager().getSyncView(schema.getName(), schemaInfo.getTable()) != null) {
-                    return tryRouteToOneNode(schema, rrs, sc, selectStmt);
+                    rrs.setNeedOptimizer(true);
+                    rrs.setSqlStatement(selectStmt);
+                    return schema;
                 }
 
                 super.visitorParse(schema, rrs, stmt, visitor, sc);
                 if (visitor.getSubQueryList().size() > 0) {
-                    return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc);
+                    return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size());
                 }
 
                 String noShardingNode = RouterUtil.isNoSharding(schema, schemaInfo.getTable());
@@ -123,26 +125,26 @@ public class DruidSelectParser extends DefaultDruidParser {
                 if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode()) && !sc.isAutocommit()) {
                     rrs.setCanRunInReadDB(false);
                 }
-                if (!canRouteTablesToOneNode(schema, stmt, rrs, mysqlSelectQuery, sc)) {
+                if (!canRouteTablesToOneNode(schema, stmt, rrs, mysqlSelectQuery, sc, visitor.getSelectTableList().size())) {
                     parseOrderAggGroupMysql(schema, stmt, rrs, mysqlSelectQuery, tc);
                 }
             } else if (mysqlFrom instanceof SQLSubqueryTableSource ||
                     mysqlFrom instanceof SQLJoinTableSource ||
                     mysqlFrom instanceof SQLUnionQueryTableSource) {
                 super.visitorParse(schema, rrs, stmt, visitor, sc);
-                return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc);
+                return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size());
             }
         } else if (sqlSelectQuery instanceof SQLUnionQuery) {
             super.visitorParse(schema, rrs, stmt, visitor, sc);
-            return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc);
+            return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size());
         }
 
         return schema;
     }
 
-    private SchemaConfig tryRouteToOneNode(SchemaConfig schema, RouteResultset rrs, ServerConnection sc, SQLSelectStatement selectStmt) throws SQLException {
+    private SchemaConfig tryRouteToOneNode(SchemaConfig schema, RouteResultset rrs, ServerConnection sc, SQLSelectStatement selectStmt, int tableSize) throws SQLException {
         Set<String> schemaList = new HashSet<>();
-        String dataNode = RouterUtil.tryRouteTablesToOneNode(sc.getUser(), rrs.getStatement(), schema, ctx, schemaList);
+        String dataNode = RouterUtil.tryRouteTablesToOneNode(sc.getUser(), rrs.getStatement(), schema, ctx, schemaList, tableSize);
         if (dataNode != null) {
             String sql = rrs.getStatement();
             for (String toRemoveSchemaName : schemaList) {
@@ -157,9 +159,9 @@ public class DruidSelectParser extends DefaultDruidParser {
         return schema;
     }
     private boolean canRouteTablesToOneNode(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
-                                         MySqlSelectQueryBlock mysqlSelectQuery, ServerConnection sc) throws SQLException {
+                                         MySqlSelectQueryBlock mysqlSelectQuery, ServerConnection sc, int tableSize) throws SQLException {
         Set<String> schemaList = new HashSet<>();
-        String dataNode = RouterUtil.tryRouteTablesToOneNode(sc.getUser(), rrs.getStatement(), schema, ctx, schemaList);
+        String dataNode = RouterUtil.tryRouteTablesToOneNode(sc.getUser(), rrs.getStatement(), schema, ctx, schemaList, tableSize);
         if (dataNode != null) {
             String sql = rrs.getStatement();
             assert schemaList.size() <= 1;
@@ -440,7 +442,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         return groupByCols;
     }
 
-    private SchemaConfig executeComplexSQL(String schemaName, SchemaConfig schema, RouteResultset rrs, SQLSelectStatement selectStmt, ServerConnection sc)
+    private SchemaConfig executeComplexSQL(String schemaName, SchemaConfig schema, RouteResultset rrs, SQLSelectStatement selectStmt, ServerConnection sc, int tableSize)
             throws SQLException {
         StringPtr noShardingNode = new StringPtr(null);
         Set<String> schemas = new HashSet<>();
@@ -451,7 +453,7 @@ public class DruidSelectParser extends DefaultDruidParser {
             rrs.setFinishedExecute(true);
             return schema;
         } else {
-            return tryRouteToOneNode(schema, rrs, sc, selectStmt);
+            return tryRouteToOneNode(schema, rrs, sc, selectStmt, tableSize);
         }
     }
 

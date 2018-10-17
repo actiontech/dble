@@ -37,6 +37,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     private boolean notInWhere = false;
     private List<SQLSelect> subQueryList = new ArrayList<>();
     private Map<String, String> aliasMap = new LinkedHashMap<>();
+    private List<String> selectTableList = new ArrayList<>();
     private String currentTable;
 
     private void reset() {
@@ -141,6 +142,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     @Override
     public boolean visit(SQLSelectStatement x) {
         aliasMap.clear();
+        selectTableList.clear();
         return true;
     }
 
@@ -266,7 +268,6 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     @Override
     public boolean visit(MySqlDeleteStatement x) {
         aliasMap.clear();
-
         accept(x.getFrom());
         accept(x.getUsing());
         x.getTableSource().accept(this);
@@ -287,14 +288,12 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     @Override
     public boolean visit(SQLUpdateStatement x) {
         aliasMap.clear();
-
         SQLName identName = x.getTableName();
         if (identName != null) {
             String ident = identName.toString();
             currentTable = ident;
 
             aliasMap.put(ident, ident);
-
             String alias = x.getTableSource().getAlias();
             if (alias != null) {
                 aliasMap.put(alias, ident);
@@ -313,7 +312,8 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     public boolean visit(SQLExprTableSource x) {
         if (this.isSimpleExprTableSource(x)) {
             String ident = x.getExpr().toString();
-
+            currentTable = ident;
+            selectTableList.add(ident);
             String alias = x.getAlias();
             if (alias != null && !aliasMap.containsKey(alias)) {
                 putAliasToMap(alias, ident);
@@ -343,34 +343,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
     @Override
     public boolean visit(SQLSelectQueryBlock x) {
-        List<SQLSelectItem> list = x.getSelectList();
-        for (SQLSelectItem item : list) {
-            item.accept(this);
-        }
-        if (x.getFrom() == null) {
-            return false;
-        } else {
-            if (x.getFrom() instanceof SQLSubqueryTableSource) {
-                x.getFrom().accept(this);
-                return false;
-            } else {
-                if (x.getFrom() instanceof SQLExprTableSource) {
-                    SQLExprTableSource tableSource = (SQLExprTableSource) x.getFrom();
-                    if (tableSource.getExpr() instanceof SQLName) {
-                        currentTable = tableSource.getExpr().toString();
-                    }
-                }
-                if (x.getFrom() != null) {
-                    x.getFrom().accept(this);
-                }
-
-                if (x.getWhere() != null) {
-                    x.getWhere().setParent(x);
-                }
-
-                return true;
-            }
-        }
+        return true;
     }
 
     @Override
@@ -715,6 +688,11 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         }
         return retList;
     }
+
+    public List<String> getSelectTableList() {
+        return selectTableList;
+    }
+
 
     private void getConditionsFromWhereUnit(WhereUnit whereUnit) {
         List<List<Condition>> retList = new ArrayList<>();

@@ -413,7 +413,10 @@ public final class RouterUtil {
         return routeNodeSet;
     }
 
-    public static String tryRouteTablesToOneNode(String user, String sql, SchemaConfig schemaConfig, DruidShardingParseInfo ctx, Set<String> schemaList) throws SQLException {
+    public static String tryRouteTablesToOneNode(String user, String sql, SchemaConfig schemaConfig, DruidShardingParseInfo ctx, Set<String> schemaList, int tableSize) throws SQLException {
+        if (ctx.getTables().size() != tableSize) {
+            return null;
+        }
         Set<String> resultNodes = new HashSet<>();
         for (RouteCalculateUnit routeUnit : ctx.getRouteCalculateUnits()) {
             Set<String> tmpResultNodes = new HashSet<>();

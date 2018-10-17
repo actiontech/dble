@@ -152,6 +152,8 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         String begin;
         if (x.beginExpr instanceof SQLCharExpr) {
             begin = (String) ((SQLCharExpr) x.beginExpr).getValue();
+        } else if (x.beginExpr instanceof SQLNullExpr) {
+            begin = x.beginExpr.toString();
         } else {
             Object value = SQLEvalVisitorUtils.eval(this.getDbType(), x.beginExpr, this.getParameters(), false);
             if (value != null) {
@@ -164,6 +166,8 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         String end;
         if (x.endExpr instanceof SQLCharExpr) {
             end = (String) ((SQLCharExpr) x.endExpr).getValue();
+        } else if (x.endExpr instanceof SQLNullExpr) {
+            end = x.endExpr.toString();
         } else {
             Object value = SQLEvalVisitorUtils.eval(this.getDbType(), x.endExpr, this.getParameters(), false);
             if (value != null) {
@@ -432,8 +436,12 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                 SQLExpr item = var12[var8];
                 Column valueColumn = this.getColumn(item);
                 if (valueColumn == null) {
-                    Object value = SQLEvalVisitorUtils.eval(this.getDbType(), item, this.getParameters(), false);
-                    condition.getValues().add(value);
+                    if (item instanceof SQLNullExpr) {
+                        condition.getValues().add(item);
+                    } else {
+                        Object value = SQLEvalVisitorUtils.eval(this.getDbType(), item, this.getParameters(), false);
+                        condition.getValues().add(value);
+                    }
                 }
             }
 

@@ -87,8 +87,6 @@ public final class DryRun {
         if (newSystemVariables == null) {
             if (!loader.isDataHostWithoutWH()) {
                 list.add(new ErrorInfo("Backend", "ERROR", "Get Vars from backend failed,Maybe all backend MySQL can't connected"));
-            } else {
-
             }
         } else {
             try {

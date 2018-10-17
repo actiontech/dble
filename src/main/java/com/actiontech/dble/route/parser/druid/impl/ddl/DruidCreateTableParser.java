@@ -48,7 +48,7 @@ public class DruidCreateTableParser extends DefaultDruidParser {
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, createStmt.getTableSource());
         StructureMeta.TableMeta tableMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
         if (tableMeta != null) {
-            String msg = "Table '" + schemaInfo.getSchema() + "." + schemaInfo.getTable() + "' already exists";
+            String msg = "Table '" + schemaInfo.getSchema() + "." + schemaInfo.getTable() + "' or table meta already exists";
             throw new SQLException(msg, "42S01", ErrorCode.ER_TABLE_EXISTS_ERROR);
         }
 
@@ -57,7 +57,7 @@ public class DruidCreateTableParser extends DefaultDruidParser {
             SchemaInfo likeSchemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, createStmt.getLike());
             StructureMeta.TableMeta likeTableMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(likeSchemaInfo.getSchema(), likeSchemaInfo.getTable());
             if (likeTableMeta == null) {
-                String msg = "Table '" + likeSchemaInfo.getSchema() + "." + likeSchemaInfo.getTable() + "' doesn't exist in the config of schema";
+                String msg = "Table '" + likeSchemaInfo.getSchema() + "." + likeSchemaInfo.getTable() + "' or table meta doesn't exist";
                 throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
             }
             statement = likeTableMeta.getCreateSql().replaceFirst("`" + likeSchemaInfo.getTable() + "`", "`" + schemaInfo.getTable() + "`");

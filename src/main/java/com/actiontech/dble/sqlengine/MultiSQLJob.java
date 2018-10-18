@@ -68,7 +68,7 @@ public class MultiSQLJob implements ResponseHandler, Runnable {
                 ds.getConnection(schema, true, this, null);
             }
         } catch (Exception e) {
-            LOGGER.info("can't get connection for sql ,error:" + e);
+            LOGGER.warn("can't get connection", e);
             doFinished(true);
         }
     }
@@ -107,7 +107,7 @@ public class MultiSQLJob implements ResponseHandler, Runnable {
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        LOGGER.info("can't get connection for sql :" + sql, e);
+        LOGGER.warn("can't get connection for sql :" + sql, e);
         doFinished(true);
     }
 

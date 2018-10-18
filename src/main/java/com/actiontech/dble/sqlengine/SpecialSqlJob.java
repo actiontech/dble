@@ -57,7 +57,7 @@ public class SpecialSqlJob extends SQLJob {
             });
 
         } catch (Exception e) {
-            LOGGER.info("can't get connection for sql ,error:" + e);
+            LOGGER.warn("can't get connection", e);
             doFinished(true);
         }
     }
@@ -74,7 +74,7 @@ public class SpecialSqlJob extends SQLJob {
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        LOGGER.info("can't get connection for sql :" + sql, e);
+        LOGGER.warn("can't get connection for sql :" + sql, e);
         list.add(new ErrorInfo("Meta", "WARNING", "Can't get connection for Meta check in dataNode[" + ds.getName() + "." + schema + "]"));
         doFinished(true);
     }

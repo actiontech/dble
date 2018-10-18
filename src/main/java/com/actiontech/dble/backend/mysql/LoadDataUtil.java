@@ -23,7 +23,6 @@ public final class LoadDataUtil {
     }
 
     public static void requestFileDataResponse(byte[] data, BackendConnection conn) {
-
         byte packId = data[3];
         BackendAIOConnection backendAIOConnection = (BackendAIOConnection) conn;
         RouteResultsetNode rrn = (RouteResultsetNode) conn.getAttachment();
@@ -32,25 +31,16 @@ public final class LoadDataUtil {
         try {
             if (loadDataData != null && loadDataData.size() > 0) {
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                for (int i = 0, loadDataDataSize = loadDataData.size(); i < loadDataDataSize; i++) {
-                    String line = loadDataData.get(i);
-
-
-                    String s = (i == loadDataDataSize - 1) ? line : line + loadData.getLineTerminatedBy();
+                for (String loadDataDataLine : loadDataData) {
+                    String s = loadDataDataLine + loadData.getLineTerminatedBy();
                     byte[] bytes = s.getBytes(CharsetUtil.getJavaCharset(loadData.getCharset()));
                     bos.write(bytes);
-
-
                 }
-
                 packId = writeToBackConnection(packId, new ByteArrayInputStream(bos.toByteArray()), backendAIOConnection);
-
             } else {
                 packId = writeToBackConnection(packId, new BufferedInputStream(new FileInputStream(loadData.getFileName())), backendAIOConnection);
-
             }
         } catch (IOException e) {
-
             throw new RuntimeException(e);
         } finally {
             //send empty packet
@@ -58,8 +48,6 @@ public final class LoadDataUtil {
             empty[3] = ++packId;
             backendAIOConnection.write(empty);
         }
-
-
     }
 
     public static byte writeToBackConnection(byte packID, InputStream inputStream, BackendAIOConnection backendAIOConnection) throws IOException {
@@ -83,12 +71,9 @@ public final class LoadDataUtil {
                 packet.setData(temp);
                 packet.write(backendAIOConnection);
             }
-
         } finally {
             inputStream.close();
         }
-
-
         return packID;
     }
 }

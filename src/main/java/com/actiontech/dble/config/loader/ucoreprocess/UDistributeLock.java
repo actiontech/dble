@@ -61,7 +61,7 @@ public class UDistributeLock {
                     String sessionId = session;
                     while (!Thread.currentThread().isInterrupted()) {
                         try {
-                            LOGGER.info("renew lock of session  start:" + sessionId + " " + path);
+                            LOGGER.debug("renew lock of session  start:" + sessionId + " " + path);
                             if ("".equals(ClusterUcoreSender.getKey(path).getValue())) {
                                 LOGGER.warn("renew lock of session  failure:" + sessionId + " " + path + ", the key is missing ");
                                 // alert
@@ -70,11 +70,11 @@ public class UDistributeLock {
                                 LOGGER.warn("renew lock of session  failure:" + sessionId + " " + path);
                                 // alert
                             } else {
-                                LOGGER.info("renew lock of session  success:" + sessionId + " " + path);
+                                LOGGER.debug("renew lock of session  success:" + sessionId + " " + path);
                             }
                             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10000));
                         } catch (Exception e) {
-                            LOGGER.info("renew lock of session  failure:" + sessionId + " " + path, e);
+                            LOGGER.warn("renew lock of session  failure:" + sessionId + " " + path, e);
                             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(5000));
                         }
                     }

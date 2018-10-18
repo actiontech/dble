@@ -6,12 +6,22 @@
 package com.actiontech.dble.manager.handler;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.datasource.PhysicalDBPool;
+import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.manager.response.*;
 import com.actiontech.dble.route.parser.ManagerParseShow;
 import com.actiontech.dble.server.status.SlowQueryLog;
+import com.actiontech.dble.sqlengine.TransformSQLJob;
 import com.actiontech.dble.util.StringUtil;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowVariantsStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowWarningsStatement;
+import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
+import com.alibaba.druid.sql.parser.SQLStatementParser;
+
+import java.util.Iterator;
 
 
 /**
@@ -198,7 +208,28 @@ public final class ShowHandler {
                 ShowSingleValue.execute(c, "@@slow_query.flushsize", SlowQueryLog.getInstance().getFlushSize());
                 break;
             default:
-                c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
+                if (isSupportShow(stmt)) {
+                    Iterator<PhysicalDBPool> iterator = DbleServer.getInstance().getConfig().getDataHosts().values().iterator();
+                    if (iterator.hasNext()) {
+                        PhysicalDBPool pool = iterator.next();
+                        final PhysicalDatasource source = pool.getSource();
+                        TransformSQLJob sqlJob = new TransformSQLJob(stmt, pool.getSchemas()[0], source, c);
+                        sqlJob.run();
+                    } else {
+                        c.writeErrMessage(ErrorCode.ER_YES, "no valid data host");
+                    }
+                } else {
+                    c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
+                }
         }
+    }
+
+    private static boolean isSupportShow(String stmt) {
+        SQLStatementParser parser = new MySqlStatementParser(stmt);
+        SQLStatement statement = parser.parseStatement();
+        if (!(statement instanceof MySqlShowWarningsStatement || statement instanceof MySqlShowVariantsStatement)) {
+            return false;
+        }
+        return true;
     }
 }

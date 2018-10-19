@@ -165,7 +165,9 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         tempFile = tempPath + "clientTemp.txt";
         tempByteBuffer = new ByteArrayOutputStream();
 
-        trySetPartitionColumnIndex(statement);
+        if (!trySetPartitionColumnIndex(statement)) {
+            return;
+        }
 
         parseLoadDataPram();
         if (statement.isLocal()) {
@@ -215,7 +217,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     /**
      * findout the index of the partition key
      */
-    private void trySetPartitionColumnIndex(MySqlLoadDataInFileStatement sqlStatement) {
+    private boolean trySetPartitionColumnIndex(MySqlLoadDataInFileStatement sqlStatement) {
         if (tableConfig != null) {
             List<SQLExpr> columns = sqlStatement.getColumns();
 
@@ -241,13 +243,14 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                             }
                         }
                     } catch (Exception e) {
-                        serverConnection.writeErrMessage(ErrorCode.ER_DOING_DDL, " table is doing DDL");
+                        serverConnection.writeErrMessage(ErrorCode.ER_DOING_DDL, " table is doing DDL or table meta error");
                         clear();
-                        return;
+                        return false;
                     }
                 }
             }
         }
+        return true;
     }
 
     private synchronized void saveByteOrToFile(byte[] data, boolean isForce) {

@@ -56,6 +56,9 @@ public final class SchemaUtil {
 
     public static SchemaInfo getSchemaInfo(String user, SchemaConfig schemaConfig, String fullTableName) throws SQLException {
         SchemaInfo schemaInfo = new SchemaInfo();
+        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+            fullTableName = fullTableName.toLowerCase();
+        }
         String[] tableAndSchema = fullTableName.split("\\.");
 
         if (tableAndSchema.length == 2) {
@@ -80,10 +83,6 @@ public final class SchemaUtil {
             schemaInfo.schemaConfig = schemaConfig;
         }
 
-        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
-            schemaInfo.table = schemaInfo.table.toLowerCase();
-            schemaInfo.schema = schemaInfo.schema.toLowerCase();
-        }
         return schemaInfo;
     }
 

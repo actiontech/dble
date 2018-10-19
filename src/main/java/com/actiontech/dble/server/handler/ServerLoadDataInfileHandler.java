@@ -165,7 +165,9 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         tempFile = tempPath + "clientTemp.txt";
         tempByteBuffer = new ByteArrayOutputStream();
 
-        trySetPartitionColumnIndex(statement);
+        if (!trySetPartitionColumnIndex(statement)) {
+            return;
+        }
 
         parseLoadDataPram();
         if (statement.isLocal()) {
@@ -215,37 +217,40 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     /**
      * findout the index of the partition key
      */
-    private void trySetPartitionColumnIndex(MySqlLoadDataInFileStatement sqlStatement) {
+    private boolean trySetPartitionColumnIndex(MySqlLoadDataInFileStatement sqlStatement) {
         if (tableConfig != null) {
             List<SQLExpr> columns = sqlStatement.getColumns();
 
             String pColumn = getPartitionColumn();
-            if (columns != null && columns.size() > 0) {
-                for (int i = 0, columnsSize = columns.size(); i < columnsSize; i++) {
-                    String column = StringUtil.removeBackQuote(columns.get(i).toString());
-                    if (pColumn.equalsIgnoreCase(column)) {
-                        partitionColumnIndex = i;
-                        break;
-                    }
-                }
-            } else {
-                try {
-                    StructureMeta.TableMeta tbMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schema.getName(), tableName);
-                    if (tbMeta != null) {
-                        for (int i = 0; i < tbMeta.getColumnsCount(); i++) {
-                            if (pColumn.equalsIgnoreCase(tbMeta.getColumns(i).getName())) {
-                                partitionColumnIndex = i;
-                                break;
-                            }
+            if (pColumn != null) {
+                if (columns != null && columns.size() > 0) {
+                    for (int i = 0, columnsSize = columns.size(); i < columnsSize; i++) {
+                        String column = StringUtil.removeBackQuote(columns.get(i).toString());
+                        if (pColumn.equalsIgnoreCase(column)) {
+                            partitionColumnIndex = i;
+                            break;
                         }
                     }
-                } catch (Exception e) {
-                    serverConnection.writeErrMessage(ErrorCode.ER_DOING_DDL, " table is doing DDL");
-                    clear();
-                    return;
+                } else {
+                    try {
+                        StructureMeta.TableMeta tbMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schema.getName(), tableName);
+                        if (tbMeta != null) {
+                            for (int i = 0; i < tbMeta.getColumnsCount(); i++) {
+                                if (pColumn.equalsIgnoreCase(tbMeta.getColumns(i).getName())) {
+                                    partitionColumnIndex = i;
+                                    break;
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        serverConnection.writeErrMessage(ErrorCode.ER_DOING_DDL, " table is doing DDL or table meta error");
+                        clear();
+                        return false;
+                    }
                 }
             }
         }
+        return true;
     }
 
     private synchronized void saveByteOrToFile(byte[] data, boolean isForce) {
@@ -286,12 +291,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     private RouteResultset tryDirectRoute(String strSql, String[] lineList) {
         RouteResultset rrs = new RouteResultset(strSql, ServerParse.INSERT);
         rrs.setLoadData(true);
-        if (tableConfig == null && schema.getDataNode() != null) {
-            //default node
-            RouteResultsetNode rrNode = new RouteResultsetNode(schema.getDataNode(), ServerParse.INSERT, strSql);
-            rrs.setNodes(new RouteResultsetNode[]{rrNode});
-            return rrs;
-        } else if (tableConfig != null && tableConfig.isGlobalTable()) {
+        if (tableConfig != null && tableConfig.isGlobalTable()) {
             ArrayList<String> dataNodes = tableConfig.getDataNodes();
             RouteResultsetNode[] rrsNodes = new RouteResultsetNode[dataNodes.size()];
             for (int i = 0, dataNodesSize = dataNodes.size(); i < dataNodesSize; i++) {
@@ -299,25 +299,32 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 RouteResultsetNode rrNode = new RouteResultsetNode(dataNode, ServerParse.INSERT, strSql);
                 rrsNodes[i] = rrNode;
             }
+            rrs.setGlobalTable(true);
             rrs.setNodes(rrsNodes);
             return rrs;
-        } else if (tableConfig != null) {
+        } else {
             DruidShardingParseInfo ctx = new DruidShardingParseInfo();
             ctx.addTable(tableName);
 
-            if (partitionColumnIndex == -1) {
-                throw new RuntimeException("no partition Column in this Line " + StringUtil.join(lineList, loadData.getLineTerminatedBy()));
+            if (partitionColumnIndex != -1) {
+                String value = lineList[partitionColumnIndex];
+                RouteCalculateUnit routeCalculateUnit = new RouteCalculateUnit();
+                routeCalculateUnit.addShardingExpr(tableName, getPartitionColumn(),
+                        parseFieldString(value, loadData.getEnclose(), loadData.getEscape()));
+                ctx.addRouteCalculateUnit(routeCalculateUnit);
             }
-            String value = lineList[partitionColumnIndex];
-            RouteCalculateUnit routeCalculateUnit = new RouteCalculateUnit();
-            routeCalculateUnit.addShardingExpr(tableName, getPartitionColumn(),
-                    parseFieldString(value, loadData.getEnclose(), loadData.getEscape()));
-            ctx.addRouteCalculateUnit(routeCalculateUnit);
 
             try {
                 SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
-                for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
-                    RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, ctx, unit, rrs, false, tableId2DataNodeCache, null);
+                if (ctx.getRouteCalculateUnits().size() > 0) {
+                    for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
+                        RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, ctx, unit, rrs, false, tableId2DataNodeCache, null);
+                        if (rrsTmp != null) {
+                            Collections.addAll(nodeSet, rrsTmp.getNodes());
+                        }
+                    }
+                } else {
+                    RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, ctx, null, rrs, false, tableId2DataNodeCache, null);
                     if (rrsTmp != null) {
                         Collections.addAll(nodeSet, rrsTmp.getNodes());
                     }
@@ -337,7 +344,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             }
         }
 
-        return null;
     }
 
 
@@ -448,6 +454,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         rrs.setLoadData(true);
         rrs.setStatement(srcStatement);
         rrs.setFinishedRoute(true);
+        rrs.setGlobalTable(tableConfig == null ? false : this.tableConfig.isGlobalTable());
         int size = routeMap.size();
         RouteResultsetNode[] routeResultsetNodes = new RouteResultsetNode[size];
         int index = 0;

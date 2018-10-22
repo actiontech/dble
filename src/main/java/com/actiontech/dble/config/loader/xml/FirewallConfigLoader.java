@@ -10,6 +10,7 @@ import com.actiontech.dble.config.model.UserConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.config.util.ParameterMapping;
+import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.wall.WallConfig;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -68,6 +69,11 @@ public class FirewallConfigLoader implements Loader<FirewallConfig, XMLServerLoa
 
                 Map<String, Object> props = ConfigUtil.loadElements((Element) node);
                 ParameterMapping.mapping(wallConfig, props);
+                if (props.size() > 0) {
+                    String[] propItem = new String[props.size()];
+                    props.keySet().toArray(propItem);
+                    throw new ConfigException("blacklist item(s) is not recognized: " + StringUtil.join(propItem, ","));
+                }
             }
         }
         firewall.setWallConfig(wallConfig);

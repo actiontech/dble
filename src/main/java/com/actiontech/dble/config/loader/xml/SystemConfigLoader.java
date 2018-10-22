@@ -10,6 +10,7 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.config.util.ParameterMapping;
+import com.actiontech.dble.util.StringUtil;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -27,6 +28,11 @@ public class SystemConfigLoader implements Loader<SystemConfig, XMLServerLoader>
             if (node instanceof Element) {
                 Map<String, Object> props = ConfigUtil.loadElements((Element) node);
                 ParameterMapping.mapping(system, props);
+                if (props.size() > 0) {
+                    String[] propItem = new String[props.size()];
+                    props.keySet().toArray(propItem);
+                    throw new ConfigException("These properties of system are not recognized: " + StringUtil.join(propItem, ","));
+                }
             }
         }
 

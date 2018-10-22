@@ -11,6 +11,7 @@ import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.SplitUtil;
+import com.actiontech.dble.util.StringUtil;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -35,22 +36,31 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
                 String password = (String) props.get("password");
                 String usingDecrypt = (String) props.get("usingDecrypt");
                 String passwordDecrypt = DecryptUtil.decrypt(usingDecrypt, name, password);
+                if (passwordDecrypt == null) {
+                    throw new ConfigException("User password must be configured");
+                } else {
+                    props.remove("password");
+                    props.remove("usingDecrypt");
+                }
                 user.setName(name);
                 user.setPassword(passwordDecrypt);
                 user.setEncryptPassword(password);
 
                 String maxCon = (String) props.get("maxCon");
                 if (null != maxCon) {
+                    props.remove("maxCon");
                     user.setMaxCon(Integer.parseInt(maxCon));
                 }
 
                 String readOnly = (String) props.get("readOnly");
                 if (null != readOnly) {
+                    props.remove("readOnly");
                     user.setReadOnly(Boolean.parseBoolean(readOnly));
                 }
 
                 String manager = (String) props.get("manager");
                 if (null != manager) {
+                    props.remove("manager");
                     user.setManager(Boolean.parseBoolean(manager));
                     user.setSchemas(new HashSet<String>(0));
                 }
@@ -58,6 +68,7 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
                 if (user.isManager() && schemas != null) {
                     throw new ConfigException("manager user can't set any schema!");
                 } else if (!user.isManager()) {
+                    props.remove("schemas");
                     if (schemas != null && !"".equals(schemas)) {
                         String[] strArray = SplitUtil.split(schemas, ',', true);
                         user.setSchemas(new HashSet<>(Arrays.asList(strArray)));
@@ -69,6 +80,11 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
                 }
                 if (users.containsKey(name)) {
                     throw new ConfigException("user " + name + " duplicated!");
+                }
+                if (props.size() > 0) {
+                    String[] propItem = new String[props.size()];
+                    props.keySet().toArray(propItem);
+                    throw new ConfigException("These properties of user[" + name + "]  are not recognized: " + StringUtil.join(propItem, ","));
                 }
                 users.put(name, user);
             }

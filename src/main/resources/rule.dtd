@@ -27,9 +27,5 @@
         <!ATTLIST function name CDATA #REQUIRED>
         <!ATTLIST function class CDATA #REQUIRED>
 
-        <!ELEMENT property (#PCDATA | bean)*>
+        <!ELEMENT property (#PCDATA)*>
         <!ATTLIST property name NMTOKEN #REQUIRED>
-
-        <!ELEMENT bean (property*)>
-        <!ATTLIST bean name NMTOKEN #IMPLIED>
-        <!ATTLIST bean class NMTOKEN #IMPLIED>

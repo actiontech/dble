@@ -166,7 +166,13 @@ public class XMLRuleLoader {
                 //reflection
                 AbstractPartitionAlgorithm function = createFunction(name, clazz);
                 function.setName(name);
-                ParameterMapping.mapping(function, ConfigUtil.loadElements(e));
+                Map<String, Object> props = ConfigUtil.loadElements(e);
+                ParameterMapping.mapping(function, props);
+                if (props.size() > 0) {
+                    String[] propItem = new String[props.size()];
+                    props.keySet().toArray(propItem);
+                    throw new ConfigException("These properties of function [" + name + "] is not recognized: " + StringUtil.join(propItem, ","));
+                }
                 //init for AbstractPartitionAlgorithm
                 function.selfCheck();
                 function.init();

@@ -130,41 +130,12 @@ public final class ConfigUtil {
                 String name = e.getNodeName();
                 if ("property".equals(name)) {
                     String key = e.getAttribute("name");
-                    NodeList nl = e.getElementsByTagName("bean");
-                    if (nl.getLength() == 0) {
-                        String value = e.getTextContent();
-                        map.put(key, StringUtil.isEmpty(value) ? null : value.trim());
-                    } else {
-                        map.put(key, loadBean((Element) nl.item(0)));
-                    }
+                    String value = e.getTextContent();
+                    map.put(key, StringUtil.isEmpty(value) ? null : value.trim());
                 }
             }
         }
         return map;
-    }
-
-    public static BeanConfig loadBean(Element parent, String tagName) {
-        NodeList nodeList = parent.getElementsByTagName(tagName);
-        if (nodeList.getLength() > 1) {
-            throw new ConfigException(tagName + " elements length over one!");
-        }
-        return loadBean((Element) nodeList.item(0));
-    }
-
-    public static BeanConfig loadBean(Element e) {
-        if (e == null) {
-            return null;
-        }
-        BeanConfig bean = new BeanConfig();
-        bean.setName(e.getAttribute("name"));
-        Element element = loadElement(e, "className");
-        if (element != null) {
-            bean.setClassName(element.getTextContent());
-        } else {
-            bean.setClassName(e.getAttribute("class"));
-        }
-        bean.setParams(loadElements(e));
-        return bean;
     }
 
     public static void setSchemasForPool(Map<String, PhysicalDBPool> dataHostMap, Map<String, PhysicalDBNode> dataNodeMap) {

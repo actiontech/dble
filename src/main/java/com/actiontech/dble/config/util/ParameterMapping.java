@@ -51,45 +51,15 @@ public final class ParameterMapping {
                 if (isPrimitiveType(cls)) {
                     value = convert(cls, string);
                 }
-            } else if (obj instanceof BeanConfig) {
-                value = createBean((BeanConfig) obj);
-            } else if (obj instanceof BeanConfig[]) {
-                List<Object> list = new ArrayList<>();
-                for (BeanConfig beanconfig : (BeanConfig[]) obj) {
-                    list.add(createBean(beanconfig));
-                }
-                value = list.toArray();
             }
             if (cls != null && value != null) {
                 Method method = pd.getWriteMethod();
                 if (method != null) {
                     method.invoke(object, value);
+                    parameter.remove(pd.getName());
                 }
             }
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    public static Object createBean(BeanConfig config) throws IllegalAccessException, InvocationTargetException {
-        Object bean = config.create(true);
-        if (bean instanceof Map) {
-            Map<String, Object> map = (Map<String, Object>) bean;
-            for (Map.Entry<String, Object> entry : config.getParams().entrySet()) {
-                String key = entry.getKey();
-                Object value = entry.getValue();
-                if (value instanceof BeanConfig) {
-                    BeanConfig mapBeanConfig = (BeanConfig) entry.getValue();
-                    value = mapBeanConfig.create(true);
-                    mapping(value, mapBeanConfig.getParams());
-                }
-                map.put(key, value);
-            }
-        } else if (bean instanceof List) {
-            //do nothing
-        } else {
-            mapping(bean, config.getParams());
-        }
-        return bean;
     }
 
     /**

@@ -76,7 +76,7 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
                         throw new ConfigException("Server user must have at least one schemas");
                     }
                     // load DML
-                    loadPrivileges(user, false, e);
+                    loadPrivileges(user, e);
                 }
                 if (users.containsKey(name)) {
                     throw new ConfigException("user " + name + " duplicated!");
@@ -91,7 +91,7 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
         }
     }
 
-    private void loadPrivileges(UserConfig userConfig, boolean isLowerCaseTableNames, Element node) {
+    private void loadPrivileges(UserConfig userConfig, Element node) {
         UserPrivilegesConfig privilegesConfig = new UserPrivilegesConfig();
 
         NodeList privilegesNodes = node.getElementsByTagName("privileges");
@@ -107,10 +107,7 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
             int schemaNodeLength = schemaNodes.getLength();
             for (int j = 0; j < schemaNodeLength; j++) {
                 Element schemaNode = (Element) schemaNodes.item(j);
-                String name1 = schemaNode.getAttribute("name");
-                if (isLowerCaseTableNames) {
-                    name1 = name1.toLowerCase();
-                }
+                final String name1 = schemaNode.getAttribute("name");
 
                 String dml1 = schemaNode.getAttribute("dml");
                 int[] dml1Array = new int[dml1.length()];
@@ -127,9 +124,6 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
                     UserPrivilegesConfig.TablePrivilege tablePrivilege = new UserPrivilegesConfig.TablePrivilege();
                     Element tableNode = (Element) tableNodes.item(z);
                     String name2 = tableNode.getAttribute("name");
-                    if (isLowerCaseTableNames) {
-                        name2 = name2.toLowerCase();
-                    }
 
                     String dml2 = tableNode.getAttribute("dml");
                     int[] dml2Array = new int[dml2.length()];

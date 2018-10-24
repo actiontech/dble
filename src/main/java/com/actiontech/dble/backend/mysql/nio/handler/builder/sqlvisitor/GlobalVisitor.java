@@ -18,6 +18,7 @@ import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
 import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.util.PlanUtil;
+import com.actiontech.dble.util.StringUtil;
 
 
 /**
@@ -265,7 +266,7 @@ public class GlobalVisitor extends MysqlVisitor {
                 Item groupCol = group.getItem();
                 String pdName = "";
                 if (groupCol.basicConstItem())
-                    pdName = "'" + groupCol.toString() + "'";
+                    pdName = "'" + StringUtil.trim(groupCol.toString(), '\'') + "'";
                 if (pdName.isEmpty())
                     pdName = visitUnSelPushDownName(groupCol, true);
                 sqlBuilder.append(pdName).append(" ").append(group.getSortOrder());
@@ -295,7 +296,7 @@ public class GlobalVisitor extends MysqlVisitor {
                 Item orderByCol = order.getItem();
                 String pdName = "";
                 if (orderByCol.basicConstItem())
-                    pdName = "'" + orderByCol.toString() + "'";
+                    pdName = "'" + StringUtil.trim(orderByCol.toString(), '\'') + "'";
                 if (pdName.isEmpty())
                     pdName = visitUnSelPushDownName(orderByCol, true);
                 sqlBuilder.append(pdName).append(" ").append(order.getSortOrder());
@@ -354,6 +355,7 @@ public class GlobalVisitor extends MysqlVisitor {
             return orgPushDownName + " as `" + pushAlias + "`";
         }
     }
+
     // pushDown's name of not in select list
     protected final String visitUnSelPushDownName(Item item, boolean canUseAlias) {
         if (item.isWithSubQuery()) {

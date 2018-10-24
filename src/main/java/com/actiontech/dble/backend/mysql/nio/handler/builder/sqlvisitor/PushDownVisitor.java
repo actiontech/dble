@@ -280,7 +280,7 @@ public class PushDownVisitor extends MysqlVisitor {
                         Item groupCol = group.getItem();
                         String pdName = "";
                         if (groupCol.basicConstItem())
-                            pdName = "'" + groupCol.toString() + "'";
+                            pdName = "'" + StringUtil.trim(groupCol.toString(), '\'') + "'";
                         if (pdName.isEmpty())
                             pdName = visitUnSelPushDownName(groupCol, true);
                         sqlBuilder.append(pdName).append(" ").append(group.getSortOrder()).append(",");
@@ -296,7 +296,7 @@ public class PushDownVisitor extends MysqlVisitor {
                         Item orderSel = order.getItem();
                         String pdName = "";
                         if (orderSel.basicConstItem())
-                            pdName = "'" + orderSel.toString() + "'";
+                            pdName = "'" + StringUtil.trim(orderSel.toString(), '\'') + "'";
                         if (pdName.isEmpty())
                             pdName = visitUnSelPushDownName(orderSel, true);
                         sqlBuilder.append(pdName).append(" ").append(order.getSortOrder()).append(",");
@@ -320,7 +320,7 @@ public class PushDownVisitor extends MysqlVisitor {
                     if (orderByCol instanceof ItemString) {
                         pdName = orderByCol.toString();
                     } else {
-                        pdName = "'" + orderByCol.toString() + "'";
+                        pdName = "'" + StringUtil.trim(orderByCol.toString(), '\'') + "'";
                     }
                 if (pdName.isEmpty())
                     pdName = visitUnSelPushDownName(orderByCol, true);

@@ -533,4 +533,14 @@ public final class StringUtil {
         sb.append(list[list.length - 1]);
         return sb.toString();
     }
+
+
+    public static String trim(String orgStr, char c) {
+        if (orgStr != null && orgStr.length() > 1) {
+            if (orgStr.charAt(0) == c && orgStr.charAt(orgStr.length() - 1) == c) {
+                return orgStr.substring(1, orgStr.length() - 1);
+            }
+        }
+        return orgStr;
+    }
 }

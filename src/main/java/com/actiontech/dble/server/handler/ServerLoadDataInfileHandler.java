@@ -316,7 +316,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             if (partitionColumnIndex != -1) {
                 String value;
                 if (lineList.length < partitionColumnIndex + 1) {
-                    value = "0";
+                    throw new RuntimeException("Partition column is empty in line '" + StringUtil.join(lineList, loadData.getLineTerminatedBy()) + "'");
                 } else {
                     value = lineList[partitionColumnIndex];
                 }

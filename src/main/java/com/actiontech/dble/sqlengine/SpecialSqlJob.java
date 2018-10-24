@@ -101,8 +101,8 @@ public class SpecialSqlJob extends SQLJob {
         list.add(new ErrorInfo("Meta", "WARNING", "Execute show tables in dataNode[" + ds.getName() + "." + schema + "] get error"));
 
         LOGGER.info(errMsg);
-        conn.close("dry run error backend");
         doFinished(true);
+        conn.close("dry run error backend");
     }
 
     @Override
@@ -115,8 +115,8 @@ public class SpecialSqlJob extends SQLJob {
 
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
-        conn.close("dry run used connection");
         doFinished(false);
+        conn.close("dry run used connection");
     }
 
 }

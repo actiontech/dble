@@ -157,7 +157,7 @@ public final class ComplexQueryPlanUtil {
                 TempTableHandler tmp = (TempTableHandler) handler;
                 DMLResponseHandler endHandler = tmp.getCreatedHandler();
                 endHandler.setNextHandler(nextHandler);
-                buildHandlerTree(endHandler, refMap, handlerMap, nameMap, Collections.singleton(childName + "'s RESULTS"));
+                rootName = buildHandlerTree(endHandler, refMap, handlerMap, nameMap, Collections.singleton(childName + "'s RESULTS"));
             }
             handler = nextHandler;
             nextHandler = nextHandler.getNextHandler();

@@ -24,17 +24,15 @@ import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.sqlengine.mpp.LoadData;
 import com.actiontech.dble.util.ObjectUtil;
 import com.actiontech.dble.util.SqlStringUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
-import com.alibaba.druid.sql.ast.expr.SQLLiteralExpr;
-import com.alibaba.druid.sql.ast.expr.SQLTextLiteralExpr;
+import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlLoadDataInFileStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
-import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import com.univocity.parsers.csv.CsvParser;
@@ -138,8 +136,30 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             return;
         }
 
-        SQLStatementParser parser = new MySqlStatementParser(strSql);
-        statement = (MySqlLoadDataInFileStatement) parser.parseStatement();
+        try {
+            statement = (MySqlLoadDataInFileStatement) new MySqlStatementParser(strSql).parseStatement();
+            SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(serverConnection.getUser(), serverConnection.getSchema(), statement.getTableName(), null);
+            tableName = schemaInfo.getTable();
+            schema = schemaInfo.getSchemaConfig();
+        } catch (SQLException e) {
+            clear();
+            serverConnection.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());
+            return;
+        }
+
+        // if there are schema in sql, remove it.
+        if (statement.getTableName() instanceof SQLPropertyExpr) {
+            statement.setTableName(new SQLIdentifierExpr(tableName));
+        }
+
+        tableConfig = schema.getTables().get(tableName);
+        if (!DbleServer.getInstance().getTmManager().checkTableExists(schema.getName(), tableName)) {
+            String msg = "Table '" + schema.getName() + "." + tableName + "' or table mata doesn't exist";
+            clear();
+            serverConnection.writeErrMessage("42S02", msg, ErrorCode.ER_NO_SUCH_TABLE);
+            return;
+        }
+
         fileName = parseFileName(strSql);
         if (fileName == null) {
             serverConnection.writeErrMessage(ErrorCode.ER_FILE_NOT_FOUND, " file name is null !");
@@ -147,20 +167,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             return;
         }
 
-        schema = DbleServer.getInstance().getConfig().getSchemas().get(serverConnection.getSchema());
         tableId2DataNodeCache = (LayerCachePool) DbleServer.getInstance().getCacheService().getCachePool("TableID2DataNodeCache");
-        tableName = statement.getTableName().getSimpleName();
-        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
-            tableName = tableName.toLowerCase();
-        }
-
-        tableConfig = schema.getTables().get(tableName);
-        if (!DbleServer.getInstance().getTmManager().checkTableExists(schema.getName(), tableName)) {
-            String msg = "Table '" + schema.getName() + "." + tableName + "' doesn't exist";
-            clear();
-            serverConnection.writeErrMessage("42S02", msg, ErrorCode.ER_NO_SUCH_TABLE);
-            return;
-        }
         tempPath = SystemConfig.getHomePath() + File.separator + "temp" + File.separator + serverConnection.getId() + File.separator;
         tempFile = tempPath + "clientTemp.txt";
         tempByteBuffer = new ByteArrayOutputStream();
@@ -307,7 +314,12 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             ctx.addTable(tableName);
 
             if (partitionColumnIndex != -1) {
-                String value = lineList[partitionColumnIndex];
+                String value;
+                if (lineList.length < partitionColumnIndex + 1) {
+                    throw new RuntimeException("Partition column is empty in line '" + StringUtil.join(lineList, loadData.getLineTerminatedBy()) + "'");
+                } else {
+                    value = lineList[partitionColumnIndex];
+                }
                 RouteCalculateUnit routeCalculateUnit = new RouteCalculateUnit();
                 routeCalculateUnit.addShardingExpr(tableName, getPartitionColumn(),
                         parseFieldString(value, loadData.getEnclose(), loadData.getEscape()));
@@ -569,6 +581,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 settings.getFormat().setQuoteEscape(loadData.getEscape().charAt(0));
             }
             settings.getFormat().setNormalizedNewline(loadData.getLineTerminatedBy().charAt(0));
+            settings.setSkipEmptyLines(false);
             settings.trimValues(false);
 
             CsvParser parser = new CsvParser(settings);

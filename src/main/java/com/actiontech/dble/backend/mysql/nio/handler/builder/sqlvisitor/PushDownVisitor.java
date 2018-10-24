@@ -7,6 +7,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor;
 
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.common.item.ItemString;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.NoNameNode;
@@ -316,7 +317,11 @@ public class PushDownVisitor extends MysqlVisitor {
                 Item orderByCol = order.getItem();
                 String pdName = "";
                 if (orderByCol.basicConstItem())
-                    pdName = "'" + orderByCol.toString() + "'";
+                    if (orderByCol instanceof ItemString) {
+                        pdName = orderByCol.toString();
+                    } else {
+                        pdName = "'" + orderByCol.toString() + "'";
+                    }
                 if (pdName.isEmpty())
                     pdName = visitUnSelPushDownName(orderByCol, true);
                 if (realPush) {

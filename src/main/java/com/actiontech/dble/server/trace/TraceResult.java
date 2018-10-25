@@ -173,7 +173,7 @@ public class TraceResult implements Cloneable {
         lst.add(genTraceRecord("Read_SQL", requestStart.getTimestamp(), parseStart.getTimestamp()));
         lst.add(genTraceRecord("Parse_SQL", parseStart.getTimestamp(), routeStart.getTimestamp()));
         if (simpleHandler != null) {
-            genSimpleResults(lst);
+            if (genSimpleResults(lst)) return null;
         } else if (builder != null) {
             if (genComplexQueryResults(lst)) return null;
         } else {
@@ -260,7 +260,7 @@ public class TraceResult implements Cloneable {
         }
     }
 
-    private void genSimpleResults(List<String[]> lst) {
+    private boolean genSimpleResults(List<String[]> lst) {
         lst.add(genTraceRecord("Route_Calculation", routeStart.getTimestamp(), preExecuteStart.getTimestamp()));
         lst.add(genTraceRecord("Prepare_to_Push", preExecuteStart.getTimestamp(), preExecuteEnd.getTimestamp()));
         Map<MySQLConnection, TraceRecord> connFetchStartMap = connReceivedMap.get(simpleHandler);
@@ -274,6 +274,10 @@ public class TraceResult implements Cloneable {
             minFetchStart = Math.min(minFetchStart, fetchStartRecord.getTimestamp());
             executeList.add(genTraceRecord("Execute_SQL", preExecuteEnd.getTimestamp(), fetchStartRecord.getTimestamp(), fetchStartRecord.getDataNode(), fetchStartRecord.getRef()));
             TraceRecord fetchEndRecord = connFetchEndMap.get(fetchStart.getKey());
+            if (fetchEndRecord == null) {
+                LOGGER.debug("connection fetchEndRecord is null ");
+                return true;
+            }
             fetchList.add(genTraceRecord("Fetch_result", fetchStartRecord.getTimestamp(), fetchEndRecord.getTimestamp(), fetchStartRecord.getDataNode(), fetchStartRecord.getRef()));
             maxFetchEnd = Math.max(maxFetchEnd, fetchEndRecord.getTimestamp());
         }
@@ -284,6 +288,7 @@ public class TraceResult implements Cloneable {
             lst.add(genTraceRecord("Distributed_Transaction_Commit", adtCommitBegin.getTimestamp(), adtCommitEnd.getTimestamp()));
         }
         lst.add(genTraceRecord("Write_to_Client", minFetchStart, veryEnd));
+        return false;
     }
 
     private String[] genTraceRecord(String operation, long start, long end) {

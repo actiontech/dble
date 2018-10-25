@@ -47,7 +47,7 @@ public class DruidCreateTableParser extends DefaultDruidParser {
         String schemaName = schema == null ? null : schema.getName();
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, createStmt.getTableSource());
         StructureMeta.TableMeta tableMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
-        if (tableMeta != null) {
+        if (tableMeta != null && !createStmt.isIfNotExiists()) {
             String msg = "Table '" + schemaInfo.getSchema() + "." + schemaInfo.getTable() + "' or table meta already exists";
             throw new SQLException(msg, "42S01", ErrorCode.ER_TABLE_EXISTS_ERROR);
         }

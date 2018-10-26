@@ -271,7 +271,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
         errPacket.setErrNo(ErrorCode.ER_META_DATA);
-        String errMsg = "CREATE TABLE OK, BUT GENERATE METADATA FAILED";
+        String errMsg = "Create TABLE OK, but generate metedata failed for the current druid parser can not recognize part of the sql";
         errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
         session.multiStatementPacket(errPacket, packetId);
         doSqlStat();

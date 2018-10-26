@@ -107,7 +107,7 @@ public final class ShowConnectionSQL {
         row.add(StringUtil.encode(FormatUtil.formatDate(c.getLastReadTime()), charset));
         long rt = c.getLastReadTime();
         long wt = c.getLastWriteTime();
-        row.add(LongUtil.toBytes((wt > rt) ? (wt - rt) : (TimeUtil.currentTimeMillis() - rt)));
+        row.add(LongUtil.toBytes((wt >= rt) ? (wt - rt) : (TimeUtil.currentTimeMillis() - rt)));
         String executeSql = "";
         if (c.getExecuteSql() != null) {
             executeSql = c.getExecuteSql().length() <= 1024 ? c.getExecuteSql() : c.getExecuteSql().substring(0, 1024);

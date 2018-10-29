@@ -194,11 +194,11 @@ public class MultiTablesMetaHandler {
         ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.add(schema + "." + tableName);
         LOGGER.info("Currently detected: ");
         for (Map.Entry<String, List<String>> entry : tableStruct.entrySet()) {
-            StringBuilder stringBuilder = new StringBuilder();
+            StringBuilder stringBuilder = new StringBuilder("{");
             for (String dn : entry.getValue()) {
                 stringBuilder.append("DataNode:[").append(dn).append("]");
             }
-            stringBuilder.append(":").append(entry);
+            stringBuilder.append("}_Struct:").append(entry.getKey());
             LOGGER.info(stringBuilder.toString());
         }
     }

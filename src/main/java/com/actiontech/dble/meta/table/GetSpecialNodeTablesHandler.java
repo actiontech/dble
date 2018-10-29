@@ -46,6 +46,7 @@ public class GetSpecialNodeTablesHandler extends GetNodeTablesHandler {
                     LOGGER.warn(warnMsg);
                     AlertUtil.alertSelf(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, warnMsg, AlertUtil.genSingleLabel("TABLE", tableId));
                     ToResolveContainer.TABLE_LACK.add(tableId);
+                    handler.handlerTable(table, dataNode, null);
                 }
             }
         }

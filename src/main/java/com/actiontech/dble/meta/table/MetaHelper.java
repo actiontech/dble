@@ -40,6 +40,9 @@ public final class MetaHelper {
     private static final Logger LOGGER = LoggerFactory.getLogger(MetaHelper.class);
 
     public static StructureMeta.TableMeta initTableMeta(String table, String sql, long timeStamp) {
+        if (sql == null) {
+            return null;
+        }
         try {
             SQLStatementParser parser = new MySqlCreateTableParser(sql);
             SQLCreateTableStatement createStatement = parser.parseCreateTable();

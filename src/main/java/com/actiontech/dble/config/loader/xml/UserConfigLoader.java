@@ -12,6 +12,9 @@ import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.SplitUtil;
 import com.actiontech.dble.util.StringUtil;
+import org.apache.commons.lang.BooleanUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -22,6 +25,8 @@ import java.util.HashSet;
 import java.util.Map;
 
 public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserConfigLoader.class);
+
     public void load(Element root, XMLServerLoader xsl) throws IllegalAccessException, InvocationTargetException {
         Map<String, UserConfig> users = xsl.getUsers();
         NodeList list = root.getElementsByTagName("user");
@@ -34,7 +39,15 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
                 UserConfig user = new UserConfig();
                 Map<String, Object> props = ConfigUtil.loadElements(e);
                 String password = (String) props.get("password");
-                String usingDecrypt = (String) props.get("usingDecrypt");
+                String usingDecryptStr = (String) props.get("usingDecrypt");
+                boolean usingDecrypt = false;
+                if (usingDecryptStr != null) {
+                    if ("1".equals(usingDecryptStr)) {
+                        usingDecrypt = true;
+                    } else if (!"0".equals(usingDecryptStr)) {
+                        LOGGER.warn("user " + name + " usingDecrypt is not recognized, use 0 replaced");
+                    }
+                }
                 String passwordDecrypt = DecryptUtil.decrypt(usingDecrypt, name, password);
                 if (passwordDecrypt == null) {
                     throw new ConfigException("User password must be configured");
@@ -55,13 +68,23 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
                 String readOnly = (String) props.get("readOnly");
                 if (null != readOnly) {
                     props.remove("readOnly");
-                    user.setReadOnly(Boolean.parseBoolean(readOnly));
+                    Boolean readOnlyBool = BooleanUtils.toBooleanObject(readOnly);
+                    if (readOnlyBool == null) {
+                        readOnlyBool = false;
+                        LOGGER.warn("user " + name + " readOnly is not recognized, use false replaced!");
+                    }
+                    user.setReadOnly(readOnlyBool);
                 }
 
                 String manager = (String) props.get("manager");
                 if (null != manager) {
                     props.remove("manager");
-                    user.setManager(Boolean.parseBoolean(manager));
+                    Boolean managerBool = BooleanUtils.toBooleanObject(manager);
+                    if (null == managerBool) {
+                        managerBool = false;
+                        LOGGER.warn("user " + name + " manager is not recognized, use false replaced!");
+                    }
+                    user.setManager(managerBool);
                     user.setSchemas(new HashSet<String>(0));
                 }
                 String schemas = (String) props.get("schemas");

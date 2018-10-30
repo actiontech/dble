@@ -33,8 +33,8 @@ public final class DecryptUtil {
         System.out.println(encrypt(password));
     }
 
-    public static String decrypt(String usingDecrypt, String user, String password) {
-        if ("1".equals(usingDecrypt)) {
+    public static String decrypt(boolean usingDecrypt, String user, String password) {
+        if (usingDecrypt) {
             //type:user:password
             //0:test:test
             try {
@@ -86,8 +86,8 @@ public final class DecryptUtil {
         return new String(plainBytes);
     }
 
-    public static String dbHostDecrypt(String usingDecrypt, String host, String user, String password) {
-        if ("1".equals(usingDecrypt)) {
+    public static String dbHostDecrypt(boolean usingDecrypt, String host, String user, String password) {
+        if (usingDecrypt) {
             //type:host:user:password
             //1:my_host1:test:test
             try {

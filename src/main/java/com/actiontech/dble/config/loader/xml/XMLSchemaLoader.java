@@ -16,6 +16,7 @@ import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.SplitUtil;
+import org.apache.commons.lang.BooleanUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
@@ -235,15 +236,23 @@ public class XMLSchemaLoader implements SchemaLoader {
             //if autoIncrement,it will use sequence handler
             boolean autoIncrement = isAutoIncrement(tableElement, primaryKey);
             //limit size of the table
-            boolean needAddLimit = true;
+            Boolean needAddLimit = Boolean.TRUE;
             if (tableElement.hasAttribute("needAddLimit")) {
-                needAddLimit = Boolean.parseBoolean(tableElement.getAttribute("needAddLimit"));
+                needAddLimit = BooleanUtils.toBooleanObject(tableElement.getAttribute("needAddLimit"));
+                if (needAddLimit == null) {
+                    LOGGER.warn("Table[" + tableElement.getAttribute("name") + "] needAddLimit in schema.xml is not recognized, use true replaced");
+                    needAddLimit = Boolean.TRUE;
+                }
             }
             //table type is global or not
-            String tableTypeStr = tableElement.hasAttribute("type") ? tableElement.getAttribute("type") : null;
             TableTypeEnum tableType = TableTypeEnum.TYPE_SHARDING_TABLE;
-            if ("global".equalsIgnoreCase(tableTypeStr)) {
-                tableType = TableTypeEnum.TYPE_GLOBAL_TABLE;
+            if (tableElement.hasAttribute("type")) {
+                String tableTypeStr = tableElement.getAttribute("type");
+                if ("global".equalsIgnoreCase(tableTypeStr)) {
+                    tableType = TableTypeEnum.TYPE_GLOBAL_TABLE;
+                } else {
+                    LOGGER.warn("Table[" + tableElement.getAttribute("name") + "] type in schema.xml is not recognized, use sharding replaced");
+                }
             }
             //dataNode of table
             TableRuleConfig tableRule = null;
@@ -254,10 +263,14 @@ public class XMLSchemaLoader implements SchemaLoader {
                     throw new ConfigException("rule " + ruleName + " is not found!");
                 }
             }
-            boolean ruleRequired = false;
             //ruleRequired?
+            Boolean ruleRequired = Boolean.FALSE;
             if (tableElement.hasAttribute("ruleRequired")) {
-                ruleRequired = Boolean.parseBoolean(tableElement.getAttribute("ruleRequired"));
+                ruleRequired = BooleanUtils.toBooleanObject(tableElement.getAttribute("ruleRequired"));
+                if (ruleRequired == null) {
+                    LOGGER.warn("Table[" + tableElement.getAttribute("name") + "] ruleRequired in schema.xml is not recognized, use false replaced");
+                    ruleRequired = Boolean.FALSE;
+                }
             }
             String dataNode = tableElement.getAttribute("dataNode");
             //distribute function
@@ -300,9 +313,13 @@ public class XMLSchemaLoader implements SchemaLoader {
     }
 
     private boolean isAutoIncrement(Element tableElement, String primaryKey) {
-        boolean autoIncrement = false;
+        Boolean autoIncrement = Boolean.FALSE;
         if (tableElement.hasAttribute("autoIncrement")) {
-            autoIncrement = Boolean.parseBoolean(tableElement.getAttribute("autoIncrement"));
+            autoIncrement = BooleanUtils.toBooleanObject(tableElement.getAttribute("autoIncrement"));
+            if (autoIncrement == null) {
+                LOGGER.warn("autoIncrement is not recognized, using false replaced");
+                autoIncrement = Boolean.FALSE;
+            }
             if (autoIncrement && primaryKey == null) {
                 throw new ConfigException("autoIncrement is true but primaryKey is not setting!");
             }
@@ -514,7 +531,15 @@ public class XMLSchemaLoader implements SchemaLoader {
         int colonIndex = nodeUrl.indexOf(':');
         String ip = nodeUrl.substring(0, colonIndex).trim();
         int port = Integer.parseInt(nodeUrl.substring(colonIndex + 1).trim());
-        String usingDecrypt = node.getAttribute("usingDecrypt");
+        boolean usingDecrypt = false;
+        if (node.hasAttribute("usingDecrypt")) {
+            String usingDecryptStr = node.getAttribute("usingDecrypt");
+            if ("1".equals(usingDecryptStr)) {
+                usingDecrypt = true;
+            } else if (!"0".equals(usingDecryptStr)) {
+                LOGGER.warn("Host " + nodeHost + " usingDecrypt is not recognized, use 0 replaced");
+            }
+        }
         String disabledStr = node.getAttribute("disabled");
         boolean disabled = !"".equals(disabledStr) && Boolean.parseBoolean(disabledStr);
         String passwordEncryty = DecryptUtil.dbHostDecrypt(usingDecrypt, nodeHost, user, password);
@@ -567,9 +592,9 @@ public class XMLSchemaLoader implements SchemaLoader {
             String slaveThresholdStr = element.getAttribute("slaveThreshold");
             int slaveThreshold = slaveThresholdStr.equals("") ? -1 : Integer.parseInt(slaveThresholdStr);
 
-            //tempReadHostAvailable >0 means read service is still work even write host crash
+            //tempReadHostAvailable 1 means read service is still work even write host crash
             String tempReadHostAvailableStr = element.getAttribute("tempReadHostAvailable");
-            boolean tempReadHostAvailable = !tempReadHostAvailableStr.equals("") && Integer.parseInt(tempReadHostAvailableStr) > 0;
+            int tempReadHostAvailable = tempReadHostAvailableStr.equals("") ? 0 : Integer.parseInt(tempReadHostAvailableStr);
 
             final String heartbeatSQL = element.getElementsByTagName("heartbeat").item(0).getTextContent();
 

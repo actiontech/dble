@@ -7,6 +7,8 @@ package com.actiontech.dble.route.function;
 
 import com.actiontech.dble.config.model.rule.RuleAlgorithm;
 import com.actiontech.dble.util.ResourceUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -20,6 +22,7 @@ import java.util.Set;
  * @author mycat
  */
 public class PartitionByFileMap extends AbstractPartitionAlgorithm implements RuleAlgorithm {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PartitionByFileMap.class);
     private static final long serialVersionUID = 1884866019947627284L;
     private String mapFile;
     private Map<Object, Integer> app2Partition;
@@ -63,7 +66,11 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
     }
 
     public void setDefaultNode(int defaultNode) {
-        this.defaultNode = defaultNode;
+        if (defaultNode >= 0 || defaultNode == -1) {
+            this.defaultNode = defaultNode;
+        } else {
+            LOGGER.warn("enum algorithm default node less than 0 and is not -1, use -1 replaced.");
+        }
         propertiesMap.put("defaultNode", String.valueOf(defaultNode));
     }
 

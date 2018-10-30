@@ -7,6 +7,8 @@ package com.actiontech.dble.config.model;
 
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.config.util.ConfigException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -18,6 +20,7 @@ import java.util.regex.Pattern;
  * @author wuzhih
  */
 public class DataHostConfig {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DataHostConfig.class);
     public static final int NOT_SWITCH_DS = -1;
     public static final int DEFAULT_SWITCH_DS = 1;
     public static final int SYN_STATUS_SWITCH_DS = 2;
@@ -39,15 +42,24 @@ public class DataHostConfig {
     private boolean tempReadHostAvailable = false;
 
     public DataHostConfig(String name,
-                          DBHostConfig[] writeHosts, Map<Integer, DBHostConfig[]> readHosts, Map<Integer, DBHostConfig[]> standbyReadHosts, int switchType, int slaveThreshold, boolean tempReadHostAvailable) {
+                          DBHostConfig[] writeHosts, Map<Integer, DBHostConfig[]> readHosts, Map<Integer, DBHostConfig[]> standbyReadHosts, int switchType, int slaveThreshold, int tempReadHostAvailable) {
         super();
         this.name = name;
         this.writeHosts = writeHosts;
         this.readHosts = readHosts;
         this.standbyReadHosts = standbyReadHosts;
-        this.switchType = switchType;
+        if ((switchType >= 1 && switchType <= 3) || switchType == -1) {
+            this.switchType = switchType;
+        } else {
+            LOGGER.warn("dataHost " + name + " switchType in schema.xml is not recognized, use -1 replaced!");
+            this.switchType = -1;
+        }
         this.slaveThreshold = slaveThreshold;
-        this.tempReadHostAvailable = tempReadHostAvailable;
+        if (tempReadHostAvailable >= 0 && tempReadHostAvailable <= 1) {
+            this.tempReadHostAvailable = tempReadHostAvailable == 1;
+        } else {
+            LOGGER.warn("dataHost " + name + " tempReadHostAvailable in schema.xml is not recognized, use 0 replaced!");
+        }
     }
 
     public boolean isTempReadHostAvailable() {
@@ -92,7 +104,11 @@ public class DataHostConfig {
     }
 
     public void setBalance(int balance) {
-        this.balance = balance;
+        if (balance >= 0 && balance <= 3) {
+            this.balance = balance;
+        } else {
+            throw new ConfigException("dataHost " + name + " balance should be between 0 and 3!");
+        }
     }
 
     public DBHostConfig[] getWriteHosts() {

@@ -12,6 +12,9 @@ import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.wall.WallConfig;
+import org.apache.commons.lang.BooleanUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -23,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 
 public class FirewallConfigLoader implements Loader<FirewallConfig, XMLServerLoader> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(FirewallConfigLoader.class);
+
     public void load(Element root, XMLServerLoader xsl) throws IllegalAccessException, InvocationTargetException {
         FirewallConfig firewall = xsl.getFirewall();
         Map<String, UserConfig> users = xsl.getUsers();
@@ -62,9 +67,13 @@ public class FirewallConfigLoader implements Loader<FirewallConfig, XMLServerLoa
             Node node = blacklist.item(i);
             if (node instanceof Element) {
                 Element e = (Element) node;
-                String check = e.getAttribute("check");
-                if (null != check) {
-                    firewall.setBlackListCheck(Boolean.parseBoolean(check));
+                if (e.hasAttribute("check")) {
+                    Boolean check = BooleanUtils.toBooleanObject(e.getAttribute("check"));
+                    if (null == check) {
+                        LOGGER.warn("blacklist attribute check in server.xml is not recognized, using false replaced.");
+                        check = Boolean.FALSE;
+                    }
+                    firewall.setBlackListCheck(check);
                 }
 
                 Map<String, Object> props = ConfigUtil.loadElements((Element) node);

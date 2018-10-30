@@ -187,7 +187,11 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
     }
 
     public void setDefaultNode(int defaultNode) {
-        this.defaultNode = defaultNode;
+        if (defaultNode >= 0 || defaultNode == -1) {
+            this.defaultNode = defaultNode;
+        } else {
+            LOGGER.warn("numberrange algorithm default node less than 0 and is not -1, use -1 replaced.");
+        }
         propertiesMap.put("defaultNode", String.valueOf(defaultNode));
     }
 

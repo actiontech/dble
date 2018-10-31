@@ -37,6 +37,17 @@ public class WriteHost {
     protected String disabled;
     @XmlAttribute
     protected String id;
+    @XmlAttribute
+    protected String weight;
+
+    public String getWeight() {
+        return weight;
+    }
+
+    public void setWeight(String weight) {
+        this.weight = weight;
+    }
+
 
     private List<ReadHost> readHost;
 
@@ -97,6 +108,7 @@ public class WriteHost {
         this.id = id;
     }
 
+
     public List<ReadHost> getReadHost() {
         if (this.readHost == null) {
             readHost = new ArrayList<>();
@@ -124,6 +136,8 @@ public class WriteHost {
                 id +
                 ", usingDecrypt=" +
                 usingDecrypt +
+                ", weight=" +
+                weight +
                 ", readHost=" +
                 readHost +
                 "]";

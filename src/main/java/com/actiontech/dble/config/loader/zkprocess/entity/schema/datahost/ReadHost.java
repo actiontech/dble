@@ -18,18 +18,6 @@ import java.util.List;
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "readHost")
 public class ReadHost extends WriteHost {
-
-    @XmlAttribute
-    protected String weight;
-
-    public String getWeight() {
-        return weight;
-    }
-
-    public void setWeight(String weight) {
-        this.weight = weight;
-    }
-
     @XmlTransient
     @Override
     public List<ReadHost> getReadHost() {
@@ -38,7 +26,23 @@ public class ReadHost extends WriteHost {
 
     @Override
     public String toString() {
-        return "ReadHost [host=" + host + ", url=" + url + ", password=" + password + ", user=" + user + ", usingDecrypt=" + usingDecrypt + ", weight=" + weight + "]";
+        return "ReadHost [host=" +
+                host +
+                ", url=" +
+                url +
+                ", password=" +
+                password +
+                ", user=" +
+                user +
+                ", disabled=" +
+                disabled +
+                ", id=" +
+                id +
+                ", usingDecrypt=" +
+                usingDecrypt +
+                ", weight=" +
+                weight +
+                "]";
     }
 
 }

@@ -331,9 +331,19 @@ public abstract class PlanNode {
         for (Item sel : columnsSelected) {
             setUpItem(sel);
             NamedField field = makeOutNamedField(sel);
-            if (outerFields.containsKey(field) && getParent() != null)
+            if (outerFields.containsKey(field) && isDuplicateField(this))
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "duplicate field");
             outerFields.put(field, sel);
+        }
+    }
+
+    protected boolean isDuplicateField(PlanNode node) {
+        if (node.parent == null) {
+            return false;
+        } else if (node.parent.type() == PlanNodeType.MERGE) {
+            return isDuplicateField(node.parent);
+        } else {
+            return true;
         }
     }
 

@@ -15,6 +15,7 @@ public final class ManagerParseOnOff {
 
     public static final int OTHER = -1;
     public static final int SLOW_QUERY_LOG = 1;
+    public static final int ALERT = 2;
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -35,11 +36,37 @@ public final class ManagerParseOnOff {
         return OTHER;
     }
 
-    // enable/disable @@LOG_SLOW_QUERY
     private static int atCheck(String stmt, int offset) {
-        if (stmt.length() > ++offset && stmt.charAt(offset) == '@' &&
-                stmt.length() > offset + "SLOW_QUERY_LOG".length()) {
-            String prefix = stmt.substring(++offset).toUpperCase();
+        if (stmt.length() > ++offset && stmt.charAt(offset) == '@' && stmt.length() > ++offset) {
+            switch (stmt.charAt(offset)) {
+                case 'A':
+                case 'a':
+                    return aCheck(stmt, offset);
+                case 'S':
+                case 's':
+                    return sCheck(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    // enable/disable @@ALERT
+    private static int aCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 4) {
+            String prefix = stmt.substring(offset).toUpperCase();
+            if (prefix.startsWith("ALERT") && (stmt.length() == offset + 5 || ParseUtil.isEOF(stmt, offset + 5))) {
+                return ALERT;
+            }
+        }
+        return OTHER;
+    }
+
+    // enable/disable @@SLOW_QUERY_LOG
+    private static int sCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 13) {
+            String prefix = stmt.substring(offset).toUpperCase();
             if (prefix.startsWith("SLOW_QUERY_LOG") && (stmt.length() == offset + 14 || ParseUtil.isEOF(stmt, offset + 14))) {
                 return SLOW_QUERY_LOG;
             }

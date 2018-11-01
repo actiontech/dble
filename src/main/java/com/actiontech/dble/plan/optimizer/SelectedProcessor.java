@@ -127,14 +127,15 @@ public final class SelectedProcessor {
 
     // union's push is different , when toPushColumn.isEmpty,   merge's select can't be change
     private static PlanNode mergePushSelected(MergeNode merge, Collection<Item> toPushColumns) {
-        if (toPushColumns.isEmpty() && merge.getOrderBys().isEmpty()) {
+        final Map<String, Integer> colIndexs = merge.getColIndexs();
+        // no order by or have same name field
+        if (toPushColumns.isEmpty() && (merge.getOrderBys().isEmpty() || colIndexs.size() != merge.getColumnsSelected().size())) {
             for (PlanNode child : merge.getChildren()) {
                 pushSelected(child, new HashSet<Item>());
             }
             return merge;
         }
         boolean canOverload = mergeNodeChildsCheck(merge) && !toPushColumns.isEmpty();
-        final Map<String, Integer> colIndexs = merge.getColIndexs();
         List<Item> mergeSelects = null;
         if (toPushColumns.isEmpty()) {
             //  merge's select can't be change

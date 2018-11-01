@@ -5,16 +5,12 @@
 */
 package com.actiontech.dble.config.model;
 
-import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.config.model.rule.RuleConfig;
+import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.util.SplitUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Map;
-import java.util.Random;
 
 /**
  * @author mycat
@@ -34,7 +30,6 @@ public class TableConfig {
     private final String partitionColumn;
     private final boolean ruleRequired;
     private final boolean partionKeyIsPrimaryKey;
-    private final Random rand = new Random();
     private final boolean isNoSharding;
     /**
      * Child Table
@@ -274,23 +269,7 @@ public class TableConfig {
     }
 
     public String getRandomDataNode() {
-        int index = Math.abs(rand.nextInt(Integer.MAX_VALUE)) % dataNodes.size();
-        ArrayList<String> x = new ArrayList<>();
-        x.addAll(dataNodes);
-        Map<String, PhysicalDBNode> dataNodeMap = DbleServer.getInstance().getConfig().getDataNodes();
-        while (x.size() > 1) {
-            for (PhysicalDatasource ds : dataNodeMap.get(x.get(index)).getDbPool().getAllDataSources()) {
-                if (ds.isAlive()) {
-                    return x.get(index);
-                } else {
-                    break;
-                }
-            }
-            x.remove(index);
-            index = Math.abs(rand.nextInt(Integer.MAX_VALUE)) % x.size();
-        }
-
-        return x.get(0);
+        return RouterUtil.getRandomDataNode(dataNodes);
     }
 
     public boolean isRuleRequired() {

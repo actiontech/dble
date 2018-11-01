@@ -6,6 +6,8 @@
 package com.actiontech.dble.route.util;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SchemaConfig;
@@ -37,9 +39,7 @@ import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.*;
 
-import static com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.AllAnySubQueryHandler.ALL_SUB_QUERY_RESULTS;
-import static com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.AllAnySubQueryHandler.MIN_SUB_QUERY_RESULTS;
-import static com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.AllAnySubQueryHandler.MAX_SUB_QUERY_RESULTS;
+import static com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.AllAnySubQueryHandler.*;
 import static com.actiontech.dble.plan.optimizer.JoinStrategyProcessor.NEED_REPLACE;
 
 /**
@@ -52,7 +52,7 @@ public final class RouterUtil {
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RouterUtil.class);
-
+    private static Random rand = new Random();
     public static String removeSchema(String stmt, String schema) {
         return removeSchema(stmt, schema, DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
     }
@@ -337,6 +337,25 @@ public final class RouterUtil {
         routeToSingleNode(rrs, dataNode);
     }
 
+    public static String getRandomDataNode(ArrayList<String> dataNodes) {
+        int index = Math.abs(rand.nextInt(Integer.MAX_VALUE)) % dataNodes.size();
+        ArrayList<String> x = new ArrayList<>();
+        x.addAll(dataNodes);
+        Map<String, PhysicalDBNode> dataNodeMap = DbleServer.getInstance().getConfig().getDataNodes();
+        while (x.size() > 1) {
+            for (PhysicalDatasource ds : dataNodeMap.get(x.get(index)).getDbPool().getAllDataSources()) {
+                if (ds.isAlive()) {
+                    return x.get(index);
+                } else {
+                    break;
+                }
+            }
+            x.remove(index);
+            index = Math.abs(rand.nextInt(Integer.MAX_VALUE)) % x.size();
+        }
+
+        return x.get(0);
+    }
     /**
      * getRandomDataNode
      *
@@ -460,6 +479,22 @@ public final class RouterUtil {
                             return null;
                         }
                     }
+                }
+            }
+            if (globalTables.size() == tableSize) {
+                boolean isFirstTable = true;
+                for (TableConfig tb : globalTables) {
+                    if (isFirstTable) {
+                        tmpResultNodes.addAll(tb.getDataNodes());
+                        isFirstTable = false;
+                    } else {
+                        tmpResultNodes.retainAll(tb.getDataNodes());
+                    }
+                }
+                if (tmpResultNodes.size() != 0) {
+                    return getRandomDataNode(new ArrayList<>(tmpResultNodes));
+                } else {
+                    return null;
                 }
             }
             for (TableConfig tb : globalTables) {

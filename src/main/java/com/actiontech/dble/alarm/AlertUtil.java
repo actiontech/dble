@@ -16,13 +16,18 @@ public final class AlertUtil {
 
     }
 
-    private static Alert alert;
+    private static volatile Alert alert;
+    private static final Alert DEFAULT_ALERT = new NoAlert();
 
     static {
-        if (UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) != null) {
+        alert = DEFAULT_ALERT;
+    }
+
+    public static void switchAlert(boolean enableAlert) {
+        if (enableAlert && UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) != null) {
             alert = UcoreAlert.getInstance();
         } else {
-            alert = new NoAlert();
+            alert = DEFAULT_ALERT;
         }
     }
 

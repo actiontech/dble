@@ -153,6 +153,8 @@ public final class SystemConfig {
     private int flushSlowLogPeriod = 1; //second
     private int flushSlowLogSize = 1000; //row
     private int sqlSlowTime = 100; //ms
+    //alert switch
+    private int enableAlert = 1;
 
     public SystemConfig() {
     }
@@ -941,6 +943,18 @@ public final class SystemConfig {
         this.sqlSlowTime = sqlSlowTime;
     }
 
+    public int getEnableAlert() {
+        return enableAlert;
+    }
+
+    @SuppressWarnings("unused")
+    public void setEnableAlert(int enableAlert) {
+        if (enableAlert >= 0 && enableAlert <= 1) {
+            this.enableAlert = enableAlert;
+        } else {
+            LOGGER.warn("enableAlert " + enableAlert + " in server.xml is not recognized ,use " + this.enableAlert + " replaced");
+        }
+    }
 
     public int getMaxCon() {
         return maxCon;
@@ -1027,6 +1041,7 @@ public final class SystemConfig {
                 ", flushSlowLogPeriod=" + flushSlowLogPeriod +
                 ", flushSlowLogSize=" + flushSlowLogSize +
                 ", sqlSlowTime=" + sqlSlowTime +
+                ", enableAlert=" + enableAlert +
                 "]";
     }
 

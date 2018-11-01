@@ -5,6 +5,7 @@
  */
 package com.actiontech.dble;
 
+import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
@@ -363,6 +364,9 @@ public final class DbleServer {
 
         if (system.getEnableSlowLog() == 1) {
             SlowQueryLog.getInstance().setEnableSlowLog(true);
+        }
+        if (system.getEnableAlert() == 1) {
+            AlertUtil.switchAlert(true);
         }
         if (aio) {
             int processorCount = frontProcessorCount + backendProcessorCount;

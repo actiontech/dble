@@ -37,6 +37,9 @@ import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.*;
 
+import static com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.AllAnySubQueryHandler.ALL_SUB_QUERY_RESULTS;
+import static com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.AllAnySubQueryHandler.MIN_SUB_QUERY_RESULTS;
+import static com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.AllAnySubQueryHandler.MAX_SUB_QUERY_RESULTS;
 import static com.actiontech.dble.plan.optimizer.JoinStrategyProcessor.NEED_REPLACE;
 
 /**
@@ -770,7 +773,9 @@ public final class RouterUtil {
             if (pnode != null && "null".equals(pair.colValue)) {
                 continue;
             } else if (pair.colValue != null) {
-                if (NEED_REPLACE.equals(pair.colValue)) {
+                // for explain
+                if (NEED_REPLACE.equals(pair.colValue) || ALL_SUB_QUERY_RESULTS.equals(pair.colValue) ||
+                        MIN_SUB_QUERY_RESULTS.equals(pair.colValue) || MAX_SUB_QUERY_RESULTS.equals(pair.colValue)) {
                     return;
                 }
                 Integer nodeIndex = algorithm.calculate(pair.colValue);

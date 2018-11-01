@@ -21,6 +21,9 @@ import java.util.Collections;
 import java.util.List;
 
 public class AllAnySubQueryHandler extends SubQueryHandler {
+    public static final String ALL_SUB_QUERY_RESULTS = "{ALL_SUB_QUERY_RESULTS}";
+    public static final String MIN_SUB_QUERY_RESULTS = "{MIN_SUB_QUERY_RESULTS}";
+    public static final String MAX_SUB_QUERY_RESULTS = "{MAX_SUB_QUERY_RESULTS}";
     private ItemAllAnySubQuery itemSubQuery;
     private Field sourceField;
     private RowDataPacket tmpRow;
@@ -142,33 +145,33 @@ public class AllAnySubQueryHandler extends SubQueryHandler {
         switch (itemSubQuery.getOperator()) {
             case Equality:
                 if (itemSubQuery.isAll()) {
-                    itemSubQuery.getValue().add(new ItemString("{ALL_SUB_QUERY_RESULTS}"));
+                    itemSubQuery.getValue().add(new ItemString(ALL_SUB_QUERY_RESULTS));
                 }
                 break;
             case NotEqual:
             case LessThanOrGreater:
                 if (!itemSubQuery.isAll()) {
-                    itemSubQuery.getValue().add(new ItemString("{ALL_SUB_QUERY_RESULTS}"));
+                    itemSubQuery.getValue().add(new ItemString(ALL_SUB_QUERY_RESULTS));
                 }
                 break;
             case LessThan:
             case LessThanOrEqual:
                 if (itemSubQuery.isAll()) {
                     //row < tmpRow
-                    itemSubQuery.getValue().add(new ItemString("{MIN_SUB_QUERY_RESULTS}"));
+                    itemSubQuery.getValue().add(new ItemString(MIN_SUB_QUERY_RESULTS));
                 } else if (!itemSubQuery.isAll()) {
                     //row > tmpRow
-                    itemSubQuery.getValue().add(new ItemString("{MAX_SUB_QUERY_RESULTS}"));
+                    itemSubQuery.getValue().add(new ItemString(MAX_SUB_QUERY_RESULTS));
                 }
                 break;
             case GreaterThan:
             case GreaterThanOrEqual:
                 if (itemSubQuery.isAll()) {
                     //row > tmpRow
-                    itemSubQuery.getValue().add(new ItemString("{MAX_SUB_QUERY_RESULTS}"));
+                    itemSubQuery.getValue().add(new ItemString(MAX_SUB_QUERY_RESULTS));
                 } else if (!itemSubQuery.isAll()) {
                     //row < tmpRow
-                    itemSubQuery.getValue().add(new ItemString("{MIN_SUB_QUERY_RESULTS}"));
+                    itemSubQuery.getValue().add(new ItemString(MIN_SUB_QUERY_RESULTS));
                 }
                 break;
             default:

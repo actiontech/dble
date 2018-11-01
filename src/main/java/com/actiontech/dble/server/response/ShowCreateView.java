@@ -76,7 +76,7 @@ public final class ShowCreateView {
     }
 
     public static void sendOutTheViewInfo(ServerConnection c, String schema, String viewName) throws Exception {
-        //check if the view or schema is not exists
+        //check if the view or schema doesn't exist
         if (schema == null || "".equals(schema)) {
             throw new Exception(" No database selected");
         }

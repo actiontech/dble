@@ -95,7 +95,7 @@ public final class CheckFullMetaData {
                 if (ma.group(4) != null) {
                     String schema = ma.group(6);
                     if (DbleServer.getInstance().getConfig().getSchemas().get(schema) == null) {
-                        c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The schema [" + schema + "] is not exists");
+                        c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The schema [" + schema + "] doesn't exist");
                         return;
                     }
                     if (ma.group(8) != null) {
@@ -103,7 +103,7 @@ public final class CheckFullMetaData {
                         if (DbleServer.getInstance().getConfig().getSchemas().get(schema).getTables().get(table) == null &&
                                 DbleServer.getInstance().getTmManager().getCatalogs().get(schema) == null &&
                                 DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getTableMeta(table) == null) {
-                            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The table [" + schema + "." + table + "] is not existed");
+                            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The table [" + schema + "." + table + "] doesn't exist");
                             return;
                         }
                         rows = getTableRows(schema, table, c.getCharset().getResults());

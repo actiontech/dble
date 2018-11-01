@@ -926,7 +926,9 @@ public class NonBlockingSession implements Session {
         if (rrs.getSchema() != null) {
             return handleSpecial(rrs, schema, isSuccess, null);
         } else {
-            LOGGER.info("Hint ddl do not update the meta");
+            if (rrs.getSqlType() == ServerParse.DDL) {
+                LOGGER.info("Hint ddl do not update the meta");
+            }
             return true;
         }
     }

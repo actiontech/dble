@@ -51,12 +51,12 @@ public class TableNode extends PlanNode {
         }
         SchemaConfig schemaConfig = config.getSchemas().get(this.schema);
         if (schemaConfig == null) {
-            throw new RuntimeException("schema " + this.schema + " is not exists!");
+            throw new RuntimeException("schema " + this.schema + " doesn't exist!");
         }
         this.tableMeta = metaManager.getSyncTableMeta(this.schema, this.tableName);
         TableConfig tableConfig = schemaConfig.getTables().get(this.tableName);
         if (this.tableMeta == null) {
-            String errorMsg = "table " + this.tableName + " is not exists!";
+            String errorMsg = "table " + this.tableName + " doesn't exist!";
             if (tableConfig != null || schemaConfig.getDataNode() != null) {
                 errorMsg += "You should create it OR reload metadata";
             }

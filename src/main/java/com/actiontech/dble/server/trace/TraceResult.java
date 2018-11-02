@@ -331,7 +331,7 @@ public class TraceResult implements Cloneable {
         lst.add(genLogRecord("Read_SQL", requestStart.getTimestamp(), parseStart.getTimestamp()));
         lst.add(genLogRecord("Prepare_Push", parseStart.getTimestamp(), preExecuteEnd.getTimestamp()));
         if (simpleHandler != null) {
-            genSimpleLogs(lst);
+            if (genSimpleLogs(lst)) return null;
         } else if (builder != null) {
             if (genComplexQueryLogs(lst)) return null;
         } else {
@@ -402,7 +402,7 @@ public class TraceResult implements Cloneable {
         return false;
     }
 
-    private void genSimpleLogs(List<String[]> lst) {
+    private boolean genSimpleLogs(List<String[]> lst) {
         Map<MySQLConnection, TraceRecord> connFetchStartMap = connReceivedMap.get(simpleHandler);
         Map<MySQLConnection, TraceRecord> connFetchEndMap = connFinishedMap.get(simpleHandler);
         List<String[]> executeList = new ArrayList<>(connFetchStartMap.size());
@@ -414,12 +414,17 @@ public class TraceResult implements Cloneable {
             minFetchStart = Math.min(minFetchStart, fetchStartRecord.getTimestamp());
             executeList.add(genLogRecord(fetchStartRecord.getDataNode() + "_First_Result_Fetch", preExecuteEnd.getTimestamp(), fetchStartRecord.getTimestamp()));
             TraceRecord fetchEndRecord = connFetchEndMap.get(fetchStart.getKey());
+            if (fetchEndRecord == null) {
+                LOGGER.debug("connection fetchEndRecord is null ");
+                return true;
+            }
             fetchList.add(genLogRecord(fetchStartRecord.getDataNode() + "_Last_Result_Fetch", fetchStartRecord.getTimestamp(), fetchEndRecord.getTimestamp()));
             maxFetchEnd = Math.max(maxFetchEnd, fetchEndRecord.getTimestamp());
         }
         lst.addAll(executeList);
         lst.addAll(fetchList);
         lst.add(genLogRecord("Write_Client", minFetchStart, veryEnd));
+        return false;
     }
 
     private String[] genLogRecord(String operation, long start, long end) {

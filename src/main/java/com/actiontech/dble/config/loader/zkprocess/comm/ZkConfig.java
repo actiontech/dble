@@ -33,8 +33,7 @@ public final class ZkConfig {
 
     public String getZkURL() {
         return zkProperties == null ? null :
-                zkProperties.getProperty(ClusterParamCfg.CLUSTER_PLUGINS_IP.getKey()) + ":" +
-                        zkProperties.getProperty(ClusterParamCfg.CLUSTER_PLUGINS_PORT.getKey());
+                zkProperties.getProperty(ClusterParamCfg.CLUSTER_PLUGINS_IP.getKey());
     }
 
     public static void initZk(Properties cluterProperties) {

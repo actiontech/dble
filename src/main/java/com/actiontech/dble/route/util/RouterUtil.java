@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.AllAnySubQueryHandler.*;
 import static com.actiontech.dble.plan.optimizer.JoinStrategyProcessor.NEED_REPLACE;
@@ -52,7 +53,7 @@ public final class RouterUtil {
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RouterUtil.class);
-    private static Random rand = new Random();
+    private static ThreadLocalRandom rand = ThreadLocalRandom.current();
     public static String removeSchema(String stmt, String schema) {
         return removeSchema(stmt, schema, DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
     }

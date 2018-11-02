@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -49,7 +50,8 @@ public class PhysicalDBPool {
     private final ReentrantLock switchLock = new ReentrantLock();
 
     private final int balance;
-    private final Random random = new Random();
+    private final ThreadLocalRandom random = ThreadLocalRandom.current();
+
     private String[] schemas;
 
     private final DataHostConfig dataHostConfig;

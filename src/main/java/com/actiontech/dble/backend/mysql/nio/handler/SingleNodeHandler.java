@@ -346,11 +346,14 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         if (primaryKeyIndex != -1) {
             rowDataPk = new RowDataPacket(fieldCount);
             rowDataPk.read(row);
-            String primaryKey = new String(rowDataPk.fieldValues.get(primaryKeyIndex));
-            RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
-            LayerCachePool pool = DbleServer.getInstance().getRouterService().getTableId2DataNodeCache();
-            if (pool != null) {
-                pool.putIfAbsent(primaryKeyTable, primaryKey, rNode.getName());
+            byte[] key = rowDataPk.fieldValues.get(primaryKeyIndex);
+            if (key != null) {
+                String primaryKey = new String(key);
+                RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+                LayerCachePool pool = DbleServer.getInstance().getRouterService().getTableId2DataNodeCache();
+                if (pool != null) {
+                    pool.putIfAbsent(primaryKeyTable, primaryKey, rNode.getName());
+                }
             }
         }
 

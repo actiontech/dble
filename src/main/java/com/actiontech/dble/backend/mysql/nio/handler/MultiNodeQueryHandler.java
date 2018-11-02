@@ -382,10 +382,13 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             if (primaryKeyIndex != -1) {
                 rowDataPkg = new RowDataPacket(fieldCount);
                 rowDataPkg.read(row);
-                String primaryKey = new String(rowDataPkg.fieldValues.get(primaryKeyIndex));
-                LayerCachePool pool = DbleServer.getInstance().getRouterService().getTableId2DataNodeCache();
-                if (pool != null) {
-                    pool.putIfAbsent(primaryKeyTable, primaryKey, dataNode);
+                byte[] key = rowDataPkg.fieldValues.get(primaryKeyIndex);
+                if (key != null) {
+                    String primaryKey = new String(rowDataPkg.fieldValues.get(primaryKeyIndex));
+                    LayerCachePool pool = DbleServer.getInstance().getRouterService().getTableId2DataNodeCache();
+                    if (pool != null) {
+                        pool.putIfAbsent(primaryKeyTable, primaryKey, dataNode);
+                    }
                 }
             }
             if (prepared) {

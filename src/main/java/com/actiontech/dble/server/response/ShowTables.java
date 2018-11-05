@@ -54,7 +54,7 @@ public final class ShowTables {
             c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.toString());
             return;
         }
-        String showSchema = info.getSchema();
+        String showSchema = info.getSchema() == null ? null : StringUtil.removeBackQuote(info.getSchema());
         if (showSchema != null && DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             showSchema = showSchema.toLowerCase();
         }

@@ -9,7 +9,6 @@ import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.parser.ServerParseShow;
 import com.actiontech.dble.server.response.*;
-import com.actiontech.dble.util.StringUtil;
 
 
 /**
@@ -20,9 +19,6 @@ public final class ShowHandler {
     }
 
     public static void handle(String stmt, ServerConnection c, int offset) {
-
-        // remove `
-        stmt = StringUtil.replaceChars(stmt, "`", null);
 
         int type = ServerParseShow.parse(stmt, offset);
         switch (type) {

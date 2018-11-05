@@ -12,6 +12,7 @@ import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 import com.actiontech.dble.util.StringUtil;
+import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowIndexesStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowKeysStatement;
@@ -27,8 +28,8 @@ public final class ShowIndex {
 
     private static final String INDEX_PAT = "^\\s*(show)" +
             "(\\s+(index|indexes|keys))" +
-            "(\\s+(from|in)\\s+([a-zA-Z_0-9.]+))" +
-            "(\\s+(from|in)\\s+([a-zA-Z_0-9]+))?" +
+            "(\\s+(from|in)\\s+(`?[a-zA-Z_0-9.]+`?))" +
+            "(\\s+(from|in)\\s+(`?[a-zA-Z_0-9]+`?))?" +
             "(\\s+(where)\\s+((. *)*)\\s*)?" +
             "\\s*$";
     public static final Pattern PATTERN = Pattern.compile(INDEX_PAT, Pattern.CASE_INSENSITIVE);
@@ -50,7 +51,8 @@ public final class ShowIndex {
             if (statement instanceof MySqlShowIndexesStatement) {
                 MySqlShowIndexesStatement mySqlShowIndexesStatement = (MySqlShowIndexesStatement) statement;
                 table = StringUtil.removeBackQuote(mySqlShowIndexesStatement.getTable().getSimpleName());
-                schema = mySqlShowIndexesStatement.getDatabase() == null ? c.getSchema() : mySqlShowIndexesStatement.getDatabase().getSimpleName();
+                SQLName database = mySqlShowIndexesStatement.getDatabase();
+                schema = database == null ? c.getSchema() : StringUtil.removeBackQuote(database.getSimpleName());
                 if (schema == null) {
                     c.writeErrMessage("3D000", "No database selected", ErrorCode.ER_NO_DB_ERROR);
                     return;
@@ -64,7 +66,8 @@ public final class ShowIndex {
             } else if (statement instanceof MySqlShowKeysStatement) {
                 MySqlShowKeysStatement mySqlShowKeysStatement = (MySqlShowKeysStatement) statement;
                 table = StringUtil.removeBackQuote(mySqlShowKeysStatement.getTable().getSimpleName());
-                schema = mySqlShowKeysStatement.getDatabase() == null ? c.getSchema() : mySqlShowKeysStatement.getDatabase().getSimpleName();
+                SQLName database = mySqlShowKeysStatement.getDatabase();
+                schema = database == null ? c.getSchema() : StringUtil.removeBackQuote(database.getSimpleName());
                 if (schema == null) {
                     c.writeErrMessage("3D000", "No database selected", ErrorCode.ER_NO_DB_ERROR);
                     return;
@@ -84,7 +87,7 @@ public final class ShowIndex {
                 sql.append(strWhere);
             }
             if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
-                schema = StringUtil.removeBackQuote(schema).toLowerCase();
+                schema = schema.toLowerCase();
                 table = table.toLowerCase();
             }
             SchemaInfo schemaInfo = new SchemaInfo(schema, table);

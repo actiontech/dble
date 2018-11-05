@@ -295,4 +295,19 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         }
         session.getSource().write(data);
     }
+
+
+    @Override
+    public boolean clearIfSessionClosed(NonBlockingSession nonBlockingSession) {
+        if (nonBlockingSession.closed()) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("session closed ,clear resources " + nonBlockingSession);
+            }
+            nonBlockingSession.clearResources(rrs);
+            this.clearResources();
+            return true;
+        } else {
+            return false;
+        }
+    }
 }

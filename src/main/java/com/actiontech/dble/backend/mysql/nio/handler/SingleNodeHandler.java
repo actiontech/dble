@@ -88,7 +88,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
     private void execute(BackendConnection conn) {
         if (session.closed()) {
-            session.clearResources(true);
+            session.clearResources(rrs);
             return;
         }
         conn.setResponseHandler(this);

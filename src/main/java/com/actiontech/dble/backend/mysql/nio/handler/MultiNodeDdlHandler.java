@@ -105,7 +105,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     }
 
     private void innerExecute(BackendConnection conn, RouteResultsetNode node) {
-        if (clearIfSessionClosed(session)) {
+        if (clearIfSessionClosed()) {
             return;
         }
         conn.setResponseHandler(this);
@@ -297,13 +297,12 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     }
 
 
-    @Override
-    public boolean clearIfSessionClosed(NonBlockingSession nonBlockingSession) {
-        if (nonBlockingSession.closed()) {
+    public boolean clearIfSessionClosed() {
+        if (session.closed()) {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("session closed ,clear resources " + nonBlockingSession);
+                LOGGER.debug("session closed without execution,clear resources " + session);
             }
-            nonBlockingSession.clearResources(rrs);
+            session.clearResources(rrs);
             this.clearResources();
             return true;
         } else {

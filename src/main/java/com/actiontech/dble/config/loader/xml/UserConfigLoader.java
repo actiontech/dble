@@ -5,6 +5,7 @@
 */
 package com.actiontech.dble.config.loader.xml;
 
+import com.actiontech.dble.config.ErrorInfo;
 import com.actiontech.dble.config.model.UserConfig;
 import com.actiontech.dble.config.model.UserPrivilegesConfig;
 import com.actiontech.dble.config.util.ConfigException;
@@ -22,6 +23,7 @@ import org.w3c.dom.NodeList;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 
 public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
@@ -29,8 +31,9 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
 
     public void load(Element root, XMLServerLoader xsl) throws IllegalAccessException, InvocationTargetException {
         Map<String, UserConfig> users = xsl.getUsers();
-        NodeList list = root.getElementsByTagName("user");
+        List<ErrorInfo> errors = xsl.getErrors();
 
+        NodeList list = root.getElementsByTagName("user");
         for (int i = 0, n = list.getLength(); i < n; i++) {
             Node node = list.item(i);
             if (node instanceof Element) {
@@ -45,7 +48,9 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
                     if ("1".equals(usingDecryptStr)) {
                         usingDecrypt = true;
                     } else if (!"0".equals(usingDecryptStr)) {
-                        LOGGER.warn("user " + name + " usingDecrypt is not recognized, use 0 replaced");
+                        String warning = "user[" + name + "] property usingDecrypt " + usingDecryptStr + " is not recognized, use 0 replaced";
+                        LOGGER.warn(warning);
+                        errors.add(new ErrorInfo("Xml", "WARNING", warning));
                     }
                 }
                 String passwordDecrypt = DecryptUtil.decrypt(usingDecrypt, name, password);
@@ -71,7 +76,9 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
                     Boolean readOnlyBool = BooleanUtils.toBooleanObject(readOnly);
                     if (readOnlyBool == null) {
                         readOnlyBool = false;
-                        LOGGER.warn("user " + name + " readOnly is not recognized, use false replaced!");
+                        String warning = "user[" + name + "] property readOnly " + readOnly + " is not recognized, use false replaced";
+                        LOGGER.warn(warning);
+                        errors.add(new ErrorInfo("Xml", "WARNING", warning));
                     }
                     user.setReadOnly(readOnlyBool);
                 }
@@ -82,7 +89,9 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
                     Boolean managerBool = BooleanUtils.toBooleanObject(manager);
                     if (null == managerBool) {
                         managerBool = false;
-                        LOGGER.warn("user " + name + " manager is not recognized, use false replaced!");
+                        String warning = "user[" + name + "] property manager " + manager + " is not recognized, use false replaced";
+                        LOGGER.warn(warning);
+                        errors.add(new ErrorInfo("Xml", "WARNING", warning));
                     }
                     user.setManager(managerBool);
                     user.setSchemas(new HashSet<String>(0));
@@ -99,7 +108,7 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
                         throw new ConfigException("Server user must have at least one schemas");
                     }
                     // load DML
-                    loadPrivileges(user, e);
+                    loadPrivileges(user, e, errors);
                 }
                 if (users.containsKey(name)) {
                     throw new ConfigException("user " + name + " duplicated!");
@@ -114,16 +123,22 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
         }
     }
 
-    private void loadPrivileges(UserConfig userConfig, Element node) {
+    private void loadPrivileges(UserConfig userConfig, Element node, List<ErrorInfo> errors) {
         UserPrivilegesConfig privilegesConfig = new UserPrivilegesConfig();
 
         NodeList privilegesNodes = node.getElementsByTagName("privileges");
         int privilegesNodesLength = privilegesNodes.getLength();
         for (int i = 0; i < privilegesNodesLength; i++) {
             Element privilegesNode = (Element) privilegesNodes.item(i);
-            String check = privilegesNode.getAttribute("check");
-            if (null != check) {
-                privilegesConfig.setCheck(Boolean.valueOf(check));
+            if (privilegesNode.hasAttribute("check")) {
+                Boolean check = BooleanUtils.toBooleanObject(privilegesNode.getAttribute("check"));
+                if (null == check) {
+                    check = false;
+                    String warning = "user[" + userConfig.getName() + "] privileges check is not recognized, use false replaced!";
+                    LOGGER.warn(warning);
+                    errors.add(new ErrorInfo("Xml", "WARNING", warning));
+                }
+                privilegesConfig.setCheck(check);
             }
 
             NodeList schemaNodes = privilegesNode.getElementsByTagName("schema");

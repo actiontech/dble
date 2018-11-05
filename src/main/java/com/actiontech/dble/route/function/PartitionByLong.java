@@ -107,6 +107,16 @@ public final class PartitionByLong extends AbstractPartitionAlgorithm implements
         }
     }
 
+    /**
+     * getPartitionNum, return -1 means no limit
+     *
+     * @return partitionNum
+     */
+    @Override
+    public int getPartitionNum() {
+        return partitionUtil.getSegmentLength();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {

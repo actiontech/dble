@@ -42,12 +42,9 @@ public class ConfigInitializer {
     private volatile Map<String, PhysicalDBNode> dataNodes;
     private volatile Map<String, PhysicalDBPool> dataHosts;
     private volatile Map<ERTable, Set<ERTable>> erRelations;
-
+    private volatile boolean dataHostWithoutWH = true;
 
     private List<ErrorInfo> errorInfos = new ArrayList<>();
-
-
-    private volatile boolean dataHostWithoutWH = true;
 
     public ConfigInitializer(boolean loadDataHost, boolean lowerCaseNames) {
         //load server.xml
@@ -71,6 +68,8 @@ public class ConfigInitializer {
         }
 
         this.firewall = serverLoader.getFirewall();
+        // errors when parsing config
+        this.errorInfos.addAll(serverLoader.getErrors());
 
         deleteRedundancyConf();
         checkWriteHost();

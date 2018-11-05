@@ -5,6 +5,7 @@
 */
 package com.actiontech.dble.config.loader.xml;
 
+import com.actiontech.dble.config.ErrorInfo;
 import com.actiontech.dble.config.model.FirewallConfig;
 import com.actiontech.dble.config.model.UserConfig;
 import com.actiontech.dble.config.util.ConfigException;
@@ -31,6 +32,8 @@ public class FirewallConfigLoader implements Loader<FirewallConfig, XMLServerLoa
     public void load(Element root, XMLServerLoader xsl) throws IllegalAccessException, InvocationTargetException {
         FirewallConfig firewall = xsl.getFirewall();
         Map<String, UserConfig> users = xsl.getUsers();
+        List<ErrorInfo> errors = xsl.getErrors();
+
         NodeList list = root.getElementsByTagName("host");
         Map<String, List<UserConfig>> whitehost = new HashMap<>();
 
@@ -70,8 +73,10 @@ public class FirewallConfigLoader implements Loader<FirewallConfig, XMLServerLoa
                 if (e.hasAttribute("check")) {
                     Boolean check = BooleanUtils.toBooleanObject(e.getAttribute("check"));
                     if (null == check) {
-                        LOGGER.warn("blacklist attribute check in server.xml is not recognized, using false replaced.");
                         check = Boolean.FALSE;
+                        String warning = "blacklist attribute check " + e.getAttribute("check") + " in server.xml is not recognized, using false replaced.";
+                        LOGGER.warn(warning);
+                        errors.add(new ErrorInfo("Xml", "WARNING", warning));
                     }
                     firewall.setBlackListCheck(check);
                 }

@@ -9,7 +9,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Created by szf on 2018/7/12.
  */
-public class BackEndRecycleRunnable implements Runnable {
+public class BackEndRecycleRunnable implements Runnable, BackEndCleaner {
 
     private final MySQLConnection backendConnection;
     private ReentrantLock lock = new ReentrantLock();

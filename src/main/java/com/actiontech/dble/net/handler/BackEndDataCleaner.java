@@ -24,7 +24,7 @@ public class BackEndDataCleaner implements BackEndCleaner {
     public void waitUntilDataFinish() {
         lock.lock();
         try {
-            if (backendConnection.isRunning() && !backendConnection.isClosed()) {
+            while (backendConnection.isRunning() && !backendConnection.isClosed()) {
                 LOGGER.info("await for the row data get to a end");
                 condRelease.await();
             }

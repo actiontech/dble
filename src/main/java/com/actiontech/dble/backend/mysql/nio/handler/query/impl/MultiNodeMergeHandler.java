@@ -148,7 +148,6 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(conn.toString() + " 's rowEof is reached.");
         }
-        ((MySQLConnection) conn).setRunning(false);
         if (this.terminate.get())
             return;
         if (isEasyMerge) {

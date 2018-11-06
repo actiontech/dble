@@ -233,6 +233,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
         LOGGER.info(this.source.toString() + " handle data error:", e);
         dataQueue.clear();
         this.source.setRunning(false);
+        this.source.singal();
         ResponseHandler handler = this.responseHandler;
         if (handler != null)
             handler.connectionError(e, this.source);

@@ -26,6 +26,7 @@ import com.actiontech.dble.btrace.provider.CostTimeProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
+import com.actiontech.dble.net.handler.BackEndDataCleaner;
 import com.actiontech.dble.net.handler.FrontendCommandHandler;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
@@ -764,6 +765,16 @@ public class NonBlockingSession implements Session {
         }
 
     }
+
+
+    public void waitFinishConnection(RouteResultsetNode rrn) {
+        BackendConnection c = target.get(rrn);
+        if (c != null) {
+            BackEndDataCleaner clear = new BackEndDataCleaner((MySQLConnection) c);
+            clear.waitUntilDataFinish();
+        }
+    }
+
 
     public void releaseConnections(final boolean needClosed) {
         boolean debug = LOGGER.isDebugEnabled();

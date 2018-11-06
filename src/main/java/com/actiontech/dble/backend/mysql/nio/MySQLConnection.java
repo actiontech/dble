@@ -13,6 +13,7 @@ import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.net.BackendAIOConnection;
+import com.actiontech.dble.net.handler.BackEndCleaner;
 import com.actiontech.dble.net.handler.BackEndRecycleRunnable;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -57,7 +58,7 @@ public class MySQLConnection extends BackendAIOConnection {
     private long oldTimestamp;
 
 
-    private volatile BackEndRecycleRunnable recycler = null;
+    private volatile BackEndCleaner recycler = null;
 
     private static long initClientFlags() {
         int flag = 0;
@@ -500,7 +501,7 @@ public class MySQLConnection extends BackendAIOConnection {
 
     }
 
-    public void setRecycler(BackEndRecycleRunnable recycler) {
+    public void setRecycler(BackEndCleaner recycler) {
         this.recycler = recycler;
     }
 
@@ -635,6 +636,8 @@ public class MySQLConnection extends BackendAIOConnection {
                     }
                 }
             }
+            this.setRunning(false);
+            this.singal();
             innerTerminate(reason);
         }
         if (this.respHandler != null) {
@@ -648,6 +651,8 @@ public class MySQLConnection extends BackendAIOConnection {
         DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
             @Override
             public void run() {
+                conn.setRunning(false);
+                conn.singal();
                 handler.connectionClose(conn, reason);
                 respHandler = null;
             }

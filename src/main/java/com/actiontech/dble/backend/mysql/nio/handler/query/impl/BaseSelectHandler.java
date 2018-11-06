@@ -182,6 +182,9 @@ public class BaseSelectHandler extends BaseDMLHandler {
     protected void onTerminate() {
         if (autocommit) {
             this.session.releaseConnection(rrss, LOGGER.isDebugEnabled(), false);
+        } else {
+            //the connection should wait until the connection running finish
+            this.session.waitFinishConnection(rrss);
         }
     }
 

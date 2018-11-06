@@ -27,7 +27,7 @@ public final class ShowTableStatus {
     private static final String SHOW_TABLE_STATUS = "^\\s*(show)" +
             "(\\s+table)" +
             "(\\s+status)" +
-            "(\\s+(from|in)\\s+([a-zA-Z_0-9]+))?" +
+            "(\\s+(from|in)\\s+(`?[a-zA-Z_0-9]+`?))?" +
             "((\\s+(like)\\s+'((. *)*)'\\s*)|(\\s+(where)\\s+((. *)*)\\s*))?" +
             "\\s*$";
     public static final Pattern PATTERN = Pattern.compile(SHOW_TABLE_STATUS, Pattern.CASE_INSENSITIVE);
@@ -40,6 +40,7 @@ public final class ShowTableStatus {
         Matcher ma = PATTERN.matcher(stmt);
         ma.matches(); //always RETURN TRUE
         String schema = ma.group(6);
+        schema = schema == null ? null : StringUtil.removeBackQuote(schema);
         if (schema != null && DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             schema = schema.toLowerCase();
         }

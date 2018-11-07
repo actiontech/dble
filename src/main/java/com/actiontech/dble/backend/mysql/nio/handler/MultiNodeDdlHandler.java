@@ -159,7 +159,10 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                 setFail(new String(err.getMessage()));
             }
             if (--nodeCount <= 0 && errorResponse.compareAndSet(false, true)) {
-                session.handleSpecial(oriRrs, session.getSource().getSchema(), false);
+                if (relieaseDDLLock.compareAndSet(false, true)) {
+                    session.handleSpecial(oriRrs, session.getSource().getSchema(), false);
+                }
+
                 handleRollbackPacket(err.toBytes());
             }
         } finally {
@@ -306,7 +309,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
             }
             session.clearResources(true);
             if (relieaseDDLLock.compareAndSet(false, true)) {
-                DbleServer.getInstance().getTmManager().removeMetaLock(rrs.getSchema(), rrs.getTable());
+                session.handleSpecial(oriRrs, session.getSource().getSchema(), false);
             }
             this.clearResources();
             return true;

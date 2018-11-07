@@ -873,7 +873,7 @@ public class NonBlockingSession implements Session {
     public void clearResources(RouteResultset rrs) {
         clearResources(true);
         if (rrs.getSqlType() == DDL) {
-            DbleServer.getInstance().getTmManager().removeMetaLock(rrs.getSchema(), rrs.getTable());
+            this.handleSpecial(rrs, this.getSource().getSchema(), false);
         }
     }
 

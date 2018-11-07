@@ -73,6 +73,7 @@ public final class ManagerParseShow {
     public static final int SLOW_QUERY_TIME = 56;
     public static final int SLOW_QUERY_FLUSH_PERIOD = 57;
     public static final int SLOW_QUERY_FLUSH_SIZE = 58;
+    public static final int ALERT = 59;
 
     public static final Pattern PATTERN_FOR_TABLE_INFO = Pattern.compile("^(\\s*schema\\s*=\\s*)([a-zA-Z_0-9]+)" +
             "(\\s+and\\s+table\\s*=\\s*)([a-zA-Z_0-9]+)\\s*$", Pattern.CASE_INSENSITIVE);
@@ -140,24 +141,51 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
-    // show @@algorithm
     private static int showACheck(String stmt, int offset) {
-        if (stmt.length() > offset + "lgorithm ".length()) {
-            char c1 = stmt.charAt(++offset);
+        while (stmt.length() > ++offset) {
+            switch (stmt.charAt(offset)) {
+                case 'l':
+                case 'L':
+                    continue;
+                case 'g':
+                case 'G':
+                    return show2Algorithm(stmt, offset);
+                case 'e':
+                case 'E':
+                    return show2Alert(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    // show @@algorithm
+    private static int show2Algorithm(String stmt, int offset) {
+        if (stmt.length() > offset + "orithm ".length()) {
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
             char c7 = stmt.charAt(++offset);
-            char c8 = stmt.charAt(++offset);
-            if ((c1 == 'L' || c1 == 'l') && (c2 == 'G' || c2 == 'g') && (c3 == 'O' || c3 == 'o') &&
-                    (c4 == 'R' || c4 == 'r') && (c5 == 'I' || c5 == 'i') && (c6 == 'T' || c6 == 't') &&
-                    (c7 == 'H' || c7 == 'h') && (c8 == 'M' || c8 == 'm')) {
+            if ((c2 == 'O' || c2 == 'o') && (c3 == 'R' || c3 == 'r') &&
+                    (c4 == 'I' || c4 == 'i') && (c5 == 'T' || c5 == 't') &&
+                    (c6 == 'H' || c6 == 'h') && (c7 == 'M' || c7 == 'm')) {
                 return checkWherePlus(stmt, offset, TABLE_ALGORITHM);
-
             }
+        }
+        return OTHER;
+    }
 
+    // show @@ALERT
+    private static int show2Alert(String stmt, int offset) {
+        if (stmt.length() > offset + "rt".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            if ((c1 == 'R' || c1 == 'r') && (c2 == 'T' || c2 == 't')) {
+                return ALERT;
+            }
         }
         return OTHER;
     }

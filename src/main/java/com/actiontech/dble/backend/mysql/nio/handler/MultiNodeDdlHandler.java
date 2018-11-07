@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author guoji.ma@gmail.com
@@ -43,6 +44,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     private ErrorPacket err;
     private Set<BackendConnection> closedConnSet;
     private volatile boolean finishedTest = false;
+    private AtomicBoolean relieaseDDLLock = new AtomicBoolean(false);
 
     public MultiNodeDdlHandler(RouteResultset rrs, NonBlockingSession session) {
         super(session);
@@ -302,7 +304,10 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("session closed without execution,clear resources " + session);
             }
-            session.clearResources(rrs);
+            session.clearResources(true);
+            if (relieaseDDLLock.compareAndSet(false, true)) {
+                DbleServer.getInstance().getTmManager().removeMetaLock(rrs.getSchema(), rrs.getTable());
+            }
             this.clearResources();
             return true;
         } else {

@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author guoji.ma@gmail.com
@@ -43,6 +44,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     private ErrorPacket err;
     private Set<BackendConnection> closedConnSet;
     private volatile boolean finishedTest = false;
+    private AtomicBoolean relieaseDDLLock = new AtomicBoolean(false);
 
     public MultiNodeDdlHandler(RouteResultset rrs, NonBlockingSession session) {
         super(session);
@@ -105,7 +107,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     }
 
     private void innerExecute(BackendConnection conn, RouteResultsetNode node) {
-        if (clearIfSessionClosed(session)) {
+        if (clearIfSessionClosed()) {
             return;
         }
         conn.setResponseHandler(this);
@@ -157,7 +159,10 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                 setFail(new String(err.getMessage()));
             }
             if (--nodeCount <= 0 && errorResponse.compareAndSet(false, true)) {
-                session.handleSpecial(oriRrs, session.getSource().getSchema(), false);
+                if (relieaseDDLLock.compareAndSet(false, true)) {
+                    session.handleSpecial(oriRrs, session.getSource().getSchema(), false);
+                }
+
                 handleRollbackPacket(err.toBytes());
             }
         } finally {
@@ -294,5 +299,22 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
             source.setTxInterrupt("ROLLBACK");
         }
         session.getSource().write(data);
+    }
+
+
+    public boolean clearIfSessionClosed() {
+        if (session.closed()) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("session closed without execution,clear resources " + session);
+            }
+            session.clearResources(true);
+            if (relieaseDDLLock.compareAndSet(false, true)) {
+                session.handleSpecial(oriRrs, session.getSource().getSchema(), false);
+            }
+            this.clearResources();
+            return true;
+        } else {
+            return false;
+        }
     }
 }

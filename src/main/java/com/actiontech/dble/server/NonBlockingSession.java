@@ -64,6 +64,7 @@ import java.util.concurrent.locks.LockSupport;
 
 import static com.actiontech.dble.meta.PauseEndThreadPool.CONTINUE_TYPE_MULTIPLE;
 import static com.actiontech.dble.meta.PauseEndThreadPool.CONTINUE_TYPE_SINGLE;
+import static com.actiontech.dble.server.parser.ServerParse.DDL;
 
 /**
  * @author mycat
@@ -867,6 +868,13 @@ public class NonBlockingSession implements Session {
         clearHandlesResources();
         source.setTxStart(false);
         source.getAndIncrementXid();
+    }
+
+    public void clearResources(RouteResultset rrs) {
+        clearResources(true);
+        if (rrs.getSqlType() == DDL) {
+            this.handleSpecial(rrs, this.getSource().getSchema(), false);
+        }
     }
 
     public boolean closed() {

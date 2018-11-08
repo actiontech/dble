@@ -141,15 +141,13 @@ public final class ExplainHandler {
                                                     String stmt) {
         String db = c.getSchema();
         int sqlType = ServerParse.parse(stmt) & 0xff;
-        if (db == null) {
-            //TODO: EXPLAIN SCHEMA.TABLE
-            c.writeErrMessage(ErrorCode.ER_NO_DB_ERROR, "No database selected");
-            return null;
-        }
-        SchemaConfig schema = DbleServer.getInstance().getConfig().getSchemas().get(db);
-        if (schema == null) {
-            c.writeErrMessage(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + db + "'");
-            return null;
+        SchemaConfig schema = null;
+        if (db != null) {
+            schema = DbleServer.getInstance().getConfig().getSchemas().get(db);
+            if (schema == null) {
+                c.writeErrMessage(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + db + "'");
+                return null;
+            }
         }
         try {
             if (ServerParse.INSERT == sqlType && isInsertSeq(c, stmt, schema)) {

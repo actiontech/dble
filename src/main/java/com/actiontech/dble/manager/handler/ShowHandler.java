@@ -6,6 +6,7 @@
 package com.actiontech.dble.manager.handler;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.config.ErrorCode;
@@ -206,6 +207,9 @@ public final class ShowHandler {
                 break;
             case ManagerParseShow.SLOW_QUERY_FLUSH_SIZE:
                 ShowSingleValue.execute(c, "@@slow_query.flushsize", SlowQueryLog.getInstance().getFlushSize());
+                break;
+            case ManagerParseShow.ALERT:
+                ShowSingleValue.execute(c, "@@alert", AlertUtil.isEnable() ? 1L : 0L);
                 break;
             default:
                 if (isSupportShow(stmt)) {

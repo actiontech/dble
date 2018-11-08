@@ -37,7 +37,7 @@ public class ItemFuncSecToTime extends ItemTimeFunc {
             return true;
         }
         long seconds = val.longValue();
-        if (seconds > MyTime.TIME_MAX_SECOND) {
+        if (seconds > MyTime.TIME_MAX_VALUE_SECONDS) {
             ltime.setMaxHhmmss();
             return true;
         }

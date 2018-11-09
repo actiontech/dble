@@ -271,12 +271,14 @@ public class NonBlockingSession implements Session {
         provider.allBackendConnReceive(source.getId());
     }
 
-    public void setResponseTime() {
+    public void setResponseTime(boolean isSuccess) {
         long responseTime = 0;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             responseTime = System.nanoTime();
             traceResult.setVeryEnd(responseTime);
-            SlowQueryLog.getInstance().putSlowQueryLog(this.source, (TraceResult) traceResult.clone());
+            if (isSuccess) {
+                SlowQueryLog.getInstance().putSlowQueryLog(this.source, (TraceResult) traceResult.clone());
+            }
         }
         if (!timeCost) {
             return;

@@ -14,8 +14,8 @@ public class NormalAutoCommitNodesHandler extends NormalCommitNodesHandler {
     }
 
     @Override
-    protected void setResponseTime() {
+    protected void setResponseTime(boolean isSuccess) {
         session.setFinishedCommitTime();
-        session.setResponseTime();
+        session.setResponseTime(isSuccess);
     }
 }

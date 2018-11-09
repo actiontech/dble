@@ -329,7 +329,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         }
     }
 
-    protected void setResponseTime() {
+    protected void setResponseTime(boolean isSuccess) {
     }
 
     protected void nextParse() {
@@ -350,7 +350,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             if (session.closed()) {
                 return;
             }
-            setResponseTime();
+            setResponseTime(true);
             byte[] send = sendData;
             session.getSource().write(send);
 
@@ -374,7 +374,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 byte[] toSend = sendData;
                 session.clearResources(false);
                 if (!session.closed()) {
-                    setResponseTime();
+                    setResponseTime(true);
                     session.getSource().write(toSend);
                 }
             }
@@ -382,7 +382,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             // need to rollback;
         } else {
             XAStateLog.saveXARecoveryLog(session.getSessionXaID(), session.getXaState());
-            setResponseTime();
+            setResponseTime(true);
             session.getSource().write(sendData);
             LOGGER.info("cleanAndFeedback:" + error);
 

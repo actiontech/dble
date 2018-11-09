@@ -57,7 +57,7 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
             if (sendData == null) {
                 sendData = OkPacket.OK;
             }
-            cleanAndFeedback();
+            cleanAndFeedback(true);
         }
     }
 
@@ -67,7 +67,7 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
             if (sendData == null) {
                 sendData = session.getOkByteArray();
             }
-            cleanAndFeedback();
+            cleanAndFeedback(true);
         }
     }
 
@@ -79,7 +79,7 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
         this.setFail(errMsg);
         conn.close("rollback error response"); //quit to rollback
         if (decrementCountBy(1)) {
-            cleanAndFeedback();
+            cleanAndFeedback(false);
         }
     }
 
@@ -90,7 +90,7 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
         this.setFail(errMsg);
         conn.close("rollback connection error"); //quit if not rollback
         if (decrementCountBy(1)) {
-            cleanAndFeedback();
+            cleanAndFeedback(false);
         }
     }
 
@@ -99,18 +99,18 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
         // quitted
         this.setFail(reason);
         if (decrementCountBy(1)) {
-            cleanAndFeedback();
+            cleanAndFeedback(false);
         }
     }
 
-    private void cleanAndFeedback() {
+    private void cleanAndFeedback(boolean isOk) {
         byte[] send = sendData;
         // clear all resources
         session.clearResources(false);
         if (session.closed()) {
             return;
         }
-        setResponseTime();
+        setResponseTime(isOk);
         if (this.isFail()) {
             createErrPkg(error).write(session.getSource());
         } else {
@@ -120,6 +120,6 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
         }
     }
 
-    protected void setResponseTime() {
+    protected void setResponseTime(boolean isSuccess) {
     }
 }

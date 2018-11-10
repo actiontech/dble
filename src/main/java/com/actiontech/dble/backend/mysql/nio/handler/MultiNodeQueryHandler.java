@@ -192,11 +192,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
                 if (byteBuffer == null) {
                     errPacket.setPacketId(1);
-                    handleEndPacket(errPacket.toBytes(), AutoTxOperation.ROLLBACK, conn);
+                    handleEndPacket(errPacket.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
                 } else {
                     session.getSource().write(byteBuffer);
                     errPacket.setPacketId(++packetId);
-                    handleEndPacket(errPacket.toBytes(), AutoTxOperation.ROLLBACK, conn);
+                    handleEndPacket(errPacket.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
                 }
             }
         } finally {
@@ -234,7 +234,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (isFail()) {
                     session.handleSpecial(rrs, source.getSchema(), false);
                     session.resetMultiStatementStatus();
-                    handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
+                    handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
                     return;
                 }
                 boolean metaInited = session.handleSpecial(rrs, source.getSchema(), true);
@@ -260,7 +260,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
                 session.multiStatementPacket(ok, packetId);
                 doSqlStat();
-                handleEndPacket(ok.toBytes(), AutoTxOperation.COMMIT, conn);
+                handleEndPacket(ok.toBytes(), AutoTxOperation.COMMIT, conn, true);
             } finally {
                 lock.unlock();
             }
@@ -275,7 +275,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
         session.multiStatementPacket(errPacket, packetId);
         doSqlStat();
-        handleEndPacket(errPacket.toBytes(), AutoTxOperation.COMMIT, conn);
+        handleEndPacket(errPacket.toBytes(), AutoTxOperation.COMMIT, conn, false);
     }
 
     @Override
@@ -336,11 +336,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
 
                 if (this.isFail()) {
-                    session.setResponseTime();
+                    session.setResponseTime(false);
                     session.resetMultiStatementStatus();
                     source.write(byteBuffer);
                     ErrorPacket errorPacket = createErrPkg(this.error);
-                    handleEndPacket(errorPacket.toBytes(), AutoTxOperation.ROLLBACK, conn); //todo :optimized
+                    handleEndPacket(errorPacket.toBytes(), AutoTxOperation.ROLLBACK, conn, false); //todo :optimized
                     return;
                 }
             }
@@ -457,11 +457,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             if (--nodeCount == 0) {
                 session.handleSpecial(rrs, session.getSource().getSchema(), false);
                 if (byteBuffer == null) {
-                    handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
+                    handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
                 } else {
                     session.getSource().write(byteBuffer);
                     err.setPacketId(++packetId);
-                    handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
+                    handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
                 }
             }
         } finally {
@@ -476,7 +476,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             LOGGER.debug("last packet id:" + packetId);
         }
         byteBuffer = source.writeToBuffer(eof, byteBuffer);
-        session.setResponseTime();
+        session.setResponseTime(true);
         doSqlStat();
         source.write(byteBuffer);
     }
@@ -571,7 +571,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
 
-    void handleEndPacket(byte[] data, AutoTxOperation txOperation, BackendConnection conn) {
+    void handleEndPacket(byte[] data, AutoTxOperation txOperation, BackendConnection conn, boolean isSuccess) {
         ServerConnection source = session.getSource();
         if (source.isAutocommit() && !source.isTxStart() && conn.isModifiedSQLExecuted()) {
             if (nodeCount < 0) {
@@ -612,7 +612,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (inTransaction && (AutoTxOperation.ROLLBACK == txOperation)) {
                     source.setTxInterrupt("ROLLBACK");
                 }
-                session.setResponseTime();
+                session.setResponseTime(isSuccess);
                 session.getSource().write(data);
             }
         }

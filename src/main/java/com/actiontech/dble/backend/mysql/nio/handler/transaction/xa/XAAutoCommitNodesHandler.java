@@ -28,8 +28,8 @@ public class XAAutoCommitNodesHandler extends XACommitNodesHandler {
     }
 
     @Override
-    protected void setResponseTime() {
+    protected void setResponseTime(boolean isSuccess) {
         session.setFinishedCommitTime();
-        session.setResponseTime();
+        session.setResponseTime(isSuccess);
     }
 }

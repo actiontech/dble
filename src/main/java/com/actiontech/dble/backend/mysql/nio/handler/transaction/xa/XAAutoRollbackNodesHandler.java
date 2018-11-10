@@ -46,7 +46,7 @@ public class XAAutoRollbackNodesHandler extends XARollbackNodesHandler {
     }
 
     @Override
-    protected void setResponseTime() {
-        session.setResponseTime();
+    protected void setResponseTime(boolean isSuccess) {
+        session.setResponseTime(isSuccess);
     }
 }

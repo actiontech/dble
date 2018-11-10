@@ -87,7 +87,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
     }
 
 
-    protected void setResponseTime() {
+    protected void setResponseTime(boolean isSuccess) {
     }
 
     private boolean executeRollback(MySQLConnection mysqlCon, int position) {
@@ -360,7 +360,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             if (session.closed()) {
                 return;
             }
-            setResponseTime();
+            setResponseTime(true);
             byte[] send = sendData;
             session.getSource().write(send);
 
@@ -388,7 +388,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                 byte[] toSend = sendData;
                 session.clearResources(false);
                 if (!session.closed()) {
-                    setResponseTime();
+                    setResponseTime(true);
                     session.getSource().write(toSend);
                 }
             }
@@ -402,7 +402,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             if (session.closed()) {
                 return;
             }
-            setResponseTime();
+            setResponseTime(true);
             session.getSource().write(sendData);
 
         }

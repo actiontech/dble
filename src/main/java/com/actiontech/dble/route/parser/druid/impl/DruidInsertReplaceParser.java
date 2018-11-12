@@ -27,12 +27,13 @@ import java.util.Set;
 import static com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 
 abstract class DruidInsertReplaceParser extends DefaultDruidParser {
-    protected static RouteResultset routeByERParentKey(RouteResultset rrs, TableConfig tc, String joinKeyVal)
+    protected static RouteResultset routeByERParentKey(RouteResultset rrs, TableConfig tc, String joinKeyVal, SchemaInfo schemaInfo)
             throws SQLNonTransientException {
         if (tc.getDirectRouteTC() != null) {
             Set<ColumnRoutePair> parentColVal = new HashSet<>(1);
             ColumnRoutePair pair = new ColumnRoutePair(joinKeyVal);
             parentColVal.add(pair);
+            checkDefaultValues(joinKeyVal, tc, schemaInfo.getSchema(), tc.getJoinKey());
             Set<String> dataNodeSet = RouterUtil.ruleCalculate(tc.getDirectRouteTC(), parentColVal);
             if (dataNodeSet.isEmpty() || dataNodeSet.size() > 1) {
                 throw new SQLNonTransientException("parent key can't find  valid data node ,expect 1 but found: " + dataNodeSet.size());
@@ -46,6 +47,36 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
         return null;
     }
 
+
+    /**
+     * check if the column is not null and the
+     *
+     * @param columnValue
+     * @throws SQLNonTransientException
+     */
+    public static void checkDefaultValues(String columnValue, TableConfig tableConfig, String schema, String partitionColumn) throws SQLNonTransientException {
+
+        if (columnValue == null || "null".equalsIgnoreCase(columnValue)) {
+            StructureMeta.TableMeta meta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schema, tableConfig.getName());
+            for (StructureMeta.ColumnMeta columnMeta : meta.getColumnsList()) {
+                if (!columnMeta.getCanNull()) {
+                    if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+                        if (columnMeta.getName().equalsIgnoreCase(partitionColumn)) {
+                            String msg = "Sharding column can't be null when the table in MySQL column is not null";
+                            LOGGER.info(msg);
+                            throw new SQLNonTransientException(msg);
+                        }
+                    } else {
+                        if (columnMeta.getName().equals(partitionColumn)) {
+                            String msg = "Sharding column can't be null when the table in MySQL column is not null";
+                            LOGGER.info(msg);
+                            throw new SQLNonTransientException(msg);
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     protected static String shardingValueToSting(SQLExpr valueExpr) throws SQLNonTransientException {
         String shardingValue = null;

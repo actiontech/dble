@@ -56,8 +56,8 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
         }
     }
 
-    public RowDataComparator(List<FieldPacket> fps, List<Order> orders) {
-        sourceFields = HandlerTool.createFields(fps);
+    public RowDataComparator(List<Field> fields, List<Order> orders) {
+        sourceFields = fields;
         if (orders != null && orders.size() > 0) {
             ascList = new ArrayList<>();
             cmpFields = new ArrayList<>();
@@ -73,8 +73,6 @@ public class RowDataComparator implements Comparator<RowDataPacket> {
             }
         }
     }
-
-
     private static Item createOrderItem(Item sel, List<Field> fields, boolean allPushDown, DMLResponseHandler.HandlerType type) {
         Item ret = null;
         if (sel.basicConstItem())

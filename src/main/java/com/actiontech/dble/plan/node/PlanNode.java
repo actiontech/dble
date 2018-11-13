@@ -13,6 +13,7 @@ import com.actiontech.dble.plan.common.context.ReferContext;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
+import com.actiontech.dble.plan.common.item.function.sumfunc.ItemFuncGroupConcat;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
@@ -330,6 +331,9 @@ public abstract class PlanNode {
 
         for (Item sel : columnsSelected) {
             setUpItem(sel);
+            if (sel instanceof ItemFuncGroupConcat) {
+                ((ItemFuncGroupConcat) sel).fixOrders(nameContext);
+            }
             NamedField field = makeOutNamedField(sel);
             if (outerFields.containsKey(field) && isDuplicateField(this))
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "duplicate field");

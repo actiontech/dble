@@ -42,6 +42,10 @@ public class GetConnectionHandler implements ResponseHandler {
         return finishedCount.get() >= total;
     }
 
+    public void initIncrement() {
+        finishedCount.incrementAndGet();
+    }
+
     @Override
     public void connectionAcquired(BackendConnection conn) {
         successCons.add(conn);

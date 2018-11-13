@@ -51,8 +51,6 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlCharExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlExtractExpr;
-import com.alibaba.druid.sql.ast.expr.SQLIntervalExpr;
-import com.alibaba.druid.sql.ast.expr.SQLIntervalUnit;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
 import com.alibaba.druid.sql.parser.SQLExprParser;
@@ -502,7 +500,12 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 if (orderExpr != null) {
                     orderList = new ArrayList<>();
                     for (SQLSelectOrderByItem orderItem : orderExpr.getItems()) {
-                        Order order = new Order(getItem(orderItem.getExpr()), orderItem.getType());
+                        Order order;
+                        if (orderItem.getType() == null) {
+                            order = new Order(getItem(orderItem.getExpr()));
+                        } else {
+                            order = new Order(getItem(orderItem.getExpr()), orderItem.getType());
+                        }
                         orderList.add(order);
                     }
                 }
@@ -522,6 +525,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
             default:
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "not supported " + funcName);
         }
+        initName(x);
     }
 
     @Override

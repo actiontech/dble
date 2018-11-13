@@ -20,6 +20,7 @@ import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.ItemInt;
 import com.actiontech.dble.plan.common.item.ItemRef;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
+import com.actiontech.dble.plan.common.item.function.sumfunc.ItemFuncGroupConcat;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -244,6 +245,15 @@ public final class HandlerTool {
         }
         ItemSum ret = (ItemSum) f.reStruct(args, allPushDown, fields);
         ret.setItemName(f.getPushDownName() == null ? f.getItemName() : f.getPushDownName());
+        if (ret instanceof ItemFuncGroupConcat && ((ItemFuncGroupConcat) ret).getOrders() != null) {
+            for (Order order : ((ItemFuncGroupConcat) ret).getOrders()) {
+                Item arg = order.getItem();
+                Item newArg = createItem(arg, fields, startIndex, allPushDown, type);
+                if (newArg == null)
+                    throw new RuntimeException("Function argument not found:" + arg);
+                order.setItem(newArg);
+            }
+        }
         return ret;
     }
 

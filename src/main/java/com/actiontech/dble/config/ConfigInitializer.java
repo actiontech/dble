@@ -146,6 +146,9 @@ public class ConfigInitializer {
             String hostName = entry.getKey();
             List<Pair<String, String>> nodeList = entry.getValue();
             PhysicalDBPool pool = dataHosts.get(hostName);
+
+            checkMaxCon(pool);
+
             if (isStart) {
                 // start for first time, 1.you can set write host as empty
                 if (pool.getSources() == null || pool.getSources().length == 0) {
@@ -190,6 +193,20 @@ public class ConfigInitializer {
                 sb.append("},");
             }
             throw new ConfigException(sb.toString());
+        }
+    }
+
+
+    private void checkMaxCon(PhysicalDBPool pool) {
+        int schemasCount = 0;
+        for (PhysicalDBNode dn : dataNodes.values()) {
+            if (dn.getDbPool() == pool) {
+                schemasCount++;
+            }
+        }
+        if (pool.getDataHostConfig().getMaxCon() < Math.max(schemasCount + 1, pool.getDataHostConfig().getMinCon())) {
+            errorInfos.add(new ErrorInfo("Xml", "NOTICE", "DataHost[" + pool.getHostName() + "] maxCon too little,would be change to " +
+                    Math.max(schemasCount + 1, pool.getDataHostConfig().getMinCon())));
         }
     }
 

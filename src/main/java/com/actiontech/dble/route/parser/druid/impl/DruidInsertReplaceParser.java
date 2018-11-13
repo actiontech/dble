@@ -60,18 +60,10 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
             StructureMeta.TableMeta meta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schema, tableConfig.getName());
             for (StructureMeta.ColumnMeta columnMeta : meta.getColumnsList()) {
                 if (!columnMeta.getCanNull()) {
-                    if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
-                        if (columnMeta.getName().equalsIgnoreCase(partitionColumn)) {
-                            String msg = "Sharding column can't be null when the table in MySQL column is not null";
-                            LOGGER.info(msg);
-                            throw new SQLNonTransientException(msg);
-                        }
-                    } else {
-                        if (columnMeta.getName().equals(partitionColumn)) {
-                            String msg = "Sharding column can't be null when the table in MySQL column is not null";
-                            LOGGER.info(msg);
-                            throw new SQLNonTransientException(msg);
-                        }
+                    if (columnMeta.getName().equalsIgnoreCase(partitionColumn)) {
+                        String msg = "Sharding column can't be null when the table in MySQL column is not null";
+                        LOGGER.info(msg);
+                        throw new SQLNonTransientException(msg);
                     }
                 }
             }

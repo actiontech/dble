@@ -40,10 +40,10 @@ public class ConMap {
     public BackendConnection tryTakeCon(final String schema, boolean autoCommit) {
 
         final ConQueue queue = items.get(schema == null ? KEY_STRING_FOR_NULL_DATABASE : schema);
-        if (queue == null) {
-            return null;
+        BackendConnection con = null;
+        if (queue != null) {
+            con = tryTakeCon(queue, autoCommit);
         }
-        BackendConnection con = tryTakeCon(queue, autoCommit);
         if (con != null) {
             return con;
         } else {

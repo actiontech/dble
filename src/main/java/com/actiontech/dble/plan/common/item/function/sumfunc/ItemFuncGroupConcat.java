@@ -271,7 +271,7 @@ public class ItemFuncGroupConcat extends ItemSum {
         return orders;
     }
 
-    private class OrderResult {
+    private static class OrderResult {
         private String result;
         private RowDataPacket row;
 

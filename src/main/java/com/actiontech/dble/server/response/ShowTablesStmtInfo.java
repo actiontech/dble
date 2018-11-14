@@ -18,12 +18,12 @@ import java.util.regex.Pattern;
  * Created by huqing.yan on 2017/7/20.
  */
 public class ShowTablesStmtInfo {
-    private static final String TABLE_PAT = "^\\s*(show)" +
+    private static final String TABLE_PAT = "^\\s*(/\\*[\\s\\S]*\\*/)?\\s*(show)" +
             "(\\s+(full|all))?" +
             "(\\s+tables)" +
             "(\\s+(from|in)\\s+(`?[a-zA-Z_0-9]+`?))?" +
             "((\\s+(like)\\s+'((. *)*)'\\s*)|(\\s+(where)\\s+((. *)*)\\s*))?" +
-            "\\s*$";
+            "\\s*\\s*(/\\*[\\s\\S]*\\*/)?\\s*$";
     public static final Pattern PATTERN = Pattern.compile(TABLE_PAT, Pattern.CASE_INSENSITIVE);
     private final boolean isFull;
     private final boolean isAll;
@@ -36,24 +36,24 @@ public class ShowTablesStmtInfo {
     ShowTablesStmtInfo(String sql) throws SQLSyntaxErrorException {
         Matcher ma = PATTERN.matcher(sql);
         ma.matches(); //always RETURN TRUE
-        isFull = ma.group(2) != null;
-        isAll = isFull && ma.group(3).equalsIgnoreCase("all");
-        schema = ma.group(7);
-        cond = ma.group(8);
-        like = ma.group(11);
-        where = ma.group(15);
+        isFull = ma.group(3) != null;
+        isAll = isFull && ma.group(4).equalsIgnoreCase("all");
+        schema = ma.group(8);
+        cond = ma.group(9);
+        like = ma.group(12);
+        where = ma.group(16);
 
-        StringBuilder sb = new StringBuilder(ma.group(1));
+        StringBuilder sb = new StringBuilder(ma.group(2));
         if (isFull) {
             sb.append(" full ");
         }
-        sb.append(ma.group(4));
-        if (ma.group(5) != null) {
-            if (ma.group(6).equalsIgnoreCase("in")) {
+        sb.append(ma.group(5));
+        if (ma.group(6) != null) {
+            if (ma.group(7).equalsIgnoreCase("in")) {
                 sb.append(" from ");
                 sb.append(schema);
             } else {
-                sb.append(ma.group(5));
+                sb.append(ma.group(6));
             }
         }
         if (cond != null)

@@ -208,6 +208,11 @@ public class ConfigInitializer {
             errorInfos.add(new ErrorInfo("Xml", "NOTICE", "DataHost[" + pool.getHostName() + "] maxCon too little,would be change to " +
                     Math.max(schemasCount + 1, pool.getDataHostConfig().getMinCon())));
         }
+
+        if (Math.max(schemasCount + 1, pool.getDataHostConfig().getMinCon()) != pool.getDataHostConfig().getMinCon()) {
+            errorInfos.add(new ErrorInfo("Xml", "NOTICE", "DataHost[" + pool.getHostName() + "] minCon too little,Dble would init dataHost" +
+                    " with " + schemasCount + 1 + " connections"));
+        }
     }
 
     private void testDataSource(Set<String> errNodeKeys, Set<String> errSourceKeys, BoolPtr isConnectivity,

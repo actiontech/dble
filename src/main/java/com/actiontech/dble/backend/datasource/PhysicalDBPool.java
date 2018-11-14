@@ -358,7 +358,7 @@ public class PhysicalDBPool {
         int initSize = ds.getConfig().getMinCon();
         if (initSize < this.schemas.length + 1) {
             initSize = this.schemas.length + 1;
-            LOGGER.info("minCon size is less than (the count of schema +1), so dble will create at least 1 conn for every schema and an empty schema conn");
+            LOGGER.warn("minCon size is less than (the count of schema +1), so dble will create at least 1 conn for every schema and an empty schema conn");
         }
 
         if (ds.getConfig().getMaxCon() < initSize) {
@@ -392,7 +392,6 @@ public class PhysicalDBPool {
                 LOGGER.warn(getMessage(index, " init connection error."), e);
             }
         }
-
 
 
         long timeOut = System.currentTimeMillis() + 60 * 1000;

@@ -143,7 +143,7 @@ public final class MetaHelper {
     }
 
     public static StructureMeta.ColumnMeta.Builder makeColumnMeta(StructureMeta.TableMeta.Builder tmBuilder, SQLColumnDefinition column, Set<String> indexNames) {
-        StructureMeta.ColumnMeta.Builder cmBuilder = StructureMeta.ColumnMeta.newBuilder();
+        StructureMeta.ColumnMeta.Builder cmBuilder = StructureMeta.ColumnMeta.newBuilder().setCanNull(true);
         cmBuilder.setName(StringUtil.removeBackQuote(column.getName().getSimpleName()));
         cmBuilder.setDataType(column.getDataType().getName());
         for (SQLColumnConstraint constraint : column.getConstraints()) {

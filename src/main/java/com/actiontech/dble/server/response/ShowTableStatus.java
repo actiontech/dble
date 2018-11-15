@@ -39,7 +39,7 @@ public final class ShowTableStatus {
 
         Matcher ma = PATTERN.matcher(stmt);
         ma.matches(); //always RETURN TRUE
-        String schema = ma.group(6);
+        String schema = ma.group(7);
         schema = schema == null ? null : StringUtil.removeBackQuote(schema);
         if (schema != null && DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             schema = schema.toLowerCase();

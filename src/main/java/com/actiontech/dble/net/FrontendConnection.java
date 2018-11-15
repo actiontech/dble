@@ -182,9 +182,11 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     public void initCharsetIndex(int ci) {
         String name = CharsetUtil.getCharset(ci);
-        charsetName.setClient(name);
-        charsetName.setResults(name);
-        charsetName.setCollation(CharsetUtil.getDefaultCollation(name));
+        if (name != null) {
+            charsetName.setClient(name);
+            charsetName.setResults(name);
+            charsetName.setCollation(CharsetUtil.getDefaultCollation(name));
+        }
     }
 
     public void writeErrMessage(String sqlState, String msg, int vendorCode) {
@@ -478,7 +480,7 @@ public abstract class FrontendConnection extends AbstractConnection {
     }
 
     protected int getServerCapabilities() {
-        int flag = 0;
+        int flag = 1;
         flag |= Capabilities.CLIENT_LONG_PASSWORD;
         flag |= Capabilities.CLIENT_FOUND_ROWS;
         flag |= Capabilities.CLIENT_LONG_FLAG;

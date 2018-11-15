@@ -49,7 +49,7 @@ import java.nio.ByteBuffer;
  */
 public class HandshakeV10Packet extends MySQLPacket {
     private static final byte[] FILLER_10 = new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    private static final byte[] DEFAULT_AUTH_PLUGIN_NAME = "mysql_native_password".getBytes();
+    static final byte[] DEFAULT_AUTH_PLUGIN_NAME = "mysql_native_password".getBytes();
 
     private byte protocolVersion;
     private byte[] serverVersion;

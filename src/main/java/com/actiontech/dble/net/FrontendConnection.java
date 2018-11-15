@@ -480,7 +480,7 @@ public abstract class FrontendConnection extends AbstractConnection {
     }
 
     protected int getServerCapabilities() {
-        int flag = 1;
+        int flag = 0;
         flag |= Capabilities.CLIENT_LONG_PASSWORD;
         flag |= Capabilities.CLIENT_FOUND_ROWS;
         flag |= Capabilities.CLIENT_LONG_FLAG;

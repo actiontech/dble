@@ -79,38 +79,40 @@ public class FrontendAuthenticator implements NIOHandler {
         }
 
         // check mysql client user
-        authority(authPacket.getUser(), authPacket.getPassword(), authPacket.getDatabase());
-        success(authPacket);
+        if (authority(authPacket.getUser(), authPacket.getPassword(), authPacket.getDatabase())) {
+            success(authPacket);
+        }
     }
 
-    private void authority(String user, byte[] pwd, String schema) {
+    private boolean authority(String user, byte[] pwd, String schema) {
+
         // check user
         if (!checkUser(user, source.getHost())) {
             failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + user + "' with host '" + source.getHost() + "'");
-            return;
+            return false;
         }
 
         // check password
         if (!checkPassword(pwd, user)) {
             failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + user + "', because password is error ");
-            return;
+            return false;
         }
 
         // check dataHost without writeHost flag
         if (DbleServer.getInstance().getConfig().isDataHostWithoutWR() && !(this instanceof ManagerAuthenticator)) {
             failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + user + "', because there are some dataHost is empty ");
-            return;
+            return false;
         }
 
         // check schema
         switch (checkSchema(schema, user)) {
             case ErrorCode.ER_BAD_DB_ERROR:
                 failure(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + schema + "'");
-                break;
+                return false;
             case ErrorCode.ER_DBACCESS_DENIED_ERROR:
                 String s = "Access denied for user '" + user + "' to database '" + schema + "'";
                 failure(ErrorCode.ER_DBACCESS_DENIED_ERROR, s);
-                break;
+                return false;
             default:
                 break;
         }
@@ -120,14 +122,15 @@ public class FrontendAuthenticator implements NIOHandler {
             case SERVER_MAX:
                 String s = "Access denied for user '" + user + "',too many connections for dble server";
                 failure(ErrorCode.ER_ACCESS_DENIED_ERROR, s);
-                break;
+                return false;
             case USER_MAX:
                 String s1 = "Access denied for user '" + user + "',too many connections for this user";
                 failure(ErrorCode.ER_ACCESS_DENIED_ERROR, s1);
-                break;
+                return false;
             default:
                 break;
         }
+        return true;
     }
 
     protected boolean checkUser(String user, String host) {

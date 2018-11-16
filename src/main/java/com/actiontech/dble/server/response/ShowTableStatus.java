@@ -45,11 +45,12 @@ public final class ShowTableStatus {
             schema = schema.toLowerCase();
         }
         String cSchema = schema == null ? c.getSchema() : schema;
-        responseDirect(c, cSchema);
+        String likeCondition = ma.group(11);
+        responseDirect(c, cSchema, likeCondition);
     }
 
 
-    private static void responseDirect(ServerConnection c, String cSchema) {
+    private static void responseDirect(ServerConnection c, String cSchema, String likeCondition) {
         if (cSchema == null) {
             c.writeErrMessage("3D000", "No database selected", ErrorCode.ER_NO_DB_ERROR);
             return;
@@ -63,7 +64,7 @@ public final class ShowTableStatus {
         Map<String, StructureMeta.TableMeta> meta = schemata.getTableMetas();
         PackageBufINf bufInf;
 
-        bufInf = writeTablesHeaderAndRows(buffer, c, meta);
+        bufInf = writeTablesHeaderAndRows(buffer, c, meta, likeCondition);
 
         writeRowEof(bufInf.getBuffer(), c, bufInf.getPacketId());
     }
@@ -78,7 +79,7 @@ public final class ShowTableStatus {
         c.write(buffer);
     }
 
-    private static PackageBufINf writeTablesHeaderAndRows(ByteBuffer buffer, ServerConnection c, Map<String, StructureMeta.TableMeta> tableMap) {
+    private static PackageBufINf writeTablesHeaderAndRows(ByteBuffer buffer, ServerConnection c, Map<String, StructureMeta.TableMeta> tableMap, String likeCondition) {
         int fieldCount = 18;
         ResultSetHeaderPacket header = PacketUtil.getHeader(fieldCount);
         FieldPacket[] fields = new FieldPacket[fieldCount];
@@ -98,11 +99,23 @@ public final class ShowTableStatus {
         // write eof
         eof.write(buffer, c, true);
 
+        Pattern pattern = null;
+        if (likeCondition != null && !"".equals(likeCondition)) {
+            String p = "^" + likeCondition.replaceAll("%", ".*");
+            pattern = Pattern.compile(p, Pattern.CASE_INSENSITIVE);
+        }
         for (String name : tableMap.keySet()) {
             RowDataPacket row = new RowDataPacket(fieldCount);
             if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
                 name = name.toLowerCase();
             }
+            if (pattern != null) {
+                Matcher maLike = pattern.matcher(name);
+                if (!maLike.matches()) {
+                    continue;
+                }
+            }
+
             row.add(StringUtil.encode(name, c.getCharset().getResults()));
             row.add(StringUtil.encode("InnoDB", c.getCharset().getResults()));
             row.add(StringUtil.encode("10", c.getCharset().getResults()));

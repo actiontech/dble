@@ -19,12 +19,26 @@ public final class ParseUtil {
     }
 
     public static boolean isEOF(String stmt, int offset) {
+        boolean isInhint = false;
         for (; offset < stmt.length(); offset++) {
-            if (!ParseUtil.isEOF(stmt.charAt(offset))) {
-                return false;
+            if (!isInhint) {
+                if (!ParseUtil.isEOF(stmt.charAt(offset))) {
+                    if (stmt.charAt(offset) == '/' &&
+                            ((offset + 1) < stmt.length() && stmt.charAt(++offset) == '*')) {
+                        isInhint = true;
+                    } else {
+                        return false;
+                    }
+                }
+            } else {
+                if (stmt.charAt(offset) == '*' &&
+                        ((offset + 1) < stmt.length() && stmt.charAt(++offset) == '/')) {
+                    isInhint = false;
+                }
             }
         }
-        return true;
+
+        return !isInhint;
     }
 
     public static boolean isMultiEof(String stmt, int offset) {

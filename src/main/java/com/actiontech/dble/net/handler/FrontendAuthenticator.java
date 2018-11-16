@@ -68,10 +68,7 @@ public class FrontendAuthenticator implements NIOHandler {
             AuthPacket auth = new AuthPacket();
             auth.read(data);
             authPacket = auth;
-            if (auth.getAuthPlugin() == null) {
-                failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "please set auth method and only mysql_native_password auth check is supported");
-                return;
-            } else if (!"mysql_native_password".equals(auth.getAuthPlugin())) {
+            if (auth.getAuthPlugin() != null && !"mysql_native_password".equals(auth.getAuthPlugin())) {
                 // send switch auth request package
                 AuthSwitchRequestPackage authSwitch = new AuthSwitchRequestPackage("mysql_native_password".getBytes(), this.source.getSeed());
                 authSwitch.setPacketId(auth.getPacketId() + 1);

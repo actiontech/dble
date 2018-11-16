@@ -296,7 +296,7 @@ public final class CharsetUtil {
         CHARSET_TO_JAVA.put("gb18030", "GB18030");
     }
     public static String getCharset(int index) {
-        if (INDEX_TO_COLLATION[index] == null) {
+        if (index >= INDEX_TO_COLLATION.length || INDEX_TO_COLLATION[index] == null) {
             LOGGER.info("can't find collation index " + index);
             return null;
         }

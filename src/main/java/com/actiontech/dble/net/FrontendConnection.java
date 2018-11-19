@@ -182,9 +182,11 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     public void initCharsetIndex(int ci) {
         String name = CharsetUtil.getCharset(ci);
-        charsetName.setClient(name);
-        charsetName.setResults(name);
-        charsetName.setCollation(CharsetUtil.getDefaultCollation(name));
+        if (name != null) {
+            charsetName.setClient(name);
+            charsetName.setResults(name);
+            charsetName.setCollation(CharsetUtil.getDefaultCollation(name));
+        }
     }
 
     public void writeErrMessage(String sqlState, String msg, int vendorCode) {

@@ -26,6 +26,7 @@ import com.actiontech.dble.btrace.provider.CostTimeProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
+import com.actiontech.dble.net.handler.BackEndDataCleaner;
 import com.actiontech.dble.net.handler.FrontendCommandHandler;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
@@ -63,6 +64,7 @@ import java.util.concurrent.locks.LockSupport;
 
 import static com.actiontech.dble.meta.PauseEndThreadPool.CONTINUE_TYPE_MULTIPLE;
 import static com.actiontech.dble.meta.PauseEndThreadPool.CONTINUE_TYPE_SINGLE;
+import static com.actiontech.dble.server.parser.ServerParse.DDL;
 
 /**
  * @author mycat
@@ -269,12 +271,14 @@ public class NonBlockingSession implements Session {
         provider.allBackendConnReceive(source.getId());
     }
 
-    public void setResponseTime() {
+    public void setResponseTime(boolean isSuccess) {
         long responseTime = 0;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             responseTime = System.nanoTime();
             traceResult.setVeryEnd(responseTime);
-            SlowQueryLog.getInstance().putSlowQueryLog(this.source, (TraceResult) traceResult.clone());
+            if (isSuccess) {
+                SlowQueryLog.getInstance().putSlowQueryLog(this.source, (TraceResult) traceResult.clone());
+            }
         }
         if (!timeCost) {
             return;
@@ -765,6 +769,16 @@ public class NonBlockingSession implements Session {
 
     }
 
+
+    public void waitFinishConnection(RouteResultsetNode rrn) {
+        BackendConnection c = target.get(rrn);
+        if (c != null) {
+            BackEndDataCleaner clear = new BackEndDataCleaner((MySQLConnection) c);
+            clear.waitUntilDataFinish();
+        }
+    }
+
+
     public void releaseConnections(final boolean needClosed) {
         boolean debug = LOGGER.isDebugEnabled();
         for (RouteResultsetNode rrn : target.keySet()) {
@@ -856,6 +870,13 @@ public class NonBlockingSession implements Session {
         clearHandlesResources();
         source.setTxStart(false);
         source.getAndIncrementXid();
+    }
+
+    public void clearResources(RouteResultset rrs) {
+        clearResources(true);
+        if (rrs.getSqlType() == DDL) {
+            this.handleSpecial(rrs, this.getSource().getSchema(), false);
+        }
     }
 
     public boolean closed() {

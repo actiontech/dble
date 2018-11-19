@@ -81,11 +81,12 @@ public final class ShowCreateView {
             throw new Exception(" No database selected");
         }
 
+        schema = StringUtil.removeBackQuote(schema);
         SchemaMeta schemaMeta = DbleServer.getInstance().getTmManager().getCatalogs().get(schema);
         if (schemaMeta == null) {
             throw new Exception("Table '" + schema + "." + viewName + "' doesn't exist");
         }
-
+        viewName = StringUtil.removeBackQuote(viewName);
         ViewMeta view = schemaMeta.getViewMetas().get(viewName);
         if (view == null) {
             throw new Exception("Table '" + schema + "." + viewName + "' doesn't exist");

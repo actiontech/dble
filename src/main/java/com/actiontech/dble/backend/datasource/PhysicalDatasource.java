@@ -39,7 +39,7 @@ public abstract class PhysicalDatasource {
     private static final Logger LOGGER = LoggerFactory.getLogger(PhysicalDatasource.class);
 
     private final String name;
-    private final int size;
+    private int size;
     private final DBHostConfig config;
     private final ConMap conMap = new ConMap();
     private DBHeartbeat heartbeat;
@@ -119,6 +119,11 @@ public abstract class PhysicalDatasource {
     }
 
     public abstract DBHeartbeat createHeartBeat();
+
+
+    public void setSize(int size) {
+        this.size = size;
+    }
 
     public String getName() {
         return name;

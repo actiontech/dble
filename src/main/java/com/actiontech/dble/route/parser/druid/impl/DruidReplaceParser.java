@@ -304,7 +304,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         final String sql = RouterUtil.removeSchema(statementToString(replace), schemaInfo.getSchema());
         rrs.setStatement(sql);
         // try to route by ER parent partition key
-        RouteResultset theRrs = routeByERParentKey(rrs, tc, realVal);
+        RouteResultset theRrs = routeByERParentKey(rrs, tc, realVal, schemaInfo);
         if (theRrs != null) {
             rrs.setFinishedRoute(true);
         } else {
@@ -427,9 +427,9 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     /**
      * insert single record
      *
-     * @param schemaInfo SchemaInfo
-     * @param rrs RouteResultset
-     * @param partitionColumn partitionColumn
+     * @param schemaInfo       SchemaInfo
+     * @param rrs              RouteResultset
+     * @param partitionColumn  partitionColumn
      * @param replaceStatement SQLReplaceStatement
      * @throws SQLNonTransientException if not find a valid data node
      */

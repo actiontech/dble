@@ -11,6 +11,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoTxOperation;
 import com.actiontech.dble.backend.mysql.nio.handler.util.ArrayMinHeap;
+import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HeapItem;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -66,7 +67,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
                     return;
                 }
                 session.resetMultiStatementStatus();
-                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn);
+                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
             } else {
                 if (!fieldsReturned) {
                     fieldsReturned = true;
@@ -142,7 +143,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
             ItemField itemField = new ItemField(rrs.getSchema(), rrs.getTableAlias(), groupBy);
             orderBys.add(new Order(itemField));
         }
-        rowComparator = new RowDataComparator(fieldPackets, orderBys);
+        rowComparator = new RowDataComparator(HandlerTool.createFields(fieldPackets), orderBys);
         outputHandler.fieldEofResponse(null, null, fieldPackets, null, false, conn);
     }
 

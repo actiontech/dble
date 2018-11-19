@@ -18,17 +18,23 @@ public final class AlertUtil {
 
     private static volatile Alert alert;
     private static final Alert DEFAULT_ALERT = new NoAlert();
+    private static volatile boolean isEnable = false;
 
     static {
         alert = DEFAULT_ALERT;
     }
 
     public static void switchAlert(boolean enableAlert) {
+        isEnable = enableAlert;
         if (enableAlert && UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) != null) {
             alert = UcoreAlert.getInstance();
         } else {
             alert = DEFAULT_ALERT;
         }
+    }
+
+    public static boolean isEnable() {
+        return isEnable;
     }
 
     public static void alertSelf(String code, Alert.AlertLevel level, String desc, Map<String, String> labels) {

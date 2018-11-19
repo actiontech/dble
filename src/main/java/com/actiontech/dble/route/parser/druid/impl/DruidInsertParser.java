@@ -153,7 +153,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         final String sql = RouterUtil.removeSchema(statementToString(insertStmt), schemaInfo.getSchema());
         rrs.setStatement(sql);
         // try to route by ER parent partion key
-        RouteResultset theRrs = routeByERParentKey(rrs, tc, realVal);
+        RouteResultset theRrs = routeByERParentKey(rrs, tc, realVal, schemaInfo);
         if (theRrs != null) {
             rrs.setFinishedRoute(true);
         } else {
@@ -199,6 +199,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         String shardingValue = shardingValueToSting(valueExpr);
         TableConfig tableConfig = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
         AbstractPartitionAlgorithm algorithm = tableConfig.getRule().getRuleAlgorithm();
+        checkDefaultValues(shardingValue, tableConfig, schemaInfo.getSchema(), partitionColumn);
         Integer nodeIndex = algorithm.calculate(shardingValue);
         if (nodeIndex == null || nodeIndex >= tableConfig.getDataNodes().size()) {
             String msg = "can't find any valid data node :" + schemaInfo.getTable() + " -> " + partitionColumn + " -> " + shardingValue;
@@ -258,6 +259,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             }
             SQLExpr expr = valueClause.getValues().get(shardingColIndex);
             String shardingValue = shardingValueToSting(expr);
+            checkDefaultValues(shardingValue, tableConfig, schemaInfo.getSchema(), partitionColumn);
             Integer nodeIndex = algorithm.calculate(shardingValue);
             // null means can't find any valid index
             if (nodeIndex == null) {

@@ -358,7 +358,13 @@ public class PhysicalDBPool {
         int initSize = ds.getConfig().getMinCon();
         if (initSize < this.schemas.length + 1) {
             initSize = this.schemas.length + 1;
-            LOGGER.info("minCon size is less than (the count of schema +1), so dble will create at least 1 conn for every schema and an empty schema conn");
+            LOGGER.warn("minCon size is less than (the count of schema +1), so dble will create at least 1 conn for every schema and an empty schema conn");
+        }
+
+        if (ds.getConfig().getMaxCon() < initSize) {
+            ds.getConfig().setMaxCon(initSize);
+            ds.setSize(initSize);
+            LOGGER.warn("maxCon is less than the initSize of dataHost:" + initSize + " change the maxCon into " + initSize);
         }
 
         LOGGER.info("init backend mysql source ,create connections total " + initSize + " for " + ds.getName() +
@@ -369,6 +375,16 @@ public class PhysicalDBPool {
         // long start = System.currentTimeMillis();
         // long timeOut = start + 5000 * 1000L;
 
+        try {
+            if (ds.getActiveCount() <= 0) {
+                ds.initMinConnection(null, true, getConHandler, null);
+            } else {
+                getConHandler.initIncrement();
+            }
+        } catch (Exception e) {
+            LOGGER.warn("init connection with schema null error", e);
+        }
+
         for (int i = 0; i < initSize - 1; i++) {
             try {
                 ds.initMinConnection(this.schemas[i % schemas.length], true, getConHandler, null);
@@ -377,11 +393,6 @@ public class PhysicalDBPool {
             }
         }
 
-        try {
-            ds.initMinConnection(null, true, getConHandler, null);
-        } catch (Exception e) {
-            LOGGER.warn("init connection with schema null error", e);
-        }
 
         long timeOut = System.currentTimeMillis() + 60 * 1000;
 

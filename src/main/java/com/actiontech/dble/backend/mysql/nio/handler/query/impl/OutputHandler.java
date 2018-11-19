@@ -175,7 +175,7 @@ public class OutputHandler extends BaseDMLHandler {
             byte[] eof = eofPacket.toBytes();
             buffer = source.writeToBuffer(eof, buffer);
             session.setHandlerEnd(this);
-            session.setResponseTime();
+            session.setResponseTime(true);
             boolean multiStatementFlag = session.getIsMultiStatement().get();
             source.write(buffer);
             session.multiStatementNextSql(multiStatementFlag);

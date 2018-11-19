@@ -42,12 +42,9 @@ public class ConfigInitializer {
     private volatile Map<String, PhysicalDBNode> dataNodes;
     private volatile Map<String, PhysicalDBPool> dataHosts;
     private volatile Map<ERTable, Set<ERTable>> erRelations;
-
+    private volatile boolean dataHostWithoutWH = true;
 
     private List<ErrorInfo> errorInfos = new ArrayList<>();
-
-
-    private volatile boolean dataHostWithoutWH = true;
 
     public ConfigInitializer(boolean loadDataHost, boolean lowerCaseNames) {
         //load server.xml
@@ -71,6 +68,8 @@ public class ConfigInitializer {
         }
 
         this.firewall = serverLoader.getFirewall();
+        // errors when parsing config
+        this.errorInfos.addAll(serverLoader.getErrors());
 
         deleteRedundancyConf();
         checkWriteHost();
@@ -147,6 +146,9 @@ public class ConfigInitializer {
             String hostName = entry.getKey();
             List<Pair<String, String>> nodeList = entry.getValue();
             PhysicalDBPool pool = dataHosts.get(hostName);
+
+            checkMaxCon(pool);
+
             if (isStart) {
                 // start for first time, 1.you can set write host as empty
                 if (pool.getSources() == null || pool.getSources().length == 0) {
@@ -191,6 +193,25 @@ public class ConfigInitializer {
                 sb.append("},");
             }
             throw new ConfigException(sb.toString());
+        }
+    }
+
+
+    private void checkMaxCon(PhysicalDBPool pool) {
+        int schemasCount = 0;
+        for (PhysicalDBNode dn : dataNodes.values()) {
+            if (dn.getDbPool() == pool) {
+                schemasCount++;
+            }
+        }
+        if (pool.getDataHostConfig().getMaxCon() < Math.max(schemasCount + 1, pool.getDataHostConfig().getMinCon())) {
+            errorInfos.add(new ErrorInfo("Xml", "NOTICE", "DataHost[" + pool.getHostName() + "] maxCon too little,would be change to " +
+                    Math.max(schemasCount + 1, pool.getDataHostConfig().getMinCon())));
+        }
+
+        if (Math.max(schemasCount + 1, pool.getDataHostConfig().getMinCon()) != pool.getDataHostConfig().getMinCon()) {
+            errorInfos.add(new ErrorInfo("Xml", "NOTICE", "DataHost[" + pool.getHostName() + "] minCon too little,Dble would init dataHost" +
+                    " with " + schemasCount + 1 + " connections"));
         }
     }
 

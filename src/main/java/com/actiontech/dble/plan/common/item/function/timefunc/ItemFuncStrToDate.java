@@ -13,7 +13,6 @@ import com.actiontech.dble.plan.common.time.MySQLTime;
 import com.actiontech.dble.plan.common.time.MySQLTimestampType;
 import com.actiontech.dble.plan.common.time.MyTime;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
@@ -23,7 +22,7 @@ public class ItemFuncStrToDate extends ItemTemporalHybridFunc {
      * @param args
      */
     public ItemFuncStrToDate(List<Item> args) {
-        super(new ArrayList<Item>());
+        super(args);
     }
 
     @Override

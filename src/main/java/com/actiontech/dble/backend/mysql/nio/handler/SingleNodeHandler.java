@@ -88,7 +88,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
     private void execute(BackendConnection conn) {
         if (session.closed()) {
-            session.clearResources(true);
+            session.clearResources(rrs);
             return;
         }
         conn.setResponseHandler(this);
@@ -151,9 +151,8 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         if (buffer != null) {
             /* SELECT 9223372036854775807 + 1;    response: field_count, field, eof, err */
             buffer = source.writeToBuffer(errPkg.toBytes(), allocBuffer());
-            session.setResponseTime();
+            session.setResponseTime(false);
             source.write(buffer);
-
         } else {
             errPkg.write(source);
         }
@@ -195,7 +194,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             source.setLastInsertId(ok.getInsertId());
             session.setBackendResponseEndTime((MySQLConnection) conn);
             session.releaseConnectionIfSafe(conn, false);
-            session.setResponseTime();
+            session.setResponseTime(true);
             session.multiStatementPacket(ok, packetId);
             boolean multiStatementFlag = session.getIsMultiStatement().get();
             doSqlStat();
@@ -213,7 +212,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
         session.setBackendResponseEndTime((MySQLConnection) conn);
         session.releaseConnectionIfSafe(conn, false);
-        session.setResponseTime();
+        session.setResponseTime(false);
         session.multiStatementPacket(errPacket, packetId);
         boolean multiStatementFlag = session.getIsMultiStatement().get();
         doSqlStat();
@@ -242,7 +241,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         session.multiStatementPacket(eof, packetId);
         ServerConnection source = session.getSource();
         buffer = source.writeToBuffer(eof, allocBuffer());
-        session.setResponseTime();
+        session.setResponseTime(true);
         boolean multiStatementFlag = session.getIsMultiStatement().get();
         doSqlStat();
         source.write(buffer);

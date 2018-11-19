@@ -29,6 +29,9 @@ public class FrontendAuthenticator implements NIOHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FrontendAuthenticator.class);
     private static final byte[] AUTH_OK = new byte[]{7, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0};
+    private static final byte[] SWITCH_AUTH_OK = new byte[]{7, 0, 0, 4, 0, 0, 0, 2, 0, 0, 0};
+    private AuthPacket authPacket;
+    private boolean isAuthSwitch = false;
 
     protected final FrontendConnection source;
 
@@ -56,62 +59,78 @@ public class FrontendAuthenticator implements NIOHandler {
             return;
         }
 
-        AuthPacket auth = new AuthPacket();
-        auth.read(data);
-
-        //check mysql_native_password
-        if (auth.getAuthPlugin() != null && !"mysql_native_password".equals(auth.getAuthPlugin())) {
-            failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "only mysql_native_password auth check is supported");
-            return;
+        if (isAuthSwitch) {
+            // receive switch auth response package
+            AuthSwitchResponsePackage authSwitchResponse = new AuthSwitchResponsePackage();
+            authSwitchResponse.read(data);
+            authPacket.setPassword(authSwitchResponse.getAuthPluginData());
+        } else {
+            AuthPacket auth = new AuthPacket();
+            auth.read(data);
+            authPacket = auth;
+            if (auth.getAuthPlugin() != null && !"mysql_native_password".equals(auth.getAuthPlugin())) {
+                // send switch auth request package
+                AuthSwitchRequestPackage authSwitch = new AuthSwitchRequestPackage("mysql_native_password".getBytes(), this.source.getSeed());
+                authSwitch.setPacketId(auth.getPacketId() + 1);
+                isAuthSwitch = true;
+                authSwitch.write(source);
+                return;
+            }
         }
 
+        // check mysql client user
+        if (authority(authPacket.getUser(), authPacket.getPassword(), authPacket.getDatabase())) {
+            success(authPacket);
+        }
+    }
+
+    private boolean authority(String user, byte[] pwd, String schema) {
+
         // check user
-        if (!checkUser(auth.getUser(), source.getHost())) {
-            failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + auth.getUser() + "' with host '" + source.getHost() + "'");
-            return;
+        if (!checkUser(user, source.getHost())) {
+            failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + user + "' with host '" + source.getHost() + "'");
+            return false;
         }
 
         // check password
-        if (!checkPassword(auth.getPassword(), auth.getUser())) {
-            failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + auth.getUser() + "', because password is error ");
-            return;
+        if (!checkPassword(pwd, user)) {
+            failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + user + "', because password is error ");
+            return false;
         }
-
 
         // check dataHost without writeHost flag
         if (DbleServer.getInstance().getConfig().isDataHostWithoutWR() && !(this instanceof ManagerAuthenticator)) {
-            failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + auth.getUser() + "', because there are some dataHost is empty ");
-            return;
+            failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + user + "', because there are some dataHost is empty ");
+            return false;
         }
 
         // check schema
-        switch (checkSchema(auth.getDatabase(), auth.getUser())) {
+        switch (checkSchema(schema, user)) {
             case ErrorCode.ER_BAD_DB_ERROR:
-                failure(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + auth.getDatabase() + "'");
-                break;
+                failure(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + schema + "'");
+                return false;
             case ErrorCode.ER_DBACCESS_DENIED_ERROR:
-                String s = "Access denied for user '" + auth.getUser() + "' to database '" + auth.getDatabase() + "'";
+                String s = "Access denied for user '" + user + "' to database '" + schema + "'";
                 failure(ErrorCode.ER_DBACCESS_DENIED_ERROR, s);
-                break;
+                return false;
             default:
                 break;
         }
 
         //check maxconnection
-        switch (DbleServer.getInstance().getUserManager().maxConnectionCheck(auth.getUser(), source.getPrivileges().getMaxCon(auth.getUser()), (source instanceof ManagerConnection))) {
+        switch (DbleServer.getInstance().getUserManager().maxConnectionCheck(user, source.getPrivileges().getMaxCon(user), (source instanceof ManagerConnection))) {
             case SERVER_MAX:
-                String s = "Access denied for user '" + auth.getUser() + "',too many connections for dble server";
+                String s = "Access denied for user '" + user + "',too many connections for dble server";
                 failure(ErrorCode.ER_ACCESS_DENIED_ERROR, s);
-                break;
+                return false;
             case USER_MAX:
-                String s1 = "Access denied for user '" + auth.getUser() + "',too many connections for this user";
+                String s1 = "Access denied for user '" + user + "',too many connections for this user";
                 failure(ErrorCode.ER_ACCESS_DENIED_ERROR, s1);
-                break;
+                return false;
             default:
-                success(auth);
+                break;
         }
-
-
+        return true;
     }
 
     protected boolean checkUser(String user, String host) {
@@ -192,7 +211,11 @@ public class FrontendAuthenticator implements NIOHandler {
         }
 
         ByteBuffer buffer = source.allocate();
-        source.write(source.writeToBuffer(AUTH_OK, buffer));
+        if (isAuthSwitch) {
+            source.write(source.writeToBuffer(SWITCH_AUTH_OK, buffer));
+        } else {
+            source.write(source.writeToBuffer(AUTH_OK, buffer));
+        }
         boolean clientCompress = Capabilities.CLIENT_COMPRESS == (Capabilities.CLIENT_COMPRESS & auth.getClientFlags());
         boolean usingCompress = DbleServer.getInstance().getConfig().getSystem().getUseCompression() == 1;
         if (clientCompress && usingCompress) {
@@ -204,5 +227,4 @@ public class FrontendAuthenticator implements NIOHandler {
         LOGGER.info(source.toString() + info);
         source.writeErrMessage((byte) 2, errNo, info);
     }
-
 }

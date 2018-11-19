@@ -252,11 +252,17 @@ public class PushDownVisitor extends MysqlVisitor {
                     sqlBuilder.append(colNameSum).append(",").append(colNameCount).append(",");
                     continue;
                 } else if (i == ItemSum.SumFuncType.STD_FUNC || i == ItemSum.SumFuncType.VARIANCE_FUNC) {
-                    String colNameCount = colName.replace(funName + "(", "COUNT(");
+                    String toReplace = "";
+                    if (i == ItemSum.SumFuncType.STD_FUNC) {
+                        toReplace = "(STDDEV_SAMP\\()|(STDDEV_POP\\()|(STDDEV\\()|(STD\\()";
+                    } else{
+                        toReplace = "(VAR_SAMP\\()|(VAR_POP\\()|(VARIANCE\\()";
+                    }
+                    String colNameCount = colName.replaceAll(toReplace, "COUNT(");
                     colNameCount = colNameCount.replace(getMadeAggAlias(funName), getMadeAggAlias("COUNT"));
-                    String colNameSum = colName.replace(funName + "(", "SUM(");
+                    String colNameSum = colName.replaceAll(toReplace, "SUM(");
                     colNameSum = colNameSum.replace(getMadeAggAlias(funName), getMadeAggAlias("SUM"));
-                    String colNameVar = colName.replace(funName + "(", "VARIANCE(");
+                    String colNameVar = colName.replaceAll(toReplace, "VARIANCE(");
                     colNameVar = colNameVar.replace(getMadeAggAlias(funName), getMadeAggAlias("VARIANCE"));
                     sqlBuilder.append(colNameCount).append(",").append(colNameSum).append(",").append(colNameVar).append(",");
                     continue;

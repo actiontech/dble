@@ -255,7 +255,7 @@ public class PushDownVisitor extends MysqlVisitor {
                     String toReplace = "";
                     if (i == ItemSum.SumFuncType.STD_FUNC) {
                         toReplace = "(STDDEV_SAMP\\()|(STDDEV_POP\\()|(STDDEV\\()|(STD\\()";
-                    } else{
+                    } else {
                         toReplace = "(VAR_SAMP\\()|(VAR_POP\\()|(VARIANCE\\()";
                     }
                     String colNameCount = colName.replaceAll(toReplace, "COUNT(");

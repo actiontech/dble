@@ -203,6 +203,7 @@ public class DefaultDruidParser implements DruidParser {
         for (String realSchema : schemas) {
             statement = RouterUtil.removeSchema(statement, realSchema);
         }
+        statement = RouterUtil.removeSchema(statement, schema.getName());
         rrs.setStatement(statement);
         String dataNodeTarget = dataNode.get();
         if (dataNodeTarget == null) {

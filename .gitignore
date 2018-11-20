@@ -115,6 +115,7 @@ hs_err_pid*
 /txlogs/
 /slowlogs/
 /viewConf/
+/test-output/
 src/main/resources/server.xml
 src/main/resources/schema.xml 
 src/main/resources/rule.xml

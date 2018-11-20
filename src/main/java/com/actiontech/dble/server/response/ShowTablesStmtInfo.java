@@ -23,7 +23,7 @@ public class ShowTablesStmtInfo {
             "(\\s+(full|all))?" +
             "(\\s+tables)" +
             "(\\s+(from|in)\\s+(`?[a-zA-Z_0-9]+`?))?" +
-            "(\\s+(like|where)\\s+(. *)*)?" +
+            "((\\s+(like)\\s+'((. *)*)'\\s*)|(\\s+(where)\\s+((. *)*)\\s*))?" +
             "\\s*\\s*(/\\*[\\s\\S]*\\*/)?\\s*$";
     public static final Pattern PATTERN = Pattern.compile(TABLE_PAT, Pattern.CASE_INSENSITIVE);
     private final boolean isFull;

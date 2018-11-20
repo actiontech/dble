@@ -9,6 +9,7 @@ import com.actiontech.dble.route.sequence.handler.DistributedSequenceHandler;
 import junit.framework.Assert;
 import org.apache.curator.test.TestingServer;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -21,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @version 1.0
  * @time 00:12:05 2016/5/3
  */
+@Ignore
 public class DistributedSequenceHandlerTest {
     TestingServer testingServer = null;
     DistributedSequenceHandler distributedSequenceHandler[];

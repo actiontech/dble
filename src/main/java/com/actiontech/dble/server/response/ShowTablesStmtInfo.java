@@ -6,6 +6,7 @@
 package com.actiontech.dble.server.response;
 
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
+import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLShowTablesStatement;
@@ -22,26 +23,24 @@ public class ShowTablesStmtInfo {
             "(\\s+(full|all))?" +
             "(\\s+tables)" +
             "(\\s+(from|in)\\s+(`?[a-zA-Z_0-9]+`?))?" +
-            "((\\s+(like)\\s+'((. *)*)'\\s*)|(\\s+(where)\\s+((. *)*)\\s*))?" +
+            "(\\s+(like|where)\\s+(. *)*)?" +
             "\\s*\\s*(/\\*[\\s\\S]*\\*/)?\\s*$";
     public static final Pattern PATTERN = Pattern.compile(TABLE_PAT, Pattern.CASE_INSENSITIVE);
     private final boolean isFull;
     private final boolean isAll;
     private final String schema;
     private final String cond;
-    private final String like;
-    private final String where;
     private final SQLExpr whereExpr;
+    private String like;
+    private String where;
 
     ShowTablesStmtInfo(String sql) throws SQLSyntaxErrorException {
         Matcher ma = PATTERN.matcher(sql);
         ma.matches(); //always RETURN TRUE
         isFull = ma.group(3) != null;
         isAll = isFull && ma.group(4).equalsIgnoreCase("all");
-        schema = ma.group(8);
+        schema = ma.group(8) == null ? null : StringUtil.removeBackQuote(ma.group(8));
         cond = ma.group(9);
-        like = ma.group(12);
-        where = ma.group(16);
 
         StringBuilder sb = new StringBuilder(ma.group(2));
         if (isFull) {
@@ -61,6 +60,13 @@ public class ShowTablesStmtInfo {
         sql = sb.toString();
         SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(sql);
         whereExpr = ((SQLShowTablesStatement) statement).getWhere();
+        if (whereExpr != null) {
+            where = whereExpr.toString();
+        }
+        SQLExpr likeExpr = ((SQLShowTablesStatement) statement).getLike();
+        if (likeExpr != null) {
+            like = StringUtil.removeApostrophe(likeExpr.toString());
+        }
     }
 
     public boolean isAll() {

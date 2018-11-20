@@ -18,6 +18,7 @@ import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.model.UserConfig;
 import com.actiontech.dble.manager.handler.PackageBufINf;
 import com.actiontech.dble.meta.SchemaMeta;
+import com.actiontech.dble.meta.ViewMeta;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
@@ -34,7 +35,6 @@ import com.google.common.base.Strings;
 
 import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -54,7 +54,11 @@ public final class ShowTables {
             c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.toString());
             return;
         }
-        String showSchema = info.getSchema() == null ? null : StringUtil.removeBackQuote(info.getSchema());
+        if (info.getLike() != null && info.getWhere() != null) {
+            c.writeErrMessage("42000", "only allow LIKE or WHERE clause in statement", ErrorCode.ER_PARSE_ERROR);
+            return;
+        }
+        String showSchema = info.getSchema();
         if (showSchema != null && DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             showSchema = showSchema.toLowerCase();
         }
@@ -237,35 +241,29 @@ public final class ShowTables {
         if (schemata == null) {
             return new HashMap<>();
         }
-        Map meta = schemata.getTableMetas();
+        Map tableMeta = schemata.getTableMetas();
+        Map<String, ViewMeta> viewMeta = schemata.getViewMetas();
         TreeMap<String, String> tableMap = new TreeMap<>();
-        Map<String, SchemaConfig> schemas = DbleServer.getInstance().getConfig().getSchemas();
+        Pattern pattern = null;
         if (null != info.getLike()) {
             String p = "^" + info.getLike().replaceAll("%", ".*");
-            Pattern pattern = Pattern.compile(p, Pattern.CASE_INSENSITIVE);
-            Matcher maLike;
-
-            for (TableConfig tbConfig : schemas.get(cSchema).getTables().values()) {
-                String tbName = tbConfig.getName();
-                maLike = pattern.matcher(tbName);
-                if (maLike.matches() && meta.get(tbName) != null) {
-                    String tbType = "BASE TABLE";
-                    if (info.isAll()) {
-                        tbType = tbConfig.getTableType() == TableConfig.TableTypeEnum.TYPE_GLOBAL_TABLE ? "GLOBAL TABLE" : "SHARDING TABLE";
-                    }
-                    tableMap.put(tbName, tbType);
+            pattern = Pattern.compile(p, Pattern.CASE_INSENSITIVE);
+        }
+        Map<String, SchemaConfig> schemas = DbleServer.getInstance().getConfig().getSchemas();
+        for (TableConfig tbConfig : schemas.get(cSchema).getTables().values()) {
+            String tbName = tbConfig.getName();
+            if (tableMeta.get(tbName) != null && (pattern == null || pattern.matcher(tbName).matches())) {
+                String tbType = "BASE TABLE";
+                if (info.isAll()) {
+                    tbType = tbConfig.getTableType() == TableConfig.TableTypeEnum.TYPE_GLOBAL_TABLE ? "GLOBAL TABLE" : "SHARDING TABLE";
                 }
+                tableMap.put(tbName, tbType);
             }
-        } else {
-            for (TableConfig tbConfig : schemas.get(cSchema).getTables().values()) {
-                String tbName = tbConfig.getName();
-                if (meta.get(tbName) != null) {
-                    String tbType = "BASE TABLE";
-                    if (info.isAll()) {
-                        tbType = tbConfig.getTableType() == TableConfig.TableTypeEnum.TYPE_GLOBAL_TABLE ? "GLOBAL TABLE" : "SHARDING TABLE";
-                    }
-                    tableMap.put(tbName, tbType);
-                }
+        }
+        for (ViewMeta vm : viewMeta.values()) {
+            String viewName = vm.getViewName();
+            if (viewName != null && (pattern == null || pattern.matcher(viewName).matches())) {
+                tableMap.put(viewName, "VIEW");
             }
         }
         return tableMap;

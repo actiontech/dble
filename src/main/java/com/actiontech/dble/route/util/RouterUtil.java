@@ -615,6 +615,10 @@ public final class RouterUtil {
         //findRouter for singe table global table will not change the result
         // if global table and normal table has no intersection ,they had treat as normal join
         for (String tableName : tables) {
+            String testShardingNode = RouterUtil.isNoSharding(schema, tableName);
+            if (testShardingNode != null) {
+                return RouterUtil.routeToSingleNode(rrs, testShardingNode);
+            }
             TableConfig tableConfig = schema.getTables().get(tableName);
             if (tableConfig != null && !tableConfig.isGlobalTable() && tablesRouteMap.get(tableName) == null) { //the other is single table
                 tablesRouteMap.put(tableName, new HashSet<String>());

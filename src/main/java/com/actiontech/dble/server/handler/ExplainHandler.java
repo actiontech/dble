@@ -62,6 +62,12 @@ public final class ExplainHandler {
     public static void handle(String stmt, ServerConnection c, int offset) {
         stmt = stmt.substring(offset).trim();
 
+        //try to parse the sql again ,stop the inner command
+        if (checkInnerCommand(stmt)) {
+            c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "Inner command not route to MySQL:" + stmt);
+            return;
+        }
+
         RouteResultset rrs = getRouteResultset(c, stmt);
         if (rrs == null) {
             return;
@@ -127,6 +133,36 @@ public final class ExplainHandler {
         }
         HandlerBuilder builder = new HandlerBuilder(node, c.getSession2());
         return builder.getBuilder(c.getSession2(), node, true);
+    }
+
+    private static boolean checkInnerCommand(String stmt) {
+        int newRes = ServerParse.parse(stmt);
+        int sqlType = newRes & 0xff;
+        switch (sqlType) {
+            case ServerParse.EXPLAIN:
+            case ServerParse.EXPLAIN2:
+            case ServerParse.KILL:
+            case ServerParse.UNLOCK:
+            case ServerParse.LOCK:
+            case ServerParse.CREATE_VIEW:
+            case ServerParse.REPLACE_VIEW:
+            case ServerParse.ALTER_VIEW:
+            case ServerParse.DROP_VIEW:
+            case ServerParse.BEGIN:
+            case ServerParse.USE:
+            case ServerParse.COMMIT:
+            case ServerParse.ROLLBACK:
+            case ServerParse.SET:
+            case ServerParse.MYSQL_COMMENT:
+            case ServerParse.SHOW:
+            case ServerParse.SCRIPT_PREPARE:
+            case ServerParse.MYSQL_CMD_COMMENT:
+            case ServerParse.HELP:
+            case ServerParse.LOAD_DATA_INFILE_SQL:
+                return true;
+            default:
+                return false;
+        }
     }
 
     private static RowDataPacket getRow(RouteResultsetNode node, String charset) {

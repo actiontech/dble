@@ -50,8 +50,14 @@ public class ItemSumCount extends ItemSumInt {
         if (transObj != null) {
             long countOther = (Long) transObj;
             count += countOther;
-        } else if (!args.get(0).isNull())
+        } else {
+            for (Item arg : args) {
+                if (arg.isNull()) {
+                    return false;
+                }
+            }
             count++;
+        }
         return false;
     }
 

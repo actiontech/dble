@@ -131,6 +131,7 @@ public final class DbleServer {
 
 
     private FrontendUserManager userManager = new FrontendUserManager();
+
     private DbleServer() {
     }
 
@@ -431,7 +432,7 @@ public final class DbleServer {
         if (isUseUcore()) {
             try {
                 OnlineLockStatus.getInstance().metaUcoreInit(true);
-            }catch (Exception e){
+            } catch (Exception e) {
                 LOGGER.info("ucore can not connection ");
             }
         }

@@ -44,7 +44,7 @@ public class UcoreNodesListener implements Runnable {
 
                 if (DbleServer.getInstance().getTmManager().getRepository() instanceof FileSystemRepository) {
                     DbleServer.getInstance().getTmManager().setRepository(new CKVStoreRepository());
-                    OnlineLockStatus.getInstance().metaUcoreInit(true);
+                    OnlineLockStatus.getInstance().metaUcoreInit(false);
                 }
             } catch (Exception e) {
                 LOGGER.warn("error in ucore nodes watch,try for another time");

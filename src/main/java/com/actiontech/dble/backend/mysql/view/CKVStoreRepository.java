@@ -30,6 +30,8 @@ public class CKVStoreRepository implements Repository {
 
     private Map<String, Map<String, String>> viewCreateSqlMap = new HashMap<String, Map<String, String>>();
 
+    FileSystemRepository fileSystemRepository = null;
+
     @Override
     public Map<String, Map<String, String>> getViewCreateSqlMap() {
         return viewCreateSqlMap;
@@ -38,6 +40,8 @@ public class CKVStoreRepository implements Repository {
 
     public CKVStoreRepository() {
         init();
+        fileSystemRepository = new FileSystemRepository(viewCreateSqlMap);
+        fileSystemRepository.saveUcoreMap();
     }
 
     @Override
@@ -105,6 +109,8 @@ public class CKVStoreRepository implements Repository {
             if (errorMsg != null) {
                 throw new RuntimeException(errorMsg);
             }
+            fileSystemRepository.saveUcoreMap();
+
         } catch (RuntimeException e) {
             LOGGER.warn("set to ucore node error :　" + e.getMessage());
             throw e;
@@ -164,6 +170,7 @@ public class CKVStoreRepository implements Repository {
             if (errorMsg != null) {
                 throw new RuntimeException(errorMsg);
             }
+            fileSystemRepository.saveUcoreMap();
         } catch (RuntimeException e) {
             LOGGER.warn("delete ucore node error :　" + e.getMessage());
             throw e;

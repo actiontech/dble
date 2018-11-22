@@ -1,9 +1,13 @@
 package com.actiontech.dble.config.loader.ucoreprocess.listen;
 
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.UcoreInterface;
+import com.actiontech.dble.backend.mysql.view.CKVStoreRepository;
+import com.actiontech.dble.backend.mysql.view.FileSystemRepository;
 import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
 import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
+import com.actiontech.dble.server.status.OnlineLockStatus;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +40,11 @@ public class UcoreNodesListener implements Runnable {
                     }
                     UcoreConfig.getInstance().setIpList(ips);
                     UcoreConfig.getInstance().setIp(StringUtils.join(ips, ','));
+                }
+
+                if (DbleServer.getInstance().getTmManager().getRepository() instanceof FileSystemRepository) {
+                    DbleServer.getInstance().getTmManager().setRepository(new CKVStoreRepository());
+                    OnlineLockStatus.getInstance().metaUcoreInit(true);
                 }
             } catch (Exception e) {
                 LOGGER.warn("error in ucore nodes watch,try for another time");

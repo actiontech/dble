@@ -425,7 +425,8 @@ public final class ClusterUcoreSender {
         Iterator<Map.Entry<String, String>> iterator = expectedMap.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<String, String> entry = iterator.next();
-            if (!currentMap.containsKey(entry.getKey())) {
+            if (!currentMap.containsKey(entry.getKey()) ||
+                    (currentMap.containsKey(entry.getKey()) && !currentMap.get(entry.getKey()).equals(entry.getValue()))) {
                 iterator.remove();
             }
         }

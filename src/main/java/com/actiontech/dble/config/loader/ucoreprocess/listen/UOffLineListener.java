@@ -114,7 +114,8 @@ public class UOffLineListener implements Runnable {
                 }
 
                 for (Map.Entry<String, String> en : onlineMap.entrySet()) {
-                    if (!newMap.containsKey(en.getKey())) {
+                    if (!newMap.containsKey(en.getKey()) ||
+                            (newMap.containsKey(en.getKey()) && !newMap.get(en.getKey()).equals(en.getValue()))) {
                         String serverId = en.getKey().split("/")[en.getKey().split("/").length - 1];
                         checkDDLAndRelease(serverId);
                         checkBinlogStatusRelease(serverId);

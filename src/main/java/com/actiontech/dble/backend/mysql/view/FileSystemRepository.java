@@ -34,6 +34,11 @@ public class FileSystemRepository implements Repository {
         init();
     }
 
+    public FileSystemRepository(Map<String, Map<String, String>> map) {
+        init();
+        viewCreateSqlMap = map;
+    }
+
     /**
      * init the file read & create the viewMap
      */
@@ -41,7 +46,6 @@ public class FileSystemRepository implements Repository {
         try {
             ServerConfig config = DbleServer.getInstance().getConfig();
             SystemConfig systemConfig = config.getSystem();
-
             baseDir = systemConfig.getViewPersistenceConfBaseDir();
             baseName = systemConfig.getViewPersistenceConfBaseName();
 
@@ -65,6 +69,19 @@ public class FileSystemRepository implements Repository {
             }
         } catch (Exception e) {
             LOGGER.info("close error");
+        }
+    }
+
+    /**
+     * only used by ucore view
+     * save the view info into local
+     * so the view can be use without ucore
+     */
+    public void saveUcoreMap() {
+        try {
+            this.writeToFile(mapToJsonString(viewCreateSqlMap));
+        } catch (Exception e) {
+            LOGGER.warn("ucore view data put local fail:" + e.getMessage());
         }
     }
 

@@ -350,7 +350,12 @@ public class ProxyMetaManager {
      * recovery all the view info from ckvsystem
      */
     private void loadViewFromCKV() {
-        repository = new CKVStoreRepository();
+        try {
+            repository = new CKVStoreRepository();
+        } catch (Exception e) {
+            LOGGER.info("load view info from ucore fail,turned into local file model");
+            repository = new FileSystemRepository();
+        }
         Map<String, Map<String, String>> viewCreateSqlMap = repository.getViewCreateSqlMap();
         loadViewMeta(viewCreateSqlMap);
     }
@@ -683,4 +688,7 @@ public class ProxyMetaManager {
         return repository;
     }
 
+    public void setRepository(Repository repository) {
+        this.repository = repository;
+    }
 }

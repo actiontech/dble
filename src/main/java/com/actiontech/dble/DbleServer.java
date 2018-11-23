@@ -131,6 +131,7 @@ public final class DbleServer {
 
 
     private FrontendUserManager userManager = new FrontendUserManager();
+
     private DbleServer() {
     }
 
@@ -429,7 +430,11 @@ public final class DbleServer {
         userManager.initForLatest(config.getUsers(), system.getMaxCon());
 
         if (isUseUcore()) {
-            OnlineLockStatus.getInstance().metaUcoreInit(true);
+            try {
+                OnlineLockStatus.getInstance().metaUcoreInit(true);
+            } catch (Exception e) {
+                LOGGER.info("ucore can not connection ");
+            }
         }
         //initialized the cache service
         cacheService = new CacheService(this.systemVariables.isLowerCaseTableNames());

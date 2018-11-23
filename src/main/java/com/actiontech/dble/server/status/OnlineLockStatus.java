@@ -21,6 +21,7 @@ public final class OnlineLockStatus {
     private static final Logger LOGGER = LoggerFactory.getLogger(OnlineLockStatus.class);
     private volatile UDistributeLock onlineLock = null;
     private volatile boolean onlineInited = false;
+
     private OnlineLockStatus() {
     }
 
@@ -42,7 +43,7 @@ public final class OnlineLockStatus {
         }
         onlineLock = new UDistributeLock(UcorePathUtil.getOnlinePath(UcoreConfig.getInstance().
                 getValue(ClusterParamCfg.CLUSTER_CFG_MYID)),
-                UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), 6);
+                "" + System.currentTimeMillis(), 6);
         int time = 0;
         while (!onlineLock.acquire()) {
             time++;

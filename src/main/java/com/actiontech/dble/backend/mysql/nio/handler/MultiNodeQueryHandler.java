@@ -122,7 +122,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
     private void innerExecute(BackendConnection conn, RouteResultsetNode node) {
-        if (clearIfSessionClosed(session)) {
+        if (clearIfSessionClosed(session) && this.rrs.getSqlType() != ServerParse.DDL) {
             return;
         }
         MySQLConnection mysqlCon = (MySQLConnection) conn;

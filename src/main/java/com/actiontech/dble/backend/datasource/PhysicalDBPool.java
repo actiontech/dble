@@ -374,12 +374,14 @@ public class PhysicalDBPool {
         GetConnectionHandler getConHandler = new GetConnectionHandler(list, initSize);
         // long start = System.currentTimeMillis();
         // long timeOut = start + 5000 * 1000L;
-
+        boolean hasConnectionInPool = false;
         try {
             if (ds.getActiveCount() <= 0) {
                 ds.initMinConnection(null, true, getConHandler, null);
             } else {
+                LOGGER.info("connection with null schema do not create,because testConnection in pool");
                 getConHandler.initIncrement();
+                hasConnectionInPool = true;
             }
         } catch (Exception e) {
             LOGGER.warn("init connection with schema null error", e);
@@ -408,7 +410,7 @@ public class PhysicalDBPool {
             }
         }
         LOGGER.info("init result :" + getConHandler.getStatusInfo());
-        return !list.isEmpty();
+        return !list.isEmpty() || hasConnectionInPool;
     }
 
     public void doHeartbeat() {

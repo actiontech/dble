@@ -59,7 +59,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
             if (sendData == null) {
                 sendData = session.getOkByteArray();
             }
-            cleanAndFeedback(true);
+            cleanAndFeedback();
         }
     }
 
@@ -71,7 +71,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
         this.setFail(errMsg);
         conn.close("commit response error");
         if (decrementCountBy(1)) {
-            cleanAndFeedback(false);
+            cleanAndFeedback();
         }
     }
 
@@ -81,7 +81,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
         this.setFail(e.getMessage());
         conn.close("Commit connection Error");
         if (decrementCountBy(1)) {
-            cleanAndFeedback(false);
+            cleanAndFeedback();
         }
     }
 
@@ -93,22 +93,23 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
         this.setFail(reason);
         conn.close("commit connection closed");
         if (decrementCountBy(1)) {
-            cleanAndFeedback(false);
+            cleanAndFeedback();
         }
     }
 
-    private void cleanAndFeedback(boolean isSuccess) {
+    private void cleanAndFeedback() {
         byte[] send = sendData;
         // clear all resources
         session.clearResources(false);
         if (session.closed()) {
             return;
         }
-        setResponseTime(isSuccess);
         if (this.isFail()) {
             createErrPkg(error).write(session.getSource());
+            setResponseTime(false);
         } else {
             boolean multiStatementFlag = session.getIsMultiStatement().get();
+            setResponseTime(true);
             session.getSource().write(send);
             session.multiStatementNextSql(multiStatementFlag);
         }

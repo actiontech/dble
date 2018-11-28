@@ -170,7 +170,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             if (!newConn.equals(mysqlCon)) {
                 mysqlCon = newConn;
             } else if (decrementCountBy(1)) {
-                cleanAndFeedback();
+                cleanAndFeedback(false);
                 return;
             }
         }
@@ -210,7 +210,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 if (session.getXaState() == TxState.TX_PREPARED_STATE) {
                     session.setXaState(TxState.TX_INITIALIZE_STATE);
                 }
-                cleanAndFeedback();
+                cleanAndFeedback(true);
             }
         }
     }
@@ -251,7 +251,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                 session.setXaState(TxState.TX_COMMIT_FAILED_STATE);
                 if (decrementCountBy(1)) {
-                    cleanAndFeedback();
+                    cleanAndFeedback(false);
                 }
             } else if (mysqlCon.getXaStatus() == TxState.TX_COMMIT_FAILED_STATE) {
                 if (errPacket.getErrNo() == ErrorCode.ER_XAER_NOTA) {
@@ -263,14 +263,14 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                         if (session.getXaState() == TxState.TX_PREPARED_STATE) {
                             session.setXaState(TxState.TX_INITIALIZE_STATE);
                         }
-                        cleanAndFeedback();
+                        cleanAndFeedback(false);
                     }
                 } else {
                     mysqlCon.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
                     XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                     session.setXaState(TxState.TX_COMMIT_FAILED_STATE);
                     if (decrementCountBy(1)) {
-                        cleanAndFeedback();
+                        cleanAndFeedback(false);
                     }
                 }
             }
@@ -323,7 +323,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                 session.setXaState(TxState.TX_COMMIT_FAILED_STATE);
                 if (decrementCountBy(1)) {
-                    cleanAndFeedback();
+                    cleanAndFeedback(false);
                 }
             }
         }
@@ -342,7 +342,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         }
     }
 
-    private void cleanAndFeedback() {
+    private void cleanAndFeedback(boolean isSuccess) {
         if (session.getXaState() == TxState.TX_INITIALIZE_STATE) { // clear all resources
             XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_COMMITTED_STATE);
             session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_INIT);
@@ -350,7 +350,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             if (session.closed()) {
                 return;
             }
-            setResponseTime(true);
+            setResponseTime(isSuccess);
             byte[] send = sendData;
             session.getSource().write(send);
 
@@ -374,7 +374,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 byte[] toSend = sendData;
                 session.clearResources(false);
                 if (!session.closed()) {
-                    setResponseTime(true);
+                    setResponseTime(isSuccess);
                     session.getSource().write(toSend);
                 }
             }
@@ -382,7 +382,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             // need to rollback;
         } else {
             XAStateLog.saveXARecoveryLog(session.getSessionXaID(), session.getXaState());
-            setResponseTime(true);
+            setResponseTime(isSuccess);
             session.getSource().write(sendData);
             LOGGER.info("cleanAndFeedback:" + error);
 

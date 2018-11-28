@@ -360,7 +360,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             if (session.closed()) {
                 return;
             }
-            setResponseTime(true);
+            setResponseTime(false);
             byte[] send = sendData;
             session.getSource().write(send);
 
@@ -388,7 +388,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                 byte[] toSend = sendData;
                 session.clearResources(false);
                 if (!session.closed()) {
-                    setResponseTime(true);
+                    setResponseTime(false);
                     session.getSource().write(toSend);
                 }
             }
@@ -402,7 +402,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             if (session.closed()) {
                 return;
             }
-            setResponseTime(true);
+            setResponseTime(false);
             session.getSource().write(sendData);
 
         }

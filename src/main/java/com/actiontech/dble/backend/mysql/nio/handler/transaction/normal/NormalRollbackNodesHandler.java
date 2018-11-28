@@ -57,7 +57,7 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
             if (sendData == null) {
                 sendData = OkPacket.OK;
             }
-            cleanAndFeedback(true);
+            cleanAndFeedback();
         }
     }
 
@@ -67,7 +67,7 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
             if (sendData == null) {
                 sendData = session.getOkByteArray();
             }
-            cleanAndFeedback(true);
+            cleanAndFeedback();
         }
     }
 
@@ -79,7 +79,7 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
         this.setFail(errMsg);
         conn.close("rollback error response"); //quit to rollback
         if (decrementCountBy(1)) {
-            cleanAndFeedback(false);
+            cleanAndFeedback();
         }
     }
 
@@ -90,7 +90,7 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
         this.setFail(errMsg);
         conn.close("rollback connection error"); //quit if not rollback
         if (decrementCountBy(1)) {
-            cleanAndFeedback(false);
+            cleanAndFeedback();
         }
     }
 
@@ -99,18 +99,18 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
         // quitted
         this.setFail(reason);
         if (decrementCountBy(1)) {
-            cleanAndFeedback(false);
+            cleanAndFeedback();
         }
     }
 
-    private void cleanAndFeedback(boolean isOk) {
+    private void cleanAndFeedback() {
         byte[] send = sendData;
         // clear all resources
         session.clearResources(false);
         if (session.closed()) {
             return;
         }
-        setResponseTime(isOk);
+        setResponseTime(false);
         if (this.isFail()) {
             createErrPkg(error).write(session.getSource());
         } else {

@@ -20,7 +20,7 @@ public class SchemaMeta {
      */
     private final ConcurrentMap<String, StructureMeta.TableMeta> tableMetas;
 
-    private final ConcurrentMap<String, ViewMeta> viewMetas;
+    private volatile ConcurrentMap<String, ViewMeta> viewMetas;
 
     public SchemaMeta() {
         this.tableMetas = new ConcurrentHashMap<>();
@@ -71,6 +71,10 @@ public class SchemaMeta {
 
     public ConcurrentMap<String, ViewMeta> getViewMetas() {
         return viewMetas;
+    }
+
+    public void setViewMetas(ConcurrentMap<String, ViewMeta> viewMetas) {
+        this.viewMetas = viewMetas;
     }
 
     public String getViewMetaJson() {

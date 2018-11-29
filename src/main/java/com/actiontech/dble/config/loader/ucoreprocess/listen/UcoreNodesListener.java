@@ -45,11 +45,13 @@ public class UcoreNodesListener implements Runnable {
                 }
 
                 if (DbleServer.getInstance().getTmManager().getRepository() instanceof FileSystemRepository) {
+                    LOGGER.warn("Dble first reconnect to ucore ,local view repository change to CKVStoreRepository");
                     Repository newViewRepository = new CKVStoreRepository();
                     DbleServer.getInstance().getTmManager().setRepository(newViewRepository);
                     Map<String, Map<String, String>> viewCreateSqlMap = newViewRepository.getViewCreateSqlMap();
                     DbleServer.getInstance().getTmManager().reloadViewMeta(viewCreateSqlMap);
                     //init online status
+                    LOGGER.warn("Dble first reconnect to ucore ,online status rebuild");
                     OnlineLockStatus.getInstance().metaUcoreInit(true);
                 }
             } catch (Exception e) {

@@ -365,14 +365,25 @@ public class ProxyMetaManager {
      *
      * @param viewCreateSqlMap
      */
-    private void loadViewMeta(Map<String, Map<String, String>> viewCreateSqlMap) {
-
+    public void loadViewMeta(Map<String, Map<String, String>> viewCreateSqlMap) {
         for (Map.Entry<String, Map<String, String>> schemaName : viewCreateSqlMap.entrySet()) {
             for (Map.Entry<String, String> view : schemaName.getValue().entrySet()) {
                 ViewMeta vm = new ViewMeta(view.getValue(), schemaName.getKey(), this);
                 vm.init(true);
                 this.getCatalogs().get(schemaName.getKey()).getViewMetas().put(vm.getViewName(), vm);
             }
+        }
+    }
+
+    public void reloadViewMeta(Map<String, Map<String, String>> viewCreateSqlMap) {
+        for (Map.Entry<String, Map<String, String>> schemaName : viewCreateSqlMap.entrySet()) {
+            ConcurrentMap<String, ViewMeta> schemaViewMeta = new ConcurrentHashMap<String, ViewMeta>();
+            for (Map.Entry<String, String> view : schemaName.getValue().entrySet()) {
+                ViewMeta vm = new ViewMeta(view.getValue(), schemaName.getKey(), this);
+                vm.init(true);
+                schemaViewMeta.put(vm.getViewName(), vm);
+            }
+            this.getCatalogs().get(schemaName.getKey()).setViewMetas(schemaViewMeta);
         }
     }
 

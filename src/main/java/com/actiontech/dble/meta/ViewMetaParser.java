@@ -7,6 +7,7 @@ package com.actiontech.dble.meta;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.route.parser.util.ParseUtil;
+import com.actiontech.dble.util.StringUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,6 +40,8 @@ public class ViewMetaParser {
         if (viewName.indexOf('.') != -1) {
             viewName = viewName.split("\\.")[1];
         }
+        viewName = StringUtil.removeBackQuote(viewName);
+
         //get the name of view
         viewMeta.setViewName(viewName);
         //get the list of column name

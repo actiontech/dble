@@ -8,6 +8,7 @@ package com.actiontech.dble.meta;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.plan.node.QueryNode;
+import com.actiontech.dble.util.StringUtil;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,6 +52,9 @@ public class SchemaMeta {
      * @return
      */
     public QueryNode getView(String name) {
+        if (name.indexOf("`") != -1) {
+            name = StringUtil.removeBackQuote(name);
+        }
         ViewMeta view = viewMetas.get(name);
         QueryNode queryNode = null;
         if (view != null) {

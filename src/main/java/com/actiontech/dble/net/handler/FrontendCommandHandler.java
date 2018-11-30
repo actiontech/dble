@@ -17,6 +17,9 @@ import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 /**
  * FrontendCommandHandler
  *
@@ -26,7 +29,8 @@ public class FrontendCommandHandler implements NIOHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(FrontendCommandHandler.class);
     protected final FrontendConnection source;
     protected final CommandCount commands;
-    private byte[] dataTodo;
+    private volatile byte[] dataTodo;
+    Queue<byte[]> blobDataQueue = new ConcurrentLinkedQueue<byte[]>();
 
     public FrontendCommandHandler(FrontendConnection source) {
         this.source = source;
@@ -43,7 +47,14 @@ public class FrontendCommandHandler implements NIOHandler {
             }
             return;
         }
-        dataTodo = data;
+        if (MySQLPacket.COM_STMT_SEND_LONG_DATA != data[4]) {
+            dataTodo = data;
+        } else if (MySQLPacket.COM_STMT_RESET == data[4]) {
+            blobDataQueue.clear();
+        } else {
+            blobDataQueue.offer(data);
+            return;
+        }
         if (source instanceof ServerConnection) {
             ((ServerConnection) source).getSession2().resetMultiStatementStatus();
         }
@@ -92,17 +103,13 @@ public class FrontendCommandHandler implements NIOHandler {
                 commands.doStmtPrepare();
                 source.stmtPrepare(data);
                 break;
-            case MySQLPacket.COM_STMT_SEND_LONG_DATA:
-                commands.doStmtSendLongData();
-                source.stmtSendLongData(data);
-                break;
             case MySQLPacket.COM_STMT_RESET:
                 commands.doStmtReset();
                 source.stmtReset(data);
                 break;
             case MySQLPacket.COM_STMT_EXECUTE:
                 commands.doStmtExecute();
-                source.stmtExecute(data);
+                source.stmtExecute(data, blobDataQueue);
                 break;
             case MySQLPacket.COM_STMT_CLOSE:
                 commands.doStmtClose();

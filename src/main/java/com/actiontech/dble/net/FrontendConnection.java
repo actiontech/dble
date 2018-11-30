@@ -30,6 +30,7 @@ import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.NetworkChannel;
 import java.nio.channels.SocketChannel;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 
 /**
@@ -373,6 +374,7 @@ public abstract class FrontendConnection extends AbstractConnection {
     }
 
     public void stmtReset(byte[] data) {
+
         if (prepareHandler != null) {
             prepareHandler.reset(data);
         } else {
@@ -380,7 +382,12 @@ public abstract class FrontendConnection extends AbstractConnection {
         }
     }
 
-    public void stmtExecute(byte[] data) {
+    public void stmtExecute(byte[] data, Queue<byte[]> dataqueue) {
+        byte[] sendData = dataqueue.poll();
+        while (sendData != null) {
+            this.stmtSendLongData(sendData);
+            sendData = dataqueue.poll();
+        }
         if (prepareHandler != null) {
             prepareHandler.execute(data);
         } else {

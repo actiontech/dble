@@ -16,6 +16,7 @@ import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncEq
 import com.actiontech.dble.plan.util.FilterUtils;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.plan.util.ToStringUtil;
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.util.StringUtil;
 
 import java.util.*;
@@ -111,10 +112,10 @@ public class JoinNode extends PlanNode {
         if (usingFields != null) {
             for (String using : usingFields) {
                 using = StringUtil.removeBackQuote(using);
-                String lName = findTbNameByUsing(this.getLeftNode(), using);
-                String rName = findTbNameByUsing(this.getRightNode(), using);
+                Pair<String, String> lName = findTbNameByUsing(this.getLeftNode(), using);
+                Pair<String, String> rName = findTbNameByUsing(this.getRightNode(), using);
                 if (lName.equals(rName)) {
-                    throw new MySQLOutPutException(ErrorCode.ER_NONUNIQ_TABLE, "42000", "Not unique table/alias: '" + lName + "'");
+                    throw new MySQLOutPutException(ErrorCode.ER_NONUNIQ_TABLE, "42000", "Not unique table/alias: '" + lName.getValue() + "'");
                 }
                 Item filter = setUpItem(genJoinFilter(using, lName, rName));
                 joinFilter.add((ItemFuncEqual) filter);
@@ -154,10 +155,14 @@ public class JoinNode extends PlanNode {
         return fields;
     }
 
-    private String findTbNameByUsing(PlanNode node, String using) {
+    private Pair<String, String> findTbNameByUsing(PlanNode node, String using) {
+        String schema = null;
+        if (node.type() == PlanNodeType.TABLE) {
+            schema = ((TableNode) node).getSchema();
+        }
         String table = node.getCombinedName();
         if (table != null) {
-            return table;
+            return new Pair<>(schema, table);
         }
         boolean found = false;
         for (NamedField field : node.getOuterFields().keySet()) {
@@ -171,12 +176,12 @@ public class JoinNode extends PlanNode {
                 }
             }
         }
-        return table;
+        return new Pair<>(schema, table);
     }
 
-    private ItemFuncEqual genJoinFilter(String using, String leftJoinNode, String rightJoinNode) {
-        ItemField column1 = new ItemField(null, leftJoinNode, using);
-        ItemField column2 = new ItemField(null, rightJoinNode, using);
+    private ItemFuncEqual genJoinFilter(String using, Pair<String, String> leftJoinNode, Pair<String, String> rightJoinNode) {
+        ItemField column1 = new ItemField(leftJoinNode.getKey(), leftJoinNode.getValue(), using);
+        ItemField column2 = new ItemField(rightJoinNode.getKey(), rightJoinNode.getValue(), using);
         return new ItemFuncEqual(column1, column2);
     }
 
@@ -205,14 +210,14 @@ public class JoinNode extends PlanNode {
             super.dealSingleStarColumn(newSels);
         } else {
             PlanNode driverNode = this.isRightOuterJoin() ? this.getRightNode() : this.getLeftNode();
-            String table = findTbNameByUsing(driverNode, usingFields.get(0));
+            Pair<String, String> tableInfo = findTbNameByUsing(driverNode, usingFields.get(0));
             if (isNatural) {
                 //is the join is a natural join,the fields order is driverNode's column order
                 for (NamedField field : driverNode.getInnerFields().keySet()) {
                     String name = field.getName();
                     for (String fieldName : usingFields) {
                         if (name.equals(fieldName)) {
-                            ItemField col = new ItemField(null, table, fieldName);
+                            ItemField col = new ItemField(tableInfo.getKey(), tableInfo.getValue(), fieldName);
                             newSels.add(col);
                         }
                     }
@@ -222,13 +227,13 @@ public class JoinNode extends PlanNode {
                     if (usingFields.contains(field.getName())) {
                         continue;
                     }
-                    ItemField col = new ItemField(null, field.getTable(), field.getName());
+                    ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName());
                     newSels.add(col);
                 }
 
                 // add Remaining innerFields
                 for (NamedField field : innerFields.keySet()) {
-                    ItemField col = new ItemField(null, field.getTable(), field.getName());
+                    ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName());
                     boolean contians = false;
                     for (Item f : newSels) {
                         if (f instanceof ItemField) {
@@ -245,7 +250,7 @@ public class JoinNode extends PlanNode {
 
             } else {
                 for (String fieldName : usingFields) {
-                    ItemField col = new ItemField(null, table, fieldName);
+                    ItemField col = new ItemField(tableInfo.getKey(), tableInfo.getValue(), fieldName);
                     newSels.add(col);
                 }
 
@@ -253,7 +258,7 @@ public class JoinNode extends PlanNode {
                     if (usingFields.contains(field.getName())) {
                         continue;
                     }
-                    ItemField col = new ItemField(null, field.getTable(), field.getName());
+                    ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName());
                     newSels.add(col);
                 }
             }

@@ -16,6 +16,10 @@ public abstract class ItemIdent extends Item {
      * shorter than life-time of Item_field.
      */
 
+    public String getDbName() {
+        return dbName;
+    }
+
     protected String dbName;
     protected String tableName;
 

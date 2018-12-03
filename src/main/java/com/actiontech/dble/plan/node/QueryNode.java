@@ -45,7 +45,7 @@ public class QueryNode extends PlanNode {
         for (PlanNode child : children) {
             child.setUpFields();
             for (NamedField childOutField : child.outerFields.keySet()) {
-                NamedField tmpField = new NamedField(this.getAlias(), childOutField.getName(), childOutField.planNode);
+                NamedField tmpField = new NamedField(childOutField.getSchema(), this.getAlias(), childOutField.getName(), childOutField.planNode);
                 if (innerFields.containsKey(tmpField) && getParent() != null)
                     throw new MySQLOutPutException(ErrorCode.ER_DUP_FIELDNAME, "42S21", "Duplicate column name '" + childOutField.getName() + "'");
                 innerFields.put(tmpField, childOutField);

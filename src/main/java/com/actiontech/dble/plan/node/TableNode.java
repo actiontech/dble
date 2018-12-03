@@ -93,7 +93,7 @@ public class TableNode extends PlanNode {
         innerFields.clear();
         String tmpTable = alias == null ? tableName : alias;
         for (StructureMeta.ColumnMeta cm : tableMeta.getColumnsList()) {
-            NamedField tmpField = new NamedField(tmpTable, cm.getName(), this);
+            NamedField tmpField = new NamedField(schema, tmpTable, cm.getName(), this);
             innerFields.put(tmpField, tmpField);
         }
     }

@@ -289,14 +289,13 @@ public abstract class PlanNode {
 
     protected void setUpInnerFields() {
         innerFields.clear();
-        String tmpFieldTable;
-        String tmpFieldName;
         for (PlanNode child : children) {
             child.setUpFields();
             for (NamedField coutField : child.outerFields.keySet()) {
-                tmpFieldTable = child.getAlias() == null ? coutField.getTable() : child.getAlias();
-                tmpFieldName = coutField.getName();
-                NamedField tmpField = new NamedField(tmpFieldTable, tmpFieldName, coutField.planNode);
+                String tmpFieldSchema = child.type() == PlanNodeType.TABLE ? ((TableNode) child).getSchema() : coutField.getSchema();
+                String tmpFieldTable = child.getAlias() == null ? coutField.getTable() : child.getAlias();
+                String tmpFieldName = coutField.getName();
+                NamedField tmpField = new NamedField(tmpFieldSchema, tmpFieldTable, tmpFieldName, coutField.planNode);
                 if (innerFields.containsKey(tmpField) && getParent() != null)
                     throw new MySQLOutPutException(ErrorCode.ER_DUP_FIELDNAME, "42S21", "Duplicate column name '" + tmpFieldName + "'");
                 innerFields.put(tmpField, coutField);
@@ -401,7 +400,7 @@ public abstract class PlanNode {
 
     protected void dealSingleStarColumn(List<Item> newSels) {
         for (NamedField field : innerFields.keySet()) {
-            ItemField col = new ItemField(null, field.getTable(), field.getName());
+            ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName());
             newSels.add(col);
         }
     }
@@ -418,7 +417,7 @@ public abstract class PlanNode {
                     boolean found = false;
                     for (NamedField field : innerFields.keySet()) {
                         if (selTable.equals(field.getTable())) {
-                            ItemField col = new ItemField(null, field.getTable(), field.getName());
+                            ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName());
                             newSels.add(col);
                             found = true;
                         } else if (found) {
@@ -447,7 +446,7 @@ public abstract class PlanNode {
             tmpFieldTable = getPureName();
         if (sel.getAlias() != null)
             tmpFieldName = sel.getAlias();
-        return new NamedField(tmpFieldTable, tmpFieldName, this);
+        return new NamedField(null, tmpFieldTable, tmpFieldName, this);
     }
 
     Item setUpItem(Item sel) {

@@ -9,14 +9,14 @@ import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.plan.NamedField;
-import com.actiontech.dble.plan.node.PlanNode;
-import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.common.context.NameResolutionContext;
 import com.actiontech.dble.plan.common.context.ReferContext;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.time.MySQLTime;
 import com.actiontech.dble.plan.node.JoinNode;
+import com.actiontech.dble.plan.node.PlanNode;
+import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
@@ -213,11 +213,10 @@ public class ItemField extends ItemIdent {
     public Item fixFields(NameResolutionContext context) {
         if (this.isWild())
             return this;
-        String tmpFieldTable = null;
         String tmpFieldName = getItemName();
         PlanNode planNode = context.getPlanNode();
         if (context.getPlanNode().type() == PlanNodeType.MERGE) {
-            return getMergeNodeColumn(tmpFieldTable, tmpFieldName, planNode);
+            return getMergeNodeColumn(tmpFieldName, planNode);
         }
         Item column = null;
         if (context.isFindInSelect()) {
@@ -232,8 +231,7 @@ public class ItemField extends ItemIdent {
                     }
                 }
             } else {
-                tmpFieldTable = getTableName();
-                column = planNode.getOuterFields().get(new NamedField(tmpFieldTable, tmpFieldName, null));
+                column = planNode.getOuterFields().get(new NamedField(getDbName(), getTableName(), tmpFieldName, null));
             }
         }
         if (column != null && context.isSelectFirst()) {
@@ -246,8 +244,7 @@ public class ItemField extends ItemIdent {
             for (NamedField namedField : planNode.getInnerFields().keySet()) {
                 if (StringUtils.equalsIgnoreCase(tmpFieldName, namedField.getName())) {
                     if (columnFromMeta == null) {
-                        tmpFieldTable = namedField.getTable();
-                        NamedField coutField = planNode.getInnerFields().get(new NamedField(tmpFieldTable, tmpFieldName, null));
+                        NamedField coutField = planNode.getInnerFields().get(new NamedField(namedField.getSchema(), namedField.getTable(), tmpFieldName, null));
                         this.tableName = namedField.getTable();
                         getReferTables().clear();
                         this.getReferTables().add(coutField.planNode);
@@ -264,8 +261,7 @@ public class ItemField extends ItemIdent {
                 }
             }
         } else {
-            tmpFieldTable = getTableName();
-            NamedField tmpField = new NamedField(tmpFieldTable, tmpFieldName, null);
+            NamedField tmpField = new NamedField(getDbName(), getTableName(), tmpFieldName, null);
             if (planNode.getInnerFields().containsKey(tmpField)) {
                 NamedField coutField = planNode.getInnerFields().get(tmpField);
                 getReferTables().clear();
@@ -284,7 +280,8 @@ public class ItemField extends ItemIdent {
 
     }
 
-    private Item getMergeNodeColumn(String tmpFieldTable, String tmpFieldName, PlanNode planNode) {
+    private Item getMergeNodeColumn(String tmpFieldName, PlanNode planNode) {
+        String tmpFieldTable = null;
         // select union only found in outerfields
         Item column;
         if (StringUtils.isEmpty(getTableName())) {
@@ -301,7 +298,7 @@ public class ItemField extends ItemIdent {
                     }
                 }
             }
-            column = planNode.getOuterFields().get(new NamedField(tmpFieldTable, tmpFieldName, null));
+            column = planNode.getOuterFields().get(new NamedField(null, tmpFieldTable, tmpFieldName, null));
         } else {
             throw new MySQLOutPutException(ErrorCode.ER_TABLENAME_NOT_ALLOWED_HERE, "42000",
                     "Table '" + getTableName() + "' from one of the SELECTs cannot be used in global ORDER clause");

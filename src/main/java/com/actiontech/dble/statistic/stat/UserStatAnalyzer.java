@@ -47,8 +47,13 @@ public final class UserStatAnalyzer implements QueryResultListener {
                 long resultSetSize = query.getResultSize();
                 UserStat userStat = userStatMap.get(user);
                 if (userStat == null) {
-                    userStat = new UserStat(user);
-                    userStatMap.put(user, userStat);
+                    synchronized (this) {
+                        userStat = userStatMap.get(user);
+                        if (userStat == null) {
+                            userStat = new UserStat(user);
+                            userStatMap.put(user, userStat);
+                        }
+                    }
                 }
                 userStat.update(sqlType, sql, sqlRows, netInBytes, netOutBytes, startTime, endTime, resultSetSize);
                 break;

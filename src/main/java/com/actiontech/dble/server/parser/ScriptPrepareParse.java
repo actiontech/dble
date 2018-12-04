@@ -7,6 +7,8 @@ package com.actiontech.dble.server.parser;
 
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.route.parser.util.ParseUtil;
+import org.apache.commons.lang.StringEscapeUtils;
+
 import java.util.List;
 import java.util.LinkedList;
 
@@ -128,8 +130,9 @@ public final class ScriptPrepareParse {
         String exestmt = null;
 
         char c1 = stmt.charAt(offset);
-        int i = stmt.indexOf(c1, ++offset);
-        exestmt = stmt.substring(offset, i);
+        int i = stmt.lastIndexOf(c1);
+        exestmt = stmt.substring(++offset, i);
+        exestmt = StringEscapeUtils.unescapeJava(exestmt);
         offset = skipSpaceAndComment(stmt, i);
         if (offset + 1 != stmt.length()) {
             return OTHER;

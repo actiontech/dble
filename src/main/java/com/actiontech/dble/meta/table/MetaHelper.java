@@ -20,7 +20,6 @@ import com.alibaba.druid.sql.dialect.mysql.ast.MySqlPrimaryKey;
 import com.alibaba.druid.sql.dialect.mysql.ast.MySqlUnique;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlTableIndex;
-import com.alibaba.druid.sql.dialect.mysql.parser.MySqlCreateTableParser;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import org.slf4j.Logger;
@@ -44,9 +43,9 @@ public final class MetaHelper {
             return null;
         }
         try {
-            SQLStatementParser parser = new MySqlCreateTableParser(sql);
+            SQLStatementParser parser = new DbleCreateTableParser(sql);
             SQLCreateTableStatement createStatement = parser.parseCreateTable();
-            return MetaHelper.initTableMeta(table, sql, createStatement, timeStamp);
+            return MetaHelper.initTableMeta(table, createStatement, timeStamp);
         } catch (Exception e) {
             LOGGER.warn("sql[" + sql + "] parser error:", e);
             AlertUtil.alertSelf(AlarmCode.GET_TABLE_META_FAIL, Alert.AlertLevel.WARN, "sql[" + sql + "] parser error:" + e.getMessage(), null);
@@ -54,11 +53,11 @@ public final class MetaHelper {
         }
     }
 
-    public static StructureMeta.TableMeta initTableMeta(String table, String sql, SQLCreateTableStatement createStatement, long timeStamp) {
+    public static StructureMeta.TableMeta initTableMeta(String table, SQLCreateTableStatement createStatement, long timeStamp) {
         StructureMeta.TableMeta.Builder tmBuilder = StructureMeta.TableMeta.newBuilder();
         tmBuilder.setTableName(table);
         tmBuilder.setVersion(timeStamp);
-        tmBuilder.setCreateSql(sql);
+        tmBuilder.setCreateSql(createStatement.toString());
         Set<String> indexNames = new HashSet<>();
         for (SQLTableElement tableElement : createStatement.getTableElementList()) {
             if (tableElement instanceof SQLColumnDefinition) {

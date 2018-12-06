@@ -308,7 +308,7 @@ public final class ManagerParseReload {
 
             // exclude "RELOAD @@QUERY_CF =  ";
             int index = stmt.indexOf("=");
-            if (index != -1 && stmt.trim().length() > ++index) {
+            if (index != -1 && !ParseUtil.isErrorTail(0, stmt.substring(offset, index)) && stmt.trim().length() > ++index) {
                 return QUERY_CF;
             }
         }

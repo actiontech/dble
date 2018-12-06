@@ -299,12 +299,17 @@ public final class ManagerParseReload {
             char c6 = stmt.charAt(++offset);
             char c7 = stmt.charAt(++offset);
 
+            // include "RELOAD @@QUERY_CF"
             if ((c1 == 'U' || c1 == 'u') && (c2 == 'E' || c2 == 'e') && (c3 == 'R' || c3 == 'r') &&
-                    (c4 == 'Y' || c4 == 'y') && (c5 == '_') && (c6 == 'C' || c6 == 'c') && (c7 == 'F' || c7 == 'f')) {
-                if (stmt.length() > ++offset && stmt.charAt(offset) != ' ') {
-                    return QUERY_CF;
-                }
-                return OTHER;
+                    (c4 == 'Y' || c4 == 'y') && (c5 == '_') && (c6 == 'C' || c6 == 'c') && (c7 == 'F' || c7 == 'f') &&
+                    stmt.trim().length() == ++offset) {
+                return QUERY_CF;
+            }
+
+            // exclude "RELOAD @@QUERY_CF =  ";
+            int index = stmt.indexOf("=");
+            if (index != -1 && !ParseUtil.isErrorTail(0, stmt.substring(offset, index)) && stmt.trim().length() > ++index) {
+                return QUERY_CF;
             }
         }
         return OTHER;

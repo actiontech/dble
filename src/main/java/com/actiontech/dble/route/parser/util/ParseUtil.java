@@ -80,15 +80,14 @@ public final class ParseUtil {
         return false;
     }
 
-    //FIXME SIZE CHECK
     public static String parseString(String stmt) {
         int offset = stmt.indexOf('=');
-        while (stmt.charAt(++offset) == ' ') {
-            //do nothing
-        }
-        if (offset != -1 && stmt.length() > offset) {
-            String txt = stmt.substring(offset).trim();
-            return txt;
+        if (offset != -1) {
+            int length = stmt.length();
+            while (length > ++offset && stmt.charAt(offset) == ' ') {
+                // do nothing
+            }
+            return stmt.substring(offset).trim();
         }
         return null;
     }

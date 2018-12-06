@@ -80,7 +80,6 @@ public final class ParseUtil {
         return false;
     }
 
-    //FIXME SIZE CHECK
     public static String parseString(String stmt) {
         int offset = stmt.indexOf('=');
         if (offset != -1) {

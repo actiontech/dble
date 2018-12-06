@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * @author mycat
  */
-public class ConfigInitializer {
+public class ConfigInitializer implements ProblemReporter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigInitializer.class);
 
@@ -48,10 +48,10 @@ public class ConfigInitializer {
 
     public ConfigInitializer(boolean loadDataHost, boolean lowerCaseNames) {
         //load server.xml
-        XMLServerLoader serverLoader = new XMLServerLoader();
+        XMLServerLoader serverLoader = new XMLServerLoader(this);
 
         //load rule.xml and schema.xml
-        SchemaLoader schemaLoader = new XMLSchemaLoader(lowerCaseNames);
+        SchemaLoader schemaLoader = new XMLSchemaLoader(lowerCaseNames, this);
         this.schemas = schemaLoader.getSchemas();
         this.system = serverLoader.getSystem();
         this.users = serverLoader.getUsers();
@@ -68,11 +68,20 @@ public class ConfigInitializer {
         }
 
         this.firewall = serverLoader.getFirewall();
-        // errors when parsing config
-        this.errorInfos.addAll(serverLoader.getErrors());
 
         deleteRedundancyConf();
         checkWriteHost();
+    }
+
+    @Override
+    public void warn(String problem) {
+        this.errorInfos.add(new ErrorInfo("Xml", "WARNING", problem));
+        LOGGER.warn(problem);
+    }
+
+    @Override
+    public void error(String problem) {
+        throw new ConfigException(problem);
     }
 
     private void checkWriteHost() {

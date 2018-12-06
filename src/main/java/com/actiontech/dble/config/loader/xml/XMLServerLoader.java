@@ -5,7 +5,7 @@
 */
 package com.actiontech.dble.config.loader.xml;
 
-import com.actiontech.dble.config.ErrorInfo;
+import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.model.FirewallConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.UserConfig;
@@ -16,9 +16,7 @@ import org.w3c.dom.Element;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -29,16 +27,19 @@ public class XMLServerLoader {
     private final SystemConfig system;
     private final Map<String, UserConfig> users;
     private final FirewallConfig firewall;
-    private final List<ErrorInfo> errors;
+    protected ProblemReporter problemReporter;
 
     public XMLServerLoader() {
-        this.system = new SystemConfig();
+        this(null);
+    }
+
+    public XMLServerLoader(ProblemReporter problemReporter) {
+        this.problemReporter = problemReporter;
+        this.system = new SystemConfig(problemReporter);
         this.users = new HashMap<>();
         this.firewall = new FirewallConfig();
-        this.errors = new ArrayList<>();
         Element root = loadXml();
         this.load(root, new SystemConfigLoader());
-        this.errors.addAll(this.system.getErrors());
         this.load(root, new UserConfigLoader());
         this.load(root, new FirewallConfigLoader());
     }
@@ -55,10 +56,6 @@ public class XMLServerLoader {
 
     public FirewallConfig getFirewall() {
         return firewall;
-    }
-
-    public List<ErrorInfo> getErrors() {
-        return errors;
     }
 
     public Element loadXml() {

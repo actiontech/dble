@@ -161,8 +161,7 @@ public final class ConfigUtil {
     }
 
     private static boolean isBool(String value) {
-        return "true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value) ||
-                "0".equalsIgnoreCase(value) || "1".equalsIgnoreCase(value);
+        return "true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value);
     }
 
     /**
@@ -170,29 +169,28 @@ public final class ConfigUtil {
      * @param element
      * @param attrName
      * @param defaultValue
-     * @param isBool element value is boolean type
      * @param reporter
      * @return
      */
-    public static String checkAndGetAttribute(Element element, String attrName, String defaultValue, boolean isBool, ProblemReporter reporter) {
+    public static String checkAndGetAttribute(Element element, String attrName, String defaultValue, ProblemReporter reporter) {
         if (element.hasAttribute(attrName)) {
             String val = element.getAttribute(attrName);
-            if ((isBool && isBool(val)) || (!isBool && isNumeric(val))) {
+            if (isBool(val) || isNumeric(val)) {
                 return val;
             } else if (reporter != null) {
-                reporter.warn(element.getNodeName() + " " + element.getAttribute("name") + " attribute " + attrName +
-                        " is illegal, use " + defaultValue + " replaced!");
+                reporter.warn(element.getNodeName() + "[" + element.getAttribute("name") + "] attribute " + attrName + " " + val +
+                        " is illegal, use " + defaultValue + " replaced");
             }
         }
         return defaultValue;
     }
 
-    public static String checkAndGetAttribute(String propertyName, String val, String defaultValue, boolean isBool, ProblemReporter reporter) {
+    public static String checkAndGetAttribute(String propertyName, String val, String defaultValue, ProblemReporter reporter) {
         if (val != null) {
-            if ((isBool && isBool(val)) || (!isBool && isNumeric(val))) {
+            if (isBool(val) || isNumeric(val)) {
                 return val;
             } else if (reporter != null) {
-                reporter.warn("property " + propertyName + " in server.xml is illegal, use " + defaultValue + " replaced!");
+                reporter.warn("property[" + propertyName + "] " + val + " in server.xml is illegal, use " + defaultValue + " replaced");
             }
         }
         return defaultValue;

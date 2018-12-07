@@ -64,7 +64,7 @@ public class FirewallConfigLoader implements Loader<FirewallConfig, XMLServerLoa
             Node node = blacklist.item(i);
             if (node instanceof Element) {
                 Element e = (Element) node;
-                String checkStr = ConfigUtil.checkAndGetAttribute(e, "check", "false", true, xsl.problemReporter);
+                String checkStr = ConfigUtil.checkAndGetAttribute(e, "check", "false", xsl.problemReporter);
                 boolean check = Boolean.parseBoolean(checkStr);
                 firewall.setBlackListCheck(check);
 

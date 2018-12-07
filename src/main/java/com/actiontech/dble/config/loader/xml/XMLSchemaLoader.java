@@ -238,7 +238,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             //if autoIncrement,it will use sequence handler
             boolean autoIncrement = isAutoIncrement(tableElement, primaryKey);
             //limit size of the table
-            String needAddLimitStr = ConfigUtil.checkAndGetAttribute(tableElement, "needAddLimit", "true", true, problemReporter);
+            String needAddLimitStr = ConfigUtil.checkAndGetAttribute(tableElement, "needAddLimit", "true", problemReporter);
             boolean needAddLimit = Boolean.parseBoolean(needAddLimitStr);
 
             //table type is global or not
@@ -248,7 +248,7 @@ public class XMLSchemaLoader implements SchemaLoader {
                 if ("global".equalsIgnoreCase(tableTypeStr)) {
                     tableType = TableTypeEnum.TYPE_GLOBAL_TABLE;
                 } else {
-                    problemReporter.warn("Table[" + tableElement.getAttribute("name") + "] type in schema.xml is not recognized, use sharding replaced");
+                    problemReporter.warn("Table[" + tableElement.getAttribute("name") + "] attribute type " + tableTypeStr + " in schema.xml is illegal, use sharding replaced");
                 }
             }
             //dataNode of table
@@ -261,7 +261,7 @@ public class XMLSchemaLoader implements SchemaLoader {
                 }
             }
             //ruleRequired?
-            String ruleRequiredStr = ConfigUtil.checkAndGetAttribute(tableElement, "ruleRequired", "false", true, problemReporter);
+            String ruleRequiredStr = ConfigUtil.checkAndGetAttribute(tableElement, "ruleRequired", "false", problemReporter);
             boolean ruleRequired = Boolean.parseBoolean(ruleRequiredStr);
 
             String dataNode = tableElement.getAttribute("dataNode");
@@ -305,7 +305,7 @@ public class XMLSchemaLoader implements SchemaLoader {
     }
 
     private boolean isAutoIncrement(Element tableElement, String primaryKey) {
-        String autoIncrementStr = ConfigUtil.checkAndGetAttribute(tableElement, "autoIncrement", "false", true, problemReporter);
+        String autoIncrementStr = ConfigUtil.checkAndGetAttribute(tableElement, "autoIncrement", "false", problemReporter);
         boolean autoIncrement = Boolean.parseBoolean(autoIncrementStr);
         if (autoIncrement && primaryKey == null) {
             throw new ConfigException("autoIncrement is true but primaryKey is not setting!");
@@ -364,7 +364,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             String primaryKey = childTbElement.hasAttribute("primaryKey") ? childTbElement.getAttribute("primaryKey").toUpperCase() : null;
 
             boolean autoIncrement = isAutoIncrement(childTbElement, primaryKey);
-            String needAddLimitStr = ConfigUtil.checkAndGetAttribute(childTbElement, "needAddLimit", "true", true, problemReporter);
+            String needAddLimitStr = ConfigUtil.checkAndGetAttribute(childTbElement, "needAddLimit", "true", problemReporter);
             boolean needAddLimit = Boolean.parseBoolean(needAddLimitStr);
 
             //join key ,the parent's column
@@ -507,12 +507,17 @@ public class XMLSchemaLoader implements SchemaLoader {
         int colonIndex = nodeUrl.indexOf(':');
         String ip = nodeUrl.substring(0, colonIndex).trim();
         int port = Integer.parseInt(nodeUrl.substring(colonIndex + 1).trim());
-        String usingDecryptStr = ConfigUtil.checkAndGetAttribute(node, "usingDecrypt", "0", true, problemReporter);
-        boolean usingDecrypt = "1".equals(usingDecryptStr);
+        String usingDecryptStr = ConfigUtil.checkAndGetAttribute(node, "usingDecrypt", "0", problemReporter);
+        boolean usingDecrypt = false;
+        if ("1".equals(usingDecryptStr)) {
+            usingDecrypt = true;
+        } else if (!"0".equals(usingDecryptStr)) {
+            problemReporter.warn("dataHost[" + dataHost + "] attribute usingDecrypt " + usingDecryptStr + " in schema.xml is illegal, use 0 replaced!");
+        }
         String passwordEncryty = DecryptUtil.dbHostDecrypt(usingDecrypt, nodeHost, user, password);
-        String disabledStr = ConfigUtil.checkAndGetAttribute(node, "disabled", "false", true, problemReporter);
+        String disabledStr = ConfigUtil.checkAndGetAttribute(node, "disabled", "false", problemReporter);
         boolean disabled = Boolean.parseBoolean(disabledStr);
-        String weightStr = ConfigUtil.checkAndGetAttribute(node, "weight", String.valueOf(PhysicalDBPool.WEIGHT), false, problemReporter);
+        String weightStr = ConfigUtil.checkAndGetAttribute(node, "weight", String.valueOf(PhysicalDBPool.WEIGHT), problemReporter);
         int weight = Integer.parseInt(weightStr);
 
         DBHostConfig conf = new DBHostConfig(nodeHost, ip, port, nodeUrl, user, passwordEncryty, disabled);
@@ -555,21 +560,25 @@ public class XMLSchemaLoader implements SchemaLoader {
              * 2 switch according to the second behind of slave ,the heartbeat query is show slave status
              * 3 switch according to Galera Cluster for MySQL
              */
-            String switchTypeStr = ConfigUtil.checkAndGetAttribute(element, "switchType", "-1", false, problemReporter);
+            String switchTypeStr = ConfigUtil.checkAndGetAttribute(element, "switchType", "-1", problemReporter);
             int switchType = Integer.parseInt(switchTypeStr);
             if ((switchType < 1 && switchType != -1) || switchType > 3) {
-                problemReporter.warn("dataHost " + name + " attribute switchType in schema.xml isn't between 1 and 3 or -1, use -1 replaced!");
+                problemReporter.warn("dataHost[" + name + "] attribute switchType " + switchTypeStr + " in schema.xml isn't between 1 and 3 or -1, use -1 replaced!");
                 switchType = -1;
             }
 
             //slave delay threshold
-            String slaveThresholdStr = ConfigUtil.checkAndGetAttribute(element, "slaveThreshold", "-1", false, problemReporter);
-            int slaveThreshold = Integer.parseInt(slaveThresholdStr);
+            String slaveThresholdStr = ConfigUtil.checkAndGetAttribute(element, "slaveThreshold", "-1", problemReporter);
+            final int slaveThreshold = Integer.parseInt(slaveThresholdStr);
 
             //tempReadHostAvailable 1 means read service is still work even write host crash
-            String tempReadHostAvailableStr = ConfigUtil.checkAndGetAttribute(element, "tempReadHostAvailable", "0", true, problemReporter);
-            int tempReadHostAvailable = Integer.parseInt(tempReadHostAvailableStr);
-
+            String tempReadHostAvailableStr = ConfigUtil.checkAndGetAttribute(element, "tempReadHostAvailable", "0", problemReporter);
+            int tempReadHostAvailable = 0;
+            if ("1".equals(tempReadHostAvailableStr)) {
+                tempReadHostAvailable = 1;
+            } else if (!"0".equals(tempReadHostAvailableStr)) {
+                problemReporter.warn("dataHost[" + name + "] attribute tempReadHostAvailable " + tempReadHostAvailableStr + " in schema.xml is illegal, use 0 replaced!");
+            }
             final String heartbeatSQL = element.getElementsByTagName("heartbeat").item(0).getTextContent();
 
             NodeList writeNodes = element.getElementsByTagName("writeHost");

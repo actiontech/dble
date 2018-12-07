@@ -33,12 +33,17 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
             if (node instanceof Element) {
                 Element e = (Element) node;
                 String name = e.getAttribute("name");
-                UserConfig user = new UserConfig();
+                final UserConfig user = new UserConfig();
                 Map<String, Object> props = ConfigUtil.loadElements(e);
                 String password = (String) props.get("password");
                 String usingDecryptStr = (String) props.get("usingDecrypt");
-                usingDecryptStr = ConfigUtil.checkAndGetAttribute("usingDecrypt", usingDecryptStr, "0", true, xsl.problemReporter);
-                boolean usingDecrypt = "1".equals(usingDecryptStr);
+                usingDecryptStr = ConfigUtil.checkAndGetAttribute("usingDecrypt", usingDecryptStr, "0", xsl.problemReporter);
+                boolean usingDecrypt = false;
+                if ("1".equals(usingDecryptStr)) {
+                    usingDecrypt = true;
+                } else if (!"0".equals(usingDecryptStr)) {
+                    xsl.problemReporter.warn("property[usingDecrypt] " + usingDecryptStr + " in server.xml is illegal, use 0 replaced!");
+                }
                 String passwordDecrypt = DecryptUtil.decrypt(usingDecrypt, name, password);
                 if (passwordDecrypt == null) {
                     throw new ConfigException("User password must be configured");
@@ -59,14 +64,14 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
                 String readOnlyStr = (String) props.get("readOnly");
                 if (null != readOnlyStr) {
                     props.remove("readOnly");
-                    readOnlyStr = ConfigUtil.checkAndGetAttribute("readOnly", readOnlyStr, "false", true, xsl.problemReporter);
+                    readOnlyStr = ConfigUtil.checkAndGetAttribute("readOnly", readOnlyStr, "false", xsl.problemReporter);
                     user.setReadOnly(Boolean.parseBoolean(readOnlyStr));
                 }
 
                 String managerStr = (String) props.get("manager");
                 if (null != managerStr) {
                     props.remove("manager");
-                    managerStr = ConfigUtil.checkAndGetAttribute("manager", managerStr, "false", true, xsl.problemReporter);
+                    managerStr = ConfigUtil.checkAndGetAttribute("manager", managerStr, "false", xsl.problemReporter);
                     user.setManager(Boolean.parseBoolean(managerStr));
                     user.setSchemas(new HashSet<String>(0));
                 }
@@ -104,7 +109,7 @@ public class UserConfigLoader implements Loader<UserConfig, XMLServerLoader> {
         int privilegesNodesLength = privilegesNodes.getLength();
         for (int i = 0; i < privilegesNodesLength; i++) {
             Element privilegesNode = (Element) privilegesNodes.item(i);
-            String checkStr = ConfigUtil.checkAndGetAttribute(privilegesNode, "check", "false", true, reporter);
+            String checkStr = ConfigUtil.checkAndGetAttribute(privilegesNode, "check", "false", reporter);
             boolean check = Boolean.parseBoolean(checkStr);
             privilegesConfig.setCheck(check);
 

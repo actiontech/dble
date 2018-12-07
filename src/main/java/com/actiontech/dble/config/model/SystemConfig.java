@@ -232,7 +232,7 @@ public final class SystemConfig {
         if (useGlobleTableCheck >= 0 && useGlobleTableCheck <= 1) {
             this.useGlobleTableCheck = useGlobleTableCheck;
         } else if (this.problemReporter != null) {
-            problemReporter.warn("Property useGlobleTableCheck " + useGlobleTableCheck + " in server.xml is illegal ,use " + this.useGlobleTableCheck + " replaced");
+            problemReporter.warn("Property[useGlobleTableCheck] " + useGlobleTableCheck + " in server.xml is illegal ,use " + this.useGlobleTableCheck + " replaced");
         }
     }
 
@@ -254,7 +254,7 @@ public final class SystemConfig {
         if (sequnceHandlerType >= 1 && sequnceHandlerType <= 4) {
             this.sequnceHandlerType = sequnceHandlerType;
         } else if (this.problemReporter != null) {
-            problemReporter.warn("Property sequnceHandlerType " + sequnceHandlerType + " in server.xml is illegal ,use " + this.sequnceHandlerType + " replaced");
+            problemReporter.warn("Property[sequnceHandlerType] " + sequnceHandlerType + " in server.xml is illegal ,use " + this.sequnceHandlerType + " replaced");
         }
     }
 
@@ -318,7 +318,7 @@ public final class SystemConfig {
         if (useSqlStat >= 0 && useSqlStat <= 1) {
             this.useSqlStat = useSqlStat;
         } else if (this.problemReporter != null) {
-            problemReporter.warn("Property useSqlStat " + useSqlStat + " in server.xml is illegal ,use " + this.useSqlStat + " replaced");
+            problemReporter.warn("Property[useSqlStat] " + useSqlStat + " in server.xml is illegal, use " + this.useSqlStat + " replaced");
         }
     }
 
@@ -331,7 +331,7 @@ public final class SystemConfig {
         if (useCompression >= 0 && useCompression <= 1) {
             this.useCompression = useCompression;
         } else if (this.problemReporter != null) {
-            problemReporter.warn("Property useCompression " + useCompression + " in server.xml is illegal ,use " + this.useCompression + " replaced");
+            problemReporter.warn("Property[useCompression] " + useCompression + " in server.xml is illegal, use " + this.useCompression + " replaced");
         }
     }
 
@@ -344,7 +344,7 @@ public final class SystemConfig {
         if (CharsetUtil.getCharsetDefaultIndex(charset) > 0) {
             this.charset = charset;
         } else if (this.problemReporter != null) {
-            this.problemReporter.warn("Property character set " + charset + " in server.xml is illegal ,use " + this.charset + " replaced");
+            this.problemReporter.warn("Property[character set] " + charset + " in server.xml is illegal, use " + this.charset + " replaced");
         }
     }
 
@@ -530,7 +530,7 @@ public final class SystemConfig {
         if (txIsolation >= 1 && txIsolation <= 4) {
             this.txIsolation = txIsolation;
         } else if (this.problemReporter != null) {
-            problemReporter.warn("Property txIsolation " + txIsolation + " in server.xml is illegal ,use " + this.txIsolation + " replaced");
+            problemReporter.warn("Property[txIsolation] " + txIsolation + " in server.xml is illegal, use " + this.txIsolation + " replaced");
         }
     }
 
@@ -552,7 +552,7 @@ public final class SystemConfig {
         if (recordTxn >= 0 && recordTxn <= 1) {
             this.recordTxn = recordTxn;
         } else if (this.problemReporter != null) {
-            problemReporter.warn("Property recordTxn " + recordTxn + " in server.xml is illegal ,use " + this.recordTxn + " replaced");
+            problemReporter.warn("Property[recordTxn] " + recordTxn + " in server.xml is illegal, use " + this.recordTxn + " replaced");
         }
     }
 
@@ -583,7 +583,7 @@ public final class SystemConfig {
         if (bufferUsagePercent >= 0 && bufferUsagePercent <= 100) {
             this.bufferUsagePercent = bufferUsagePercent;
         } else if (this.problemReporter != null) {
-            this.problemReporter.warn("Property bufferUsagePercent " + bufferUsagePercent + " in server.xml is not recognized ,use " + this.bufferUsagePercent + " replaced");
+            this.problemReporter.warn("Property[bufferUsagePercent] " + bufferUsagePercent + " in server.xml is illegal, use " + this.bufferUsagePercent + " replaced");
         }
     }
 
@@ -659,7 +659,7 @@ public final class SystemConfig {
         if (frontSocketNoDelay >= 0 && frontSocketNoDelay <= 1) {
             this.frontSocketNoDelay = frontSocketNoDelay;
         } else if (this.problemReporter != null) {
-            problemReporter.warn("Property frontSocketNoDelay " + frontSocketNoDelay + " in server.xml is illegal ,use " + this.frontSocketNoDelay + " replaced");
+            problemReporter.warn("Property[frontSocketNoDelay] " + frontSocketNoDelay + " in server.xml is illegal, use " + this.frontSocketNoDelay + " replaced");
         }
     }
 
@@ -672,7 +672,7 @@ public final class SystemConfig {
         if (backSocketNoDelay >= 0 && backSocketNoDelay <= 1) {
             this.backSocketNoDelay = backSocketNoDelay;
         } else if (this.problemReporter != null) {
-            problemReporter.warn("Property backSocketNoDelay " + backSocketNoDelay + " in server.xml is illegal ,use " + this.backSocketNoDelay + " replaced");
+            problemReporter.warn("Property[backSocketNoDelay] " + backSocketNoDelay + " in server.xml is illegal, use " + this.backSocketNoDelay + " replaced");
         }
     }
 
@@ -685,7 +685,7 @@ public final class SystemConfig {
         if (usingAIO >= 0 && usingAIO <= 1) {
             this.usingAIO = usingAIO;
         } else if (this.problemReporter != null) {
-            problemReporter.warn("Property usingAIO " + usingAIO + " in server.xml is illegal ,use " + this.usingAIO + " replaced");
+            problemReporter.warn("Property[usingAIO] " + usingAIO + " in server.xml is illegal, use " + this.usingAIO + " replaced");
         }
     }
 
@@ -707,7 +707,7 @@ public final class SystemConfig {
         if (checkTableConsistency >= 0 && checkTableConsistency <= 1) {
             this.checkTableConsistency = checkTableConsistency;
         } else if (this.problemReporter != null) {
-            problemReporter.warn("Property checkTableConsistency " + checkTableConsistency + " in server.xml is illegal ,use " + this.checkTableConsistency + " replaced");
+            problemReporter.warn("Property[checkTableConsistency] " + checkTableConsistency + " in server.xml is illegal, use " + this.checkTableConsistency + " replaced");
         }
     }
 
@@ -828,7 +828,7 @@ public final class SystemConfig {
         if (useCostTimeStat >= 0 && useCostTimeStat <= 1) {
             this.useCostTimeStat = useCostTimeStat;
         } else if (this.problemReporter != null) {
-            problemReporter.warn("Property useCostTimeStat " + useCostTimeStat + " in server.xml is illegal ,use " + this.useCostTimeStat + " replaced");
+            problemReporter.warn("Property[useCostTimeStat] " + useCostTimeStat + " in server.xml is illegal, use " + this.useCostTimeStat + " replaced");
         }
     }
 
@@ -858,7 +858,7 @@ public final class SystemConfig {
         if (useThreadUsageStat >= 0 && useThreadUsageStat <= 1) {
             this.useThreadUsageStat = useThreadUsageStat;
         } else if (this.problemReporter != null) {
-            problemReporter.warn("Property useThreadUsageStat " + useThreadUsageStat + " in server.xml is illegal ,use " + this.useThreadUsageStat + " replaced");
+            problemReporter.warn("Property[useThreadUsageStat] " + useThreadUsageStat + " in server.xml is illegal, use " + this.useThreadUsageStat + " replaced");
         }
     }
 
@@ -872,7 +872,7 @@ public final class SystemConfig {
         if (usePerformanceMode >= 0 && usePerformanceMode <= 1) {
             this.usePerformanceMode = usePerformanceMode;
         } else if (this.problemReporter != null) {
-            problemReporter.warn("Property usePerformanceMode " + usePerformanceMode + " in server.xml is illegal ,use " + this.usePerformanceMode + " replaced");
+            problemReporter.warn("Property[usePerformanceMode] " + usePerformanceMode + " in server.xml is illegal, use " + this.usePerformanceMode + " replaced");
         }
     }
 
@@ -894,7 +894,7 @@ public final class SystemConfig {
         if (enableSlowLog >= 0 && enableSlowLog <= 1) {
             this.enableSlowLog = enableSlowLog;
         } else if (this.problemReporter != null) {
-            problemReporter.warn("Property enableSlowLog " + enableSlowLog + " in server.xml is illegal ,use " + this.enableSlowLog + " replaced");
+            problemReporter.warn("Property[enableSlowLog] " + enableSlowLog + " in server.xml is illegal, use " + this.enableSlowLog + " replaced");
         }
     }
 
@@ -952,7 +952,7 @@ public final class SystemConfig {
         if (enableAlert >= 0 && enableAlert <= 1) {
             this.enableAlert = enableAlert;
         } else if (this.problemReporter != null) {
-            problemReporter.warn("Property enableAlert " + enableAlert + " in server.xml is illegal ,use " + this.enableAlert + " replaced");
+            problemReporter.warn("Property[enableAlert] " + enableAlert + " in server.xml is illegal, use " + this.enableAlert + " replaced");
         }
     }
 

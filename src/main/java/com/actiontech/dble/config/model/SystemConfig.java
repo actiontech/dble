@@ -6,14 +6,11 @@
 package com.actiontech.dble.config.model;
 
 import com.actiontech.dble.backend.mysql.CharsetUtil;
-import com.actiontech.dble.config.ErrorInfo;
 import com.actiontech.dble.config.Isolations;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.actiontech.dble.config.ProblemReporter;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 
 /**
  * SystemConfig
@@ -21,7 +18,6 @@ import java.util.ArrayList;
  * @author mycat
  */
 public final class SystemConfig {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SystemConfig.class);
     public static final String SYS_HOME = "DBLE_HOME";
     static final long DEFAULT_IDLE_TIMEOUT = 30 * 60 * 1000L;
     public static final int SEQUENCE_HANDLER_MYSQL = 1;
@@ -158,9 +154,10 @@ public final class SystemConfig {
     //alert switch
     private int enableAlert = 1;
     //errors
-    private ArrayList<ErrorInfo> errors = new ArrayList<>(18);
+    private ProblemReporter problemReporter;
 
-    public SystemConfig() {
+    public SystemConfig(ProblemReporter problemReporter) {
+        this.problemReporter = problemReporter;
     }
 
     public int getTransactionRatateSize() {
@@ -234,10 +231,8 @@ public final class SystemConfig {
     public void setUseGlobleTableCheck(int useGlobleTableCheck) {
         if (useGlobleTableCheck >= 0 && useGlobleTableCheck <= 1) {
             this.useGlobleTableCheck = useGlobleTableCheck;
-        } else {
-            String warning = "Property useGlobleTableCheck " + useGlobleTableCheck + " in server.xml is not recognized ,use " + this.useGlobleTableCheck + " replaced";
-            LOGGER.warn(warning);
-            errors.add(new ErrorInfo("Xml", "WARNING", warning));
+        } else if (this.problemReporter != null) {
+            problemReporter.warn("Property[useGlobleTableCheck] " + useGlobleTableCheck + " in server.xml is illegal ,use " + this.useGlobleTableCheck + " replaced");
         }
     }
 
@@ -258,10 +253,8 @@ public final class SystemConfig {
     public void setSequnceHandlerType(int sequnceHandlerType) {
         if (sequnceHandlerType >= 1 && sequnceHandlerType <= 4) {
             this.sequnceHandlerType = sequnceHandlerType;
-        } else {
-            String warning = "Property sequnceHandlerType " + sequnceHandlerType + " in server.xml is not recognized ,use " + this.sequnceHandlerType + " replaced";
-            LOGGER.warn(warning);
-            errors.add(new ErrorInfo("Xml", "WARNING", warning));
+        } else if (this.problemReporter != null) {
+            problemReporter.warn("Property[sequnceHandlerType] " + sequnceHandlerType + " in server.xml is illegal ,use " + this.sequnceHandlerType + " replaced");
         }
     }
 
@@ -324,10 +317,8 @@ public final class SystemConfig {
     public void setUseSqlStat(int useSqlStat) {
         if (useSqlStat >= 0 && useSqlStat <= 1) {
             this.useSqlStat = useSqlStat;
-        } else {
-            String warning = "Property useSqlStat " + useSqlStat + " in server.xml is not recognized ,use " + this.useSqlStat + " replaced";
-            LOGGER.warn(warning);
-            errors.add(new ErrorInfo("Xml", "WARNING", warning));
+        } else if (this.problemReporter != null) {
+            problemReporter.warn("Property[useSqlStat] " + useSqlStat + " in server.xml is illegal, use " + this.useSqlStat + " replaced");
         }
     }
 
@@ -339,10 +330,8 @@ public final class SystemConfig {
     public void setUseCompression(int useCompression) {
         if (useCompression >= 0 && useCompression <= 1) {
             this.useCompression = useCompression;
-        } else {
-            String warning = "Property useCompression " + useCompression + " in server.xml is not recognized ,use " + this.useCompression + " replaced";
-            LOGGER.warn(warning);
-            errors.add(new ErrorInfo("Xml", "WARNING", warning));
+        } else if (this.problemReporter != null) {
+            problemReporter.warn("Property[useCompression] " + useCompression + " in server.xml is illegal, use " + this.useCompression + " replaced");
         }
     }
 
@@ -354,10 +343,8 @@ public final class SystemConfig {
     public void setCharset(String charset) {
         if (CharsetUtil.getCharsetDefaultIndex(charset) > 0) {
             this.charset = charset;
-        } else {
-            String warning = "Property character set " + charset + " in server.xml is not recognized ,use " + this.charset + " replaced";
-            LOGGER.warn(warning);
-            errors.add(new ErrorInfo("Xml", "WARNING", warning));
+        } else if (this.problemReporter != null) {
+            this.problemReporter.warn("Property[character set] " + charset + " in server.xml is illegal, use " + this.charset + " replaced");
         }
     }
 
@@ -542,10 +529,8 @@ public final class SystemConfig {
     public void setTxIsolation(int txIsolation) {
         if (txIsolation >= 1 && txIsolation <= 4) {
             this.txIsolation = txIsolation;
-        } else {
-            String warning = "Property txIsolation " + charset + " in server.xml is not recognized ,use " + this.txIsolation + " replaced";
-            LOGGER.warn(warning);
-            errors.add(new ErrorInfo("Xml", "WARNING", warning));
+        } else if (this.problemReporter != null) {
+            problemReporter.warn("Property[txIsolation] " + txIsolation + " in server.xml is illegal, use " + this.txIsolation + " replaced");
         }
     }
 
@@ -566,10 +551,8 @@ public final class SystemConfig {
     public void setRecordTxn(int recordTxn) {
         if (recordTxn >= 0 && recordTxn <= 1) {
             this.recordTxn = recordTxn;
-        } else {
-            String warning = "Property recordTxn " + recordTxn + " in server.xml is not recognized ,use " + this.recordTxn + " replaced";
-            LOGGER.warn(warning);
-            errors.add(new ErrorInfo("Xml", "WARNING", warning));
+        } else if (this.problemReporter != null) {
+            problemReporter.warn("Property[recordTxn] " + recordTxn + " in server.xml is illegal, use " + this.recordTxn + " replaced");
         }
     }
 
@@ -599,10 +582,8 @@ public final class SystemConfig {
     public void setBufferUsagePercent(int bufferUsagePercent) {
         if (bufferUsagePercent >= 0 && bufferUsagePercent <= 100) {
             this.bufferUsagePercent = bufferUsagePercent;
-        } else {
-            String warning = "Property bufferUsagePercent " + bufferUsagePercent + " in server.xml is not recognized ,use " + this.bufferUsagePercent + " replaced";
-            LOGGER.warn(warning);
-            errors.add(new ErrorInfo("Xml", "WARNING", warning));
+        } else if (this.problemReporter != null) {
+            this.problemReporter.warn("Property[bufferUsagePercent] " + bufferUsagePercent + " in server.xml is illegal, use " + this.bufferUsagePercent + " replaced");
         }
     }
 
@@ -677,10 +658,8 @@ public final class SystemConfig {
     public void setFrontSocketNoDelay(int frontSocketNoDelay) {
         if (frontSocketNoDelay >= 0 && frontSocketNoDelay <= 1) {
             this.frontSocketNoDelay = frontSocketNoDelay;
-        } else {
-            String warning = "Property frontSocketNoDelay " + frontSocketNoDelay + " in server.xml is not recognized ,use " + this.frontSocketNoDelay + " replaced";
-            LOGGER.warn(warning);
-            errors.add(new ErrorInfo("Xml", "WARNING", warning));
+        } else if (this.problemReporter != null) {
+            problemReporter.warn("Property[frontSocketNoDelay] " + frontSocketNoDelay + " in server.xml is illegal, use " + this.frontSocketNoDelay + " replaced");
         }
     }
 
@@ -692,10 +671,8 @@ public final class SystemConfig {
     public void setBackSocketNoDelay(int backSocketNoDelay) {
         if (backSocketNoDelay >= 0 && backSocketNoDelay <= 1) {
             this.backSocketNoDelay = backSocketNoDelay;
-        } else {
-            String warning = "Property backSocketNoDelay " + backSocketNoDelay + " in server.xml is not recognized ,use " + this.backSocketNoDelay + " replaced";
-            LOGGER.warn(warning);
-            errors.add(new ErrorInfo("Xml", "WARNING", warning));
+        } else if (this.problemReporter != null) {
+            problemReporter.warn("Property[backSocketNoDelay] " + backSocketNoDelay + " in server.xml is illegal, use " + this.backSocketNoDelay + " replaced");
         }
     }
 
@@ -707,10 +684,8 @@ public final class SystemConfig {
     public void setUsingAIO(int usingAIO) {
         if (usingAIO >= 0 && usingAIO <= 1) {
             this.usingAIO = usingAIO;
-        } else {
-            String warning = "usingAIO property " + usingAIO + " in server.xml is not recognized ,use " + this.usingAIO + " replaced";
-            LOGGER.warn(warning);
-            errors.add(new ErrorInfo("Xml", "WARNING", warning));
+        } else if (this.problemReporter != null) {
+            problemReporter.warn("Property[usingAIO] " + usingAIO + " in server.xml is illegal, use " + this.usingAIO + " replaced");
         }
     }
 
@@ -731,10 +706,8 @@ public final class SystemConfig {
     public void setCheckTableConsistency(int checkTableConsistency) {
         if (checkTableConsistency >= 0 && checkTableConsistency <= 1) {
             this.checkTableConsistency = checkTableConsistency;
-        } else {
-            String warning = "Property checkTableConsistency " + checkTableConsistency + " in server.xml is not recognized ,use " + this.checkTableConsistency + " replaced";
-            LOGGER.warn(warning);
-            errors.add(new ErrorInfo("Xml", "WARNING", warning));
+        } else if (this.problemReporter != null) {
+            problemReporter.warn("Property[checkTableConsistency] " + checkTableConsistency + " in server.xml is illegal, use " + this.checkTableConsistency + " replaced");
         }
     }
 
@@ -854,10 +827,8 @@ public final class SystemConfig {
     public void setUseCostTimeStat(int useCostTimeStat) {
         if (useCostTimeStat >= 0 && useCostTimeStat <= 1) {
             this.useCostTimeStat = useCostTimeStat;
-        } else {
-            String warning = "Property useCostTimeStat " + useCostTimeStat + " in server.xml is not recognized ,use " + this.useCostTimeStat + " replaced";
-            LOGGER.warn(warning);
-            errors.add(new ErrorInfo("Xml", "WARNING", warning));
+        } else if (this.problemReporter != null) {
+            problemReporter.warn("Property[useCostTimeStat] " + useCostTimeStat + " in server.xml is illegal, use " + this.useCostTimeStat + " replaced");
         }
     }
 
@@ -886,10 +857,8 @@ public final class SystemConfig {
     public void setUseThreadUsageStat(int useThreadUsageStat) {
         if (useThreadUsageStat >= 0 && useThreadUsageStat <= 1) {
             this.useThreadUsageStat = useThreadUsageStat;
-        } else {
-            String warning = "Property useThreadUsageStat " + useThreadUsageStat + " in server.xml is not recognized ,use " + this.useThreadUsageStat + " replaced";
-            LOGGER.warn(warning);
-            errors.add(new ErrorInfo("Xml", "WARNING", warning));
+        } else if (this.problemReporter != null) {
+            problemReporter.warn("Property[useThreadUsageStat] " + useThreadUsageStat + " in server.xml is illegal, use " + this.useThreadUsageStat + " replaced");
         }
     }
 
@@ -902,10 +871,8 @@ public final class SystemConfig {
     public void setUsePerformanceMode(int usePerformanceMode) {
         if (usePerformanceMode >= 0 && usePerformanceMode <= 1) {
             this.usePerformanceMode = usePerformanceMode;
-        } else {
-            String warning = "Property usePerformanceMode " + usePerformanceMode + " in server.xml is not recognized ,use " + this.usePerformanceMode + " replaced";
-            LOGGER.warn(warning);
-            errors.add(new ErrorInfo("Xml", "WARNING", warning));
+        } else if (this.problemReporter != null) {
+            problemReporter.warn("Property[usePerformanceMode] " + usePerformanceMode + " in server.xml is illegal, use " + this.usePerformanceMode + " replaced");
         }
     }
 
@@ -926,10 +893,8 @@ public final class SystemConfig {
     public void setEnableSlowLog(int enableSlowLog) {
         if (enableSlowLog >= 0 && enableSlowLog <= 1) {
             this.enableSlowLog = enableSlowLog;
-        } else {
-            String warning = "Property enableSlowLog " + enableSlowLog + " in server.xml is not recognized ,use " + this.enableSlowLog + " replaced";
-            LOGGER.warn(warning);
-            errors.add(new ErrorInfo("Xml", "WARNING", warning));
+        } else if (this.problemReporter != null) {
+            problemReporter.warn("Property[enableSlowLog] " + enableSlowLog + " in server.xml is illegal, use " + this.enableSlowLog + " replaced");
         }
     }
 
@@ -986,10 +951,8 @@ public final class SystemConfig {
     public void setEnableAlert(int enableAlert) {
         if (enableAlert >= 0 && enableAlert <= 1) {
             this.enableAlert = enableAlert;
-        } else {
-            String warning = "Property enableAlert " + enableAlert + " in server.xml is not recognized ,use " + this.enableAlert + " replaced";
-            LOGGER.warn(warning);
-            errors.add(new ErrorInfo("Xml", "WARNING", warning));
+        } else if (this.problemReporter != null) {
+            problemReporter.warn("Property[enableAlert] " + enableAlert + " in server.xml is illegal, use " + this.enableAlert + " replaced");
         }
     }
 
@@ -999,10 +962,6 @@ public final class SystemConfig {
 
     public void setMaxCon(int maxCon) {
         this.maxCon = maxCon;
-    }
-
-    public ArrayList<ErrorInfo> getErrors() {
-        return errors;
     }
 
     @Override

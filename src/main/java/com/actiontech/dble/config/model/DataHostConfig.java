@@ -7,9 +7,6 @@ package com.actiontech.dble.config.model;
 
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.config.util.ConfigException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,7 +17,6 @@ import java.util.regex.Pattern;
  * @author wuzhih
  */
 public class DataHostConfig {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DataHostConfig.class);
     public static final int NOT_SWITCH_DS = -1;
     public static final int DEFAULT_SWITCH_DS = 1;
     public static final int SYN_STATUS_SWITCH_DS = 2;
@@ -48,18 +44,9 @@ public class DataHostConfig {
         this.writeHosts = writeHosts;
         this.readHosts = readHosts;
         this.standbyReadHosts = standbyReadHosts;
-        if ((switchType >= 1 && switchType <= 3) || switchType == -1) {
-            this.switchType = switchType;
-        } else {
-            LOGGER.warn("dataHost " + name + " switchType in schema.xml is not recognized, use -1 replaced!");
-            this.switchType = -1;
-        }
+        this.switchType = switchType;
         this.slaveThreshold = slaveThreshold;
-        if (tempReadHostAvailable >= 0 && tempReadHostAvailable <= 1) {
-            this.tempReadHostAvailable = tempReadHostAvailable == 1;
-        } else {
-            LOGGER.warn("dataHost " + name + " tempReadHostAvailable in schema.xml is not recognized, use 0 replaced!");
-        }
+        this.tempReadHostAvailable = tempReadHostAvailable == 1;
     }
 
     public boolean isTempReadHostAvailable() {

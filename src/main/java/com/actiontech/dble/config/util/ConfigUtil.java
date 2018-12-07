@@ -7,7 +7,9 @@ package com.actiontech.dble.config.util;
 
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
+import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.util.StringUtil;
+import org.apache.commons.lang.StringUtils;
 import org.w3c.dom.*;
 import org.xml.sax.*;
 
@@ -152,5 +154,45 @@ public final class ConfigUtil {
             }
         }
         return schemaList.toArray(new String[schemaList.size()]);
+    }
+
+    private static boolean isNumeric(String value) {
+        return "-1".equals(value) || StringUtils.isNumeric(value);
+    }
+
+    private static boolean isBool(String value) {
+        return "true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value);
+    }
+
+    /**
+     * check element illegal value and return val
+     * @param element
+     * @param attrName
+     * @param defaultValue
+     * @param reporter
+     * @return
+     */
+    public static String checkAndGetAttribute(Element element, String attrName, String defaultValue, ProblemReporter reporter) {
+        if (element.hasAttribute(attrName)) {
+            String val = element.getAttribute(attrName);
+            if (isBool(val) || isNumeric(val)) {
+                return val;
+            } else if (reporter != null) {
+                reporter.warn(element.getNodeName() + "[" + element.getAttribute("name") + "] attribute " + attrName + " " + val +
+                        " is illegal, use " + defaultValue + " replaced");
+            }
+        }
+        return defaultValue;
+    }
+
+    public static String checkAndGetAttribute(String propertyName, String val, String defaultValue, ProblemReporter reporter) {
+        if (val != null) {
+            if (isBool(val) || isNumeric(val)) {
+                return val;
+            } else if (reporter != null) {
+                reporter.warn("property[" + propertyName + "] " + val + " in server.xml is illegal, use " + defaultValue + " replaced");
+            }
+        }
+        return defaultValue;
     }
 }

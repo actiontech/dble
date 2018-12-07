@@ -5,7 +5,6 @@
 */
 package com.actiontech.dble.config.loader.xml;
 
-import com.actiontech.dble.config.ErrorInfo;
 import com.actiontech.dble.config.model.FirewallConfig;
 import com.actiontech.dble.config.model.UserConfig;
 import com.actiontech.dble.config.util.ConfigException;
@@ -13,9 +12,6 @@ import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.wall.WallConfig;
-import org.apache.commons.lang.BooleanUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -27,12 +23,10 @@ import java.util.List;
 import java.util.Map;
 
 public class FirewallConfigLoader implements Loader<FirewallConfig, XMLServerLoader> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(FirewallConfigLoader.class);
 
     public void load(Element root, XMLServerLoader xsl) throws IllegalAccessException, InvocationTargetException {
         FirewallConfig firewall = xsl.getFirewall();
         Map<String, UserConfig> users = xsl.getUsers();
-        List<ErrorInfo> errors = xsl.getErrors();
 
         NodeList list = root.getElementsByTagName("host");
         Map<String, List<UserConfig>> whitehost = new HashMap<>();
@@ -70,16 +64,9 @@ public class FirewallConfigLoader implements Loader<FirewallConfig, XMLServerLoa
             Node node = blacklist.item(i);
             if (node instanceof Element) {
                 Element e = (Element) node;
-                if (e.hasAttribute("check")) {
-                    Boolean check = BooleanUtils.toBooleanObject(e.getAttribute("check"));
-                    if (null == check) {
-                        check = Boolean.FALSE;
-                        String warning = "blacklist attribute check " + e.getAttribute("check") + " in server.xml is not recognized, using false replaced.";
-                        LOGGER.warn(warning);
-                        errors.add(new ErrorInfo("Xml", "WARNING", warning));
-                    }
-                    firewall.setBlackListCheck(check);
-                }
+                String checkStr = ConfigUtil.checkAndGetAttribute(e, "check", "false", xsl.problemReporter);
+                boolean check = Boolean.parseBoolean(checkStr);
+                firewall.setBlackListCheck(check);
 
                 Map<String, Object> props = ConfigUtil.loadElements((Element) node);
                 ParameterMapping.mapping(wallConfig, props);

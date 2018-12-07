@@ -33,13 +33,13 @@ public final class ShowCollatin {
 
         FIELDS[i] = PacketUtil.getField("Collation", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
-        FIELDS[i] = PacketUtil.getField("Charset", Fields.FIELD_TYPE_LONG);
+        FIELDS[i] = PacketUtil.getField("Charset", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("Id", Fields.FIELD_TYPE_LONG);
         FIELDS[i++].setPacketId(++packetId);
-        FIELDS[i] = PacketUtil.getField("Default", Fields.FIELD_TYPE_LONG);
+        FIELDS[i] = PacketUtil.getField("Default", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
-        FIELDS[i] = PacketUtil.getField("Compiled", Fields.FIELD_TYPE_LONG);
+        FIELDS[i] = PacketUtil.getField("Compiled", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("Sortlen", Fields.FIELD_TYPE_LONG);
         FIELDS[i++].setPacketId(++packetId);

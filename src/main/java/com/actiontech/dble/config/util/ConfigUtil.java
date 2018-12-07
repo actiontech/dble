@@ -156,11 +156,11 @@ public final class ConfigUtil {
         return schemaList.toArray(new String[schemaList.size()]);
     }
 
-    public static boolean isNumeric(String value) {
+    private static boolean isNumeric(String value) {
         return "-1".equals(value) || StringUtils.isNumeric(value);
     }
 
-    public static boolean isBool(String value) {
+    private static boolean isBool(String value) {
         return "true".equalsIgnoreCase(value) || "false".equalsIgnoreCase(value) ||
                 "0".equalsIgnoreCase(value) || "1".equalsIgnoreCase(value);
     }

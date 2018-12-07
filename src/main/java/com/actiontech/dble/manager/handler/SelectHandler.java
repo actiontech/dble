@@ -13,6 +13,7 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.manager.response.SelectMaxAllowedPacket;
 import com.actiontech.dble.manager.response.SelectSessionTxReadOnly;
+import com.actiontech.dble.manager.response.ShowSingleString;
 import com.actiontech.dble.route.parser.ManagerParseSelect;
 import com.actiontech.dble.server.response.SelectVersionComment;
 import com.actiontech.dble.sqlengine.TransformSQLJob;
@@ -37,7 +38,8 @@ public final class SelectHandler {
     }
 
     public static void handle(String stmt, ManagerConnection c, int offset) {
-        switch (ManagerParseSelect.parse(stmt, offset)) {
+        int rs = ManagerParseSelect.parse(stmt, offset);
+        switch (rs & 0xff) {
             case VERSION_COMMENT:
                 SelectVersionComment.response(c);
                 break;
@@ -46,6 +48,9 @@ public final class SelectHandler {
                 break;
             case MAX_ALLOWED_PACKET:
                 SelectMaxAllowedPacket.execute(c);
+                break;
+            case TIMEDIFF:
+                ShowSingleString.execute(c, stmt.substring(rs >>> 8), "00:00:00");
                 break;
             default:
                 if (isSupportSelect(stmt)) {

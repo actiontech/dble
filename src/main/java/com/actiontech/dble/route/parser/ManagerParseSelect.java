@@ -7,6 +7,7 @@ package com.actiontech.dble.route.parser;
 
 import com.actiontech.dble.route.parser.util.ParseUtil;
 
+
 public final class ManagerParseSelect {
     private ManagerParseSelect() {
     }
@@ -15,10 +16,12 @@ public final class ManagerParseSelect {
     public static final int VERSION_COMMENT = 1;
     public static final int SESSION_TX_READ_ONLY = 2;
     public static final int MAX_ALLOWED_PACKET = 3;
+    public static final int TIMEDIFF = 4;
 
     private static final char[] STRING_VERSION_COMMENT = "VERSION_COMMENT".toCharArray();
     private static final char[] STRING_SESSION_TX_READ_ONLY = "SESSION.TX_READ_ONLY".toCharArray();
     private static final char[] STRING_MAX_ALLOWED_PACKET = "MAX_ALLOWED_PACKET".toCharArray();
+    private static final char[] STRING_TIMEDIFF = "TIMEDIFF(NOW(), UTC_TIMESTAMP())".toCharArray();
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -30,11 +33,25 @@ public final class ManagerParseSelect {
                 case '#':
                     i = ParseUtil.comment(stmt, i);
                     continue;
+                case 'T':
+                case 't':
+                    return selectTCheck(stmt, i);
                 case '@':
                     return select2Check(stmt, i);
                 default:
                     return OTHER;
             }
+        }
+        return OTHER;
+    }
+
+    private static int selectTCheck(String stmt, int offset) {
+        int length = offset + STRING_TIMEDIFF.length;
+        if (stmt.length() >= length && ParseUtil.compare(stmt, offset, STRING_TIMEDIFF)) {
+            if (stmt.length() > length && stmt.charAt(length) != ' ') {
+                return OTHER;
+            }
+            return (offset << 8) | TIMEDIFF;
         }
         return OTHER;
     }

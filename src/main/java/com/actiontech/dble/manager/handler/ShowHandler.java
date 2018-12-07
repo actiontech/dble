@@ -211,6 +211,9 @@ public final class ShowHandler {
             case ManagerParseShow.ALERT:
                 ShowSingleValue.execute(c, "@@alert", AlertUtil.isEnable() ? 1L : 0L);
                 break;
+            case ManagerParseShow.COLLATION:
+                ShowCollatin.execute(c);
+                break;
             default:
                 if (isSupportShow(stmt)) {
                     Iterator<PhysicalDBPool> iterator = DbleServer.getInstance().getConfig().getDataHosts().values().iterator();

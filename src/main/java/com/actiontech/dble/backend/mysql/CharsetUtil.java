@@ -15,6 +15,7 @@ import java.util.Map;
 public final class CharsetUtil {
     private CharsetUtil() {
     }
+
     public static final Logger LOGGER = LoggerFactory.getLogger(CharsetUtil.class);
     private static final CollationInfo[] INDEX_TO_COLLATION = new CollationInfo[251];
     private static final Map<String, CollationInfo> COLLATION_TO_INDEX = new HashMap<>(250);
@@ -247,9 +248,9 @@ public final class CharsetUtil {
 
         for (int i = 1; i < INDEX_TO_COLLATION.length; i++) {
             if (INDEX_TO_COLLATION[i] != null) {
-                COLLATION_TO_INDEX.put(INDEX_TO_COLLATION[i].collation, INDEX_TO_COLLATION[i]);
-                if (INDEX_TO_COLLATION[i].isDefault) {
-                    CHARSET_TO_DEFAULT_COLLATION.put(INDEX_TO_COLLATION[i].charset, INDEX_TO_COLLATION[i]);
+                COLLATION_TO_INDEX.put(INDEX_TO_COLLATION[i].getCollation(), INDEX_TO_COLLATION[i]);
+                if (INDEX_TO_COLLATION[i].isDefault()) {
+                    CHARSET_TO_DEFAULT_COLLATION.put(INDEX_TO_COLLATION[i].getCharset(), INDEX_TO_COLLATION[i]);
                 }
             }
         }
@@ -295,12 +296,13 @@ public final class CharsetUtil {
         CHARSET_TO_JAVA.put("eucjpms", "EUC_JP_Solaris");
         CHARSET_TO_JAVA.put("gb18030", "GB18030");
     }
+
     public static String getCharset(int index) {
         if (index >= INDEX_TO_COLLATION.length || INDEX_TO_COLLATION[index] == null) {
             LOGGER.info("can't find collation index " + index);
             return null;
         }
-        return INDEX_TO_COLLATION[index].charset;
+        return INDEX_TO_COLLATION[index].getCharset();
     }
 
     public static String getDefaultCollation(String charset) {
@@ -308,7 +310,7 @@ public final class CharsetUtil {
             return null;
         } else {
             CollationInfo info = CHARSET_TO_DEFAULT_COLLATION.get(charset.toLowerCase());
-            return (info == null) ? null : info.collation;
+            return (info == null) ? null : info.getCollation();
         }
     }
 
@@ -317,7 +319,7 @@ public final class CharsetUtil {
             return 0;
         } else {
             CollationInfo info = COLLATION_TO_INDEX.get(collation.toLowerCase());
-            return (info == null) ? 0 : info.id;
+            return (info == null) ? 0 : info.getId();
         }
     }
 
@@ -328,10 +330,10 @@ public final class CharsetUtil {
             CollationInfo info = COLLATION_TO_INDEX.get(collation.toLowerCase());
             if (info == null) {
                 return 0;
-            } else if (!info.charset.equals(charset)) {
+            } else if (!info.getCharset().equals(charset)) {
                 return -1;
             } else {
-                return info.id;
+                return info.getId();
             }
         }
     }
@@ -345,7 +347,7 @@ public final class CharsetUtil {
             return 0;
         } else {
             CollationInfo info = CHARSET_TO_DEFAULT_COLLATION.get(charset.toLowerCase());
-            return (info == null) ? 0 : info.id;
+            return (info == null) ? 0 : info.getId();
         }
     }
 
@@ -363,18 +365,8 @@ public final class CharsetUtil {
         return getJavaCharset(charset);
     }
 
-    private static class CollationInfo {
-        private final String collation;
-        private final String charset;
-        private final int id;
-        private final boolean isDefault;
 
-        CollationInfo(String collation, String charset, int id, boolean isDefault) {
-            this.collation = collation;
-            this.charset = charset;
-            this.id = id;
-            this.isDefault = isDefault;
-
-        }
+    public static CollationInfo[] getAllCollationInfo() {
+        return INDEX_TO_COLLATION;
     }
 }

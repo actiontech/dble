@@ -34,7 +34,6 @@ public final class ManagerParseShow {
     public static final int SQL_LARGE = 19;
     public static final int SQL_RESULTSET = 20;
 
-
     public static final int THREADPOOL = 21;
     public static final int TIME_CURRENT = 22;
     public static final int TIME_STARTUP = 23;
@@ -75,6 +74,8 @@ public final class ManagerParseShow {
     public static final int SLOW_QUERY_FLUSH_SIZE = 58;
     public static final int ALERT = 59;
 
+    public static final int COLLATION = 60;
+
     public static final Pattern PATTERN_FOR_TABLE_INFO = Pattern.compile("^(\\s*schema\\s*=\\s*)([a-zA-Z_0-9]+)" +
             "(\\s+and\\s+table\\s*=\\s*)([a-zA-Z_0-9]+)\\s*$", Pattern.CASE_INSENSITIVE);
 
@@ -93,12 +94,39 @@ public final class ManagerParseShow {
                 case 'd':
                 case 'D':
                     return show2DCheck(stmt, i);
+                case 'C':
+                case 'c':
+                    return showCCheck(stmt, i);
                 default:
                     return OTHER;
             }
         }
         return OTHER;
     }
+
+
+    private static int showCCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "OLLATION".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            if ((c1 == 'O' || c1 == 'o') && (c2 == 'L' || c2 == 'l') && (c3 == 'L' || c3 == 'l') &&
+                    (c4 == 'A' || c4 == 'a') && (c5 == 'T' || c5 == 't') && (c6 == 'I' || c6 == 'i') &&
+                    (c7 == 'O' || c7 == 'o') && (c8 == 'N' || c8 == 'n')) {
+                if (ParseUtil.isErrorTail(++offset, stmt)) {
+                    return OTHER;
+                }
+                return COLLATION;
+            }
+        }
+        return OTHER;
+    }
+
 
     // SHOW @
     private static int show2Check(String stmt, int offset) {
@@ -790,6 +818,7 @@ public final class ManagerParseShow {
         }
         return OTHER;
     }
+
     //show @@slow_query.
     private static int show2SlowQueryCheck(String stmt, int offset) {
         if (stmt.length() > offset + 1) {
@@ -806,6 +835,7 @@ public final class ManagerParseShow {
         }
         return OTHER;
     }
+
     private static int slowQueryTimeCheck(String stmt, int offset) {
         if (stmt.length() > offset + 3) {
             char c1 = stmt.charAt(++offset);
@@ -880,6 +910,7 @@ public final class ManagerParseShow {
         }
         return OTHER;
     }
+
     //show @@slow_query_log
     private static int show2SlowQueryLog(String stmt, int offset) {
         if (stmt.length() >= offset + "_LOG".length()) {

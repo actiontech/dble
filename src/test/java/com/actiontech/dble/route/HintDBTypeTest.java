@@ -28,7 +28,7 @@ public class HintDBTypeTest {
     public HintDBTypeTest() {
         String schemaFile = "/route/schema.xml";
         String ruleFile = "/route/rule.xml";
-        SchemaLoader schemaLoader = new XMLSchemaLoader(schemaFile, ruleFile);
+        SchemaLoader schemaLoader = new XMLSchemaLoader(schemaFile, ruleFile, true, null);
         schemaMap = schemaLoader.getSchemas();
         routeStrategy = RouteStrategyFactory.getRouteStrategy();
     }

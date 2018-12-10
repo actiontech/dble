@@ -25,7 +25,7 @@ public class NoShardingSpace {
     public NoShardingSpace() {
         String schemaFile = "/route/schema.xml";
         String ruleFile = "/route/rule.xml";
-        SchemaLoader schemaLoader = new XMLSchemaLoader(schemaFile, ruleFile);
+        SchemaLoader schemaLoader = new XMLSchemaLoader(schemaFile, ruleFile, true, null);
         schema = schemaLoader.getSchemas().get("dubbo");
     }
 

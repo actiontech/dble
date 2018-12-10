@@ -48,7 +48,7 @@ public final class GlobalTableUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(GlobalTableUtil.class);
     private static Map<String, TableConfig> globalTableMap = new ConcurrentHashMap<>();
     /**
-     * the field of timpstamp,
+     * the field of timestamp,
      * for check GlobalTable consistency
      */
     public static final String GLOBAL_TABLE_CHECK_COLUMN = "_dble_op_time";

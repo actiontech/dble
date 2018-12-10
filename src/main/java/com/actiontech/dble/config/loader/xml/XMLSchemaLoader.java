@@ -56,18 +56,6 @@ public class XMLSchemaLoader implements SchemaLoader {
         this.load(DEFAULT_DTD, schemaFile == null ? DEFAULT_XML : schemaFile);
     }
 
-    public XMLSchemaLoader(String schemaFile, String ruleFile) {
-        this(schemaFile, ruleFile, true, null);
-    }
-
-    public XMLSchemaLoader() {
-        this(true);
-    }
-
-    public XMLSchemaLoader(boolean lowerCaseNames) {
-        this(null, null, lowerCaseNames, null);
-    }
-
     public XMLSchemaLoader(boolean lowerCaseNames, ProblemReporter problemReporter) {
         this(null, null, lowerCaseNames, problemReporter);
     }
@@ -252,6 +240,7 @@ public class XMLSchemaLoader implements SchemaLoader {
                 }
             }
             //dataNode of table
+            boolean globalTableContainsRule = false;
             TableRuleConfig tableRule = null;
             if (tableElement.hasAttribute("rule")) {
                 String ruleName = tableElement.getAttribute("rule");
@@ -259,6 +248,7 @@ public class XMLSchemaLoader implements SchemaLoader {
                 if (tableRule == null) {
                     throw new ConfigException("rule " + ruleName + " is not found!");
                 }
+                globalTableContainsRule = tableType == TableTypeEnum.TYPE_GLOBAL_TABLE;
             }
             //ruleRequired?
             String ruleRequiredStr = ConfigUtil.checkAndGetAttribute(tableElement, "ruleRequired", "false", problemReporter);
@@ -293,6 +283,10 @@ public class XMLSchemaLoader implements SchemaLoader {
                     throw new ConfigException("table " + tableName + " duplicated!");
                 }
                 tables.put(table.getName(), table);
+            }
+
+            if (globalTableContainsRule) {
+                problemReporter.warn("global table [" + tableNameElement + "] contains a needless sharding rule");
             }
             // child table must know its unique father
             if (tableNames.length == 1) {

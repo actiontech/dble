@@ -519,11 +519,13 @@ public final class RouterUtil {
 
         Map<String, Set<String>> tablesRouteMap = new HashMap<>();
         if (tryRouteWithPrimaryCache(rrs, tablesRouteMap, DbleServer.getInstance().getRouterService().getTableId2DataNodeCache(), columnsMap, schema, tableName, tableConfig.getPrimaryKey(), isSelect)) {
-            if (tablesRouteMap.get(tableName).size() > 1) {
+            Set<String> nodes = tablesRouteMap.get(tableName);
+            if (nodes == null || nodes.size() != 1) {
                 return false;
+            } else {
+                resultNodes.add(nodes.iterator().next());
+                return true;
             }
-            resultNodes.add(tablesRouteMap.get(tableName).iterator().next());
-            return true;
         }
 
         String joinKey = tableConfig.getJoinKey();

@@ -245,6 +245,7 @@ public class ItemField extends ItemIdent {
                 if (StringUtils.equalsIgnoreCase(tmpFieldName, namedField.getName())) {
                     if (columnFromMeta == null) {
                         NamedField coutField = planNode.getInnerFields().get(new NamedField(namedField.getSchema(), namedField.getTable(), tmpFieldName, null));
+                        this.dbName = namedField.getSchema();
                         this.tableName = namedField.getTable();
                         getReferTables().clear();
                         this.getReferTables().add(coutField.planNode);
@@ -266,6 +267,7 @@ public class ItemField extends ItemIdent {
                 NamedField coutField = planNode.getInnerFields().get(tmpField);
                 getReferTables().clear();
                 getReferTables().add(coutField.planNode);
+                this.dbName = tmpField.getSchema();
                 this.tableName = tmpField.getTable();
                 columnFromMeta = this;
             }

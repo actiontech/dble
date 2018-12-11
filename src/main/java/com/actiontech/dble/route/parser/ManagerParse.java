@@ -97,10 +97,10 @@ public final class ManagerParse {
             switch (stmt.charAt(offset)) {
                 case 'R':
                 case 'r':
-                    return dryRunCheck(stmt);
+                    return dryRunCheck(stmt, --offset);
                 case 'I':
                 case 'i':
-                    return disCheck(stmt);
+                    return disCheck(stmt, --offset);
                 default:
                     return OTHER;
             }
@@ -108,8 +108,8 @@ public final class ManagerParse {
         return OTHER;
     }
 
-    private static int dryRunCheck(String stmt) {
-        String thePart = stmt.toUpperCase();
+    private static int dryRunCheck(String stmt, int offset) {
+        String thePart = stmt.substring(offset).toUpperCase();
         if (thePart.startsWith("DRYRUN")) {
             return DRY_RUN;
         } else {
@@ -117,8 +117,8 @@ public final class ManagerParse {
         }
     }
 
-    private static int disCheck(String stmt) {
-        String thePart = stmt.toUpperCase();
+    private static int disCheck(String stmt, int offset) {
+        String thePart = stmt.substring(offset).toUpperCase();
         if (thePart.startsWith("DISABLE") && stmt.length() > 7 && ParseUtil.isSpace(stmt.charAt(7))) {
             return (8 << 8) | DISABLE;
         }

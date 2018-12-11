@@ -436,7 +436,7 @@ public final class RouterUtil {
         return routeNodeSet;
     }
 
-    public static String tryRouteTablesToOneNode(String user, String sql, SchemaConfig schemaConfig, DruidShardingParseInfo ctx, Set<String> schemaList, int tableSize) throws SQLException {
+    public static String tryRouteTablesToOneNode(String user, RouteResultset rrs, SchemaConfig schemaConfig, DruidShardingParseInfo ctx, Set<String> schemaList, int tableSize, boolean isSelect) throws SQLException {
         if (ctx.getTables().size() != tableSize) {
             return null;
         }
@@ -476,7 +476,7 @@ public final class RouterUtil {
                             return null;
                         }
                     } else {
-                        if (!tryCalcNodeForShardingTable(sql, tmpResultNodes, tablesSet, entry, tableName, tableConfig)) {
+                        if (!tryCalcNodeForShardingTable(rrs, tmpResultNodes, tablesSet, entry, tableName, schema, tableConfig, isSelect)) {
                             return null;
                         }
                     }
@@ -514,8 +514,20 @@ public final class RouterUtil {
         return resultNodes.iterator().next();
     }
 
-    private static boolean tryCalcNodeForShardingTable(String sql, Set<String> resultNodes, Set<String> tablesSet, Map.Entry<String, Map<String, Set<ColumnRoutePair>>> entry, String tableName, TableConfig tableConfig) throws SQLNonTransientException {
+    private static boolean tryCalcNodeForShardingTable(RouteResultset rrs, Set<String> resultNodes, Set<String> tablesSet, Map.Entry<String, Map<String, Set<ColumnRoutePair>>> entry, String tableName, SchemaConfig schema, TableConfig tableConfig, boolean isSelect) throws SQLNonTransientException {
         Map<String, Set<ColumnRoutePair>> columnsMap = entry.getValue();
+
+        Map<String, Set<String>> tablesRouteMap = new HashMap<>();
+        if (tryRouteWithPrimaryCache(rrs, tablesRouteMap, DbleServer.getInstance().getRouterService().getTableId2DataNodeCache(), columnsMap, schema, tableName, tableConfig.getPrimaryKey(), isSelect)) {
+            Set<String> nodes = tablesRouteMap.get(tableName);
+            if (nodes == null || nodes.size() != 1) {
+                return false;
+            } else {
+                resultNodes.add(nodes.iterator().next());
+                return true;
+            }
+        }
+
         String joinKey = tableConfig.getJoinKey();
         String partitionCol = tableConfig.getPartitionColumn();
 
@@ -564,7 +576,7 @@ public final class RouterUtil {
             }
         } else if (joinKey != null && columnsMap.get(joinKey) != null && columnsMap.get(joinKey).size() != 0) {
             Set<ColumnRoutePair> joinKeyValue = columnsMap.get(joinKey);
-            Set<String> dataNodeSet = ruleByJoinValueCalculate(sql, tableConfig, joinKeyValue);
+            Set<String> dataNodeSet = ruleByJoinValueCalculate(rrs.getStatement(), tableConfig, joinKeyValue);
             if (dataNodeSet.size() > 1) {
                 return false;
             }

@@ -244,10 +244,10 @@ public class ItemField extends ItemIdent {
             for (NamedField namedField : planNode.getInnerFields().keySet()) {
                 if (StringUtils.equalsIgnoreCase(tmpFieldName, namedField.getName())) {
                     if (columnFromMeta == null) {
+                        NamedField coutField = planNode.getInnerFields().get(new NamedField(namedField.getSchema(), namedField.getTable(), tmpFieldName, null));
                         this.dbName = namedField.getSchema();
                         this.tableName = namedField.getTable();
                         getReferTables().clear();
-                        NamedField coutField = planNode.getInnerFields().get(new NamedField(namedField.getSchema(), namedField.getTable(), tmpFieldName, null));
                         this.getReferTables().add(coutField.planNode);
                         columnFromMeta = this;
                     } else {

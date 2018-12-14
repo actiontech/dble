@@ -221,10 +221,9 @@ public class ItemField extends ItemIdent {
         Item column = null;
         if (context.isFindInSelect()) {
             // try to find in selectlist
-            if (StringUtils.isEmpty(getDbName()) || StringUtils.isEmpty(getTableName())) {
+            if (StringUtils.isEmpty(getTableName())) {
                 for (NamedField namedField : planNode.getOuterFields().keySet()) {
-                    if (StringUtils.equalsIgnoreCase(tmpFieldName, namedField.getName()) &&
-                            (StringUtils.isEmpty(getTableName()) || StringUtils.equalsIgnoreCase(getTableName(), namedField.getTable()))) {
+                    if (StringUtils.equalsIgnoreCase(tmpFieldName, namedField.getName())) {
                         if (column == null) {
                             column = planNode.getOuterFields().get(namedField);
                         } else
@@ -238,16 +237,12 @@ public class ItemField extends ItemIdent {
         if (column != null && context.isSelectFirst()) {
             return column;
         }
-        return findItemFormInnerField(tmpFieldName, planNode, column);
-    }
 
-    private Item findItemFormInnerField(String tmpFieldName, PlanNode planNode, Item column) {
         // find from inner fields
         Item columnFromMeta = null;
-        if (StringUtils.isEmpty(getDbName()) || StringUtils.isEmpty(getTableName())) {
+        if (StringUtils.isEmpty(getTableName())) {
             for (NamedField namedField : planNode.getInnerFields().keySet()) {
-                if (StringUtils.equalsIgnoreCase(tmpFieldName, namedField.getName()) &&
-                        (StringUtils.isEmpty(getTableName()) || StringUtils.equalsIgnoreCase(getTableName(), namedField.getTable()))) {
+                if (StringUtils.equalsIgnoreCase(tmpFieldName, namedField.getName())) {
                     if (columnFromMeta == null) {
                         this.dbName = namedField.getSchema();
                         this.tableName = namedField.getTable();
@@ -284,6 +279,7 @@ public class ItemField extends ItemIdent {
         else {
             return column;
         }
+
     }
 
     private Item getMergeNodeColumn(String tmpFieldName, PlanNode planNode) {

@@ -463,13 +463,14 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 
     @Override
     public void endVisit(SQLPropertyExpr x) {
-        String dbName = null;
+        String dbName;
         String tableName;
         if (x.getOwner() instanceof SQLPropertyExpr) {
             SQLPropertyExpr tableInfo = (SQLPropertyExpr) x.getOwner();
             dbName = ((SQLIdentifierExpr) tableInfo.getOwner()).getSimpleName();
             tableName = tableInfo.getSimpleName();
         } else {
+            dbName = currentDb;
             tableName = ((SQLIdentifierExpr) x.getOwner()).getSimpleName();
         }
         item = new ItemField(dbName, StringUtil.removeBackQuote(tableName), StringUtil.removeBackQuote(x.getSimpleName()));

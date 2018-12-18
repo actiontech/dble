@@ -217,8 +217,8 @@ public class JoinHandler extends OwnThreadDMLHandler {
                 }
             }
             session.setHandlerEnd(this);
-            nextHandler.rowEofResponse(null, isLeft, conn);
             HandlerTool.terminateHandlerTree(this);
+            nextHandler.rowEofResponse(null, isLeft, conn);
         } catch (Exception e) {
             String msg = "join thread error, " + e.getLocalizedMessage();
             LOGGER.info(msg, e);

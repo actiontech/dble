@@ -64,7 +64,7 @@ public class ProxyMetaManager {
     protected static final Logger LOGGER = LoggerFactory.getLogger(ProxyMetaManager.class);
     /* catalog,table,tablemeta */
     private final Map<String, SchemaMeta> catalogs;
-    private final Set<String> lockTables;
+    private final Map<String, String> lockTables;
     private ReentrantLock metaLock = new ReentrantLock();
     private ScheduledExecutorService scheduler;
     private ScheduledFuture<?> checkTaskHandler;
@@ -75,7 +75,7 @@ public class ProxyMetaManager {
 
     public ProxyMetaManager() {
         this.catalogs = new ConcurrentHashMap<>();
-        this.lockTables = new HashSet<>();
+        this.lockTables = new HashMap<>();
         this.timestamp = System.currentTimeMillis();
     }
 
@@ -87,26 +87,39 @@ public class ProxyMetaManager {
         return schema + "." + tbName;
     }
 
-    public int getMetaCount() {
-        return metaCount.get();
+    public String metaCountCheck() {
+        StringBuffer result = new StringBuffer("");
+        metaLock.lock();
+        try {
+            if (metaCount.get() != 0) {
+                result.append("There is other session is doing DDL\n");
+                for (String x : lockTables.values()) {
+                    result.append(x + "\n");
+                }
+                result.setLength(result.length() - 1);
+            }
+        } finally {
+            metaLock.unlock();
+        }
+        return result.length() == 0 ? null : result.toString();
     }
 
     public ReentrantLock getMetaLock() {
         return metaLock;
     }
 
-    public void addMetaLock(String schema, String tbName) throws SQLNonTransientException {
+    public void addMetaLock(String schema, String tbName, String sql) throws SQLNonTransientException {
         metaLock.lock();
         try {
             String lockKey = genLockKey(schema, tbName);
-            if (lockTables.contains(lockKey)) {
+            if (lockTables.containsKey(lockKey)) {
                 String msg = "SCHEMA[" + schema + "], TABLE[" + tbName + "] is doing DDL";
                 LOGGER.warn(msg);
                 throw new SQLNonTransientException(msg, "HY000", ErrorCode.ER_DOING_DDL);
             } else {
                 metaCount.incrementAndGet();
                 version.incrementAndGet();
-                lockTables.add(lockKey);
+                lockTables.put(lockKey, sql);
             }
         } finally {
             metaLock.unlock();
@@ -116,7 +129,7 @@ public class ProxyMetaManager {
     public void removeMetaLock(String schema, String tbName) {
         metaLock.lock();
         try {
-            if (lockTables.remove(genLockKey(schema, tbName))) {
+            if (lockTables.remove(genLockKey(schema, tbName)) != null) {
                 metaCount.decrementAndGet();
             }
         } finally {
@@ -196,7 +209,7 @@ public class ProxyMetaManager {
             } else {
                 metaLock.lock();
                 try {
-                    if (lockTables.contains(genLockKey(schema, tbName))) {
+                    if (lockTables.containsKey(genLockKey(schema, tbName))) {
                         String msg = "SCHEMA[" + schema + "], TABLE[" + tbName + "] is doing DDL";
                         LOGGER.info(msg);
                         throw new SQLNonTransientException(msg, "HY000", ErrorCode.ER_DOING_DDL);
@@ -222,7 +235,7 @@ public class ProxyMetaManager {
             } else {
                 metaLock.lock();
                 try {
-                    if (lockTables.contains(genLockKey(schema, vName))) {
+                    if (lockTables.containsKey(genLockKey(schema, vName))) {
                         String msg = "SCHEMA[" + schema + "], TABLE[" + vName + "] is doing DDL";
                         LOGGER.info(msg);
                         throw new SQLNonTransientException(msg, "HY000", ErrorCode.ER_DOING_DDL);

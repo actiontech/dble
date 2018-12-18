@@ -88,8 +88,8 @@ public class ProxyMetaManager {
     }
 
     public String metaCountCheck() {
-        metaLock.lock();
         StringBuffer result = new StringBuffer("");
+        metaLock.lock();
         try {
             if (metaCount.get() != 0) {
                 result.append("There is other session is doing DDL\n");

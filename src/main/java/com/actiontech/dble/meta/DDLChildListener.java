@@ -64,7 +64,7 @@ public class DDLChildListener implements PathChildrenCacheListener {
         final String schema = StringUtil.removeBackQuote(tableInfo[0]);
         final String table = StringUtil.removeBackQuote(tableInfo[1]);
         try {
-            DbleServer.getInstance().getTmManager().addMetaLock(schema, table);
+            DbleServer.getInstance().getTmManager().addMetaLock(schema, table, ddlInfo.getSql());
         } catch (Exception t) {
             DbleServer.getInstance().getTmManager().removeMetaLock(schema, table);
             throw t;

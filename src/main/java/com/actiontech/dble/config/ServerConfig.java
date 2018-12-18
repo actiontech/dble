@@ -246,10 +246,10 @@ public class ServerConfig {
         metaLock.lock();
         this.changing = true;
         try {
-            if (DbleServer.getInstance().getTmManager().getMetaCount() != 0) {
-                String msg = "There is other session is doing DDL";
-                LOGGER.warn(msg);
-                throw new SQLNonTransientException(msg, "HY000", ErrorCode.ER_DOING_DDL);
+            String checkResult = DbleServer.getInstance().getTmManager().metaCountCheck();
+            if (checkResult != null) {
+                LOGGER.warn(checkResult);
+                throw new SQLNonTransientException(checkResult, "HY000", ErrorCode.ER_DOING_DDL);
             }
             // old data host
             // 1 stop heartbeat

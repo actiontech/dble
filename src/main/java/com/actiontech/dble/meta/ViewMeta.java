@@ -80,7 +80,7 @@ public class ViewMeta {
                 throw new Exception("sql not supported ");
             }
 
-            tmManager.addMetaLock(schema, viewName);
+            tmManager.addMetaLock(schema, viewName, createSql);
 
             //check if the select part has
             this.checkDuplicate(viewParser, isReplace);

@@ -339,7 +339,7 @@ public class ServerConnection extends FrontendConnection {
         String table = rrs.getTable();
         try {
             //lock self meta
-            DbleServer.getInstance().getTmManager().addMetaLock(schema, table);
+            DbleServer.getInstance().getTmManager().addMetaLock(schema, table, rrs.getSrcStatement());
             if (DbleServer.getInstance().isUseZK()) {
                 String nodeName = StringUtil.getFullName(schema, table);
                 String ddlPath = KVPathUtil.getDDLPath();

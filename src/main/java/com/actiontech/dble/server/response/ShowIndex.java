@@ -31,6 +31,7 @@ public final class ShowIndex {
             "(\\s+(from|in)\\s+([a-zA-Z_0-9.`]+))" +
             "(\\s+(from|in)\\s+(`?[a-zA-Z_0-9]+`?))?" +
             "(\\s+(where)\\s+((. *)*)\\s*)?" +
+            "(\\s*\\/\\*[\\s\\S]*\\*\\/)?" +
             "\\s*$";
     public static final Pattern PATTERN = Pattern.compile(INDEX_PAT, Pattern.CASE_INSENSITIVE);
 

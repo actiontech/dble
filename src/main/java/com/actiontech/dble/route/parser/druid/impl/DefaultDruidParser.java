@@ -41,6 +41,11 @@ public class DefaultDruidParser implements DruidParser {
     protected static final Logger LOGGER = LoggerFactory.getLogger(DefaultDruidParser.class);
     protected DruidShardingParseInfo ctx;
 
+
+    public DefaultDruidParser() {
+        ctx = new DruidShardingParseInfo();
+    }
+
     /**
      * @param schema
      * @param stmt

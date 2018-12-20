@@ -137,9 +137,6 @@ public final class ExplainHandler {
 
     private static boolean checkInnerCommand(String stmt) {
         int newRes = ServerParse.parse(stmt);
-        if (newRes == ServerParse.OTHER) {
-            return true;
-        }
         int sqlType = newRes & 0xff;
         switch (sqlType) {
             case ServerParse.EXPLAIN:

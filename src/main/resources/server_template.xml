@@ -96,7 +96,7 @@
         <property name="bufferPoolChunkSize">4096</property>
         <property name="bufferPoolPageNumber">512</property>
         <property name="bufferPoolPageSize">2097152</property>
-        <!--<property name="bufferPoolPageSize">mappedFileSize</property>-->
+        <!--<property name="mappedFileSize">2097152</property>-->
 
         <!-- sql statistics-->
         <!-- 1 means use SQL statistics, 0 means not -->

@@ -37,7 +37,7 @@ public final class DropViewHandler {
             }
 
             for (String singleName : viewName) {
-                DbleServer.getInstance().getTmManager().addMetaLock(c.getSchema(), singleName);
+                DbleServer.getInstance().getTmManager().addMetaLock(c.getSchema(), singleName, stmt);
                 try {
                     deleteFromReposoitory(c.getSchema(), singleName);
                     DbleServer.getInstance().getTmManager().getCatalogs().get(c.getSchema()).getViewMetas().remove(singleName.trim());

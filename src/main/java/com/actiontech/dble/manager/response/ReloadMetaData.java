@@ -26,10 +26,10 @@ public final class ReloadMetaData {
         final ReentrantLock lock = DbleServer.getInstance().getTmManager().getMetaLock();
         lock.lock();
         try {
-            if (DbleServer.getInstance().getTmManager().getMetaCount() != 0) {
-                msg = "Reload metadata failed,There is other session is doing DDL";
-                LOGGER.warn(msg);
-                c.writeErrMessage("HY000", msg, ErrorCode.ER_DOING_DDL);
+            String checkResult = DbleServer.getInstance().getTmManager().metaCountCheck();
+            if (checkResult != null) {
+                LOGGER.warn(checkResult);
+                c.writeErrMessage("HY000", checkResult, ErrorCode.ER_DOING_DDL);
                 return;
             }
             try {

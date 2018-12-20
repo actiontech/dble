@@ -54,7 +54,7 @@ public class ViewChildListener implements PathChildrenCacheListener {
         String schema = paths[paths.length - 1].split(":")[0];
         String viewName = paths[paths.length - 1].split(":")[1];
 
-        DbleServer.getInstance().getTmManager().addMetaLock(schema, viewName);
+        DbleServer.getInstance().getTmManager().addMetaLock(schema, viewName, "DROP VIEW " + viewName);
         try {
             DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().remove(viewName);
         } finally {

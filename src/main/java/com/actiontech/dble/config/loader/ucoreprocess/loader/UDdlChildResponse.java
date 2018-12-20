@@ -54,7 +54,7 @@ public class UDdlChildResponse implements UcoreXmlLoader {
                 LOGGER.info("init of ddl " + schema + " " + table);
                 try {
                     lockMap.put(fullName, ddlInfo.getFrom());
-                    DbleServer.getInstance().getTmManager().addMetaLock(schema, table);
+                    DbleServer.getInstance().getTmManager().addMetaLock(schema, table, ddlInfo.getSql());
                 } catch (Exception t) {
                     DbleServer.getInstance().getTmManager().removeMetaLock(schema, table);
                     throw t;

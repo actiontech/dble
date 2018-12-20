@@ -160,6 +160,113 @@ public class RouteWithOrTest {
     }
 
 
+    @Test
+    public void test8() {
+        List<RouteCalculateUnit> result = getCoreCalculateUnit("select * from ntest,mtest where (ntest.name = 'cccc' or ntest.name = 'bbbb') and ntest.id = mtest.id and mtest.id = 1 ");
+        RouteCalculateUnit unit = result.get(0);
+        Assert.assertEquals(2, unit.getTablesAndConditions().size());
+        Assert.assertEquals(2, unit.getTablesAndConditions().get("ntest").size());
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("ID"));
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("NAME"));
+        Assert.assertEquals(1, unit.getTablesAndConditions().get("mtest").size());
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("ID"));
+        unit = result.get(1);
+        Assert.assertEquals(2, unit.getTablesAndConditions().size());
+        Assert.assertEquals(2, unit.getTablesAndConditions().get("ntest").size());
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("ID"));
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("NAME"));
+        Assert.assertEquals(1, unit.getTablesAndConditions().get("mtest").size());
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("ID"));
+
+    }
+
+
+    @Test
+    public void test9() {
+        List<RouteCalculateUnit> result = getCoreCalculateUnit("select * from ntest,mtest where ntest.id = mtest.id and mtest.id = 1 and (ntest.name = 'cccc' or ntest.name = 'bbbb') and (mtest.name = 'aaaa' or mtest.name = 'dddd')");
+        RouteCalculateUnit unit = result.get(0);
+        Assert.assertEquals(2, unit.getTablesAndConditions().size());
+        Assert.assertEquals(2, unit.getTablesAndConditions().get("ntest").size());
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("ID"));
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("NAME"));
+        Assert.assertEquals(2, unit.getTablesAndConditions().get("mtest").size());
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("ID"));
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("NAME"));
+        unit = result.get(1);
+        Assert.assertEquals(2, unit.getTablesAndConditions().size());
+        Assert.assertEquals(2, unit.getTablesAndConditions().get("ntest").size());
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("ID"));
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("NAME"));
+        Assert.assertEquals(2, unit.getTablesAndConditions().get("mtest").size());
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("ID"));
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("NAME"));
+        unit = result.get(2);
+        Assert.assertEquals(2, unit.getTablesAndConditions().size());
+        Assert.assertEquals(2, unit.getTablesAndConditions().get("ntest").size());
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("ID"));
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("NAME"));
+        Assert.assertEquals(2, unit.getTablesAndConditions().get("mtest").size());
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("ID"));
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("NAME"));
+        unit = result.get(3);
+        Assert.assertEquals(2, unit.getTablesAndConditions().size());
+        Assert.assertEquals(2, unit.getTablesAndConditions().get("ntest").size());
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("ID"));
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("NAME"));
+        Assert.assertEquals(2, unit.getTablesAndConditions().get("mtest").size());
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("ID"));
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("NAME"));
+
+    }
+
+
+    @Test
+    public void test10() {
+        List<RouteCalculateUnit> result = getCoreCalculateUnit("select * from ntest,mtest,xtest where ntest.id = mtest.id and xtest.id = ntest.id and mtest.id = 1 and (ntest.name = 'cccc' or ntest.name = 'bbbb') and (mtest.name = 'aaaa' or mtest.name = 'dddd')");
+        RouteCalculateUnit unit = result.get(0);
+        Assert.assertEquals(3, unit.getTablesAndConditions().size());
+        Assert.assertEquals(2, unit.getTablesAndConditions().get("ntest").size());
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("ID"));
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("NAME"));
+        Assert.assertEquals(2, unit.getTablesAndConditions().get("mtest").size());
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("ID"));
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("NAME"));
+        Assert.assertEquals(1, unit.getTablesAndConditions().get("xtest").size());
+        Assert.assertTrue(unit.getTablesAndConditions().get("xtest").containsKey("ID"));
+        unit = result.get(1);
+        Assert.assertEquals(3, unit.getTablesAndConditions().size());
+        Assert.assertEquals(2, unit.getTablesAndConditions().get("ntest").size());
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("ID"));
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("NAME"));
+        Assert.assertEquals(2, unit.getTablesAndConditions().get("mtest").size());
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("ID"));
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("NAME"));
+        Assert.assertEquals(1, unit.getTablesAndConditions().get("xtest").size());
+        Assert.assertTrue(unit.getTablesAndConditions().get("xtest").containsKey("ID"));
+        unit = result.get(2);
+        Assert.assertEquals(3, unit.getTablesAndConditions().size());
+        Assert.assertEquals(2, unit.getTablesAndConditions().get("ntest").size());
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("ID"));
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("NAME"));
+        Assert.assertEquals(2, unit.getTablesAndConditions().get("mtest").size());
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("ID"));
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("NAME"));
+        Assert.assertEquals(1, unit.getTablesAndConditions().get("xtest").size());
+        Assert.assertTrue(unit.getTablesAndConditions().get("xtest").containsKey("ID"));
+        unit = result.get(3);
+        Assert.assertEquals(3, unit.getTablesAndConditions().size());
+        Assert.assertEquals(2, unit.getTablesAndConditions().get("ntest").size());
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("ID"));
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("NAME"));
+        Assert.assertEquals(2, unit.getTablesAndConditions().get("mtest").size());
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("ID"));
+        Assert.assertTrue(unit.getTablesAndConditions().get("ntest").containsKey("NAME"));
+        Assert.assertEquals(1, unit.getTablesAndConditions().get("xtest").size());
+        Assert.assertTrue(unit.getTablesAndConditions().get("xtest").containsKey("ID"));
+
+    }
+
+
     public List<RouteCalculateUnit> getCoreCalculateUnit(String sql) throws RuntimeException {
         try {
             ServerSchemaStatVisitor visitor = new ServerSchemaStatVisitor();

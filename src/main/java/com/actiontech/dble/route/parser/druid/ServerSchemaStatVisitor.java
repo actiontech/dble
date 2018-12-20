@@ -587,6 +587,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
      * reBuild WhereUnits
      */
     private void reBuildWhereUnits() {
+        relationMerge(getRelationships());
         if (conditions.size() > 0) {
             for (int i = 0; i < whereUnits.size(); i++) {
                 WhereUnit orgUnit = whereUnits.get(i);
@@ -598,6 +599,59 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                 whereUnit.addSubWhereUnit(innerWhereUnit);
                 whereUnits.set(i, whereUnit);
             }
+        }
+    }
+
+    /**
+     * Equal or not equal to relationship transfer
+     * E.g.  ntest.id = mtest.id and xtest.id = ntest.id
+     * we try to add a derivative relationship "xtest.id = mtest.id"
+     * so when there has limit in mtest.id the xtest.id can also get the limit
+     * P.S.:Only order insensitive operator can be optimize,like = or <=>
+     *
+     * @param relationships
+     */
+    private void relationMerge(Set<Relationship> relationships) {
+        HashSet<Relationship> loopReSet = new HashSet<>();
+        loopReSet.addAll(relationships);
+        for (Relationship re : loopReSet) {
+            for (Relationship inv : loopReSet) {
+                if (inv.getOperator().equals(re.getOperator()) && (inv.getOperator().equals("=") || inv.getOperator().equals("<=>"))) {
+                    List<Column> tempSet = new ArrayList<>();
+                    addAndCheckDuplicate(tempSet, re.getLeft());
+                    addAndCheckDuplicate(tempSet, re.getRight());
+                    addAndCheckDuplicate(tempSet, inv.getLeft());
+                    addAndCheckDuplicate(tempSet, inv.getRight());
+                    if (tempSet.size() == 2) {
+                        Relationship rs1 = new Relationship(tempSet.get(0), tempSet.get(1), inv.getOperator());
+                        Relationship rs2 = new Relationship(tempSet.get(1), tempSet.get(0), inv.getOperator());
+                        if (relationships.contains(rs1) || relationships.contains(rs2)) {
+                            continue;
+                        } else {
+                            relationships.add(rs1);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * find how mach non-repeating column in 2 relationships
+     * E.g. A = B and B = C the result size is 2
+     * A = B and C = D the result size is 4
+     * A = B and B = A the result size is 0
+     * when the result size is 2,we can know that there is 3 columns in  2 relationships
+     * and the derivative relationship may be needed
+     *
+     * @param tempSet
+     * @param tmp
+     */
+    private void addAndCheckDuplicate(List<Column> tempSet, Column tmp) {
+        if (tempSet.contains(tmp)) {
+            tempSet.remove(tmp);
+        } else {
+            tempSet.add(tmp);
         }
     }
 

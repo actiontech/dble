@@ -78,9 +78,9 @@
         <!-- use XA transaction ,the finished XA log will removed. the default period is 1000 milliseconds-->
         <property name="xaLogCleanPeriod">1000</property>
         <!-- XA Recovery Log path -->
-        <!--<property name="XARecoveryLogBaseDir">/tmlogs/</property>-->
+        <!--<property name="xaRecoveryLogBaseDir">/tmlogs/</property>-->
         <!-- XA Recovery Log name -->
-        <!--<property name="XARecoveryLogBaseName">tmlog</property>-->
+        <!--<property name="xaRecoveryLogBaseName">tmlog</property>-->
 
         <!-- true is use JoinStrategy, default false-->
         <property name="useJoinStrategy">true</property>

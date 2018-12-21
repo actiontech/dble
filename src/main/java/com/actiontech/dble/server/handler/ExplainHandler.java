@@ -204,7 +204,7 @@ public final class ExplainHandler {
                 StringBuilder s = new StringBuilder();
                 LOGGER.info(s.append(c).append(stmt).toString() + " error:" + e);
                 String msg = "druid parse sql error:" + e.getMessage();
-                c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg == null ? e.getClass().getSimpleName() : msg);
+                c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg);
                 return null;
             } else {
                 StringBuilder s = new StringBuilder();

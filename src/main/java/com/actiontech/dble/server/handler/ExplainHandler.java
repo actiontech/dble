@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
+import java.sql.SQLSyntaxErrorException;
 import java.util.List;
 
 /**
@@ -198,6 +199,12 @@ public final class ExplainHandler {
                 LOGGER.info(s.append(c).append(stmt).toString() + " error:" + sqlException);
                 String msg = sqlException.getMessage();
                 c.writeErrMessage(sqlException.getErrorCode(), msg == null ? sqlException.getClass().getSimpleName() : msg);
+                return null;
+            } else if (e instanceof SQLSyntaxErrorException) {
+                StringBuilder s = new StringBuilder();
+                LOGGER.info(s.append(c).append(stmt).toString() + " error:" + e);
+                String msg = "druid parse sql error:" + e.getMessage();
+                c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg);
                 return null;
             } else {
                 StringBuilder s = new StringBuilder();

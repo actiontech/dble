@@ -220,7 +220,7 @@ public class ConfigInitializer implements ProblemReporter {
 
         if (Math.max(schemasCount + 1, pool.getDataHostConfig().getMinCon()) != pool.getDataHostConfig().getMinCon()) {
             errorInfos.add(new ErrorInfo("Xml", "NOTICE", "DataHost[" + pool.getHostName() + "] minCon too little,Dble would init dataHost" +
-                    " with " + schemasCount + 1 + " connections"));
+                    " with " + (schemasCount + 1) + " connections"));
         }
     }
 

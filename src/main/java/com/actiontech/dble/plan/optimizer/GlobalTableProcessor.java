@@ -122,7 +122,7 @@ public final class GlobalTableProcessor {
             if (tnChild.getNoshardNode() != null) {
                 tn.getNoshardNode().retainAll(tnChild.getNoshardNode());
             } else {
-                tn.setNoshardNode(null);
+                tn.getNoshardNode().clear();
             }
         }
     }

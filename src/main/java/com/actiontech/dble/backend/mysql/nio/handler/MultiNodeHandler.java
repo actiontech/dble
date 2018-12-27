@@ -53,7 +53,6 @@ public abstract class MultiNodeHandler implements ResponseHandler {
     }
 
 
-
     public boolean clearIfSessionClosed(NonBlockingSession nonBlockingSession) {
         if (nonBlockingSession.closed()) {
             if (LOGGER.isDebugEnabled()) {
@@ -61,6 +60,22 @@ public abstract class MultiNodeHandler implements ResponseHandler {
             }
 
             nonBlockingSession.clearResources(true);
+            this.clearResources();
+            return true;
+        } else {
+            return false;
+        }
+
+    }
+
+    public boolean clearIfSessionClosed(NonBlockingSession nonBlockingSession, boolean needRelease) {
+        if (nonBlockingSession.closed()) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("session closed ,clear resources " + nonBlockingSession);
+            }
+            if (needRelease) {
+                nonBlockingSession.clearResources(true);
+            }
             this.clearResources();
             return true;
         } else {

@@ -6,11 +6,13 @@
 package com.actiontech.dble.plan.optimizer;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.route.util.RouterUtil;
+import com.actiontech.dble.server.util.SchemaUtil;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
@@ -117,7 +119,13 @@ public final class MyOptimizer {
         }
 
         if (isAllGlobal) {
-            if (dataNodes != null && dataNodes.size() > 0) { //all global table
+            if (dataNodes == null) { // all nonamenode
+                String db = SchemaUtil.getRandomDb();
+                SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(db);
+                node.setNoshardNode(schemaConfig.getAllDataNodes());
+                resultDataNodes.addAll(schemaConfig.getAllDataNodes());
+                return 1;
+            } else if (dataNodes.size() > 0) { //all global table
                 node.setNoshardNode(dataNodes);
                 resultDataNodes.addAll(dataNodes);
                 String sql = node.getSql();

@@ -53,7 +53,8 @@ public class SystemConfigLoader implements Loader<SystemConfig, XMLServerLoader>
             if (validVersion) {
                 Versions.setServerVersion(system.getFakeMySQLVersion());
             } else {
-                throw new ConfigException("The specified MySQL Version (" + system.getFakeMySQLVersion() + ") is not valid.");
+                throw new ConfigException("The specified MySQL Version (" + system.getFakeMySQLVersion() + ") is not valid, " +
+                        "the version should look like 'x.y.z'.");
             }
         }
     }

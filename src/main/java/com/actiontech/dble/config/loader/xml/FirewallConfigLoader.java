@@ -69,7 +69,7 @@ public class FirewallConfigLoader implements Loader<FirewallConfig, XMLServerLoa
                 firewall.setBlackListCheck(check);
 
                 Map<String, Object> props = ConfigUtil.loadElements((Element) node);
-                ParameterMapping.mapping(wallConfig, props);
+                ParameterMapping.mapping(wallConfig, props, xsl.problemReporter);
                 if (props.size() > 0) {
                     String[] propItem = new String[props.size()];
                     props.keySet().toArray(propItem);

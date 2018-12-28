@@ -16,6 +16,7 @@ public class RBTreeList<E> extends AbstractList<E> {
     private Object[] elementData;
     private int size;
     private RBTNode<E> root;
+    private List<E> orderList = null;
 
     public RBTreeList(int initialCapacity, Comparator<E> comparator) {
         super();
@@ -546,6 +547,15 @@ public class RBTreeList<E> extends AbstractList<E> {
     private void rangeCheck(int index) {
         if (index >= size)
             throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size);
+    }
+
+    public E inOrderOf(int index) {
+        if (orderList == null) {
+            List<E> list = new ArrayList<>(size);
+            inOrder(root, list);
+            orderList = list;
+        }
+        return orderList.get(index);
     }
 
     static class RBTNode<E> {

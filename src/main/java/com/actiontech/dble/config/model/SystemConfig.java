@@ -357,7 +357,7 @@ public final class SystemConfig {
         if (CharsetUtil.getCharsetDefaultIndex(charset) > 0) {
             this.charset = charset;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "charset", charset, this.charset));
+            problemReporter.warn("Property [ charset ] '" + charset + "' in server.xml is illegal, use " + this.charset + " replaced");
         }
     }
 

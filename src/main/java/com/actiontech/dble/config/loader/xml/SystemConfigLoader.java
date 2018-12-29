@@ -27,7 +27,7 @@ public class SystemConfigLoader implements Loader<SystemConfig, XMLServerLoader>
             Node node = list.item(i);
             if (node instanceof Element) {
                 Map<String, Object> props = ConfigUtil.loadElements((Element) node);
-                ParameterMapping.mapping(system, props);
+                ParameterMapping.mapping(system, props, xsl.problemReporter);
                 if (props.size() > 0) {
                     String[] propItem = new String[props.size()];
                     props.keySet().toArray(propItem);

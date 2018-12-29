@@ -45,7 +45,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 
     public XMLSchemaLoader(String schemaFile, String ruleFile, boolean lowerCaseNames, ProblemReporter problemReporter) {
         //load rule.xml
-        XMLRuleLoader ruleLoader = new XMLRuleLoader(ruleFile);
+        XMLRuleLoader ruleLoader = new XMLRuleLoader(ruleFile, problemReporter);
         this.tableRules = ruleLoader.getTableRules();
         this.dataHosts = new HashMap<>();
         this.dataNodes = new HashMap<>();

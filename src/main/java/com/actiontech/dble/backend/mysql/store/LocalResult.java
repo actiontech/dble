@@ -30,7 +30,6 @@ public abstract class LocalResult implements ResultStore {
     protected RowDataPacket currentRow;
     protected RowDataPacket lastRow;
     protected boolean isClosed;
-    protected boolean isDone;
     protected Lock lock;
     /* @bug 1208 */
     protected String charset = "UTF-8";
@@ -42,7 +41,6 @@ public abstract class LocalResult implements ResultStore {
         this.pool = pool;
         init();
         this.isClosed = false;
-        this.isDone = false;
         this.lock = new ReentrantLock();
         this.charset = charset;
     }
@@ -127,7 +125,6 @@ public abstract class LocalResult implements ResultStore {
     public void done() {
         lock.lock();
         try {
-            isDone = true;
             if (this.isClosed)
                 return;
             if (external == null)

@@ -68,26 +68,22 @@ public class DistinctLocalResult extends LocalResult {
      * @return next row
      */
     public RowDataPacket next() {
-        if (isDone) {
-            return super.next();
-        } else {
-            lock.lock();
-            try {
-                if (this.isClosed)
-                    return null;
-                if (++rowId < rowCount) {
-                    if (external != null) {
-                        currentRow = external.next();
-                    } else {
-                        currentRow = ((RBTreeList<RowDataPacket>) rows).inOrderOf(rowId);
-                    }
+        lock.lock();
+        try {
+            if (this.isClosed)
+                return null;
+            if (++rowId < rowCount) {
+                if (external != null) {
+                    currentRow = external.next();
                 } else {
-                    currentRow = null;
+                    currentRow = ((RBTreeList<RowDataPacket>) rows).inOrderOf(rowId);
                 }
-                return currentRow;
-            } finally {
-                lock.unlock();
+            } else {
+                currentRow = null;
             }
+            return currentRow;
+        } finally {
+            lock.unlock();
         }
     }
 

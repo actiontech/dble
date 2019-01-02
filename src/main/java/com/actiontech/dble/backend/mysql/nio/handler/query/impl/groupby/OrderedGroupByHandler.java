@@ -92,7 +92,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
             sums.add(sum);
         }
         comparator = new RowDataComparator(this.fieldPackets, this.groupBys, this.isAllPushDown(), this.type());
-        prepareSumAggregators(sums, this.referredSumFunctions, this.fieldPackets, this.isAllPushDown(), true, (MySQLConnection) conn);
+        prepareSumAggregators(sums, this.referredSumFunctions, this.fieldPackets, this.isAllPushDown());
         setupSumFunctions(sums);
         sendGroupFieldPackets(conn);
     }
@@ -192,7 +192,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
      * @return
      */
     protected void prepareSumAggregators(List<ItemSum> functions, List<ItemSum> sumFunctions, List<FieldPacket> packets,
-                                         boolean isAllPushDown, boolean needDistinct, MySQLConnection conn) {
+                                         boolean isAllPushDown) {
         LOGGER.debug("prepare_sum_aggregators");
         for (int i = 0; i < functions.size(); i++) {
             ItemSum func = functions.get(i);
@@ -205,7 +205,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
                         setMemSizeController(session.getOtherBufferMC());
                 distinctStores.add(store);
             }
-            func.setAggregator(needDistinct && func.hasWithDistinct() ?
+            func.setAggregator(func.hasWithDistinct() ?
                             AggregatorType.DISTINCT_AGGREGATOR : AggregatorType.SIMPLE_AGGREGATOR,
                     store);
         }

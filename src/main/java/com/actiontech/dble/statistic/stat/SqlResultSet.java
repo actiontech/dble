@@ -5,13 +5,20 @@
 
 package com.actiontech.dble.statistic.stat;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * SqlResultSet
  */
 public class SqlResultSet {
     private String sql;
-    private long resultSetSize = 0;
-    private int count = 1;
+    private long resultSetSize;
+    private AtomicInteger count = new AtomicInteger(1);
+
+    SqlResultSet(String sql, long resultSetSize) {
+        this.sql = sql;
+        this.resultSetSize = resultSetSize;
+    }
 
     public String getSql() {
         return sql;
@@ -30,12 +37,10 @@ public class SqlResultSet {
     }
 
     public int getCount() {
-        return count;
+        return this.count.get();
     }
 
     public void count() {
-        this.count++;
+        this.count.incrementAndGet();
     }
-
-
 }

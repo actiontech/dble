@@ -225,20 +225,10 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                 //remove always true
                 if (!RouterUtil.isConditionAlwaysTrue(x) && !notInWhere) {
                     hasOrCondition = true;
-
                     WhereUnit whereUnit;
-                    if (conditions.size() > 0) {
-                        whereUnit = new WhereUnit();
-                        whereUnit.setFinishedParse(true);
-                        whereUnit.addOutConditions(getConditions());
-                        whereUnit.addOutRelationships(getRelationships());
-                        WhereUnit innerWhereUnit = new WhereUnit(x);
-                        whereUnit.addSubWhereUnit(innerWhereUnit);
-                    } else {
-                        whereUnit = new WhereUnit(x);
-                        whereUnit.addOutConditions(getConditions());
-                        whereUnit.addOutRelationships(getRelationships());
-                    }
+                    whereUnit = new WhereUnit(x);
+                    whereUnit.addOutConditions(getConditions());
+                    whereUnit.addOutRelationships(getRelationships());
                     whereUnits.add(whereUnit);
                 }
                 return false;
@@ -536,28 +526,34 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
      * splitConditions
      */
     private List<List<Condition>> splitConditions() {
+        //pre deal with condition and whereUnits
+        reBuildWhereUnits();
+
+        this.storedWhereUnits.addAll(whereUnits);
+
         //split according to or expr
         for (WhereUnit whereUnit : whereUnits) {
             splitUntilNoOr(whereUnit);
         }
+        loopFindSubOrCondition(storedWhereUnits);
 
-        this.storedWhereUnits.addAll(whereUnits);
-
-        loopFindSubWhereUnit(whereUnits);
 
         for (WhereUnit whereUnit : storedWhereUnits) {
-            this.getConditionsFromWhereUnit(whereUnit);
+            this.resetCondtionsFromWhereUnit(whereUnit);
         }
 
         return mergedConditions();
     }
 
     /**
-     * FIND WhereUnit
+     * Loop all the splitedExprList and try to accept them again
+     * if the Expr in splitedExprList is still  a OR-Expr just deal with it
+     * <p>
+     * This function only recursively all child splitedExpr and make them split again
      *
      * @param whereUnitList
      */
-    private void loopFindSubWhereUnit(List<WhereUnit> whereUnitList) {
+    private void loopFindSubOrCondition(List<WhereUnit> whereUnitList) {
         List<WhereUnit> subWhereUnits = new ArrayList<>();
         for (WhereUnit whereUnit : whereUnitList) {
             if (whereUnit.getSplitedExprList().size() > 0) {
@@ -566,10 +562,11 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                     reset();
                     if (isExprHasOr(sqlExpr)) {
                         removeSplitedList.add(sqlExpr);
-                        WhereUnit subWhereUnit = this.whereUnits.get(0);
-                        splitUntilNoOr(subWhereUnit);
-                        whereUnit.addSubWhereUnit(subWhereUnit);
-                        subWhereUnits.add(subWhereUnit);
+                        for (WhereUnit subWhereUnit : whereUnits) {
+                            splitUntilNoOr(subWhereUnit);
+                            whereUnit.addSubWhereUnit(subWhereUnit);
+                            subWhereUnits.add(subWhereUnit);
+                        }
                     } else {
                         this.relationships.clear();
                         this.conditions.clear();
@@ -582,12 +579,85 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             subWhereUnits.addAll(whereUnit.getSubWhereUnit());
         }
         if (subWhereUnits.size() > 0) {
-            loopFindSubWhereUnit(subWhereUnits);
+            loopFindSubOrCondition(subWhereUnits);
+        }
+    }
+
+    /**
+     * reBuild WhereUnits
+     */
+    private void reBuildWhereUnits() {
+        relationMerge(getRelationships());
+        if (conditions.size() > 0) {
+            for (int i = 0; i < whereUnits.size(); i++) {
+                WhereUnit orgUnit = whereUnits.get(i);
+                WhereUnit whereUnit = new WhereUnit();
+                whereUnit.setFinishedParse(true);
+                whereUnit.addOutConditions(getConditions());
+                whereUnit.addOutRelationships(getRelationships());
+                WhereUnit innerWhereUnit = new WhereUnit(orgUnit.getCanSplitExpr());
+                whereUnit.addSubWhereUnit(innerWhereUnit);
+                whereUnits.set(i, whereUnit);
+            }
+        }
+    }
+
+    /**
+     * Equal or not equal to relationship transfer
+     * E.g.  ntest.id = mtest.id and xtest.id = ntest.id
+     * we try to add a derivative relationship "xtest.id = mtest.id"
+     * so when there has limit in mtest.id the xtest.id can also get the limit
+     * P.S.:Only order insensitive operator can be optimize,like = or <=>
+     *
+     * @param relationships
+     */
+    private void relationMerge(Set<Relationship> relationships) {
+        HashSet<Relationship> loopReSet = new HashSet<>();
+        loopReSet.addAll(relationships);
+        for (Relationship re : loopReSet) {
+            for (Relationship inv : loopReSet) {
+                if (inv.getOperator().equals(re.getOperator()) && (inv.getOperator().equals("=") || inv.getOperator().equals("<=>"))) {
+                    List<Column> tempSet = new ArrayList<>();
+                    addAndCheckDuplicate(tempSet, re.getLeft());
+                    addAndCheckDuplicate(tempSet, re.getRight());
+                    addAndCheckDuplicate(tempSet, inv.getLeft());
+                    addAndCheckDuplicate(tempSet, inv.getRight());
+                    if (tempSet.size() == 2) {
+                        Relationship rs1 = new Relationship(tempSet.get(0), tempSet.get(1), inv.getOperator());
+                        Relationship rs2 = new Relationship(tempSet.get(1), tempSet.get(0), inv.getOperator());
+                        if (relationships.contains(rs1) || relationships.contains(rs2)) {
+                            continue;
+                        } else {
+                            relationships.add(rs1);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * find how mach non-repeating column in 2 relationships
+     * E.g. A = B and B = C the result size is 2
+     * A = B and C = D the result size is 4
+     * A = B and B = A the result size is 0
+     * when the result size is 2,we can know that there is 3 columns in  2 relationships
+     * and the derivative relationship may be needed
+     *
+     * @param tempSet
+     * @param tmp
+     */
+    private void addAndCheckDuplicate(List<Column> tempSet, Column tmp) {
+        if (tempSet.contains(tmp)) {
+            tempSet.remove(tmp);
+        } else {
+            tempSet.add(tmp);
         }
     }
 
     private boolean isExprHasOr(SQLExpr expr) {
         expr.accept(this);
+        reBuildWhereUnits();
         return hasOrCondition;
     }
 
@@ -595,22 +665,25 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         if (storedWhereUnits.size() == 0) {
             return new ArrayList<>();
         }
+
         for (WhereUnit whereUnit : storedWhereUnits) {
-            mergeOneWhereUnit(whereUnit);
+            mergeSubConditionWithOuterCondition(whereUnit);
         }
+
         return getMergedConditionList(storedWhereUnits);
 
     }
 
     /**
-     * mergeOneWhereUnit
+     * mergeSubConditionWithOuterCondition
+     * Only subWhereUnit will be deal
      *
      * @param whereUnit
      */
-    private void mergeOneWhereUnit(WhereUnit whereUnit) {
+    private void mergeSubConditionWithOuterCondition(WhereUnit whereUnit) {
         if (whereUnit.getSubWhereUnit().size() > 0) {
             for (WhereUnit sub : whereUnit.getSubWhereUnit()) {
-                mergeOneWhereUnit(sub);
+                mergeSubConditionWithOuterCondition(sub);
             }
 
             if (whereUnit.getSubWhereUnit().size() > 1) {
@@ -625,7 +698,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                         extendConditionsFromRelations(aMergedConditionList, whereUnit.getOutRelationships());
                     }
                 }
-                whereUnit.setConditionList(mergedConditionList);
+                whereUnit.getConditionList().addAll(mergedConditionList);
             } else if (whereUnit.getSubWhereUnit().size() == 1) {
                 List<List<Condition>> subConditionList = whereUnit.getSubWhereUnit().get(0).getConditionList();
                 if (whereUnit.getOutConditions().size() > 0 && subConditionList.size() > 0) {
@@ -694,7 +767,14 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     }
 
 
-    private void getConditionsFromWhereUnit(WhereUnit whereUnit) {
+    /**
+     * turn all the condition in or into conditionList
+     * exp (conditionA OR conditionB) into conditionList{conditionA,conditionB}
+     * so the conditionA,conditionB can be group with outer conditions
+     *
+     * @param whereUnit
+     */
+    private void resetCondtionsFromWhereUnit(WhereUnit whereUnit) {
         List<List<Condition>> retList = new ArrayList<>();
         List<Condition> outSideCondition = new ArrayList<>();
         outSideCondition.addAll(conditions);
@@ -718,12 +798,12 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         whereUnit.setConditionList(retList);
 
         for (WhereUnit subWhere : whereUnit.getSubWhereUnit()) {
-            getConditionsFromWhereUnit(subWhere);
+            resetCondtionsFromWhereUnit(subWhere);
         }
     }
 
     /**
-     * splitUntilNoOr
+     * split on conditions into whereUnit..splitedExprList
      *
      * @param whereUnit
      */
@@ -737,21 +817,21 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         } else {
             SQLBinaryOpExpr expr = whereUnit.getCanSplitExpr();
             if (expr.getOperator() == SQLBinaryOperator.BooleanOr) {
-                addExprIfNotFalse(whereUnit, expr.getRight());
+                addExprNotFalse(whereUnit, expr.getRight());
                 if (expr.getLeft() instanceof SQLBinaryOpExpr) {
                     whereUnit.setCanSplitExpr((SQLBinaryOpExpr) expr.getLeft());
                     splitUntilNoOr(whereUnit);
                 } else {
-                    addExprIfNotFalse(whereUnit, expr.getLeft());
+                    addExprNotFalse(whereUnit, expr.getLeft());
                 }
             } else {
-                addExprIfNotFalse(whereUnit, expr);
+                addExprNotFalse(whereUnit, expr);
                 whereUnit.setFinishedParse(true);
             }
         }
     }
 
-    private void addExprIfNotFalse(WhereUnit whereUnit, SQLExpr expr) {
+    private void addExprNotFalse(WhereUnit whereUnit, SQLExpr expr) {
         if (!RouterUtil.isConditionAlwaysFalse(expr)) {
             whereUnit.addSplitedExpr(expr);
         }
@@ -788,6 +868,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     public String getCurrentTable() {
         return currentTable;
     }
+
     private void extendConditionsFromRelations(List<Condition> conds, Set<Relationship> relations) {
         List<Condition> newConds = new ArrayList<>();
         Iterator<Condition> iterator = conds.iterator();

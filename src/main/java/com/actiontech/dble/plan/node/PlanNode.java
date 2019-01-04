@@ -320,10 +320,14 @@ public abstract class PlanNode {
         nameContext.setSelectFirst(false);
         if (parent instanceof MergeNode) {
             if (parent.getChildren().get(1) != null && parent.getChildren().get(1) == this) {
-                List<Item> alaisList = parent.getChildren().get(0).getColumnsSelected();
+                List<Item> aliasList = parent.getChildren().get(0).getColumnsSelected();
+                if (aliasList.size() != columnsSelected.size()) {
+                    throw new MySQLOutPutException(ErrorCode.ER_WRONG_NUMBER_OF_COLUMNS_IN_SELECT, "21000",
+                            "The used SELECT statements have a different number of columns");
+                }
                 for (int i = 0; i < columnsSelected.size(); i++) {
                     Item sel = columnsSelected.get(i);
-                    Item beforeUnion = alaisList.get(i);
+                    Item beforeUnion = aliasList.get(i);
                     sel.setAlias(beforeUnion.getAlias() == null ? beforeUnion.getItemName() : beforeUnion.getAlias());
                 }
             }

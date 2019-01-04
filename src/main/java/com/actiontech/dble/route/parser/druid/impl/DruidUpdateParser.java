@@ -53,7 +53,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
         } else {
             SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, (SQLExprTableSource) tableSource);
             if (!ServerPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), ServerPrivileges.CheckType.UPDATE)) {
-                String msg = "The statement DML privilege check is not passed, sql:" + stmt;
+                String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                 throw new SQLNonTransientException(msg);
             }
             schema = schemaInfo.getSchemaConfig();

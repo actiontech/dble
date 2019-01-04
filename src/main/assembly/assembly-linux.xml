@@ -66,6 +66,10 @@
                 <exclude>**/*</exclude>
             </excludes>
         </fileSet>
+		 <fileSet>
+            <directory>${basedir}/algorithm</directory>
+            <outputDirectory>dble/algorithm</outputDirectory>
+        </fileSet>
     </fileSets>
 
 </assembly>

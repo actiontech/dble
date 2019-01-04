@@ -42,7 +42,7 @@
         <!--<property name="costSamplePercent">1</property>-->
 
         <!--connection -->
-        <!--<property name="charset">utf-8</property>-->
+        <!--<property name="charset">utf8</property>-->
         <!--<property name="maxPacketSize">16777216</property>-->
         <!--<property name="txIsolation">3</property>-->
 
@@ -78,9 +78,9 @@
         <!-- use XA transaction ,the finished XA log will removed. the default period is 1000 milliseconds-->
         <property name="xaLogCleanPeriod">1000</property>
         <!-- XA Recovery Log path -->
-        <!--<property name="XARecoveryLogBaseDir">/tmlogs/</property>-->
+        <!--<property name="xaRecoveryLogBaseDir">/tmlogs/</property>-->
         <!-- XA Recovery Log name -->
-        <!--<property name="XARecoveryLogBaseName">tmlog</property>-->
+        <!--<property name="xaRecoveryLogBaseName">tmlog</property>-->
 
         <!-- true is use JoinStrategy, default false-->
         <property name="useJoinStrategy">true</property>
@@ -96,7 +96,7 @@
         <property name="bufferPoolChunkSize">4096</property>
         <property name="bufferPoolPageNumber">512</property>
         <property name="bufferPoolPageSize">2097152</property>
-        <!--<property name="bufferPoolPageSize">mappedFileSize</property>-->
+        <!--<property name="mappedFileSize">2097152</property>-->
 
         <!-- sql statistics-->
         <!-- 1 means use SQL statistics, 0 means not -->

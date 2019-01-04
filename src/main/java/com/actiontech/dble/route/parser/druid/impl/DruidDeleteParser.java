@@ -47,7 +47,7 @@ public class DruidDeleteParser extends DefaultDruidParser {
             StringPtr noShardingNode = new StringPtr(null);
             Set<String> schemas = new HashSet<>();
             if (!SchemaUtil.isNoSharding(sc, (SQLJoinTableSource) tableSource, stmt, stmt, schemaName, schemas, noShardingNode)) {
-                String msg = "DELETE query with multiple tables is not supported, sql:" + stmt;
+                String msg = "DELETE query with multiple tables is not supported, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                 throw new SQLNonTransientException(msg);
             } else {
                 return routeToNoSharding(schema, rrs, schemas, noShardingNode);
@@ -56,7 +56,7 @@ public class DruidDeleteParser extends DefaultDruidParser {
             SQLExprTableSource deleteTableSource = (SQLExprTableSource) tableSource;
             SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, deleteTableSource);
             if (!ServerPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), CheckType.DELETE)) {
-                String msg = "The statement DML privilege check is not passed, sql:" + stmt;
+                String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                 throw new SQLNonTransientException(msg);
             }
             schema = schemaInfo.getSchemaConfig();
@@ -66,7 +66,7 @@ public class DruidDeleteParser extends DefaultDruidParser {
                 StringPtr noShardingNode = new StringPtr(null);
                 Set<String> schemas = new HashSet<>();
                 if (!SchemaUtil.isNoSharding(sc, deleteTableSource, stmt, stmt, schemaInfo.getSchema(), schemas, noShardingNode)) {
-                    String msg = "DELETE query with sub-query  is not supported, sql:" + stmt;
+                    String msg = "DELETE query with sub-query  is not supported, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                     throw new SQLNonTransientException(msg);
                 } else {
                     return routeToNoSharding(schema, rrs, schemas, noShardingNode);

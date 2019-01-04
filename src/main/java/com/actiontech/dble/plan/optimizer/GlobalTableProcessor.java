@@ -118,12 +118,11 @@ public final class GlobalTableProcessor {
                 parentSet.addAll(tnChild.getNoshardNode());
                 tn.setNoshardNode(parentSet);
             }
-        }
-        if (tn.getNoshardNode() != null) {
+        } else {
             if (tnChild.getNoshardNode() != null) {
                 tn.getNoshardNode().retainAll(tnChild.getNoshardNode());
             } else {
-                tn.setNoshardNode(null);
+                tn.getNoshardNode().clear();
             }
         }
     }

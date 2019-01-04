@@ -64,10 +64,9 @@ public class TableNode extends PlanNode {
         }
         this.referedTableNodes.add(this);
         if (tableConfig == null) {
-            this.unGlobalTableCount = 1;
             this.setNoshardNode(new HashSet<>(Collections.singletonList(schemaConfig.getDataNode())));
         } else {
-            if (tableConfig.getTableType() != TableTypeEnum.TYPE_GLOBAL_TABLE) {
+            if (tableConfig.getTableType() != TableTypeEnum.TYPE_GLOBAL_TABLE && !tableConfig.isNoSharding()) {
                 this.unGlobalTableCount = 1;
             }
             this.setNoshardNode(new HashSet<>(tableConfig.getDataNodes()));

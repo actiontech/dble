@@ -200,7 +200,7 @@ public final class SchemaUtil {
         }
 
         if (!ServerPrivileges.checkPrivilege(source, schemaInfo.schema, schemaInfo.table, checkType)) {
-            String msg = "The statement DML privilege check is not passed, sql:" + stmt;
+            String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
             throw new SQLNonTransientException(msg);
         }
         String noShardingNode = RouterUtil.isNoSharding(schemaInfo.schemaConfig, schemaInfo.table);

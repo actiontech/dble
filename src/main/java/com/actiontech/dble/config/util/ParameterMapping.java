@@ -5,6 +5,8 @@
 */
 package com.actiontech.dble.config.util;
 
+import com.actiontech.dble.config.ProblemReporter;
+import com.actiontech.dble.util.BooleanUtil;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +38,7 @@ public final class ParameterMapping {
      * @throws IllegalAccessException
      * @throws InvocationTargetException
      */
-    public static void mapping(Object object, Map<String, ?> parameter) throws IllegalAccessException,
+    public static void mapping(Object object, Map<String, ?> parameter, ProblemReporter problemReporter) throws IllegalAccessException,
             InvocationTargetException {
         PropertyDescriptor[] pds = getDescriptors(object.getClass());
         for (PropertyDescriptor pd : pds) {
@@ -49,7 +51,15 @@ public final class ParameterMapping {
                     string = ConfigUtil.filter(string);
                 }
                 if (isPrimitiveType(cls)) {
-                    value = convert(cls, string);
+                    try {
+                        value = convert(cls, string);
+                    } catch (NumberFormatException nfe) {
+                        if (problemReporter != null) {
+                            problemReporter.warn("property [ " + pd.getName() + " ] '" + string + "' data type should be " + cls.toString() + ", skip");
+                        }
+                        parameter.remove(pd.getName());
+                        continue;
+                    }
                 }
             }
             if (cls != null && value != null) {
@@ -99,7 +109,7 @@ public final class ParameterMapping {
         if (cls.equals(String.class)) {
             value = string;
         } else if (cls.equals(Boolean.TYPE)) {
-            value = Boolean.valueOf(string);
+            value = BooleanUtil.parseBoolean(string);
         } else if (cls.equals(Byte.TYPE)) {
             value = Byte.valueOf(string);
         } else if (cls.equals(Short.TYPE)) {

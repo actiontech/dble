@@ -57,7 +57,7 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
                 throw new SQLNonTransientException(msg);
             }
             if (!ServerPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), CheckType.SELECT)) {
-                String msg = "The statement DML privilege check is not passed, sql:" + stmt;
+                String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                 throw new SQLNonTransientException(msg);
             }
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));

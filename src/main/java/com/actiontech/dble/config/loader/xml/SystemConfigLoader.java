@@ -27,7 +27,7 @@ public class SystemConfigLoader implements Loader<SystemConfig, XMLServerLoader>
             Node node = list.item(i);
             if (node instanceof Element) {
                 Map<String, Object> props = ConfigUtil.loadElements((Element) node);
-                ParameterMapping.mapping(system, props);
+                ParameterMapping.mapping(system, props, xsl.problemReporter);
                 if (props.size() > 0) {
                     String[] propItem = new String[props.size()];
                     props.keySet().toArray(propItem);
@@ -39,19 +39,22 @@ public class SystemConfigLoader implements Loader<SystemConfig, XMLServerLoader>
         if (system.getFakeMySQLVersion() != null) {
             boolean validVersion = false;
             String majorMySQLVersion = system.getFakeMySQLVersion();
-            int pos = majorMySQLVersion.indexOf(".") + 1;
-            majorMySQLVersion = majorMySQLVersion.substring(0, majorMySQLVersion.indexOf(".", pos));
-            for (String ver : SystemConfig.MYSQL_VERSIONS) {
-                // version is x.y.z ,just compare the x.y
-                if (majorMySQLVersion.equals(ver)) {
-                    validVersion = true;
+            String[] versions = majorMySQLVersion.split("\\.");
+            if (versions.length == 3) {
+                majorMySQLVersion = versions[0] + "." + versions[1];
+                for (String ver : SystemConfig.MYSQL_VERSIONS) {
+                    // version is x.y.z ,just compare the x.y
+                    if (majorMySQLVersion.equals(ver)) {
+                        validVersion = true;
+                    }
                 }
             }
 
             if (validVersion) {
                 Versions.setServerVersion(system.getFakeMySQLVersion());
             } else {
-                throw new ConfigException("The specified MySQL Version (" + system.getFakeMySQLVersion() + ") is not valid.");
+                throw new ConfigException("The specified MySQL Version (" + system.getFakeMySQLVersion() + ") is not valid, " +
+                        "the version should look like 'x.y.z'.");
             }
         }
     }

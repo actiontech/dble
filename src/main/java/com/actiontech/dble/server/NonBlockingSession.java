@@ -687,7 +687,8 @@ public class NonBlockingSession implements Session {
      */
     public void terminate() {
         // XA MUST BE FINISHED
-        if (source.isTxStart() && this.getXaState() != null && this.getXaState() != TxState.TX_INITIALIZE_STATE) {
+        if ((source.isTxStart() && this.getXaState() != null && this.getXaState() != TxState.TX_INITIALIZE_STATE) ||
+                needWaitFinished) {
             return;
         }
         for (BackendConnection node : target.values()) {

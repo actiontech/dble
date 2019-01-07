@@ -173,6 +173,37 @@ public final class ShowHelp {
         //log
         HELPS.put("log @@[file=? limit=? key=? regex=?]", "Report logs by given regex");
 
+        //dryrun
+        HELPS.put("dryrun", "Dry run to check config before reload xml");
+
+        //pause
+        HELPS.put("pause @@DataNode", "Block query requests witch specified dataNodes involved ");
+        HELPS.put("RESUME", "Resume the query requests of the paused dataNodes");
+        HELPS.put("show @@pause", "Show which dataNodes have bean pause");
+
+        //slow_query_log
+        HELPS.put("show @@slow_query_log", "Show if the slow query log is enabled");
+        HELPS.put("enable @@slow_query_log", "Turn on the slow query log");
+        HELPS.put("disable @@slow_query_log", "Turn off the slow query log");
+        HELPS.put("show @@slow_query.time", "Show the threshold of slow sql, the unit is millisecond");
+        HELPS.put("reload @@slow_query.time", "Reset the threshold of slow sql");
+        HELPS.put("show @@slow_query.flushperiod", "Show the min flush period for writing to disk");
+        HELPS.put("reload @@slow_query.flushperiod", "Reset the flush period");
+        HELPS.put("show @@slow_query.flushsize", "Show the min flush size for writing to disk");
+        HELPS.put("reload @@slow_query.flushsize", "Reset the flush size");
+
+        //create database
+        HELPS.put("create database @@dataNode ='dn......'", "create database for datanode setted in schema.xml");
+
+        //check @@metadata
+        HELPS.put("check @@metadata", "show last time of `reload @@metadata`/start dble");
+        HELPS.put("check full @@metadata", "show detail information of metadata");
+
+        //alert
+        HELPS.put("show @@alert", "Show if the alert is enabled");
+        HELPS.put("enable @@alert", "Turn on the alert");
+        HELPS.put("disable @@alert", "Turn off the alert");
+
         // list sort
         KEYS.addAll(HELPS.keySet());
     }

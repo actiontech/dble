@@ -48,7 +48,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
             sql = source.getSession2().getRemingSql();
         }
         //Preliminary judgment of multi statement
-        if (source.getSession2().generalNextStatement(sql)) {
+        if (source.isMultStatementAllow() && source.getSession2().generalNextStatement(sql)) {
             sql = sql.substring(0, ParseUtil.findNextBreak(sql));
         }
         source.setExecuteSql(sql);

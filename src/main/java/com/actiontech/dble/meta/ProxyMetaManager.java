@@ -83,6 +83,10 @@ public class ProxyMetaManager {
         return timestamp;
     }
 
+    public Map<String, String> getLockTables() {
+        return lockTables;
+    }
+
     private String genLockKey(String schema, String tbName) {
         return schema + "." + tbName;
     }

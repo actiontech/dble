@@ -1,5 +1,10 @@
 <?xml version="1.0"?>
 
+<!--
+  ~ Copyright (C) 2016-2019 ActionTech.
+  ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+  -->
+
 <!DOCTYPE suppressions PUBLIC
         "-//Puppy Crawl//DTD Suppressions 1.1//EN"
         "http://checkstyle.sourceforge.net/dtds/suppressions_1_1.dtd">

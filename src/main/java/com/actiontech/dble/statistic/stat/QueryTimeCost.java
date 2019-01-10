@@ -23,6 +23,8 @@ public class QueryTimeCost {
 
     private AtomicBoolean firstBackConRes = new AtomicBoolean(false);
 
+    private AtomicBoolean firstBackConEof = new AtomicBoolean(false);
+
     public QueryTimeCost() {
     }
 
@@ -74,6 +76,10 @@ public class QueryTimeCost {
 
     public int getBackendSize() {
         return backendSize;
+    }
+
+    public AtomicBoolean getFirstBackConEof() {
+        return firstBackConEof;
     }
 
 }

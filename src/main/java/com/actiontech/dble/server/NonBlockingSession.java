@@ -22,6 +22,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XACommitNode
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XARollbackNodesHandler;
 import com.actiontech.dble.backend.mysql.store.memalloc.MemSizeController;
 import com.actiontech.dble.backend.mysql.xa.TxState;
+import com.actiontech.dble.btrace.provider.ComplexQueryProvider;
 import com.actiontech.dble.btrace.provider.CostTimeProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
@@ -95,6 +96,7 @@ public class NonBlockingSession implements Session {
     private MemSizeController otherBufferMC;
     private QueryTimeCost queryTimeCost;
     private CostTimeProvider provider;
+    private ComplexQueryProvider xprovider;
     private volatile boolean timeCost = false;
     private AtomicBoolean firstBackConRes = new AtomicBoolean(false);
 
@@ -143,6 +145,7 @@ public class NonBlockingSession implements Session {
         }
         queryTimeCost = new QueryTimeCost();
         provider = new CostTimeProvider();
+        xprovider = new ComplexQueryProvider();
         provider.beginRequest(source.getId());
         if (requestTime == 0) {
             requestTime = System.nanoTime();
@@ -184,6 +187,20 @@ public class NonBlockingSession implements Session {
         }
         provider.endRoute(source.getId());
         queryTimeCost.setCount(rrs.getNodes() == null ? 0 : rrs.getNodes().length);
+    }
+
+    public void endComplexRoute() {
+        if (!timeCost) {
+            return;
+        }
+        xprovider.endRoute(source.getId());
+    }
+
+    public void endComplexExecute() {
+        if (!timeCost) {
+            return;
+        }
+        xprovider.endComplexExecute(source.getId());
     }
 
     public void readyToDeliver() {
@@ -302,6 +319,13 @@ public class NonBlockingSession implements Session {
             Map<MySQLConnection, TraceRecord> connMap = new ConcurrentHashMap<>();
             connMap.put(conn, record);
             traceResult.addToConnFinishedMap(responseHandler, connMap);
+        }
+
+        if (!timeCost) {
+            return;
+        }
+        if (queryTimeCost.getFirstBackConEof().compareAndSet(false, true)) {
+            xprovider.firstComplexEof(source.getId());
         }
     }
 

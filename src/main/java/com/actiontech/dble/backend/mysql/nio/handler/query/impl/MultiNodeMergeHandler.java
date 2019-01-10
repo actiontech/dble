@@ -148,6 +148,7 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(conn.toString() + " 's rowEof is reached.");
         }
+
         if (this.terminate.get())
             return;
         if (isEasyMerge) {
@@ -267,8 +268,10 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
             }
         }
     }
+
     /**
      * terminatePreHandler
+     *
      * @param handler handler
      */
     private void terminatePreHandler(DMLResponseHandler handler) {

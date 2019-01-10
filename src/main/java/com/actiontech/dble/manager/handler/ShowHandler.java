@@ -214,6 +214,9 @@ public final class ShowHandler {
             case ManagerParseShow.COLLATION:
                 ShowCollatin.execute(c);
                 break;
+            case ManagerParseShow.DDL_STATE:
+                ShowDdlState.execute(c);
+                break;
             default:
                 if (isSupportShow(stmt)) {
                     Iterator<PhysicalDBPool> iterator = DbleServer.getInstance().getConfig().getDataHosts().values().iterator();

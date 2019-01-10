@@ -75,6 +75,7 @@ public final class ManagerParseShow {
     public static final int ALERT = 59;
 
     public static final int COLLATION = 60;
+    public static final int DDL_STATE = 61;
 
     public static final Pattern PATTERN_FOR_TABLE_INFO = Pattern.compile("^(\\s*schema\\s*=\\s*)([a-zA-Z_0-9]+)" +
             "(\\s+and\\s+table\\s*=\\s*)([a-zA-Z_0-9]+)\\s*$", Pattern.CASE_INSENSITIVE);
@@ -396,14 +397,32 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
-    // SHOW @@DATA
+    // SHOW @@D
     private static int show2DCheck(String stmt, int offset) {
-        if (stmt.length() > offset + "ATA".length()) {
+        if (stmt.length() > ++offset) {
+            switch (stmt.charAt(offset)) {
+                case 'A':
+                case 'a':
+                    return show2DACheck(stmt, offset);
+                case 'D':
+                case 'd':
+                    return show2DDCheck(stmt, offset);
+                case 'I':
+                case 'i':
+                    return show2DICheck(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    // SHOW @@DATA
+    private static int show2DACheck(String stmt, int offset) {
+        if (stmt.length() > offset + "TA".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-            if ((c1 == 'A' || c1 == 'a') && (c2 == 'T' || c2 == 't') && (c3 == 'A' || c3 == 'a') &&
-                    stmt.length() > ++offset) {
+            if ((c1 == 'T' || c1 == 't') && (c2 == 'A' || c2 == 'a') && stmt.length() > ++offset) {
                 switch (stmt.charAt(offset)) {
                     case 'B':
                     case 'b':
@@ -417,9 +436,18 @@ public final class ManagerParseShow {
                     default:
                         return OTHER;
                 }
-            } else if ((c1 == 'I' || c1 == 'i') &&
-                    (c2 == 'R' || c2 == 'r') &&
-                    (c3 == 'E' || c3 == 'e') &&
+            }
+        }
+        return OTHER;
+    }
+
+    // SHOW @@DIRECTMEMORY
+    private static int show2DICheck(String stmt, int offset) {
+        if (stmt.length() > offset + "RE".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            if ((c1 == 'R' || c1 == 'r') &&
+                    (c2 == 'E' || c2 == 'e') &&
                     stmt.length() > ++offset) {   /**DIRECTMEMORY**/
                 switch (stmt.charAt(offset)) {
                     case 'C':
@@ -429,6 +457,15 @@ public final class ManagerParseShow {
                         return OTHER;
                 }
             }
+        }
+        return OTHER;
+    }
+
+    // SHOW @@DDL
+    private static int show2DDCheck(String stmt, int offset) {
+        char c1 = stmt.charAt(++offset);
+        if ((c1 == 'L' || c1 == 'l') && (++offset == stmt.length() || stmt.substring(offset, stmt.length()).trim().length() == 0)) {
+            return DDL_STATE;
         }
         return OTHER;
     }

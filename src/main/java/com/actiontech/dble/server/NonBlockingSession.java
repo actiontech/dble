@@ -190,7 +190,6 @@ public class NonBlockingSession implements Session {
     }
 
     public void endComplexRoute() {
-        setPreExecuteEnd();
         if (!timeCost) {
             return;
         }
@@ -564,6 +563,7 @@ public class NonBlockingSession implements Session {
                 return;
             }
         }
+        setPreExecuteEnd();
         if (PlanUtil.containsSubQuery(node)) {
             final PlanNode finalNode = node;
             DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {

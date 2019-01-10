@@ -28,7 +28,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -50,8 +49,6 @@ public class MultiNodeMergeHandler extends OwnThreadDMLHandler {
     private int reachedConCount;
     private boolean isEasyMerge;
     private volatile boolean noNeedRows = false;
-
-    private AtomicBoolean hasEof = new AtomicBoolean(false);
 
     public MultiNodeMergeHandler(long id, RouteResultsetNode[] route, boolean autocommit, NonBlockingSession session,
                                  List<Order> orderBys) {

@@ -35,6 +35,7 @@ public final class ManagerParse {
     public static final int DRY_RUN = 17;
     public static final int ENABLE = 18;
     public static final int DISABLE = 19;
+    public static final int KILL_DDL = 20;
 
     public static int parse(String stmt) {
         for (int i = 0; i < stmt.length(); i++) {
@@ -462,7 +463,7 @@ public final class ManagerParse {
                         case '\n':
                             continue;
                         case '@':
-                            return killConnection(stmt, offset);
+                            return killCheck(stmt, offset);
                         default:
                             return OTHER;
                     }
@@ -473,9 +474,61 @@ public final class ManagerParse {
         return OTHER;
     }
 
+    // KILL @@
+    private static int killCheck(String stmt, int offset) {
+        if (stmt.length() > ++offset && stmt.charAt(offset) == '@' && stmt.length() > ++offset) {
+            switch (stmt.charAt(offset)) {
+                case 'C':
+                case 'c':
+                    return killConnection(stmt, offset);
+                case 'D':
+                case 'd':
+                    return killDdl(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    // KILL @@DDL WHERE SCHEMA=? AND TABLE=?
+    private static int killDdl(String stmt, int offset) {
+        if (stmt.length() > offset + "DL ".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+
+            if ((c1 == 'D' || c1 == 'd') && (c2 == 'L' || c2 == 'l')) {
+                while (stmt.length() > ++offset) {
+                    switch (stmt.charAt(offset)) {
+                        case ' ':
+                            continue;
+                        case 'W':
+                        case 'w':
+                            char c3 = stmt.charAt(++offset);
+                            char c4 = stmt.charAt(++offset);
+                            char c5 = stmt.charAt(++offset);
+                            char c6 = stmt.charAt(++offset);
+                            char c7 = stmt.charAt(++offset);
+                            if ((c3 == 'H' || c3 == 'h') &&
+                                    (c4 == 'E' || c4 == 'e') &&
+                                    (c5 == 'R' || c5 == 'r') &&
+                                    (c6 == 'E' || c6 == 'e') &&
+                                    (c7 == ' ')) {
+                                return (offset << 8) | KILL_DDL;
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+        }
+        return OTHER;
+    }
+
     // KILL @@CONNECTION' ' XXXXXX
     private static int killConnection(String stmt, int offset) {
-        if (stmt.length() > offset + "@CONNECTION ".length()) {
+        if (stmt.length() > offset + "ONNECTION ".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
@@ -486,20 +539,16 @@ public final class ManagerParse {
             char c8 = stmt.charAt(++offset);
             char c9 = stmt.charAt(++offset);
             char c10 = stmt.charAt(++offset);
-            char c11 = stmt.charAt(++offset);
-            char c12 = stmt.charAt(++offset);
-            if ((c1 == '@') &&
-                    (c2 == 'C' || c2 == 'c') &&
-                    (c3 == 'O' || c3 == 'o') &&
-                    (c4 == 'N' || c4 == 'n') &&
-                    (c5 == 'N' || c5 == 'n') &&
-                    (c6 == 'E' || c6 == 'e') &&
-                    (c7 == 'C' || c7 == 'c') &&
-                    (c8 == 'T' || c8 == 't') &&
-                    (c9 == 'I' || c9 == 'i') &&
-                    (c10 == 'O' || c10 == 'o') &&
-                    (c11 == 'N' || c11 == 'n') &&
-                    (c12 == ' ' || c12 == '\t' || c12 == '\r' || c12 == '\n')) {
+            if ((c1 == 'O' || c1 == 'o') &&
+                    (c2 == 'N' || c2 == 'n') &&
+                    (c3 == 'N' || c3 == 'n') &&
+                    (c4 == 'E' || c4 == 'e') &&
+                    (c5 == 'C' || c5 == 'c') &&
+                    (c6 == 'T' || c6 == 't') &&
+                    (c7 == 'I' || c7 == 'i') &&
+                    (c8 == 'O' || c8 == 'o') &&
+                    (c9 == 'N' || c9 == 'n') &&
+                    (c10 == ' ' || c10 == '\t' || c10 == '\r' || c10 == '\n')) {
                 while (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':

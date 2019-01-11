@@ -57,6 +57,10 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
             case ManagerParse.KILL_CONN:
                 KillConnection.response(sql, rs >>> SHIFT, c);
                 break;
+            case ManagerParse.KILL_DDL:
+                String tableInfo = sql.substring(rs >>> SHIFT).trim();
+                KillDdl.response(sql, tableInfo, c);
+                break;
             case ManagerParse.OFFLINE:
                 Offline.execute(c);
                 break;

@@ -140,11 +140,13 @@ public final class ShowHelp {
         HELPS.put("show @@thread_used", "Report usage of threads, for optimize performance ");
         HELPS.put("show @@dataNodes where schema=? and table=?", "Report the data nodes info of a table");
         HELPS.put("show @@algorithm where schema=? and table=?", "Report the algorithm info of a table");
+        HELPS.put("show @@ddl", "Report all ddl info in progress");
         // switch
         HELPS.put("switch @@datasource name:index", "Switch dataSource");
 
         // kill
         HELPS.put("kill @@connection id1,id2,...", "Kill the specified connections");
+        HELPS.put("kill @@ddl_lock where schema=? and table=?", "Kill ddl lock held by the specified ddl");
 
         // stop
         HELPS.put("stop @@heartbeat name:time", "Pause dataNode heartbeat");

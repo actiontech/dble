@@ -35,7 +35,7 @@ public final class ManagerParse {
     public static final int DRY_RUN = 17;
     public static final int ENABLE = 18;
     public static final int DISABLE = 19;
-    public static final int KILL_DDL = 20;
+    public static final int KILL_DDL_LOCK = 20;
 
     public static int parse(String stmt) {
         for (int i = 0; i < stmt.length(); i++) {
@@ -491,30 +491,41 @@ public final class ManagerParse {
         return OTHER;
     }
 
-    // KILL @@DDL WHERE SCHEMA=? AND TABLE=?
+    // KILL @@DDL_LOCK WHERE SCHEMA=? AND TABLE=?
     private static int killDdl(String stmt, int offset) {
-        if (stmt.length() > offset + "DL ".length()) {
+        if (stmt.length() > offset + "DL_LOCK ".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
 
-            if ((c1 == 'D' || c1 == 'd') && (c2 == 'L' || c2 == 'l')) {
+            if ((c1 == 'D' || c1 == 'd') &&
+                    (c2 == 'L' || c2 == 'l') &&
+                    (c3 == '_') &&
+                    (c4 == 'L' || c4 == 'l') &&
+                    (c5 == 'O' || c5 == 'o') &&
+                    (c6 == 'C' || c6 == 'c') &&
+                    (c7 == 'K' || c7 == 'k')) {
                 while (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':
                             continue;
                         case 'W':
                         case 'w':
-                            char c3 = stmt.charAt(++offset);
-                            char c4 = stmt.charAt(++offset);
-                            char c5 = stmt.charAt(++offset);
-                            char c6 = stmt.charAt(++offset);
-                            char c7 = stmt.charAt(++offset);
-                            if ((c3 == 'H' || c3 == 'h') &&
-                                    (c4 == 'E' || c4 == 'e') &&
-                                    (c5 == 'R' || c5 == 'r') &&
-                                    (c6 == 'E' || c6 == 'e') &&
-                                    (c7 == ' ')) {
-                                return (offset << 8) | KILL_DDL;
+                            char c8 = stmt.charAt(++offset);
+                            char c9 = stmt.charAt(++offset);
+                            char c10 = stmt.charAt(++offset);
+                            char c11 = stmt.charAt(++offset);
+                            char c12 = stmt.charAt(++offset);
+                            if ((c8 == 'H' || c8 == 'h') &&
+                                    (c9 == 'E' || c9 == 'e') &&
+                                    (c10 == 'R' || c10 == 'r') &&
+                                    (c11 == 'E' || c11 == 'e') &&
+                                    (c12 == ' ')) {
+                                return (offset << 8) | KILL_DDL_LOCK;
                             }
                             break;
                         default:

@@ -172,6 +172,7 @@ public class MySQLPlanNodeVisitor {
                 this.tableNode = viewNode;
                 tableNode.setWithSubQuery(true);
                 this.tableNode.setExistView(true);
+                tableNode.setKeepFieldSchema(false);
                 return true;
             } else {
                 try {

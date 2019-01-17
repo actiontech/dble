@@ -46,6 +46,11 @@ public class NoNameNode extends PlanNode {
         return "";
     }
 
+    @Override
+    public String getPureSchema() {
+        return "";
+    }
+
 
     public String getCatalog() {
         return this.catalog;

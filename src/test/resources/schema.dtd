@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
         <!--
+  ~ Copyright (C) 2016-2019 ActionTech.
+  ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+  -->
+
+        <!--
          -
          - Licensed under the Apache License, Version 2.0 (the "License");
          - you may not use this file except in compliance with the License.
@@ -16,26 +21,24 @@
         <!ELEMENT dble:schema (schema*,dataNode*,dataHost*)>
         <!ATTLIST dble:schema xmlns:dble CDATA #FIXED "http://dble.cloud/">
 
-        <!-- checkSQLschema will be ignored,just for compatibility -->
         <!ELEMENT schema (table*)>
         <!ATTLIST schema name NMTOKEN #REQUIRED>
-        <!ATTLIST schema checkSQLschema NMTOKEN #IMPLIED>
         <!ATTLIST schema dataNode CDATA #IMPLIED>
         <!ATTLIST schema sqlMaxLimit CDATA #IMPLIED>
 
-        <!ELEMENT table (property*,(childTable*))>
+        <!ELEMENT table (childTable*)>
         <!ATTLIST table name CDATA #REQUIRED>
-        <!ATTLIST table nameSuffix CDATA #IMPLIED>
         <!ATTLIST table dataNode CDATA #REQUIRED>
         <!ATTLIST table rule NMTOKEN #IMPLIED>
         <!ATTLIST table ruleRequired NMTOKEN #IMPLIED>
         <!ATTLIST table primaryKey NMTOKEN #IMPLIED>
         <!ATTLIST table autoIncrement NMTOKEN #IMPLIED>
+        <!ATTLIST table incrementColumn NMTOKEN #IMPLIED>
         <!ATTLIST table needAddLimit NMTOKEN #IMPLIED>
         <!ATTLIST table type NMTOKEN #IMPLIED>
 
 
-        <!ELEMENT childTable (property*,(childTable*))>
+        <!ELEMENT childTable (childTable*)>
         <!ATTLIST childTable name NMTOKEN #REQUIRED>
         <!ATTLIST childTable joinKey NMTOKEN #REQUIRED>
         <!ATTLIST childTable parentKey NMTOKEN #REQUIRED>
@@ -43,24 +46,21 @@
         <!ATTLIST childTable autoIncrement NMTOKEN #IMPLIED>
 
 
-        <!ELEMENT dataNode (property*)>
+        <!ELEMENT dataNode EMPTY>
         <!ATTLIST dataNode name CDATA #REQUIRED>
         <!ATTLIST dataNode dataHost CDATA #REQUIRED>
         <!ATTLIST dataNode database CDATA #REQUIRED>
-        <!-- writeType ,dbDriver and dbType will be ignored,just for compatibility -->
-        <!ELEMENT dataHost (heartbeat,(connectionInitSql*),(writeHost+))>
+
+        <!ELEMENT dataHost (heartbeat,(writeHost)*)>
         <!ATTLIST dataHost
                 balance CDATA #REQUIRED
                 maxCon CDATA #REQUIRED
                 minCon CDATA #REQUIRED
                 name NMTOKEN #REQUIRED
-                balance CDATA #REQUIRED
-                switchType  CDATA #IMPLIED
-                slaveThreshold  CDATA #IMPLIED
+                switchType CDATA #IMPLIED
+                slaveThreshold CDATA #IMPLIED
                 tempReadHostAvailable CDATA #IMPLIED
-                writeType CDATA #IMPLIED
-                dbDriver CDATA #IMPLIED
-                dbType CDATA #IMPLIED>
+                keepOrig CDATA #IMPLIED>
 
         <!ELEMENT writeHost (readHost)*>
         <!ATTLIST writeHost
@@ -68,17 +68,22 @@
                 host NMTOKEN #REQUIRED
                 password CDATA #REQUIRED
                 user CDATA #REQUIRED
-                usingDecrypt CDATA #IMPLIED>
+                weight CDATA #IMPLIED
+                id CDATA #IMPLIED
+                usingDecrypt CDATA #IMPLIED
+                disabled CDATA #IMPLIED>
 
         <!ELEMENT heartbeat (#PCDATA)>
         <!ELEMENT connectionInitSql (#PCDATA)>
-        <!ELEMENT readHost (property*) >
+        <!ELEMENT readHost EMPTY >
         <!ATTLIST readHost
                 host NMTOKEN #REQUIRED
                 url CDATA #REQUIRED
                 password CDATA #REQUIRED
                 user NMTOKEN #REQUIRED
                 weight CDATA #IMPLIED
-                usingDecrypt CDATA #IMPLIED>
+                id CDATA #IMPLIED
+                usingDecrypt CDATA #IMPLIED
+                disabled CDATA #IMPLIED>
 
 

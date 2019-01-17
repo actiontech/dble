@@ -220,11 +220,6 @@ public class XMLSchemaLoader implements SchemaLoader {
         NodeList nodeList = node.getElementsByTagName("table");
         for (int i = 0; i < nodeList.getLength(); i++) {
             Element tableElement = (Element) nodeList.item(i);
-
-            //primaryKey used for cache and autoincrement
-            String primaryKey = tableElement.hasAttribute("primaryKey") ? tableElement.getAttribute("primaryKey").toUpperCase() : null;
-            //if autoIncrement,it will use sequence handler
-            boolean autoIncrement = isAutoIncrement(tableElement, primaryKey);
             //limit size of the table
             String needAddLimitStr = ConfigUtil.checkAndGetAttribute(tableElement, "needAddLimit", "true", problemReporter);
             boolean needAddLimit = Boolean.parseBoolean(needAddLimitStr);
@@ -269,9 +264,18 @@ public class XMLSchemaLoader implements SchemaLoader {
             if (tableNames == null) {
                 throw new ConfigException("table name is not found!");
             }
+            //primaryKey used for cache and autoincrement
+            String primaryKey = tableElement.hasAttribute("primaryKey") ? tableElement.getAttribute("primaryKey").toUpperCase() : null;
+            //if autoIncrement,it will use sequence handler
+            String incrementColumn = tableElement.hasAttribute("incrementColumn") ? tableElement.getAttribute("incrementColumn").toUpperCase() : null;
+            boolean autoIncrement = isAutoIncrement(tableElement, primaryKey, incrementColumn);
+
+            if (incrementColumn != null && !autoIncrement) {
+                throw new ConfigException("table " + tableNameElement + " has incrementColumn but not autoIncrement");
+            }
             for (String tableName : tableNames) {
                 TableConfig table = new TableConfig(tableName, primaryKey, autoIncrement, needAddLimit, tableType,
-                        dataNode, (tableRule != null) ? tableRule.getRule() : null, ruleRequired);
+                        dataNode, (tableRule != null) ? tableRule.getRule() : null, ruleRequired, incrementColumn);
                 checkDataNodeExists(table.getDataNodes());
                 if (table.getRule() != null) {
                     checkRuleSuitTable(table);
@@ -298,11 +302,11 @@ public class XMLSchemaLoader implements SchemaLoader {
         return tables;
     }
 
-    private boolean isAutoIncrement(Element tableElement, String primaryKey) {
+    private boolean isAutoIncrement(Element tableElement, String primaryKey, String incrementColumn) {
         String autoIncrementStr = ConfigUtil.checkAndGetAttribute(tableElement, "autoIncrement", "false", problemReporter);
         boolean autoIncrement = Boolean.parseBoolean(autoIncrementStr);
-        if (autoIncrement && primaryKey == null) {
-            throw new ConfigException("autoIncrement is true but primaryKey is not setting!");
+        if (autoIncrement && primaryKey == null && incrementColumn == null) {
+            throw new ConfigException("autoIncrement is true but primaryKey and incrementColumn is not setting!");
         }
         return autoIncrement;
     }
@@ -355,17 +359,22 @@ public class XMLSchemaLoader implements SchemaLoader {
             if (isLowerCaseNames) {
                 cdTbName = cdTbName.toLowerCase();
             }
-            String primaryKey = childTbElement.hasAttribute("primaryKey") ? childTbElement.getAttribute("primaryKey").toUpperCase() : null;
 
-            boolean autoIncrement = isAutoIncrement(childTbElement, primaryKey);
+
             String needAddLimitStr = ConfigUtil.checkAndGetAttribute(childTbElement, "needAddLimit", "true", problemReporter);
             boolean needAddLimit = Boolean.parseBoolean(needAddLimitStr);
 
             //join key ,the parent's column
             String joinKey = childTbElement.getAttribute("joinKey").toUpperCase();
             String parentKey = childTbElement.getAttribute("parentKey").toUpperCase();
+            String primaryKey = childTbElement.hasAttribute("primaryKey") ? childTbElement.getAttribute("primaryKey").toUpperCase() : null;
+            String incrementColumn = childTbElement.hasAttribute("incrementColumn") ? childTbElement.getAttribute("incrementColumn").toUpperCase() : null;
+            boolean autoIncrement = isAutoIncrement(childTbElement, primaryKey, incrementColumn);
+            if (incrementColumn != null && !autoIncrement) {
+                throw new ConfigException("table " + cdTbName + " has incrementColumn but not AutoIncrement");
+            }
             TableConfig table = new TableConfig(cdTbName, primaryKey, autoIncrement, needAddLimit,
-                    TableTypeEnum.TYPE_SHARDING_TABLE, strDatoNodes, null, false, parentTable, joinKey, parentKey);
+                    TableTypeEnum.TYPE_SHARDING_TABLE, strDatoNodes, null, false, parentTable, joinKey, parentKey, incrementColumn);
 
             if (tables.containsKey(table.getName())) {
                 throw new ConfigException("table " + table.getName() + " duplicated!");

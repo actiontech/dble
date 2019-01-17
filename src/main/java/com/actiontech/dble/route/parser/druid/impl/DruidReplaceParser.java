@@ -177,20 +177,21 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         // replace with no column name ：replace into t values(xxx,xxx)
         if (columns == null || columns.size() <= 0) {
             if (isAutoIncrement) {
-                autoIncrement = getPrimaryKeyIndex(schemaInfo, tc.getPrimaryKey());
+                autoIncrement = getIncrementKeyIndex(schemaInfo, tc.getTrueIncrementColumn());
             }
             colSize = orgTbMeta.getColumnsList().size();
             idxGlobal = getIdxGlobalByMeta(isGlobalCheck, orgTbMeta, sb, colSize);
         } else { // replace sql with  column names
-            boolean hasPkInSql = concatColumns(replace, tc, isGlobalCheck, isAutoIncrement, sb, columns);
+            boolean hasIncrementInSql = concatColumns(replace, tc, isGlobalCheck, isAutoIncrement, sb, columns);
+            getIncrementKeyIndex(schemaInfo, tc.getTrueIncrementColumn());
             colSize = columns.size();
-            if (isAutoIncrement && !hasPkInSql) {
+            if (isAutoIncrement && !hasIncrementInSql) {
                 autoIncrement = columns.size();
-                sb.append(",").append(tc.getPrimaryKey());
+                sb.append(",").append(tc.getTrueIncrementColumn());
                 colSize++;
             }
             if (isGlobalCheck) {
-                idxGlobal = (isAutoIncrement && !hasPkInSql) ? columns.size() + 1 : columns.size();
+                idxGlobal = (isAutoIncrement && !hasIncrementInSql) ? columns.size() + 1 : columns.size();
                 sb.append(",").append(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN);
                 colSize++;
             }
@@ -217,10 +218,10 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
 
     private boolean concatColumns(SQLReplaceStatement replace, TableConfig tc, boolean isGlobalCheck, boolean isAutoIncrement, StringBuilder sb, List<SQLExpr> columns) throws SQLNonTransientException {
         sb.append("(");
-        boolean hasPkInSql = false;
+        boolean hasIncrementInSql = false;
         for (int i = 0; i < columns.size(); i++) {
-            if (isAutoIncrement && columns.get(i).toString().equalsIgnoreCase(tc.getPrimaryKey())) {
-                hasPkInSql = true;
+            if (isAutoIncrement && columns.get(i).toString().equalsIgnoreCase(tc.getTrueIncrementColumn())) {
+                hasIncrementInSql = true;
             }
             if (i < columns.size() - 1)
                 sb.append(columns.get(i).toString()).append(",");
@@ -233,7 +234,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
                 throw new SQLNonTransientException(msg);
             }
         }
-        return hasPkInSql;
+        return hasIncrementInSql;
     }
 
 
@@ -254,8 +255,13 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         // check the value number & the column number is all right
         int size = values.size();
         int checkSize = colSize - (idxGlobal < 0 ? 0 : 1);
+        int lowerlimit = colSize - (autoIncrement < 0 ? 0 : 1) - (idxGlobal < 0 ? 0 : 1);
         if (checkSize < size && idxGlobal >= 0) {
             String msg = "In insert Syntax, you can't set value for Global check column!";
+            LOGGER.info(msg);
+            throw new SQLNonTransientException(msg);
+        } else if (size < lowerlimit) {
+            String msg = "Column count doesn't match value count";
             LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }
@@ -341,9 +347,9 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     /**
      * find joinKey index
      *
-     * @param schemaInfo SchemaInfo
+     * @param schemaInfo  SchemaInfo
      * @param replaceStmt MySqlInsertStatement
-     * @param joinKey joinKey
+     * @param joinKey     joinKey
      * @return -1 means no join key,otherwise means the index
      * @throws SQLNonTransientException if not find
      */
@@ -354,8 +360,9 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
 
     /**
      * find the index of the key in column list
-     * @param schemaInfo SchemaInfo
-     * @param replaceStmt SQLReplaceStatement
+     *
+     * @param schemaInfo      SchemaInfo
+     * @param replaceStmt     SQLReplaceStatement
      * @param partitionColumn partitionColumn
      * @return the index of the partition column
      * @throws SQLNonTransientException if not find
@@ -369,11 +376,11 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     /**
      * insert into .... select .... OR insert into table() values (),(),....
      *
-     * @param schemaInfo SchemaInfo
-     * @param rrs RouteResultset
+     * @param schemaInfo      SchemaInfo
+     * @param rrs             RouteResultset
      * @param partitionColumn partitionColumn
-     * @param replace SQLReplaceStatement
-     * @throws SQLNonTransientException  if the column size of values is not correct
+     * @param replace         SQLReplaceStatement
+     * @throws SQLNonTransientException if the column size of values is not correct
      */
     private void parserBatchInsert(SchemaInfo schemaInfo, RouteResultset rrs, String partitionColumn,
                                    SQLReplaceStatement replace) throws SQLNonTransientException {

@@ -350,6 +350,11 @@ public class JoinNode extends PlanNode {
         return null;
     }
 
+    @Override
+    public String getPureSchema() {
+        return null;
+    }
+
     /**
      * exchangeLeftAndRight
      */

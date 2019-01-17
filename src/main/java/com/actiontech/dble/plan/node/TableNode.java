@@ -133,6 +133,11 @@ public class TableNode extends PlanNode {
         return this.getTableName();
     }
 
+    @Override
+    public String getPureSchema() {
+        return this.getSchema();
+    }
+
     public String getSchema() {
         return this.schema;
     }

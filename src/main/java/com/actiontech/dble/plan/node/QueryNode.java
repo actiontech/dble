@@ -59,6 +59,11 @@ public class QueryNode extends PlanNode {
     }
 
     @Override
+    public String getPureSchema() {
+        return this.getChild().getPureSchema();
+    }
+
+    @Override
     public QueryNode copy() {
         QueryNode newTableNode = new QueryNode(this.getChild().copy());
         this.copySelfTo(newTableNode);

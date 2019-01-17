@@ -49,6 +49,11 @@ public class MergeNode extends PlanNode {
         return null;
     }
 
+    @Override
+    public String getPureSchema() {
+        return null;
+    }
+
     public boolean isUnion() {
         return union;
     }

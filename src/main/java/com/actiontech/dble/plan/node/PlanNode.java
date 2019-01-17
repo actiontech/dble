@@ -167,6 +167,8 @@ public abstract class PlanNode {
 
     public abstract String getPureName();
 
+    public abstract String getPureSchema();
+
     /* height of node */
     public abstract int getHeight();
 
@@ -449,9 +451,14 @@ public abstract class PlanNode {
     }
 
     private NamedField makeOutNamedField(Item sel) {
-        String schema = null;
-        if (keepFieldSchema && sel instanceof ItemIdent) {
-            schema = ((ItemIdent) sel).getDbName();
+        String tmpSchema = null;
+        if (keepFieldSchema) {
+            if (sel instanceof ItemIdent) {
+                tmpSchema = ((ItemIdent) sel).getDbName();
+            }
+            if (sel.basicConstItem()) {
+                tmpSchema = getPureSchema();
+            }
         }
         String tmpFieldTable = sel.getTableName();
         String tmpFieldName = sel.getItemName();
@@ -461,7 +468,7 @@ public abstract class PlanNode {
             tmpFieldTable = getPureName();
         if (sel.getAlias() != null)
             tmpFieldName = sel.getAlias();
-        return new NamedField(schema, tmpFieldTable, tmpFieldName, this);
+        return new NamedField(tmpSchema, tmpFieldTable, tmpFieldName, this);
     }
 
     Item setUpItem(Item sel) {

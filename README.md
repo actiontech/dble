@@ -1,5 +1,11 @@
 # dble
 
+
+[![GitHub issues](https://img.shields.io/github/issues/actiontech/dble.svg)](https://github.com/actiontech/dble/issues)
+[![GitHub forks](https://img.shields.io/github/forks/actiontech/dble.svg)](https://github.com/actiontech/dble/network/members)
+[![GitHub stars](https://img.shields.io/github/stars/actiontech/dble.svg)](https://github.com/actiontech/dble/stargazers)
+[![GitHub license](https://img.shields.io/github/license/actiontech/dble.svg)](https://github.com/actiontech/dble/blob/master/LICENSE)
+[![dble](https://img.shields.io/badge/dble-working%20in%20banks-blue.svg)](https://github.com/actiontech/dble)
 <img src="https://travis-ci.org/actiontech/dble.svg?branch=master">
 
 dble (pronouced "double", less bug and no "ou") is maintain by [ActionTech](http://www.actionsky.com/).

@@ -13,7 +13,6 @@ import com.actiontech.dble.plan.common.context.ReferContext;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
-import com.actiontech.dble.plan.common.item.ItemIdent;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemFuncGroupConcat;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
@@ -453,9 +452,7 @@ public abstract class PlanNode {
     private NamedField makeOutNamedField(Item sel) {
         String tmpSchema = null;
         if (keepFieldSchema) {
-            if (sel instanceof ItemIdent) {
-                tmpSchema = ((ItemIdent) sel).getDbName();
-            }
+            tmpSchema = sel.getDbName();
             if (sel.basicConstItem()) {
                 tmpSchema = getPureSchema();
             }

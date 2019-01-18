@@ -981,6 +981,9 @@ public abstract class Item {
         return null;
     }
 
+    public String getDbName() {
+        return null;
+    }
     /**
      * added to construct all refers in an item
      *

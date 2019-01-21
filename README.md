@@ -8,7 +8,7 @@
 [![GitHub release](https://img.shields.io/github/release/actiontech/dble.svg)](https://github.com/actiontech/dble/releases)
 <img src="https://travis-ci.org/actiontech/dble.svg?branch=master">
 
-dble (pronouced "double", less bug and no "ou") is maintain by [ActionTech](http://www.actionsky.com/).
+dble (pronouced "double", less bug and no "ou") is maintain by [ActionTech](https://opensource.actionsky.com).
 
 ## What is dble?
 

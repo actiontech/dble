@@ -1,5 +1,4 @@
-# dble
-
+![dble](./docs/dble_logo.png)
 
 [![GitHub issues](https://img.shields.io/github/issues/actiontech/dble.svg)](https://github.com/actiontech/dble/issues)
 [![GitHub forks](https://img.shields.io/github/forks/actiontech/dble.svg)](https://github.com/actiontech/dble/network/members)

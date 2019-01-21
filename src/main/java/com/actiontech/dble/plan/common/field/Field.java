@@ -256,6 +256,10 @@ public abstract class Field {
         return table;
     }
 
+    public String getOrgTable() {
+        return orgTable;
+    }
+
     public void setTable(String table) {
         this.table = table;
     }

@@ -4,7 +4,7 @@
 --
 
 -- auto sharding by id (long)
-create table travelrecord (
+create table if not exists travelrecord (
   id bigint not null auto_increment,
   participants varchar(250) not null,
   origin varchar(50) not null,
@@ -16,7 +16,7 @@ create table travelrecord (
 )engine=innodb charset=utf8;
 
 -- global tables
-create table company (
+create table if not exists company (
   id bigint not null auto_increment,
   name varchar(20) not null,
   address varchar(250) not null,
@@ -26,7 +26,7 @@ create table company (
   primary key(id)
 )engine=innodb charset=utf8;
 
-create table goods (
+create table if not exists goods (
   id bigint not null auto_increment,
   name varchar(50) not null,
   price decimal(9,2) not null,
@@ -37,7 +37,7 @@ create table goods (
 )engine=innodb charset=utf8;
 
 -- random sharding
-create table hotnews (
+create table if not exists hotnews (
   id bigint not null auto_increment,
   title varchar(50) not null,
   create_time datetime not null,
@@ -48,7 +48,7 @@ create table hotnews (
 )engine=innodb charset=utf8;
 
 -- ER sharding
-create table customer (
+create table if not exists customer (
   id bigint not null auto_increment,
   name varchar(20) not null,
   birth_date date null,
@@ -64,7 +64,7 @@ create table customer (
 -- mysql> explain select*from customer where id=2;
 -- ERROR 1064 (HY000): Can't find a valid data node for specified node index :customer -> ID -> 2 -> Index : 2
 
-create table orders (
+create table if not exists orders (
   id bigint not null auto_increment,
   order_no varchar(60) not null,
   order_time datetime not null,
@@ -74,7 +74,7 @@ create table orders (
   foreign key(customer_id) references customer(id)
 )engine=innodb charset=utf8;
 
-create table order_items (
+create table if not exists order_items (
   id bigint not null auto_increment,
   goods_id bigint not null,
   goods_name varchar(50) not null,
@@ -86,7 +86,7 @@ create table order_items (
   foreign key(order_id) references orders(id)
 )engine=innodb charset=utf8;
 
-create table customer_addr (
+create table if not exists customer_addr (
   id bigint not null auto_increment,
   address varchar(80) not null,
   contact varchar(50) not null,
@@ -94,6 +94,3 @@ create table customer_addr (
   primary key(id),
   foreign key(customer_id) references customer(id)
 )engine=innodb charset=utf8;
--- issue
--- mysql> explain select *from customer_addr where customer_id=3;
--- ERROR 1064 (HY000): Index: 3, Size: 2

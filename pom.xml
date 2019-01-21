@@ -558,6 +558,11 @@
                                     <extraArgument>-Xmx4G</extraArgument>
                                     <extraArgument>-Xms1G</extraArgument>
                                     <extraArgument>-XX:MaxDirectMemorySize=2G</extraArgument>
+                                    <extraArgument>-XX:+PrintHeapAtGC</extraArgument>
+                                    <extraArgument>-XX:+PrintGCDateStamps</extraArgument>
+                                    <extraArgument>-Xloggc:./logs/gc.log</extraArgument>
+                                    <extraArgument>-XX:+PrintGCTimeStamps</extraArgument>
+                                    <extraArgument>-XX:+PrintGC</extraArgument>
                                 </extraArguments>
                             </jvmSettings>
                             <generatorConfigurations>

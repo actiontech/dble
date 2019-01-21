@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<!--
+  ~ Copyright (C) 2016-2019 ActionTech.
+  ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+  -->
+
+<!DOCTYPE dble:schema SYSTEM "schema.dtd">
+<dble:schema xmlns:dble="http://dble.cloud/">
+
+    <schema name="testdb">
+        <table name="travelrecord" dataNode="dn1,dn2" rule="sharding-by-hash2"/>
+        <!-- global table is auto cloned to all defined data nodes ,so can join
+            with any table whose sharding node is in the same data node -->
+        <table name="company" primaryKey="ID" type="global" dataNode="dn1,dn2,dn3,dn4"/>
+        <table name="goods" primaryKey="ID" type="global" dataNode="dn1,dn2"/>
+        <!-- random sharding using mod sharind rule -->
+        <table name="hotnews" primaryKey="ID" autoIncrement="true" dataNode="dn1,dn2,dn3,dn4"
+               rule="sharding-by-mod"/>
+        <table name="customer" primaryKey="ID" dataNode="dn1,dn2"
+               rule="sharding-by-mod2">
+            <childTable name="orders" primaryKey="ID" joinKey="customer_id"
+                        parentKey="id">
+                <childTable name="order_items" joinKey="order_id"
+                            parentKey="id"/>
+            </childTable>
+            <childTable name="customer_addr" primaryKey="ID" joinKey="customer_id"
+                        parentKey="id"/>
+        </table>
+    </schema>
+
+
+    <dataNode name="dn1" dataHost="backend-mysql1" database="db1"/>
+    <dataNode name="dn2" dataHost="backend-mysql1" database="db2"/>
+    <dataNode name="dn3" dataHost="backend-mysql2" database="db3"/>
+    <dataNode name="dn4" dataHost="backend-mysql2" database="db4"/>
+    <dataHost name="backend-mysql1" maxCon="300" minCon="10" balance="0" switchType="1" slaveThreshold="100">
+        <heartbeat>show slave status</heartbeat>
+        <writeHost host="hostM1" url="172.18.0.2:3306" user="root"
+                   password="123456">
+        </writeHost>
+    </dataHost>
+    <dataHost name="backend-mysql2" maxCon="300" minCon="10" balance="0" switchType="1" slaveThreshold="100">
+        <heartbeat>show slave status</heartbeat>
+        <writeHost host="hostM1" url="172.18.0.3:3306" user="root"
+                   password="123456">
+        </writeHost>
+    </dataHost>
+</dble:schema>

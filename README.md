@@ -1,5 +1,4 @@
-# dble
-
+![dble](./docs/dble_logo.png)
 
 [![GitHub issues](https://img.shields.io/github/issues/actiontech/dble.svg)](https://github.com/actiontech/dble/issues)
 [![GitHub forks](https://img.shields.io/github/forks/actiontech/dble.svg)](https://github.com/actiontech/dble/network/members)
@@ -9,7 +8,7 @@
 [![GitHub release](https://img.shields.io/github/release/actiontech/dble.svg)](https://github.com/actiontech/dble/releases)
 <img src="https://travis-ci.org/actiontech/dble.svg?branch=master">
 
-dble (pronouced "double", less bug and no "ou") is maintain by [ActionTech](http://www.actionsky.com/).
+dble (pronouced "double", less bug and no "ou") is maintain by [ActionTech](https://opensource.actionsky.com).
 
 ## What is dble?
 
@@ -51,6 +50,9 @@ Read the [Roadmap](./docs/ROADMAP.md).
 
 ## Quick start 
 Read the [Quick Start](./docs/QUICKSTART.md).
+
+## Official website
+For more information, please visit the [official website](https://opensource.actionsky.com).
 
 ## Documentation
 + [简体中文](https://actiontech.github.io/dble-docs-cn/)

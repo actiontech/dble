@@ -51,11 +51,12 @@ public abstract class ItemIdent extends Item {
         return tableName;
     }
 
-    public void setTableName(String tableName) {
-        this.tableName = tableName;
-    }
-
+    @Override
     public String getDbName() {
         return dbName;
+    }
+
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
     }
 }

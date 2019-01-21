@@ -54,4 +54,8 @@ public abstract class ItemIdent extends Item {
     public void setTableName(String tableName) {
         this.tableName = tableName;
     }
+
+    public String getDbName() {
+        return dbName;
+    }
 }

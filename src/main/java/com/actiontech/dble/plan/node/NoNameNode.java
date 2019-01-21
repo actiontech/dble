@@ -31,6 +31,7 @@ public class NoNameNode extends PlanNode {
         this.sql = sql;
         SchemaConfig schema = DbleServer.getInstance().getConfig().getSchemas().get(catalog);
         this.setNoshardNode(new HashSet<>(Collections.singletonList(schema.getMetaDataNode())));
+        this.keepFieldSchema = true;
     }
 
     @Override
@@ -42,6 +43,11 @@ public class NoNameNode extends PlanNode {
 
     @Override
     public String getPureName() {
+        return "";
+    }
+
+    @Override
+    public String getPureSchema() {
         return "";
     }
 

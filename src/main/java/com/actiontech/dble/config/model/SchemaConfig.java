@@ -151,7 +151,7 @@ public class SchemaConfig {
     }
 
     private Map<String, TableConfig> getLowerCaseTables() {
-        Map<String, TableConfig> newTables = new HashMap<>();
+        Map<String, TableConfig> newTables = new TableConfigMap();
 
         //first round is only get the top tables
         List<TableConfig> valueList = new ArrayList<>(tables.values());

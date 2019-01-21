@@ -13,6 +13,7 @@ import com.actiontech.dble.plan.common.context.ReferContext;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
+import com.actiontech.dble.plan.common.item.ItemIdent;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemFuncGroupConcat;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
@@ -125,6 +126,8 @@ public abstract class PlanNode {
 
     private ReferContext referContext;
 
+    protected boolean keepFieldSchema = true;
+
     protected PlanNode() {
         nameContext = new NameResolutionContext();
         referContext = new ReferContext();
@@ -163,6 +166,8 @@ public abstract class PlanNode {
     private List<Item> nestLoopFilters = null;
 
     public abstract String getPureName();
+
+    public abstract String getPureSchema();
 
     /* height of node */
     public abstract int getHeight();
@@ -285,18 +290,21 @@ public abstract class PlanNode {
         to.setUnGlobalTableCount(unGlobalTableCount);
         to.setNoshardNode(noshardNode);
         to.getSubQueries().addAll(subQueries);
+        to.setKeepFieldSchema(keepFieldSchema);
     }
 
     protected void setUpInnerFields() {
         innerFields.clear();
-        String tmpFieldTable;
-        String tmpFieldName;
         for (PlanNode child : children) {
             child.setUpFields();
             for (NamedField coutField : child.outerFields.keySet()) {
-                tmpFieldTable = child.getAlias() == null ? coutField.getTable() : child.getAlias();
-                tmpFieldName = coutField.getName();
-                NamedField tmpField = new NamedField(tmpFieldTable, tmpFieldName, coutField.planNode);
+                String tmpFieldSchema = null;
+                if (child.isKeepFieldSchema()) {
+                    tmpFieldSchema = child.type() == PlanNodeType.TABLE ? ((TableNode) child).getSchema() : coutField.getSchema();
+                }
+                String tmpFieldTable = child.getAlias() == null ? coutField.getTable() : child.getAlias();
+                String tmpFieldName = coutField.getName();
+                NamedField tmpField = new NamedField(tmpFieldSchema, tmpFieldTable, tmpFieldName, coutField.planNode);
                 if (innerFields.containsKey(tmpField) && getParent() != null)
                     throw new MySQLOutPutException(ErrorCode.ER_DUP_FIELDNAME, "42S21", "Duplicate column name '" + tmpFieldName + "'");
                 innerFields.put(tmpField, coutField);
@@ -405,7 +413,7 @@ public abstract class PlanNode {
 
     protected void dealSingleStarColumn(List<Item> newSels) {
         for (NamedField field : innerFields.keySet()) {
-            ItemField col = new ItemField(null, field.getTable(), field.getName());
+            ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName());
             newSels.add(col);
         }
     }
@@ -422,7 +430,7 @@ public abstract class PlanNode {
                     boolean found = false;
                     for (NamedField field : innerFields.keySet()) {
                         if (selTable.equals(field.getTable())) {
-                            ItemField col = new ItemField(null, field.getTable(), field.getName());
+                            ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName());
                             newSels.add(col);
                             found = true;
                         } else if (found) {
@@ -443,6 +451,15 @@ public abstract class PlanNode {
     }
 
     private NamedField makeOutNamedField(Item sel) {
+        String tmpSchema = null;
+        if (keepFieldSchema) {
+            if (sel instanceof ItemIdent) {
+                tmpSchema = ((ItemIdent) sel).getDbName();
+            }
+            if (sel.basicConstItem()) {
+                tmpSchema = getPureSchema();
+            }
+        }
         String tmpFieldTable = sel.getTableName();
         String tmpFieldName = sel.getItemName();
         if (alias != null)
@@ -451,7 +468,7 @@ public abstract class PlanNode {
             tmpFieldTable = getPureName();
         if (sel.getAlias() != null)
             tmpFieldName = sel.getAlias();
-        return new NamedField(tmpFieldTable, tmpFieldName, this);
+        return new NamedField(tmpSchema, tmpFieldTable, tmpFieldName, this);
     }
 
     Item setUpItem(Item sel) {
@@ -742,4 +759,13 @@ public abstract class PlanNode {
      * @return String
      */
     public abstract String toString(int level);
+
+    public void setKeepFieldSchema(boolean keepFieldSchema) {
+        this.keepFieldSchema = keepFieldSchema;
+    }
+
+    public boolean isKeepFieldSchema() {
+        return keepFieldSchema;
+    }
+
 }

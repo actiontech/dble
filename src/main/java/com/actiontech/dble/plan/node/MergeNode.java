@@ -49,6 +49,11 @@ public class MergeNode extends PlanNode {
         return null;
     }
 
+    @Override
+    public String getPureSchema() {
+        return null;
+    }
+
     public boolean isUnion() {
         return union;
     }
@@ -95,8 +100,8 @@ public class MergeNode extends PlanNode {
         Set<NamedField> checkDup = new HashSet<>(firstNode.getOuterFields().size(), 1);
         for (NamedField coutField : firstNode.getOuterFields().keySet()) {
             ItemField column = new ItemField(null, coutField.getTable(), coutField.getName());
-            NamedField tmpField = new NamedField(coutField.getTable(), coutField.getName(), this);
-            NamedField testDupField = new NamedField(null, coutField.getName(), this);
+            NamedField tmpField = new NamedField(null, coutField.getTable(), coutField.getName(), this);
+            NamedField testDupField = new NamedField(null, null, coutField.getName(), this);
             if (checkDup.contains(testDupField) && isDuplicateField(this)) {
                 throw new MySQLOutPutException(ErrorCode.ER_DUP_FIELDNAME, "", "Duplicate column name " + coutField.getName());
             }

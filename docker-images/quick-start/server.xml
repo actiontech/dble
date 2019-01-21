@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (C) 2016-2019 ActionTech.
+  ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+  -->
+
+<!-- - - Licensed under the Apache License, Version 2.0 (the "License");
+	- you may not use this file except in compliance with the License. - You 
+	may obtain a copy of the License at - - http://www.apache.org/licenses/LICENSE-2.0 
+	- - Unless required by applicable law or agreed to in writing, software - 
+	distributed under the License is distributed on an "AS IS" BASIS, - WITHOUT 
+	WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. - See the 
+	License for the specific language governing permissions and - limitations 
+	under the License. -->
+<!DOCTYPE dble:server SYSTEM "server.dtd">
+<dble:server xmlns:dble="http://dble.cloud/">
+    <system>
+        <!-- base config -->
+        <!--<property name="bindIp">0.0.0.0</property>-->
+        <property name="serverPort">8066</property>
+        <property name="managerPort">9066</property>
+        <!--<property name="maxCon">1024</property> -->
+        <!-- <property name="processors">4</property>-->
+        <!-- <property name="backendProcessors">12</property>-->
+        <!--<property name="processorExecutor">4</property> -->
+        <!--<property name="backendProcessorExecutor">12</property> -->
+        <!--<property name="complexExecutor">8</property> -->
+        <!--<property name="writeToBackendExecutor">4</property> -->
+
+        <!--<property name="fakeMySQLVersion">5.6.20</property>-->
+        <property name="sequnceHandlerType">2</property>
+        <!-- serverBacklog size,default 2048-->
+        <property name="serverBacklog">2048</property>
+        <!--<property name="serverNodeId">1</property>-->
+        <!--<property name="showBinlogStatusTimeout">60000</property>-->
+
+        <!--option-->
+        <!--<property name="useCompression">1</property>-->
+        <!--<property name="usingAIO">0</property>-->
+        <!--<property name="useZKSwitch">true</property>-->
+        <!--<property name="useThreadUsageStat">0</property>-->
+        <!--<property name="usePerformanceMode">0</property>-->
+
+        <!-- query time cost statistics-->
+        <!--<property name="useCostTimeStat">0</property>-->
+        <!--<property name="maxCostStatSize">100</property>-->
+        <!--<property name="costSamplePercent">1</property>-->
+
+        <!--connection -->
+        <!--<property name="charset">utf8</property>-->
+        <!--<property name="maxPacketSize">16777216</property>-->
+        <!--<property name="txIsolation">3</property>-->
+
+        <!--consistency-->
+        <!-- check the consistency of table structure between nodes,default not -->
+        <property name="checkTableConsistency">0</property>
+        <!-- check periodt, he default period is 60000 milliseconds -->
+        <property name="checkTableConsistencyPeriod">60000</property>
+        <!-- 1 check the consistency of global table, 0 is not -->
+        <property name="useGlobleTableCheck">0</property>
+        <property name="glableTableCheckPeriod">86400000</property>
+
+        <!-- heartbeat check period -->
+        <property name="dataNodeIdleCheckPeriod">300000</property>
+        <property name="dataNodeHeartbeatPeriod">10000</property>
+
+        <!-- processor check conn-->
+        <property name="processorCheckPeriod">1000</property><!-- unit millisecond -->
+        <property name="sqlExecuteTimeout">300</property><!-- unit second -->
+        <property name="idleTimeout">1800000</property><!-- unit millisecond -->
+
+        <!-- transaction log -->
+        <!-- 1 enable record the transaction log, 0 disable -->
+        <property name="recordTxn">0</property>
+        <!--<property name="transactionLogBaseDir">/txlogs</property>-->
+        <!--<property name="transactionLogBaseName">server-tx</property>-->
+        <!--<property name="transactionRatateSize">16</property>--><!-- unit M -->
+
+        <!-- XA transaction -->
+        <!-- use XA transaction ,if the mysql service crash,the unfinished XA commit/rollback will retry for several times
+       it is the check period for ,default is 1000 milliseconds-->
+        <property name="xaSessionCheckPeriod">1000</property>
+        <!-- use XA transaction ,the finished XA log will removed. the default period is 1000 milliseconds-->
+        <property name="xaLogCleanPeriod">1000</property>
+        <!-- XA Recovery Log path -->
+        <!--<property name="xaRecoveryLogBaseDir">/tmlogs/</property>-->
+        <!-- XA Recovery Log name -->
+        <!--<property name="xaRecoveryLogBaseName">tmlog</property>-->
+
+        <!-- true is use JoinStrategy, default false-->
+        <property name="useJoinStrategy">true</property>
+        <property name="nestLoopConnSize">4</property>
+        <property name="nestLoopRowsSize">2000</property>
+
+        <!-- query memory used for per session,unit is M-->
+        <property name="otherMemSize">4</property>
+        <property name="orderMemSize">4</property>
+        <property name="joinMemSize">4</property>
+
+        <!-- off Heap unit:bytes-->
+        <property name="bufferPoolChunkSize">4096</property>
+        <property name="bufferPoolPageNumber">256</property>
+        <property name="bufferPoolPageSize">2097152</property>
+        <!--<property name="mappedFileSize">2097152</property>-->
+
+        <!-- sql statistics-->
+        <!-- 1 means use SQL statistics, 0 means not -->
+        <property name="useSqlStat">0</property>
+        <!--<property name="bufferUsagePercent">80</property>-->
+        <!--<property name="clearBigSqLResultSetMapMs">600000</property>-->
+        <!--<property name="sqlRecordCount">10</property>-->
+        <!--<property name="maxResultSet">524288</property>-->
+
+        <!-- backSocket unit:bytes-->
+        <!--<property name="backSocketSoRcvbuf">4194304</property>-->
+        <!--<property name="backSocketSoSndbuf">1048576</property>-->
+        <!--<property name="backSocketNoDelay">1</property>-->
+
+        <!-- frontSocket-->
+        <!--<property name="frontSocketSoRcvbuf">1048576</property>-->
+        <!--<property name="frontSocketSoSndbuf">4194304</property>-->
+        <!--<property name="frontSocketNoDelay">1</property>-->
+
+        <!-- for join tmp results -->
+        <!--<property name="mergeQueueSize">1024</property>-->
+        <!--<property name="orderByQueueSize">1024</property>-->
+        <!--<property name="joinQueueSize">1024</property>-->
+
+        <!-- if enable the slow query log -->
+        <property name="enableSlowLog">0</property>
+        <!-- the slow query log location -->
+        <!--<property name="slowLogBaseDir">./slowlogs</property>-->
+        <!--<property name="slowLogBaseName">slow-query</property>-->
+        <!-- the max period for flushing the slow query log from memory to disk  after last time , unit is second -->
+        <property name="flushSlowLogPeriod">1</property>
+        <!-- the max records for flushing the slow query log from memory to disk after last time -->
+        <property name="flushSlowLogSize">1000</property>
+        <!-- the threshold for judging if the query is slow , unit is millisecond -->
+        <property name="sqlSlowTime">100</property>
+
+
+    </system>
+
+    <!-- firewall config -->
+    <!--
+    <firewall>
+    <whitehost>
+          <host host="127.0.0.1" user="root"/>
+          <host host="0:0:0:0:0:0:0:1" user="root"/>
+       </whitehost>
+       <blacklist check="true">
+       <property name="selelctAllow">false</property>
+       </blacklist>
+    </firewall>
+    -->
+    <user name="man1">
+        <property name="password">654321</property>
+        <property name="manager">true</property>
+        <!-- manager user can't set schema-->
+    </user>
+
+    <user name="root">
+        <property name="password">123456</property>
+        <property name="schemas">testdb</property>
+
+        <!-- table's DML privileges  INSERT/UPDATE/SELECT/DELETE -->
+        <!--
+        <privileges check="false">
+            <schema name="TESTDB" dml="0110" >
+                <table name="tb01" dml="0000"></table>
+                <table name="tb02" dml="1111"></table>
+            </schema>
+        </privileges>
+         -->
+    </user>
+
+    <user name="user">
+        <property name="password">user</property>
+        <property name="schemas">testdb</property>
+        <property name="readOnly">true</property>
+    </user>
+
+</dble:server>

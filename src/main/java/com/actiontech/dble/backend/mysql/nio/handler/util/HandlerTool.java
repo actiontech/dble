@@ -6,10 +6,13 @@
 package com.actiontech.dble.backend.mysql.nio.handler.util;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.MysqlVisitor;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler.HandlerType;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
@@ -278,15 +281,22 @@ public final class HandlerTool {
         String selName = (sel.getPushDownName() == null ? sel.getItemName() : sel.getPushDownName());
         selName = selName.trim();
         String tableName = sel.getTableName();
+        String schemaName = sel.getDbName();
         for (int index = startIndex; index < fields.size(); index++) {
             Field field = fields.get(index);
             // field.name==null if '' push down
             String colName2 = field.getName() == null ? null : field.getName().trim();
             String tableName2 = field.getTable();
-            if (tableName2 != null && DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
-                tableName2 = tableName2.toLowerCase();
+            String schemaName2 = field.getDbName();
+            if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+                if (tableName2 != null) {
+                    tableName2 = tableName2.toLowerCase();
+                }
+                if (schemaName2 != null) {
+                    schemaName2 = schemaName2.toLowerCase();
+                }
             }
-            if (sel instanceof ItemField && !StringUtil.equalsWithEmpty(tableName, tableName2)) {
+            if (sel instanceof ItemField && !(StringUtil.equalsWithEmpty(tableName, tableName2) && isMatchSchema(schemaName, field.getOrgTable(), schemaName2))) {
                 continue;
             }
             if (selName.equalsIgnoreCase(colName2)) {
@@ -296,6 +306,29 @@ public final class HandlerTool {
         return -1;
     }
 
+    private static boolean isMatchSchema(String logicSchema, String table, String sourceSchema) {
+        if (StringUtil.isEmpty(table) || StringUtil.isEmpty(logicSchema) || StringUtil.equalsWithEmpty(logicSchema, sourceSchema)) {
+            return true;
+        }
+        SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(logicSchema);
+        if (schemaConfig.isNoSharding()) {
+            PhysicalDBNode dbNode = DbleServer.getInstance().getConfig().getDataNodes().get(schemaConfig.getDataNode());
+            return dbNode.getDatabase().equals(sourceSchema);
+        }
+        TableConfig tbConfig = schemaConfig.getTables().get(table);
+        if (tbConfig == null) {
+            PhysicalDBNode dbNode = DbleServer.getInstance().getConfig().getDataNodes().get(schemaConfig.getDataNode());
+            return dbNode.getDatabase().equals(sourceSchema);
+        } else {
+            for (String dataNode : tbConfig.getDataNodes()) {
+                PhysicalDBNode dbNode = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
+                if (dbNode.getDatabase().equals(sourceSchema)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
     /**
      * make order by from distinct
      *

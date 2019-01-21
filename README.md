@@ -51,6 +51,9 @@ Read the [Roadmap](./docs/ROADMAP.md).
 ## Quick start 
 Read the [Quick Start](./docs/QUICKSTART.md).
 
+## Official website
+For more information, please visit the [official website](https://opensource.actionsky.com).
+
 ## Documentation
 + [简体中文](https://actiontech.github.io/dble-docs-cn/)
 + English(Comming soon)

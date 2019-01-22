@@ -358,9 +358,9 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             idxGlobal = getIdxGlobalByMeta(isGlobalCheck, orgTbMeta, sb, colSize);
         } else {
             genColumnNames(tc, isGlobalCheck, isAutoIncrement, sb, columns);
-            getIncrementKeyIndex(schemaInfo, tc.getTrueIncrementColumn());
             colSize = columns.size();
             if (isAutoIncrement) {
+                getIncrementKeyIndex(schemaInfo, tc.getTrueIncrementColumn());
                 autoIncrement = columns.size();
                 sb.append(",").append(tc.getTrueIncrementColumn());
                 colSize++;

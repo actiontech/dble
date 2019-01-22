@@ -183,9 +183,9 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             idxGlobal = getIdxGlobalByMeta(isGlobalCheck, orgTbMeta, sb, colSize);
         } else { // replace sql with  column names
             boolean hasIncrementInSql = concatColumns(replace, tc, isGlobalCheck, isAutoIncrement, sb, columns);
-            getIncrementKeyIndex(schemaInfo, tc.getTrueIncrementColumn());
             colSize = columns.size();
             if (isAutoIncrement && !hasIncrementInSql) {
+                getIncrementKeyIndex(schemaInfo, tc.getTrueIncrementColumn());
                 autoIncrement = columns.size();
                 sb.append(",").append(tc.getTrueIncrementColumn());
                 colSize++;

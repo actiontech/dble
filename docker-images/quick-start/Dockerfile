@@ -9,7 +9,8 @@ RUN version=$(curl "https://github.com/actiontech/dble/releases/latest"|awk -F "
     wget https://raw.githubusercontent.com/actiontech/dble/master/docker-images/quick-start/rule.xml -P /opt/dble/conf/ && \
     wget https://raw.githubusercontent.com/actiontech/dble/master/docker-images/quick-start/wrapper.conf -P /opt/dble/conf/ && \
     wget https://raw.githubusercontent.com/actiontech/dble/master/docker-images/quick-start/docker_init_start.sh -P /opt/dble/bin/ && \
-    chmod 777 /opt/dble/bin/docker_init_start.sh && \
+    wget https://raw.githubusercontent.com/actiontech/dble/master/docker-images/wait-for-it.sh -P /opt/dble/bin/ && \
+    chmod 777 /opt/dble/bin/* && \
     rm -f /opt/actiontech-dble-$version.tar.gz
 
 VOLUME /opt/dble

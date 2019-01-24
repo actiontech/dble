@@ -524,6 +524,7 @@ public final class RouterUtil {
                 return false;
             } else {
                 resultNodes.add(nodes.iterator().next());
+                tablesSet.remove(tableName);
                 return true;
             }
         }
@@ -748,7 +749,7 @@ public final class RouterUtil {
         }
         if (!allFound && isSelect) {
             // need cache primary key ->dataNode relation
-            rrs.setPrimaryKey(tableKey + '.' + primaryKey);
+            rrs.setContainsPrimaryFilter(true);
         }
         return allFound;
     }

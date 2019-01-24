@@ -190,7 +190,6 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
 				null, cachePool);
         Assert.assertEquals(1, rrs.getNodes().length);
         Assert.assertEquals(false, rrs.isCacheAble());
-        Assert.assertEquals(null, rrs.getPrimaryKey());
         Assert.assertEquals(-1, rrs.getLimitSize());
         Assert.assertEquals("dn2", rrs.getNodes()[0].getName());
 
@@ -199,7 +198,6 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         rrs = routeStrategy.route(schema, -1, sql, null, cachePool);
         Assert.assertEquals(2, rrs.getNodes().length);
         Assert.assertEquals(false, rrs.isCacheAble());
-        Assert.assertEquals("TESTDB_EMPLOYEE.ID", rrs.getPrimaryKey());
         Assert.assertEquals(-1, rrs.getLimitSize());
 
         // update cache ID found
@@ -207,7 +205,6 @@ public class DruidMysqlRouteStrategyTest extends TestCase {
         rrs = routeStrategy.route(schema, -1, sql, null, cachePool);
         Assert.assertEquals(1, rrs.getNodes().length);
         Assert.assertEquals(false, rrs.isCacheAble());
-        Assert.assertEquals(null, rrs.getPrimaryKey());
         Assert.assertEquals("dn2", rrs.getNodes()[0].getName());
 
         // delete cache ID found

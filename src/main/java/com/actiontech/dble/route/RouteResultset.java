@@ -6,6 +6,7 @@
 package com.actiontech.dble.route;
 
 import com.actiontech.dble.util.FormatUtil;
+import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 
 import java.io.Serializable;
@@ -29,8 +30,8 @@ public final class RouteResultset implements Serializable {
     private int limitStart;
     private boolean cacheAble;
     // used to store table's ID->data nodes cache
-    // format is table.primaryKey
     private String primaryKey;
+    private boolean containsPrimaryFilter = false;
     // limit output total
     private int limitSize;
 
@@ -153,28 +154,29 @@ public final class RouteResultset implements Serializable {
         this.limitStart = limitStart;
     }
 
-    public String getPrimaryKey() {
-        return primaryKey;
-    }
-
     public boolean hasPrimaryKeyToCache() {
-        return primaryKey != null;
+        return schema != null && table != null && primaryKey != null;
     }
 
     public void setPrimaryKey(String primaryKey) {
-        if (!primaryKey.contains(".")) {
-            throw new java.lang.IllegalArgumentException(
-                    "must be table.primaryKey format :" + primaryKey);
-        }
         this.primaryKey = primaryKey;
     }
+
+    public boolean isContainsPrimaryFilter() {
+        return containsPrimaryFilter;
+    }
+
+    public void setContainsPrimaryFilter(boolean containsPrimaryFilter) {
+        this.containsPrimaryFilter = containsPrimaryFilter;
+    }
+
 
     /**
      * return primary key items ,first is table name ,seconds is primary key
      *
      */
     public String[] getPrimaryKeyItems() {
-        return primaryKey.split("\\.");
+        return new String[]{StringUtil.getFullName(schema, table, '_'), primaryKey};
     }
 
     public void setSrcStatement(String srcStatement) {

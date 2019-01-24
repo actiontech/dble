@@ -121,6 +121,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                     String msg = "Table '" + schema.getName() + "." + schemaInfo.getTable() + "' doesn't exist";
                     throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
                 }
+                rrs.setPrimaryKey(tc.getPrimaryKey());
                 // select ...for update /in shard mode /in transaction
                 if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode()) && !sc.isAutocommit()) {
                     rrs.setCanRunInReadDB(false);
@@ -650,7 +651,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         } else if (mysqlSelectQuery.getLimit() != null) { // has already limit
             return false;
         } else if (ctx.getTables().size() == 1) {
-            if (rrs.hasPrimaryKeyToCache()) {
+            if (rrs.isContainsPrimaryFilter()) {
                 // single table and has primary key , need not limit because of only one row
                 return false;
             }

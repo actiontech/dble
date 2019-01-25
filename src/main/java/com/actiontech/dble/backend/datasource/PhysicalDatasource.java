@@ -254,9 +254,11 @@ public abstract class PhysicalDatasource {
             }
             NewConnectionRespHandler simpleHandler = new NewConnectionRespHandler();
             try {
-                // creat new connection
-                this.createNewConnection(simpleHandler, null, schemas[i % schemas.length]);
-                simpleHandler.getBackConn().release();
+                if (this.createNewCount()) {
+                    // creat new connection
+                    this.createNewConnection(simpleHandler, null, schemas[i % schemas.length]);
+                    simpleHandler.getBackConn().release();
+                }
                 if (ToResolveContainer.CREATE_CONN_FAIL.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {
                     Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
                     if (AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", this.getConfig().getId(), labels)) {

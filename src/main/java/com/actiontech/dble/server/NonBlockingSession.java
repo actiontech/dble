@@ -446,7 +446,7 @@ public class NonBlockingSession implements Session {
             try {
                 singleNodeHandler.execute();
             } catch (Exception e) {
-                handleSpecial(rrs, source.getSchema(), false);
+                handleSpecial(rrs, false);
                 LOGGER.info(String.valueOf(source) + rrs, e);
                 source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.getMessage() == null ? e.toString() : e.getMessage());
             }
@@ -900,7 +900,7 @@ public class NonBlockingSession implements Session {
     public void clearResources(RouteResultset rrs) {
         clearResources(true);
         if (rrs.getSqlType() == DDL) {
-            this.handleSpecial(rrs, this.getSource().getSchema(), false);
+            this.handleSpecial(rrs, false);
         }
     }
 
@@ -968,9 +968,9 @@ public class NonBlockingSession implements Session {
         return errConn;
     }
 
-    public boolean handleSpecial(RouteResultset rrs, String schema, boolean isSuccess) {
+    public boolean handleSpecial(RouteResultset rrs, boolean isSuccess) {
         if (rrs.getSchema() != null) {
-            return handleSpecial(rrs, schema, isSuccess, null);
+            return handleSpecial(rrs, isSuccess, null);
         } else {
             if (rrs.getSqlType() == ServerParse.DDL) {
                 LOGGER.info("Hint ddl do not update the meta");
@@ -979,7 +979,7 @@ public class NonBlockingSession implements Session {
         }
     }
 
-    public boolean handleSpecial(RouteResultset rrs, String schema, boolean isSuccess, String errInfo) {
+    public boolean handleSpecial(RouteResultset rrs, boolean isSuccess, String errInfo) {
         if (rrs.getSqlType() == ServerParse.DDL && rrs.getSchema() != null) {
             String sql = rrs.getSrcStatement();
             if (source.isTxStart()) {
@@ -988,9 +988,9 @@ public class NonBlockingSession implements Session {
             }
             if (!isSuccess) {
                 LOGGER.warn("DDL execute failed or Session closed," +
-                        "Schema[" + schema + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
+                        "Schema[" + rrs.getSchema() + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
             }
-            return DbleServer.getInstance().getTmManager().updateMetaData(schema, sql, isSuccess, true);
+            return DbleServer.getInstance().getTmManager().updateMetaData(rrs.getSchema(), rrs.getTable(), sql, isSuccess, true, rrs.getDdlType());
         }
         return true;
     }

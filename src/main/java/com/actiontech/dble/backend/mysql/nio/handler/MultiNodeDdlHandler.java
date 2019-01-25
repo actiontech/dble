@@ -160,7 +160,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
             }
             if (--nodeCount <= 0 && errorResponse.compareAndSet(false, true)) {
                 if (relieaseDDLLock.compareAndSet(false, true)) {
-                    session.handleSpecial(oriRrs, session.getSource().getSchema(), false);
+                    session.handleSpecial(oriRrs, false);
                 }
 
                 handleRollbackPacket(err.toBytes());
@@ -206,7 +206,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
             }
             if (--nodeCount > 0)
                 return;
-            session.handleSpecial(oriRrs, session.getSource().getSchema(), false);
+            session.handleSpecial(oriRrs, false);
             handleRollbackPacket(err.toBytes());
         } finally {
             lock.unlock();
@@ -239,7 +239,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                 return;
 
             if (this.isFail()) {
-                session.handleSpecial(oriRrs, source.getSchema(), false);
+                session.handleSpecial(oriRrs, false);
                 handleRollbackPacket(err.toBytes());
             } else {
                 try {
@@ -252,7 +252,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                     handler.execute();
                 } catch (Exception e) {
                     LOGGER.warn(String.valueOf(source) + oriRrs, e);
-                    session.handleSpecial(oriRrs, source.getSchema(), false);
+                    session.handleSpecial(oriRrs, false);
                     source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
                 }
                 if (session.isPrepared()) {
@@ -309,7 +309,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
             }
             session.clearResources(true);
             if (relieaseDDLLock.compareAndSet(false, true)) {
-                session.handleSpecial(oriRrs, session.getSource().getSchema(), false);
+                session.handleSpecial(oriRrs, false);
             }
             this.clearResources();
             return true;

@@ -314,16 +314,16 @@ public class Testparser {
 //        // TODO:NOT SUPPORTED
 //        selectSQl = "select CAST(expr AS  char(2) CHARACTER SET utf8 ),CAST(expr AS  SIGNED INT ),CAST(expr AS unSIGNED INT )  from char_columns where id =1  and name = 'x';";
 //        obj.test(selectSQl);
-        //		selectSQl = "select CONVERT(expr ,  char(2))   from char_columns where id =1  and name = 'x';";
-        //		obj.test(selectSQl);
+        		selectSQl = "select CONVERT(expr ,  char(2))   from char_columns where id =1  and name = 'x';";
+        		obj.test(selectSQl);
         //	    selectSQl = "SELECT CASE 1 WHEN 1 THEN 'one'  WHEN 2 THEN 'two' ELSE 'more' END, CASE WHEN 1>0 THEN 'true' ELSE 'false' END;";
         //		obj.test(selectSQl);
         //		selectSQl = "SELECT 3 DIV 5, - (2), 3/5;";
         //		obj.test(selectSQl);
         //		selectSQl = "SELECT ~5 , SELECT 29 & 15;";
         //		obj.test(selectSQl);
-        //		selectSQl = "SELECT LTRIM('  barbar'),TRIM(LEADING 'x' FROM 'xxxbarxxx'),SOUNDEX('Hello'), CONVERT('abc' USING utf8);";
-        //		obj.test(selectSQl);
+        		selectSQl = "SELECT LTRIM('  barbar'),TRIM(LEADING 'x' FROM 'xxxbarxxx'),TRIM('x' FROM 'xxxbarxxx'),SOUNDEX('Hello'), CONVERT('abc' USING utf8);";
+        		obj.test(selectSQl);
         //		selectSQl = "SELECT SOUNDEX('Hello'),CHAR(77,121,83,81,'76');";
         //		obj.test(selectSQl);
         //		selectSQl = "SELECT student_name, GROUP_CONCAT(DISTINCT test_score order by id asc,test_score2 DESC SEPARATOR \",,\") FROM student GROUP BY student_name;";

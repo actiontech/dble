@@ -535,20 +535,16 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         Map<String, Object> attributes = x.getAttributes();
         switch (funcName) {
             case "TRIM":
-                if (attributes == null) {
+                SQLExpr from = x.getFrom();
+                if (from == null) {
                     item = new ItemFuncTrim(args.get(0), TrimTypeEnum.DEFAULT);
                 } else {
                     TrimTypeEnum trimType = TrimTypeEnum.DEFAULT;
-                    String type = (String) attributes.get(ItemFuncKeyWord.TRIM_TYPE);
-                    if (type != null) {
-                        trimType = TrimTypeEnum.valueOf(type);
+                    String trimOption = x.getTrimOption();
+                    if (trimOption != null) {
+                        trimType = TrimTypeEnum.valueOf(trimOption);
                     }
-                    if (attributes.get(ItemFuncKeyWord.FROM) == null) {
-                        item = new ItemFuncTrim(args.get(0), trimType);
-                    } else {
-                        SQLCharExpr from = (SQLCharExpr) attributes.get(ItemFuncKeyWord.FROM);
-                        item = new ItemFuncTrim(args.get(0), getItem(from), trimType);
-                    }
+                    item = new ItemFuncTrim(args.get(0), getItem(from), trimType);
                 }
                 break;
             case "CONVERT":

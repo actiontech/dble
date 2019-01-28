@@ -145,7 +145,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             ((MySQLConnection) conn).quit();
         }
         source.setTxInterrupt(errMsg);
-        session.handleSpecial(rrs, session.getSource().getSchema(), false);
+        session.handleSpecial(rrs, false);
 
 
         if (buffer != null) {
@@ -173,7 +173,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         if (executeResponse) {
             this.resultSize += data.length;
             //handleSpecial
-            boolean metaInited = session.handleSpecial(rrs, session.getSource().getSchema(), true);
+            boolean metaInited = session.handleSpecial(rrs, true);
             if (!metaInited) {
                 executeMetaDataFailed(conn);
                 return;

@@ -87,7 +87,7 @@ public class DDLChildListener implements PathChildrenCacheListener {
         }
         //to judge the table is be drop
         if (ddlInfo.getType() == DDLInfo.DDLType.DROP_TABLE) {
-            DbleServer.getInstance().getTmManager().updateMetaData(ddlInfo.getSchema(), ddlInfo.getSql(), DDLInfo.DDLStatus.SUCCESS.equals(ddlInfo.getStatus()), false);
+            DbleServer.getInstance().getTmManager().updateMetaData(ddlInfo.getSchema(), table, ddlInfo.getSql(), DDLInfo.DDLStatus.SUCCESS.equals(ddlInfo.getStatus()), false, ddlInfo.getType());
         } else {
             //else get the lastest table meta from db
             DbleServer.getInstance().getTmManager().updateOnetableWithBackData(DbleServer.getInstance().getConfig(), ddlInfo.getSchema(), table);

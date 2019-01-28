@@ -7,6 +7,7 @@ package com.actiontech.dble.route.parser.druid.impl.ddl;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.route.RouteResultset;
@@ -37,6 +38,7 @@ public class DruidCreateTableParser extends DefaultDruidParser {
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc)
             throws SQLException {
         MySqlCreateTableStatement createStmt = (MySqlCreateTableStatement) stmt;
+        rrs.setDdlType(DDLInfo.DDLType.CREATE_TABLE);
         //disable create table select from
         if (createStmt.getSelect() != null) {
             String msg = "create table from other table not supported :" + stmt;

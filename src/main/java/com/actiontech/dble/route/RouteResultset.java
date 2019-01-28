@@ -5,6 +5,7 @@
 */
 package com.actiontech.dble.route;
 
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.util.FormatUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -25,6 +26,7 @@ public final class RouteResultset implements Serializable {
     private final int sqlType;
     private RouteResultsetNode[] nodes;
     private transient SQLStatement sqlStatement;
+    private DDLInfo.DDLType ddlType = DDLInfo.DDLType.UNKNOWN;
 
     private boolean needOptimizer;
     private int limitStart;
@@ -173,7 +175,6 @@ public final class RouteResultset implements Serializable {
 
     /**
      * return primary key items ,first is table name ,seconds is primary key
-     *
      */
     public String[] getPrimaryKeyItems() {
         return new String[]{StringUtil.getFullName(schema, table, '_'), primaryKey};
@@ -287,4 +288,14 @@ public final class RouteResultset implements Serializable {
         s.append("\n}");
         return s.toString();
     }
+
+
+    public DDLInfo.DDLType getDdlType() {
+        return ddlType;
+    }
+
+    public void setDdlType(DDLInfo.DDLType ddlType) {
+        this.ddlType = ddlType;
+    }
+
 }

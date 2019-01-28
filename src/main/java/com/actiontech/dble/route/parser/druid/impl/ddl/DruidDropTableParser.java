@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.route.parser.druid.impl.ddl;
 
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -27,6 +28,7 @@ public class DruidDropTableParser extends DefaultDruidParser {
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc)
             throws SQLException {
         SQLDropTableStatement dropTable = (SQLDropTableStatement) stmt;
+        rrs.setDdlType(DDLInfo.DDLType.DROP_TABLE);
         if (dropTable.getTableSources().size() > 1) {
             String msg = "dropping multi-tables is not supported, sql:" + stmt;
             throw new SQLNonTransientException(msg);

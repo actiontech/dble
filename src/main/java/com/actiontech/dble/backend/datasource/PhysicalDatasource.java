@@ -214,7 +214,9 @@ public abstract class PhysicalDatasource {
         long length = linkedQueue.size();
         for (int i = 0; i < length; i++) {
             BackendConnection con = linkedQueue.poll();
-            if (con.isClosedOrQuit()) {
+            if (con == null) {
+                break;
+            } else if (con.isClosedOrQuit()) {
                 continue;
             } else if (con.getLastTime() < hearBeatTime) { //if the connection is idle for a long time
                 con.setBorrowed(true);

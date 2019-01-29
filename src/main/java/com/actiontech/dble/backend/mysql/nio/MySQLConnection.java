@@ -651,10 +651,14 @@ public class MySQLConnection extends BackendAIOConnection {
         DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
             @Override
             public void run() {
-                conn.setRunning(false);
-                conn.singal();
-                handler.connectionClose(conn, reason);
-                respHandler = null;
+                try {
+                    conn.setRunning(false);
+                    conn.singal();
+                    handler.connectionClose(conn, reason);
+                    respHandler = null;
+                } catch (Throwable e) {
+                    LOGGER.warn("get error close mysqlconnection ", e);
+                }
             }
         });
     }

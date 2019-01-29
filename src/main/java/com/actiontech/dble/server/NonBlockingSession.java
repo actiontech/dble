@@ -757,22 +757,24 @@ public class NonBlockingSession implements Session {
 
     public void releaseConnection(RouteResultsetNode rrn, boolean debug, final boolean needClose) {
 
-        BackendConnection c = target.remove(rrn);
-        if (c != null) {
-            if (debug) {
-                LOGGER.debug("release connection " + c);
-            }
-            if (c.getAttachment() != null) {
-                c.setAttachment(null);
-            }
-            if (!c.isClosedOrQuit()) {
-                if (c.isAutocommit()) {
-                    c.release();
-                } else if (needClose) {
-                    //c.rollback();
-                    c.close("the  need to be closed");
-                } else {
-                    c.release();
+        if (rrn != null) {
+            BackendConnection c = target.remove(rrn);
+            if (c != null) {
+                if (debug) {
+                    LOGGER.debug("release connection " + c);
+                }
+                if (c.getAttachment() != null) {
+                    c.setAttachment(null);
+                }
+                if (!c.isClosedOrQuit()) {
+                    if (c.isAutocommit()) {
+                        c.release();
+                    } else if (needClose) {
+                        //c.rollback();
+                        c.close("the  need to be closed");
+                    } else {
+                        c.release();
+                    }
                 }
             }
         }

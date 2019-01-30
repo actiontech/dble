@@ -16,6 +16,7 @@ import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowColumnsStatement;
 
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -36,6 +37,17 @@ public final class ShowColumns {
 
     public static void response(ServerConnection c, String stmt) {
         try {
+            Pattern pattern = ShowColumns.PATTERN;
+            Matcher ma = pattern.matcher(stmt);
+            // always match
+            if (ma.matches()) {
+                int start = ma.start(6);
+                int end = ma.end(6);
+                String sub = stmt.substring(0, start);
+                String sub2 = stmt.substring(end, stmt.length());
+                stmt = sub + " from " + sub2;
+            }
+
             SQLStatement statement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
             MySqlShowColumnsStatement showColumnsStatement = (MySqlShowColumnsStatement) statement;
             String table = StringUtil.removeBackQuote(showColumnsStatement.getTable().getSimpleName());

@@ -371,13 +371,13 @@ public final class ReloadConfig {
             LOGGER.info("reload config: apply new config start");
             if (mergeReload) {
                 config.reload(newUsers, newSchemas, newDataNodes, mergedDataHosts, newErRelations, newFirewall,
-                        newSystemVariables, loader.isDataHostWithoutWH(), true);
+                        newSystemVariables, loader.isDataHostWithoutWH(), true, loadAllMode);
                 DbleServer.getInstance().getUserManager().initForLatest(newUsers, loader.getSystem().getMaxCon());
                 LOGGER.info("reload config: apply new config end");
                 recycleOldBackendConnections(recyclHost, ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
             } else {
                 config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall,
-                        newSystemVariables, loader.isDataHostWithoutWH(), true);
+                        newSystemVariables, loader.isDataHostWithoutWH(), true, loadAllMode);
                 DbleServer.getInstance().getUserManager().initForLatest(newUsers, loader.getSystem().getMaxCon());
                 LOGGER.info("reload config: apply new config end");
                 recycleOldBackendConnections(config.getBackupDataHosts(), ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
@@ -486,7 +486,7 @@ public final class ReloadConfig {
 
         /* 2 apply the new conf */
         DbleServer.getInstance().getConfig().reload(users, schemas, dataNodes, dataHosts, erRelations, firewall,
-                DbleServer.getInstance().getSystemVariables(), loader.isDataHostWithoutWH(), false);
+                DbleServer.getInstance().getSystemVariables(), loader.isDataHostWithoutWH(), false, 0);
         DbleServer.getInstance().getUserManager().initForLatest(users, loader.getSystem().getMaxCon());
     }
 

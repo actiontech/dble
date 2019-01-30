@@ -158,7 +158,7 @@ public class PushDownVisitor extends MysqlVisitor {
             } else {
                 joinOnFilterStr.append(" and ");
             }
-            joinOnFilterStr.append(filter);
+            joinOnFilterStr.append(getItemName(filter));
         }
 
         if (join.getOtherJoinOnFilter() != null) {

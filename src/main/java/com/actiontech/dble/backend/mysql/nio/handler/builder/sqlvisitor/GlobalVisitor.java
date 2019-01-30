@@ -210,7 +210,7 @@ public class GlobalVisitor extends MysqlVisitor {
                 first = false;
             } else
                 joinOnFilterStr.append(" and ");
-            joinOnFilterStr.append(filter);
+            joinOnFilterStr.append(getItemName(filter));
         }
 
         if (join.getOtherJoinOnFilter() != null) {
@@ -361,10 +361,7 @@ public class GlobalVisitor extends MysqlVisitor {
         if (item.isWithSubQuery()) {
             return buildSubQueryItem(item, canUseAlias);
         }
-        String selName = item.getItemName();
-        if (item.type().equals(ItemType.FIELD_ITEM)) {
-            selName = "`" + item.getTableName() + "`.`" + selName + "`";
-        }
+        String selName = getItemName(item);
         String nameInMap = pushNameMap.get(selName);
         if (nameInMap != null) {
             item.setPushDownName(nameInMap);

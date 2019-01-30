@@ -39,6 +39,7 @@ public final class ShowColumns {
         try {
             Pattern pattern = ShowColumns.PATTERN;
             Matcher ma = pattern.matcher(stmt);
+            // always match
             if (ma.matches()) {
                 int start = ma.start(6);
                 int end = ma.end(6);

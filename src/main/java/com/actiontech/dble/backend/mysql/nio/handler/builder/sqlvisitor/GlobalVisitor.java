@@ -210,7 +210,7 @@ public class GlobalVisitor extends MysqlVisitor {
                 first = false;
             } else
                 joinOnFilterStr.append(" and ");
-            joinOnFilterStr.append(filter);
+            joinOnFilterStr.append(getItemName(filter));
         }
 
         if (join.getOtherJoinOnFilter() != null) {

@@ -10,6 +10,7 @@ import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.table.old.MultiTableMetaHandler;
+import com.actiontech.dble.util.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +45,7 @@ public class SchemaMetaHandler {
     }
 
     private void filter() {
-        if (filter != null) {
+        if (!CollectionUtil.isEmpty(filter)) {
             Map<String, SchemaConfig> newReload = new HashMap<>();
             for (Entry<String, Set<String>> entry : filter.entrySet()) {
                 String schema = entry.getKey();

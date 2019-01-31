@@ -281,7 +281,7 @@ public final class ManagerParseReload {
                     (c4 == 'D' || c4 == 'd') && (c5 == 'A' || c5 == 'a') && (c6 == 'T' || c6 == 't') && (c7 == 'A' || c7 == 'a')) {
                 // skip space
                 for (++offset; offset < stmt.length(); ++offset) {
-                    if (stmt.charAt(offset) != ' ') {
+                    if (ParseUtil.isSpace(stmt.charAt(offset))) {
                         break;
                     }
                 }

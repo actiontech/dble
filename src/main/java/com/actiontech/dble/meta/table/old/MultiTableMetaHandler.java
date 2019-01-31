@@ -50,6 +50,7 @@ public class MultiTableMetaHandler {
             List<String> tables = getSingleTables();
             if (!CollectionUtil.isEmpty(filterTables)) {
                 tables.retainAll(filterTables);
+                filterTables.removeAll(tables);
             }
             singleTableCnt.set(tables.size());
             for (String table : tables) {

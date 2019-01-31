@@ -16,10 +16,11 @@ services:
         tty: true
         ports:
             - "33061:3306"
+        volumes:
+            - ./:/etc/mysql/
         networks:
             net:
               ipv4_address: 172.18.0.2
-        dns: 114.114.114.114
         environment:
             MYSQL_ROOT_PASSWORD: 123456
     mysql2:
@@ -31,10 +32,11 @@ services:
         tty: true
         ports:
             - "33062:3306"
+        volumes:
+            - ./:/etc/mysql/
         networks:
             net:
               ipv4_address: 172.18.0.3
-        dns: 114.114.114.114
         environment:
             MYSQL_ROOT_PASSWORD: 123456
     dble-server:
@@ -54,4 +56,3 @@ services:
         networks:
             net:
               ipv4_address: 172.18.0.5
-        dns: 114.114.114.114

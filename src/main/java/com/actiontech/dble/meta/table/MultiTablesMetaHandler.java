@@ -13,6 +13,7 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.protocol.StructureMeta;
+import com.actiontech.dble.util.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +37,7 @@ public class MultiTablesMetaHandler {
     private Lock singleTableLock = new ReentrantLock();
     private Condition collectTables = singleTableLock.newCondition();
     private Map<String, Map<String, List<String>>> tablesStructMap = new HashMap<>();
+    private Set<String> filterTables;
 
     MultiTablesMetaHandler(SchemaMetaHandler schemaMetaHandler, SchemaConfig schemaConfig, Set<String> selfNode) {
         this.schemaMetaHandler = schemaMetaHandler;
@@ -50,6 +52,10 @@ public class MultiTablesMetaHandler {
         boolean existTable = false;
         if (schemaConfig.getDataNode() != null && (selfNode == null || !selfNode.contains(schemaConfig.getDataNode()))) {
             List<String> tables = getSingleTables();
+            if (!CollectionUtil.isEmpty(filterTables)) {
+                tables.retainAll(filterTables);
+                filterTables.removeAll(tables);
+            }
             if (tables.size() > 0) {
                 existTable = true;
                 singleTableCnt.set(1);
@@ -58,7 +64,7 @@ public class MultiTablesMetaHandler {
             }
         }
         Map<String, Set<String>> dataNodeMap = new HashMap<>();
-        for (Entry<String, TableConfig> entry : schemaConfig.getTables().entrySet()) {
+        for (Entry<String, TableConfig> entry : filterConfigTables().entrySet()) {
             existTable = true;
             String tableName = entry.getKey();
             TableConfig tbConfig = entry.getValue();
@@ -78,6 +84,22 @@ public class MultiTablesMetaHandler {
         if (!existTable) {
             countDown();
         }
+    }
+
+    private Map<String, TableConfig> filterConfigTables() {
+        Map<String, TableConfig> newReload = new HashMap<>();
+        if (CollectionUtil.isEmpty(filterTables)) {
+            newReload = schemaConfig.getTables();
+        } else {
+            for (String table : filterTables) {
+                if (schemaConfig.getTables().containsKey(table)) {
+                    newReload.put(table, schemaConfig.getTables().get(table));
+                } else {
+                    LOGGER.warn("reload table[" + schema + "." + table + "] metadata, but table doesn't exist");
+                }
+            }
+        }
+        return newReload;
     }
 
     private List<String> getSingleTables() {
@@ -167,6 +189,10 @@ public class MultiTablesMetaHandler {
 
     public ProxyMetaManager getTmManager() {
         return this.schemaMetaHandler.getTmManager();
+    }
+
+    public void setFilterTables(Set<String> filterTables) {
+        this.filterTables = filterTables;
     }
 
     public synchronized void checkTableConsistent(String table, String dataNode, String sql) {

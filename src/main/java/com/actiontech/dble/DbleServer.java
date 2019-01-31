@@ -523,11 +523,15 @@ public final class DbleServer {
     }
 
     public void reloadMetaData(ServerConfig conf) {
+        this.reloadMetaData(conf, null);
+    }
+
+    public void reloadMetaData(ServerConfig conf, Map<String, Set<String>> specifiedSchemas) {
         this.metaChanging = true;
         try {
             ProxyMetaManager tmpManager = tmManager;
             ProxyMetaManager newManager = new ProxyMetaManager();
-            newManager.initMeta(conf);
+            newManager.initMeta(conf, specifiedSchemas);
             tmManager = newManager;
             tmpManager.terminate();
         } finally {

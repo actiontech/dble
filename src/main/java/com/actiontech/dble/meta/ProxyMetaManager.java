@@ -288,7 +288,7 @@ public class ProxyMetaManager {
         if (DbleServer.getInstance().isUseZK()) {
             this.metaZKinit(config);
         } else {
-            initMeta(config);
+            initMeta(config, null);
         }
         LOGGER.info("init metaData end");
     }
@@ -324,7 +324,7 @@ public class ProxyMetaManager {
             times++;
         }
 
-        initMeta(config);
+        initMeta(config, null);
         // online
         ZKUtils.createTempNode(KVPathUtil.getOnlinePath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
         //add watcher
@@ -396,9 +396,10 @@ public class ProxyMetaManager {
     }
 
 
-    public void initMeta(ServerConfig config) {
+    public void initMeta(ServerConfig config, Map<String, Set<String>> specifiedSchemas) {
         Set<String> selfNode = getSelfNodes(config);
         SchemaMetaHandler handler = new SchemaMetaHandler(this, config, selfNode);
+        handler.setFilter(specifiedSchemas);
         handler.execute();
         if (DbleServer.getInstance().isUseZK()) {
             loadViewFromKV();

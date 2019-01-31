@@ -46,7 +46,8 @@ public final class ReloadHandler {
                 ReloadQueryCf.execute(c, filter);
                 break;
             case ManagerParseReload.META_DATA:
-                ReloadMetaData.execute(c);
+                String whereCondition = stmt.substring(rs >>> SHIFT).trim();
+                ReloadMetaData.execute(c, whereCondition);
                 break;
             default:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");

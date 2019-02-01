@@ -307,6 +307,8 @@ public class Testparser {
         //		selectSQl = "SELECT 1 IS NULL,1 IS NOT UNKNOWN,1 IS TRUE, 0 IS FALSE,2 IN (0,3,5,7), 2 >= 2,1 = 0,2 BETWEEN 1 AND 3;";
         //		obj.test(selectSQl);
         //		selectSQl = "select CAST(expr AS datetime(6) ), CAST(expr AS date ), CAST(expr AS time(6) ) from char_columns where id =1  and name = 'x';";
+        selectSQl = "SELECT CHARSET(CHAR(X'65')), CHARSET(CHAR(X'65' USING utf8));";
+        obj.test(selectSQl);
         selectSQl = "select CAST(expr AS  nchar(2) CHARACTER SET utf8),CAST(expr AS  char(2)), CAST(expr AS  char(2) CHARACTER SET utf8 ),CAST(expr AS  char(2) CHARACTER SET latin1 )  from char_columns where id =1  and name = 'x';";
         obj.test(selectSQl);
         selectSQl = "select CAST(expr AS  char(2) CHARACTER SET utf8 ),CAST(expr AS  SIGNED ),CAST(expr AS unSIGNED )  from char_columns where id =1  and name = 'x';";

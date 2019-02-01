@@ -567,10 +567,11 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                         item = ItemCreate.getInstance().createFuncConvert(args.get(0), castType);
                     }
                 } else {
-                    if (attributes == null || attributes.get(ItemFuncKeyWord.USING) == null) {
-                        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "CONVERT(... USING ...) is standard SQL syntax");
+                    SQLExpr using = x.getUsing();
+                    if (using == null || !(using instanceof SQLIdentifierExpr)) {
+                        throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "CONVERT(... USING ...) is standard SQL syntax,You should set correct charset");
                     }
-                    item = new ItemFuncConvCharset(args.get(0), (String) attributes.get(ItemFuncKeyWord.USING));
+                    item = new ItemFuncConvCharset(args.get(0), ((SQLIdentifierExpr) using).getSimpleName());
                 }
                 break;
             case "CHAR":

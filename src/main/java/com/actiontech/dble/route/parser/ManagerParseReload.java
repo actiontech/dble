@@ -281,13 +281,13 @@ public final class ManagerParseReload {
                     (c4 == 'D' || c4 == 'd') && (c5 == 'A' || c5 == 'a') && (c6 == 'T' || c6 == 't') && (c7 == 'A' || c7 == 'a')) {
                 // skip space
                 for (++offset; offset < stmt.length(); ++offset) {
-                    if (ParseUtil.isSpace(stmt.charAt(offset))) {
+                    if (!ParseUtil.isSpace(stmt.charAt(offset))) {
                         break;
                     }
                 }
 
                 if (stmt.length() == offset) {
-                    return META_DATA;
+                    return (offset << 8) | META_DATA;
                 } else if (offset + 5 < stmt.length()) {
                     char c8 = stmt.charAt(offset);
                     char c9 = stmt.charAt(++offset);

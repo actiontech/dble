@@ -65,7 +65,7 @@ public class ProxyMetaManager {
     private AtomicInteger metaCount = new AtomicInteger(0);
     private volatile Repository repository = null;
     private AtomicInteger version = new AtomicInteger(0);
-    private final long timestamp;
+    private long timestamp;
 
     public ProxyMetaManager() {
         this.catalogs = new ConcurrentHashMap<>();
@@ -75,6 +75,10 @@ public class ProxyMetaManager {
 
     public long getTimestamp() {
         return timestamp;
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
     }
 
     public Map<String, String> getLockTables() {

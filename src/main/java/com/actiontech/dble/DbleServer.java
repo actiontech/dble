@@ -534,6 +534,7 @@ public final class DbleServer {
                 tmpManager.terminate();
             } else {
                 tmManager.initMeta(conf, specifiedSchemas);
+                tmManager.setTimestamp(System.currentTimeMillis());
             }
         } finally {
             this.metaChanging = false;

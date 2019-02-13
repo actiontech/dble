@@ -27,7 +27,6 @@ public abstract class GetNodeTablesHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(GetNodeTablesHandler.class);
     protected static final String SQL = "show full tables where Table_type ='BASE TABLE' ";
     protected String dataNode;
-    private volatile boolean finished = false;
 
     GetNodeTablesHandler(String dataNode) {
         this.dataNode = dataNode;
@@ -36,11 +35,6 @@ public abstract class GetNodeTablesHandler {
     protected abstract void handleTables(String table);
 
     protected abstract void handleFinished();
-
-    public boolean isFinished() {
-        return finished;
-    }
-
     public void execute() {
         PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
         String mysqlShowTableCol = "Tables_in_" + dn.getDatabase();
@@ -85,7 +79,6 @@ public abstract class GetNodeTablesHandler {
                     AlertUtil.alert(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "{" + key + "} is lack", "mysql", ds.getConfig().getId(), labels);
                     ToResolveContainer.DATA_NODE_LACK.add(key);
                 }
-                finished = true;
                 handleFinished();
                 return;
             }
@@ -104,7 +97,6 @@ public abstract class GetNodeTablesHandler {
                 }
                 handleTables(table);
             }
-            finished = true;
             handleFinished();
         }
     }

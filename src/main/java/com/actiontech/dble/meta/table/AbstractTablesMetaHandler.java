@@ -44,33 +44,40 @@ public abstract class AbstractTablesMetaHandler {
     }
 
     public void execute() {
-        for (Map.Entry<String, Set<String>> dataNodeInfo : dataNodeMap.entrySet()) {
-            String dataNode = dataNodeInfo.getKey();
-            if (selfNode != null && selfNode.contains(dataNode)) {
-                this.countdown();
-                continue;
+        final AbstractTablesMetaHandler handler = this;
+        DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                for (Map.Entry<String, Set<String>> dataNodeInfo : dataNodeMap.entrySet()) {
+                    String dataNode = dataNodeInfo.getKey();
+                    if (selfNode != null && selfNode.contains(dataNode)) {
+                        handler.countdown();
+                        continue;
+                    }
+                    Set<String> existTables = listExistTables(dataNode, dataNodeInfo.getValue());
+                    if (existTables.size() == 0) {
+                        handler.countdown();
+                        continue;
+                    }
+                    StringBuilder sbSql = new StringBuilder();
+                    for (String table : existTables) {
+                        sbSql.append(SQL.replace("{0}", table));
+                    }
+                    PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
+                    PhysicalDatasource ds = dn.getDbPool().getSource();
+                    if (ds.isAlive()) {
+                        MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLShowCreateTablesListener(existTables, dataNode, ds));
+                        MultiSQLJob sqlJob = new MultiSQLJob(sbSql.toString(), dn.getDatabase(), resultHandler, ds);
+                        sqlJob.run();
+                    } else {
+                        MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLShowCreateTablesListener(existTables, dataNode, null));
+                        MultiSQLJob sqlJob = new MultiSQLJob(sbSql.toString(), dataNode, resultHandler, false);
+                        sqlJob.run();
+                    }
+                }
             }
-            Set<String> existTables = listExistTables(dataNode, dataNodeInfo.getValue());
-            if (existTables.size() == 0) {
-                this.countdown();
-                continue;
-            }
-            StringBuilder sbSql = new StringBuilder();
-            for (String table : existTables) {
-                sbSql.append(SQL.replace("{0}", table));
-            }
-            PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
-            PhysicalDatasource ds = dn.getDbPool().getSource();
-            if (ds.isAlive()) {
-                MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLShowCreateTablesListener(existTables, dataNode, ds));
-                MultiSQLJob sqlJob = new MultiSQLJob(sbSql.toString(), dn.getDatabase(), resultHandler, ds);
-                sqlJob.run();
-            } else {
-                MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLShowCreateTablesListener(existTables, dataNode, null));
-                MultiSQLJob sqlJob = new MultiSQLJob(sbSql.toString(), dataNode, resultHandler, false);
-                sqlJob.run();
-            }
-        }
+        });
+
     }
 
     private Set<String> listExistTables(String dataNode, Set<String> tables) {

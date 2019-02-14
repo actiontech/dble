@@ -683,7 +683,16 @@ public final class RouterUtil {
                 // global select ,not cache route result
                 rrs.setCacheAble(false);
                 rrs.setGlobalTable(true);
-                return routeToSingleNode(rrs, tc.getRandomDataNode());
+                String randomDataNode = tc.getRandomDataNode();
+                rrs = routeToSingleNode(rrs, randomDataNode);
+                List<String> globalBackupNodes = new ArrayList<>(tc.getDataNodes().size() - 1);
+                for (String dataNode : tc.getDataNodes()) {
+                    if (!dataNode.equals(randomDataNode)) {
+                        globalBackupNodes.add(dataNode);
+                    }
+                }
+                rrs.setGlobalBackupNodes(globalBackupNodes);
+                return rrs;
             } else { //insert into all global table's node
                 return routeToMultiNode(false, rrs, tc.getDataNodes(), true);
             }

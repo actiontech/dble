@@ -17,6 +17,7 @@ public abstract class Versions {
     public static final String ANNOTATION_NAME = "@annotation-name@";
     public static final String ROOT_PREFIX = "@root_prefix@";
     public static final String DOMAIN = "@domain@";
+    public static final String CONFIG_VERSION = "@config_version@";
 
     public static void setServerVersion(String version) {
         byte[] mysqlVersionPart = version.getBytes();

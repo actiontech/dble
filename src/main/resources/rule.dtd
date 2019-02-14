@@ -20,6 +20,7 @@
         -->
         <!ELEMENT dble:rule (tableRule*,function*)>
         <!ATTLIST dble:rule xmlns:dble CDATA #FIXED "http://dble.cloud/">
+        <!ATTLIST dble:rule version CDATA #IMPLIED>
 
         <!ELEMENT tableRule (rule+)>
         <!ATTLIST tableRule name CDATA #REQUIRED>

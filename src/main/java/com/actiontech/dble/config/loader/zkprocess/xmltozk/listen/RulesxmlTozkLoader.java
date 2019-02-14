@@ -88,6 +88,9 @@ public class RulesxmlTozkLoader extends ZkMultiLoader implements NotifyService {
 
         String functionJson = this.parseJsonFunctionService.parseBeanToJson(rules.getFunction());
         this.checkAndWriteString(basePath, KVPathUtil.FUNCTION, functionJson);
+
+        String version = rules.getVersion();
+        this.checkAndWriteString(basePath, KVPathUtil.VERSION, version);
     }
 
     /**

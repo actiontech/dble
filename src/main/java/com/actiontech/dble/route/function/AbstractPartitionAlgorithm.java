@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.route.function;
 
-import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.model.rule.RuleAlgorithm;
 
 import java.io.Serializable;
@@ -56,15 +55,14 @@ public abstract class AbstractPartitionAlgorithm implements RuleAlgorithm, Seria
     /**
      * valid the consistency between table's node size and rule's node size
      *
-     * @param tableConf
+     * @param dnSize
      * @return -1 if table datanode size < rule function partition size
      * 0 if table datanode size == rule function partition size
      * 1 if table datanode size > rule function partition size
      */
-    public final int suitableFor(TableConfig tableConf) {
+    public final int suitableFor(int dnSize) {
         int nPartition = getPartitionNum();
         if (nPartition > 0) {
-            int dnSize = tableConf.getDataNodes().size();
             if (dnSize < nPartition) {
                 return -1;
             } else if (dnSize > nPartition) {

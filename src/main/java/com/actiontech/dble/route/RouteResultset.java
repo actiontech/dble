@@ -11,6 +11,7 @@ import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * @author mycat
@@ -27,6 +28,8 @@ public final class RouteResultset implements Serializable {
     private RouteResultsetNode[] nodes;
     private transient SQLStatement sqlStatement;
     private DDLInfo.DDLType ddlType = DDLInfo.DDLType.UNKNOWN;
+
+    private List<String> globalBackupNodes = null;
 
     private boolean needOptimizer;
     private int limitStart;
@@ -296,6 +299,14 @@ public final class RouteResultset implements Serializable {
 
     public void setDdlType(DDLInfo.DDLType ddlType) {
         this.ddlType = ddlType;
+    }
+
+    public List<String> getGlobalBackupNodes() {
+        return globalBackupNodes;
+    }
+
+    public void setGlobalBackupNodes(List<String> globalBackupNodes) {
+        this.globalBackupNodes = globalBackupNodes;
     }
 
 }

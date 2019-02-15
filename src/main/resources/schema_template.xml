@@ -5,7 +5,7 @@
   -->
 
 <!DOCTYPE dble:schema SYSTEM "schema.dtd">
-<dble:schema xmlns:dble="http://dble.cloud/">
+<dble:schema xmlns:dble="http://dble.cloud/" version="2.19.01.0">
 
     <schema name="TESTDB">
         <!-- auto sharding by id (long) -->

@@ -39,6 +39,10 @@ public class HandlerBuilder {
         }
     }
 
+    synchronized void removeRrs(RouteResultsetNode rrsNode) {
+        rrsNodes.remove(rrsNode);
+    }
+
     /**
      * start all leaf handler of children of special handler
      */

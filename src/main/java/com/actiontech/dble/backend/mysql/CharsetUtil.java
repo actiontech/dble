@@ -282,7 +282,7 @@ public final class CharsetUtil {
         CHARSET_TO_JAVA.put("macroman", "MacRoman");
         CHARSET_TO_JAVA.put("cp852", "Cp852");
         CHARSET_TO_JAVA.put("latin7", "ISO8859_13");
-        CHARSET_TO_JAVA.put("utf8mb4", "MacCentralEurope"); //?
+        CHARSET_TO_JAVA.put("utf8mb4", "UTF-8"); //https://dev.mysql.com/doc/connector-j/5.1/en/connector-j-reference-charsets.html
         CHARSET_TO_JAVA.put("cp1251", "Cp1251");
         CHARSET_TO_JAVA.put("utf16", "UTF-16");
         CHARSET_TO_JAVA.put("utf16le", "UTF-16LE");

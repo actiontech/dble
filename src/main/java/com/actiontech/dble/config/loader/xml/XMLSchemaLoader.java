@@ -401,7 +401,7 @@ public class XMLSchemaLoader implements SchemaLoader {
      */
     private void checkRuleSuitTable(TableConfig tableConf) {
         AbstractPartitionAlgorithm function = tableConf.getRule().getRuleAlgorithm();
-        int suitValue = function.suitableFor(tableConf);
+        int suitValue = function.suitableFor(tableConf.getDataNodes().size());
         if (suitValue < 0) {
             throw new ConfigException("Illegal table conf : table [ " + tableConf.getName() + " ] rule function [ " +
                     tableConf.getRule().getFunctionName() + " ] partition size : " + tableConf.getRule().getRuleAlgorithm().getPartitionNum() + " > table datanode size : " +

@@ -501,10 +501,16 @@ public final class DbleServer {
             if (dnIndexLock.acquire(30, TimeUnit.SECONDS)) {
                 try {
                     File file = new File(SystemConfig.getHomePath(), "conf" + File.separator + "dnindex.properties");
+                    byte[] data;
+                    if (!file.exists()) {
+                        data = "".getBytes();
+                    } else {
+                        data = Files.toByteArray(file);
+                    }
                     String path = KVPathUtil.getDnIndexNode();
                     CuratorFramework zk = ZKUtils.getConnection();
                     if (zk.checkExists().forPath(path) == null) {
-                        zk.create().creatingParentsIfNeeded().forPath(path, Files.toByteArray(file));
+                        zk.create().creatingParentsIfNeeded().forPath(path, data);
                     }
                 } finally {
                     dnIndexLock.release();
@@ -517,10 +523,6 @@ public final class DbleServer {
 
     public void reloadSystemVariables(SystemVariables sys) {
         systemVariables = sys;
-    }
-
-    public void reloadMetaData(ServerConfig conf) {
-        this.reloadMetaData(conf, null);
     }
 
     public void reloadMetaData(ServerConfig conf, Map<String, Set<String>> specifiedSchemas) {

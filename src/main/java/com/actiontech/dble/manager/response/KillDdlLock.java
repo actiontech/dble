@@ -7,8 +7,11 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.loader.ucoreprocess.UDistrbtLockManager;
+import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,11 +36,19 @@ public final class KillDdlLock {
         }
         String schema = matcher.group(2);
         String table = matcher.group(4);
-        DbleServer.getInstance().getTmManager().removeMetaLock(schema, table);
+        // release distributed lock
+        if (DbleServer.getInstance().isUseUcore()) {
+            UDistrbtLockManager.releaseLock(UcorePathUtil.getDDLPath(StringUtil.getUFullName(schema, table)));
+        }
+        boolean isRemoved = DbleServer.getInstance().getTmManager().removeMetaLock(schema, table);
         OkPacket packet = new OkPacket();
         packet.setPacketId(1);
         packet.setAffectedRows(0);
-        packet.setMessage(("ddl lock that exists is removed successfully!").getBytes());
+        if (isRemoved) {
+            packet.setMessage(("ddl lock is removed successfully!").getBytes());
+        } else {
+            packet.setMessage(("There is no ddl lock!").getBytes());
+        }
         packet.setServerStatus(2);
         packet.write(mc);
     }

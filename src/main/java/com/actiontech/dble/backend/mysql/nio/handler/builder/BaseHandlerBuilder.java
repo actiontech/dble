@@ -165,8 +165,27 @@ public abstract class BaseHandlerBuilder {
         GlobalVisitor visitor = new GlobalVisitor(node, true);
         visitor.visit();
         String sql = visitor.getSql().toString();
-        RouteResultsetNode[] rrss = getTableSources(node.getNoshardNode(), sql);
+        String randomDataNode = getRandomNode(node.getNoshardNode());
+        RouteResultsetNode rrsNode = new RouteResultsetNode(randomDataNode, ServerParse.SELECT, sql);
+        RouteResultsetNode[] rrss = new RouteResultsetNode[]{rrsNode};
         hBuilder.checkRRSs(rrss);
+        if (session.getTargetCount() > 0 && session.getTarget(rrss[0]) == null) {
+            for (String dataNode : node.getNoshardNode()) {
+                if (!dataNode.equals(randomDataNode)) {
+                    RouteResultsetNode tmpRrsNode = new RouteResultsetNode(dataNode, ServerParse.SELECT, sql);
+                    RouteResultsetNode[] tmpRrss = new RouteResultsetNode[]{tmpRrsNode};
+                    hBuilder.checkRRSs(tmpRrss);
+                    if (session.getTarget(tmpRrsNode) != null) {
+                        rrss = tmpRrss;
+                        hBuilder.removeRrs(rrsNode);
+                        break;
+                    } else {
+                        hBuilder.removeRrs(tmpRrsNode);
+                    }
+                }
+            }
+        }
+
         MultiNodeMergeHandler mh = new MultiNodeMergeHandler(getSequenceId(), rrss, session.getSource().isAutocommit() && !session.getSource().isTxStart(),
                 session, null);
         addHandler(mh);
@@ -397,7 +416,7 @@ public abstract class BaseHandlerBuilder {
         addHandler(mh);
     }
 
-    protected RouteResultsetNode[] getTableSources(Set<String> dataNodes, String sql) {
+    protected String getRandomNode(Set<String> dataNodes) {
         String randomDatenode = null;
         int index = (int) (System.currentTimeMillis() % dataNodes.size());
         int i = 0;
@@ -408,8 +427,7 @@ public abstract class BaseHandlerBuilder {
             }
             i++;
         }
-        RouteResultsetNode rrss = new RouteResultsetNode(randomDatenode, ServerParse.SELECT, sql);
-        return new RouteResultsetNode[]{rrss};
+        return randomDatenode;
     }
 
     protected TableConfig getTableConfig(String schema, String table) {

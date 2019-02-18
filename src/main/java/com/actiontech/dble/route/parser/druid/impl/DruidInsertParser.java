@@ -53,7 +53,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             throw new SQLNonTransientException(msg);
         }
 
-        if(insert.getValuesList().isEmpty()){
+        if (insert.getValuesList().isEmpty()) {
             String msg = "Insert syntax error,no values in sql";
             throw new SQLNonTransientException(msg);
         }
@@ -296,6 +296,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
 
     /**
      * find the index of the partition column
+     *
      * @param schemaInfo      SchemaInfo
      * @param insertStmt      MySqlInsertStatement
      * @param partitionColumn partitionColumn

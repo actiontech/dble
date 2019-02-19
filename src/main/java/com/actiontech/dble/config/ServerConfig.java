@@ -230,15 +230,18 @@ public class ServerConfig {
             } else if (!isLoadAll || (loadAllMode & ManagerParseConfig.OPTR_MODE) == 0) { // reload @@config_all not contains -r
                 SchemaConfig oldSchemaConfig = schemaEntry.getValue();
                 if (!StringUtil.equalsWithEmpty(oldSchemaConfig.getDataNode(), newSchemaConfig.getDataNode())) {
+                    delSchema.add(oldSchema);
                     reloadSchema.add(oldSchema);
                 } else {
                     if (isLoadAll && newSchemaConfig.getDataNode() != null) { // reload config_all
                         //check data node and datahost change
                         List<String> strDataNodes = Collections.singletonList(newSchemaConfig.getDataNode());
                         if (isDataNodeChanged(strDataNodes, newDataNodes)) {
+                            delSchema.add(oldSchema);
                             reloadSchema.add(oldSchema);
                             continue;
                         } else if ((loadAllMode & ManagerParseConfig.OPTS_MODE) == 0 && isDataHostChanged(strDataNodes, newDataNodes)) { // reload @@config_all not contains -s
+                            delSchema.add(oldSchema);
                             reloadSchema.add(oldSchema);
                             continue;
                         }
@@ -249,6 +252,7 @@ public class ServerConfig {
         }
         for (String newSchema : newSchemas.keySet()) {
             if ((loadAllMode & ManagerParseConfig.OPTR_MODE) != 0) { // reload @@config_all -r
+                delSchema.add(newSchema);
                 reloadSchema.add(newSchema);
             } else if (!this.schemas.containsKey(newSchema)) {
                 reloadSchema.add(newSchema); // new added schema
@@ -266,12 +270,18 @@ public class ServerConfig {
                 TableConfig oldTableConfig = tableEntry.getValue();
                 if (!newTableConfig.getDataNodes().equals(oldTableConfig.getDataNodes()) ||
                         newTableConfig.getTableType() != oldTableConfig.getTableType()) {
-                    reloadTables.add(new Pair<>(oldSchema, oldTable));
+                    Pair<String, String> table = new Pair<>(oldSchema, oldTable);
+                    delTables.add(table);
+                    reloadTables.add(table);
                 } else if (isDataNodeChanged(oldTableConfig.getDataNodes(), newDataNodes)) {
-                    reloadTables.add(new Pair<>(oldSchema, oldTable));
+                    Pair<String, String> table = new Pair<>(oldSchema, oldTable);
+                    delTables.add(table);
+                    reloadTables.add(table);
                 } else if ((loadAllMode & ManagerParseConfig.OPTS_MODE) == 0 &&
                         isDataHostChanged(oldTableConfig.getDataNodes(), newDataNodes)) { // reload @@config_all not contains -s
-                    reloadTables.add(new Pair<>(oldSchema, oldTable));
+                    Pair<String, String> table = new Pair<>(oldSchema, oldTable);
+                    delTables.add(table);
+                    reloadTables.add(table);
                 }
             }
         }
@@ -405,6 +415,25 @@ public class ServerConfig {
     }
 
     private void reloadMetaData(List<Pair<String, String>> delTables, List<Pair<String, String>> reloadTables, List<String> delSchema, List<String> reloadSchema) {
+        if (delSchema.size() > 0) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("metadata will delete schema:" + StringUtil.join(delSchema, ","));
+            }
+            for (String schema : delSchema) {
+                DbleServer.getInstance().getTmManager().getCatalogs().remove(schema);
+            }
+            LOGGER.info("metadata finished for deleted schemas");
+        }
+        if (delTables.size() > 0) {
+            if (LOGGER.isDebugEnabled()) {
+                String tables = changeTablesToString(delTables);
+                LOGGER.debug("metadata will delete Tables:" + tables);
+            }
+            for (Pair<String, String> table : delTables) {
+                DbleServer.getInstance().getTmManager().getCatalogs().get(table.getKey()).dropTable(table.getValue());
+            }
+            LOGGER.info("metadata finished for deleted tables");
+        }
         if (reloadSchema.size() != 0 || reloadTables.size() != 0) {
             Map<String, Set<String>> specifiedSchemas = new HashMap<>();
             if (reloadSchema.size() > 0) {
@@ -431,26 +460,6 @@ public class ServerConfig {
             }
             DbleServer.getInstance().reloadMetaData(this, specifiedSchemas);
             LOGGER.info("metadata finished for changes of schemas and tables");
-        }
-
-        if (delSchema.size() > 0) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("metadata will delete schema:" + StringUtil.join(delSchema, ","));
-            }
-            for (String schema : delSchema) {
-                DbleServer.getInstance().getTmManager().getCatalogs().remove(schema);
-            }
-            LOGGER.info("metadata finished for deleted schemas");
-        }
-        if (delTables.size() > 0) {
-            if (LOGGER.isDebugEnabled()) {
-                String tables = changeTablesToString(delTables);
-                LOGGER.debug("metadata will delete Tables:" + tables);
-            }
-            for (Pair<String, String> table : delTables) {
-                DbleServer.getInstance().getTmManager().getCatalogs().get(table.getKey()).dropTable(table.getValue());
-            }
-            LOGGER.info("metadata finished for deleted tables");
         }
     }
 

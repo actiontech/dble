@@ -37,7 +37,7 @@ public class DruidDropTableParser extends DefaultDruidParser {
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, dropTable.getTableSources().get(0));
         String statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema());
         rrs.setStatement(statement);
-        String noShardingNode = RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable());
+        String noShardingNode = RouterUtil.isNoShardingDDL(schemaInfo.getSchemaConfig(), schemaInfo.getTable());
         if (noShardingNode != null) {
             RouterUtil.routeToSingleDDLNode(schemaInfo, rrs, noShardingNode);
             return schemaInfo.getSchemaConfig();

@@ -37,6 +37,8 @@ public final class UcorePathUtil {
     }
 
 
+    public static final String VERSION = "version";
+
     //depth:4,child node of conf_base_path/rules/
     public static final String TABLE_RULE = "tableRule";
     public static final String FUNCTION = "function";

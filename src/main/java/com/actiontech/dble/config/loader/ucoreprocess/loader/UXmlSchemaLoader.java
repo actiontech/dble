@@ -72,6 +72,8 @@ public class UXmlSchemaLoader implements UcoreXmlLoader {
         List<DataHost> dataHostList = parseJsonDataHost.parseJsonToBean(jsonObj.getJSONArray(UcorePathUtil.DATA_HOST).toJSONString());
         schema.setDataHost(dataHostList);
 
+        schema.setVersion(jsonObj.getString(UcorePathUtil.VERSION));
+
         String path = ResourceUtil.getResourcePathFromRoot(UcorePathUtil.UCORE_LOCAL_WRITE_PATH);
         path = new File(path).getPath() + File.separator;
         path += WRITEPATH;
@@ -88,6 +90,7 @@ public class UXmlSchemaLoader implements UcoreXmlLoader {
     public void notifyCluster() throws Exception {
         Schemas schema = this.parseSchemaXmlService.parseXmlToBean(UcorePathUtil.UCORE_LOCAL_WRITE_PATH + WRITEPATH);
         JSONObject schemas = new JSONObject();
+        schemas.put(UcorePathUtil.VERSION, schema.getVersion());
         schemas.put(UcorePathUtil.SCHEMA_SCHEMA, schema.getSchema());
         schemas.put(UcorePathUtil.DATA_NODE, schema.getDataNode());
         schemas.put(UcorePathUtil.DATA_HOST, schema.getDataHost());

@@ -20,6 +20,7 @@
         -->
         <!ELEMENT dble:server (system?,firewall?,user+)>
         <!ATTLIST dble:server xmlns:dble CDATA #FIXED "http://dble.cloud/">
+        <!ATTLIST dble:server version CDATA #IMPLIED>
 
         <!ELEMENT system (property*) >
 

@@ -97,7 +97,6 @@ public class XMLSchemaLoader implements SchemaLoader {
             }
             if (!version.equals(Versions.CONFIG_VERSION)) {
                 String message = "The server-version is " + Versions.CONFIG_VERSION + ",but the schema.xml version is " + version + ".There may be some incompatible config between two versions,please check it";
-                LOGGER.warn(message);
                 if (this.problemReporter != null) {
                     this.problemReporter.warn(message);
                 }

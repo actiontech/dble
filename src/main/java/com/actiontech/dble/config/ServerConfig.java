@@ -412,7 +412,7 @@ public class ServerConfig {
                     LOGGER.debug("metadata will reload schema:" + StringUtil.join(reloadSchema, ","));
                 }
                 for (String schema : reloadSchema) {
-                    specifiedSchemas.put(schema, new HashSet<String>(0));
+                    specifiedSchemas.put(schema, null);
                 }
             }
             if (reloadTables.size() > 0) {

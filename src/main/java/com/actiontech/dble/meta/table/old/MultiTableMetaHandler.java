@@ -71,7 +71,7 @@ public class MultiTableMetaHandler {
 
     private Map<String, TableConfig> filterConfigTables() {
         Map<String, TableConfig> newReload = new HashMap<>();
-        if (CollectionUtil.isEmpty(filterTables)) {
+        if (filterTables == null) {
             newReload = config.getTables();
         } else {
             for (String table : filterTables) {

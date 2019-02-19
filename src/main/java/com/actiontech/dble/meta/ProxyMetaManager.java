@@ -128,15 +128,18 @@ public class ProxyMetaManager {
         }
     }
 
-    public void removeMetaLock(String schema, String tbName) {
+    public boolean removeMetaLock(String schema, String tbName) {
         metaLock.lock();
+        boolean isRemoved = false;
         try {
             if (lockTables.remove(genLockKey(schema, tbName)) != null) {
+                isRemoved = true;
                 metaCount.decrementAndGet();
             }
         } finally {
             metaLock.unlock();
         }
+        return isRemoved;
     }
 
     public Map<String, SchemaMeta> getCatalogs() {

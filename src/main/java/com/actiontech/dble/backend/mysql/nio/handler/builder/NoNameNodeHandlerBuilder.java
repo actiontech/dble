@@ -12,6 +12,7 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.plan.node.NoNameNode;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.server.parser.ServerParse;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,7 +51,8 @@ class NoNameNodeHandlerBuilder extends BaseHandlerBuilder {
         String sql = visitor.getSql().toString();
         String schema = session.getSource().getSchema();
         SchemaConfig schemaConfig = schemaConfigMap.get(schema);
-        RouteResultsetNode[] rrss = getTableSources(schemaConfig.getAllDataNodes(), sql);
+        String randomDatenode = getRandomNode(schemaConfig.getAllDataNodes());
+        RouteResultsetNode[] rrss = new RouteResultsetNode[]{new RouteResultsetNode(randomDatenode, ServerParse.SELECT, sql)};
         hBuilder.checkRRSs(rrss);
         MultiNodeMergeHandler mh = new MultiNodeMergeHandler(getSequenceId(), rrss, session.getSource().isAutocommit() && !session.getSource().isTxStart(),
                 session, null);

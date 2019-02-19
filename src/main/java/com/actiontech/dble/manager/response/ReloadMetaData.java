@@ -88,8 +88,9 @@ public final class ReloadMetaData {
         Map<String, Set<String>> filter = new HashMap<>();
         Matcher matcher = PATTERN_WHERE.matcher(whereCondition);
         if (matcher.matches()) {
-            Set<String> tables = new HashSet<>(1);
+            Set<String> tables = null;
             if (!StringUtil.isEmpty(matcher.group(3))) {
+                tables = new HashSet<>(1);
                 tables.add(matcher.group(3));
             }
             filter.put(matcher.group(1), tables);

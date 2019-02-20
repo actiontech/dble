@@ -112,7 +112,7 @@ public class ServerzkToxmlLoader extends ZkMultiLoader implements NotifyService 
         server.setUser(userList);
 
         DataInf version = this.getZkData(zkDirectory, KVPathUtil.VERSION);
-        server.setVersion(version.getDataValue());
+        server.setVersion(version == null ? null : version.getDataValue());
 
         return server;
     }

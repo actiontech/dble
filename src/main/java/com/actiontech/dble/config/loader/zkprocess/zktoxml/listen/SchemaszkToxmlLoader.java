@@ -105,7 +105,7 @@ public class SchemaszkToxmlLoader extends ZkMultiLoader implements NotifyService
         schema.setDataHost(dataHostList);
 
         DataInf version = this.getZkData(zkDirectory, KVPathUtil.VERSION);
-        schema.setVersion(version.getDataValue());
+        schema.setVersion(version == null ? null : version.getDataValue());
 
 
         return schema;

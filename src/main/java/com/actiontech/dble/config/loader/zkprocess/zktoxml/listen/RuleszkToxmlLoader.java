@@ -114,7 +114,7 @@ public class RuleszkToxmlLoader extends ZkMultiLoader implements NotifyService {
         rules.setFunction(functionList);
 
         DataInf version = this.getZkData(zkDirectory, KVPathUtil.VERSION);
-        rules.setVersion(version.getDataValue());
+        rules.setVersion(version == null ? null : version.getDataValue());
 
         return rules;
     }

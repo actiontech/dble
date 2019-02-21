@@ -37,7 +37,7 @@ public final class ReloadMetaData {
         if (!StringUtil.isEmpty(whereCondition)) {
             filter = getFilter(whereCondition);
             if (CollectionUtil.isEmpty(filter)) {
-                c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
+                c.writeErrMessage(ErrorCode.ER_YES, "Usage: reload @@metadata [where schema='?' [and table='?'] | where table in ('schema1'.'table1',...)]");
                 return;
             }
         }

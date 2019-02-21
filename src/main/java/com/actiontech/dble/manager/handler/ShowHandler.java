@@ -104,6 +104,9 @@ public final class ShowHandler {
             case ManagerParseShow.PROCESSOR:
                 ShowProcessor.execute(c);
                 break;
+            case ManagerParseShow.PROCESS_LIST:
+                ShowProcessList.execute(c);
+                break;
             case ManagerParseShow.SERVER:
                 ShowServer.execute(c);
                 break;

@@ -91,6 +91,8 @@ public class ServerxmlTozkLoader extends ZkMultiLoader implements NotifyService 
         String userValueStr = this.parseJsonUser.parseBeanToJson(server.getUser());
         this.checkAndWriteString(basePath, KVPathUtil.USER, userValueStr);
 
+        String version = server.getVersion();
+        this.checkAndWriteString(basePath, KVPathUtil.VERSION, version);
 
     }
 }

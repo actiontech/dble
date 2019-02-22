@@ -20,6 +20,7 @@
         -->
         <!ELEMENT dble:schema (schema*,dataNode*,dataHost*)>
         <!ATTLIST dble:schema xmlns:dble CDATA #FIXED "http://dble.cloud/">
+        <!ATTLIST dble:schema version CDATA #IMPLIED>
 
         <!ELEMENT schema (table*)>
         <!ATTLIST schema name NMTOKEN #REQUIRED>

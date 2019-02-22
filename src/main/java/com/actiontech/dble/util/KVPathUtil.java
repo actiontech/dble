@@ -129,6 +129,8 @@ public final class KVPathUtil {
     public static final String TABLE_RULE = "tableRule";
     public static final String FUNCTION = "function";
 
+    public static final String VERSION = "version";
+
     //depth:2,sequences path:base_path/sequences
     public static final String SEQUENCES = "sequences";
 

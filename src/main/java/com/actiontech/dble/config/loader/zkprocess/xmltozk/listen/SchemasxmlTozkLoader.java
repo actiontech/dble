@@ -97,6 +97,9 @@ public class SchemasxmlTozkLoader extends ZkMultiLoader implements NotifyService
 
         this.checkAndWriteString(basePath, KVPathUtil.DATA_HOST, dataHostValueStr);
 
+        String version = schema.getVersion();
+        this.checkAndWriteString(basePath, KVPathUtil.VERSION, version);
+
     }
 
 }

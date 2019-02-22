@@ -439,6 +439,10 @@
                                     <value>5.6.29-dble-${project.version}-${git.commit.id}-${timestamp}</value>
                                 </replacement>
                                 <replacement>
+                                    <token>@config_version@</token>
+                                    <value>${project.version}</value>
+                                </replacement>
+                                <replacement>
                                     <token>@version-comment@</token>
                                     <value>${server.comment}</value>
                                 </replacement>

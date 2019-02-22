@@ -5,10 +5,10 @@
 
 package com.actiontech.dble.plan.optimizer;
 
-import com.actiontech.dble.plan.node.PlanNode;
-import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.actiontech.dble.plan.node.JoinNode;
+import com.actiontech.dble.plan.node.PlanNode;
+import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.util.PlanUtil;
 
 import java.util.HashSet;
@@ -117,6 +117,8 @@ public final class GlobalTableProcessor {
                 Set<String> parentSet = new HashSet<>();
                 parentSet.addAll(tnChild.getNoshardNode());
                 tn.setNoshardNode(parentSet);
+            } else {
+                tn.setNoshardNode(new HashSet<String>());
             }
         } else {
             if (tnChild.getNoshardNode() != null) {

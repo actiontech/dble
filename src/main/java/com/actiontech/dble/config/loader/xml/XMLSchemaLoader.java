@@ -7,6 +7,7 @@ package com.actiontech.dble.config.loader.xml;
 
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.config.ProblemReporter;
+import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.loader.SchemaLoader;
 import com.actiontech.dble.config.model.*;
 import com.actiontech.dble.config.model.TableConfig.TableTypeEnum;
@@ -17,6 +18,8 @@ import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.SplitUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -33,6 +36,7 @@ import java.util.Map.Entry;
 public class XMLSchemaLoader implements SchemaLoader {
     private static final String DEFAULT_DTD = "/schema.dtd";
     private static final String DEFAULT_XML = "/schema.xml";
+    private static final Logger LOGGER = LoggerFactory.getLogger(XMLSchemaLoader.class);
 
     private final Map<String, TableRuleConfig> tableRules;
     private final Map<String, DataHostConfig> dataHosts;
@@ -87,6 +91,16 @@ public class XMLSchemaLoader implements SchemaLoader {
             dtd = ResourceUtil.getResourceAsStream(dtdFile);
             xml = ResourceUtil.getResourceAsStream(xmlFile);
             Element root = ConfigUtil.getDocument(dtd, xml).getDocumentElement();
+            String version = "2.18.12.0 or earlier";
+            if (root.getAttributes().getNamedItem("version") != null) {
+                version = root.getAttributes().getNamedItem("version").getNodeValue();
+            }
+            if (!version.equals(Versions.CONFIG_VERSION)) {
+                String message = "The server-version is " + Versions.CONFIG_VERSION + ",but the schema.xml version is " + version + ".There may be some incompatible config between two versions,please check it";
+                if (this.problemReporter != null) {
+                    this.problemReporter.warn(message);
+                }
+            }
             loadDataHosts(root);
             loadDataNodes(root);
             loadSchemas(root);

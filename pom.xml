@@ -15,6 +15,7 @@
     <description>The project of dble-server</description>
 
     <properties>
+        <java.version>1.8</java.version>
         <app.encoding>UTF-8</app.encoding>
         <version.template.file>version.txt.template</version.template.file>
         <version.file>version.txt</version.file>
@@ -361,8 +362,8 @@
                     <forceJavacCompilerUse>true</forceJavacCompilerUse>
                     <!-- maven-compiler-plugin defaults to targeting Java 5, but our javac
                         only supports >=6 -->
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
                     <encoding>${app.encoding}</encoding>
                 </configuration>
                 <dependencies>

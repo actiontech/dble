@@ -110,9 +110,15 @@ public class HeartbeatRecorder {
                 ++c3;
             }
         }
-        avg1 = (v1 / c1);
-        avg2 = (v2 / c2);
-        avg3 = (v3 / c3);
+        if (c1 != 0) {
+            avg1 = (v1 / c1);
+        }
+        if (c2 != 0) {
+            avg2 = (v2 / c2);
+        }
+        if (c3 != 0) {
+            avg3 = (v3 / c3);
+        }
     }
 
     public Queue<Record> getRecordsAll() {

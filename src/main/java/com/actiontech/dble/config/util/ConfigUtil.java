@@ -13,6 +13,7 @@ import org.apache.commons.lang.StringUtils;
 import org.w3c.dom.*;
 import org.xml.sax.*;
 
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -66,6 +67,7 @@ public final class ConfigUtil {
     public static Document getDocument(final InputStream dtd, InputStream xml) throws ParserConfigurationException,
             SAXException, IOException {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, Boolean.TRUE);
         factory.setValidating(true);
         factory.setNamespaceAware(false);
         DocumentBuilder builder = factory.newDocumentBuilder();

@@ -76,6 +76,7 @@ public final class ManagerParseShow {
 
     public static final int COLLATION = 60;
     public static final int DDL_STATE = 61;
+    public static final int PROCESS_LIST = 62;
 
     public static final Pattern PATTERN_FOR_TABLE_INFO = Pattern.compile("^(\\s*schema\\s*=\\s*)([a-zA-Z_0-9]+)" +
             "(\\s+and\\s+table\\s*=\\s*)([a-zA-Z_0-9]+)\\s*$", Pattern.CASE_INSENSITIVE);
@@ -708,7 +709,7 @@ public final class ManagerParseShow {
                     return show2PaCheck(stmt, offset);
                 case 'R':
                 case 'r':
-                    return show2PrCheck(stmt, offset);
+                    return show2ProcessCheck(stmt, offset);
                 default:
                     return OTHER;
             }
@@ -1275,23 +1276,57 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
-    // SHOW @@PROCESSOR
-    private static int show2PrCheck(String stmt, int offset) {
-        if (stmt.length() > offset + "OCESSOR".length()) {
+    private static int show2ProcessCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "OCESS".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
-            char c6 = stmt.charAt(++offset);
-            char c7 = stmt.charAt(++offset);
             if ((c1 == 'O' || c1 == 'o') && (c2 == 'C' || c2 == 'c') && (c3 == 'E' || c3 == 'e') &&
-                    (c4 == 'S' || c4 == 's') && (c5 == 'S' || c5 == 's') && (c6 == 'O' || c6 == 'o') &&
-                    (c7 == 'R' || c7 == 'r')) {
+                    (c4 == 'S' || c4 == 's') && (c5 == 'S' || c5 == 's')) {
+                while (stmt.length() > ++offset) {
+                    switch (stmt.charAt(offset)) {
+                        case 'O':
+                        case 'o':
+                            return show2ProcessorCheck(stmt, offset);
+                        case 'L':
+                        case 'l':
+                            return show2ProcesslistCheck(stmt, offset);
+                        default:
+                            return OTHER;
+                    }
+                }
+            }
+        }
+        return OTHER;
+    }
+
+    // SHOW @@PROCESSOR
+    private static int show2ProcessorCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "R".length()) {
+            char c1 = stmt.charAt(++offset);
+            if (c1 == 'R' || c1 == 'r') {
                 if (ParseUtil.isErrorTail(++offset, stmt)) {
                     return OTHER;
                 }
                 return PROCESSOR;
+            }
+        }
+        return OTHER;
+    }
+
+    // SHOW @@PROCESSLIST
+    private static int show2ProcesslistCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "IST".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            if ((c1 == 'I' || c1 == 'i') && (c2 == 'S' || c2 == 's') && (c3 == 'T' || c3 == 't')) {
+                if (ParseUtil.isErrorTail(++offset, stmt)) {
+                    return OTHER;
+                }
+                return PROCESS_LIST;
             }
         }
         return OTHER;

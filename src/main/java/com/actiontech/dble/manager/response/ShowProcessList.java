@@ -20,7 +20,7 @@ import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
+import java.util.*;
 
 /**
  * ShowProcessList
@@ -90,31 +90,62 @@ public final class ShowProcessList {
         // write eof
         buffer = EOF.write(buffer, c, true);
 
-        // write rows
-        byte packetId = EOF.getPacketId();
+        List<RowDataPacket> rows = new ArrayList<>();
+        Map<String, Integer> indexs = new HashMap<>();
+        Map<String, List<Long>> dataNodeMap = new HashMap<>(4, 1f);
+        String charset = c.getCharset().getResults();
 
-        NIOProcessor[] processors = DbleServer.getInstance().getFrontProcessors();
-        for (NIOProcessor p : processors) {
+        for (NIOProcessor p : DbleServer.getInstance().getFrontProcessors()) {
             for (FrontendConnection fc : p.getFrontends().values()) {
-                if (fc == null) {
+                if (fc == null)
                     break;
-                }
+
                 Map<RouteResultsetNode, BackendConnection> backendConns = null;
                 if (fc instanceof ServerConnection) {
                     backendConns = ((ServerConnection) fc).getSession2().getTargetMap();
                 }
                 if (!CollectionUtil.isEmpty(backendConns)) {
                     for (Map.Entry<RouteResultsetNode, BackendConnection> entry : backendConns.entrySet()) {
-                        RowDataPacket row = getRow(fc, entry.getKey().getName(), entry.getValue(), c.getCharset().getResults());
-                        row.setPacketId(++packetId);
-                        buffer = row.write(buffer, c, true);
+                        String dataNode = entry.getKey().getName();
+                        long threadId = ((MySQLConnection) entry.getValue()).getThreadId();
+                        // row data package
+                        RowDataPacket row = getRow(fc, dataNode, threadId, charset);
+                        rows.add(row);
+                        // index
+                        indexs.put(dataNode + "." + String.valueOf(threadId), rows.size() - 1);
+                        // datanode map
+                        if (dataNodeMap.get(dataNode) == null) {
+                            List<Long> threadIds = new ArrayList<>(3);
+                            threadIds.add(threadId);
+                            dataNodeMap.put(dataNode, threadIds);
+                        } else {
+                            dataNodeMap.get(dataNode).add(threadId);
+                        }
                     }
                 } else {
-                    RowDataPacket row = getRow(fc, null, null, c.getCharset().getResults());
-                    row.setPacketId(++packetId);
-                    buffer = row.write(buffer, c, true);
+                    RowDataPacket row = getRow(fc, null, null, charset);
+                    rows.add(row);
                 }
             }
+        }
+
+        // set 'show processlist' content
+        Map<String, Map<String, String>> backendRes = showProcessList(dataNodeMap);
+        for (Map.Entry<String, Integer> entry : indexs.entrySet()) {
+            int index = entry.getValue();
+            RowDataPacket row = rows.get(index);
+            row.setValue(5, StringUtil.encode(backendRes.get(entry.getKey()).get("db"), charset));
+            row.setValue(6, StringUtil.encode(backendRes.get(entry.getKey()).get("Command"), charset));
+            row.setValue(7, StringUtil.encode(backendRes.get(entry.getKey()).get("Time"), charset));
+            row.setValue(8, StringUtil.encode(backendRes.get(entry.getKey()).get("State"), charset));
+            row.setValue(9, StringUtil.encode(backendRes.get(entry.getKey()).get("info"), charset));
+        }
+
+        // write rows
+        byte packetId = EOF.getPacketId();
+        for (RowDataPacket row : rows) {
+            row.setPacketId(++packetId);
+            buffer = row.write(buffer, c, true);
         }
 
         // write last eof
@@ -126,51 +157,39 @@ public final class ShowProcessList {
         c.write(buffer);
     }
 
-    private static RowDataPacket getRow(FrontendConnection fc, String dataNode, BackendConnection conn, String charset) {
-        MySQLConnection mysqlConn = null;
-        if (conn instanceof MySQLConnection) {
-            mysqlConn = (MySQLConnection) conn;
-        }
+    private static RowDataPacket getRow(FrontendConnection fc, String dataNode, Long threadId, String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         // Front_Id
         row.add(LongUtil.toBytes(fc.getId()));
         // Datanode
         row.add(StringUtil.encode(dataNode == null ? NULL_VAL : dataNode, charset));
         // BconnID
-        row.add(mysqlConn == null ? StringUtil.encode(NULL_VAL, charset) : LongUtil.toBytes(mysqlConn.getThreadId()));
+        row.add(threadId == null ? StringUtil.encode(NULL_VAL, charset) : LongUtil.toBytes(threadId));
         // User
         row.add(StringUtil.encode(fc.getUser(), charset));
         // Front_Host
         row.add(StringUtil.encode(fc.getHost() + ":" + fc.getLocalPort(), charset));
         // db
-        row.add(StringUtil.encode(mysqlConn == null ? NULL_VAL : conn.getSchema(), charset));
-        // show prcesslist
-        String command = NULL_VAL;
-        String time = "0";
-        String state = "";
-        String info = NULL_VAL;
-        if (mysqlConn != null) {
-            ShowProcesslistHandler handler = new ShowProcesslistHandler(dataNode, mysqlConn.getThreadId());
-            handler.execute();
-            Map<String, String> result = handler.getResult();
-            if (!CollectionUtil.isEmpty(result)) {
-                command = result.get("Command");
-                time = result.get("Time");
-                state = result.get("State");
-                info = result.get("Info");
-            }
-        }
-
+        row.add(StringUtil.encode(NULL_VAL, charset));
         // Command
-        row.add(StringUtil.encode(command, charset));
+        row.add(StringUtil.encode(NULL_VAL, charset));
         // Time
-        row.add(LongUtil.toBytes(Long.parseLong(time)));
+        row.add(LongUtil.toBytes(0L));
         // State
-        row.add(StringUtil.encode(state, charset));
+        row.add(StringUtil.encode("", charset));
         // Info
-        row.add(StringUtil.encode(info, charset));
+        row.add(StringUtil.encode(NULL_VAL, charset));
         return row;
     }
 
+    private static Map<String, Map<String, String>> showProcessList(Map<String, List<Long>> dns) {
+        Map<String, Map<String, String>> result = new HashMap<>();
+        for (Map.Entry<String, List<Long>> entry : dns.entrySet()) {
+            ShowProcesslistHandler handler = new ShowProcesslistHandler(entry.getKey(), entry.getValue());
+            handler.execute();
+            result.putAll(handler.getResult());
+        }
+        return result;
+    }
 
 }

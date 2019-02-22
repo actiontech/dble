@@ -3,10 +3,16 @@ package com.actiontech.dble.manager.handler;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
-import com.actiontech.dble.sqlengine.*;
+import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
+import com.actiontech.dble.sqlengine.SQLJob;
+import com.actiontech.dble.sqlengine.SQLQueryResult;
+import com.actiontech.dble.sqlengine.SQLQueryResultListener;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -15,33 +21,33 @@ import java.util.concurrent.locks.ReentrantLock;
 public class ShowProcesslistHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(ShowProcesslistHandler.class);
     private static final String[] MYSQL_SHOW_PROCESSLIST_COLS = new String[]{
-            "Command", "Time", "State", "Info"};
-    private static final String SQL = "SELECT Command,Time,State,Info FROM information_schema.processlist where id = {0};";
+            "Id", "db", "Command", "Time", "State", "Info"};
+    private static final String SQL = "SELECT Id,db,Command,Time,State,Info FROM information_schema.processlist where Id in ({0});";
     private String dataNode;
-    private long threadId;
-    private Map<String, String> result;
+    private List<Long> threadIds;
+    private Map<String, Map<String, String>> result;
     private Lock lock;
     private Condition done;
     private boolean finished = false;
 
-    public ShowProcesslistHandler(String dataNode, long threadId) {
+    public ShowProcesslistHandler(String dataNode, List<Long> threadIds) {
         this.dataNode = dataNode;
-        this.threadId = threadId;
+        this.threadIds = threadIds;
         this.lock = new ReentrantLock();
         this.done = lock.newCondition();
     }
 
     public void execute() {
-        String sbSql = SQL.replace("{0}", String.valueOf(threadId));
+        String sbSql = SQL.replace("{0}", StringUtils.join(threadIds, ','));
         PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
         PhysicalDatasource ds = dn.getDbPool().getSource();
         if (ds.isAlive()) {
-            OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_PROCESSLIST_COLS, new MySQLShowProcesslistListener());
-            MultiSQLJob sqlJob = new MultiSQLJob(sbSql, dn.getDatabase(), resultHandler, ds);
+            MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_PROCESSLIST_COLS, new MySQLShowProcesslistListener());
+            SQLJob sqlJob = new SQLJob(sbSql, dn.getDatabase(), resultHandler, ds);
             sqlJob.run();
         } else {
-            OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_PROCESSLIST_COLS, new MySQLShowProcesslistListener());
-            MultiSQLJob sqlJob = new MultiSQLJob(sbSql, dataNode, resultHandler, false);
+            MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_PROCESSLIST_COLS, new MySQLShowProcesslistListener());
+            SQLJob sqlJob = new SQLJob(sbSql, dataNode, resultHandler, false);
             sqlJob.run();
         }
         waitDone();
@@ -70,20 +76,25 @@ public class ShowProcesslistHandler {
         }
     }
 
-    public Map<String, String> getResult() {
+    public Map<String, Map<String, String>> getResult() {
         return this.result;
     }
 
-    private class MySQLShowProcesslistListener implements SQLQueryResultListener<SQLQueryResult<Map<String, String>>> {
+    private class MySQLShowProcesslistListener implements SQLQueryResultListener<SQLQueryResult<List<Map<String, String>>>> {
         MySQLShowProcesslistListener() {
         }
 
         @Override
-        public void onResult(SQLQueryResult<Map<String, String>> res) {
+        public void onResult(SQLQueryResult<List<Map<String, String>>> res) {
             if (!res.isSuccess()) {
                 LOGGER.warn("execute 'show processlist' error in " + dataNode);
             } else {
-                result = res.getResult();
+                List<Map<String, String>> rows = res.getResult();
+                result = new HashMap<>(rows.size(), 1f);
+                for (Map<String, String> row : rows) {
+                    String threadId = row.get(MYSQL_SHOW_PROCESSLIST_COLS[0]);
+                    result.put(dataNode + "." + threadId, row);
+                }
                 signalDone();
             }
         }

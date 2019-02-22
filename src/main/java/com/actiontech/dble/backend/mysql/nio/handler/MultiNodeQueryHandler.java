@@ -43,7 +43,6 @@ import java.util.Set;
 public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataResponseHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeQueryHandler.class);
     protected final RouteResultset rrs;
-    protected final NonBlockingSession session;
     private final boolean sessionAutocommit;
     private long affectedRows;
     long selectRows;
@@ -74,7 +73,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             byteBuffer = session.getSource().allocate();
         }
         this.sessionAutocommit = session.getSource().isAutocommit();
-        this.session = session;
     }
 
     protected void reset(int initCount) {

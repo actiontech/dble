@@ -132,13 +132,16 @@ public final class ShowProcessList {
         // set 'show processlist' content
         Map<String, Map<String, String>> backendRes = showProcessList(dataNodeMap);
         for (Map.Entry<String, Integer> entry : indexs.entrySet()) {
-            int index = entry.getValue();
-            RowDataPacket row = rows.get(index);
-            row.setValue(5, StringUtil.encode(backendRes.get(entry.getKey()).get("db"), charset));
-            row.setValue(6, StringUtil.encode(backendRes.get(entry.getKey()).get("Command"), charset));
-            row.setValue(7, StringUtil.encode(backendRes.get(entry.getKey()).get("Time"), charset));
-            row.setValue(8, StringUtil.encode(backendRes.get(entry.getKey()).get("State"), charset));
-            row.setValue(9, StringUtil.encode(backendRes.get(entry.getKey()).get("info"), charset));
+            Map<String, String> res = backendRes.get(entry.getKey());
+            if (res != null) {
+                int index = entry.getValue();
+                RowDataPacket row = rows.get(index);
+                row.setValue(5, StringUtil.encode(res.get("db"), charset));
+                row.setValue(6, StringUtil.encode(res.get("Command"), charset));
+                row.setValue(7, StringUtil.encode(res.get("Time"), charset));
+                row.setValue(8, StringUtil.encode(res.get("State"), charset));
+                row.setValue(9, StringUtil.encode(res.get("info"), charset));
+            }
         }
 
         // write rows

@@ -4,9 +4,11 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.manager.handler.ShowProcesslistHandler;
+import com.actiontech.dble.net.ConnectionException;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.mysql.EOFPacket;
@@ -20,7 +22,10 @@ import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * ShowProcessList
@@ -77,19 +82,6 @@ public final class ShowProcessList {
     }
 
     public static void execute(ManagerConnection c) {
-        ByteBuffer buffer = c.allocate();
-
-        // write header
-        buffer = HEADER.write(buffer, c, true);
-
-        // write fields
-        for (FieldPacket field : FIELDS) {
-            buffer = field.write(buffer, c, true);
-        }
-
-        // write eof
-        buffer = EOF.write(buffer, c, true);
-
         List<RowDataPacket> rows = new ArrayList<>();
         Map<String, Integer> indexs = new HashMap<>();
         Map<String, List<Long>> dataNodeMap = new HashMap<>(4, 1f);
@@ -130,19 +122,37 @@ public final class ShowProcessList {
         }
 
         // set 'show processlist' content
-        Map<String, Map<String, String>> backendRes = showProcessList(dataNodeMap);
-        for (Map.Entry<String, Integer> entry : indexs.entrySet()) {
-            Map<String, String> res = backendRes.get(entry.getKey());
-            if (res != null) {
-                int index = entry.getValue();
-                RowDataPacket row = rows.get(index);
-                row.setValue(5, StringUtil.encode(res.get("db"), charset));
-                row.setValue(6, StringUtil.encode(res.get("Command"), charset));
-                row.setValue(7, StringUtil.encode(res.get("Time"), charset));
-                row.setValue(8, StringUtil.encode(res.get("State"), charset));
-                row.setValue(9, StringUtil.encode(res.get("info"), charset));
+        try {
+            Map<String, Map<String, String>> backendRes = showProcessList(dataNodeMap);
+            for (Map.Entry<String, Integer> entry : indexs.entrySet()) {
+                Map<String, String> res = backendRes.get(entry.getKey());
+                if (res != null) {
+                    int index = entry.getValue();
+                    RowDataPacket row = rows.get(index);
+                    row.setValue(5, StringUtil.encode(res.get("db"), charset));
+                    row.setValue(6, StringUtil.encode(res.get("Command"), charset));
+                    row.setValue(7, StringUtil.encode(res.get("Time"), charset));
+                    row.setValue(8, StringUtil.encode(res.get("State"), charset));
+                    row.setValue(9, StringUtil.encode(res.get("info"), charset));
+                }
             }
+        } catch (ConnectionException ce) {
+            c.writeErrMessage(ErrorCode.ER_BACKEND_CONNECTION, "backend connection acquisition exception!");
+            return;
         }
+
+        ByteBuffer buffer = c.allocate();
+
+        // write header
+        buffer = HEADER.write(buffer, c, true);
+
+        // write fields
+        for (FieldPacket field : FIELDS) {
+            buffer = field.write(buffer, c, true);
+        }
+
+        // write eof
+        buffer = EOF.write(buffer, c, true);
 
         // write rows
         byte packetId = EOF.getPacketId();
@@ -190,7 +200,11 @@ public final class ShowProcessList {
         for (Map.Entry<String, List<Long>> entry : dns.entrySet()) {
             ShowProcesslistHandler handler = new ShowProcesslistHandler(entry.getKey(), entry.getValue());
             handler.execute();
-            result.putAll(handler.getResult());
+            if (handler.isSuccess()) {
+                result.putAll(handler.getResult());
+            } else {
+                throw new ConnectionException(ErrorCode.ER_BACKEND_CONNECTION, "backend connection acquisition exception!");
+            }
         }
         return result;
     }

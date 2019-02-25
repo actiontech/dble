@@ -23,9 +23,13 @@ import com.alibaba.druid.sql.ast.statement.SQLUnionQuery;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 public class DruidSingleUnitSelectParser extends DefaultDruidParser {
+
+    private Map<String, SchemaConfig> schemaMap = null;
+
     @Override
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,
                                      ServerSchemaStatVisitor visitor, ServerConnection sc) throws SQLException {
@@ -42,7 +46,8 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
             if (mysqlFrom instanceof SQLSubqueryTableSource || mysqlFrom instanceof SQLJoinTableSource || mysqlFrom instanceof SQLUnionQueryTableSource) {
                 StringPtr noShardingNode = new StringPtr(null);
                 Set<String> schemas = new HashSet<>();
-                if (SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, schemas, noShardingNode)) {
+                if ((schemaMap != null && schemaMap.size() == 1) &&
+                        SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, schemas, noShardingNode)) {
                     return routeToNoSharding(schema, rrs, schemas, noShardingNode);
                 } else {
                     super.visitorParse(schema, rrs, stmt, visitor, sc);
@@ -73,12 +78,22 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
         } else if (sqlSelectQuery instanceof SQLUnionQuery) {
             StringPtr noShardingNode = new StringPtr(null);
             Set<String> schemas = new HashSet<>();
-            if (SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, schemas, noShardingNode)) {
+            if ((schemaMap != null && schemaMap.size() == 1) &&
+                    SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, schemas, noShardingNode)) {
                 return routeToNoSharding(schema, rrs, schemas, noShardingNode);
             } else {
                 super.visitorParse(schema, rrs, stmt, visitor, sc);
             }
         }
         return schema;
+    }
+
+
+    public Map<String, SchemaConfig> getSchemaMap() {
+        return schemaMap;
+    }
+
+    public void setSchemaMap(Map<String, SchemaConfig> schemaMap) {
+        this.schemaMap = schemaMap;
     }
 }

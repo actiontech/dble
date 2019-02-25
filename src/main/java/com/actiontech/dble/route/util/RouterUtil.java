@@ -119,6 +119,59 @@ public final class RouterUtil {
         return count;
     }
 
+
+    public static RouteResultset routeFromParserComplex(DruidParser druidParser, Map<String, SchemaConfig> schemaMap, RouteResultset rrs, SQLStatement statement,
+                                                        String originSql, LayerCachePool cachePool, ServerSchemaStatVisitor visitor,
+                                                        ServerConnection sc, PlanNode node) throws SQLException {
+        druidParser.parser(null, rrs, statement, originSql, cachePool, visitor, sc);
+        if (rrs.isFinishedExecute()) {
+            return null;
+        }
+        if (rrs.isFinishedRoute()) {
+            return rrs;
+        }
+
+        /**
+         * no name table or others
+         */
+        DruidShardingParseInfo ctx = druidParser.getCtx();
+        if ((ctx.getTables() == null || ctx.getTables().size() == 0) &&
+                (ctx.getTableAliasMap() == null || ctx.getTableAliasMap().isEmpty())) {
+            SchemaConfig schema = (SchemaConfig) schemaMap.values().toArray()[0];
+            return RouterUtil.routeToSingleNode(rrs, schema.getRandomDataNode());
+        }
+
+        /* multi-tables*/
+        if (druidParser.getCtx().getRouteCalculateUnits().size() == 0) {
+            RouteCalculateUnit routeCalculateUnit = new RouteCalculateUnit();
+            druidParser.getCtx().addRouteCalculateUnit(routeCalculateUnit);
+        }
+
+        SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
+        for (RouteCalculateUnit unit : druidParser.getCtx().getRouteCalculateUnits()) {
+            RouteResultset rrsTmp = RouterUtil.tryRouteForTablesComplex(schemaMap, druidParser.getCtx(), unit, rrs, isSelect(statement), cachePool, node);
+            if (rrsTmp != null && rrsTmp.getNodes() != null) {
+                Collections.addAll(nodeSet, rrsTmp.getNodes());
+                if (rrsTmp.isGlobalTable()) {
+                    break;
+                }
+            }
+        }
+
+
+        RouteResultsetNode[] nodes = new RouteResultsetNode[nodeSet.size()];
+        int i = 0;
+        for (RouteResultsetNode aNodeSet : nodeSet) {
+            nodes[i] = aNodeSet;
+            i++;
+        }
+        rrs.setNodes(nodes);
+
+
+        return rrs;
+    }
+
+
     public static RouteResultset routeFromParser(DruidParser druidParser, SchemaConfig schema, RouteResultset rrs, SQLStatement statement,
                                                  String originSql, LayerCachePool cachePool, ServerSchemaStatVisitor visitor,
                                                  ServerConnection sc, PlanNode node) throws SQLException {
@@ -357,6 +410,7 @@ public final class RouterUtil {
 
         return x.get(0);
     }
+
     /**
      * getRandomDataNode
      *
@@ -591,6 +645,7 @@ public final class RouterUtil {
         }
         return true;
     }
+
     /**
      * tryRouteFor multiTables
      */
@@ -664,6 +719,83 @@ public final class RouterUtil {
         return rrs;
 
     }
+
+
+    /**
+     * tryRouteFor multiTables
+     */
+    public static RouteResultset tryRouteForTablesComplex(Map<String, SchemaConfig> schemaMap, DruidShardingParseInfo ctx,
+                                                          RouteCalculateUnit routeUnit, RouteResultset rrs, boolean isSelect, LayerCachePool cachePool, PlanNode node)
+            throws SQLException {
+
+        List<String> tables = ctx.getTables();
+
+        // no sharding table
+        String noShardingNode = RouterUtil.isNoSharding(schemaMap.get(tables.get(0)), tables.get(0));
+        if (noShardingNode != null) {
+            return RouterUtil.routeToSingleNode(rrs, noShardingNode);
+        }
+
+        if (tables.size() == 1) {
+            return RouterUtil.tryRouteForOneTable((SchemaConfig) (schemaMap.values().toArray()[0]), routeUnit, tables.get(0), rrs, isSelect, cachePool, node);
+        }
+
+        /**
+         * multi-table it must be ER OR   global* normal , global* er
+         */
+        //map <table,data_nodes>
+        Map<String, Set<String>> tablesRouteMap = new HashMap<>();
+
+        Map<String, Map<String, Set<ColumnRoutePair>>> tablesAndConditions = routeUnit.getTablesAndConditions();
+        if (tablesAndConditions != null && tablesAndConditions.size() > 0) {
+            //findRouter for shard-ing table
+            RouterUtil.findRouterWithConditionsForTables(schemaMap, rrs, tablesAndConditions, tablesRouteMap, cachePool, isSelect, false, node);
+            if (rrs.isFinishedRoute()) {
+                return rrs;
+            }
+        }
+
+        //findRouter for singe table global table will not change the result
+        // if global table and normal table has no intersection ,they had treat as normal join
+        for (String tableName : tables) {
+            SchemaConfig schema = schemaMap.get(tableName);
+            String testShardingNode = RouterUtil.isNoSharding(schema, tableName);
+            if (testShardingNode != null && tablesRouteMap.size() == 0) {
+                return RouterUtil.routeToSingleNode(rrs, testShardingNode);
+            }
+            TableConfig tableConfig = schema.getTables().get(tableName);
+            if (tableConfig != null && !tableConfig.isGlobalTable() && tablesRouteMap.get(tableName) == null) { //the other is single table
+                tablesRouteMap.put(tableName, new HashSet<String>());
+                tablesRouteMap.get(tableName).addAll(tableConfig.getDataNodes());
+            }
+        }
+
+        Set<String> retNodesSet = new HashSet<>();
+        boolean isFirstAdd = true;
+        for (Map.Entry<String, Set<String>> entry : tablesRouteMap.entrySet()) {
+            if (entry.getValue() == null || entry.getValue().size() == 0) {
+                throw new SQLNonTransientException("parent key can't find any valid datanode ");
+            } else {
+                if (isFirstAdd) {
+                    retNodesSet.addAll(entry.getValue());
+                    isFirstAdd = false;
+                } else {
+                    retNodesSet.retainAll(entry.getValue());
+                    if (retNodesSet.size() == 0) { //two tables has no no intersection
+                        String errMsg = "invalid route in sql, multi tables found but datanode has no intersection " +
+                                " sql:" + rrs.getStatement();
+                        LOGGER.info(errMsg);
+                        throw new SQLNonTransientException(errMsg);
+                    }
+                }
+            }
+        }
+        //retNodesSet.size() >0
+        routeToMultiNode(isSelect, rrs, retNodesSet);
+        return rrs;
+
+    }
+
 
     /**
      * tryRouteForOneTable
@@ -762,6 +894,75 @@ public final class RouterUtil {
         }
         return allFound;
     }
+
+
+    /**
+     * findRouterWithConditionsForTables
+     */
+    public static void findRouterWithConditionsForTables(Map<String, SchemaConfig> schemaMap, RouteResultset rrs,
+                                                         Map<String, Map<String, Set<ColumnRoutePair>>> tablesAndConditions,
+                                                         Map<String, Set<String>> tablesRouteMap, LayerCachePool cachePool,
+                                                         boolean isSelect, boolean isSingleTable, PlanNode node) throws SQLNonTransientException {
+
+        //router for shard-ing tables
+        for (Map.Entry<String, Map<String, Set<ColumnRoutePair>>> entry : tablesAndConditions.entrySet()) {
+            String tableName = entry.getKey();
+            SchemaConfig schema = schemaMap.get(tableName);
+            if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+                tableName = tableName.toLowerCase();
+            }
+            if (tableName.startsWith(schema.getName() + ".")) {
+                tableName = tableName.substring(schema.getName().length() + 1);
+            }
+            TableConfig tableConfig = schema.getTables().get(tableName);
+            if (tableConfig == null) {
+                if (isSingleTable) {
+                    String msg = " Table '" + schema.getName() + "." + tableName + "' doesn't exist";
+                    LOGGER.info(msg);
+                    throw new SQLNonTransientException(msg);
+                } else {
+                    //cross to other schema
+                    continue;
+                }
+            }
+            if (tableConfig.isGlobalTable() || schema.getTables().get(tableName).getDataNodes().size() == 1) {
+                //global table or single node shard-ing table will router later
+                continue;
+            } else { //shard-ing table,childTable or others
+                Map<String, Set<ColumnRoutePair>> columnsMap = entry.getValue();
+                if (tryRouteWithPrimaryCache(rrs, tablesRouteMap, cachePool, columnsMap, schema, tableName, tableConfig.getPrimaryKey(), isSelect)) {
+                    continue;
+                }
+
+                String joinKey = tableConfig.getJoinKey();
+                String partitionCol = tableConfig.getPartitionColumn();
+                boolean isFoundPartitionValue = partitionCol != null && columnsMap.get(partitionCol) != null;
+
+                // where filter contains partition column
+                if (isFoundPartitionValue) {
+                    Set<ColumnRoutePair> partitionValue = columnsMap.get(partitionCol);
+                    if (partitionValue.size() == 0) {
+                        if (tablesRouteMap.get(tableName) == null) {
+                            tablesRouteMap.put(tableName, new HashSet<String>());
+                        }
+                        tablesRouteMap.get(tableName).addAll(tableConfig.getDataNodes());
+                    } else {
+                        routeWithPartition(tablesRouteMap, tableName, tableConfig, partitionValue, node);
+                    }
+                } else if (joinKey != null && columnsMap.get(joinKey) != null && columnsMap.get(joinKey).size() != 0) {
+                    routerForJoinTable(rrs, tableConfig, columnsMap, joinKey);
+                    return;
+                } else {
+                    //no partition column,router to all nodes
+                    if (tablesRouteMap.get(tableName) == null) {
+                        tablesRouteMap.put(tableName, new HashSet<String>());
+                    }
+                    tablesRouteMap.get(tableName).addAll(tableConfig.getDataNodes());
+                }
+            }
+        }
+    }
+
 
     /**
      * findRouterWithConditionsForTables

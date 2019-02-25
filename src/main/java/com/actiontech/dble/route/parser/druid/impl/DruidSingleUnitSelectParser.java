@@ -5,8 +5,6 @@
 
 package com.actiontech.dble.route.parser.druid.impl;
 
-import com.actiontech.dble.config.ServerPrivileges;
-import com.actiontech.dble.config.ServerPrivileges.CheckType;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
@@ -14,14 +12,12 @@ import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.util.SchemaUtil;
-import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.ast.statement.SQLUnionQuery;
 
 import java.sql.SQLException;
-import java.sql.SQLNonTransientException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -55,19 +51,11 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
                 }
             }
 
-            SQLExprTableSource fromSource = (SQLExprTableSource) mysqlFrom;
-            SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, fromSource);
-            if (schemaInfo.getSchemaConfig() == null) {
-                String msg = "No Supported, sql:" + stmt;
-                throw new SQLNonTransientException(msg);
+            for (SchemaConfig schemaInfo : schemaMap.values()) {
+                rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getName()));
             }
-            if (!ServerPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), CheckType.SELECT)) {
-                String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
-                throw new SQLNonTransientException(msg);
-            }
-            rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
-            schema = schemaInfo.getSchemaConfig();
-            super.visitorParse(schema, rrs, stmt, visitor, sc);
+
+            super.visitorParse(null, rrs, stmt, visitor, sc);
             if (visitor.getSubQueryList().size() > 0) {
                 this.getCtx().getRouteCalculateUnits().clear();
             }

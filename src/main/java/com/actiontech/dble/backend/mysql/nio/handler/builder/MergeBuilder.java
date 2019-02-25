@@ -8,6 +8,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.builder;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.PushDownVisitor;
 import com.actiontech.dble.cache.LayerCachePool;
+import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.TableNode;
@@ -22,6 +23,7 @@ import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 
 import java.sql.SQLException;
+import java.sql.SQLNonTransientException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -66,7 +68,17 @@ public class MergeBuilder {
         LayerCachePool pool = DbleServer.getInstance().getRouterService().getTableId2DataNodeCache();
         Map<String, SchemaConfig> tableConfigMap = new HashMap<>();
         for (TableNode tn : node.getReferedTableNodes()) {
-            tableConfigMap.put(tn.getTableName(), schemaConfigMap.get(tn.getSchema()));
+            if (schemaConfigMap.get(tn.getSchema()) != null) {
+                tableConfigMap.put(tn.getTableName(), schemaConfigMap.get(tn.getSchema()));
+            } else {
+                String msg = "No Supported, sql:" + select.toString();
+                throw new SQLNonTransientException(msg);
+            }
+
+            if (!ServerPrivileges.checkPrivilege(session.getSource(), schemaConfigMap.get(tn.getSchema()).getName(), tn.getTableName(), ServerPrivileges.CheckType.SELECT)) {
+                String msg = "The statement DML privilege check is not passed, sql:" + select.toString().replaceAll("[\\t\\n\\r]", " ");
+                throw new SQLNonTransientException(msg);
+            }
         }
         druidParser.setSchemaMap(tableConfigMap);
         return RouterUtil.routeFromParserComplex(druidParser, tableConfigMap, rrs, select, sql, pool, visitor, session.getSource(), node);

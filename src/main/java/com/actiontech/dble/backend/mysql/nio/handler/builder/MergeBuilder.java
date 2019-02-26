@@ -70,14 +70,6 @@ public class MergeBuilder {
         for (TableNode tn : node.getReferedTableNodes()) {
             if (schemaConfigMap.get(tn.getSchema()) != null) {
                 tableConfigMap.put(tn.getTableName(), schemaConfigMap.get(tn.getSchema()));
-            } else {
-                String msg = "No Supported, sql:" + select.toString();
-                throw new SQLNonTransientException(msg);
-            }
-
-            if (!ServerPrivileges.checkPrivilege(session.getSource(), schemaConfigMap.get(tn.getSchema()).getName(), tn.getTableName(), ServerPrivileges.CheckType.SELECT)) {
-                String msg = "The statement DML privilege check is not passed, sql:" + select.toString().replaceAll("[\\t\\n\\r]", " ");
-                throw new SQLNonTransientException(msg);
             }
         }
         druidParser.setSchemaMap(tableConfigMap);

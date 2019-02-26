@@ -141,7 +141,9 @@ public final class GlobalTableProcessor {
             normal = left;
         }
         Set<String> result = new HashSet<>();
-        result.addAll(global.getNoshardNode());
+        if (global.getNoshardNode() != null) {
+            result.addAll(global.getNoshardNode());
+        }
         Set<String> normalSet = normal.getNoshardNode();
         result.retainAll(normalSet);
         return result.size() == normalSet.size();

@@ -8,7 +8,6 @@ package com.actiontech.dble.backend.mysql.nio.handler.builder;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.PushDownVisitor;
 import com.actiontech.dble.cache.LayerCachePool;
-import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.TableNode;
@@ -23,7 +22,6 @@ import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 
 import java.sql.SQLException;
-import java.sql.SQLNonTransientException;
 import java.util.HashMap;
 import java.util.Map;
 

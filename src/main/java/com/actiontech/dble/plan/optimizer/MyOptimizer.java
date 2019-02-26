@@ -44,7 +44,7 @@ public final class MyOptimizer {
 
                 node = JoinERProcessor.optimize(node);
 
-                if (existGlobal == 0) {
+                if (existGlobal >= 0) {
                     node = GlobalTableProcessor.optimize(node);
                 }
                 //  push down filter

@@ -5,14 +5,14 @@
 
 package com.actiontech.dble.plan.optimizer;
 
-import com.actiontech.dble.plan.node.PlanNode;
-import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.Item.ItemType;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.MergeNode;
+import com.actiontech.dble.plan.node.PlanNode;
+import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.util.FilterUtils;
 import com.actiontech.dble.plan.util.PlanUtil;
@@ -132,14 +132,16 @@ public final class FilterPusher {
         return qtn;
     }
 
+    // qtn is a query node, only has one child
     private static PlanNode getQueryNode(PlanNode qtn, List<Item> dnfNodeToPush) {
-        if (qtn.getSubQueries().size() > 0) {
+        if (qtn.getSubQueries().size() > 0 || qtn.getChild().type() == PlanNodeType.MERGE) {
             Item node = FilterUtils.and(dnfNodeToPush);
             if (node != null) {
                 qtn.query(FilterUtils.and(qtn.getWhereFilter(), node));
             }
             return qtn;
         }
+
         refreshPdFilters(qtn, dnfNodeToPush);
         PlanNode child = pushFilter(qtn.getChild(), dnfNodeToPush);
         ((QueryNode) qtn).setChild(child);

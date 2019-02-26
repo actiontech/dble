@@ -728,7 +728,7 @@ public final class RouterUtil {
         }
 
         if (tables.size() == 1) {
-            return RouterUtil.tryRouteForOneTable((SchemaConfig) (schemaMap.values().toArray()[0]), routeUnit, tables.get(0), rrs, isSelect, cachePool, node);
+            return RouterUtil.tryRouteForOneTable((schemaMap.get(tables.get(0))), routeUnit, tables.get(0), rrs, isSelect, cachePool, node);
         }
 
         /**

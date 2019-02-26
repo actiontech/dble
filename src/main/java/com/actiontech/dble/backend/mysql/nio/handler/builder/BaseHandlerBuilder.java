@@ -491,7 +491,7 @@ public abstract class BaseHandlerBuilder {
     }
 
     private void handleSubQueryForExplain(final ReentrantLock lock, final Condition finishSubQuery, final AtomicBoolean finished,
-                                final AtomicInteger subNodes, final PlanNode planNode, final SubQueryHandler tempHandler) {
+                                          final AtomicInteger subNodes, final PlanNode planNode, final SubQueryHandler tempHandler) {
         tempHandler.setForExplain();
         BaseHandlerBuilder builder = hBuilder.getBuilder(session, planNode, true);
         DMLResponseHandler endHandler = builder.getEndHandler();
@@ -504,6 +504,7 @@ public abstract class BaseHandlerBuilder {
         DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
             @Override
             public void run() {
+                boolean startHandler = false;
                 try {
                     BaseHandlerBuilder builder = hBuilder.getBuilder(session, planNode, false);
                     DMLResponseHandler endHandler = builder.getEndHandler();
@@ -519,6 +520,7 @@ public abstract class BaseHandlerBuilder {
                         }
                     };
                     tempHandler.setTempDoneCallBack(tempDone);
+                    startHandler = true;
                     HandlerBuilder.startHandler(endHandler);
                 } catch (Exception e) {
                     LOGGER.info("execute ItemScalarSubQuery error", e);
@@ -527,6 +529,9 @@ public abstract class BaseHandlerBuilder {
                     String errorMsg = e.getMessage() == null ? e.toString() : e.getMessage();
                     errorPackage.setMessage(errorMsg.getBytes(StandardCharsets.UTF_8));
                     errorPackets.add(errorPackage);
+                    if (!startHandler) {
+                        subQueryFinished(subNodes, lock, finished, finishSubQuery);
+                    }
                 }
             }
         });

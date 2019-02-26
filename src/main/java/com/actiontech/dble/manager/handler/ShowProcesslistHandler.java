@@ -29,6 +29,7 @@ public class ShowProcesslistHandler {
     private Lock lock;
     private Condition done;
     private boolean finished = false;
+    private boolean success = false;
 
     public ShowProcesslistHandler(String dataNode, List<Long> threadIds) {
         this.dataNode = dataNode;
@@ -80,6 +81,10 @@ public class ShowProcesslistHandler {
         return this.result;
     }
 
+    public boolean isSuccess() {
+        return success;
+    }
+
     private class MySQLShowProcesslistListener implements SQLQueryResultListener<SQLQueryResult<List<Map<String, String>>>> {
         MySQLShowProcesslistListener() {
         }
@@ -89,14 +94,15 @@ public class ShowProcesslistHandler {
             if (!res.isSuccess()) {
                 LOGGER.warn("execute 'show processlist' error in " + dataNode);
             } else {
+                success = true;
                 List<Map<String, String>> rows = res.getResult();
                 result = new HashMap<>(rows.size(), 1f);
                 for (Map<String, String> row : rows) {
                     String threadId = row.get(MYSQL_SHOW_PROCESSLIST_COLS[0]);
                     result.put(dataNode + "." + threadId, row);
                 }
-                signalDone();
             }
+            signalDone();
         }
     }
 }

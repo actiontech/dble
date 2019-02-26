@@ -54,6 +54,7 @@ public final class RouterUtil {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RouterUtil.class);
     private static ThreadLocalRandom rand = ThreadLocalRandom.current();
+
     public static String removeSchema(String stmt, String schema) {
         return removeSchema(stmt, schema, DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
     }
@@ -129,16 +130,6 @@ public final class RouterUtil {
         }
         if (rrs.isFinishedRoute()) {
             return rrs;
-        }
-
-        /**
-         * no name table or others
-         */
-        DruidShardingParseInfo ctx = druidParser.getCtx();
-        if ((ctx.getTables() == null || ctx.getTables().size() == 0) &&
-                (ctx.getTableAliasMap() == null || ctx.getTableAliasMap().isEmpty())) {
-            SchemaConfig schema = (SchemaConfig) schemaMap.values().toArray()[0];
-            return RouterUtil.routeToSingleNode(rrs, schema.getRandomDataNode());
         }
 
         /* multi-tables*/

@@ -105,7 +105,7 @@ public final class FilterPusher {
         }
 
         // root node will receive filter as where ,otherwise merge the current where and push down
-        if (qtn.getChildren().isEmpty() || PlanUtil.isGlobalOrER(qtn)) {
+        if (qtn.getChildren().isEmpty() || (PlanUtil.isGlobalOrER(qtn) && qtn.type() != PlanNodeType.MERGE)) {
             Item node = FilterUtils.and(dnfNodeToPush);
             if (node != null) {
                 qtn.query(FilterUtils.and(qtn.getWhereFilter(), node));
@@ -134,7 +134,7 @@ public final class FilterPusher {
 
     // qtn is a query node, only has one child
     private static PlanNode getQueryNode(PlanNode qtn, List<Item> dnfNodeToPush) {
-        if (qtn.getSubQueries().size() > 0 || qtn.getChild().type() == PlanNodeType.MERGE) {
+        if (qtn.getSubQueries().size() > 0) {
             Item node = FilterUtils.and(dnfNodeToPush);
             if (node != null) {
                 qtn.query(FilterUtils.and(qtn.getWhereFilter(), node));

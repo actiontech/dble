@@ -93,22 +93,23 @@ public class DruidSelectParser extends DefaultDruidParser {
                     String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                     throw new SQLNonTransientException(msg);
                 }
-                rrs.setSchema(schemaInfo.getSchema());
-                rrs.setTable(schemaInfo.getTable());
-                rrs.setTableAlias(schemaInfo.getTableAlias());
-                rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
-                schema = schemaInfo.getSchemaConfig();
 
-                if (DbleServer.getInstance().getTmManager().getSyncView(schema.getName(), schemaInfo.getTable()) != null) {
+                if (DbleServer.getInstance().getTmManager().getSyncView(schemaInfo.getSchemaConfig().getName(), schemaInfo.getTable()) != null) {
                     rrs.setNeedOptimizer(true);
                     rrs.setSqlStatement(selectStmt);
-                    return schema;
+                    return schemaInfo.getSchemaConfig();
                 }
 
                 super.visitorParse(schema, rrs, stmt, visitor, sc);
                 if (visitor.getSubQueryList().size() > 0) {
                     return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size());
                 }
+
+                rrs.setSchema(schemaInfo.getSchema());
+                rrs.setTable(schemaInfo.getTable());
+                rrs.setTableAlias(schemaInfo.getTableAlias());
+                rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
+                schema = schemaInfo.getSchemaConfig();
 
                 String noShardingNode = RouterUtil.isNoSharding(schema, schemaInfo.getTable());
                 if (noShardingNode != null) {
@@ -159,8 +160,9 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
         return schema;
     }
+
     private boolean canRouteTablesToOneNode(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
-                                         MySqlSelectQueryBlock mysqlSelectQuery, ServerConnection sc, int tableSize) throws SQLException {
+                                            MySqlSelectQueryBlock mysqlSelectQuery, ServerConnection sc, int tableSize) throws SQLException {
         Set<String> schemaList = new HashSet<>();
         String dataNode = RouterUtil.tryRouteTablesToOneNode(sc.getUser(), rrs, schema, ctx, schemaList, tableSize, true);
         if (dataNode != null) {
@@ -348,7 +350,7 @@ public class DruidSelectParser extends DefaultDruidParser {
     }
 
     private void parseAggGroupCommon(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
-                                                    MySqlSelectQueryBlock mysqlSelectQuery, TableConfig tc) throws SQLException {
+                                     MySqlSelectQueryBlock mysqlSelectQuery, TableConfig tc) throws SQLException {
         Map<String, String> aliaColumns = new HashMap<>();
         boolean isDistinct = (mysqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCT) || (mysqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCTROW);
         parseAggExprCommon(schema, rrs, mysqlSelectQuery, aliaColumns, tc, isDistinct);

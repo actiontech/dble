@@ -109,6 +109,7 @@ public final class FilterPusher {
             Item node = FilterUtils.and(dnfNodeToPush);
             if (node != null) {
                 qtn.query(FilterUtils.and(qtn.getWhereFilter(), node));
+                qtn.setContainsSubQuery(qtn.getWhereFilter().isWithSubQuery() || isWithSubQuery(dnfNodeToPush));
             }
             return qtn;
         }
@@ -138,6 +139,7 @@ public final class FilterPusher {
             Item node = FilterUtils.and(dnfNodeToPush);
             if (node != null) {
                 qtn.query(FilterUtils.and(qtn.getWhereFilter(), node));
+                qtn.setContainsSubQuery(qtn.getWhereFilter().isWithSubQuery() || isWithSubQuery(dnfNodeToPush));
             }
             return qtn;
         }
@@ -154,6 +156,7 @@ public final class FilterPusher {
         Item node = FilterUtils.and(dnfNodeToPush);
         if (node != null) {
             qtn.query(FilterUtils.and(qtn.getWhereFilter(), node));
+            qtn.setContainsSubQuery(qtn.getWhereFilter().isWithSubQuery() || isWithSubQuery(dnfNodeToPush));
         }
         Item mergeWhere = qtn.getWhereFilter();
         // push down merge's condition
@@ -358,4 +361,12 @@ public final class FilterPusher {
         return ret;
     }
 
+    private static boolean isWithSubQuery(List<Item> filters) {
+        for (Item filter : filters) {
+            if (filter.isWithSubQuery()) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

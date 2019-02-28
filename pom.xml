@@ -9,7 +9,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.actiontech</groupId>
     <artifactId>dble</artifactId>
-    <version>9.9.9.9</version>
+    <version>2.19.01.0</version>
     <packaging>jar</packaging>
     <name>dble-server</name>
     <description>The project of dble-server</description>

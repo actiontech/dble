@@ -49,7 +49,9 @@ Read the [Roadmap](./docs/ROADMAP.md).
 ![architecture](./docs/architecture.PNG)
 
 ## Quick start 
-Read the [Quick Start](./docs/QUICKSTART.md).
+Read the [Quick Start](./docs/QUICKSTART.md) or [Quick Start With Docker](./docs/dble_quick_start_docker.md) or  [Quick Start With Docker-Compose](./docs/dble_start_docker_compose.md).  
+
+参见文档[快速开始](https://github.com/actiontech/dble-docs-cn/blob/master/0.overview/0.3_dble_quick_start.md)或者[Docker快速开始](https://github.com/actiontech/dble-docs-cn/blob/master/0.overview/0.4_dble_quick_start_docker.md)或者[Docker-Compose快速开始](https://github.com/actiontech/dble-docs-cn/blob/master/0.overview/0.5_dble_start_docker_compose.md).
 
 ## Official website
 For more information, please visit the [official website](https://opensource.actionsky.com).

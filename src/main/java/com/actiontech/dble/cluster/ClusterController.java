@@ -41,8 +41,8 @@ public final class ClusterController {
         //read from myid.properties to tall use zk or ucore
         try {
             properties = loadMyidPropersites();
-
             if (CONFIG_MODE_UCORE.equalsIgnoreCase(properties.getProperty(ClusterParamCfg.CLUSTER_FLAG.getKey()))) {
+                checkUcoreProperties();
                 UcoreConfig.initUcore(properties);
             } else if (CONFIG_MODE_ZK.equalsIgnoreCase(properties.getProperty(ClusterParamCfg.CLUSTER_FLAG.getKey()))) {
                 ZkConfig.initZk(properties);
@@ -57,11 +57,14 @@ public final class ClusterController {
 
     public static void initFromShellUcore() {
         properties = loadMyidPropersites();
+        checkClusterMode(CONFIG_MODE_UCORE);
+        checkUcoreProperties();
         UcoreConfig.initUcoreFromShell(properties);
     }
 
     public static void initFromShellZK() {
         properties = loadMyidPropersites();
+        checkClusterMode(CONFIG_MODE_ZK);
         ZkConfig.setZkProperties(properties);
     }
 
@@ -71,7 +74,7 @@ public final class ClusterController {
 
         try (InputStream configIS = ResourceUtil.getResourceAsStream(CONFIG_FILE_NAME)) {
             if (configIS == null) {
-                return null;
+                return pros;
             }
             pros.load(configIS);
         } catch (IOException e) {
@@ -81,7 +84,6 @@ public final class ClusterController {
         //check if the
         if (!CONFIG_MODE_SINGLE.equalsIgnoreCase(pros.getProperty(ClusterParamCfg.CLUSTER_FLAG.getKey()))) {
             if (Strings.isNullOrEmpty(pros.getProperty(ClusterParamCfg.CLUSTER_PLUGINS_IP.getKey())) ||
-                    Strings.isNullOrEmpty(pros.getProperty(ClusterParamCfg.CLUSTER_PLUGINS_PORT.getKey())) ||
                     Strings.isNullOrEmpty(pros.getProperty(ClusterParamCfg.CLUSTER_CFG_CLUSTERID.getKey())) ||
                     Strings.isNullOrEmpty(pros.getProperty(ClusterParamCfg.CLUSTER_CFG_MYID.getKey()))) {
                 throw new RuntimeException("Cluster Config is not completely set");
@@ -89,6 +91,18 @@ public final class ClusterController {
         }
         return pros;
 
+    }
+
+    private static void checkClusterMode(String clusterMode) {
+        if (!clusterMode.equalsIgnoreCase(properties.getProperty(ClusterParamCfg.CLUSTER_FLAG.getKey()))) {
+            throw new RuntimeException("Cluster mode is not " + clusterMode);
+        }
+    }
+    private static void checkUcoreProperties() {
+        if (Strings.isNullOrEmpty(properties.getProperty(ClusterParamCfg.CLUSTER_PLUGINS_PORT.getKey())) ||
+                Strings.isNullOrEmpty(properties.getProperty(ClusterParamCfg.CLUSTER_CFG_SERVER_ID.getKey()))) {
+            throw new RuntimeException("Cluster Config is not completely set");
+        }
     }
 
 }

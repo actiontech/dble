@@ -5,14 +5,14 @@
 
 package com.actiontech.dble.plan.optimizer;
 
-import com.actiontech.dble.plan.node.PlanNode;
-import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.Item.ItemType;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.MergeNode;
+import com.actiontech.dble.plan.node.PlanNode;
+import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.util.FilterUtils;
 import com.actiontech.dble.plan.util.PlanUtil;
@@ -105,10 +105,11 @@ public final class FilterPusher {
         }
 
         // root node will receive filter as where ,otherwise merge the current where and push down
-        if (qtn.getChildren().isEmpty() || PlanUtil.isGlobalOrER(qtn)) {
+        if (qtn.getChildren().isEmpty() || (PlanUtil.isGlobalOrER(qtn) && qtn.type() != PlanNodeType.MERGE)) {
             Item node = FilterUtils.and(dnfNodeToPush);
             if (node != null) {
                 qtn.query(FilterUtils.and(qtn.getWhereFilter(), node));
+                qtn.setContainsSubQuery(qtn.getWhereFilter().isWithSubQuery() || isWithSubQuery(dnfNodeToPush));
             }
             return qtn;
         }
@@ -132,14 +133,17 @@ public final class FilterPusher {
         return qtn;
     }
 
+    // qtn is a query node, only has one child
     private static PlanNode getQueryNode(PlanNode qtn, List<Item> dnfNodeToPush) {
         if (qtn.getSubQueries().size() > 0) {
             Item node = FilterUtils.and(dnfNodeToPush);
             if (node != null) {
                 qtn.query(FilterUtils.and(qtn.getWhereFilter(), node));
+                qtn.setContainsSubQuery(qtn.getWhereFilter().isWithSubQuery() || isWithSubQuery(dnfNodeToPush));
             }
             return qtn;
         }
+
         refreshPdFilters(qtn, dnfNodeToPush);
         PlanNode child = pushFilter(qtn.getChild(), dnfNodeToPush);
         ((QueryNode) qtn).setChild(child);
@@ -152,6 +156,7 @@ public final class FilterPusher {
         Item node = FilterUtils.and(dnfNodeToPush);
         if (node != null) {
             qtn.query(FilterUtils.and(qtn.getWhereFilter(), node));
+            qtn.setContainsSubQuery(qtn.getWhereFilter().isWithSubQuery() || isWithSubQuery(dnfNodeToPush));
         }
         Item mergeWhere = qtn.getWhereFilter();
         // push down merge's condition
@@ -356,4 +361,12 @@ public final class FilterPusher {
         return ret;
     }
 
+    private static boolean isWithSubQuery(List<Item> filters) {
+        for (Item filter : filters) {
+            if (filter.isWithSubQuery()) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

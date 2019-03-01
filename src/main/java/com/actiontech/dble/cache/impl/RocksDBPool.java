@@ -43,7 +43,7 @@ public class RocksDBPool implements CachePool {
     public Object get(Object key) {
         try {
             byte[] keyBytes = fst.asByteArray(key);
-            byte[] bytes = cache.get(fst.asByteArray(keyBytes));
+            byte[] bytes = cache.get(keyBytes);
             if (bytes != null) {
                 Object cached = fst.asObject(bytes);
 

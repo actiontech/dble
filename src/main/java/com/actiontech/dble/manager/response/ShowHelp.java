@@ -135,6 +135,7 @@ public final class ShowHelp {
         HELPS.put("show @@backend.old", "Report old connections witch still alive after reload config all");
         HELPS.put("show @@binlog.status", "Report the current GTID of all backend nodes");
         HELPS.put("show @@help", "Report usage of manager port");
+        HELPS.put("show @@processlist", "Report correspondence between front and backend session");
 
         HELPS.put("show @@cost_time", "Report cost time of query , contains back End ,front End and over all");
         HELPS.put("show @@thread_used", "Report usage of threads, for optimize performance ");

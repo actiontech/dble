@@ -38,7 +38,6 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     private static final String STMT = "select 1";
     private final RouteResultset rrs;
     private final RouteResultset oriRrs;
-    private final NonBlockingSession session;
     private final boolean sessionAutocommit;
     private final MultiNodeQueryHandler handler;
     private ErrorPacket err;
@@ -58,7 +57,6 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 
         this.rrs = RouteResultCopy.rrCopy(rrs, ServerParse.SELECT, STMT);
         this.sessionAutocommit = session.getSource().isAutocommit();
-        this.session = session;
 
         this.oriRrs = rrs;
         this.handler = new MultiNodeQueryHandler(rrs, session);

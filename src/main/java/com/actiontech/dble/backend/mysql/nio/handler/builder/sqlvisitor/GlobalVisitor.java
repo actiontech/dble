@@ -384,6 +384,9 @@ public class GlobalVisitor extends MysqlVisitor {
             ItemInSubQuery inSubItem = (ItemInSubQuery) item;
             StringBuilder builder = new StringBuilder();
             builder.append(visitUnSelPushDownName(inSubItem.getLeftOperand(), canUseAlias));
+            if (inSubItem.isNeg()) {
+                builder.append(" not ");
+            }
             builder.append(" in ");
             PlanNode child = inSubItem.getPlanNode();
             MysqlVisitor childVisitor = new GlobalVisitor(child, true);

@@ -29,13 +29,11 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UnLockTablesHandler.class);
 
-    private final NonBlockingSession session;
     private final boolean autocommit;
     private final String srcStatement;
 
     public UnLockTablesHandler(NonBlockingSession session, boolean autocommit, String sql) {
         super(session);
-        this.session = session;
         this.autocommit = autocommit;
         this.srcStatement = sql;
     }

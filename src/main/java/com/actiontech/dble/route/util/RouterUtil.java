@@ -1161,6 +1161,32 @@ public final class RouterUtil {
         return null;
     }
 
+
+    /**
+     * no shard-ing table dataNode
+     *
+     * @param schemaConfig the SchemaConfig info
+     * @param tableName    the TableName
+     * @return dataNode DataNode of no-sharding table
+     */
+    public static String isNoShardingDDL(SchemaConfig schemaConfig, String tableName) throws SQLNonTransientException {
+        if (schemaConfig == null) {
+            return null;
+        }
+        if (schemaConfig.isNoSharding()) { //schema without table
+            return schemaConfig.getDataNode();
+        }
+        TableConfig tbConfig = schemaConfig.getTables().get(tableName);
+        if (tbConfig == null && schemaConfig.getDataNode() != null) {
+            return schemaConfig.getDataNode();
+        }
+        if (tbConfig != null && tbConfig.isNoSharding()) {
+            return tbConfig.getDataNodes().get(0);
+        }
+        return null;
+    }
+
+
     /**
      * isConditionAlwaysTrue
      *

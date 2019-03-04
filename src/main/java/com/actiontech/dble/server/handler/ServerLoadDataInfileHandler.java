@@ -70,7 +70,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     private boolean isHasStoreToFile = false;
 
     private SchemaConfig schema;
-    private SystemConfig systemConfig = DbleServer.getInstance().getConfig().getSystem();
+    private final SystemConfig systemConfig = DbleServer.getInstance().getConfig().getSystem();
     private String tableName;
     private TableConfig tableConfig;
     private int partitionColumnIndex = -1;

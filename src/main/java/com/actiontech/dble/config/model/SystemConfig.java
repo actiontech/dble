@@ -1146,7 +1146,7 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setMaxCharsPerColumn(int maxCharsPerColumn) {
-        if (maxCharsPerColumn > 0 && maxCharsPerColumn < 7 * 1024 * 256) {
+        if (maxCharsPerColumn > 0 && maxCharsPerColumn <= 7 * 1024 * 256) {
             this.maxCharsPerColumn = maxCharsPerColumn;
         } else if (this.problemReporter != null) {
             problemReporter.warn(String.format(WARNING_FORMATE, "maxCharsPerColumn", maxCharsPerColumn, this.maxCharsPerColumn));
@@ -1159,7 +1159,11 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setMaxDataSizeToFile(int maxDataSizeToFile) {
-        this.maxDataSizeToFile = maxDataSizeToFile;
+        if (maxDataSizeToFile > 0) {
+            this.maxDataSizeToFile = maxDataSizeToFile;
+        } else if (this.problemReporter != null) {
+            problemReporter.warn(String.format(WARNING_FORMATE, "maxDataSizeToFile", maxDataSizeToFile, this.maxDataSizeToFile));
+        }
     }
 
     @Override
@@ -1241,6 +1245,8 @@ public final class SystemConfig {
                 ", flushSlowLogSize=" + flushSlowLogSize +
                 ", sqlSlowTime=" + sqlSlowTime +
                 ", enableAlert=" + enableAlert +
+                ", maxCharsPerColumn=" + maxCharsPerColumn +
+                ", maxDataSizeToFile=" + maxDataSizeToFile +
                 "]";
     }
 

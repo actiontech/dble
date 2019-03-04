@@ -70,6 +70,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     private boolean isHasStoreToFile = false;
 
     private SchemaConfig schema;
+    private SystemConfig systemConfig = DbleServer.getInstance().getConfig().getSystem();
     private String tableName;
     private TableConfig tableConfig;
     private int partitionColumnIndex = -1;
@@ -392,7 +393,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                     data.getData().add(jLine);
                 }
 
-                if (toFile && data.getData().size() > 10000) {
+                if (toFile && data.getData().size() > systemConfig.getMaxDataSizeToFile()) {
                     //avoid OOM
                     saveDataToFile(data, name);
                 }
@@ -571,7 +572,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             // List<String> lines = Splitter.on(loadData.getLineTerminatedBy()).omitEmptyStrings().splitToList(content);
             CsvParserSettings settings = new CsvParserSettings();
             settings.setMaxColumns(65535);
-            settings.setMaxCharsPerColumn(65535);
+            settings.setMaxCharsPerColumn(systemConfig.getMaxCharsPerColumn());
             settings.getFormat().setLineSeparator(loadData.getLineTerminatedBy());
             settings.getFormat().setDelimiter(loadData.getFieldTerminatedBy().charAt(0));
             if (loadData.getEnclose() != null) {
@@ -622,7 +623,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     private boolean parseFileByLine(String file, String encode, String split) {
         CsvParserSettings settings = new CsvParserSettings();
         settings.setMaxColumns(65535);
-        settings.setMaxCharsPerColumn(65535);
+        settings.setMaxCharsPerColumn(systemConfig.getMaxCharsPerColumn());
         settings.getFormat().setLineSeparator(loadData.getLineTerminatedBy());
         settings.getFormat().setDelimiter(loadData.getFieldTerminatedBy().charAt(0));
         if (loadData.getEnclose() != null) {

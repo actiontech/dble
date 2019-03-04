@@ -393,7 +393,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                     data.getData().add(jLine);
                 }
 
-                if (toFile && data.getData().size() > systemConfig.getMaxDataSizeToFile()) {
+                if (toFile && data.getData().size() > systemConfig.getMaxRowSizeToFile()) {
                     //avoid OOM
                     saveDataToFile(data, name);
                 }

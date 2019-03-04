@@ -155,7 +155,7 @@ public final class SystemConfig {
     //alert switch
     private int enableAlert = 1;
     //load data
-    private int maxDataSizeToFile = 10000;
+    private int maxRowSizeToFile = 10000;
     private int maxCharsPerColumn = 65535; // 128k,65535 chars
     //errors
     private ProblemReporter problemReporter;
@@ -1153,16 +1153,16 @@ public final class SystemConfig {
         }
     }
 
-    public int getMaxDataSizeToFile() {
-        return maxDataSizeToFile;
+    public int getMaxRowSizeToFile() {
+        return maxRowSizeToFile;
     }
 
     @SuppressWarnings("unused")
-    public void setMaxDataSizeToFile(int maxDataSizeToFile) {
-        if (maxDataSizeToFile > 0) {
-            this.maxDataSizeToFile = maxDataSizeToFile;
+    public void setMaxRowSizeToFile(int maxRowSizeToFile) {
+        if (maxRowSizeToFile > 0) {
+            this.maxRowSizeToFile = maxRowSizeToFile;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "maxDataSizeToFile", maxDataSizeToFile, this.maxDataSizeToFile));
+            problemReporter.warn(String.format(WARNING_FORMATE, "maxRowSizeToFile", maxRowSizeToFile, this.maxRowSizeToFile));
         }
     }
 
@@ -1246,7 +1246,7 @@ public final class SystemConfig {
                 ", sqlSlowTime=" + sqlSlowTime +
                 ", enableAlert=" + enableAlert +
                 ", maxCharsPerColumn=" + maxCharsPerColumn +
-                ", maxDataSizeToFile=" + maxDataSizeToFile +
+                ", maxRowSizeToFile=" + maxRowSizeToFile +
                 "]";
     }
 

@@ -6,6 +6,7 @@
 package com.actiontech.dble.meta;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
@@ -28,6 +29,7 @@ public class DDLChildListener implements PathChildrenCacheListener {
 
     @Override
     public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
+        ClusterDelayProvider.delayAfterGetDdlNotice();
         ChildData childData = event.getData();
         switch (event.getType()) {
             case CHILD_ADDED:
@@ -63,6 +65,7 @@ public class DDLChildListener implements PathChildrenCacheListener {
         String[] tableInfo = nodeName.split("\\.");
         final String schema = StringUtil.removeBackQuote(tableInfo[0]);
         final String table = StringUtil.removeBackQuote(tableInfo[1]);
+        ClusterDelayProvider.delayBeforeUpdateMeta();
         try {
             DbleServer.getInstance().getTmManager().addMetaLock(schema, table, ddlInfo.getSql());
         } catch (Exception t) {
@@ -85,12 +88,14 @@ public class DDLChildListener implements PathChildrenCacheListener {
         if (DDLStatus.INIT == ddlInfo.getStatus()) {
             return;
         }
+        ClusterDelayProvider.delayBeforeUpdateMeta();
         //to judge the table is be drop
         if (ddlInfo.getType() == DDLInfo.DDLType.DROP_TABLE) {
             DbleServer.getInstance().getTmManager().updateMetaData(ddlInfo.getSchema(), table, ddlInfo.getSql(), DDLInfo.DDLStatus.SUCCESS.equals(ddlInfo.getStatus()), false, ddlInfo.getType());
         } else {
-            //else get the lastest table meta from db
+            //else get the latest table meta from db
             DbleServer.getInstance().getTmManager().updateOnetableWithBackData(DbleServer.getInstance().getConfig(), ddlInfo.getSchema(), table);
+            ClusterDelayProvider.delayBeforeDdlResponse();
             try {
                 DbleServer.getInstance().getTmManager().notifyResponseClusterDDL(ddlInfo.getSchema(), table, ddlInfo.getSql(), DDLInfo.DDLStatus.SUCCESS, ddlInfo.getType(), false);
             } catch (Exception e) {

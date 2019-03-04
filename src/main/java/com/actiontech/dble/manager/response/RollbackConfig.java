@@ -57,6 +57,7 @@ public final class RollbackConfig {
                 if (!distributeLock.acquire(100, TimeUnit.MILLISECONDS)) {
                     c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rollbacking, please try again later.");
                 } else {
+                    ClusterDelayProvider.delayAfterReloadLock();
                     try {
                         rollbackWithZk(zkConn, c);
                     } finally {
@@ -148,6 +149,8 @@ public final class RollbackConfig {
         lock.lock();
         try {
             rollback();
+            ClusterDelayProvider.delayAfterMasterRollback();
+
             XmltoZkMain.rollbackConf();
             //tell zk this instance has prepared
             ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
@@ -160,6 +163,7 @@ public final class RollbackConfig {
                 onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
                 preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
             }
+            ClusterDelayProvider.delayBeforeDeleterollbackLock();
             for (String child : preparedList) {
                 zkConn.delete().forPath(ZKPaths.makePath(KVPathUtil.getConfStatusPath(), child));
             }

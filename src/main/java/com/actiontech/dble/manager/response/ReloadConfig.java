@@ -88,6 +88,7 @@ public final class ReloadConfig {
                     return;
                 }
                 LOGGER.info("reload config: added distributeLock " + KVPathUtil.getConfChangeLockPath() + " to zk");
+                ClusterDelayProvider.delayAfterReloadLock();
                 try {
                     reloadWithZookeeper(loadAll, loadAllMode, zkConn, c);
                 } finally {
@@ -192,6 +193,8 @@ public final class ReloadConfig {
         try {
             load(loadAll, loadAllMode);
             LOGGER.info("reload config: single instance(self) finished");
+            ClusterDelayProvider.delayAfterMasterLoad();
+
             XmltoZkMain.writeConfFileToZK(loadAll, loadAllMode);
             LOGGER.info("reload config: sent config status to ucore");
             //tell zk this instance has prepared
@@ -208,6 +211,7 @@ public final class ReloadConfig {
                 preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
             }
             LOGGER.info("reload config: all instances finished ");
+            ClusterDelayProvider.delayBeforeDeleteReloadLock();
             StringBuilder sbErrorInfo = new StringBuilder();
             for (String child : preparedList) {
                 String childPath = ZKPaths.makePath(KVPathUtil.getConfStatusPath(), child);

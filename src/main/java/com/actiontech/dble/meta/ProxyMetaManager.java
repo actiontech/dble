@@ -495,6 +495,7 @@ public class ProxyMetaManager {
             String nodeName = StringUtil.getFullName(schema, table);
             String nodePath = ZKPaths.makePath(KVPathUtil.getDDLPath(), nodeName);
             zkConn.create().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
+            ClusterDelayProvider.delayAfterDdlLockMeta();
         } else if (DbleServer.getInstance().isUseUcore()) {
             DDLInfo ddlInfo = new DDLInfo(schema, sql, UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), DDLInfo.DDLStatus.INIT, DDLInfo.DDLType.UNKNOWN);
             String nodeName = StringUtil.getUFullName(schema, table);
@@ -513,10 +514,10 @@ public class ProxyMetaManager {
 
 
     public void notifyResponseClusterDDL(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, DDLInfo.DDLType ddlType, boolean needNotifyOther) throws Exception {
+        ClusterDelayProvider.delayAfterDdlExecuted();
         if (DbleServer.getInstance().isUseZK()) {
             notifyResponseZKDdl(schema, table, sql, ddlStatus, ddlType, needNotifyOther);
         } else if (DbleServer.getInstance().isUseUcore()) {
-            ClusterDelayProvider.delayAfterDdlExecuted();
             notifyReponseUcoreDDL(schema, table, sql, ddlStatus, ddlType, needNotifyOther);
         }
     }
@@ -531,11 +532,14 @@ public class ProxyMetaManager {
         String thisNode = ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
         ZKUtils.createTempNode(instancePath, thisNode);
         if (needNotifyOther) {
+            ClusterDelayProvider.delayBeforeDdlNotice();
             zkConn.setData().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
+            ClusterDelayProvider.delayAfterDdlNotice();
             while (true) {
                 List<String> preparedList = zkConn.getChildren().forPath(instancePath);
                 List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
                 if (preparedList.size() >= onlineList.size()) {
+                    ClusterDelayProvider.delayBeforeDdlNoticeDeleted();
                     zkConn.delete().deletingChildrenIfNeeded().forPath(nodePath);
                     break;
                 }

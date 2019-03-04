@@ -6,6 +6,7 @@
 package com.actiontech.dble.meta;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.alibaba.fastjson.JSONObject;
@@ -27,6 +28,7 @@ public class ViewChildListener implements PathChildrenCacheListener {
     @Override
     public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
         ChildData childData = event.getData();
+        ClusterDelayProvider.delayWhenReponseViewNotic();
         switch (event.getType()) {
             case CHILD_ADDED:
                 createOrUpdateViewMeta(childData, false);

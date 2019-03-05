@@ -35,15 +35,21 @@ public class DruidLockTableParser extends DefaultDruidParser {
         MySqlLockTableStatement lockTableStat = (MySqlLockTableStatement) stmt;
         Map<String, List<String>> dataNodeToLocks = new HashMap<>();
         for (MySqlLockTableStatement.Item item : lockTableStat.getItems()) {
-
             String schemaName = schema == null ? null : schema.getName();
             SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, item.getTableSource());
             SchemaConfig schemaConfig = schemaInfo.getSchemaConfig();
             String table = schemaInfo.getTable();
             String noShardingNode = RouterUtil.isNoShardingDDL(schemaConfig, table);
             if (noShardingNode != null) {
+                StringBuilder sbItem = new StringBuilder(table);
+                if (item.getTableSource().getAlias() != null) {
+                    sbItem.append(" as ");
+                    sbItem.append(item.getTableSource().getAlias());
+                }
+                sbItem.append(" ");
+                sbItem.append(item.getLockType());
                 List<String> locks = dataNodeToLocks.computeIfAbsent(noShardingNode, k -> new ArrayList<>());
-                locks.add(table + " " + item.getLockType());
+                locks.add(sbItem.toString());
                 continue;
             }
             TableConfig tableConfig = schemaConfig.getTables().get(table);
@@ -54,8 +60,15 @@ public class DruidLockTableParser extends DefaultDruidParser {
             }
             List<String> dataNodes = tableConfig.getDataNodes();
             for (String dataNode : dataNodes) {
+                StringBuilder sbItem = new StringBuilder(table);
+                if (item.getTableSource().getAlias() != null) {
+                    sbItem.append(" as ");
+                    sbItem.append(item.getTableSource().getAlias());
+                }
+                sbItem.append(" ");
+                sbItem.append(item.getLockType());
                 List<String> locks = dataNodeToLocks.computeIfAbsent(dataNode, k -> new ArrayList<>());
-                locks.add(table + " " + item.getLockType());
+                locks.add(sbItem.toString());
             }
         }
         Set<RouteResultsetNode> lockedNodes = new HashSet<>();

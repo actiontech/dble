@@ -54,6 +54,8 @@ import java.util.regex.Pattern;
  */
 public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerLoadDataInfileHandler.class);
+    //innodb limit of columns per table, https://dev.mysql.com/doc/refman/8.0/en/column-count-limit.html
+    private static final int DEFAULT_MAX_COLUMNS = 1017;
     private ServerConnection serverConnection;
     private String sql;
     private String fileName;
@@ -70,6 +72,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     private boolean isHasStoreToFile = false;
 
     private SchemaConfig schema;
+    private final SystemConfig systemConfig = DbleServer.getInstance().getConfig().getSystem();
     private String tableName;
     private TableConfig tableConfig;
     private int partitionColumnIndex = -1;
@@ -392,7 +395,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                     data.getData().add(jLine);
                 }
 
-                if (toFile && data.getData().size() > 10000) {
+                if (toFile && data.getData().size() > systemConfig.getMaxRowSizeToFile()) {
                     //avoid OOM
                     saveDataToFile(data, name);
                 }
@@ -570,8 +573,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             }
             // List<String> lines = Splitter.on(loadData.getLineTerminatedBy()).omitEmptyStrings().splitToList(content);
             CsvParserSettings settings = new CsvParserSettings();
-            settings.setMaxColumns(65535);
-            settings.setMaxCharsPerColumn(65535);
+            settings.setMaxColumns(DEFAULT_MAX_COLUMNS);
+            settings.setMaxCharsPerColumn(systemConfig.getMaxCharsPerColumn());
             settings.getFormat().setLineSeparator(loadData.getLineTerminatedBy());
             settings.getFormat().setDelimiter(loadData.getFieldTerminatedBy().charAt(0));
             if (loadData.getEnclose() != null) {
@@ -621,8 +624,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
     private boolean parseFileByLine(String file, String encode, String split) {
         CsvParserSettings settings = new CsvParserSettings();
-        settings.setMaxColumns(65535);
-        settings.setMaxCharsPerColumn(65535);
+        settings.setMaxColumns(DEFAULT_MAX_COLUMNS);
+        settings.setMaxCharsPerColumn(systemConfig.getMaxCharsPerColumn());
         settings.getFormat().setLineSeparator(loadData.getLineTerminatedBy());
         settings.getFormat().setDelimiter(loadData.getFieldTerminatedBy().charAt(0));
         if (loadData.getEnclose() != null) {

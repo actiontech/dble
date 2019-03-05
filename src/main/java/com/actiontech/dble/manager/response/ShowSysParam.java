@@ -148,6 +148,8 @@ public final class ShowSysParam {
         paramValues.add(sysConfig.getFlushSlowLogPeriod() + "s");
         paramValues.add(sysConfig.getFlushSlowLogSize() + "");
         paramValues.add(sysConfig.getSqlSlowTime() + "ms");
+        paramValues.add(sysConfig.getMaxCharsPerColumn() + "");
+        paramValues.add(sysConfig.getMaxRowSizeToFile() + "");
 
 
         for (int i = 0; i < PARAM_NAMES.length; i++) {
@@ -246,6 +248,8 @@ public final class ShowSysParam {
             "flushSlowLogPeriod",
             "flushSlowLogSize",
             "sqlSlowTime",
+            "maxCharsPerColumn",
+            "maxRowSizeToFile",
     };
 
     private static final String[] PARAM_DESCRIPTION = {
@@ -326,6 +330,8 @@ public final class ShowSysParam {
             "The period for flushing log to disk, the default is 1 second",
             "The max size for flushing log to disk, the default is 1000 ",
             "The threshold of Slow Query, the default is 100ms",
+            "The maximum number of characters allowed for per column when load data.The default value is 65535",
+            "The maximum row size,if over this value,row data will be saved to file when load data.The default value is 10000",
     };
 
     private static final String[] ISOLATION_LEVELS = {"", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ", "SERIALIZABLE"};

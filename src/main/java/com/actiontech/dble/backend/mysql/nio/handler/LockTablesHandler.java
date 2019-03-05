@@ -16,6 +16,7 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.server.parser.ServerParse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,6 +96,10 @@ public class LockTablesHandler extends MultiNodeHandler {
                 return;
             }
             boolean isEndPack = decrementCountBy(1);
+            final RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
+            if (node.getSqlType() == ServerParse.UNLOCK) {
+                session.releaseConnection(conn);
+            }
             if (isEndPack) {
                 if (this.isFail() || session.closed()) {
                     tryErrorFinished(true);

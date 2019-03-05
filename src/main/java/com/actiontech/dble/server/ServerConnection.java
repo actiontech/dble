@@ -427,12 +427,24 @@ public class ServerConnection extends FrontendConnection {
             writeErrMessage(ErrorCode.ER_YES, "can't lock tables in transaction in dble!");
             return;
         }
-        // if lock table has been executed and unlock has not been executed, can't execute lock table again
-        if (isLocked) {
-            writeErrMessage(ErrorCode.ER_YES, "can't lock tables again before unlock tables in dble");
-            return;
+
+
+        String db = this.schema;
+        SchemaConfig schema = null;
+        if (this.schema != null) {
+            schema = DbleServer.getInstance().getConfig().getSchemas().get(this.schema);
+            if (schema == null) {
+                writeErrMessage(ErrorCode.ERR_BAD_LOGICDB, "Unknown Database '" + db + "'");
+                return;
+            }
         }
-        RouteResultset rrs = routeSQL(sql, ServerParse.LOCK);
+        RouteResultset rrs;
+        try {
+            rrs = DbleServer.getInstance().getRouterService().route(schema, ServerParse.LOCK, sql, this);
+        } catch (Exception e) {
+            executeException(e, sql);
+            return ;
+        }
         if (rrs != null) {
             session.lockTable(rrs);
         }

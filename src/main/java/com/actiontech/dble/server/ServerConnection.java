@@ -423,13 +423,13 @@ public class ServerConnection extends FrontendConnection {
 
     void lockTable(String sql) {
         // lock table is disable in transaction
-        if (!autocommit) {
-            writeErrMessage(ErrorCode.ER_YES, "can't lock table in transaction!");
+        if (!autocommit || isTxStart()) {
+            writeErrMessage(ErrorCode.ER_YES, "can't lock tables in transaction in dble!");
             return;
         }
         // if lock table has been executed and unlock has not been executed, can't execute lock table again
         if (isLocked) {
-            writeErrMessage(ErrorCode.ER_YES, "can't lock multi-table");
+            writeErrMessage(ErrorCode.ER_YES, "can't lock tables again before unlock tables in dble");
             return;
         }
         RouteResultset rrs = routeSQL(sql, ServerParse.LOCK);
@@ -439,6 +439,10 @@ public class ServerConnection extends FrontendConnection {
     }
 
     void unLockTable(String sql) {
+        if (!autocommit || isTxStart()) {
+            writeErrMessage(ErrorCode.ER_YES, "can't unlock tables in transaction in dble!");
+            return;
+        }
         sql = sql.replaceAll("\n", " ").replaceAll("\t", " ");
         String[] words = SplitUtil.split(sql, ' ', true);
         if (words.length == 2 && ("table".equalsIgnoreCase(words[1]) || "tables".equalsIgnoreCase(words[1]))) {

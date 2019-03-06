@@ -93,7 +93,7 @@ public class DDLChildListener implements PathChildrenCacheListener {
         if (ddlInfo.getStatus() == DDLStatus.FAILED) {
             DbleServer.getInstance().getTmManager().removeMetaLock(ddlInfo.getSchema(), table);
             try {
-                DbleServer.getInstance().getTmManager().notifyResponseClusterDDL(ddlInfo.getSchema(), table, ddlInfo.getSql(), DDLInfo.DDLStatus.SUCCESS, ddlInfo.getType(), false);
+                DbleServer.getInstance().getTmManager().notifyResponseClusterDDL(ddlInfo.getSchema(), table, ddlInfo.getSql(), DDLInfo.DDLStatus.FAILED, ddlInfo.getType(), false);
             } catch (Exception e) {
                 LOGGER.info("Error when update the meta data of the DDL " + ddlInfo.toString());
             }

@@ -116,7 +116,7 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
                 sequence = 0;
             }
             lastTimestamp = timestamp;
-            if (timestamp > deadline) {
+            if (timestamp >= deadline) {
                 throw new SQLNonTransientException("Global sequence has reach to max limit and can generate duplicate sequences.");
             }
             //42 bit timestamp, right shift 12 bit ,get high 30 bit,than left shift 34 bit

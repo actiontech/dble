@@ -180,7 +180,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
 
     @Override
     protected void onTerminate() {
-        if (autocommit) {
+        if (autocommit && !session.getSource().isLocked()) {
             this.session.releaseConnection(rrss, LOGGER.isDebugEnabled(), false);
         } else {
             //the connection should wait until the connection running finish

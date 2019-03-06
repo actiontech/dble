@@ -14,14 +14,13 @@ import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil;
-import com.actiontech.dble.util.SplitUtil;
+import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlLockTableStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlLockTableStatement.LockType;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
-import java.util.List;
+import java.util.*;
 
 /**
  * lock tables [table] [write|read]
@@ -32,61 +31,60 @@ public class DruidLockTableParser extends DefaultDruidParser {
     @Override
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc)
             throws SQLException {
-        // for lock tables table1 write, table2
-        // DruidParser can only parser table1,
-        // use "," to judge
-        String sql = rrs.getStatement();
-        sql = sql.replaceAll("\n", " ").replaceAll("\t", " ");
-        String[] stmts = SplitUtil.split(sql, ',', true);
-        // contains ","
-        if (stmts.length > 1) {
-            String tmpStmt = null;
-            String[] tmpWords = null;
-            for (int i = 1; i < stmts.length; i++) {
-                tmpStmt = stmts[i];
-                tmpWords = SplitUtil.split(tmpStmt, ' ', true);
-                if (tmpWords.length == 2 &&
-                        ("READ".equalsIgnoreCase(tmpWords[1]) || "WRITE".equalsIgnoreCase(tmpWords[1]))) {
-                    // unsupport lock multi-table
-                    continue;
-                } else {
-                    // unsupport lock multi-table
-                    throw new SQLNonTransientException(
-                            "You have an error in your SQL syntax, don't support lock multi tables!");
-                }
-            }
-            LOGGER.info("can't lock multi-table");
-            throw new SQLNonTransientException("can't lock multi-table");
-        }
         MySqlLockTableStatement lockTableStat = (MySqlLockTableStatement) stmt;
-        String schemaName = schema == null ? null : schema.getName();
-        SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, lockTableStat.getTableSource());
-        schema = schemaInfo.getSchemaConfig();
-        String table = schemaInfo.getTable();
-        String noShardingNode = RouterUtil.isNoShardingDDL(schema, table);
-        if (noShardingNode != null) {
-            RouterUtil.routeToSingleNode(rrs, noShardingNode);
-            rrs.setFinishedRoute(true);
-            return schema;
+        Map<String, List<String>> dataNodeToLocks = new HashMap<>();
+        for (MySqlLockTableStatement.Item item : lockTableStat.getItems()) {
+            String schemaName = schema == null ? null : schema.getName();
+            SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, item.getTableSource());
+            SchemaConfig schemaConfig = schemaInfo.getSchemaConfig();
+            String table = schemaInfo.getTable();
+            String noShardingNode = RouterUtil.isNoShardingDDL(schemaConfig, table);
+            if (noShardingNode != null) {
+                StringBuilder sbItem = new StringBuilder(table);
+                if (item.getTableSource().getAlias() != null) {
+                    sbItem.append(" as ");
+                    sbItem.append(item.getTableSource().getAlias());
+                }
+                sbItem.append(" ");
+                sbItem.append(item.getLockType());
+                List<String> locks = dataNodeToLocks.computeIfAbsent(noShardingNode, k -> new ArrayList<>());
+                locks.add(sbItem.toString());
+                continue;
+            }
+            TableConfig tableConfig = schemaConfig.getTables().get(table);
+            if (tableConfig == null) {
+                String msg = "can't find table define of " + table + " in schema:" + schemaConfig.getName();
+                LOGGER.info(msg);
+                throw new SQLNonTransientException(msg);
+            }
+            List<String> dataNodes = tableConfig.getDataNodes();
+            for (String dataNode : dataNodes) {
+                StringBuilder sbItem = new StringBuilder(table);
+                if (item.getTableSource().getAlias() != null) {
+                    sbItem.append(" as ");
+                    sbItem.append(item.getTableSource().getAlias());
+                }
+                sbItem.append(" ");
+                sbItem.append(item.getLockType());
+                List<String> locks = dataNodeToLocks.computeIfAbsent(dataNode, k -> new ArrayList<>());
+                locks.add(sbItem.toString());
+            }
         }
-        TableConfig tableConfig = schema.getTables().get(table);
-        if (tableConfig == null) {
-            String msg = "can't find table define of " + table + " in schema:" + schema.getName();
-            LOGGER.info(msg);
-            throw new SQLNonTransientException(msg);
+        Set<RouteResultsetNode> lockedNodes = new HashSet<>();
+        if (sc.isLocked()) {
+            lockedNodes.addAll(sc.getSession2().getTargetMap().keySet());
         }
-        LockType lockType = lockTableStat.getLockType();
-        if (LockType.WRITE != lockType && LockType.READ != lockType) {
-            String msg = "lock type must be write or read";
-            LOGGER.info(msg);
-            throw new SQLNonTransientException(msg);
+        List<RouteResultsetNode> nodes = new ArrayList<>();
+        for (Map.Entry<String, List<String>> entry : dataNodeToLocks.entrySet()) {
+            RouteResultsetNode node = new RouteResultsetNode(entry.getKey(), ServerParse.LOCK, " LOCK TABLES " + StringUtil.join(entry.getValue(), ","));
+            nodes.add(node);
+            lockedNodes.remove(node);
         }
-        List<String> dataNodes = tableConfig.getDataNodes();
-        RouteResultsetNode[] nodes = new RouteResultsetNode[dataNodes.size()];
-        for (int i = 0; i < dataNodes.size(); i++) {
-            nodes[i] = new RouteResultsetNode(dataNodes.get(i), ServerParse.LOCK, statementToString(stmt));
+        for (RouteResultsetNode toUnlockedNode : lockedNodes) {
+            RouteResultsetNode node = new RouteResultsetNode(toUnlockedNode.getName(), ServerParse.UNLOCK, " UNLOCK TABLES ");
+            nodes.add(node);
         }
-        rrs.setNodes(nodes);
+        rrs.setNodes(nodes.toArray(new RouteResultsetNode[nodes.size()]));
         rrs.setFinishedRoute(true);
         return schema;
     }

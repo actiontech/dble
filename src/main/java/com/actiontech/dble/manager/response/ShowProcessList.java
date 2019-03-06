@@ -54,7 +54,7 @@ public final class ShowProcessList {
         FIELDS[i] = PacketUtil.getField("Datanode", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("BconnID", Fields.FIELD_TYPE_LONG);
+        FIELDS[i] = PacketUtil.getField("BconnID", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("User", Fields.FIELD_TYPE_VAR_STRING);
@@ -69,7 +69,7 @@ public final class ShowProcessList {
         FIELDS[i] = PacketUtil.getField("Command", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("Time", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i] = PacketUtil.getField("Time", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("State", Fields.FIELD_TYPE_VAR_STRING);
@@ -187,7 +187,7 @@ public final class ShowProcessList {
         // Command
         row.add(StringUtil.encode(NULL_VAL, charset));
         // Time
-        row.add(LongUtil.toBytes(0L));
+        row.add(StringUtil.encode("0", charset));
         // State
         row.add(StringUtil.encode("", charset));
         // Info

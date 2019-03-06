@@ -89,6 +89,16 @@ public class DDLChildListener implements PathChildrenCacheListener {
             return;
         }
         ClusterDelayProvider.delayBeforeUpdateMeta();
+        // just release local lock
+        if (ddlInfo.getStatus() == DDLStatus.FAILED) {
+            DbleServer.getInstance().getTmManager().removeMetaLock(ddlInfo.getSchema(), table);
+            try {
+                DbleServer.getInstance().getTmManager().notifyResponseClusterDDL(ddlInfo.getSchema(), table, ddlInfo.getSql(), DDLInfo.DDLStatus.SUCCESS, ddlInfo.getType(), false);
+            } catch (Exception e) {
+                LOGGER.info("Error when update the meta data of the DDL " + ddlInfo.toString());
+            }
+            return;
+        }
         //to judge the table is be drop
         if (ddlInfo.getType() == DDLInfo.DDLType.DROP_TABLE) {
             DbleServer.getInstance().getTmManager().updateMetaData(ddlInfo.getSchema(), table, ddlInfo.getSql(), DDLInfo.DDLStatus.SUCCESS.equals(ddlInfo.getStatus()), false, ddlInfo.getType());

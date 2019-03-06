@@ -523,15 +523,15 @@ public class ProxyMetaManager {
     }
 
     private void notifyResponseZKDdl(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, DDLInfo.DDLType ddlType, boolean needNotifyOther) throws Exception {
-        CuratorFramework zkConn = ZKUtils.getConnection();
-        DDLInfo ddlInfo = new DDLInfo(schema, sql, ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ddlStatus, ddlType);
         String nodeName = StringUtil.getFullName(schema, table);
         String nodePath = ZKPaths.makePath(KVPathUtil.getDDLPath(), nodeName);
-
         String instancePath = ZKPaths.makePath(nodePath, KVPathUtil.DDL_INSTANCE);
         String thisNode = ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
         ZKUtils.createTempNode(instancePath, thisNode);
+
         if (needNotifyOther) {
+            CuratorFramework zkConn = ZKUtils.getConnection();
+            DDLInfo ddlInfo = new DDLInfo(schema, sql, ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ddlStatus, ddlType);
             ClusterDelayProvider.delayBeforeDdlNotice();
             zkConn.setData().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
             ClusterDelayProvider.delayAfterDdlNotice();

@@ -31,7 +31,6 @@ public class DruidLockTableParser extends DefaultDruidParser {
     @Override
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc)
             throws SQLException {
-
         MySqlLockTableStatement lockTableStat = (MySqlLockTableStatement) stmt;
         Map<String, List<String>> dataNodeToLocks = new HashMap<>();
         for (MySqlLockTableStatement.Item item : lockTableStat.getItems()) {
@@ -76,7 +75,6 @@ public class DruidLockTableParser extends DefaultDruidParser {
             lockedNodes.addAll(sc.getSession2().getTargetMap().keySet());
         }
         List<RouteResultsetNode> nodes = new ArrayList<>();
-        int i = 0;
         for (Map.Entry<String, List<String>> entry : dataNodeToLocks.entrySet()) {
             RouteResultsetNode node = new RouteResultsetNode(entry.getKey(), ServerParse.LOCK, " LOCK TABLES " + StringUtil.join(entry.getValue(), ","));
             nodes.add(node);

@@ -408,18 +408,6 @@
                                     <token>@pomversion@</token>
                                     <value>${project.version}</value>
                                 </replacement>
-                                <replacement>
-                                    <token>@giturl@</token>
-                                    <value>https://github.com/actiontech/dble</value>
-                                </replacement>
-                                <replacement>
-                                    <token>@website@</token>
-                                    <value>http://dble.cloud/</value>
-                                </replacement>
-                                <replacement>
-                                    <token>@qqgroup@</token>
-                                    <value>669663113</value>
-                                </replacement>
                             </replacements>
                         </configuration>
                     </execution>

@@ -476,7 +476,12 @@ public abstract class FrontendConnection extends AbstractConnection {
         //load data infile  client send empty packet which size is 4
         if (data.length == 4 && data[0] == 0 && data[1] == 0 && data[2] == 0) {
             // load in data empty packet
-            loadDataInfileEnd(data[3]);
+            DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
+                @Override
+                public void run() {
+                    loadDataInfileEnd(data[3]);
+                }
+            });
             return;
         }
         //when TERMINATED char of load data infile is \001

@@ -24,6 +24,7 @@ import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.rule.xml.Rul
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
 import com.actiontech.dble.util.KVPathUtil;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,7 +91,14 @@ public class RulesxmlTozkLoader extends ZkMultiLoader implements NotifyService {
         this.checkAndWriteString(basePath, KVPathUtil.FUNCTION, functionJson);
 
         String version = rules.getVersion();
-        this.checkAndWriteString(basePath, KVPathUtil.VERSION, version);
+        if (version != null) {
+            this.checkAndWriteString(basePath, KVPathUtil.VERSION, version);
+        } else {
+            Stat stat = this.getCurator().checkExists().forPath(basePath + KVPathUtil.SEPARATOR + KVPathUtil.VERSION);
+            if (stat != null) {
+                this.getCurator().delete().forPath(basePath + KVPathUtil.SEPARATOR + KVPathUtil.VERSION);
+            }
+        }
     }
 
     /**

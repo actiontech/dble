@@ -92,7 +92,13 @@ public class ServerxmlTozkLoader extends ZkMultiLoader implements NotifyService 
         this.checkAndWriteString(basePath, KVPathUtil.USER, userValueStr);
 
         String version = server.getVersion();
-        this.checkAndWriteString(basePath, KVPathUtil.VERSION, version);
+        if (version != null) {
+            this.checkAndWriteString(basePath, KVPathUtil.VERSION, version);
+        } else {
+            if (this.checkPathExists(basePath + KVPathUtil.SEPARATOR + KVPathUtil.VERSION)) {
+                this.getCurator().delete().forPath(basePath + KVPathUtil.SEPARATOR + KVPathUtil.VERSION);
+            }
+        }
 
     }
 }

@@ -47,4 +47,13 @@ public class XASessionCheck {
             session.rollback();
         }
     }
+
+    public ConcurrentMap<Long, NonBlockingSession> getCommitSession() {
+        return commitSession;
+    }
+
+    public ConcurrentMap<Long, NonBlockingSession> getRollbackSession() {
+        return rollbackSession;
+    }
+
 }

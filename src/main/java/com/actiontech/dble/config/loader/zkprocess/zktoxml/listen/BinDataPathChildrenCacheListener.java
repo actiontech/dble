@@ -30,9 +30,6 @@ public class BinDataPathChildrenCacheListener implements PathChildrenCacheListen
             case CHILD_UPDATED:
                 add(data, true);
                 break;
-            case CHILD_REMOVED:
-                delete(data);
-                break;
             default:
                 break;
         }
@@ -49,15 +46,6 @@ public class BinDataPathChildrenCacheListener implements PathChildrenCacheListen
         if (reload && "dnindex.properties".equals(name)) {
             DbleServer.getInstance().reloadDnIndex();
         }
-    }
-
-    private void delete(ChildData childData) throws IOException {
-        String name = childData.getPath().substring(childData.getPath().lastIndexOf("/") + 1);
-        File file = new File(
-                SystemConfig.getHomePath() + File.separator + "conf",
-                name);
-        if (file.exists())
-            file.delete();
     }
 
 }

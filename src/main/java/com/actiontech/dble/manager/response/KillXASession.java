@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author mycat
+ * @author collapsar
  */
 public final class KillXASession {
     private KillXASession() {

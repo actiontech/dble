@@ -747,6 +747,14 @@ public class NonBlockingSession implements Session {
         clearHandlesResources();
     }
 
+    public void forceClose(String reason) {
+        for (BackendConnection node : target.values()) {
+            node.terminate(reason);
+        }
+        target.clear();
+        clearHandlesResources();
+    }
+
     public void releaseConnectionIfSafe(BackendConnection conn, boolean needClosed) {
         RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
         if (node != null) {

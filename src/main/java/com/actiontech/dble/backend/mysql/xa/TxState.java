@@ -100,9 +100,8 @@ public enum TxState {
         }
     }
 
-    @Override
-    public String toString() {
-        switch (this.value) {
+    public String getState() {
+        switch (value) {
             case 0:
                 return "TX_INITIALIZE_STATE";
             case 1:
@@ -130,7 +129,12 @@ public enum TxState {
             case 12:
                 return "TX_PREPARING_STATE";
             default:
-                return "unknown";
+                return null;
         }
+    }
+
+    @Override
+    public String toString() {
+        return String.valueOf(this.value);
     }
 }

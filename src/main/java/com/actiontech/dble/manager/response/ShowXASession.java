@@ -21,9 +21,9 @@ import com.actiontech.dble.util.StringUtil;
 import java.nio.ByteBuffer;
 
 /**
- * show front session detail info
+ * show front session and associated xa transaction details
  *
- * @author wuzhih
+ * @author collapsar
  */
 public final class ShowXASession {
     private ShowXASession() {
@@ -95,7 +95,7 @@ public final class ShowXASession {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(StringUtil.encode(session.getSource().getId() + "", charset));
         row.add(StringUtil.encode(session.getSessionXaID() + "", charset));
-        row.add(StringUtil.encode(session.getXaState().toString(), charset));
+        row.add(StringUtil.encode(session.getXaState().getState(), charset));
         StringBuilder sb = new StringBuilder();
         for (RouteResultsetNode node : session.getTargetKeys()) {
             sb.append(node.getName() + " ");

@@ -112,6 +112,7 @@ public final class ShowHelp {
         HELPS.put("show @@cache", "Report system cache usage");
         HELPS.put("show @@backend", "Report backend connection status");
         HELPS.put("show @@session", "Report front session details");
+        HELPS.put("show @@session.xa", "Report front session and associated xa transaction details");
         HELPS.put("show @@connection.sql", "Report connection sql");
         HELPS.put("show @@sql", "Report SQL list");
         // helps.put("show @@sql where id = ?", "Report  specify SQL");
@@ -147,6 +148,7 @@ public final class ShowHelp {
 
         // kill
         HELPS.put("kill @@connection id1,id2,...", "Kill the specified connections");
+        HELPS.put("kill @@xa_session id1,id2,...", "Kill the specified sessions that commit/rollback xa transaction in the background");
         HELPS.put("kill @@ddl_lock where schema=? and table=?", "Kill ddl lock held by the specified ddl");
 
         // stop

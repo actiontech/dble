@@ -371,7 +371,9 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                     // close this session ,add to schedule job
                     session.getSource().close("COMMIT FAILED but it will try to COMMIT repeatedly in backend until it is success!");
                     final int count = DbleServer.getInstance().getConfig().getSystem().getXaRetryCount();
-                    if (session.isRetryXa() && (count == 0 || ++backgroundCommitTimes <= count)) {
+                    if (!session.isRetryXa()) {
+                        session.forceClose("kill xa session by manager cmd!");
+                    } else if (count == 0 || ++backgroundCommitTimes <= count) {
                         AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, "fail to try to COMMIT xa transaction " + session.getSessionXaID() + " background", AlertUtil.genSingleLabel("XA_ID", session.getSessionXaID()));
                         DbleServer.getInstance().getXaSessionCheck().addCommitSession(session);
                     }

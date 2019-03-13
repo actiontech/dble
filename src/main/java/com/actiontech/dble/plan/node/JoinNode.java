@@ -126,7 +126,11 @@ public class JoinNode extends PlanNode {
                 Item bf = joinFilter.get(index);
                 bf = setUpItem(bf);
                 if (bf.getReferTables().size() == 1) {
-                    throw new MySQLOutPutException(ErrorCode.ER_NONUNIQ_TABLE, "42000", "Not unique table/alias: '" + this.getLeftNode().getPureName() + "'");
+                    if (bf.getReferTables().iterator().next().type() == PlanNodeType.TABLE) {
+                        throw new MySQLOutPutException(ErrorCode.ER_NONUNIQ_TABLE, "42000", "Not unique table/alias: '" + this.getLeftNode().getPureName() + "'");
+                    } else {
+                        throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "42000", "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '" + bf.toString() + "'");
+                    }
                 }
                 joinFilter.set(index, (ItemFuncEqual) bf);
             }

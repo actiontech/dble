@@ -9,6 +9,13 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.StringUtil;
+import com.alibaba.druid.sql.ast.statement.SQLDropViewStatement;
+import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
+import com.alibaba.druid.sql.parser.SQLStatementParser;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.actiontech.dble.config.ErrorCode.ER_BAD_TABLE_ERROR;
 import static com.actiontech.dble.config.ErrorCode.ER_PARSE_ERROR;
@@ -24,39 +31,45 @@ public final class DropViewHandler {
 
     public static void handle(String stmt, ServerConnection c) {
         try {
-            boolean flag = parseViewExists(stmt);
-            String[] viewName = parseViewName(stmt);
+            SQLStatementParser parser;
+            parser = new MySqlStatementParser(stmt);
+            SQLDropViewStatement viewStatement;
+            try {
+                viewStatement = (SQLDropViewStatement) parser.parseStatement(true);
+            } catch (Exception t) {
+                c.writeErrMessage(ER_BAD_TABLE_ERROR, " view drop sql error");
+                return;
+            }
 
-            if (viewName != null) {
-                for (int i = 0; i < viewName.length; i++) {
-                    viewName[i] = StringUtil.removeBackQuote(viewName[i]);
+            boolean ifExistsflag = viewStatement.isIfExists();
+            List<SQLExprTableSource> removeList = new ArrayList<>();
+            if (viewStatement.getTableSources() != null && viewStatement.getTableSources().size() != 0) {
+                for (SQLExprTableSource table : viewStatement.getTableSources()) {
+                    //check table meta & add the table into list
+                    String result = addToRemoveList(removeList, table, c.getSchema(), ifExistsflag);
+                    if (result != null) {
+                        c.writeErrMessage(ER_BAD_TABLE_ERROR, result);
+                        return;
+                    }
                 }
             } else {
                 c.writeErrMessage(ER_BAD_TABLE_ERROR, " no view in sql when try to drop");
                 return;
             }
-            //check if all the view is exists
-            if (!flag) {
-                for (String singleName : viewName) {
-                    if (!(DbleServer.getInstance().getTmManager().getCatalogs().get(c.getSchema()).getViewMetas().containsKey(singleName))) {
-                        c.writeErrMessage(ER_BAD_TABLE_ERROR, " Unknown table '" + singleName + "'");
-                        return;
-                    }
-                }
-            }
 
-            for (String singleName : viewName) {
-                DbleServer.getInstance().getTmManager().addMetaLock(c.getSchema(), singleName, stmt);
+            //drop all the view
+            for (SQLExprTableSource table : removeList) {
+                String tableName = StringUtil.removeBackQuote(table.getName().getSimpleName()).trim();
+                DbleServer.getInstance().getTmManager().addMetaLock(table.getSchema(), tableName, stmt);
                 try {
-                    deleteFromReposoitory(c.getSchema(), singleName);
-                    DbleServer.getInstance().getTmManager().getCatalogs().get(c.getSchema()).getViewMetas().remove(singleName.trim());
+                    deleteFromReposoitory(table.getSchema(), tableName);
+                    DbleServer.getInstance().getTmManager().getCatalogs().get(table.getSchema()).getViewMetas().remove(tableName);
                 } catch (Throwable e) {
                     throw e;
                 } finally {
-                    DbleServer.getInstance().getTmManager().removeMetaLock(c.getSchema(), singleName);
+                    DbleServer.getInstance().getTmManager().removeMetaLock(table.getSchema(), tableName);
                 }
             }
-
 
             byte packetId = (byte) c.getSession2().getPacketId().get();
             OkPacket ok = new OkPacket();
@@ -66,7 +79,7 @@ public final class DropViewHandler {
             boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
             c.getSession2().multiStatementNextSql(multiStatementFlag);
             return;
-        } catch (Exception e) {
+        } catch (Throwable e) {
             c.writeErrMessage(ER_PARSE_ERROR, "Get Error when delete the view");
         }
     }
@@ -76,94 +89,21 @@ public final class DropViewHandler {
     }
 
 
-    public static String[] parseViewName(String sql) throws Exception {
-        //skip the first word of sql 'drop '
-        int offset = 4;
-        String stmt = sql.trim();
-        while (true) {
-            if (!(stmt.charAt(++offset) == ' ' ||
-                    stmt.charAt(offset) == '\t' ||
-                    stmt.charAt(offset) == '\r' ||
-                    stmt.charAt(offset) == '\n')) {
-                //skip  the second words view
-                offset += 4;
-                while (true) {
-                    char t = stmt.charAt(++offset);
-                    if (!(t == ' ' || t == '\t' || t == '\r' || t == '\n')) {
-                        if ((t == 'i' || t == 'I') &&
-                                (stmt.charAt(++offset) == 'f' || stmt.charAt(offset) == 'F')) {
-                            while (true) {
-                                char t1 = stmt.charAt(++offset);
-                                if (!(t1 == ' ' || t1 == '\t' || t1 == '\r' || t1 == '\n')) {
-                                    char c1 = stmt.charAt(offset);
-                                    char c2 = stmt.charAt(++offset);
-                                    char c3 = stmt.charAt(++offset);
-                                    char c4 = stmt.charAt(++offset);
-                                    char c5 = stmt.charAt(++offset);
-                                    char c6 = stmt.charAt(++offset);
-                                    if ((c1 == 'e' || c1 == 'E') &&
-                                            (c2 == 'x' || c2 == 'X') &&
-                                            (c3 == 'i' || c3 == 'I') &&
-                                            (c4 == 's' || c4 == 'S') &&
-                                            (c5 == 't' || c5 == 'T') &&
-                                            (c6 == 's' || c6 == 'S')) {
-                                        return stmt.substring(offset + 1, stmt.length()).trim().split(",");
-                                    }
-                                    return null;
-                                }
-                            }
-                        } else {
-                            return stmt.substring(offset - 1, stmt.length()).trim().split(",");
-                        }
-                    }
-                }
-            }
+    private static String addToRemoveList(List<SQLExprTableSource> removeList, SQLExprTableSource table, String defaultSchema, boolean ifExistsflag) {
+        if (table.getSchema() != null) {
+            table.setSchema(StringUtil.removeBackQuote(table.getSchema()));
+        } else {
+            table.setSchema(defaultSchema);
         }
-    }
 
-
-    public static boolean parseViewExists(String sql) throws Exception {
-        //skip the first word of sql 'drop '
-        int offset = 4;
-        String stmt = sql.trim();
-        while (true) {
-            if (!(stmt.charAt(++offset) == ' ' ||
-                    stmt.charAt(offset) == '\t' ||
-                    stmt.charAt(offset) == '\r' ||
-                    stmt.charAt(offset) == '\n')) {
-                //skip  the second words view
-                offset += 4;
-                while (true) {
-                    char t = stmt.charAt(++offset);
-                    if (!(t == ' ' || t == '\t' || t == '\r' || t == '\n')) {
-                        if ((t == 'i' || t == 'I') &&
-                                (stmt.charAt(++offset) == 'f' || stmt.charAt(offset) == 'F')) {
-                            while (true) {
-                                char t1 = stmt.charAt(++offset);
-                                if (!(t1 == ' ' || t1 == '\t' || t1 == '\r' || t1 == '\n')) {
-                                    char c1 = stmt.charAt(offset);
-                                    char c2 = stmt.charAt(++offset);
-                                    char c3 = stmt.charAt(++offset);
-                                    char c4 = stmt.charAt(++offset);
-                                    char c5 = stmt.charAt(++offset);
-                                    char c6 = stmt.charAt(++offset);
-                                    if ((c1 == 'e' || c1 == 'E') &&
-                                            (c2 == 'x' || c2 == 'X') &&
-                                            (c3 == 'i' || c3 == 'I') &&
-                                            (c4 == 's' || c4 == 'S') &&
-                                            (c5 == 't' || c5 == 'T') &&
-                                            (c6 == 's' || c6 == 'S')) {
-                                        return true;
-                                    }
-                                    return false;
-                                }
-                            }
-                        } else {
-                            return false;
-                        }
-                    }
-                }
+        if (!(DbleServer.getInstance().getTmManager().getCatalogs().get(table.getSchema()).
+                getViewMetas().containsKey(StringUtil.removeBackQuote(table.getName().getSimpleName())))) {
+            if (!ifExistsflag) {
+                return " Unknown table '" + table.getName().toString() + "'";
             }
+        } else {
+            removeList.add(table);
         }
+        return null;
     }
 }

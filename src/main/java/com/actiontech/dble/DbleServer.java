@@ -16,9 +16,9 @@ import com.actiontech.dble.backend.mysql.xa.recovery.impl.KVStoreRepository;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.buffer.DirectByteBufferPool;
 import com.actiontech.dble.cache.CacheService;
+import com.actiontech.dble.cluster.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -75,6 +75,7 @@ public final class DbleServer {
     private static final long DEFAULT_OLD_CONNECTION_CLEAR_PERIOD = 5 * 1000L;
 
     private static final DbleServer INSTANCE = new DbleServer();
+
     private static final Logger LOGGER = LoggerFactory.getLogger("Server");
     private AtomicBoolean backupLocked;
 
@@ -171,8 +172,8 @@ public final class DbleServer {
         id.append("'" + NAME + "Server.");
         if (isUseZK()) {
             id.append(ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
-        } else if (isUseUcore()) {
-            id.append(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+        } else if (isUseGeneralCluster()) {
+            id.append(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
         } else {
             id.append(this.getConfig().getSystem().getServerNodeId());
 
@@ -426,7 +427,7 @@ public final class DbleServer {
 
         userManager.initForLatest(config.getUsers(), system.getMaxCon());
 
-        if (isUseUcore()) {
+        if (isUseGeneralCluster()) {
             try {
                 OnlineLockStatus.getInstance().metaUcoreInit(true);
             } catch (Exception e) {
@@ -694,11 +695,12 @@ public final class DbleServer {
     }
 
     public boolean isUseZK() {
-        return ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) != null;
+        return ClusterGeneralConfig.getInstance().isUseCluster() && ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) != null;
     }
 
-    public boolean isUseUcore() {
-        return UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) != null;
+    public boolean isUseGeneralCluster() {
+        return ClusterGeneralConfig.getInstance().isUseCluster() &&
+                ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) == null;
     }
 
     public TxnLogProcessor getTxnLogProcessor() {
@@ -1080,5 +1082,6 @@ public final class DbleServer {
     public FrontendUserManager getUserManager() {
         return userManager;
     }
+
 
 }

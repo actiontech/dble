@@ -5,8 +5,9 @@
 
 package com.actiontech.dble.alarm;
 
-import com.actiontech.dble.cluster.ClusterParamCfg;
-import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
+import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.cluster.ClusterController;
+import com.actiontech.dble.cluster.ClusterGeneralConfig;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,7 +27,9 @@ public final class AlertUtil {
 
     public static void switchAlert(boolean enableAlert) {
         isEnable = enableAlert;
-        if (enableAlert && UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) != null) {
+        if (DbleServer.getInstance().isUseGeneralCluster() &&
+                (ClusterController.CONFIG_MODE_UCORE.equals(ClusterGeneralConfig.getInstance().getClusterType()) ||
+                        ClusterController.CONFIG_MODE_USHARD.equals(ClusterGeneralConfig.getInstance().getClusterType()))) {
             alert = UcoreAlert.getInstance();
         } else {
             alert = DEFAULT_ALERT;

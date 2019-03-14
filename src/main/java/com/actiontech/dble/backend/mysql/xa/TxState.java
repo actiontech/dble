@@ -100,6 +100,39 @@ public enum TxState {
         }
     }
 
+    public String getState() {
+        switch (value) {
+            case 0:
+                return "TX_INITIALIZE_STATE";
+            case 1:
+                return "TX_STARTED_STATE";
+            case 2:
+                return "TX_ENDED_STATE";
+            case 3:
+                return "TX_PREPARED_STATE";
+            case 4:
+                return "TX_PREPARE_UNCONNECT_STATE";
+            case 5:
+                return "TX_COMMIT_FAILED_STATE";
+            case 6:
+                return "TX_ROLLBACK_FAILED_STATE";
+            case 7:
+                return "TX_CONN_QUIT";
+            case 8:
+                return "TX_COMMITTED_STATE";
+            case 9:
+                return "TX_ROLLBACKED_STATE";
+            case 10:
+                return "TX_COMMITTING_STATE";
+            case 11:
+                return "TX_ROLLBACKING_STATE";
+            case 12:
+                return "TX_PREPARING_STATE";
+            default:
+                return null;
+        }
+    }
+
     @Override
     public String toString() {
         return String.valueOf(this.value);

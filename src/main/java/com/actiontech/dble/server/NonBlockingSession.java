@@ -81,6 +81,7 @@ public class NonBlockingSession implements Session {
     private final ConcurrentMap<RouteResultsetNode, BackendConnection> target;
     private RollbackNodesHandler rollbackHandler;
     private CommitNodesHandler commitHandler;
+    private volatile boolean retryXa = true;
     private volatile String xaTxId;
     private volatile TxState xaState;
     private boolean prepared;
@@ -746,6 +747,14 @@ public class NonBlockingSession implements Session {
         clearHandlesResources();
     }
 
+    public void forceClose(String reason) {
+        for (BackendConnection node : target.values()) {
+            node.terminate(reason);
+        }
+        target.clear();
+        clearHandlesResources();
+    }
+
     public void releaseConnectionIfSafe(BackendConnection conn, boolean needClosed) {
         RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
         if (node != null) {
@@ -894,6 +903,7 @@ public class NonBlockingSession implements Session {
         }
         this.releaseConnections(needClosed);
         needWaitFinished = false;
+        retryXa = true;
         clearHandlesResources();
         source.setTxStart(false);
         source.getAndIncrementXid();
@@ -1119,6 +1129,14 @@ public class NonBlockingSession implements Session {
 
     public RouteResultset getComplexRrs() {
         return complexRrs;
+    }
+
+    public void setRetryXa(boolean retryXa) {
+        this.retryXa = retryXa;
+    }
+
+    public boolean isRetryXa() {
+        return retryXa;
     }
 
 }

@@ -77,6 +77,7 @@ public final class ManagerParseShow {
     public static final int COLLATION = 60;
     public static final int DDL_STATE = 61;
     public static final int PROCESS_LIST = 62;
+    public static final int SESSION_XA = 63;
 
     public static final Pattern PATTERN_FOR_TABLE_INFO = Pattern.compile("^(\\s*schema\\s*=\\s*)([a-zA-Z_0-9]+)" +
             "(\\s+and\\s+table\\s*=\\s*)([a-zA-Z_0-9]+)\\s*$", Pattern.CASE_INSENSITIVE);
@@ -1360,10 +1361,21 @@ public final class ManagerParseShow {
             char c5 = stmt.charAt(++offset);
             if ((c1 == 'S' || c1 == 's') && (c2 == 'S' || c2 == 's') && (c3 == 'I' || c3 == 'i') &&
                     (c4 == 'O' || c4 == 'o') && (c5 == 'N' || c5 == 'n')) {
-                if (ParseUtil.isErrorTail(++offset, stmt)) {
+                if (stmt.length() > offset + ".XA".length()) {
+                    char c6 = stmt.charAt(++offset);
+                    char c7 = stmt.charAt(++offset);
+                    char c8 = stmt.charAt(++offset);
+                    if (c6 == '.' && (c7 == 'x' || c7 == 'X') && (c8 == 'a' || c8 == 'A')) {
+                        if (ParseUtil.isErrorTail(++offset, stmt)) {
+                            return OTHER;
+                        }
+                        return SESSION_XA;
+                    }
+                } else if (ParseUtil.isErrorTail(++offset, stmt)) {
                     return OTHER;
+                } else {
+                    return SESSION;
                 }
-                return SESSION;
             }
         }
         if (stmt.length() > offset + "RVER".length()) {

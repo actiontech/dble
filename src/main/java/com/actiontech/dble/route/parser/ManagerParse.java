@@ -36,6 +36,7 @@ public final class ManagerParse {
     public static final int ENABLE = 18;
     public static final int DISABLE = 19;
     public static final int KILL_DDL_LOCK = 20;
+    public static final int KILL_XA_SESSION = 21;
 
     public static int parse(String stmt) {
         for (int i = 0; i < stmt.length(); i++) {
@@ -484,6 +485,9 @@ public final class ManagerParse {
                 case 'D':
                 case 'd':
                     return killDdl(stmt, offset);
+                case 'X':
+                case 'x':
+                    return killXASession(stmt, offset);
                 default:
                     return OTHER;
             }
@@ -560,16 +564,39 @@ public final class ManagerParse {
                     (c8 == 'O' || c8 == 'o') &&
                     (c9 == 'N' || c9 == 'n') &&
                     (c10 == ' ' || c10 == '\t' || c10 == '\r' || c10 == '\n')) {
-                while (stmt.length() > ++offset) {
-                    switch (stmt.charAt(offset)) {
-                        case ' ':
-                        case '\t':
-                        case '\r':
-                        case '\n':
-                            continue;
-                        default:
-                            return (offset << 8) | KILL_CONN;
-                    }
+                if (ParseUtil.isErrorTail(offset, stmt)) {
+                    return (offset << 8) | KILL_CONN;
+                }
+            }
+        }
+        return OTHER;
+    }
+
+    // KILL @@XA_SESSION XXXXXX
+    private static int killXASession(String stmt, int offset) {
+        if (stmt.length() > offset + "A_SESSION ".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            char c9 = stmt.charAt(++offset);
+            char c10 = stmt.charAt(++offset);
+            if ((c1 == 'A' || c1 == 'a') &&
+                    (c2 == '_') &&
+                    (c3 == 'S' || c3 == 's') &&
+                    (c4 == 'E' || c4 == 'e') &&
+                    (c5 == 'S' || c5 == 's') &&
+                    (c6 == 'S' || c6 == 's') &&
+                    (c7 == 'I' || c7 == 'i') &&
+                    (c8 == 'O' || c8 == 'o') &&
+                    (c9 == 'N' || c9 == 'n') &&
+                    (c10 == ' ' || c10 == '\t' || c10 == '\r' || c10 == '\n')) {
+                if (ParseUtil.isErrorTail(offset, stmt)) {
+                    return (offset << 8) | KILL_XA_SESSION;
                 }
             }
         }

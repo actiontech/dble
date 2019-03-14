@@ -6,6 +6,9 @@
 package com.actiontech.dble.backend.mysql.nio.handler.transaction.xa;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AbstractRollbackNodesHandler;
@@ -29,6 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
     private static final int ROLLBACK_TIMES = 5;
     private int tryRollbackTimes = 0;
+    private int backgroundRollbackTimes = 0;
     private ParticipantLogEntry[] participantLogEntry = null;
     byte[] sendData = OkPacket.OK;
 
@@ -43,6 +47,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
     @Override
     public void clearResources() {
         tryRollbackTimes = 0;
+        backgroundRollbackTimes = 0;
         participantLogEntry = null;
         sendData = OkPacket.OK;
     }
@@ -380,13 +385,20 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                     }
                     // close the session ,add to schedule job
                     session.getSource().close(closeReason.toString());
-                    DbleServer.getInstance().getXaSessionCheck().addRollbackSession(session);
+                    final int count = DbleServer.getInstance().getConfig().getSystem().getXaRetryCount();
+                    if (!session.isRetryXa()) {
+                        session.forceClose("kill xa session by manager cmd!");
+                    } else if (count == 0 || ++backgroundRollbackTimes <= count) {
+                        AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, "fail to try to ROLLBACK xa transaction " + session.getSessionXaID() + " background", AlertUtil.genSingleLabel("XA_ID", session.getSessionXaID()));
+                        DbleServer.getInstance().getXaSessionCheck().addRollbackSession(session);
+                    }
                 }
             } else {
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_ROLLBACKED_STATE);
                 session.setXaState(TxState.TX_INITIALIZE_STATE);
                 byte[] toSend = sendData;
                 session.clearResources(false);
+                AlertUtil.alertSelfResolve(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("XA_ID", session.getSessionXaID()));
                 if (!session.closed()) {
                     setResponseTime(false);
                     session.getSource().write(toSend);

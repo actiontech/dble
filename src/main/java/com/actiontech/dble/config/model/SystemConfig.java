@@ -93,6 +93,7 @@ public final class SystemConfig {
     private long xaLogCleanPeriod = 1000L;
     private String xaRecoveryLogBaseDir = SystemConfig.getHomePath() + File.separatorChar + "tmlogs" + File.separatorChar;
     private String xaRecoveryLogBaseName = "tmlog";
+    private int xaRetryCount = 0;
 
     //use JoinStrategy
     private boolean useJoinStrategy = false;
@@ -1166,6 +1167,19 @@ public final class SystemConfig {
         }
     }
 
+    public int getXaRetryCount() {
+        return xaRetryCount;
+    }
+
+    @SuppressWarnings("unused")
+    public void setXaRetryCount(int xaRetryCount) {
+        if (xaRetryCount >= 0) {
+            this.xaRetryCount = xaRetryCount;
+        } else if (this.problemReporter != null) {
+            problemReporter.warn(String.format(WARNING_FORMATE, "xaRetryCount", xaRetryCount, this.xaRetryCount));
+        }
+    }
+
     @Override
     public String toString() {
         return "SystemConfig [" +
@@ -1247,6 +1261,7 @@ public final class SystemConfig {
                 ", enableAlert=" + enableAlert +
                 ", maxCharsPerColumn=" + maxCharsPerColumn +
                 ", maxRowSizeToFile=" + maxRowSizeToFile +
+                ", xaRetryCount=" + xaRetryCount +
                 "]";
     }
 

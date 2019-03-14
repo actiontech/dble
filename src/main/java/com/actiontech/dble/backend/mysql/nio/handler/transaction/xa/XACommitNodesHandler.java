@@ -6,6 +6,9 @@
 package com.actiontech.dble.backend.mysql.nio.handler.transaction.xa;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AbstractCommitNodesHandler;
@@ -29,6 +32,7 @@ import static com.actiontech.dble.config.ErrorCode.ER_ERROR_DURING_COMMIT;
 public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     private static final int COMMIT_TIMES = 5;
     private int tryCommitTimes = 0;
+    private int backgroundCommitTimes = 0;
     private ParticipantLogEntry[] participantLogEntry = null;
     byte[] sendData = OkPacket.OK;
 
@@ -80,6 +84,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     @Override
     public void clearResources() {
         tryCommitTimes = 0;
+        backgroundCommitTimes = 0;
         participantLogEntry = null;
         sendData = OkPacket.OK;
         if (closedConnSet != null) {
@@ -365,7 +370,13 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 } else {
                     // close this session ,add to schedule job
                     session.getSource().close("COMMIT FAILED but it will try to COMMIT repeatedly in backend until it is success!");
-                    DbleServer.getInstance().getXaSessionCheck().addCommitSession(session);
+                    final int count = DbleServer.getInstance().getConfig().getSystem().getXaRetryCount();
+                    if (!session.isRetryXa()) {
+                        session.forceClose("kill xa session by manager cmd!");
+                    } else if (count == 0 || ++backgroundCommitTimes <= count) {
+                        AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, "fail to try to COMMIT xa transaction " + session.getSessionXaID() + " background", AlertUtil.genSingleLabel("XA_ID", session.getSessionXaID()));
+                        DbleServer.getInstance().getXaSessionCheck().addCommitSession(session);
+                    }
                 }
             } else {
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_COMMITTED_STATE);
@@ -373,6 +384,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_INIT);
                 byte[] toSend = sendData;
                 session.clearResources(false);
+                AlertUtil.alertSelfResolve(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("XA_ID", session.getSessionXaID()));
                 if (!session.closed()) {
                     setResponseTime(isSuccess);
                     session.getSource().write(toSend);

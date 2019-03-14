@@ -57,6 +57,9 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
             case ManagerParse.KILL_CONN:
                 KillConnection.response(sql, rs >>> SHIFT, c);
                 break;
+            case ManagerParse.KILL_XA_SESSION:
+                KillXASession.response(sql, rs >>> SHIFT, c);
+                break;
             case ManagerParse.KILL_DDL_LOCK:
                 String tableInfo = sql.substring(rs >>> SHIFT).trim();
                 KillDdlLock.response(sql, tableInfo, c);

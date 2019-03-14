@@ -114,6 +114,7 @@ public final class ShowSysParam {
         paramValues.add(sysConfig.getXaRecoveryLogBaseName());
         paramValues.add(sysConfig.getXaSessionCheckPeriod() + "ms");
         paramValues.add(sysConfig.getXaLogCleanPeriod() + "ms");
+        paramValues.add(sysConfig.getXaRetryCount() + "");
         paramValues.add(sysConfig.isUseJoinStrategy() + "");
         paramValues.add(sysConfig.getNestLoopConnSize() + "");
         paramValues.add(sysConfig.getNestLoopRowsSize() + "");
@@ -214,6 +215,7 @@ public final class ShowSysParam {
             "xaRecoveryLogBaseName",
             "xaSessionCheckPeriod",
             "xaLogCleanPeriod",
+            "xaRetryCount",
             "useJoinStrategy",
             "nestLoopConnSize",
             "nestLoopRowsSize",
@@ -296,6 +298,7 @@ public final class ShowSysParam {
             "The name of the xa transaction record file.The default value is tmlog",
             "The xa transaction status check period.The default value is 1000ms",
             "The xa log clear period.The default value is 1000ms",
+            "Indicates the number of background retries if the xa failed to commit/rollback.The default value is 0, retry infinitely",
             "Whether nest loop join is enabled.The default value is false",
             "The nest loop temporary tables block number.The default value is 4",
             "The nest loop temporary tables rows for every block.The default value is 2000",

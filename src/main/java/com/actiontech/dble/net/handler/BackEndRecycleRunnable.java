@@ -52,7 +52,7 @@ public class BackEndRecycleRunnable implements Runnable, BackEndCleaner {
     }
 
 
-    public void singal() {
+    public void signal() {
         lock.lock();
         try {
             condRelease.signal();

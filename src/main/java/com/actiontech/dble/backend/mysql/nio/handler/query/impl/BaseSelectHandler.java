@@ -124,8 +124,6 @@ public class BaseSelectHandler extends BaseDMLHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(conn.toString() + " 's rowEof is reached.");
         }
-        session.setBackendResponseEndTime((MySQLConnection) conn);
-
         if (this.terminate.get()) {
             return;
         }

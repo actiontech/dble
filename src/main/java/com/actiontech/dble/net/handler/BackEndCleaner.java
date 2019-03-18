@@ -10,5 +10,5 @@ package com.actiontech.dble.net.handler;
  */
 public interface BackEndCleaner {
 
-    void singal();
+    void signal();
 }

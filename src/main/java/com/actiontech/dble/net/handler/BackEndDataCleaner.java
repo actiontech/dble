@@ -41,7 +41,7 @@ public class BackEndDataCleaner implements BackEndCleaner {
     }
 
 
-    public void singal() {
+    public void signal() {
         lock.lock();
         try {
             condRelease.signal();

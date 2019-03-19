@@ -179,22 +179,14 @@ public abstract class PhysicalDatasource {
 
         //the following is about the idle connection number control
         int idleCons = getIdleCount();
-        int activeCons = this.getActiveCount();
+        int totalCount = this.getTotalConCount();
         int createCount = (hostConfig.getMinCon() - idleCons) / 3;
 
         // create if idle too little
-        if ((createCount > 0) && (idleCons + activeCons < size)) {
+        if ((createCount > 0) && totalCount < size) {
             createByIdleLittle(idleCons, createCount);
         } else if (idleCons > hostConfig.getMinCon()) {
             closeByIdleMany(idleCons - hostConfig.getMinCon(), idleCons);
-        } else {
-            int activeCount = this.getActiveCount();
-            if (activeCount > size) {
-                String s = "DATASOURCE EXCEED [name=" + name +
-                        ",active=" + activeCount +
-                        ",size=" + size + ']';
-                LOGGER.info(s);
-            }
         }
     }
 
@@ -244,15 +236,14 @@ public abstract class PhysicalDatasource {
 
         final String[] schemas = dbPool.getSchemas();
         for (int i = 0; i < createCount; i++) {
-            if (this.getActiveCount() + this.getIdleCount() >= size) {
-                break;
-            }
             NewConnectionRespHandler simpleHandler = new NewConnectionRespHandler();
             try {
                 if (this.createNewCount()) {
                     // creat new connection
                     this.createNewConnection(simpleHandler, null, schemas[i % schemas.length]);
                     simpleHandler.getBackConn().release();
+                } else {
+                    break;
                 }
                 if (ToResolveContainer.CREATE_CONN_FAIL.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {
                     Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
@@ -270,7 +261,7 @@ public abstract class PhysicalDatasource {
         }
     }
 
-    public int getActiveCount() {
+    public int getTotalConCount() {
         return this.connectionCount.get();
     }
 

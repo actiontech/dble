@@ -364,7 +364,6 @@ public final class DbleServer {
         if (system.getEnableSlowLog() == 1) {
             SlowQueryLog.getInstance().setEnableSlowLog(true);
         }
-        
         AlertUtil.initAlert();
         if (system.getEnableAlert() == 1) {
             AlertUtil.switchAlert(true);

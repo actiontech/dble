@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.cluster;
 
-import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.util.ResourceUtil;
 import com.google.common.base.Strings;
@@ -24,9 +23,11 @@ public final class ClusterController {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClusterController.class);
 
     public static final String CONFIG_FILE_NAME = "/myid.properties";
-    private static final String CONFIG_MODE_UCORE = "ucore";
-    private static final String CONFIG_MODE_ZK = "zk";
-    private static final String CONFIG_MODE_SINGLE = "false";
+    public static final String CONFIG_MODE_UCORE = "ucore";
+    public static final String CONFIG_MODE_USHARD = "ushard";
+    public static final String CONFIG_MODE_ZK = "zk";
+    public static final String CONFIG_MODE_SINGLE = "false";
+    public static final String CONFIG_MODE_CUSTOMIZATION = "customization";
 
     public static final int GRPC_SUBTIMEOUT = 70;
     public static final int GENERAL_GRPC_TIMEOUT = 10;
@@ -37,29 +38,23 @@ public final class ClusterController {
     private ClusterController() {
     }
 
-    public static void init() {
+    public static ClusterGeneralConfig init() {
         //read from myid.properties to tall use zk or ucore
         try {
             properties = loadMyidPropersites();
-            if (CONFIG_MODE_UCORE.equalsIgnoreCase(properties.getProperty(ClusterParamCfg.CLUSTER_FLAG.getKey()))) {
-                checkUcoreProperties();
-                UcoreConfig.initUcore(properties);
-            } else if (CONFIG_MODE_ZK.equalsIgnoreCase(properties.getProperty(ClusterParamCfg.CLUSTER_FLAG.getKey()))) {
-                ZkConfig.initZk(properties);
-            } else {
-                LOGGER.info("No Cluster Config .......start in single mode");
-            }
+            ClusterGeneralConfig clusterGeneralConfig = ClusterGeneralConfig.initConfig(properties);
+            ClusterGeneralConfig.initData(properties);
+            return clusterGeneralConfig;
         } catch (Exception e) {
-            LOGGER.warn("error:", e);
+            throw new RuntimeException(e);
         }
-
     }
 
     public static void initFromShellUcore() {
         properties = loadMyidPropersites();
-        checkClusterMode(CONFIG_MODE_UCORE);
-        checkUcoreProperties();
-        UcoreConfig.initUcoreFromShell(properties);
+        ClusterGeneralConfig.initConfig(properties);
+        ClusterGeneralConfig.getInstance().getClusterSender().checkClusterConfig(properties);
+        ClusterGeneralConfig.getInstance().getClusterSender().initConInfo(properties);
     }
 
     public static void initFromShellZK() {
@@ -96,12 +91,6 @@ public final class ClusterController {
     private static void checkClusterMode(String clusterMode) {
         if (!clusterMode.equalsIgnoreCase(properties.getProperty(ClusterParamCfg.CLUSTER_FLAG.getKey()))) {
             throw new RuntimeException("Cluster mode is not " + clusterMode);
-        }
-    }
-    private static void checkUcoreProperties() {
-        if (Strings.isNullOrEmpty(properties.getProperty(ClusterParamCfg.CLUSTER_PLUGINS_PORT.getKey())) ||
-                Strings.isNullOrEmpty(properties.getProperty(ClusterParamCfg.CLUSTER_CFG_SERVER_ID.getKey()))) {
-            throw new RuntimeException("Cluster Config is not completely set");
         }
     }
 

@@ -10,6 +10,7 @@ import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.SecurityUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.backend.mysql.xa.TxState;
+import com.actiontech.dble.btrace.provider.XaDelayProvider;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.net.BackendAIOConnection;
@@ -377,6 +378,7 @@ public class MySQLConnection extends BackendAIOConnection {
             sb.append(setSql);
         }
         if (xaCmd != null) {
+            XaDelayProvider.delayBeforeXaStart(rrn.getName(), xaTxID);
             sb.append(xaCmd);
         }
         if (LOGGER.isDebugEnabled()) {
@@ -476,6 +478,7 @@ public class MySQLConnection extends BackendAIOConnection {
             sb.append(setSql);
         }
         if (xaCmd != null) {
+            XaDelayProvider.delayBeforeXaStart(rrn.getName(), xaTxID);
             sb.append(xaCmd);
         }
         if (LOGGER.isDebugEnabled()) {

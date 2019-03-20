@@ -5,12 +5,12 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.cluster.ClusterGeneralConfig;
+import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterParamCfg;
+import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.bean.KvBean;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
-import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
-import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
-import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.PauseInfo;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -44,11 +44,11 @@ public final class PauseEnd {
 
     public static void resume(ManagerConnection c) {
 
-        if (DbleServer.getInstance().isUseUcore()) {
+        if (DbleServer.getInstance().isUseGeneralCluster()) {
             try {
-                UKvBean value = ClusterUcoreSender.getKey(UcorePathUtil.getPauseDataNodePath());
+                KvBean value = ClusterHelper.getKV(ClusterPathUtil.getPauseDataNodePath());
                 PauseInfo pauseInfo = new PauseInfo(value.getValue());
-                if (!pauseInfo.getFrom().equals(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) {
+                if (!pauseInfo.getFrom().equals(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) {
                     c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "This node is not the node which start pause");
                     return;
                 }

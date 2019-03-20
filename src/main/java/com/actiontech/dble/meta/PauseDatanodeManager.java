@@ -6,12 +6,9 @@ package com.actiontech.dble.meta;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.cluster.ClusterParamCfg;
-import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
-import com.actiontech.dble.config.loader.ucoreprocess.KVtoXml.UcoreToXml;
-import com.actiontech.dble.config.loader.ucoreprocess.UDistributeLock;
-import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
-import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
+import com.actiontech.dble.cluster.*;
+import com.actiontech.dble.cluster.kVtoXml.ClusterToXml;
+import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.PauseInfo;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
@@ -44,7 +41,7 @@ public class PauseDatanodeManager {
     private volatile Set<String> dataNodes = null;
     private Map<String, Set<String>> pauseMap = new ConcurrentHashMap<>();
     private AtomicBoolean isPausing = new AtomicBoolean(false);
-    private UDistributeLock uDistributeLock = null;
+    private DistributeLock uDistributeLock = null;
 
     private volatile PauseEndThreadPool pauseThreadPool = null;
 
@@ -185,16 +182,16 @@ public class PauseDatanodeManager {
 
 
     public boolean clusterPauseNotic(String dataNode, int timeOut, int queueLimit) {
-        if (DbleServer.getInstance().isUseUcore()) {
+        if (DbleServer.getInstance().isUseGeneralCluster()) {
             try {
-                uDistributeLock = new UDistributeLock(UcorePathUtil.getPauseDataNodePath(),
-                        new PauseInfo(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), dataNode, PAUSE, timeOut, queueLimit).toString());
+                uDistributeLock = new DistributeLock(ClusterPathUtil.getPauseDataNodePath(),
+                        new PauseInfo(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), dataNode, PAUSE, timeOut, queueLimit).toString());
                 if (!uDistributeLock.acquire()) {
                     return false;
                 }
 
-                ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getPauseResultNodePath(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID)),
-                        UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+                ClusterHelper.setKV(ClusterPathUtil.getPauseResultNodePath(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID)),
+                        ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
             } catch (Exception e) {
                 LOGGER.info("ucore connecction error", e);
                 return false;
@@ -206,10 +203,10 @@ public class PauseDatanodeManager {
 
     public boolean waitForCluster(ManagerConnection c, long beginTime, long timeOut) throws Exception {
 
-        if (DbleServer.getInstance().isUseUcore()) {
-            Map<String, String> expectedMap = UcoreToXml.getOnlineMap();
+        if (DbleServer.getInstance().isUseGeneralCluster()) {
+            Map<String, String> expectedMap = ClusterToXml.getOnlineMap();
             for (; ; ) {
-                if (ClusterUcoreSender.checkResponseForOneTime(null, UcorePathUtil.getPauseResultNodePath(), expectedMap, null)) {
+                if (ClusterHelper.checkResponseForOneTime(null, ClusterPathUtil.getPauseResultNodePath(), expectedMap, null)) {
                     return true;
                 } else if (System.currentTimeMillis() - beginTime > timeOut) {
                     DbleServer.getInstance().getMiManager().resume();
@@ -224,24 +221,24 @@ public class PauseDatanodeManager {
 
 
     public void resumeCluster() throws Exception {
-        if (DbleServer.getInstance().isUseUcore()) {
-            ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getPauseResumePath(),
-                    new PauseInfo(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), " ", PauseInfo.RESUME, 0, 0).toString());
+        if (DbleServer.getInstance().isUseGeneralCluster()) {
+            ClusterHelper.setKV(ClusterPathUtil.getPauseResumePath(),
+                    new PauseInfo(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), " ", PauseInfo.RESUME, 0, 0).toString());
 
             //send self reponse
-            ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getPauseResumePath(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID)),
-                    UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+            ClusterHelper.setKV(ClusterPathUtil.getPauseResumePath(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID)),
+                    ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
 
-            ClusterUcoreSender.waitingForAllTheNode(null, UcorePathUtil.getPauseResumePath());
+            ClusterHelper.waitingForAllTheNode(null, ClusterPathUtil.getPauseResumePath());
 
 
             DbleServer.getInstance().getMiManager().getuDistributeLock().release();
-            ClusterUcoreSender.deleteKVTree(UcorePathUtil.getPauseDataNodePath());
+            ClusterHelper.cleanPath(ClusterPathUtil.getPauseDataNodePath());
         }
 
     }
 
-    private UDistributeLock getuDistributeLock() {
+    private DistributeLock getuDistributeLock() {
         return uDistributeLock;
     }
 

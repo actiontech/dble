@@ -5,16 +5,15 @@
 
 package com.actiontech.dble.alarm;
 
+import com.actiontech.dble.cluster.ClusterGeneralConfig;
+import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterParamCfg;
-import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
-import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
+import com.actiontech.dble.cluster.bean.ClusterAlertBean;
 
 import java.util.Map;
 
 public final class UcoreAlert implements Alert {
     private static final String SOURCE_COMPONENT_TYPE = "dble";
-    private static final String SERVER_ID = UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_SERVER_ID);
-    private static final String SOURCE_COMPONENT_ID = UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
 
     private static final UcoreAlert INSTANCE = new UcoreAlert();
 
@@ -28,50 +27,48 @@ public final class UcoreAlert implements Alert {
 
     @Override
     public void alertSelf(String code, AlertLevel level, String desc, Map<String, String> labels) {
-        alert(code, level, desc, SOURCE_COMPONENT_TYPE, SOURCE_COMPONENT_ID, labels);
+        alert(code, level, desc, SOURCE_COMPONENT_TYPE, ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), labels);
     }
 
     @Override
     public void alert(String code, AlertLevel level, String desc, String alertComponentType, String alertComponentId, Map<String, String> labels) {
-        UcoreInterface.AlertInput.Builder builder = UcoreInterface.AlertInput.newBuilder().
-                setCode(code).
-                setDesc(desc).
-                setLevel(level.toString()).
-                setSourceComponentType(SOURCE_COMPONENT_TYPE).
-                setSourceComponentId(SOURCE_COMPONENT_ID).
-                setAlertComponentId(alertComponentId).
-                setAlertComponentType(alertComponentType).
-                setServerId(SERVER_ID).
-                setTimestampUnix(System.currentTimeMillis() * 1000000);
+        ClusterAlertBean alert = new ClusterAlertBean();
+        alert.setCode(code);
+        alert.setDesc(desc);
+        alert.setLevel(level.toString());
+        alert.setSourceComponentType(SOURCE_COMPONENT_TYPE);
+        alert.setSourceComponentId(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+        alert.setAlertComponentId(alertComponentId);
+        alert.setAlertComponentType(alertComponentType);
+        alert.setServerId(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_SERVER_ID));
+        alert.setTimestampUnix(System.currentTimeMillis() * 1000000);
         if (labels != null) {
-            builder.putAllLabels(labels);
+            alert.setLabels(labels);
         }
-        UcoreInterface.AlertInput input = builder.build();
-        ClusterUcoreSender.alert(input);
+        ClusterHelper.alert(alert);
     }
 
     @Override
     public boolean alertResolve(String code, AlertLevel level, String alertComponentType, String alertComponentId, Map<String, String> labels) {
-        UcoreInterface.AlertInput.Builder builder = UcoreInterface.AlertInput.newBuilder().
-                setCode(code).
-                setDesc("").
-                setLevel(level.toString()).
-                setSourceComponentType(SOURCE_COMPONENT_TYPE).
-                setSourceComponentId(SOURCE_COMPONENT_ID).
-                setAlertComponentId(alertComponentId).
-                setAlertComponentType(alertComponentType).
-                setServerId(SERVER_ID).
-                setResolveTimestampUnix(System.currentTimeMillis() * 1000000);
+        ClusterAlertBean alert = new ClusterAlertBean();
+        alert.setCode(code);
+        alert.setDesc("");
+        alert.setLevel(level.toString());
+        alert.setSourceComponentType(SOURCE_COMPONENT_TYPE);
+        alert.setSourceComponentId(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+        alert.setAlertComponentId(alertComponentId);
+        alert.setAlertComponentType(alertComponentType);
+        alert.setServerId(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_SERVER_ID));
+        alert.setResolveTimestampUnix(System.currentTimeMillis() * 1000000);
         if (labels != null) {
-            builder.putAllLabels(labels);
+            alert.setLabels(labels);
         }
-        UcoreInterface.AlertInput input = builder.build();
-        return ClusterUcoreSender.alertResolve(input);
+        return ClusterHelper.alertResolve(alert);
     }
 
     @Override
     public boolean alertSelfResolve(String code, AlertLevel level, Map<String, String> labels) {
-        return alertResolve(code, level, SOURCE_COMPONENT_TYPE, SOURCE_COMPONENT_ID, labels);
+        return alertResolve(code, level, SOURCE_COMPONENT_TYPE, ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), labels);
     }
 
 }

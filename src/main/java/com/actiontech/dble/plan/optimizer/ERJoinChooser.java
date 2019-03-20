@@ -581,8 +581,13 @@ public class ERJoinChooser {
                 }
                 return null;
             } else {
-                if (!StringUtil.equals(table, child.getAlias()))
-                    return null;
+                if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+                    if (!StringUtil.equalsIgnoreCase(table, child.getAlias()))
+                        return null;
+                } else {
+                    if (!StringUtil.equals(table, child.getAlias()))
+                        return null;
+                }
                 for (Entry<NamedField, Item> entry : child.getOuterFields().entrySet()) {
                     if (StringUtil.equalsIgnoreCase(colName, entry.getKey().getName())) {
                         return entry.getValue();

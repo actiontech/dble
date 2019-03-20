@@ -67,6 +67,7 @@ public final class ClusterGeneralConfig {
             LOGGER.info("No Cluster Config .......start in single mode");
         } else {
             try {
+                INSTANCE.clusterSender.checkClusterConfig(properties);
                 INSTANCE.clusterSender.initCluster(properties);
                 ClusterToXml.loadKVtoFile();
             } catch (Exception e) {

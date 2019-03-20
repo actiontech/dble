@@ -27,7 +27,10 @@ public final class AlertUtil {
 
     public static void switchAlert(boolean enableAlert) {
         isEnable = enableAlert;
-        if (enableAlert && DbleServer.getInstance().isUseGeneralCluster() &&
+    }
+
+    public static void initAlert() {
+        if (DbleServer.getInstance().isUseGeneralCluster() &&
                 (ClusterController.CONFIG_MODE_UCORE.equals(ClusterGeneralConfig.getInstance().getClusterType()) ||
                         ClusterController.CONFIG_MODE_USHARD.equals(ClusterGeneralConfig.getInstance().getClusterType()))) {
             alert = UcoreAlert.getInstance();
@@ -41,19 +44,23 @@ public final class AlertUtil {
     }
 
     public static void alertSelf(String code, Alert.AlertLevel level, String desc, Map<String, String> labels) {
-        alert.alertSelf(code, level, desc, labels);
+        if (isEnable) {
+            alert.alertSelf(code, level, desc, labels);
+        }
     }
 
     public static void alert(String code, Alert.AlertLevel level, String desc, String alertComponentType, String alertComponentId, Map<String, String> labels) {
-        alert.alert(code, level, desc, alertComponentType, alertComponentId, labels);
+        if (isEnable) {
+            alert.alert(code, level, desc, alertComponentType, alertComponentId, labels);
+        }
     }
 
     public static boolean alertResolve(String code, Alert.AlertLevel level, String alertComponentType, String alertComponentId, Map<String, String> labels) {
-        return alert.alertResolve(code, level, alertComponentType, alertComponentId, labels);
+        return isEnable ? alert.alertResolve(code, level, alertComponentType, alertComponentId, labels) : true;
     }
 
     public static boolean alertSelfResolve(String code, Alert.AlertLevel level, Map<String, String> labels) {
-        return alert.alertSelfResolve(code, level, labels);
+        return isEnable ? alert.alertSelfResolve(code, level, labels) : true;
     }
 
     public static Map<String, String> genSingleLabel(String key, String value) {

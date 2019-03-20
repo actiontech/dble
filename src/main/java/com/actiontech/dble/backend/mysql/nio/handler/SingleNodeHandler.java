@@ -242,7 +242,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
         this.netOutBytes += eof.length;
         this.resultSize += eof.length;
-        session.setBackendResponseEndTime((MySQLConnection) conn);
         // if it's call statement,it will not release connection
         if (!rrs.isCallStatement()) {
             session.releaseConnectionIfSafe(conn, false);

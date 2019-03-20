@@ -57,6 +57,7 @@ public class MySQLConnection extends BackendAIOConnection {
     private volatile boolean complexQuery;
     private volatile NonBlockingSession session;
     private long oldTimestamp;
+    private final AtomicBoolean logResponse = new AtomicBoolean(false);
 
 
     private volatile BackEndCleaner recycler = null;
@@ -508,9 +509,9 @@ public class MySQLConnection extends BackendAIOConnection {
         this.recycler = recycler;
     }
 
-    public void singal() {
+    public void signal() {
         if (recycler != null) {
-            recycler.singal();
+            recycler.signal();
         }
     }
 
@@ -640,7 +641,7 @@ public class MySQLConnection extends BackendAIOConnection {
                 }
             }
             this.setRunning(false);
-            this.singal();
+            this.signal();
             innerTerminate(reason);
         }
         if (this.respHandler != null) {
@@ -656,7 +657,7 @@ public class MySQLConnection extends BackendAIOConnection {
             public void run() {
                 try {
                     conn.setRunning(false);
-                    conn.singal();
+                    conn.signal();
                     handler.connectionClose(conn, reason);
                     respHandler = null;
                 } catch (Throwable e) {
@@ -719,6 +720,9 @@ public class MySQLConnection extends BackendAIOConnection {
             return;
         }
         if (this.isRunning()) {
+            if (logResponse.compareAndSet(false, true)) {
+                session.setBackendResponseEndTime(this);
+            }
             DbleServer.getInstance().getComplexQueryExecutor().execute(new BackEndRecycleRunnable(this));
             return;
         }
@@ -730,6 +734,7 @@ public class MySQLConnection extends BackendAIOConnection {
         isDDL = false;
         setResponseHandler(null);
         setSession(null);
+        logResponse.set(false);
         pool.releaseChannel(this);
     }
 
@@ -879,6 +884,10 @@ public class MySQLConnection extends BackendAIOConnection {
 
     }
 
+    public AtomicBoolean getLogResponse() {
+        return logResponse;
+    }
+
     private static class StatusSync {
         private final String schema;
         private final CharsetNames clientCharset;
@@ -937,6 +946,7 @@ public class MySQLConnection extends BackendAIOConnection {
             conn.usrVariables = usrVariables;
         }
     }
+
 
 
 }

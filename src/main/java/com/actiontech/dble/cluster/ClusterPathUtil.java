@@ -18,7 +18,7 @@ public final class ClusterPathUtil {
     public static final String DATA_HOST = "dataHost";
     public static final String DATA_NODE = "dataNode";
     public static final String SEPARATOR = "/";
-    private static final String ROOT_PATH = "universe" + SEPARATOR + Versions.ROOT_PREFIX;
+    private static final String ROOT_PATH = ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_ROOT) != null ? ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_ROOT) : "universe" + SEPARATOR + Versions.ROOT_PREFIX;
 
     public static final String BASE_PATH = ROOT_PATH + SEPARATOR + ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_CLUSTERID) + SEPARATOR;
 

@@ -29,6 +29,12 @@ public enum ClusterParamCfg {
      */
     CLUSTER_CFG_CLUSTERID("clusterId"),
 
+
+    /**
+     * node id
+     */
+    CLUSTER_CFG_ROOT("rootPath"),
+
     /**
      * node id
      */

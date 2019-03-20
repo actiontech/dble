@@ -27,7 +27,7 @@ public final class AlertUtil {
 
     public static void switchAlert(boolean enableAlert) {
         isEnable = enableAlert;
-        if (DbleServer.getInstance().isUseGeneralCluster() &&
+        if (enableAlert && DbleServer.getInstance().isUseGeneralCluster() &&
                 (ClusterController.CONFIG_MODE_UCORE.equals(ClusterGeneralConfig.getInstance().getClusterType()) ||
                         ClusterController.CONFIG_MODE_USHARD.equals(ClusterGeneralConfig.getInstance().getClusterType()))) {
             alert = UcoreAlert.getInstance();

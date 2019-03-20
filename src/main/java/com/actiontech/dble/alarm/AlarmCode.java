@@ -35,4 +35,5 @@ public final class AlarmCode {
     public static final String HEARTBEAT_FAIL = "DBLE_HEARTBEAT_FAIL"; //Resolve by trigger
     public static final String DATA_NODE_LACK = "DBLE_DATA_NODE_LACK"; //Resolve by trigger
     public static final String XA_RECOVER_FAIL = "DBLE_XA_RECOVER_FAIL";
+    public static final String XA_BACKGROUND_RETRY_FAIL = "DBLE_XA_BACKGROUND_RETRY_FAIL";
 }

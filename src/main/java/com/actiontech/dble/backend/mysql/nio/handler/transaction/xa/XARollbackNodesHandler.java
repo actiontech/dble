@@ -6,6 +6,9 @@
 package com.actiontech.dble.backend.mysql.nio.handler.transaction.xa;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AbstractRollbackNodesHandler;
@@ -13,6 +16,7 @@ import com.actiontech.dble.backend.mysql.xa.CoordinatorLogEntry;
 import com.actiontech.dble.backend.mysql.xa.ParticipantLogEntry;
 import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.backend.mysql.xa.XAStateLog;
+import com.actiontech.dble.btrace.provider.XaDelayProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -29,6 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
     private static final int ROLLBACK_TIMES = 5;
     private int tryRollbackTimes = 0;
+    private int backgroundRollbackTimes = 0;
     private ParticipantLogEntry[] participantLogEntry = null;
     byte[] sendData = OkPacket.OK;
 
@@ -43,6 +48,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
     @Override
     public void clearResources() {
         tryRollbackTimes = 0;
+        backgroundRollbackTimes = 0;
         participantLogEntry = null;
         sendData = OkPacket.OK;
     }
@@ -132,6 +138,8 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
     private void endPhase(MySQLConnection mysqlCon) {
         if (mysqlCon.getXaStatus() == TxState.TX_STARTED_STATE) {
             String xaTxId = mysqlCon.getConnXID(session);
+            String rrnName = ((RouteResultsetNode) mysqlCon.getAttachment()).getName();
+            XaDelayProvider.delayBeforeXaEnd(rrnName, xaTxId);
             mysqlCon.execCmd("XA END " + xaTxId + ";");
 
         } else if (mysqlCon.getXaStatus() == TxState.TX_CONN_QUIT) {
@@ -149,6 +157,8 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             if (!newConn.equals(mysqlCon)) {
                 mysqlCon = newConn;
                 String xaTxId = mysqlCon.getConnXID(session);
+                String rrnName = ((RouteResultsetNode) mysqlCon.getAttachment()).getName();
+                XaDelayProvider.delayBeforeXaRollback(rrnName, xaTxId);
                 mysqlCon.execCmd("XA ROLLBACK " + xaTxId + ";");
             } else if (decrementCountBy(1)) {
                 cleanAndFeedback();
@@ -156,6 +166,8 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
 
         } else if (mysqlCon.getXaStatus() == TxState.TX_ENDED_STATE || mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE) {
             String xaTxId = mysqlCon.getConnXID(session);
+            String rrnName = ((RouteResultsetNode) mysqlCon.getAttachment()).getName();
+            XaDelayProvider.delayBeforeXaRollback(rrnName, xaTxId);
             mysqlCon.execCmd("XA ROLLBACK " + xaTxId + ";");
 
         } else if (mysqlCon.getXaStatus() == TxState.TX_CONN_QUIT || mysqlCon.getXaStatus() == TxState.TX_ROLLBACKED_STATE) {
@@ -380,13 +392,23 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                     }
                     // close the session ,add to schedule job
                     session.getSource().close(closeReason.toString());
-                    DbleServer.getInstance().getXaSessionCheck().addRollbackSession(session);
+                    final int count = DbleServer.getInstance().getConfig().getSystem().getXaRetryCount();
+                    if (!session.isRetryXa()) {
+                        session.forceClose("kill xa session by manager cmd!");
+                    } else if (count == 0 || ++backgroundRollbackTimes <= count) {
+                        final String xaId = session.getSessionXaID();
+                        AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, "fail to try to ROLLBACK xa transaction " + xaId + " background", AlertUtil.genSingleLabel("XA_ID", xaId));
+                        XaDelayProvider.beforeAddXaToQueue(count, xaId);
+                        DbleServer.getInstance().getXaSessionCheck().addRollbackSession(session);
+                        XaDelayProvider.afterAddXaToQueue(count, xaId);
+                    }
                 }
             } else {
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_ROLLBACKED_STATE);
                 session.setXaState(TxState.TX_INITIALIZE_STATE);
                 byte[] toSend = sendData;
                 session.clearResources(false);
+                AlertUtil.alertSelfResolve(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("XA_ID", session.getSessionXaID()));
                 if (!session.closed()) {
                     setResponseTime(false);
                     session.getSource().write(toSend);

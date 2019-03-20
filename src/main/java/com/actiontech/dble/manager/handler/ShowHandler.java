@@ -152,6 +152,9 @@ public final class ShowHandler {
             case ManagerParseShow.SESSION:
                 ShowSession.execute(c);
                 break;
+            case ManagerParseShow.SESSION_XA:
+                ShowXASession.execute(c);
+                break;
             case ManagerParseShow.TIME_CURRENT:
                 ShowTime.execute(c, System.currentTimeMillis());
                 break;

@@ -8,7 +8,7 @@
 [![GitHub release](https://img.shields.io/github/release/actiontech/dble.svg)](https://github.com/actiontech/dble/releases)
 <img src="https://travis-ci.org/actiontech/dble.svg?branch=master">
 
-dble (pronouced "double", less bug and no "ou") is maintain by [ActionTech](https://opensource.actionsky.com).
+dble (pronouced "double", less bug and no "ou") is maintained by [ActionTech](https://opensource.actionsky.com).
 
 ## What is dble?
 
@@ -21,7 +21,7 @@ As your business grows, you can use dble to replace the origin single MySQL inst
 Use dble as same as MySQL. You can replace MySQL with dble to power your application without changing a single line of code in most cases.
 
 - __High availability__
-dble server can used as clustered, business will not suffer with single node fail.
+dble server can be used as clustered, business will not suffer from single node fail.
 
 - __SQL Support__
 Support(some in Roadmap) SQL 92 standard and MySQL dialect. We support complex SQL query like group by, order by, distinct, join ,union, sub-query(in Roadmap) and so on.
@@ -30,13 +30,13 @@ Support(some in Roadmap) SQL 92 standard and MySQL dialect. We support complex S
 Optimize the complex query, including, without limitation, Global-table join sharding-table, ER-relation tables, Sub-Queries, Simplifying select items, and the like.
 
 - __Distributed Transaction__
-Support Distributed Transaction using two-phase commit. You can choose normal mode for performance or XA mode for data safe, of course, the XA mode dependent on MySQL-5.7's XA Transaction, MySQL node's high availability and data reliability of disk.
+Support Distributed Transaction using two-phase commit. You can choose normal mode for performance or XA mode for data safety, of course, the XA mode dependent on MySQL-5.7's XA Transaction, MySQL node's high availability and data reliability of disk.
 
 
 ## History
-dble is based on [MyCat](https://github.com/MyCATApache/Mycat-Server). Firstly we have to thank MyCat's contributors.
+dble is based on [MyCat](https://github.com/MyCATApache/Mycat-Server). First of all,  thanks to the contributors from MyCat.
 
-For us, focus on MySQL is a better choice. So we cancelled the support for other databases, deeply improved/optimized its behavior on compatibility, complex query and distributed transaction. And of course, fixed lots of bugs.
+For us, focusing on MySQL is a better choice. So we cancelled the support for other databases, deeply improved/optimized its behavior on compatibility, complex query and distributed transaction. And of course, fixed lots of bugs.
 
 For more details, see [Roadmap](./docs/ROADMAP.md) and [Issues](https://github.com/actiontech/dble/issues) . 
 
@@ -69,14 +69,14 @@ for details on submitting patches and the contribution workflow.
 
 * IRC: [![Visit our IRC channel](https://kiwiirc.com/buttons/irc.freenode.net/dble.png)](https://kiwiirc.com/client/irc.freenode.net/?nick=user|?&theme=cli#dble)
 * QQ group: 669663113
-* [If you use DBLE, please let us know.](https://wj.qq.com/s/2291106/09f4)
+* [If you're using DBLE, please let us know.](https://wj.qq.com/s/2291106/09f4)
 * wechat subscription QR code
   
   ![dble](./docs/QR_code.png)
 
 ## Contact us
 
-Dble has enterprise support plan, you may contact our sales team: 
+Dble has enterprise support plans, you may contact our sales team: 
 * Global Sales: 400-820-6580
 * North China: 86-13718877200, Mr.Wang
 * South China: 86-18503063188, Mr.Cao

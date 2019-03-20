@@ -13,11 +13,11 @@ import com.actiontech.dble.backend.datasource.PhysicalDBPoolDiff;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.ClusterParamCfg;
+import com.actiontech.dble.cluster.*;
+import com.actiontech.dble.cluster.xmltoKv.XmltoCluster;
 import com.actiontech.dble.config.ConfigInitializer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.config.loader.ucoreprocess.*;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.xmltozk.XmltoZkMain;
 import com.actiontech.dble.config.loader.zkprocess.zktoxml.listen.ConfigStatusListener;
@@ -50,7 +50,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil.SEPARATOR;
+import static com.actiontech.dble.cluster.ClusterPathUtil.SEPARATOR;
 
 /**
  * @author mycat
@@ -99,21 +99,21 @@ public final class ReloadConfig {
                 LOGGER.info("reload config using ZK failure", e);
                 writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
             }
-        } else if (DbleServer.getInstance().isUseUcore()) {
-            UDistributeLock distributeLock = new UDistributeLock(UcorePathUtil.getConfChangeLockPath(),
-                    UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+        } else if (DbleServer.getInstance().isUseGeneralCluster()) {
+            DistributeLock distributeLock = new DistributeLock(ClusterPathUtil.getConfChangeLockPath(),
+                    ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
             try {
                 if (!distributeLock.acquire()) {
                     c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rolling back, please try again later.");
                     return;
                 }
-                LOGGER.info("reload config: added distributeLock " + UcorePathUtil.getConfChangeLockPath() + " to ucore");
+                LOGGER.info("reload config: added distributeLock " + ClusterPathUtil.getConfChangeLockPath() + " to ucore");
                 ClusterDelayProvider.delayAfterReloadLock();
                 try {
                     reloadWithUcore(loadAll, loadAllMode, c);
                 } finally {
                     distributeLock.release();
-                    LOGGER.info("reload config: release distributeLock " + UcorePathUtil.getConfChangeLockPath() + " from ucore");
+                    LOGGER.info("reload config: release distributeLock " + ClusterPathUtil.getConfChangeLockPath() + " from ucore");
                 }
             } catch (Exception e) {
                 LOGGER.info("reload config failure using ucore", e);
@@ -155,23 +155,23 @@ public final class ReloadConfig {
             ClusterDelayProvider.delayAfterMasterLoad();
 
             //step 3 if the reload with no error ,than write the config file into ucore remote
-            XmltoUcore.initFileToUcore();
+            XmltoCluster.initFileToUcore();
             LOGGER.info("reload config: sent config file to ucore");
             //step 4 write the reload flag and self reload result into ucore,notify the other dble to reload
-            ConfStatus status = new ConfStatus(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
+            ConfStatus status = new ConfStatus(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
                     loadAll ? ConfStatus.Status.RELOAD_ALL : ConfStatus.Status.RELOAD,
                     loadAll ? String.valueOf(loadAllMode) : null);
-            ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getConfStatusPath(), status.toString());
+            ClusterHelper.setKV(ClusterPathUtil.getConfStatusPath(), status.toString());
             LOGGER.info("reload config: sent config status to ucore");
-            ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getSelfConfStatusPath(), UcorePathUtil.SUCCESS);
+            ClusterHelper.setKV(ClusterPathUtil.getSelfConfStatusPath(), ClusterPathUtil.SUCCESS);
             LOGGER.info("reload config: sent finished status to ucore, waiting other instances");
             //step 5 start a loop to check if all the dble in cluster is reload finished
 
-            final String errorMsg = ClusterUcoreSender.waitingForAllTheNode(UcorePathUtil.SUCCESS, UcorePathUtil.getConfStatusPath() + SEPARATOR);
+            final String errorMsg = ClusterHelper.waitingForAllTheNode(ClusterPathUtil.SUCCESS, ClusterPathUtil.getConfStatusPath() + SEPARATOR);
             LOGGER.info("reload config: all instances finished ");
             ClusterDelayProvider.delayBeforeDeleteReloadLock();
             //step 6 delete the reload flag
-            ClusterUcoreSender.deleteKVTree(UcorePathUtil.getConfStatusPath() + SEPARATOR);
+            ClusterHelper.cleanPath(ClusterPathUtil.getConfStatusPath() + SEPARATOR);
 
             if (errorMsg != null) {
                 writeErrorResultForCluster(c, errorMsg);
@@ -352,8 +352,6 @@ public final class ReloadConfig {
 
 
         /* 2.2 init the dataSource with diff*/
-
-
 
 
         LOGGER.info("reload config: init new data host  start");

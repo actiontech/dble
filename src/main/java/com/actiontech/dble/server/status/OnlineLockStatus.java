@@ -5,11 +5,8 @@
 
 package com.actiontech.dble.server.status;
 
-import com.actiontech.dble.cluster.ClusterParamCfg;
-import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
-import com.actiontech.dble.config.loader.ucoreprocess.UDistributeLock;
-import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
-import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
+import com.actiontech.dble.cluster.*;
+import com.actiontech.dble.cluster.DistributeLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +16,7 @@ import java.util.concurrent.locks.LockSupport;
 
 public final class OnlineLockStatus {
     private static final Logger LOGGER = LoggerFactory.getLogger(OnlineLockStatus.class);
-    private volatile UDistributeLock onlineLock = null;
+    private volatile DistributeLock onlineLock = null;
     private volatile boolean onlineInited = false;
 
     private OnlineLockStatus() {
@@ -36,12 +33,12 @@ public final class OnlineLockStatus {
             return false;
         }
         //check if the online mark is on than delete the mark and renew it
-        ClusterUcoreSender.deleteKV(UcorePathUtil.getOnlinePath(UcoreConfig.getInstance().
+        ClusterHelper.cleanKV(ClusterPathUtil.getOnlinePath(ClusterGeneralConfig.getInstance().
                 getValue(ClusterParamCfg.CLUSTER_CFG_MYID)));
         if (onlineLock != null) {
             onlineLock.release();
         }
-        onlineLock = new UDistributeLock(UcorePathUtil.getOnlinePath(UcoreConfig.getInstance().
+        onlineLock = new DistributeLock(ClusterPathUtil.getOnlinePath(ClusterGeneralConfig.getInstance().
                 getValue(ClusterParamCfg.CLUSTER_CFG_MYID)),
                 "" + System.currentTimeMillis(), 6);
         int time = 0;

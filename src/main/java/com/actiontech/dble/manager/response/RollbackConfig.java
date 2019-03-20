@@ -9,10 +9,9 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.ClusterParamCfg;
+import com.actiontech.dble.cluster.*;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.config.loader.ucoreprocess.*;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.xmltozk.XmltoZkMain;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
@@ -37,7 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil.SEPARATOR;
+import static com.actiontech.dble.cluster.ClusterPathUtil.SEPARATOR;
 
 
 /**
@@ -68,9 +67,9 @@ public final class RollbackConfig {
                 LOGGER.info("reload config failure", e);
                 writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
             }
-        } else if (DbleServer.getInstance().isUseUcore()) {
-            UDistributeLock distributeLock = new UDistributeLock(UcorePathUtil.getConfChangeLockPath(),
-                    UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+        } else if (DbleServer.getInstance().isUseGeneralCluster()) {
+            DistributeLock distributeLock = new DistributeLock(ClusterPathUtil.getConfChangeLockPath(),
+                    ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
             try {
 
                 if (!distributeLock.acquire()) {
@@ -113,18 +112,18 @@ public final class RollbackConfig {
             ClusterDelayProvider.delayAfterMasterRollback();
 
             //step 3 tail the ucore & notify the other dble
-            ConfStatus status = new ConfStatus(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ConfStatus.Status.ROLLBACK, null);
-            ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getConfStatusPath(), status.toString());
+            ConfStatus status = new ConfStatus(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ConfStatus.Status.ROLLBACK, null);
+            ClusterHelper.setKV(ClusterPathUtil.getConfStatusPath(), status.toString());
 
             //step 4 set self status success
-            ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getSelfConfStatusPath(), UcorePathUtil.SUCCESS);
+            ClusterHelper.setKV(ClusterPathUtil.getSelfConfStatusPath(), ClusterPathUtil.SUCCESS);
 
 
-            String errorMsg = ClusterUcoreSender.waitingForAllTheNode(UcorePathUtil.SUCCESS, UcorePathUtil.getConfStatusPath() + SEPARATOR);
+            String errorMsg = ClusterHelper.waitingForAllTheNode(ClusterPathUtil.SUCCESS, ClusterPathUtil.getConfStatusPath() + SEPARATOR);
 
             ClusterDelayProvider.delayBeforeDeleterollbackLock();
             //step 6 delete the reload flag
-            ClusterUcoreSender.deleteKVTree(UcorePathUtil.getConfStatusPath());
+            ClusterHelper.cleanPath(ClusterPathUtil.getConfStatusPath());
 
             if (errorMsg != null) {
                 throw new RuntimeException(errorMsg);

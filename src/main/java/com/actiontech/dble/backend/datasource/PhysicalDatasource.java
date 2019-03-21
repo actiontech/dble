@@ -478,11 +478,9 @@ public abstract class PhysicalDatasource {
     public void connectionClosed(BackendConnection conn) {
         //only used in mysqlConneciton synchronized function
         this.connectionCount.decrementAndGet();
-        if (conn.getSchema() != null) {
-            ConQueue queue = this.conMap.getSchemaConQueue(conn.getSchema());
-            if (queue != null) {
-                queue.removeCon(conn);
-            }
+        ConQueue queue = this.conMap.getSchemaConQueue(conn.getSchema());
+        if (queue != null) {
+            queue.removeCon(conn);
         }
     }
 

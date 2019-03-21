@@ -322,39 +322,27 @@ public abstract class BaseHandlerBuilder {
         // onCondition column in orderBys will be saved to onOrders,
         // eg: if jn.onCond = (t1.id=t2.id),
         // orderBys is t1.id,t2.id,t1.name, and onOrders = {t1.id,t2.id};
-        List<Order> onOrders = new ArrayList<>();
         List<Order> leftOnOrders = jn.getLeftJoinOnOrders();
-        List<Order> rightOnOrders = jn.getRightJoinOnOrders();
-        for (Order orderBy : orderBys) {
-            if (leftOnOrders.contains(orderBy) || rightOnOrders.contains(orderBy)) {
-                onOrders.add(orderBy);
-            } else {
-                break;
-            }
+        if (leftOnOrders.size() >= orderBys.size()) {
+            return PlanUtil.orderContains(leftOnOrders, orderBys);
         }
-        if (onOrders.isEmpty()) {
-            // join node must order by joinOnCondition
+        List<Order> onOrdersTest = orderBys.subList(0, leftOnOrders.size());
+        if (!PlanUtil.orderContains(leftOnOrders, onOrdersTest)) {
             return false;
+        }
+
+        List<Order> remainOrders = orderBys.subList(onOrdersTest.size(), orderBys.size());
+        if (remainOrders.isEmpty()) {
+            return true;
         } else {
-            List<Order> remainOrders = orderBys.subList(onOrders.size(), orderBys.size());
-            if (remainOrders.isEmpty()) {
-                return true;
-            } else {
-                List<Order> pushedOrders = PlanUtil.getPushDownOrders(jn, remainOrders);
-                if (jn.isLeftOrderMatch()) {
-                    List<Order> leftChildOrders = jn.getLeftNode().getOrderBys();
-                    List<Order> leftRemainOrders = leftChildOrders.subList(leftOnOrders.size(), leftChildOrders.size());
-                    if (PlanUtil.orderContains(leftRemainOrders, pushedOrders))
-                        return true;
-                } else if (jn.isRightOrderMatch()) {
-                    List<Order> rightChildOrders = jn.getRightNode().getOrderBys();
-                    List<Order> rightRemainOrders = rightChildOrders.subList(rightOnOrders.size(),
-                            rightChildOrders.size());
-                    if (PlanUtil.orderContains(rightRemainOrders, pushedOrders))
-                        return true;
-                }
-                return false;
+            List<Order> pushedOrders = PlanUtil.getPushDownOrders(jn, remainOrders);
+            if (jn.isLeftOrderMatch()) {
+                List<Order> leftChildOrders = jn.getLeftNode().getOrderBys();
+                List<Order> leftRemainOrders = leftChildOrders.subList(leftOnOrders.size(), leftChildOrders.size());
+                if (PlanUtil.orderContains(leftRemainOrders, pushedOrders))
+                    return true;
             }
+            return false;
         }
     }
 
@@ -499,6 +487,7 @@ public abstract class BaseHandlerBuilder {
         this.getSubQueryBuilderList().add(builder);
         subQueryFinished(subNodes, lock, finished, finishSubQuery);
     }
+
     private void handleSubQuery(final ReentrantLock lock, final Condition finishSubQuery, final AtomicBoolean finished,
                                 final AtomicInteger subNodes, final CopyOnWriteArrayList<ErrorPacket> errorPackets, final PlanNode planNode, final SubQueryHandler tempHandler) {
         DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {

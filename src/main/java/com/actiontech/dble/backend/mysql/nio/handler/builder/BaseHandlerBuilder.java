@@ -324,9 +324,8 @@ public abstract class BaseHandlerBuilder {
         // orderBys is t1.id,t2.id,t1.name, and onOrders = {t1.id,t2.id};
         List<Order> onOrders = new ArrayList<>();
         List<Order> leftOnOrders = jn.getLeftJoinOnOrders();
-        List<Order> rightOnOrders = jn.getRightJoinOnOrders();
         for (Order orderBy : orderBys) {
-            if (leftOnOrders.contains(orderBy) || rightOnOrders.contains(orderBy)) {
+            if (leftOnOrders.contains(orderBy)) {
                 onOrders.add(orderBy);
             } else {
                 break;
@@ -338,19 +337,13 @@ public abstract class BaseHandlerBuilder {
         } else {
             List<Order> remainOrders = orderBys.subList(onOrders.size(), orderBys.size());
             if (remainOrders.isEmpty()) {
-                return true;
+                return PlanUtil.orderContains(leftOnOrders, orderBys);
             } else {
                 List<Order> pushedOrders = PlanUtil.getPushDownOrders(jn, remainOrders);
                 if (jn.isLeftOrderMatch()) {
                     List<Order> leftChildOrders = jn.getLeftNode().getOrderBys();
                     List<Order> leftRemainOrders = leftChildOrders.subList(leftOnOrders.size(), leftChildOrders.size());
                     if (PlanUtil.orderContains(leftRemainOrders, pushedOrders))
-                        return true;
-                } else if (jn.isRightOrderMatch()) {
-                    List<Order> rightChildOrders = jn.getRightNode().getOrderBys();
-                    List<Order> rightRemainOrders = rightChildOrders.subList(rightOnOrders.size(),
-                            rightChildOrders.size());
-                    if (PlanUtil.orderContains(rightRemainOrders, pushedOrders))
                         return true;
                 }
                 return false;
@@ -499,6 +492,7 @@ public abstract class BaseHandlerBuilder {
         this.getSubQueryBuilderList().add(builder);
         subQueryFinished(subNodes, lock, finished, finishSubQuery);
     }
+
     private void handleSubQuery(final ReentrantLock lock, final Condition finishSubQuery, final AtomicBoolean finished,
                                 final AtomicInteger subNodes, final CopyOnWriteArrayList<ErrorPacket> errorPackets, final PlanNode planNode, final SubQueryHandler tempHandler) {
         DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {

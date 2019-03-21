@@ -331,19 +331,14 @@ public abstract class BaseHandlerBuilder {
             return false;
         }
 
-        List<Order> remainOrders = orderBys.subList(onOrdersTest.size(), orderBys.size());
-        if (remainOrders.isEmpty()) {
-            return true;
-        } else {
-            List<Order> pushedOrders = PlanUtil.getPushDownOrders(jn, remainOrders);
-            if (jn.isLeftOrderMatch()) {
-                List<Order> leftChildOrders = jn.getLeftNode().getOrderBys();
-                List<Order> leftRemainOrders = leftChildOrders.subList(leftOnOrders.size(), leftChildOrders.size());
-                if (PlanUtil.orderContains(leftRemainOrders, pushedOrders))
-                    return true;
-            }
-            return false;
+        List<Order> pushedOrders = PlanUtil.getPushDownOrders(jn, orderBys.subList(onOrdersTest.size(), orderBys.size()));
+        if (jn.isLeftOrderMatch()) {
+            List<Order> leftChildOrders = jn.getLeftNode().getOrderBys();
+            List<Order> leftRemainOrders = leftChildOrders.subList(leftOnOrders.size(), leftChildOrders.size());
+            if (PlanUtil.orderContains(leftRemainOrders, pushedOrders))
+                return true;
         }
+        return false;
     }
 
     /**

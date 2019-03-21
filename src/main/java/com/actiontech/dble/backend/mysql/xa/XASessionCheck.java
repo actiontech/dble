@@ -35,16 +35,20 @@ public class XASessionCheck {
     private void checkCommitSession() {
         for (NonBlockingSession session : commitSession.values()) {
             if (session.getXaState() == TxState.TX_COMMIT_FAILED_STATE) {
-                this.commitSession.remove(session.getSource().getId());
                 session.commit();
+            } else if (session.getXaState() == TxState.TX_INITIALIZE_STATE) {
+                this.commitSession.remove(session.getSource().getId());
             }
         }
     }
 
     private void checkRollbackSession() {
         for (NonBlockingSession session : rollbackSession.values()) {
-            this.rollbackSession.remove(session.getSource().getId());
-            session.rollback();
+            if (session.getXaState() == TxState.TX_INITIALIZE_STATE) {
+                this.rollbackSession.remove(session.getSource().getId());
+            } else {
+                session.rollback();
+            }
         }
     }
 

@@ -381,8 +381,11 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                 session.getXaState() == TxState.TX_PREPARE_UNCONNECT_STATE) {
             MySQLConnection errConn = session.releaseExcept(session.getXaState());
             if (errConn != null) {
-                XAStateLog.saveXARecoveryLog(session.getSessionXaID(), session.getXaState());
+                final String xaId = session.getSessionXaID();
+                XAStateLog.saveXARecoveryLog(xaId, session.getXaState());
                 if (++tryRollbackTimes < ROLLBACK_TIMES) {
+                    // try rollback several times
+                    XaDelayProvider.delayBeforeRetry(tryRollbackTimes, xaId);
                     rollback();
                 } else {
                     StringBuilder closeReason = new StringBuilder("ROLLBACK FAILED but it will try to ROLLBACK repeatedly in backend until it is success!");
@@ -392,12 +395,17 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                     }
                     // close the session ,add to schedule job
                     session.getSource().close(closeReason.toString());
+                    // kill xa or retry to rollback xa in background
                     final int count = DbleServer.getInstance().getConfig().getSystem().getXaRetryCount();
                     if (!session.isRetryXa()) {
-                        session.forceClose("kill xa session by manager cmd!");
+                        String warnStr = "kill xa session by manager cmd!";
+                        LOGGER.warn(warnStr);
+                        session.forceClose(warnStr);
                     } else if (count == 0 || ++backgroundRollbackTimes <= count) {
-                        final String xaId = session.getSessionXaID();
-                        AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, "fail to try to ROLLBACK xa transaction " + xaId + " background", AlertUtil.genSingleLabel("XA_ID", xaId));
+                        String warnStr = "fail to try to COMMIT xa transaction " + xaId + " background";
+                        LOGGER.warn(warnStr);
+                        AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, warnStr, AlertUtil.genSingleLabel("XA_ID", xaId));
+
                         XaDelayProvider.beforeAddXaToQueue(count, xaId);
                         DbleServer.getInstance().getXaSessionCheck().addRollbackSession(session);
                         XaDelayProvider.afterAddXaToQueue(count, xaId);

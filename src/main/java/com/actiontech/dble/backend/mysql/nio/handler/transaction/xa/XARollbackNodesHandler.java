@@ -385,7 +385,6 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                 XAStateLog.saveXARecoveryLog(xaId, session.getXaState());
                 if (++tryRollbackTimes < ROLLBACK_TIMES) {
                     // try rollback several times
-                    XaDelayProvider.delayBeforeRetry(tryRollbackTimes, xaId);
                     rollback();
                 } else {
                     StringBuilder closeReason = new StringBuilder("ROLLBACK FAILED but it will try to ROLLBACK repeatedly in backend until it is success!");

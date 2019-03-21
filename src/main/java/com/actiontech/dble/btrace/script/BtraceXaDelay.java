@@ -59,15 +59,6 @@ public final class BtraceXaDelay {
 
     @OnMethod(
             clazz = "com.actiontech.dble.btrace.provider.XaDelayProvider",
-            method = "delayBeforeRetry"
-    )
-    public static void delayBeforeRetry(int count, String xaId) throws Exception {
-        BTraceUtils.println("before retry " + xaId + " in " + count + " time.");
-        Thread.sleep(10000L);
-    }
-
-    @OnMethod(
-            clazz = "com.actiontech.dble.btrace.provider.XaDelayProvider",
             method = "beforeAddXaToQueue"
     )
     public static void beforeAddXaToQueue(int count, String xaId) throws Exception {

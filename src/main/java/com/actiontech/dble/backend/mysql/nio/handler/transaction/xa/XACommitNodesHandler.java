@@ -374,7 +374,6 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 XAStateLog.saveXARecoveryLog(xaId, session.getXaState());
                 if (++tryCommitTimes < COMMIT_TIMES) {
                     // try commit several times
-                    XaDelayProvider.delayBeforeRetry(tryCommitTimes, xaId);
                     commit();
                 } else {
                     // close this session ,add to schedule job

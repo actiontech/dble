@@ -25,10 +25,6 @@ public final class XaDelayProvider {
 
     }
 
-    public static void delayBeforeRetry(int count, String xaId) {
-
-    }
-
     public static void beforeAddXaToQueue(int count, String xaId) {
 
     }

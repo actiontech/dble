@@ -6,13 +6,11 @@
 package com.actiontech.dble.meta.table.old;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.alarm.AlarmCode;
-import com.actiontech.dble.alarm.Alert;
-import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.alarm.ToResolveContainer;
+import com.actiontech.dble.alarm.*;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.server.status.AlertManager;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
@@ -77,19 +75,26 @@ public class SchemaDefaultNodeTablesHandler {
 
         @Override
         public void onResult(SQLQueryResult<List<Map<String, String>>> result) {
-            String key = null;
-            if (ds != null) {
-                key = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getConfig().getHostName() + "],data_node[" + dataNode + "],schema[" + schema + "]";
-            }
+            final String key = ds == null ? null : "DataHost[" + ds.getHostConfig().getName() + "." + ds.getConfig().getHostName() + "],data_node[" + dataNode + "],schema[" + schema + "]";
             if (!result.isSuccess()) {
                 //not thread safe
-
                 String warnMsg = "Can't show tables from DataNode:" + dataNode + "! Maybe the data node is not initialized!";
                 LOGGER.warn(warnMsg);
                 if (ds != null) {
-                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName());
-                    labels.put("data_node", dataNode);
-                    AlertUtil.alert(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "{" + key + "} is lack", "mysql", ds.getConfig().getId(), labels);
+                    final String nodeNamex = dataNode;
+                    AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                        @Override
+                        public void send() {
+                            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName());
+                            labels.put("data_node", nodeNamex);
+                            AlertUtil.alert(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "{" + key + "} is lack", "mysql", ds.getConfig().getId(), labels);
+                        }
+
+                        @Override
+                        public String toString() {
+                            return "AlertManager Task alert " + AlarmCode.DATA_NODE_LACK + "{" + key + "} is lack";
+                        }
+                    });
                     ToResolveContainer.DATA_NODE_LACK.add(key);
                 }
                 finished = true;
@@ -97,11 +102,21 @@ public class SchemaDefaultNodeTablesHandler {
                 return;
             }
             if (ds != null && ToResolveContainer.DATA_NODE_LACK.contains(key)) {
-                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName());
-                labels.put("data_node", dataNode);
-                if (AlertUtil.alertResolve(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "mysql", ds.getConfig().getId(), labels)) {
-                    ToResolveContainer.DATA_NODE_LACK.remove(key);
-                }
+                AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                    @Override
+                    public void send() {
+                        Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName());
+                        labels.put("data_node", dataNode);
+                        if (AlertUtil.alertResolve(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "mysql", ds.getConfig().getId(), labels)) {
+                            ToResolveContainer.DATA_NODE_LACK.remove(key);
+                        }
+                    }
+
+                    @Override
+                    public String toString() {
+                        return "AlertManager Task alertResolve " + AlarmCode.CREATE_CONN_FAIL + " mysql " + ds.getConfig().getId() + " " + ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName();
+                    }
+                });
             }
             List<Map<String, String>> rows = result.getResult();
             for (Map<String, String> row : rows) {

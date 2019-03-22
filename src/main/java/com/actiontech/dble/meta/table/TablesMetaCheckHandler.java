@@ -5,12 +5,10 @@
 
 package com.actiontech.dble.meta.table;
 
-import com.actiontech.dble.alarm.AlarmCode;
-import com.actiontech.dble.alarm.Alert;
-import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.alarm.ToResolveContainer;
+import com.actiontech.dble.alarm.*;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.protocol.StructureMeta;
+import com.actiontech.dble.server.status.AlertManager;
 
 import java.sql.SQLNonTransientException;
 import java.util.Map;
@@ -32,15 +30,36 @@ public class TablesMetaCheckHandler extends AbstractTablesMetaHandler {
     protected void handlerTable(String table, String dataNode, String sql) {
         StructureMeta.TableMeta tableMeta = MetaHelper.initTableMeta(table, sql, System.currentTimeMillis());
         if (tableMeta != null) {
-            String tableId = schema + "." + tableMeta.getTableName();
+            final String tableId = schema + "." + tableMeta.getTableName();
             if (isTableModify(schema, tableMeta)) {
-                String errorMsg = "Table [" + tableMeta.getTableName() + "] are modified by other,Please Check IT!";
+                final String errorMsg = "Table [" + tableMeta.getTableName() + "] are modified by other,Please Check IT!";
                 LOGGER.warn(errorMsg);
-                AlertUtil.alertSelf(AlarmCode.TABLE_NOT_CONSISTENT_IN_MEMORY, Alert.AlertLevel.WARN, errorMsg, AlertUtil.genSingleLabel("TABLE", tableId));
+                AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                    @Override
+                    public void send() {
+                        AlertUtil.alertSelf(AlarmCode.TABLE_NOT_CONSISTENT_IN_MEMORY, Alert.AlertLevel.WARN, errorMsg, AlertUtil.genSingleLabel("TABLE", tableId));
+                    }
+
+                    @Override
+                    public String toString() {
+                        return "AlertManager Task alertSelf " + AlarmCode.TABLE_NOT_CONSISTENT_IN_MEMORY + errorMsg + " " + tableId;
+                    }
+                });
                 ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY.add(tableId);
-            } else if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY.contains(tableId) &&
-                    AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_MEMORY, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
-                ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY.remove(tableId);
+            } else if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY.contains(tableId)) {
+                AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                    @Override
+                    public void send() {
+                        if (AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_MEMORY, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
+                            ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY.remove(tableId);
+                        }
+                    }
+
+                    @Override
+                    public String toString() {
+                        return "AlertManager Task alertSelfResolve " + AlarmCode.TABLE_NOT_CONSISTENT_IN_MEMORY + " " + tableId;
+                    }
+                });
             }
             LOGGER.debug("checking table Table [" + tableMeta.getTableName() + "]");
         }

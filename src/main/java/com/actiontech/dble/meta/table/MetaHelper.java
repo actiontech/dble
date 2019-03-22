@@ -7,8 +7,10 @@ package com.actiontech.dble.meta.table;
 
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertTask;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.meta.protocol.StructureMeta;
+import com.actiontech.dble.server.status.AlertManager;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
@@ -38,14 +40,24 @@ public final class MetaHelper {
     public static final String PRIMARY = "PRIMARY";
     private static final Logger LOGGER = LoggerFactory.getLogger(MetaHelper.class);
 
-    public static StructureMeta.TableMeta initTableMeta(String table, String sql, long timeStamp) {
+    public static StructureMeta.TableMeta initTableMeta(String table, final String sql, long timeStamp) {
         try {
             SQLStatementParser parser = new CreateTableParserImp(sql);
             SQLCreateTableStatement createStatement = parser.parseCreateTable();
             return MetaHelper.initTableMeta(table, sql, createStatement, timeStamp);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             LOGGER.warn("sql[" + sql + "] parser error:", e);
-            AlertUtil.alertSelf(AlarmCode.GET_TABLE_META_FAIL, Alert.AlertLevel.WARN, "sql[" + sql + "] parser error:" + e.getMessage(), null);
+            AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                @Override
+                public void send() {
+                    AlertUtil.alertSelf(AlarmCode.GET_TABLE_META_FAIL, Alert.AlertLevel.WARN, "sql[" + sql + "] parser error:" + e.getMessage(), null);
+                }
+
+                @Override
+                public String toString() {
+                    return "AlertManager Task alertSelf " + AlarmCode.GET_TABLE_META_FAIL + " sql[" + sql + "] parser error:" + e.getMessage();
+                }
+            });
             return null;
         }
     }

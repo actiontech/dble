@@ -6,10 +6,7 @@
 package com.actiontech.dble.meta;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.alarm.AlarmCode;
-import com.actiontech.dble.alarm.Alert;
-import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.alarm.ToResolveContainer;
+import com.actiontech.dble.alarm.*;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.mysql.view.CKVStoreRepository;
@@ -35,6 +32,7 @@ import com.actiontech.dble.meta.table.TablesMetaCheckHandler;
 import com.actiontech.dble.meta.table.old.AbstractTableMetaHandler;
 import com.actiontech.dble.meta.table.old.TableMetaCheckHandler;
 import com.actiontech.dble.plan.node.QueryNode;
+import com.actiontech.dble.server.status.AlertManager;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 import com.actiontech.dble.util.KVPathUtil;
@@ -582,9 +580,20 @@ public class ProxyMetaManager {
             if (tbConfig != null) {
                 for (String dataNode : tbConfig.getDataNodes()) {
                     showDataNode = dataNode;
-                    String tableId = "DataNode[" + dataNode + "]:Table[" + tableName + "]";
-                    if (ToResolveContainer.TABLE_LACK.contains(tableId) && AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
-                        ToResolveContainer.TABLE_LACK.remove(tableId);
+                    final String tableId = "DataNode[" + dataNode + "]:Table[" + tableName + "]";
+                    if (ToResolveContainer.TABLE_LACK.contains(tableId)) {
+                        AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                            @Override
+                            public void send() {
+                                if (AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
+                                    ToResolveContainer.TABLE_LACK.remove(tableId);
+                                }
+                            }
+                            @Override
+                            public String toString() {
+                                return "AlertManager Task alertSelfResolve " + AlarmCode.TABLE_LACK + " " + tableId;
+                            }
+                        });
                     }
                 }
             }

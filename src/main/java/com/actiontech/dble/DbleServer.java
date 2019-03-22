@@ -35,6 +35,7 @@ import com.actiontech.dble.net.mysql.WriteToBackendTask;
 import com.actiontech.dble.route.RouteService;
 import com.actiontech.dble.route.sequence.handler.*;
 import com.actiontech.dble.server.ServerConnectionFactory;
+import com.actiontech.dble.server.status.AlertManager;
 import com.actiontech.dble.server.status.OnlineLockStatus;
 import com.actiontech.dble.server.status.SlowQueryLog;
 import com.actiontech.dble.server.util.GlobalTableUtil;
@@ -132,6 +133,7 @@ public final class DbleServer {
 
 
     private FrontendUserManager userManager = new FrontendUserManager();
+
     private DbleServer() {
         this.config = new ServerConfig();
         scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("TimerScheduler-%d").build());
@@ -377,6 +379,8 @@ public final class DbleServer {
         for (int i = 0; i < backendProcessorCount; i++) {
             backendProcessors[i] = new NIOProcessor("backendProcessor" + i, bufferPool);
         }
+
+        AlertManager.getInstance().startAlert();
 
         if (system.getEnableSlowLog() == 1) {
             SlowQueryLog.getInstance().setEnableSlowLog(true);
@@ -1088,5 +1092,6 @@ public final class DbleServer {
     public void setUserManager(FrontendUserManager userManager) {
         this.userManager = userManager;
     }
+
 
 }

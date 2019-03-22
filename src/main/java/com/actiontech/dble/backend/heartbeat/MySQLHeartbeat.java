@@ -7,10 +7,12 @@ package com.actiontech.dble.backend.heartbeat;
 
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertTask;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
 import com.actiontech.dble.config.model.DataHostConfig;
+import com.actiontech.dble.server.status.AlertManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -141,16 +143,38 @@ public class MySQLHeartbeat extends DBHeartbeat {
                 break;
         }
         if (this.status != OK_STATUS) {
-            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getHostConfig().getName() + "-" + this.source.getConfig().getHostName());
-            AlertUtil.alert(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "heartbeat status:" + this.status, "mysql", this.source.getConfig().getId(), labels);
+            LOGGER.warn("heartbeat error and alert the switch");
+            final int statusx = this.status;
+            AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                @Override
+                public void send() {
+                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", source.getHostConfig().getName() + "-" + source.getConfig().getHostName());
+                    AlertUtil.alert(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "heartbeat status:" + statusx, "mysql", source.getConfig().getId(), labels);
+                }
+
+                @Override
+                public String toString() {
+                    return "AlertManager Task alert " + AlarmCode.HEARTBEAT_FAIL + " heartbeat status:" + statusx;
+                }
+            });
             switchSourceIfNeed("heartbeat error");
         }
     }
 
     private void setOk() {
         if (this.status != OK_STATUS) {
-            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getHostConfig().getName() + "-" + this.source.getConfig().getHostName());
-            AlertUtil.alertResolve(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "mysql", this.source.getConfig().getId(), labels);
+            AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                @Override
+                public void send() {
+                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", source.getHostConfig().getName() + "-" + source.getConfig().getHostName());
+                    AlertUtil.alertResolve(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "mysql", source.getConfig().getId(), labels);
+                }
+
+                @Override
+                public String toString() {
+                    return "AlertManager Task alertResolve " + AlarmCode.HEARTBEAT_FAIL + " mysql " + source.getConfig().getId() + " " + source.getHostConfig().getName() + "-" + source.getConfig().getHostName();
+                }
+            });
         }
         switch (status) {
             case TIMEOUT_STATUS:

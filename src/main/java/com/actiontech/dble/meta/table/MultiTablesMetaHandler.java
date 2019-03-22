@@ -5,14 +5,12 @@
 
 package com.actiontech.dble.meta.table;
 
-import com.actiontech.dble.alarm.AlarmCode;
-import com.actiontech.dble.alarm.Alert;
-import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.alarm.ToResolveContainer;
+import com.actiontech.dble.alarm.*;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.protocol.StructureMeta;
+import com.actiontech.dble.server.status.AlertManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -127,24 +125,58 @@ public class MultiTablesMetaHandler {
                         tableMeta = MetaHelper.initTableMeta(tableName, sql, version);
                         tableMetas.add(tableMeta);
                     }
-                    String tableId = schema + "." + tableName;
+                    final String tableId = schema + "." + tableName;
                     if (tableMetas.size() > 1) {
                         consistentWarning(tableName, tableStruct);
-                    } else if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(tableId) &&
-                            AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
-                        ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.remove(tableId);
+                    } else if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(tableId)) {
+                        AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                            @Override
+                            public void send() {
+                                if (AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
+                                    ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.remove(tableId);
+                                }
+                            }
+
+                            @Override
+                            public String toString() {
+                                return "AlertManager Task alertSelfResolve " + AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS + " " + tableId;
+                            }
+                        });
                     }
                     tableMetas.clear();
                 } else if (tableStruct.size() == 1) {
-                    String tableId = schema + "." + tableName;
-                    if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(tableId) &&
-                            AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
-                        ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.remove(tableId);
+                    final String tableId = schema + "." + tableName;
+                    if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(tableId)) {
+                        AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                            @Override
+                            public void send() {
+                                if (AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
+                                    ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.remove(tableId);
+                                }
+                            }
+
+                            @Override
+                            public String toString() {
+                                return "AlertManager Task alertSelfResolve " + AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS + " " + tableId;
+                            }
+                        });
                     }
 
-                    String tableDetailId = "DataNode[" + tableStruct.values().iterator().next() + "]:Table[" + tableName + "]";
-                    if (ToResolveContainer.TABLE_LACK.contains(tableId) && AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableDetailId))) {
-                        ToResolveContainer.TABLE_LACK.remove(tableId);
+                    final String tableDetailId = "DataNode[" + tableStruct.values().iterator().next() + "]:Table[" + tableName + "]";
+                    if (ToResolveContainer.TABLE_LACK.contains(tableId)) {
+                        AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                            @Override
+                            public void send() {
+                                if (AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableDetailId))) {
+                                    ToResolveContainer.TABLE_LACK.remove(tableId);
+                                }
+                            }
+
+                            @Override
+                            public String toString() {
+                                return "AlertManager Task alertSelfResolve " + AlarmCode.TABLE_LACK + " " + tableDetailId;
+                            }
+                        });
                     }
                     tableMeta = MetaHelper.initTableMeta(tableName, tableStruct.keySet().iterator().next(), version);
                 }
@@ -187,10 +219,20 @@ public class MultiTablesMetaHandler {
         }
     }
 
-    private void consistentWarning(String tableName, Map<String, List<String>> tableStruct) {
-        String errorMsg = "Table [" + tableName + "] structure are not consistent in different data node!";
+    private void consistentWarning(final String tableName, Map<String, List<String>> tableStruct) {
+        final String errorMsg = "Table [" + tableName + "] structure are not consistent in different data node!";
         LOGGER.warn(errorMsg);
-        AlertUtil.alertSelf(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, errorMsg, AlertUtil.genSingleLabel("TABLE", schema + "." + tableName));
+        AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+            @Override
+            public void send() {
+                AlertUtil.alertSelf(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, errorMsg, AlertUtil.genSingleLabel("TABLE", schema + "." + tableName));
+            }
+
+            @Override
+            public String toString() {
+                return "AlertManager Task alertSelf " + AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS + errorMsg + " " + schema + "." + tableName;
+            }
+        });
         ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.add(schema + "." + tableName);
         LOGGER.info("Currently detected: ");
         for (Map.Entry<String, List<String>> entry : tableStruct.entrySet()) {

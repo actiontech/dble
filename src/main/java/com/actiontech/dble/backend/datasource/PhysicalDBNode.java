@@ -6,12 +6,11 @@
 package com.actiontech.dble.backend.datasource;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.alarm.AlarmCode;
-import com.actiontech.dble.alarm.Alert;
-import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.alarm.*;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.server.status.AlertManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,12 +109,22 @@ public class PhysicalDBNode {
 
     public BackendConnection getConnection(String schema, boolean autoCommit, Boolean runOnSlave, Object attachment) throws Exception {
         if (runOnSlave == null) {
-            PhysicalDatasource readSource = dbPool.getRWBalanceNode();
+            final PhysicalDatasource readSource = dbPool.getRWBalanceNode();
             if (!readSource.isAlive()) {
-                String heartbeatError = "the data source[" + readSource.getConfig().getUrl() + "] can't reached, please check the dataHost";
+                final String heartbeatError = "the data source[" + readSource.getConfig().getUrl() + "] can't reached, please check the dataHost";
                 LOGGER.warn(heartbeatError);
-                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", readSource.getHostConfig().getName() + "-" + readSource.getConfig().getHostName());
-                AlertUtil.alert(AlarmCode.DATA_HOST_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", readSource.getConfig().getId(), labels);
+                AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                    @Override
+                    public void send() {
+                        Map<String, String> labels = AlertUtil.genSingleLabel("data_host", readSource.getHostConfig().getName() + "-" + readSource.getConfig().getHostName());
+                        AlertUtil.alert(AlarmCode.DATA_HOST_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", readSource.getConfig().getId(), labels);
+                    }
+
+                    @Override
+                    public String toString() {
+                        return "AlertManager Task alert " + AlarmCode.DATA_HOST_CAN_NOT_REACH + " " + heartbeatError;
+                    }
+                });
                 throw new IOException(heartbeatError);
             }
             return readSource.getConnection(schema, autoCommit, attachment);

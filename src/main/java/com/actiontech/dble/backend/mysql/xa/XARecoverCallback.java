@@ -7,7 +7,9 @@ package com.actiontech.dble.backend.mysql.xa;
 
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertTask;
 import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.server.status.AlertManager;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.sqlengine.SQLQueryResultListener;
 import org.slf4j.Logger;
@@ -57,9 +59,19 @@ public class XARecoverCallback implements SQLQueryResultListener<SQLQueryResult<
             XAStateLog.writeCheckpoint(logEntry.getCoordinatorId());
         } else {
             LOGGER.warn("[CALLBACK][XA " + logEntry.getCoordinatorId() + logEntry.getHost() + logEntry.getPort() + logEntry.getSchema() + txState + "] when server start,but failed");
-            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", "operator " + operator);
-            AlertUtil.alertSelf(AlarmCode.XA_RECOVER_FAIL, Alert.AlertLevel.WARN,
-                    "[CALLBACK][XA " + logEntry.getCoordinatorId() + logEntry.getHost() + logEntry.getPort() + logEntry.getSchema() + txState + "] when server start,but failed", labels);
+            AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                @Override
+                public void send() {
+                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", "operator " + operator);
+                    AlertUtil.alertSelf(AlarmCode.XA_RECOVER_FAIL, Alert.AlertLevel.WARN,
+                            "[CALLBACK][XA " + logEntry.getCoordinatorId() + logEntry.getHost() + logEntry.getPort() + logEntry.getSchema() + txState + "] when server start,but failed", labels);
+                }
+
+                @Override
+                public String toString() {
+                    return "AlertManager Task alertSelf " + AlarmCode.XA_RECOVER_FAIL + " [CALLBACK][XA " + logEntry.getCoordinatorId() + logEntry.getHost() + logEntry.getPort() + logEntry.getSchema() + txState + "] when server start,but failed";
+                }
+            });
         }
     }
 }

@@ -8,10 +8,12 @@ package com.actiontech.dble.backend.mysql.store;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertTask;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.mysql.store.fs.FilePath;
 import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.server.status.AlertManager;
 import com.actiontech.dble.util.exception.TmpFileException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -231,7 +233,7 @@ public class FileStore {
             FilePath path = FilePath.get(newName).createTempFile(SUFFIX_TEMP_FILE, true);
             this.fileNames.add(path.toString());
             this.files.add(path.open(mode));
-        } catch (IOException e) {
+        } catch (final IOException e) {
             if (e.getCause() instanceof OutOfMemoryError) {
                 logger.info("no memory to mapped file,change to disk file");
                 // memory is used by other user
@@ -242,7 +244,17 @@ public class FileStore {
                 this.fileNames.add(path.toString());
             } else {
                 logger.warn("create file error :", e);
-                AlertUtil.alertSelf(AlarmCode.WRITE_TEMP_RESULT_FAIL, Alert.AlertLevel.WARN, "create file error:" + e.getMessage(), null);
+                AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                    @Override
+                    public void send() {
+                        AlertUtil.alertSelf(AlarmCode.WRITE_TEMP_RESULT_FAIL, Alert.AlertLevel.WARN, "create file error:" + e.getMessage(), null);
+                    }
+
+                    @Override
+                    public String toString() {
+                        return "AlertManager Task alertSelf " + AlarmCode.WRITE_TEMP_RESULT_FAIL + " create file error:" + e.getMessage();
+                    }
+                });
                 throw e;
             }
         }

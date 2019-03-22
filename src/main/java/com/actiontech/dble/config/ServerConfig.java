@@ -8,6 +8,7 @@ package com.actiontech.dble.config;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertTask;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
@@ -18,6 +19,7 @@ import com.actiontech.dble.route.sequence.handler.DistributedSequenceHandler;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceMySQLHandler;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceTimeHandler;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceZKHandler;
+import com.actiontech.dble.server.status.AlertManager;
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
@@ -83,9 +85,19 @@ public class ServerConfig {
         this.lock = new ReentrantLock();
         try {
             confInit.testConnection(true);
-        } catch (ConfigException e) {
+        } catch (final ConfigException e) {
             LOGGER.warn("TestConnection fail", e);
-            AlertUtil.alertSelf(AlarmCode.TEST_CONN_FAIL, Alert.AlertLevel.WARN, "TestConnection fail:" + e.getMessage(), null);
+            AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                @Override
+                public void send() {
+                    AlertUtil.alertSelf(AlarmCode.TEST_CONN_FAIL, Alert.AlertLevel.WARN, "TestConnection fail:" + e.getMessage(), null);
+                }
+
+                @Override
+                public String toString() {
+                    return "AlertManager Task alertSelf " + AlarmCode.TEST_CONN_FAIL + " TestConnection fail:" + e.getMessage();
+                }
+            });
         }
     }
 

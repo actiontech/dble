@@ -1,15 +1,13 @@
 package com.actiontech.dble.manager.handler;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.alarm.AlarmCode;
-import com.actiontech.dble.alarm.Alert;
-import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.alarm.ToResolveContainer;
+import com.actiontech.dble.alarm.*;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.server.status.AlertManager;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
@@ -70,13 +68,24 @@ public final class CreateDatabaseHandler {
                     if (!result.isSuccess()) {
                         errMsg.add(dataNode);
                     } else {
-                        String key = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getConfig().getHostName() + "],data_node[" + dataNode + "],schema[" + schema + "]";
+                        final String key = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getConfig().getHostName() + "],data_node[" + dataNode + "],schema[" + schema + "]";
                         if (ToResolveContainer.DATA_NODE_LACK.contains(key)) {
-                            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName());
-                            labels.put("data_node", dataNode);
-                            if (AlertUtil.alertResolve(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "mysql", ds.getConfig().getId(), labels)) {
-                                ToResolveContainer.DATA_NODE_LACK.remove(key);
-                            }
+                            AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                                @Override
+                                public void send() {
+                                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName());
+                                    labels.put("data_node", dataNode);
+                                    if (AlertUtil.alertResolve(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "mysql", ds.getConfig().getId(), labels)) {
+                                        ToResolveContainer.DATA_NODE_LACK.remove(key);
+                                    }
+                                }
+
+                                @Override
+                                public String toString() {
+                                    return "AlertManager Task alertResolve " + AlarmCode.DATA_NODE_LACK + " mysql " + ds.getConfig().getId() + " " + ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName();
+                                }
+
+                            });
                         }
                     }
                     numberCount.decrementAndGet();

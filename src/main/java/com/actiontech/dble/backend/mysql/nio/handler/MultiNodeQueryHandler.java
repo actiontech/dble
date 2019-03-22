@@ -77,6 +77,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
     protected void reset(int initCount) {
         super.reset(initCount);
+        if (ServerParse.LOAD_DATA_INFILE_SQL == rrs.getSqlType()) {
+            packetId = session.getSource().getLoadDataInfileHandler().getLastPackId();
+        }
         this.netOutBytes = 0;
         this.resultSize = 0;
     }
@@ -136,7 +139,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
         LOGGER.warn("backend connect" + reason + ", conn info:" + conn);
         ErrorPacket errPacket = new ErrorPacket();
-        errPacket.setPacketId(1);
+        errPacket.setPacketId(++packetId);
         errPacket.setErrNo(ErrorCode.ER_ABORTING_CONNECTION);
         reason = "Connection {DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
                 ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
@@ -150,7 +153,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     public void connectionError(Throwable e, BackendConnection conn) {
         LOGGER.warn("Backend connect Error, Connection info:" + conn, e);
         ErrorPacket errPacket = new ErrorPacket();
-        errPacket.setPacketId(1);
+        errPacket.setPacketId(++packetId);
         errPacket.setErrNo(ErrorCode.ER_DATA_HOST_ABORTING_CONNECTION);
         String errMsg = "Backend connect Error, Connection{DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
         errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
@@ -170,7 +173,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     public void errorResponse(byte[] data, BackendConnection conn) {
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(data);
-        errPacket.setPacketId(1); //just for normal error
+        errPacket.setPacketId(++packetId); //just for normal error
         err = errPacket;
         session.resetMultiStatementStatus();
         lock.lock();

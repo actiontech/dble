@@ -58,7 +58,7 @@ public class MySQLConnection extends BackendAIOConnection {
     private volatile NonBlockingSession session;
     private long oldTimestamp;
     private final AtomicBoolean logResponse = new AtomicBoolean(false);
-
+    private volatile boolean testing = false;
 
     private volatile BackEndCleaner recycler = null;
 
@@ -732,6 +732,7 @@ public class MySQLConnection extends BackendAIOConnection {
         statusSync = null;
         modifiedSQLExecuted = false;
         isDDL = false;
+        testing = false;
         setResponseHandler(null);
         setSession(null);
         logResponse.set(false);
@@ -758,6 +759,14 @@ public class MySQLConnection extends BackendAIOConnection {
         if (handler instanceof MySQLConnectionHandler) {
             ((MySQLConnectionHandler) handler).setSession(session);
         }
+    }
+
+    public boolean isTesting() {
+        return testing;
+    }
+
+    public void setTesting(boolean testing) {
+        this.testing = testing;
     }
 
     public void writeQueueAvailable() {

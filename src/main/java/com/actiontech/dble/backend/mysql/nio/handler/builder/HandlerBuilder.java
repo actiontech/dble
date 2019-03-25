@@ -69,8 +69,8 @@ public class HandlerBuilder {
         //set slave only into rrsNode
         for (DMLResponseHandler startHandler : fh.getMerges()) {
             MultiNodeMergeHandler mergeHandler = (MultiNodeMergeHandler) startHandler;
-            for (BaseSelectHandler bshandler : mergeHandler.getExeHandlers()) {
-                bshandler.getRrss().setRunOnSlave(this.session.getComplexRrs().getRunOnSlave());
+            for (BaseSelectHandler baseHandler : mergeHandler.getExeHandlers()) {
+                baseHandler.getRrss().setRunOnSlave(this.session.getComplexRrs().getRunOnSlave());
             }
         }
         session.endComplexRoute();

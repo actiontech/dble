@@ -8,8 +8,8 @@ package com.actiontech.dble.plan.util;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.*;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.DirectGroupByHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.AggregateHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.DirectGroupByHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.JoinHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.NotInHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.AllAnySubQueryHandler;
@@ -74,10 +74,16 @@ public final class ComplexQueryPlanUtil {
         for (int i = 0; i < mergeNodeSize; i++) {
             DMLResponseHandler startHandler = endHandler.getMerges().get(i);
             MultiNodeMergeHandler mergeHandler = (MultiNodeMergeHandler) startHandler;
+            String mergeName = "MERGE";
+            if (mergeHandler instanceof MultiNodeEasyMergeHandler) {
+                mergeName = "MERGE";
+            } else if (mergeHandler instanceof MultiNodeMergeAndOrderHandler) {
+                mergeName = "MERGE_AND_ORDER";
+            }
             List<BaseSelectHandler> mergeList = new ArrayList<>();
             mergeList.addAll(((MultiNodeMergeHandler) startHandler).getExeHandlers());
-            String mergeNode = genHandlerName("MERGE", nameMap);
-            ReferenceHandlerInfo refInfo = new ReferenceHandlerInfo(mergeNode, "MERGE", mergeHandler);
+            String mergeNode = genHandlerName(mergeName, nameMap);
+            ReferenceHandlerInfo refInfo = new ReferenceHandlerInfo(mergeNode, mergeName, mergeHandler);
             handlerMap.put(mergeHandler, refInfo);
             refMap.put(mergeNode, refInfo);
             for (BaseSelectHandler exeHandler : mergeList) {

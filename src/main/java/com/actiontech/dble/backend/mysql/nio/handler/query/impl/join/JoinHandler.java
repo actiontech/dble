@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.OwnThreadDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
@@ -216,8 +217,17 @@ public class JoinHandler extends OwnThreadDMLHandler {
                     rightLocal = takeFirst(rightQueue);
                 }
             }
-            session.setHandlerEnd(this);
+
             HandlerTool.terminateHandlerTree(this);
+            // for trace, when join end before all rows return ,the handler should mark as finished
+            for (DMLResponseHandler mergeHandler : this.getMerges()) {
+                DMLResponseHandler handler = mergeHandler;
+                while (handler != null && handler != this) {
+                    session.setHandlerEnd(handler);
+                    handler = handler.getNextHandler();
+                }
+            }
+            session.setHandlerEnd(this);
             nextHandler.rowEofResponse(null, isLeft, conn);
         } catch (Exception e) {
             String msg = "join thread error, " + e.getLocalizedMessage();

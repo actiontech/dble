@@ -10,7 +10,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.GlobalVi
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.*;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.DirectGroupByHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.OrderedGroupByHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.AggregateHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.AllAnySubQueryHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.InSubQueryHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.SingleRowSubQueryHandler;
@@ -218,13 +218,13 @@ public abstract class BaseHandlerBuilder {
                 } else {
                     OrderByHandler oh = new OrderByHandler(getSequenceId(), session, node.getGroupBys());
                     addHandler(oh);
-                    OrderedGroupByHandler gh = new OrderedGroupByHandler(getSequenceId(), session, node.getGroupBys(),
+                    AggregateHandler gh = new AggregateHandler(getSequenceId(), session, node.getGroupBys(),
                             sumRefs);
                     addHandler(gh);
                 }
             } else { // @bug 1052 canDirectGroupby condition we use
                 // directgroupby already
-                OrderedGroupByHandler gh = new OrderedGroupByHandler(getSequenceId(), session, node.getGroupBys(),
+                AggregateHandler gh = new AggregateHandler(getSequenceId(), session, node.getGroupBys(),
                         sumRefs);
                 addHandler(gh);
             }

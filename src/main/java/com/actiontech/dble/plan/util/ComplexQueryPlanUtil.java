@@ -9,7 +9,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.*;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.DirectGroupByHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.OrderedGroupByHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.AggregateHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.JoinHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.NotInHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.AllAnySubQueryHandler;
@@ -167,8 +167,8 @@ public final class ComplexQueryPlanUtil {
 
 
     private static String getTypeName(DMLResponseHandler handler) {
-        if (handler instanceof OrderedGroupByHandler) {
-            return "ORDERED_GROUP";
+        if (handler instanceof AggregateHandler) {
+            return "AGGREGATE";
         } else if (handler instanceof DistinctHandler) {
             return "DISTINCT";
         } else if (handler instanceof LimitHandler) {

@@ -127,37 +127,51 @@ public class MySQLDataSource extends PhysicalDatasource {
                 throw new IOException(e.getMessage());
             }
             authPacket.setDatabase(schema);
-            authPacket.write(out);
-            out.flush();
 
-            /**
-             * Phase 3: MySQL to client. send OK/ERROR packet.
-             */
+                authPacket.write(out);
+                out.flush();
             BinaryPacket bin2 = new BinaryPacket();
-            bin2.read(in);
-            switch (bin2.getData()[0]) {
-                case OkPacket.FIELD_COUNT:
-                    break;
-                case ErrorPacket.FIELD_COUNT:
-                    isConnected = false;
-                    break;
-                case EOFPacket.FIELD_COUNT:
-                    // send 323 auth packet
-                    Reply323Packet r323 = new Reply323Packet();
-                    r323.setPacketId((byte) (bin2.getPacketId() + 1));
-                    String password = this.getConfig().getPassword();
-                    if (password != null && password.length() > 0) {
-                        r323.setSeed(SecurityUtil.scramble323(password, new String(handshake.getSeed())).getBytes());
-                    }
-                    r323.write(out);
-                    out.flush();
-                    break;
-                default:
-                    isConnected = false;
-                    break;
-            }
 
-        } finally {
+            if (in.available() != 0) {
+                /**
+                 * Phase 3: MySQL to client. send OK/ERROR packet.
+                 */
+//            err.read(bin2);
+                bin2.read(in);
+            ErrorPacket err = new ErrorPacket();
+            String testResult = err.readReturnString(bin2);
+            System.out.println("----------  "+testResult);
+                switch (bin2.getData()[0]) {
+
+                    case OkPacket.FIELD_COUNT:
+                        break;
+                    case ErrorPacket.FIELD_COUNT:
+                        isConnected = false;
+                        break;
+                    case EOFPacket.FIELD_COUNT:
+                        // send 323 auth packet
+                        Reply323Packet r323 = new Reply323Packet();
+                        r323.setPacketId((byte) (bin2.getPacketId() + 1));
+                        String password = this.getConfig().getPassword();
+                        if (password != null && password.length() > 0) {
+                            r323.setSeed(SecurityUtil.scramble323(password, new String(handshake.getSeed())).getBytes());
+                        }
+                        r323.write(out);
+                        out.flush();
+                        break;
+                    default:
+                        isConnected = false;
+                        break;
+                }
+            }
+            else{
+                System.out.println("the mysql connection is closed!");
+            }
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
+        finally {
             try {
                 if (out != null) {
                     out.write(QuitPacket.QUIT);

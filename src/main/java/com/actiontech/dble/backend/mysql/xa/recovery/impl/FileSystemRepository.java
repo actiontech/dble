@@ -8,11 +8,13 @@ package com.actiontech.dble.backend.mysql.xa.recovery.impl;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertTask;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.mysql.xa.*;
 import com.actiontech.dble.backend.mysql.xa.recovery.DeserializationException;
 import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.server.status.AlertManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +62,17 @@ public class FileSystemRepository implements Repository {
             initChannelIfNecessary();
             write(coordinatorLogEntry, true);
         } catch (IOException e) {
-            AlertUtil.alertSelf(AlarmCode.XA_READ_IO_FAIL, Alert.AlertLevel.WARN, "Failed to write logfile", null);
+            AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                @Override
+                public void send() {
+                    AlertUtil.alertSelf(AlarmCode.XA_READ_IO_FAIL, Alert.AlertLevel.WARN, "Failed to write logfile", null);
+                }
+
+                @Override
+                public String toString() {
+                    return "AlertManager Task alertSelf " + AlarmCode.XA_READ_IO_FAIL + " Failed to write logfile";
+                }
+            });
             LOGGER.warn(e.getMessage(), e);
         }
     }
@@ -117,9 +129,19 @@ public class FileSystemRepository implements Repository {
             InputStreamReader isr = new InputStreamReader(in);
             br = new BufferedReader(isr);
             coordinatorLogEntries = readContent(br);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             LOGGER.warn("Error in recover", e);
-            AlertUtil.alertSelf(AlarmCode.XA_READ_IO_FAIL, Alert.AlertLevel.WARN, "Error in recover:" + e.getMessage(), null);
+            AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                @Override
+                public void send() {
+                    AlertUtil.alertSelf(AlarmCode.XA_READ_IO_FAIL, Alert.AlertLevel.WARN, "Error in recover:" + e.getMessage(), null);
+                }
+
+                @Override
+                public String toString() {
+                    return "AlertManager Task alertSelf " + AlarmCode.XA_READ_IO_FAIL + " Error in recover:" + e.getMessage();
+                }
+            });
 
         } finally {
             closeSilently(br);
@@ -144,15 +166,34 @@ public class FileSystemRepository implements Repository {
                     "Unexpected EOF - logfile not closed properly last time?",
                     unexpectedEOF);
             // merely return what was read so far...
-        } catch (ObjectStreamException unexpectedEOF) {
+        } catch (final ObjectStreamException unexpectedEOF) {
             LOGGER.warn("Unexpected EOF - logfile not closed properly last time?", unexpectedEOF);
-            AlertUtil.alertSelf(AlarmCode.XA_READ_XA_STREAM_FAIL, Alert.AlertLevel.WARN,
-                    "Unexpected EOF - logfile not closed properly last time?" + unexpectedEOF.getMessage(), null);
+            AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                @Override
+                public void send() {
+                    AlertUtil.alertSelf(AlarmCode.XA_READ_XA_STREAM_FAIL, Alert.AlertLevel.WARN,
+                            "Unexpected EOF - logfile not closed properly last time?" + unexpectedEOF.getMessage(), null);
+                }
+                @Override
+                public String toString() {
+                    return "AlertManager Task alertSelf " + AlarmCode.XA_READ_XA_STREAM_FAIL + " Unexpected EOF - logfile not closed properly last time?" + unexpectedEOF.getMessage();
+                }
+            });
             // merely return what was read so far...
-        } catch (DeserializationException unexpectedEOF) {
+        } catch (final DeserializationException unexpectedEOF) {
             LOGGER.warn("DeserializationException - logfile not closed properly last time? ", unexpectedEOF);
-            AlertUtil.alertSelf(AlarmCode.XA_READ_DECODE_FAIL, Alert.AlertLevel.WARN,
-                    "DeserializationException - logfile not closed properly last time? " + unexpectedEOF.getMessage(), null);
+            AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                @Override
+                public void send() {
+                    AlertUtil.alertSelf(AlarmCode.XA_READ_DECODE_FAIL, Alert.AlertLevel.WARN,
+                            "DeserializationException - logfile not closed properly last time? " + unexpectedEOF.getMessage(), null);
+                }
+
+                @Override
+                public String toString() {
+                    return "AlertManager Task alertSelf " + AlarmCode.XA_READ_DECODE_FAIL + " DeserializationException - logfile not closed properly last time? " + unexpectedEOF.getMessage();
+                }
+            });
         }
         return coordinatorLogEntries;
     }
@@ -203,13 +244,33 @@ public class FileSystemRepository implements Repository {
             rwChannel.force(false);
             file.discardBackupVersion();
             if (XAStateLog.isWriteAlert()) {
-                boolean resolved = AlertUtil.alertSelfResolve(AlarmCode.XA_WRITE_CHECK_POINT_FAIL, Alert.AlertLevel.WARN, null);
-                XAStateLog.setWriteAlert(resolved);
+                AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                    @Override
+                    public void send() {
+                        boolean resolved = AlertUtil.alertSelfResolve(AlarmCode.XA_WRITE_CHECK_POINT_FAIL, Alert.AlertLevel.WARN, null);
+                        XAStateLog.setWriteAlert(resolved);
+                    }
+
+                    @Override
+                    public String toString() {
+                        return "AlertManager Task alertSelfResolve " + AlarmCode.XA_WRITE_CHECK_POINT_FAIL;
+                    }
+                });
             }
             return true;
-        } catch (Exception e) {
+        } catch (final Exception e) {
             LOGGER.warn("Failed to write checkpoint", e);
-            AlertUtil.alertSelf(AlarmCode.XA_WRITE_CHECK_POINT_FAIL, Alert.AlertLevel.WARN, "Failed to write checkpoint" + e.getMessage(), null);
+            AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                @Override
+                public void send() {
+                    AlertUtil.alertSelf(AlarmCode.XA_WRITE_CHECK_POINT_FAIL, Alert.AlertLevel.WARN, "Failed to write checkpoint" + e.getMessage(), null);
+                }
+
+                @Override
+                public String toString() {
+                    return "AlertManager Task alertSelf " + AlarmCode.XA_WRITE_CHECK_POINT_FAIL + " Failed to write checkpoint" + e.getMessage();
+                }
+            });
             XAStateLog.setWriteAlert(true);
             return false;
         }

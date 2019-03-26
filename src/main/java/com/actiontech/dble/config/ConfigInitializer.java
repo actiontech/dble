@@ -6,10 +6,7 @@
 package com.actiontech.dble.config;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.alarm.AlarmCode;
-import com.actiontech.dble.alarm.Alert;
-import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.alarm.ToResolveContainer;
+import com.actiontech.dble.alarm.*;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
@@ -22,6 +19,7 @@ import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceMySQLHandler;
+import com.actiontech.dble.server.status.AlertManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -402,12 +400,25 @@ public class ConfigInitializer {
             } catch (IOException e) {
                 boolPtr.set(false);
                 if (schema != null && needAlert) {
-                    String key = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getConfig().getHostName() + "],data_node[" + nodeName + "],schema[" + schema + "]";
+                    final String key = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getConfig().getHostName() + "],data_node[" + nodeName + "],schema[" + schema + "]";
                     errKeys.add(key);
                     LOGGER.warn("test conn " + key + " error:", e);
-                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName());
-                    labels.put("data_node", nodeName);
-                    AlertUtil.alert(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "{" + key + "} is lack", "mysql", ds.getConfig().getId(), labels);
+
+                    final String id = ds.getConfig().getId();
+                    final String nodeNamex = this.nodeName;
+                    AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                        @Override
+                        public void send() {
+                            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName());
+                            labels.put("data_node", nodeNamex);
+                            AlertUtil.alert(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "{" + key + "} is lack", "mysql", id, labels);
+                        }
+
+                        @Override
+                        public String toString() {
+                            return "AlertManager Task alert " + AlarmCode.DATA_NODE_LACK + "{" + key + "} is lack";
+                        }
+                    });
                     ToResolveContainer.DATA_NODE_LACK.add(key);
                 }
             }

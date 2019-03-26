@@ -6,10 +6,7 @@
 package com.actiontech.dble.backend.datasource;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.alarm.AlarmCode;
-import com.actiontech.dble.alarm.Alert;
-import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.alarm.ToResolveContainer;
+import com.actiontech.dble.alarm.*;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.ConMap;
 import com.actiontech.dble.backend.ConQueue;
@@ -21,6 +18,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.NewConnectionRespHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.model.DBHostConfig;
 import com.actiontech.dble.config.model.DataHostConfig;
+import com.actiontech.dble.server.status.AlertManager;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
@@ -179,22 +177,14 @@ public abstract class PhysicalDatasource {
 
         //the following is about the idle connection number control
         int idleCons = getIdleCount();
-        int activeCons = this.getActiveCount();
+        int totalCount = this.getTotalConCount();
         int createCount = (hostConfig.getMinCon() - idleCons) / 3;
 
         // create if idle too little
-        if ((createCount > 0) && (idleCons + activeCons < size)) {
+        if ((createCount > 0) && totalCount < size) {
             createByIdleLittle(idleCons, createCount);
         } else if (idleCons > hostConfig.getMinCon()) {
             closeByIdleMany(idleCons - hostConfig.getMinCon(), idleCons);
-        } else {
-            int activeCount = this.getActiveCount();
-            if (activeCount > size) {
-                String s = "DATASOURCE EXCEED [name=" + name +
-                        ",active=" + activeCount +
-                        ",size=" + size + ']';
-                LOGGER.info(s);
-            }
         }
     }
 
@@ -244,31 +234,52 @@ public abstract class PhysicalDatasource {
 
         final String[] schemas = dbPool.getSchemas();
         for (int i = 0; i < createCount; i++) {
-            if (this.getActiveCount() + this.getIdleCount() >= size) {
-                break;
-            }
             NewConnectionRespHandler simpleHandler = new NewConnectionRespHandler();
             try {
-                // creat new connection
-                this.createNewConnection(simpleHandler, null, schemas[i % schemas.length]);
-                simpleHandler.getBackConn().release();
-                if (ToResolveContainer.CREATE_CONN_FAIL.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {
-                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-                    if (AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", this.getConfig().getId(), labels)) {
-                        ToResolveContainer.CREATE_CONN_FAIL.remove(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-                    }
+                if (this.createNewCount()) {
+                    // creat new connection
+                    this.createNewConnection(simpleHandler, null, schemas[i % schemas.length]);
+                    simpleHandler.getBackConn().release();
+                } else {
+                    break;
                 }
-            } catch (IOException e) {
-                String errMsg = "create connection err ";
+                if (ToResolveContainer.CREATE_CONN_FAIL.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {
+                    AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                        @Override
+                        public void send() {
+                            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", getHostConfig().getName() + "-" + getConfig().getHostName());
+                            if (AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", getConfig().getId(), labels)) {
+                                ToResolveContainer.CREATE_CONN_FAIL.remove(getHostConfig().getName() + "-" + getConfig().getHostName());
+                            }
+                        }
+
+                        @Override
+                        public String toString() {
+                            return "AlertManager Task alertResolve " + AlarmCode.CREATE_CONN_FAIL + " mysql " + getConfig().getId() + " " + getHostConfig().getName() + "-" + getConfig().getHostName();
+                        }
+                    });
+                }
+            } catch (final IOException e) {
+                final String errMsg = "create connection err ";
                 LOGGER.warn(errMsg, e);
-                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-                AlertUtil.alert(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, errMsg + e.getMessage(), "mysql", this.getConfig().getId(), labels);
-                ToResolveContainer.CREATE_CONN_FAIL.add(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                    @Override
+                    public void send() {
+                        Map<String, String> labels = AlertUtil.genSingleLabel("data_host", getHostConfig().getName() + "-" + getConfig().getHostName());
+                        AlertUtil.alert(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, errMsg + e.getMessage(), "mysql", getConfig().getId(), labels);
+                    }
+
+                    @Override
+                    public String toString() {
+                        return "AlertManager Task alert " + AlarmCode.CREATE_CONN_FAIL + " " + getHostConfig().getName() + "-" + getConfig().getHostName() + " " + errMsg + e.getMessage();
+                    }
+                });
+                ToResolveContainer.CREATE_CONN_FAIL.add(getHostConfig().getName() + "-" + getConfig().getHostName());
             }
         }
     }
 
-    public int getActiveCount() {
+    public int getTotalConCount() {
         return this.connectionCount.get();
     }
 
@@ -325,10 +336,20 @@ public abstract class PhysicalDatasource {
                          final ResponseHandler handler, final Object attachment,
                          String schema) {
         if (ToResolveContainer.CREATE_CONN_FAIL.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {
-            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-            if (AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", this.getConfig().getId(), labels)) {
-                ToResolveContainer.CREATE_CONN_FAIL.remove(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-            }
+            AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                @Override
+                public void send() {
+                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", getHostConfig().getName() + "-" + getConfig().getHostName());
+                    if (AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", getConfig().getId(), labels)) {
+                        ToResolveContainer.CREATE_CONN_FAIL.remove(getHostConfig().getName() + "-" + getConfig().getHostName());
+                    }
+                }
+
+                @Override
+                public String toString() {
+                    return "AlertManager Task alertResolve " + AlarmCode.CREATE_CONN_FAIL + " mysql " + getConfig().getId() + " " + getHostConfig().getName() + "-" + getConfig().getHostName();
+                }
+            });
         }
         takeCon(conn, schema);
         conn.setAttachment(attachment);
@@ -343,9 +364,19 @@ public abstract class PhysicalDatasource {
                 try {
                     createNewConnection(new DelegateResponseHandler(handler) {
                         @Override
-                        public void connectionError(Throwable e, BackendConnection conn) {
-                            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", hostConfig.getName() + "-" + config.getHostName());
-                            AlertUtil.alert(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "createNewConn Error" + e.getMessage(), "mysql", config.getId(), labels);
+                        public void connectionError(final Throwable e, BackendConnection conn) {
+                            AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                                @Override
+                                public void send() {
+                                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", hostConfig.getName() + "-" + config.getHostName());
+                                    AlertUtil.alert(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "createNewConn Error" + e.getMessage(), "mysql", config.getId(), labels);
+                                }
+
+                                @Override
+                                public String toString() {
+                                    return "AlertManager Task alert " + AlarmCode.CREATE_CONN_FAIL + " " + getHostConfig().getName() + "-" + getConfig().getHostName() + " " + e.getMessage();
+                                }
+                            });
                             ToResolveContainer.CREATE_CONN_FAIL.add(hostConfig.getName() + "-" + config.getHostName());
                             handler.connectionError(e, conn);
                         }
@@ -372,18 +403,38 @@ public abstract class PhysicalDatasource {
             takeCon(con, handler, attachment, schema);
         } else {
             if (!this.createNewCount()) {
-                String maxConError = "the max active Connections size can not be max than maxCon for data host[" + this.getHostConfig().getName() + "." + this.getName() + "]";
+                final String maxConError = "the max active Connections size can not be max than maxCon for data host[" + this.getHostConfig().getName() + "." + this.getName() + "]";
                 LOGGER.warn(maxConError);
-                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-                AlertUtil.alert(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, maxConError, "dble", this.getConfig().getId(), labels);
-                ToResolveContainer.REACH_MAX_CON.add(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                    @Override
+                    public void send() {
+                        Map<String, String> labels = AlertUtil.genSingleLabel("data_host", getHostConfig().getName() + "-" + getConfig().getHostName());
+                        AlertUtil.alert(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, maxConError, "dble", getConfig().getId(), labels);
+                    }
+
+                    @Override
+                    public String toString() {
+                        return "AlertManager Task alert " + AlarmCode.REACH_MAX_CON + " " + maxConError;
+                    }
+                });
+                ToResolveContainer.CREATE_CONN_FAIL.add(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
                 throw new IOException(maxConError);
             } else { // create connection
                 if (ToResolveContainer.REACH_MAX_CON.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {
-                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-                    if (AlertUtil.alertResolve(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, "dble", this.getConfig().getId(), labels)) {
-                        ToResolveContainer.REACH_MAX_CON.remove(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-                    }
+                    AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                        @Override
+                        public void send() {
+                            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", getHostConfig().getName() + "-" + getConfig().getHostName());
+                            if (AlertUtil.alertResolve(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, "dble", getConfig().getId(), labels)) {
+                                ToResolveContainer.REACH_MAX_CON.remove(getHostConfig().getName() + "-" + getConfig().getHostName());
+                            }
+                        }
+
+                        @Override
+                        public String toString() {
+                            return "AlertManager Task alertResolve " + AlarmCode.REACH_MAX_CON + " dble " + getConfig().getId() + " " + getHostConfig().getName() + "-" + getConfig().getHostName();
+                        }
+                    });
                 }
                 LOGGER.info("no idle connection in pool,create new connection for " + this.name + " of schema " + schema);
                 createNewConnection(handler, attachment, schema);
@@ -395,18 +446,38 @@ public abstract class PhysicalDatasource {
         BackendConnection con = this.conMap.tryTakeCon(schema, autocommit);
         if (con == null) {
             if (!this.createNewCount()) {
-                String maxConError = "the max active Connections size can not be max than maxCon data host[" + this.getHostConfig().getName() + "." + this.getName() + "]";
+                final String maxConError = "the max active Connections size can not be max than maxCon data host[" + this.getHostConfig().getName() + "." + this.getName() + "]";
                 LOGGER.warn(maxConError);
-                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-                AlertUtil.alert(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, maxConError, "dble", this.getConfig().getId(), labels);
-                ToResolveContainer.REACH_MAX_CON.add(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                    @Override
+                    public void send() {
+                        Map<String, String> labels = AlertUtil.genSingleLabel("data_host", getHostConfig().getName() + "-" + getConfig().getHostName());
+                        AlertUtil.alert(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, maxConError, "dble", getConfig().getId(), labels);
+                    }
+
+                    @Override
+                    public String toString() {
+                        return "AlertManager Task alert " + AlarmCode.REACH_MAX_CON + " " + maxConError;
+                    }
+                });
+                ToResolveContainer.CREATE_CONN_FAIL.add(getHostConfig().getName() + "-" + getConfig().getHostName());
                 throw new IOException(maxConError);
             } else { // create connection
                 if (ToResolveContainer.REACH_MAX_CON.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {
-                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-                    if (AlertUtil.alertResolve(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, "dble", this.getConfig().getId(), labels)) {
-                        ToResolveContainer.REACH_MAX_CON.remove(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-                    }
+                    AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                        @Override
+                        public void send() {
+                            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", getHostConfig().getName() + "-" + getConfig().getHostName());
+                            if (AlertUtil.alertResolve(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, "dble", getConfig().getId(), labels)) {
+                                ToResolveContainer.REACH_MAX_CON.remove(getHostConfig().getName() + "-" + getConfig().getHostName());
+                            }
+                        }
+
+                        @Override
+                        public String toString() {
+                            return "AlertManager Task alertResolve " + AlarmCode.REACH_MAX_CON + " dble " + getConfig().getId() + " " + getHostConfig().getName() + "-" + getConfig().getHostName();
+                        }
+                    });
                 }
                 LOGGER.info("no ilde connection in pool,create new connection for " + this.name + " of schema " + schema);
                 try {
@@ -414,15 +485,35 @@ public abstract class PhysicalDatasource {
                     this.createNewConnection(simpleHandler, schema);
                     con = simpleHandler.getBackConn();
                     if (ToResolveContainer.CREATE_CONN_FAIL.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {
-                        Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-                        if (AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", this.getConfig().getId(), labels)) {
-                            ToResolveContainer.CREATE_CONN_FAIL.remove(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-                        }
+                        AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                            @Override
+                            public void send() {
+                                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", getHostConfig().getName() + "-" + getConfig().getHostName());
+                                if (AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", getConfig().getId(), labels)) {
+                                    ToResolveContainer.CREATE_CONN_FAIL.remove(getHostConfig().getName() + "-" + getConfig().getHostName());
+                                }
+                            }
+
+                            @Override
+                            public String toString() {
+                                return "AlertManager Task alertResolve " + AlarmCode.CREATE_CONN_FAIL + " mysql " + getConfig().getId() + " " + getHostConfig().getName() + "-" + getConfig().getHostName();
+                            }
+                        });
                     }
-                } catch (IOException e) {
-                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-                    AlertUtil.alert(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "createNewConn Error" + e.getMessage(), "mysql", this.getConfig().getId(), labels);
-                    ToResolveContainer.CREATE_CONN_FAIL.add(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                } catch (final IOException e) {
+                    AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                        @Override
+                        public void send() {
+                            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", getHostConfig().getName() + "-" + getConfig().getHostName());
+                            AlertUtil.alert(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "createNewConn Error" + e.getMessage(), "mysql", getConfig().getId(), labels);
+                        }
+
+                        @Override
+                        public String toString() {
+                            return "AlertManager Task alert " + AlarmCode.CREATE_CONN_FAIL + " " + "createNewConn Error" + e.getMessage();
+                        }
+                    });
+                    ToResolveContainer.CREATE_CONN_FAIL.add(getHostConfig().getName() + "-" + getConfig().getHostName());
                     throw e;
                 }
             }
@@ -478,11 +569,9 @@ public abstract class PhysicalDatasource {
     public void connectionClosed(BackendConnection conn) {
         //only used in mysqlConneciton synchronized function
         this.connectionCount.decrementAndGet();
-        if (conn.getSchema() != null) {
-            ConQueue queue = this.conMap.getSchemaConQueue(conn.getSchema());
-            if (queue != null) {
-                queue.removeCon(conn);
-            }
+        ConQueue queue = this.conMap.getSchemaConQueue(conn.getSchema());
+        if (queue != null) {
+            queue.removeCon(conn);
         }
     }
 

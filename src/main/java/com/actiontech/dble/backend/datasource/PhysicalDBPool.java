@@ -8,12 +8,14 @@ package com.actiontech.dble.backend.datasource;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertTask;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.heartbeat.DBHeartbeat;
 import com.actiontech.dble.backend.mysql.nio.handler.GetConnectionHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.model.DataHostConfig;
+import com.actiontech.dble.server.status.AlertManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -529,10 +531,24 @@ public class PhysicalDBPool {
             }
         }
         if (!theNode.isAlive()) {
-            String heartbeatError = "the data source[" + theNode.getConfig().getUrl() + "] can't reached, please check the dataHost";
+            final String heartbeatError = "the data source[" + theNode.getConfig().getUrl() + "] can't reached, please check the dataHost";
             LOGGER.warn(heartbeatError);
-            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", theNode.getHostConfig().getName() + "-" + theNode.getConfig().getHostName());
-            AlertUtil.alert(AlarmCode.DATA_HOST_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", theNode.getConfig().getId(), labels);
+            final String hostName1 = theNode.getHostConfig().getName();
+            final String hostName2 = theNode.getConfig().getHostName();
+            final String id = theNode.getConfig().getId();
+            AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                @Override
+                public void send() {
+                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", hostName1 + "-" + hostName2);
+                    AlertUtil.alert(AlarmCode.DATA_HOST_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", id, labels);
+                }
+
+                @Override
+                public String toString() {
+                    return "AlertManager Task alert " + AlarmCode.DATA_HOST_CAN_NOT_REACH + " " + heartbeatError;
+                }
+            });
+
             throw new IOException(heartbeatError);
         }
         theNode.getConnection(schema, autocommit, handler, attachment);

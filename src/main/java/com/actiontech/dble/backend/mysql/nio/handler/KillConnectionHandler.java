@@ -7,12 +7,14 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertTask;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.server.status.AlertManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,9 +44,19 @@ public class KillConnectionHandler implements ResponseHandler {
     }
 
     @Override
-    public void connectionError(Throwable e, BackendConnection conn) {
+    public void connectionError(final Throwable e, final BackendConnection conn) {
         if (conn != null) {
-            AlertUtil.alertSelf(AlarmCode.KILL_BACKEND_CONN_FAIL, Alert.AlertLevel.NOTICE, "get killer connection " + conn.toString() + " failed:" + e.getMessage(), null);
+            AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                @Override
+                public void send() {
+                    AlertUtil.alertSelf(AlarmCode.KILL_BACKEND_CONN_FAIL, Alert.AlertLevel.NOTICE, "get killer connection " + conn.toString() + " failed:" + e.getMessage(), null);
+                }
+
+                @Override
+                public String toString() {
+                    return "AlertManager Task alertSelf " + AlarmCode.KILL_BACKEND_CONN_FAIL + " get killer connection " + conn.toString() + " failed:" + e.getMessage();
+                }
+            });
             toKilled.close("exception:" + e.toString());
         }
     }
@@ -80,7 +92,19 @@ public class KillConnectionHandler implements ResponseHandler {
             msg = new String(err.getMessage());
         }
         LOGGER.info("kill backend connection " + toKilled + " failed: " + msg + " con:" + conn);
-        AlertUtil.alertSelf(AlarmCode.KILL_BACKEND_CONN_FAIL, Alert.AlertLevel.NOTICE, "get killer connection " + conn.toString() + " failed: " + msg, null);
+        final String connString = conn.toString();
+        final String msgx = msg;
+        AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+            @Override
+            public void send() {
+                AlertUtil.alertSelf(AlarmCode.KILL_BACKEND_CONN_FAIL, Alert.AlertLevel.NOTICE, "get killer connection " + connString + " failed: " + msgx, null);
+            }
+
+            @Override
+            public String toString() {
+                return "AlertManager Task alertSelf " + AlarmCode.KILL_BACKEND_CONN_FAIL + " get killer connection " + connString + " failed: " + msgx;
+            }
+        });
         conn.release();
         toKilled.close("exception:" + msg);
     }
@@ -101,8 +125,18 @@ public class KillConnectionHandler implements ResponseHandler {
     }
 
     @Override
-    public void connectionClose(BackendConnection conn, String reason) {
-        AlertUtil.alertSelf(AlarmCode.KILL_BACKEND_CONN_FAIL, Alert.AlertLevel.NOTICE, "get killer connection " + conn.toString() + " failed: connectionClosed", null);
+    public void connectionClose(final BackendConnection conn, String reason) {
+        AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+            @Override
+            public void send() {
+                AlertUtil.alertSelf(AlarmCode.KILL_BACKEND_CONN_FAIL, Alert.AlertLevel.NOTICE, "get killer connection " + conn.toString() + " failed: connectionClosed", null);
+            }
+
+            @Override
+            public String toString() {
+                return "AlertManager Task alertSelf " + AlarmCode.KILL_BACKEND_CONN_FAIL + " get killer connection " + conn.toString() + " failed: connectionClosed";
+            }
+        });
         toKilled.close("exception:" + reason);
     }
 }

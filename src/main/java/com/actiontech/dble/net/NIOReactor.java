@@ -8,7 +8,9 @@ package com.actiontech.dble.net;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertTask;
 import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.server.status.AlertManager;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,9 +138,20 @@ public final class NIOReactor {
                     if (LOGGER.isDebugEnabled()) {
                         LOGGER.debug(con + " socket key canceled");
                     }
-                } catch (Exception e) {
+                } catch (final Exception e) {
                     LOGGER.warn("caught err:" + con, e);
-                    AlertUtil.alertSelf(AlarmCode.NIOREACTOR_UNKNOWN_EXCEPTION, Alert.AlertLevel.WARN, "caught err:" + con + e.getMessage(), null);
+                    final String conString = "" + con;
+                    AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                        @Override
+                        public void send() {
+                            AlertUtil.alertSelf(AlarmCode.NIOREACTOR_UNKNOWN_EXCEPTION, Alert.AlertLevel.WARN, "caught err:" + conString + e.getMessage(), null);
+                        }
+
+                        @Override
+                        public String toString() {
+                            return "AlertManager Task alertSelf " + AlarmCode.NIOREACTOR_UNKNOWN_EXCEPTION + " caught err:" + conString + e.getMessage();
+                        }
+                    });
                 } catch (final Throwable e) {
                     // Catch exceptions such as OOM and close connection if exists
                     //so that the reactor can keep running!
@@ -148,7 +161,17 @@ public final class NIOReactor {
                         con.close("Bad: " + e);
                     }
                     LOGGER.warn("caught err: ", e);
-                    AlertUtil.alertSelf(AlarmCode.NIOREACTOR_UNKNOWN_THROWABLE, Alert.AlertLevel.WARN, "caught err:" + e.getMessage(), null);
+                    AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                        @Override
+                        public void send() {
+                            AlertUtil.alertSelf(AlarmCode.NIOREACTOR_UNKNOWN_THROWABLE, Alert.AlertLevel.WARN, "caught err:" + e.getMessage(), null);
+                        }
+
+                        @Override
+                        public String toString() {
+                            return "AlertManager Task alertSelf " + AlarmCode.NIOREACTOR_UNKNOWN_EXCEPTION + " caught err:" + e.getMessage();
+                        }
+                    });
                 }
             }
         }

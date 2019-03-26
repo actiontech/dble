@@ -8,7 +8,9 @@ package com.actiontech.dble.net;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertTask;
 import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.server.status.AlertManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,9 +74,19 @@ public final class NIOConnector extends Thread implements SocketConnector {
                         keys.clear();
                     }
                 }
-            } catch (Exception e) {
+            } catch (final Exception e) {
                 LOGGER.warn(name, e);
-                AlertUtil.alertSelf(AlarmCode.NIOCONNECTOR_UNKNOWN_EXCEPTION, Alert.AlertLevel.WARN, name + e.getMessage(), null);
+                AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                    @Override
+                    public void send() {
+                        AlertUtil.alertSelf(AlarmCode.NIOCONNECTOR_UNKNOWN_EXCEPTION, Alert.AlertLevel.WARN, name + e.getMessage(), null);
+                    }
+
+                    @Override
+                    public String toString() {
+                        return "AlertManager Task alertSelf " + AlarmCode.NIOREACTOR_UNKNOWN_EXCEPTION + " " + name + e.getMessage();
+                    }
+                });
             }
         }
     }

@@ -6,12 +6,10 @@
 package com.actiontech.dble.meta.table;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.alarm.AlarmCode;
-import com.actiontech.dble.alarm.Alert;
-import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.alarm.ToResolveContainer;
+import com.actiontech.dble.alarm.*;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.server.status.AlertManager;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.MultiSQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
@@ -116,16 +114,23 @@ public abstract class AbstractTablesMetaHandler {
 
         @Override
         public void onResult(SQLQueryResult<List<Map<String, String>>> result) {
-            String key = null;
-            if (ds != null) {
-                key = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getConfig().getHostName() + "],data_node[" + dataNode + "],schema[" + schema + "]";
-            }
+            final String key = ds == null ? null : "DataHost[" + ds.getHostConfig().getName() + "." + ds.getConfig().getHostName() + "],data_node[" + dataNode + "],schema[" + schema + "]";
             if (ds != null && ToResolveContainer.DATA_NODE_LACK.contains(key)) {
-                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName());
-                labels.put("data_node", dataNode);
-                if (AlertUtil.alertResolve(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "mysql", ds.getConfig().getId(), labels)) {
-                    ToResolveContainer.DATA_NODE_LACK.remove(key);
-                }
+                AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                    @Override
+                    public void send() {
+                        Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName());
+                        labels.put("data_node", dataNode);
+                        if (AlertUtil.alertResolve(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "mysql", ds.getConfig().getId(), labels)) {
+                            ToResolveContainer.DATA_NODE_LACK.remove(key);
+                        }
+                    }
+
+                    @Override
+                    public String toString() {
+                        return "AlertManager Task alertResolve " + AlarmCode.CREATE_CONN_FAIL + " mysql " + ds.getConfig().getId() + " " + ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName();
+                    }
+                });
             }
             List<Map<String, String>> rows = result.getResult();
             for (Map<String, String> row : rows) {
@@ -140,10 +145,20 @@ public abstract class AbstractTablesMetaHandler {
             }
             if (tables.size() > 0) {
                 for (String table : tables) {
-                    String tableId = "DataNode[" + dataNode + "]:Table[" + table + "]";
-                    String warnMsg = "Can't get table " + table + "'s config from DataNode:" + dataNode + "! Maybe the table is not initialized!";
+                    final String tableId = "DataNode[" + dataNode + "]:Table[" + table + "]";
+                    final String warnMsg = "Can't get table " + table + "'s config from DataNode:" + dataNode + "! Maybe the table is not initialized!";
                     LOGGER.warn(warnMsg);
-                    AlertUtil.alertSelf(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, warnMsg, AlertUtil.genSingleLabel("TABLE", tableId));
+                    AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                        @Override
+                        public void send() {
+                            AlertUtil.alertSelf(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, warnMsg, AlertUtil.genSingleLabel("TABLE", tableId));
+                        }
+
+                        @Override
+                        public String toString() {
+                            return "AlertManager Task alertSelf " + AlarmCode.TABLE_LACK + " " + warnMsg + " " + tableId;
+                        }
+                    });
                     ToResolveContainer.TABLE_LACK.add(tableId);
                 }
             }

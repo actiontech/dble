@@ -5,10 +5,8 @@
 
 package com.actiontech.dble.meta.table;
 
-import com.actiontech.dble.alarm.AlarmCode;
-import com.actiontech.dble.alarm.Alert;
-import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.alarm.ToResolveContainer;
+import com.actiontech.dble.alarm.*;
+import com.actiontech.dble.server.status.AlertManager;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -18,6 +16,7 @@ public class GetSpecialNodeTablesHandler extends GetNodeTablesHandler {
     private AbstractTablesMetaHandler handler;
     private Set<String> tables;
     private volatile Set<String> existsTables = new HashSet<>();
+
     GetSpecialNodeTablesHandler(AbstractTablesMetaHandler handler, Set<String> tables, String dataNode) {
         super(dataNode);
         this.handler = handler;
@@ -41,10 +40,20 @@ public class GetSpecialNodeTablesHandler extends GetNodeTablesHandler {
         if (tables.size() != existsTables.size()) {
             for (String table : tables) {
                 if (!existsTables.contains(table)) {
-                    String tableId = "DataNode[" + dataNode + "]:Table[" + table + "]";
-                    String warnMsg = "Can't get table " + table + "'s config from DataNode:" + dataNode + "! Maybe the table is not initialized!";
+                    final String tableId = "DataNode[" + dataNode + "]:Table[" + table + "]";
+                    final String warnMsg = "Can't get table " + table + "'s config from DataNode:" + dataNode + "! Maybe the table is not initialized!";
                     LOGGER.warn(warnMsg);
-                    AlertUtil.alertSelf(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, warnMsg, AlertUtil.genSingleLabel("TABLE", tableId));
+                    AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                        @Override
+                        public void send() {
+                            AlertUtil.alertSelf(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, warnMsg, AlertUtil.genSingleLabel("TABLE", tableId));
+                        }
+
+                        @Override
+                        public String toString() {
+                            return "AlertManager Task alertSelf " + AlarmCode.GET_TABLE_META_FAIL + " " + warnMsg + " " + tableId;
+                        }
+                    });
                     ToResolveContainer.TABLE_LACK.add(tableId);
                 }
             }

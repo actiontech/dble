@@ -6,10 +6,7 @@
 package com.actiontech.dble.server.util;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.alarm.AlarmCode;
-import com.actiontech.dble.alarm.Alert;
-import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.alarm.ToResolveContainer;
+import com.actiontech.dble.alarm.*;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
@@ -20,6 +17,7 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.protocol.StructureMeta;
+import com.actiontech.dble.server.status.AlertManager;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
@@ -77,20 +75,41 @@ public final class GlobalTableUtil {
     }
 
     public static boolean isInnerColExist(SchemaUtil.SchemaInfo schemaInfo, StructureMeta.TableMeta orgTbMeta) {
-        String tableId = schemaInfo.getSchema() + "." + schemaInfo.getTable();
+        final String tableId = schemaInfo.getSchema() + "." + schemaInfo.getTable();
         for (int i = 0; i < orgTbMeta.getColumnsList().size(); i++) {
             String column = orgTbMeta.getColumnsList().get(i).getName();
             if (column.equalsIgnoreCase(GLOBAL_TABLE_CHECK_COLUMN)) {
-                if (ToResolveContainer.GLOBAL_TABLE_COLUMN_LOST.contains(tableId) &&
-                        AlertUtil.alertSelfResolve(AlarmCode.GLOBAL_TABLE_COLUMN_LOST, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
-                    ToResolveContainer.GLOBAL_TABLE_COLUMN_LOST.remove(tableId);
+                if (ToResolveContainer.GLOBAL_TABLE_COLUMN_LOST.contains(tableId)) {
+                    AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                        @Override
+                        public void send() {
+                            if (AlertUtil.alertSelfResolve(AlarmCode.GLOBAL_TABLE_COLUMN_LOST, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
+                                ToResolveContainer.GLOBAL_TABLE_COLUMN_LOST.remove(tableId);
+                            }
+                        }
+
+                        @Override
+                        public String toString() {
+                            return "AlertManager Task alertSelfResolve " + AlarmCode.GLOBAL_TABLE_COLUMN_LOST + " " + tableId;
+                        }
+                    });
                 }
                 return true;
             }
         }
-        String warnStr = tableId + " inner column: " + GLOBAL_TABLE_CHECK_COLUMN + " is not exist.";
+        final String warnStr = tableId + " inner column: " + GLOBAL_TABLE_CHECK_COLUMN + " is not exist.";
         LOGGER.warn(warnStr);
-        AlertUtil.alertSelf(AlarmCode.GLOBAL_TABLE_COLUMN_LOST, Alert.AlertLevel.WARN, warnStr, AlertUtil.genSingleLabel("TABLE", tableId));
+        AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+            @Override
+            public void send() {
+                AlertUtil.alertSelf(AlarmCode.GLOBAL_TABLE_COLUMN_LOST, Alert.AlertLevel.WARN, warnStr, AlertUtil.genSingleLabel("TABLE", tableId));
+            }
+
+            @Override
+            public String toString() {
+                return "AlertManager Task alertSelf " + AlarmCode.GLOBAL_TABLE_COLUMN_LOST + " " + warnStr + " " + tableId;
+            }
+        });
         ToResolveContainer.GLOBAL_TABLE_COLUMN_LOST.add(tableId);
         return false; // tableName without inner column
     }
@@ -213,16 +232,37 @@ public final class GlobalTableUtil {
                         } catch (Exception e) {
                             LOGGER.info(row.get(GlobalTableUtil.INNER_COLUMN) + ", " + e.getMessage());
                         } finally {
-                            String tableId = map.getDataNode() + "." + map.getTableName();
+                            final String tableId = map.getDataNode() + "." + map.getTableName();
                             if (columnsList == null || !columnsList.contains(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
-                                String warnMsg = tableId + " inner column: " + GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN + " is not exist.";
+                                final String warnMsg = tableId + " inner column: " + GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN + " is not exist.";
                                 LOGGER.warn(warnMsg);
-                                AlertUtil.alertSelf(AlarmCode.GLOBAL_TABLE_COLUMN_LOST, Alert.AlertLevel.WARN, warnMsg, AlertUtil.genSingleLabel("TABLE", tableId));
+                                AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                                    @Override
+                                    public void send() {
+                                        AlertUtil.alertSelf(AlarmCode.GLOBAL_TABLE_COLUMN_LOST, Alert.AlertLevel.WARN, warnMsg, AlertUtil.genSingleLabel("TABLE", tableId));
+                                    }
+
+                                    @Override
+                                    public String toString() {
+                                        return "AlertManager Task alertSelf " + AlarmCode.GLOBAL_TABLE_COLUMN_LOST + " " + warnMsg + " " + tableId;
+                                    }
+                                });
                                 ToResolveContainer.GLOBAL_TABLE_COLUMN_LOST.add(tableId);
                             } else {
-                                if (ToResolveContainer.GLOBAL_TABLE_COLUMN_LOST.contains(tableId) &&
-                                        AlertUtil.alertSelfResolve(AlarmCode.GLOBAL_TABLE_COLUMN_LOST, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
-                                    ToResolveContainer.GLOBAL_TABLE_COLUMN_LOST.remove(tableId);
+                                if (ToResolveContainer.GLOBAL_TABLE_COLUMN_LOST.contains(tableId)) {
+                                    AlertManager.getInstance().getAlertQueue().offer(new AlertTask() {
+                                        @Override
+                                        public void send() {
+                                            if (AlertUtil.alertSelfResolve(AlarmCode.GLOBAL_TABLE_COLUMN_LOST, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
+                                                ToResolveContainer.GLOBAL_TABLE_COLUMN_LOST.remove(tableId);
+                                            }
+                                        }
+
+                                        @Override
+                                        public String toString() {
+                                            return "AlertManager Task alertSelfResolve " + AlarmCode.GLOBAL_TABLE_COLUMN_LOST + " " + tableId;
+                                        }
+                                    });
                                 }
                                 LOGGER.debug("columnsList: " + columnsList);
                             }

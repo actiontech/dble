@@ -165,7 +165,7 @@ public class TraceResult implements Cloneable {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("collect info not in pairs,veryEnd:" + veryEnd + ",connFlagMap.size:" + connFlagMap.size() +
                         ",connReceivedMap.size:" + connReceivedMap.size() + ",connFinishedMap.size:" + connFinishedMap.size() +
-                        ",recordStartMap.size:" + connReceivedMap.size() + ",recordEndMap.size:" + connFinishedMap.size());
+                        ",recordStartMap.size:" + recordStartMap.size() + ",recordEndMap.size:" + recordEndMap.size());
             }
             return null;
         }

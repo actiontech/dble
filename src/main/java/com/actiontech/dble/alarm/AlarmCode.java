@@ -39,4 +39,5 @@ public final class AlarmCode {
 
 
     public String test = "";
+    public String test1 = ""; 
 }

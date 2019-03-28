@@ -169,7 +169,7 @@ public final class NIOReactor {
 
                         @Override
                         public String toString() {
-                            return "AlertManager Task alertSelf " + AlarmCode.NIOREACTOR_UNKNOWN_EXCEPTION + " caught err:" + e.getMessage();
+                            return "AlertManager Task alertSelf " + AlarmCode.NIOREACTOR_UNKNOWN_THROWABLE + " caught err:" + e.getMessage();
                         }
                     });
                 }

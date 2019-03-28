@@ -104,7 +104,7 @@ public abstract class AbstractTableMetaHandler {
 
                     @Override
                     public String toString() {
-                        return "AlertManager Task alertSelf " + AlarmCode.TABLE_NOT_CONSISTENT_IN_MEMORY + warnMsg + " " + tableId;
+                        return "AlertManager Task alertSelf " + AlarmCode.TABLE_LACK + warnMsg + " " + tableId;
                     }
                 });
                 ToResolveContainer.TABLE_LACK.add(tableId);
@@ -143,7 +143,7 @@ public abstract class AbstractTableMetaHandler {
 
                         @Override
                         public String toString() {
-                            return "AlertManager Task alertResolve " + AlarmCode.CREATE_CONN_FAIL + " mysql " + ds.getConfig().getId() + " " + ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName();
+                            return "AlertManager Task alertResolve " + AlarmCode.DATA_NODE_LACK + " mysql " + ds.getConfig().getId() + " " + ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName();
                         }
                     });
                 }

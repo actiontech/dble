@@ -114,7 +114,7 @@ public class SchemaDefaultNodeTablesHandler {
 
                     @Override
                     public String toString() {
-                        return "AlertManager Task alertResolve " + AlarmCode.CREATE_CONN_FAIL + " mysql " + ds.getConfig().getId() + " " + ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName();
+                        return "AlertManager Task alertResolve " + AlarmCode.DATA_NODE_LACK + " mysql " + ds.getConfig().getId() + " " + ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName();
                     }
                 });
             }

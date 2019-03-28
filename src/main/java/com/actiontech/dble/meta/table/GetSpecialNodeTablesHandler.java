@@ -51,7 +51,7 @@ public class GetSpecialNodeTablesHandler extends GetNodeTablesHandler {
 
                         @Override
                         public String toString() {
-                            return "AlertManager Task alertSelf " + AlarmCode.GET_TABLE_META_FAIL + " " + warnMsg + " " + tableId;
+                            return "AlertManager Task alertSelf " + AlarmCode.TABLE_LACK + " " + warnMsg + " " + tableId;
                         }
                     });
                     ToResolveContainer.TABLE_LACK.add(tableId);

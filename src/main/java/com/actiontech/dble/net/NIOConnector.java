@@ -84,7 +84,7 @@ public final class NIOConnector extends Thread implements SocketConnector {
 
                     @Override
                     public String toString() {
-                        return "AlertManager Task alertSelf " + AlarmCode.NIOREACTOR_UNKNOWN_EXCEPTION + " " + name + e.getMessage();
+                        return "AlertManager Task alertSelf " + AlarmCode.NIOCONNECTOR_UNKNOWN_EXCEPTION + " " + name + e.getMessage();
                     }
                 });
             }

@@ -417,7 +417,7 @@ public abstract class PhysicalDatasource {
                         return "AlertManager Task alert " + AlarmCode.REACH_MAX_CON + " " + maxConError;
                     }
                 });
-                ToResolveContainer.CREATE_CONN_FAIL.add(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                ToResolveContainer.REACH_MAX_CON.add(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
                 throw new IOException(maxConError);
             } else { // create connection
                 if (ToResolveContainer.REACH_MAX_CON.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {
@@ -460,7 +460,7 @@ public abstract class PhysicalDatasource {
                         return "AlertManager Task alert " + AlarmCode.REACH_MAX_CON + " " + maxConError;
                     }
                 });
-                ToResolveContainer.CREATE_CONN_FAIL.add(getHostConfig().getName() + "-" + getConfig().getHostName());
+                ToResolveContainer.REACH_MAX_CON.add(getHostConfig().getName() + "-" + getConfig().getHostName());
                 throw new IOException(maxConError);
             } else { // create connection
                 if (ToResolveContainer.REACH_MAX_CON.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {

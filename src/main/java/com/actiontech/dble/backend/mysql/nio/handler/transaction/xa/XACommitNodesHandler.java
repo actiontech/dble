@@ -40,6 +40,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     private Lock lockForErrorHandle = new ReentrantLock();
     private Condition sendFinished = lockForErrorHandle.newCondition();
     private volatile boolean sendFinishedFlag = false;
+
     public XACommitNodesHandler(NonBlockingSession session) {
         super(session);
     }
@@ -82,6 +83,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         }
 
     }
+
     @Override
     public void clearResources() {
         tryCommitTimes = 0;
@@ -394,7 +396,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_INIT);
                 byte[] toSend = sendData;
                 session.clearResources(false);
-                AlertUtil.alertSelfResolve(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("XA_ID", session.getSessionXaID()));
+                AlertUtil.alertSelfResolve(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("XA_ID", session.getSessionXaID()), null, null);
                 if (!session.closed()) {
                     setResponseTime(isSuccess);
                     session.getSource().write(toSend);
@@ -439,7 +441,6 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         }
 
     }
-
 
 
     private void waitUntilSendFinish() {

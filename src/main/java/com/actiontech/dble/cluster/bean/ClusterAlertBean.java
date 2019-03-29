@@ -21,8 +21,9 @@ public class ClusterAlertBean {
         return labels;
     }
 
-    public void setLabels(Map<String, String> labels) {
-        this.labels = labels;
+    public ClusterAlertBean setLabels(Map<String, String> xlabels) {
+        this.labels = xlabels;
+        return this;
     }
 
     Map<String, String> labels;
@@ -31,79 +32,89 @@ public class ClusterAlertBean {
         return code;
     }
 
-    public void setCode(String code) {
-        this.code = code;
+    public ClusterAlertBean setCode(String xcode) {
+        this.code = xcode;
+        return this;
     }
 
     public String getLevel() {
         return level;
     }
 
-    public void setLevel(String level) {
-        this.level = level;
+    public ClusterAlertBean setLevel(String xlevel) {
+        this.level = xlevel;
+        return this;
     }
 
     public String getDesc() {
         return desc;
     }
 
-    public void setDesc(String desc) {
-        this.desc = desc;
+    public ClusterAlertBean setDesc(String xdesc) {
+        this.desc = xdesc;
+        return this;
     }
 
     public String getSourceComponentType() {
         return sourceComponentType;
     }
 
-    public void setSourceComponentType(String sourceComponentType) {
-        this.sourceComponentType = sourceComponentType;
+    public ClusterAlertBean setSourceComponentType(String xsourceComponentType) {
+        this.sourceComponentType = xsourceComponentType;
+        return this;
     }
 
     public String getSourceComponentId() {
         return sourceComponentId;
     }
 
-    public void setSourceComponentId(String sourceComponentId) {
-        this.sourceComponentId = sourceComponentId;
+    public ClusterAlertBean setSourceComponentId(String xsourceComponentId) {
+        this.sourceComponentId = xsourceComponentId;
+        return this;
     }
 
     public String getAlertComponentType() {
         return alertComponentType;
     }
 
-    public void setAlertComponentType(String alertComponentType) {
-        this.alertComponentType = alertComponentType;
+    public ClusterAlertBean setAlertComponentType(String xalertComponentType) {
+        this.alertComponentType = xalertComponentType;
+        return this;
     }
 
     public String getAlertComponentId() {
         return alertComponentId;
     }
 
-    public void setAlertComponentId(String alertComponentId) {
-        this.alertComponentId = alertComponentId;
+    public ClusterAlertBean setAlertComponentId(String xalertComponentId) {
+        this.alertComponentId = xalertComponentId;
+        return this;
     }
 
     public String getServerId() {
         return serverId;
     }
 
-    public void setServerId(String serverId) {
-        this.serverId = serverId;
+    public ClusterAlertBean setServerId(String xserverId) {
+        this.serverId = xserverId;
+        return this;
     }
 
     public long getTimestampUnix() {
         return timestampUnix;
     }
 
-    public void setTimestampUnix(long timestampUnix) {
-        this.timestampUnix = timestampUnix;
+    public ClusterAlertBean setTimestampUnix(long xtimestampUnix) {
+        this.timestampUnix = xtimestampUnix;
+        return this;
     }
 
     public long getResolveTimestampUnix() {
         return resolveTimestampUnix;
     }
 
-    public void setResolveTimestampUnix(long resolveTimestampUnix) {
-        this.resolveTimestampUnix = resolveTimestampUnix;
+    public ClusterAlertBean setResolveTimestampUnix(long xresolveTimestampUnix) {
+        this.resolveTimestampUnix = xresolveTimestampUnix;
+        return this;
     }
 }

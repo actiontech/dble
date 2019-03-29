@@ -408,7 +408,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                 session.setXaState(TxState.TX_INITIALIZE_STATE);
                 byte[] toSend = sendData;
                 session.clearResources(false);
-                AlertUtil.alertSelfResolve(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("XA_ID", session.getSessionXaID()));
+                AlertUtil.alertSelfResolve(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("XA_ID", session.getSessionXaID()), null, null);
                 if (!session.closed()) {
                     setResponseTime(false);
                     session.getSource().write(toSend);

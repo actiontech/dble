@@ -5,38 +5,22 @@
 
 package com.actiontech.dble.alarm;
 
-import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.cluster.ClusterController;
-import com.actiontech.dble.cluster.ClusterGeneralConfig;
+import com.actiontech.dble.cluster.bean.ClusterAlertBean;
+import com.actiontech.dble.server.status.AlertManager;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public final class AlertUtil {
     private AlertUtil() {
 
     }
 
-    private static volatile Alert alert;
-    private static final Alert DEFAULT_ALERT = new NoAlert();
     private static volatile boolean isEnable = false;
-
-    static {
-        alert = DEFAULT_ALERT;
-    }
 
     public static void switchAlert(boolean enableAlert) {
         isEnable = enableAlert;
-    }
-
-    public static void initAlert() {
-        if (DbleServer.getInstance().isUseGeneralCluster() &&
-                (ClusterController.CONFIG_MODE_UCORE.equals(ClusterGeneralConfig.getInstance().getClusterType()) ||
-                        ClusterController.CONFIG_MODE_USHARD.equals(ClusterGeneralConfig.getInstance().getClusterType()))) {
-            alert = UcoreAlert.getInstance();
-        } else {
-            alert = DEFAULT_ALERT;
-        }
     }
 
     public static boolean isEnable() {
@@ -45,22 +29,38 @@ public final class AlertUtil {
 
     public static void alertSelf(String code, Alert.AlertLevel level, String desc, Map<String, String> labels) {
         if (isEnable) {
-            alert.alertSelf(code, level, desc, labels);
+            ClusterAlertBean bean = new ClusterAlertBean();
+            bean.setCode(code).setLevel(level.toString()).setDesc(desc).setLabels(labels);
+            AlertTask task = new AlertTask(Alert.AlertType.ALERT_SELF, null, null, bean);
+            AlertManager.getInstance().getAlertQueue().offer(task);
         }
     }
 
     public static void alert(String code, Alert.AlertLevel level, String desc, String alertComponentType, String alertComponentId, Map<String, String> labels) {
         if (isEnable) {
-            alert.alert(code, level, desc, alertComponentType, alertComponentId, labels);
+            ClusterAlertBean bean = new ClusterAlertBean();
+            bean.setCode(code).setLevel(level.toString()).setDesc(desc).setLabels(labels).setAlertComponentType(alertComponentType).setAlertComponentId(alertComponentId);
+            AlertTask task = new AlertTask(Alert.AlertType.ALERT, null, null, bean);
+            AlertManager.getInstance().getAlertQueue().offer(task);
         }
     }
 
-    public static boolean alertResolve(String code, Alert.AlertLevel level, String alertComponentType, String alertComponentId, Map<String, String> labels) {
-        return isEnable ? alert.alertResolve(code, level, alertComponentType, alertComponentId, labels) : true;
+    public static void alertResolve(String code, Alert.AlertLevel level, String alertComponentType, String alertComponentId, Map<String, String> labels, Set<String> callbackSet, String callbackKey) {
+        if (isEnable) {
+            ClusterAlertBean bean = new ClusterAlertBean();
+            bean.setCode(code).setLevel(level.toString()).setAlertComponentId(alertComponentId).setAlertComponentType(alertComponentType).setLabels(labels);
+            AlertTask task = new AlertTask(Alert.AlertType.ALERT_RESOLVE, callbackSet, callbackKey, bean);
+            AlertManager.getInstance().getAlertQueue().offer(task);
+        }
     }
 
-    public static boolean alertSelfResolve(String code, Alert.AlertLevel level, Map<String, String> labels) {
-        return isEnable ? alert.alertSelfResolve(code, level, labels) : true;
+    public static void alertSelfResolve(String code, Alert.AlertLevel level, Map<String, String> labels, Set<String> callbackSet, String callbackKey) {
+        if (isEnable) {
+            ClusterAlertBean bean = new ClusterAlertBean();
+            bean.setCode(code).setLevel(level.toString()).setLabels(labels);
+            AlertTask task = new AlertTask(Alert.AlertType.ALERT_SELF_RESOLVE, callbackSet, callbackKey, bean);
+            AlertManager.getInstance().getAlertQueue().offer(task);
+        }
     }
 
     public static Map<String, String> genSingleLabel(String key, String value) {

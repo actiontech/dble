@@ -40,6 +40,7 @@ public abstract class AbstractTableMetaHandler {
     protected String schema;
     private Set<String> selfNode;
     private ConcurrentMap<String, List<String>> dataNodeTableStructureSQLMap;
+
     public AbstractTableMetaHandler(String schema, TableConfig tbConfig, Set<String> selfNode) {
         this(schema, tbConfig.getName(), tbConfig.getDataNodes(), selfNode);
     }
@@ -109,17 +110,18 @@ public abstract class AbstractTableMetaHandler {
                 }
                 return;
             } else {
-                if (ToResolveContainer.TABLE_LACK.contains(tableId) && AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
-                    ToResolveContainer.TABLE_LACK.remove(tableId);
+                if (ToResolveContainer.TABLE_LACK.contains(tableId)) {
+                    AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId),
+                            ToResolveContainer.TABLE_LACK, tableId);
                 }
                 if (ds != null && ToResolveContainer.DATA_NODE_LACK.contains(key)) {
                     Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName());
                     labels.put("data_node", dataNode);
-                    if (AlertUtil.alertResolve(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "mysql", ds.getConfig().getId(), labels)) {
-                        ToResolveContainer.DATA_NODE_LACK.remove(key);
-                    }
+                    AlertUtil.alertResolve(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "mysql", ds.getConfig().getId(), labels,
+                            ToResolveContainer.DATA_NODE_LACK, key);
                 }
             }
+
             String currentSql = result.getResult().get(MYSQL_SHOW_CREATE_TABLE_COLS[1]);
             if (dataNodeTableStructureSQLMap.containsKey(currentSql)) {
                 List<String> dataNodeList = dataNodeTableStructureSQLMap.get(currentSql);
@@ -150,16 +152,16 @@ public abstract class AbstractTableMetaHandler {
                 String tableId = schema + "." + tableName;
                 if (tableMetas.size() > 1) {
                     consistentWarning();
-                } else if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(tableId) &&
-                        AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
-                    ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.remove(tableId);
+                } else if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(tableId)) {
+                    AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId),
+                            ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, tableId);
                 }
                 tableMetas.clear();
             } else if (dataNodeTableStructureSQLMap.size() == 1) {
                 String tableId = schema + "." + tableName;
-                if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(tableId) &&
-                        AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
-                    ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.remove(tableId);
+                if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(tableId)) {
+                    AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId),
+                            ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, tableId);
                 }
                 tableMeta = MetaHelper.initTableMeta(tableName, dataNodeTableStructureSQLMap.keySet().iterator().next(), version);
             }

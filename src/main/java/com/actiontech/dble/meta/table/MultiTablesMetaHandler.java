@@ -152,21 +152,22 @@ public class MultiTablesMetaHandler {
                     String tableId = schema + "." + tableName;
                     if (tableMetas.size() > 1) {
                         consistentWarning(tableName, tableStruct);
-                    } else if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(tableId) &&
-                            AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
-                        ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.remove(tableId);
+                    } else if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(tableId)) {
+                        AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId),
+                                ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, tableId);
                     }
                     tableMetas.clear();
                 } else if (tableStruct.size() == 1) {
                     String tableId = schema + "." + tableName;
-                    if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(tableId) &&
-                            AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
-                        ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.remove(tableId);
+                    if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(tableId)) {
+                        AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId),
+                                ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, tableId);
                     }
 
                     String tableDetailId = "DataNode[" + tableStruct.values().iterator().next() + "]:Table[" + tableName + "]";
-                    if (ToResolveContainer.TABLE_LACK.contains(tableId) && AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableDetailId))) {
-                        ToResolveContainer.TABLE_LACK.remove(tableId);
+                    if (ToResolveContainer.TABLE_LACK.contains(tableId)) {
+                        AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableDetailId),
+                                ToResolveContainer.TABLE_LACK, tableId);
                     }
                     tableMeta = MetaHelper.initTableMeta(tableName, tableStruct.keySet().iterator().next(), version);
                 }
@@ -177,6 +178,7 @@ public class MultiTablesMetaHandler {
             }
             countDown();
         }
+
     }
 
     private void countDown() {

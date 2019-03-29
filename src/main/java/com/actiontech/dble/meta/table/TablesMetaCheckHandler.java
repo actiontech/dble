@@ -38,9 +38,9 @@ public class TablesMetaCheckHandler extends AbstractTablesMetaHandler {
                 LOGGER.warn(errorMsg);
                 AlertUtil.alertSelf(AlarmCode.TABLE_NOT_CONSISTENT_IN_MEMORY, Alert.AlertLevel.WARN, errorMsg, AlertUtil.genSingleLabel("TABLE", tableId));
                 ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY.add(tableId);
-            } else if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY.contains(tableId) &&
-                    AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_MEMORY, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
-                ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY.remove(tableId);
+            } else if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY.contains(tableId)) {
+                AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_MEMORY, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId),
+                        ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY, tableId);
             }
             LOGGER.debug("checking table Table [" + tableMeta.getTableName() + "]");
         }

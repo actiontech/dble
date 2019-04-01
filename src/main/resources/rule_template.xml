@@ -14,177 +14,29 @@
 	under the License. -->
 <!DOCTYPE dble:rule SYSTEM "rule.dtd">
 <dble:rule xmlns:dble="http://dble.cloud/" version="2.19.01.0">
-    <tableRule name="sharding-by-enum">
+
+    <tableRule name="mod-four">
         <rule>
             <columns>id</columns>
-            <algorithm>enum</algorithm>
+            <algorithm>four-long</algorithm>
         </rule>
     </tableRule>
 
-    <tableRule name="sharding-by-range">
+    <tableRule name="mod-two">
         <rule>
             <columns>id</columns>
-            <algorithm>rangeLong</algorithm>
+            <algorithm>two-long</algorithm>
         </rule>
     </tableRule>
 
-    <tableRule name="sharding-by-hash">
-        <rule>
-            <columns>id</columns>
-            <algorithm>hashLong</algorithm>
-        </rule>
-    </tableRule>
-
-    <tableRule name="sharding-by-hash2">
-        <rule>
-            <columns>id</columns>
-            <algorithm>hashLong2</algorithm>
-        </rule>
-    </tableRule>
-
-    <tableRule name="sharding-by-hash3">
-        <rule>
-            <columns>id</columns>
-            <algorithm>hashLong3</algorithm>
-        </rule>
-    </tableRule>
-
-    <tableRule name="sharding-by-mod">
-        <rule>
-            <columns>id</columns>
-            <algorithm>hashmod</algorithm>
-        </rule>
-    </tableRule>
-
-	<tableRule name="sharding-by-mod2">
-        <rule>
-            <columns>id</columns>
-            <algorithm>hashmod2</algorithm>
-        </rule>
-    </tableRule>
-
-    <tableRule name="sharding-by-hash-str">
-        <rule>
-            <columns>id</columns>
-            <algorithm>hashString</algorithm>
-        </rule>
-    </tableRule>
-
-    <tableRule name="sharding-by-date">
-        <rule>
-            <columns>calldate</columns>
-            <algorithm>partbydate</algorithm>
-        </rule>
-    </tableRule>
-
-    <tableRule name="sharding-by-pattern">
-        <rule>
-            <columns>id</columns>
-            <algorithm>pattern</algorithm>
-        </rule>
-    </tableRule>
-
-    <tableRule name="sharding-by-string-jump">
-        <rule>
-            <columns>id</columns>
-            <algorithm>jumphash</algorithm>
-        </rule>
-    </tableRule>
-
-
-    <!-- enum partition -->
-    <function name="enum"
-              class="Enum">
-        <property name="mapFile">partition-hash-int.txt</property>
-        <property name="defaultNode">0</property><!--the default is -1,means unexpected value will report error-->
-        <property name="type">0</property><!--0 means key is a number, 1 means key is a string-->
-    </function>
-
-    <!-- number range partition -->
-    <function name="rangeLong"
-              class="NumberRange">
-        <property name="mapFile">autopartition-long.txt</property>
-        <property name="defaultNode">0</property><!--he default is -1,means unexpected value will report error-->
-    </function>
-
-    <!-- Hash partition,when partitionLength=1, it is a mod partition-->
-    <!--MAX(sum(count*length[i]) must not more then 2880-->
-    <function name="hashLong" class="Hash">
-        <property name="partitionCount">8</property>
-        <property name="partitionLength">128</property>
-        <!-- <property name="partitionCount">2,3</property>
-        <property name="partitionLength">4,5</property>-->
-    </function>
-
-    <!-- Hash partition,when partitionLength=1, it is a mod partition-->
-    <!--MAX(sum(count*length[i]) must not more then 2880-->
-    <function name="hashLong2" class="Hash">
+    <function name="two-long" class="Hash">
         <property name="partitionCount">2</property>
-        <property name="partitionLength">512</property>
-        <!-- <property name="partitionCount">2,3</property>
-        <property name="partitionLength">4,5</property>-->
+        <property name="partitionLength">1</property>
     </function>
 
-    <function name="jumphash"
-              class="jumpStringHash">
-        <property name="partitionCount">2</property>
-        <property name="hashSlice">0:2</property>
-    </function>
-
-    <!-- Hash partition,when partitionLength=1, it is a mod partition-->
-    <!--MAX(sum(count*length[i]) must not more then 2880-->
-    <function name="hashLong3" class="Hash">
-        <property name="partitionCount">2,1</property>
-        <property name="partitionLength">256,512</property>
-        <!-- <property name="partitionCount">2,3</property>
-        <property name="partitionLength">4,5</property>-->
-    </function>
-
-    <!-- eg:  mod 4 -->
-    <function name="hashmod" class="Hash">
+    <function class="Hash" name="four-long">
         <property name="partitionCount">4</property>
         <property name="partitionLength">1</property>
     </function>
-
-	<!-- eg:  mod 2 -->
-    <function name="hashmod2" class="Hash">
-        <property name="partitionCount">2</property>
-        <property name="partitionLength">1</property>
-    </function>
-
-    <!-- Hash partition for string-->
-    <function name="hashString" class="StringHash">
-        <property name="partitionCount">8</property>
-        <property name="partitionLength">128</property>
-        <property name="hashSlice">0:2</property>
-        <!--<property name="hashSlice">-4:0</property> -->
-    </function>
-
-    <!-- date partition -->
-    <!-- 4 case:
-    1.set sEndDate and defaultNode: input <sBeginDate ,router to defaultNode; input>sEndDate ,mod the period
-    2.set sEndDate, but no defaultNode:input <sBeginDate report error; input>sEndDate ,mod the period
-    3.set defaultNode without sEndDate: input <sBeginDate router to defaultNode;input>sBeginDate + (node size)*sPartionDay-1 will report error(expected is defaultNode,but can't control now)
-    4.sEndDate and defaultNode are all not set: input <sBeginDate report error;input>sBeginDate + (node size)*sPartionDay-1 will report error
-     -->
-    <function name="partbydate"
-              class="Date">
-        <property name="dateFormat">yyyy-MM-dd</property>
-        <property name="sBeginDate">2015-01-01</property>
-        <property name="sEndDate">2015-01-31
-        </property> <!--if not set sEndDate,then in fact ,the sEndDate = sBeginDate+ (node size)*sPartionDay-1 -->
-        <property name="sPartionDay">10</property>
-        <property name="defaultNode">0</property><!--the default is -1-->
-    </function>
-
-    <!-- pattern partition -->
-    <!--mapFile must contains all value of 0~patternValue-1,key and value must be Continuous increase-->
-    <function name="pattern"
-              class="PatternRange">
-        <property name="mapFile">partition-pattern.txt</property>
-        <property name="patternValue">1024</property>
-        <property name="defaultNode">0</property><!--contains string which is not number,router to default node-->
-    </function>
-
 
 </dble:rule>

@@ -110,6 +110,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         }
         conn.setResponseHandler(this);
         conn.setSession(session);
+        ((MySQLConnection) conn).setTesting(true);
         ((MySQLConnection) conn).setComplexQuery(true);
         conn.execute(node, session.getSource(), sessionAutocommit && !session.getSource().isTxStart());
     }
@@ -233,6 +234,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 
         lock.lock();
         try {
+            ((MySQLConnection) conn).setTesting(false);
             if (--nodeCount > 0)
                 return;
 

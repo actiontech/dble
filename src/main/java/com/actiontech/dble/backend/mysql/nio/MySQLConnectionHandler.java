@@ -219,7 +219,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
      * execute RowEof Packet
      */
     private void handleRowEofPacket(byte[] data) {
-        if (session != null && this.source.getLogResponse().compareAndSet(false, true)) {
+        if (session != null && !source.isTesting() && this.source.getLogResponse().compareAndSet(false, true)) {
             session.setBackendResponseEndTime(this.source);
         }
         this.source.setRunning(false);

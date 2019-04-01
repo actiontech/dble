@@ -6,11 +6,11 @@
 package com.actiontech.dble.plan.optimizer;
 
 import com.actiontech.dble.plan.Order;
-import com.actiontech.dble.plan.node.PlanNode;
-import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import com.actiontech.dble.plan.node.JoinNode;
+import com.actiontech.dble.plan.node.PlanNode;
+import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
@@ -113,39 +113,47 @@ public final class OrderByPusher {
             rightOnSels.add(bf.arguments().get(1));
         }
         //is on's orderBy can be changed to match implicitOrders
-        boolean canMatch = false;
-        if (implicitOrders.size() < leftOnSels.size())
-            canMatch = false;
-        else {
-            Map<Integer, SQLOrderingSpecification> foundOnIndexs = new LinkedHashMap<>();
-            for (Order orderby : implicitOrders) {
-                Item orderSel = orderby.getItem();
-                int index = -1;
-                if ((index = leftOnSels.indexOf(orderSel)) >= 0) {
-                    foundOnIndexs.put(index, orderby.getSortOrder());
-                } else if ((index = rightOnSels.indexOf(orderSel)) >= 0) {
-                    foundOnIndexs.put(index, orderby.getSortOrder());
-                } else {
-                    // neither belong to leftOn nor belong to rightOn
-                    break;
-                }
+        Map<Integer, SQLOrderingSpecification> foundOnIndexs = new LinkedHashMap<>();
+        for (Order orderby : implicitOrders) {
+            Item orderSel = orderby.getItem();
+            int index = -1;
+            if ((index = leftOnSels.indexOf(orderSel)) >= 0) {
+                foundOnIndexs.put(index, orderby.getSortOrder());
+            } else if ((index = rightOnSels.indexOf(orderSel)) >= 0) {
+                foundOnIndexs.put(index, orderby.getSortOrder());
+            } else {
+                // neither belong to leftOn nor belong to rightOn
+                break;
             }
+        }
+        boolean canMatch = false;
+        if (implicitOrders.size() < leftOnSels.size()) {
+            if (foundOnIndexs.size() == implicitOrders.size()) { // all join order by is found in leftOnsel
+                // left on order =  join order + other join sel
+                for (int index = 0; index < leftOnSels.size(); index++) {
+                    foundOnIndexs.putIfAbsent(index, SQLOrderingSpecification.ASC);
+                }
+                canMatch = true;
+            }
+        } else {
             if (foundOnIndexs.size() == leftOnSels.size()) {
                 canMatch = true;
-                for (Map.Entry<Integer, SQLOrderingSpecification> entry : foundOnIndexs.entrySet()) {
-                    int foundOnIndex = entry.getKey();
-                    SQLOrderingSpecification sortOrder = entry.getValue();
-                    Item leftOn = leftOnSels.get(foundOnIndex);
-                    Item rightOn = rightOnSels.get(foundOnIndex);
-                    // add lefton order
-                    Order leftOnOrder = new Order(leftOn, sortOrder);
-                    leftOnOrders.add(leftOnOrder);
-                    // add righton order
-                    Order rightOnOrder = new Order(rightOn, sortOrder);
-                    rightOnOrders.add(rightOnOrder);
-                }
-                return canMatch;
             }
+        }
+        if (canMatch) {
+            for (Map.Entry<Integer, SQLOrderingSpecification> entry : foundOnIndexs.entrySet()) {
+                int foundOnIndex = entry.getKey();
+                SQLOrderingSpecification sortOrder = entry.getValue();
+                Item leftOn = leftOnSels.get(foundOnIndex);
+                Item rightOn = rightOnSels.get(foundOnIndex);
+                // add lefton order
+                Order leftOnOrder = new Order(leftOn, sortOrder);
+                leftOnOrders.add(leftOnOrder);
+                // add righton order
+                Order rightOnOrder = new Order(rightOn, sortOrder);
+                rightOnOrders.add(rightOnOrder);
+            }
+            return true;
         }
         // can not match
         for (int index = 0; index < leftOnSels.size(); index++) {
@@ -159,7 +167,7 @@ public final class OrderByPusher {
             Order rightOnOrder = new Order(rightOn, sortOrder);
             rightOnOrders.add(rightOnOrder);
         }
-        return canMatch;
+        return false;
     }
 
     /**

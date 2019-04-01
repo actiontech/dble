@@ -374,10 +374,11 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 XAStateLog.saveXARecoveryLog(xaId, session.getXaState());
                 if (++tryCommitTimes < COMMIT_TIMES) {
                     // try commit several times
+                    LOGGER.warn("fail to COMMIT xa transaction " + xaId + " at the " + tryCommitTimes + "th time!");
                     commit();
                 } else {
                     // close this session ,add to schedule job
-                    session.getSource().close("COMMIT FAILED but it will try to COMMIT repeatedly in backend until it is success!");
+                    session.getSource().close("COMMIT FAILED but it will try to COMMIT repeatedly in background until it is success!");
                     // kill xa or retry to commit xa in background
                     final int count = DbleServer.getInstance().getConfig().getSystem().getXaRetryCount();
                     if (!session.isRetryXa()) {
@@ -385,7 +386,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                         LOGGER.warn(warnStr);
                         session.forceClose(warnStr);
                     } else if (count == 0 || ++backgroundCommitTimes <= count) {
-                        String warnStr = "fail to try to COMMIT xa transaction " + xaId + " background!";
+                        String warnStr = "fail to COMMIT xa transaction " + xaId + " at the " + backgroundCommitTimes + "th time in background!" ;
                         LOGGER.warn(warnStr);
                         AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, warnStr, AlertUtil.genSingleLabel("XA_ID", xaId));
 
@@ -401,6 +402,8 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 byte[] toSend = sendData;
                 session.clearResources(false);
                 AlertUtil.alertSelfResolve(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("XA_ID", session.getSessionXaID()));
+                // remove session in background
+                DbleServer.getInstance().getXaSessionCheck().getCommittingSession().remove(session.getSource().getId());
                 if (!session.closed()) {
                     setResponseTime(isSuccess);
                     session.getSource().write(toSend);

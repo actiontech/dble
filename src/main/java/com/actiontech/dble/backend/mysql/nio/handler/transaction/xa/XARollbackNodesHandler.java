@@ -385,9 +385,10 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                 XAStateLog.saveXARecoveryLog(xaId, session.getXaState());
                 if (++tryRollbackTimes < ROLLBACK_TIMES) {
                     // try rollback several times
+                    LOGGER.warn("fail to ROLLBACK xa transaction " + xaId + " at the " + tryRollbackTimes + "th time!");
                     rollback();
                 } else {
-                    StringBuilder closeReason = new StringBuilder("ROLLBACK FAILED but it will try to ROLLBACK repeatedly in backend until it is success!");
+                    StringBuilder closeReason = new StringBuilder("ROLLBACK FAILED but it will try to ROLLBACK repeatedly in background until it is success!");
                     if (error != null) {
                         closeReason.append(", the ERROR is ");
                         closeReason.append(error);
@@ -401,7 +402,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                         LOGGER.warn(warnStr);
                         session.forceClose(warnStr);
                     } else if (count == 0 || ++backgroundRollbackTimes <= count) {
-                        String warnStr = "fail to try to COMMIT xa transaction " + xaId + " background";
+                        String warnStr = "fail to ROLLBACK xa transaction " + xaId + " at the " + backgroundRollbackTimes + "th time in background!" ;
                         LOGGER.warn(warnStr);
                         AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, warnStr, AlertUtil.genSingleLabel("XA_ID", xaId));
 
@@ -416,6 +417,8 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                 byte[] toSend = sendData;
                 session.clearResources(false);
                 AlertUtil.alertSelfResolve(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("XA_ID", session.getSessionXaID()));
+                // remove session in background
+                DbleServer.getInstance().getXaSessionCheck().getRollbackingSession().remove(session.getSource().getId());
                 if (!session.closed()) {
                     setResponseTime(false);
                     session.getSource().write(toSend);

@@ -71,12 +71,12 @@ public final class ShowXASession {
         // write rows
         byte packetId = EOF.getPacketId();
         final XASessionCheck xaCheck = DbleServer.getInstance().getXaSessionCheck();
-        for (NonBlockingSession commitSession : xaCheck.getCommitSession().values()) {
+        for (NonBlockingSession commitSession : xaCheck.getCommittingSession().values()) {
             RowDataPacket row = getRow(commitSession, c.getCharset().getResults());
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
         }
-        for (NonBlockingSession rollbackSession : xaCheck.getRollbackSession().values()) {
+        for (NonBlockingSession rollbackSession : xaCheck.getRollbackingSession().values()) {
             RowDataPacket row = getRow(rollbackSession, c.getCharset().getResults());
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);

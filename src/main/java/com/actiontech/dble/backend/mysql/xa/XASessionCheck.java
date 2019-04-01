@@ -13,18 +13,24 @@ import java.util.concurrent.ConcurrentMap;
 public class XASessionCheck {
     private final ConcurrentMap<Long, NonBlockingSession> commitSession;
     private final ConcurrentMap<Long, NonBlockingSession> rollbackSession;
+    private final ConcurrentMap<Long, NonBlockingSession> committingSession;
+    private final ConcurrentMap<Long, NonBlockingSession> rollbackingSession;
 
     public XASessionCheck() {
         commitSession = new ConcurrentHashMap<>();
         rollbackSession = new ConcurrentHashMap<>();
+        committingSession = new ConcurrentHashMap<>();
+        rollbackingSession = new ConcurrentHashMap<>();
     }
 
     public void addCommitSession(NonBlockingSession s) {
-        commitSession.put(s.getSource().getId(), s);
+        this.commitSession.put(s.getSource().getId(), s);
+        this.committingSession.put(s.getSource().getId(), s);
     }
 
     public void addRollbackSession(NonBlockingSession s) {
         this.rollbackSession.put(s.getSource().getId(), s);
+        this.rollbackingSession.put(s.getSource().getId(), s);
     }
 
     public void checkSessions() {
@@ -35,20 +41,16 @@ public class XASessionCheck {
     private void checkCommitSession() {
         for (NonBlockingSession session : commitSession.values()) {
             if (session.getXaState() == TxState.TX_COMMIT_FAILED_STATE) {
-                session.commit();
-            } else if (session.getXaState() == TxState.TX_INITIALIZE_STATE) {
                 this.commitSession.remove(session.getSource().getId());
+                session.commit();
             }
         }
     }
 
     private void checkRollbackSession() {
         for (NonBlockingSession session : rollbackSession.values()) {
-            if (session.getXaState() == TxState.TX_INITIALIZE_STATE) {
-                this.rollbackSession.remove(session.getSource().getId());
-            } else {
-                session.rollback();
-            }
+            this.rollbackSession.remove(session.getSource().getId());
+            session.rollback();
         }
     }
 
@@ -56,8 +58,16 @@ public class XASessionCheck {
         return commitSession;
     }
 
-    public ConcurrentMap<Long, NonBlockingSession> getRollbackSession() {
+    public ConcurrentMap<Long, NonBlockingSession> getRollbackingSession() {
         return rollbackSession;
+    }
+
+    public ConcurrentMap<Long, NonBlockingSession> getCommittingSession() {
+        return committingSession;
+    }
+
+    public ConcurrentMap<Long, NonBlockingSession> getRollbackSession() {
+        return rollbackingSession;
     }
 
 }

@@ -357,6 +357,7 @@ public class MySQLPlanNodeVisitor {
                 setSubQueryNode(args);
             }
         }
+        tableNode.setCorrelatedSubQuery(selItem.isCorrelatedSubQuery());
     }
 
     private void handleWhereCondition(SQLExpr whereExpr) {

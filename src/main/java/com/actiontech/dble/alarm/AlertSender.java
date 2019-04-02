@@ -62,7 +62,7 @@ public class AlertSender implements Runnable {
         if (DbleServer.getInstance().isUseGeneralCluster() &&
                 (ClusterController.CONFIG_MODE_UCORE.equals(ClusterGeneralConfig.getInstance().getClusterType()) ||
                         ClusterController.CONFIG_MODE_USHARD.equals(ClusterGeneralConfig.getInstance().getClusterType()))) {
-            alert = UcoreAlert.getInstance();
+            alert = new UcoreAlert();
         } else {
             alert = DEFAULT_ALERT;
         }

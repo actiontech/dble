@@ -206,8 +206,7 @@ public class FileSystemRepository implements Repository {
             rwChannel.force(false);
             file.discardBackupVersion();
             if (ToResolveContainer.XA_WRITE_CHECK_POINT_FAIL.size() > 0) {
-                AlertUtil.alertSelfResolve(AlarmCode.XA_WRITE_CHECK_POINT_FAIL, Alert.AlertLevel.WARN, null, null, null);
-                ToResolveContainer.XA_WRITE_CHECK_POINT_FAIL.remove(XA_ALERT_FLAG);
+                AlertUtil.alertSelfResolve(AlarmCode.XA_WRITE_CHECK_POINT_FAIL, Alert.AlertLevel.WARN, null, ToResolveContainer.XA_WRITE_CHECK_POINT_FAIL, XA_ALERT_FLAG);
             }
             return true;
         } catch (Exception e) {

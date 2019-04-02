@@ -54,6 +54,16 @@ public final class AlertUtil {
         }
     }
 
+    public static void alertResolve(String code, Alert.AlertLevel level, String alertComponentType, String alertComponentId, Map<String, String> labels) {
+        if (isEnable) {
+            ClusterAlertBean bean = new ClusterAlertBean();
+            bean.setCode(code).setLevel(level.toString()).setAlertComponentId(alertComponentId).setAlertComponentType(alertComponentType).setLabels(labels);
+            AlertTask task = new AlertTask(Alert.AlertType.ALERT_RESOLVE, null, null, bean);
+            AlertManager.getInstance().getAlertQueue().offer(task);
+        }
+    }
+
+
     public static void alertSelfResolve(String code, Alert.AlertLevel level, Map<String, String> labels, Set<String> callbackSet, String callbackKey) {
         if (isEnable) {
             ClusterAlertBean bean = new ClusterAlertBean();
@@ -62,6 +72,16 @@ public final class AlertUtil {
             AlertManager.getInstance().getAlertQueue().offer(task);
         }
     }
+
+    public static void alertSelfResolve(String code, Alert.AlertLevel level, Map<String, String> labels) {
+        if (isEnable) {
+            ClusterAlertBean bean = new ClusterAlertBean();
+            bean.setCode(code).setLevel(level.toString()).setLabels(labels);
+            AlertTask task = new AlertTask(Alert.AlertType.ALERT_SELF_RESOLVE, null, null, bean);
+            AlertManager.getInstance().getAlertQueue().offer(task);
+        }
+    }
+
 
     public static Map<String, String> genSingleLabel(String key, String value) {
         Map<String, String> labels = new HashMap<>(1);

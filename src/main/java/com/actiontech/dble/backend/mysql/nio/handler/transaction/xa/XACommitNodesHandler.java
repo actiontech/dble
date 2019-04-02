@@ -396,7 +396,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_INIT);
                 byte[] toSend = sendData;
                 session.clearResources(false);
-                AlertUtil.alertSelfResolve(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("XA_ID", session.getSessionXaID()), null, null);
+                AlertUtil.alertSelfResolve(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("XA_ID", session.getSessionXaID()));
                 if (!session.closed()) {
                     setResponseTime(isSuccess);
                     session.getSource().write(toSend);

@@ -150,7 +150,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
     private void setOk() {
         if (this.status != OK_STATUS) {
             Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getHostConfig().getName() + "-" + this.source.getConfig().getHostName());
-            AlertUtil.alertResolve(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "mysql", this.source.getConfig().getId(), labels, null, null);
+            AlertUtil.alertResolve(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "mysql", this.source.getConfig().getId(), labels);
         }
         switch (status) {
             case TIMEOUT_STATUS:

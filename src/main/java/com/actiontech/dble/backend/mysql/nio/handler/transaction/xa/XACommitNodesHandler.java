@@ -370,19 +370,26 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         } else if (session.getXaState() == TxState.TX_COMMIT_FAILED_STATE) {
             MySQLConnection errConn = session.releaseExcept(TxState.TX_COMMIT_FAILED_STATE);
             if (errConn != null) {
-                XAStateLog.saveXARecoveryLog(session.getSessionXaID(), session.getXaState());
+                final String xaId = session.getSessionXaID();
+                XAStateLog.saveXARecoveryLog(xaId, session.getXaState());
                 if (++tryCommitTimes < COMMIT_TIMES) {
                     // try commit several times
+                    LOGGER.warn("fail to COMMIT xa transaction " + xaId + " at the " + tryCommitTimes + "th time!");
                     commit();
                 } else {
                     // close this session ,add to schedule job
-                    session.getSource().close("COMMIT FAILED but it will try to COMMIT repeatedly in backend until it is success!");
+                    session.getSource().close("COMMIT FAILED but it will try to COMMIT repeatedly in background until it is success!");
+                    // kill xa or retry to commit xa in background
                     final int count = DbleServer.getInstance().getConfig().getSystem().getXaRetryCount();
                     if (!session.isRetryXa()) {
-                        session.forceClose("kill xa session by manager cmd!");
+                        String warnStr = "kill xa session by manager cmd!";
+                        LOGGER.warn(warnStr);
+                        session.forceClose(warnStr);
                     } else if (count == 0 || ++backgroundCommitTimes <= count) {
-                        final String xaId = session.getSessionXaID();
-                        AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, "fail to try to COMMIT xa transaction " + xaId + " background", AlertUtil.genSingleLabel("XA_ID", xaId));
+                        String warnStr = "fail to COMMIT xa transaction " + xaId + " at the " + backgroundCommitTimes + "th time in background!" ;
+                        LOGGER.warn(warnStr);
+                        AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, warnStr, AlertUtil.genSingleLabel("XA_ID", xaId));
+
                         XaDelayProvider.beforeAddXaToQueue(count, xaId);
                         DbleServer.getInstance().getXaSessionCheck().addCommitSession(session);
                         XaDelayProvider.afterAddXaToQueue(count, xaId);
@@ -395,6 +402,8 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 byte[] toSend = sendData;
                 session.clearResources(false);
                 AlertUtil.alertSelfResolve(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("XA_ID", session.getSessionXaID()));
+                // remove session in background
+                DbleServer.getInstance().getXaSessionCheck().getCommittingSession().remove(session.getSource().getId());
                 if (!session.closed()) {
                     setResponseTime(isSuccess);
                     session.getSource().write(toSend);

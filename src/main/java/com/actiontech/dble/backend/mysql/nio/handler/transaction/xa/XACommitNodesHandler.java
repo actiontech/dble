@@ -40,6 +40,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     private Lock lockForErrorHandle = new ReentrantLock();
     private Condition sendFinished = lockForErrorHandle.newCondition();
     private volatile boolean sendFinishedFlag = false;
+
     public XACommitNodesHandler(NonBlockingSession session) {
         super(session);
     }
@@ -82,6 +83,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         }
 
     }
+
     @Override
     public void clearResources() {
         tryCommitTimes = 0;
@@ -448,7 +450,6 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         }
 
     }
-
 
 
     private void waitUntilSendFinish() {

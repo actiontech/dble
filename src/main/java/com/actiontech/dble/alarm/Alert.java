@@ -5,14 +5,23 @@
 
 package com.actiontech.dble.alarm;
 
-import java.util.Map;
+import com.actiontech.dble.cluster.bean.ClusterAlertBean;
+
 
 public interface Alert {
     enum AlertLevel {
         NOTICE, WARN, CRITICAL
     }
-    void alertSelf(String code, AlertLevel level, String desc, Map<String, String> labels);
-    void alert(String code, AlertLevel level, String desc, String alertComponentType, String alertComponentId, Map<String, String> labels);
-    boolean alertResolve(String code, AlertLevel level, String alertComponentType, String alertComponentId, Map<String, String> labels);
-    boolean alertSelfResolve(String code, AlertLevel level, Map<String, String> labels);
+
+    enum AlertType {
+        ALERT, ALERT_RESOLVE, ALERT_SELF, ALERT_SELF_RESOLVE
+    }
+
+    void alertSelf(ClusterAlertBean bean);
+
+    void alert(ClusterAlertBean bean);
+
+    boolean alertResolve(ClusterAlertBean bean);
+
+    boolean alertSelfResolve(ClusterAlertBean bean);
 }

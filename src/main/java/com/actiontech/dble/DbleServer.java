@@ -36,6 +36,7 @@ import com.actiontech.dble.net.mysql.WriteToBackendTask;
 import com.actiontech.dble.route.RouteService;
 import com.actiontech.dble.route.sequence.handler.*;
 import com.actiontech.dble.server.ServerConnectionFactory;
+import com.actiontech.dble.server.status.AlertManager;
 import com.actiontech.dble.server.status.OnlineLockStatus;
 import com.actiontech.dble.server.status.SlowQueryLog;
 import com.actiontech.dble.server.util.GlobalTableUtil;
@@ -364,10 +365,10 @@ public final class DbleServer {
         if (system.getEnableSlowLog() == 1) {
             SlowQueryLog.getInstance().setEnableSlowLog(true);
         }
-        AlertUtil.initAlert();
         if (system.getEnableAlert() == 1) {
             AlertUtil.switchAlert(true);
         }
+        AlertManager.getInstance().startAlert();
         if (aio) {
             int processorCount = frontProcessorCount + backendProcessorCount;
             LOGGER.info("using aio network handler ");

@@ -52,11 +52,11 @@ public final class KillXASession {
                     continue;
                 }
                 NonBlockingSession session = null;
-                if ((session = checker.getRollbackSession().get(value)) != null) {
+                if ((session = checker.getRollbackingSession().remove(value)) != null) {
                     sessionList.add(session);
                     break;
                 }
-                if ((session = checker.getCommitSession().get(value)) != null) {
+                if ((session = checker.getCommittingSession().remove(value)) != null) {
                     sessionList.add(session);
                     break;
                 }

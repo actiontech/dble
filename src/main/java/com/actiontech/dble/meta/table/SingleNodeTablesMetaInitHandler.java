@@ -8,7 +8,6 @@ package com.actiontech.dble.meta.table;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
-import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.MultiSQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
@@ -26,13 +25,11 @@ public class SingleNodeTablesMetaInitHandler {
             "Create Table"};
     private static final String SQL = "show create table `{0}`;";
     private String dataNode;
-    private String schema;
     private MultiTablesMetaHandler multiTablesMetaHandler;
     private volatile List<String> tables;
 
-    SingleNodeTablesMetaInitHandler(MultiTablesMetaHandler multiTablesMetaHandler, String schema, List<String> tables, String dataNode) {
+    SingleNodeTablesMetaInitHandler(MultiTablesMetaHandler multiTablesMetaHandler, List<String> tables, String dataNode) {
         this.multiTablesMetaHandler = multiTablesMetaHandler;
-        this.schema = schema;
         this.tables = tables;
         this.dataNode = dataNode;
     }
@@ -71,10 +68,7 @@ public class SingleNodeTablesMetaInitHandler {
                 }
                 tables.remove(table);
                 String createSQL = row.get(MYSQL_SHOW_CREATE_TABLE_COLS[1]);
-                StructureMeta.TableMeta tableMeta = MetaHelper.initTableMeta(table, createSQL, System.currentTimeMillis());
-                if (tableMeta != null) {
-                    multiTablesMetaHandler.getTmManager().addTable(schema, tableMeta);
-                }
+                multiTablesMetaHandler.handleSingleMetaData(table, createSQL);
             }
             if (tables.size() > 0) {
                 for (String table : tables) {

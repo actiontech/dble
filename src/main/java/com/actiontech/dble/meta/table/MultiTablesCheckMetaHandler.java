@@ -32,13 +32,6 @@ public class MultiTablesCheckMetaHandler extends MultiTablesMetaHandler {
         this.schema = schemaConfig.getName();
     }
 
-    @Override
-    void handleSingleMetaData(String table, String sql) {
-        StructureMeta.TableMeta tableMeta = MetaHelper.initTableMeta(table, sql, System.currentTimeMillis());
-        if (tableMeta != null) {
-            this.checkTableModify(tableMeta);
-        }
-    }
 
     @Override
     void handleSingleMetaData(StructureMeta.TableMeta tableMeta) {

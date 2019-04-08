@@ -8,6 +8,7 @@ package com.actiontech.dble.meta.table;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.MultiSQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
@@ -68,7 +69,8 @@ public class SingleNodeTablesMetaInitHandler {
                 }
                 tables.remove(table);
                 String createSQL = row.get(MYSQL_SHOW_CREATE_TABLE_COLS[1]);
-                multiTablesMetaHandler.handleSingleMetaData(table, createSQL);
+                StructureMeta.TableMeta tableMeta = MetaHelper.initTableMeta(table, createSQL, System.currentTimeMillis());
+                multiTablesMetaHandler.handleSingleMetaData(tableMeta);
             }
             if (tables.size() > 0) {
                 for (String table : tables) {

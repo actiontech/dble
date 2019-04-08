@@ -226,9 +226,6 @@ public abstract class MultiTablesMetaHandler {
     }
 
 
-    abstract void handleSingleMetaData(String table, String createSQL);
-
-
     abstract void handleSingleMetaData(StructureMeta.TableMeta tableMeta);
 
 

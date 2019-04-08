@@ -42,13 +42,6 @@ public class MultiTablesInitMetaHandler extends MultiTablesMetaHandler {
         }
     }
 
-    @Override
-    void handleSingleMetaData(String table, String createSQL) {
-        StructureMeta.TableMeta tableMeta = MetaHelper.initTableMeta(table, createSQL, System.currentTimeMillis());
-        if (tableMeta != null) {
-            getTmManager().addTable(schema, tableMeta);
-        }
-    }
 
     @Override
     void schemaMetaFinish() {

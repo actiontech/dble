@@ -140,8 +140,8 @@ public final class ShowHelp {
 
         HELPS.put("show @@cost_time", "Report cost time of query , contains back End ,front End and over all");
         HELPS.put("show @@thread_used", "Report usage of threads, for optimize performance ");
-        HELPS.put("show @@dataNodes where schema=? and table=?", "Report the data nodes info of a table");
-        HELPS.put("show @@algorithm where schema=? and table=?", "Report the algorithm info of a table");
+        HELPS.put("show @@dataNodes where schema='?' and table='?'", "Report the data nodes info of a table");
+        HELPS.put("show @@algorithm where schema='?' and table='?'", "Report the algorithm info of a table");
         HELPS.put("show @@ddl", "Report all ddl info in progress");
         // switch
         HELPS.put("switch @@datasource name:index", "Switch dataSource");
@@ -149,7 +149,7 @@ public final class ShowHelp {
         // kill
         HELPS.put("kill @@connection id1,id2,...", "Kill the specified connections");
         HELPS.put("kill @@xa_session id1,id2,...", "Kill the specified sessions that commit/rollback xa transaction in the background");
-        HELPS.put("kill @@ddl_lock where schema=? and table=?", "Kill ddl lock held by the specified ddl");
+        HELPS.put("kill @@ddl_lock where schema='?' and table='?'", "Kill ddl lock held by the specified ddl");
 
         // stop
         HELPS.put("stop @@heartbeat name:time", "Pause dataNode heartbeat");

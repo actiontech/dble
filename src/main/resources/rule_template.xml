@@ -56,13 +56,6 @@
         </rule>
     </tableRule>
 
-	<tableRule name="sharding-by-mod2">
-        <rule>
-            <columns>id</columns>
-            <algorithm>hashmod2</algorithm>
-        </rule>
-    </tableRule>
-
     <tableRule name="sharding-by-hash-str">
         <rule>
             <columns>id</columns>
@@ -91,20 +84,23 @@
         </rule>
     </tableRule>
 
-
     <!-- enum partition -->
-    <function name="enum"
-              class="Enum">
+    <function name="enum" class="Enum">
         <property name="mapFile">partition-hash-int.txt</property>
         <property name="defaultNode">0</property><!--the default is -1,means unexpected value will report error-->
         <property name="type">0</property><!--0 means key is a number, 1 means key is a string-->
     </function>
 
     <!-- number range partition -->
-    <function name="rangeLong"
-              class="NumberRange">
+    <function name="rangeLong" class="NumberRange">
         <property name="mapFile">autopartition-long.txt</property>
         <property name="defaultNode">0</property><!--he default is -1,means unexpected value will report error-->
+    </function>
+
+    <!-- eg:  mod 4 -->
+    <function name="hashmod" class="Hash">
+        <property name="partitionCount">4</property>
+        <property name="partitionLength">1</property>
     </function>
 
     <!-- Hash partition,when partitionLength=1, it is a mod partition-->
@@ -125,12 +121,6 @@
         <property name="partitionLength">4,5</property>-->
     </function>
 
-    <function name="jumphash"
-              class="jumpStringHash">
-        <property name="partitionCount">2</property>
-        <property name="hashSlice">0:2</property>
-    </function>
-
     <!-- Hash partition,when partitionLength=1, it is a mod partition-->
     <!--MAX(sum(count*length[i]) must not more then 2880-->
     <function name="hashLong3" class="Hash">
@@ -140,21 +130,14 @@
         <property name="partitionLength">4,5</property>-->
     </function>
 
-    <!-- eg:  mod 4 -->
-    <function name="hashmod" class="Hash">
-        <property name="partitionCount">4</property>
-        <property name="partitionLength">1</property>
-    </function>
-
-	<!-- eg:  mod 2 -->
-    <function name="hashmod2" class="Hash">
+    <function name="jumphash" class="jumpStringHash">
         <property name="partitionCount">2</property>
-        <property name="partitionLength">1</property>
+        <property name="hashSlice">0:2</property>
     </function>
 
     <!-- Hash partition for string-->
     <function name="hashString" class="StringHash">
-        <property name="partitionCount">8</property>
+        <property name="partitionCount">4</property>
         <property name="partitionLength">128</property>
         <property name="hashSlice">0:2</property>
         <!--<property name="hashSlice">-4:0</property> -->
@@ -167,24 +150,20 @@
     3.set defaultNode without sEndDate: input <sBeginDate router to defaultNode;input>sBeginDate + (node size)*sPartionDay-1 will report error(expected is defaultNode,but can't control now)
     4.sEndDate and defaultNode are all not set: input <sBeginDate report error;input>sBeginDate + (node size)*sPartionDay-1 will report error
      -->
-    <function name="partbydate"
-              class="Date">
+    <function name="partbydate" class="Date">
         <property name="dateFormat">yyyy-MM-dd</property>
         <property name="sBeginDate">2015-01-01</property>
-        <property name="sEndDate">2015-01-31
-        </property> <!--if not set sEndDate,then in fact ,the sEndDate = sBeginDate+ (node size)*sPartionDay-1 -->
+        <property name="sEndDate">2015-01-31</property> <!--if not set sEndDate,then in fact ,the sEndDate = sBeginDate+ (node size)*sPartionDay-1 -->
         <property name="sPartionDay">10</property>
         <property name="defaultNode">0</property><!--the default is -1-->
     </function>
 
     <!-- pattern partition -->
     <!--mapFile must contains all value of 0~patternValue-1,key and value must be Continuous increase-->
-    <function name="pattern"
-              class="PatternRange">
+    <function name="pattern" class="PatternRange">
         <property name="mapFile">partition-pattern.txt</property>
         <property name="patternValue">1024</property>
         <property name="defaultNode">0</property><!--contains string which is not number,router to default node-->
     </function>
-
 
 </dble:rule>

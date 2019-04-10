@@ -168,7 +168,11 @@ public final class FilterPusher {
             PlanNode child = childs.get(index);
             if (pushFilters != null) {
                 Item pushFilter = pushFilters.get(index);
-                child.query(FilterUtils.and(child.getWhereFilter(), pushFilter));
+                if (pushFilter.isWithSumFunc()) {
+                    child.having(FilterUtils.and(child.getHavingFilter(), pushFilter));
+                } else {
+                    child.query(FilterUtils.and(child.getWhereFilter(), pushFilter));
+                }
             }
             FilterPusher.optimize(child);
         }

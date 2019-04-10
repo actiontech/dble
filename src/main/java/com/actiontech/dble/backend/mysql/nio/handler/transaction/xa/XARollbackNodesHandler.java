@@ -386,6 +386,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                 if (++tryRollbackTimes < ROLLBACK_TIMES) {
                     // try rollback several times
                     LOGGER.warn("fail to ROLLBACK xa transaction " + xaId + " at the " + tryRollbackTimes + "th time!");
+                    XaDelayProvider.beforeInnerRetry(tryRollbackTimes, xaId);
                     rollback();
                 } else {
                     StringBuilder closeReason = new StringBuilder("ROLLBACK FAILED but it will try to ROLLBACK repeatedly in background until it is success!");
@@ -414,7 +415,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             } else {
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_ROLLBACKED_STATE);
                 session.setXaState(TxState.TX_INITIALIZE_STATE);
-                byte[] toSend = sendData;
+                byte[] toSend = OkPacket.OK;
                 session.clearResources(false);
                 AlertUtil.alertSelfResolve(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("XA_ID", session.getSessionXaID()));
                 // remove session in background

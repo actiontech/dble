@@ -162,6 +162,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 
     private byte[] makeErrorPacket(String errMsg) {
         ErrorPacket errPacket = new ErrorPacket();
+        errPacket.setPacketId(1);
         errPacket.setErrNo(ErrorCode.ER_UNKNOWN_ERROR);
         errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
         return errPacket.toBytes();
@@ -400,6 +401,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 if (++tryCommitTimes < COMMIT_TIMES) {
                     // try commit several times
                     LOGGER.warn("fail to COMMIT xa transaction " + xaId + " at the " + tryCommitTimes + "th time!");
+                    XaDelayProvider.beforeInnerRetry(tryCommitTimes, xaId);
                     commit();
                 } else {
                     // close this session ,add to schedule job
@@ -424,7 +426,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_COMMITTED_STATE);
                 session.setXaState(TxState.TX_INITIALIZE_STATE);
                 session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_INIT);
-                byte[] toSend = sendData;
+                byte[] toSend = OkPacket.OK;
                 session.clearResources(false);
                 AlertUtil.alertSelfResolve(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("XA_ID", session.getSessionXaID()));
                 // remove session in background

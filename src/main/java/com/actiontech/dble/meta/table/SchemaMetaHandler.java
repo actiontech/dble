@@ -70,7 +70,7 @@ public class SchemaMetaHandler {
                 }
                 multiTableMeta.execute();
             } else {
-                MultiTablesMetaHandler multiTableMeta = new MultiTablesMetaHandler(this, entry.getValue(), selfNode);
+                MultiTablesInitMetaHandler multiTableMeta = new MultiTablesInitMetaHandler(this, entry.getValue(), selfNode);
                 if (filter != null) {
                     multiTableMeta.setFilterTables(filter.get(entry.getKey()));
                 }

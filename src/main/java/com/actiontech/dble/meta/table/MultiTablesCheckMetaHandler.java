@@ -9,31 +9,44 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
+import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.protocol.StructureMeta;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.SQLNonTransientException;
-import java.util.Map;
 import java.util.Set;
 
-public class TablesMetaCheckHandler extends AbstractTablesMetaHandler {
+/**
+ * Created by szf on 2019/4/4.
+ */
+public class MultiTablesCheckMetaHandler extends MultiTablesMetaHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MultiTablesCheckMetaHandler.class);
     private final ProxyMetaManager tmManager;
+    private final String schema;
 
-    public TablesMetaCheckHandler(ProxyMetaManager tmManager, String schema, Map<String, Set<String>> dataNodeMap, Set<String> selfNode) {
-        super(schema, dataNodeMap, selfNode);
+    public MultiTablesCheckMetaHandler(ProxyMetaManager tmManager, SchemaConfig schemaConfig, Set<String> selfNode) {
+        super(schemaConfig, selfNode);
         this.tmManager = tmManager;
+        this.schema = schemaConfig.getName();
+    }
+
+
+    @Override
+    void handleSingleMetaData(StructureMeta.TableMeta tableMeta) {
+        this.checkTableModify(tableMeta);
     }
 
     @Override
-    protected void countdown() {
+    void schemaMetaFinish() {
+
     }
 
-    @Override
-    protected void handlerTable(String table, String dataNode, String sql) {
-        StructureMeta.TableMeta tableMeta = MetaHelper.initTableMeta(table, sql, System.currentTimeMillis());
+    private void checkTableModify(StructureMeta.TableMeta tableMeta) {
         if (tableMeta != null) {
             String tableId = schema + "." + tableMeta.getTableName();
-            if (isTableModify(schema, tableMeta)) {
+            if (isTableModify(tableMeta)) {
                 String errorMsg = "Table [" + tableMeta.getTableName() + "] are modified by other,Please Check IT!";
                 LOGGER.warn(errorMsg);
                 AlertUtil.alertSelf(AlarmCode.TABLE_NOT_CONSISTENT_IN_MEMORY, Alert.AlertLevel.WARN, errorMsg, AlertUtil.genSingleLabel("TABLE", tableId));
@@ -46,7 +59,8 @@ public class TablesMetaCheckHandler extends AbstractTablesMetaHandler {
         }
     }
 
-    private boolean isTableModify(String schema, StructureMeta.TableMeta tm) {
+
+    private boolean isTableModify(StructureMeta.TableMeta tm) {
         String tbName = tm.getTableName();
         StructureMeta.TableMeta oldTm;
         try {
@@ -78,4 +92,5 @@ public class TablesMetaCheckHandler extends AbstractTablesMetaHandler {
         }
         return false;
     }
+
 }

@@ -433,7 +433,7 @@ public final class DbleServer {
             try {
                 OnlineLockStatus.getInstance().metaUcoreInit(true);
             } catch (Exception e) {
-                LOGGER.info("ucore can not connection ");
+                LOGGER.warn("ucore can not connection ");
             }
         }
         //initialized the cache service

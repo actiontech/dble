@@ -419,6 +419,10 @@ public class NonBlockingSession implements Session {
             }
         }
 
+        if (this.getSessionXaID() != null && this.xaState == TxState.TX_INITIALIZE_STATE) {
+            this.xaState = TxState.TX_STARTED_STATE;
+        }
+
         RouteResultsetNode[] nodes = rrs.getNodes();
         if (nodes == null || nodes.length == 0 || nodes[0].getName() == null || nodes[0].getName().equals("")) {
             if (rrs.isNeedOptimizer()) {
@@ -434,9 +438,7 @@ public class NonBlockingSession implements Session {
             }
             return;
         }
-        if (this.getSessionXaID() != null && this.xaState == TxState.TX_INITIALIZE_STATE) {
-            this.xaState = TxState.TX_STARTED_STATE;
-        }
+
         if (nodes.length == 1) {
             SingleNodeHandler singleNodeHandler = new SingleNodeHandler(rrs, this);
             setTraceSimpleHandler(singleNodeHandler);

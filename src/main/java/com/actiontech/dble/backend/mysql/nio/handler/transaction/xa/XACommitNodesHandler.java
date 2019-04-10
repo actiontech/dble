@@ -143,6 +143,12 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                     }
                 });
             }
+        } else if (state == TxState.TX_INITIALIZE_STATE) {
+            String errMsg = "The XA state of this session is tx_initialize_state, should not go to this branch";
+            LOGGER.error(errMsg);
+            session.getSource().write(makeErrorPacket(errMsg));
+            session.closeAndClearResources(errMsg);
+            return false;
         }
         return true;
     }

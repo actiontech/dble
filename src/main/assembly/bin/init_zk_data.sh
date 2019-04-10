@@ -15,5 +15,5 @@ CURR_DIR=`pwd`
 cd ..
 DBLE_HOME=`pwd`
 cd $CURR_DIR
-$JAVA_CMD -Xms256M -Xmx1G -XX:MaxPermSize=64M  -DDBLE_HOME=$DBLE_HOME -cp "$DBLE_HOME/conf:$DBLE_HOME/lib/*" $MAIN_CLASS
+$JAVA_CMD -Xms256M -Xmx1G  -DDBLE_HOME=$DBLE_HOME -cp "$DBLE_HOME/conf:$DBLE_HOME/lib/*" $MAIN_CLASS
 echo "---------finished------------"

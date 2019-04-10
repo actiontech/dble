@@ -26,13 +26,11 @@ public class SingleNodeTablesMetaInitHandler {
             "Create Table"};
     private static final String SQL = "show create table `{0}`;";
     private String dataNode;
-    private String schema;
     private MultiTablesMetaHandler multiTablesMetaHandler;
     private volatile List<String> tables;
 
-    SingleNodeTablesMetaInitHandler(MultiTablesMetaHandler multiTablesMetaHandler, String schema, List<String> tables, String dataNode) {
+    SingleNodeTablesMetaInitHandler(MultiTablesMetaHandler multiTablesMetaHandler, List<String> tables, String dataNode) {
         this.multiTablesMetaHandler = multiTablesMetaHandler;
-        this.schema = schema;
         this.tables = tables;
         this.dataNode = dataNode;
     }
@@ -72,9 +70,7 @@ public class SingleNodeTablesMetaInitHandler {
                 tables.remove(table);
                 String createSQL = row.get(MYSQL_SHOW_CREATE_TABLE_COLS[1]);
                 StructureMeta.TableMeta tableMeta = MetaHelper.initTableMeta(table, createSQL, System.currentTimeMillis());
-                if (tableMeta != null) {
-                    multiTablesMetaHandler.getTmManager().addTable(schema, tableMeta);
-                }
+                multiTablesMetaHandler.handleSingleMetaData(tableMeta);
             }
             if (tables.size() > 0) {
                 for (String table : tables) {

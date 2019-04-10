@@ -227,7 +227,6 @@ public class XMLSchemaLoader implements SchemaLoader {
         erRelations.putAll(schemaFkERMap);
     }
 
-
     private Map<String, TableConfig> loadTables(Element node, boolean isLowerCaseNames) {
         // supprot [`] BEN GONG in table name
         Map<String, TableConfig> tables = new TableConfigMap();
@@ -242,10 +241,14 @@ public class XMLSchemaLoader implements SchemaLoader {
             TableTypeEnum tableType = TableTypeEnum.TYPE_SHARDING_TABLE;
             if (tableElement.hasAttribute("type")) {
                 String tableTypeStr = tableElement.getAttribute("type");
-                if ("global".equalsIgnoreCase(tableTypeStr)) {
-                    tableType = TableTypeEnum.TYPE_GLOBAL_TABLE;
-                } else {
-                    problemReporter.warn("Table[" + tableElement.getAttribute("name") + "] attribute type " + tableTypeStr + " in schema.xml is illegal, use sharding replaced");
+                switch (tableTypeStr.toLowerCase()) {
+                    case "global":
+                        tableType = TableTypeEnum.TYPE_GLOBAL_TABLE;
+                        break;
+                    case "default":
+                        break;
+                    default:
+                        problemReporter.warn("Table[" + tableElement.getAttribute("name") + "] attribute type value '" + tableTypeStr + "' in schema.xml is illegal, use default replaced");
                 }
             }
             //dataNode of table

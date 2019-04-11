@@ -573,7 +573,7 @@ public final class SetHandler {
             return false;
         } else if (switchStatus) {
             if (c.getSession2().getTargetMap().size() > 0 && c.getSession2().getSessionXaID() == null) {
-                c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "set xa cmd on can't used before ending a transaction");
+                c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "you can't set xa cmd on when there are unfinished operation in the session.");
                 return false;
             }
             c.getSession2().setXaTxEnabled(true);
@@ -581,7 +581,7 @@ public final class SetHandler {
             return true;
         } else {
             if (c.getSession2().getTargetMap().size() > 0 && c.getSession2().getSessionXaID() != null) {
-                c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "set xa cmd off can't used before ending a transaction");
+                c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "you can't set xa cmd off when a transaction is in progress.");
                 return false;
             }
             c.getSession2().setXaTxEnabled(false);

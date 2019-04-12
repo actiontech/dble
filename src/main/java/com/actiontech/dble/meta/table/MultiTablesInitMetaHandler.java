@@ -41,6 +41,10 @@ public class MultiTablesInitMetaHandler extends MultiTablesMetaHandler {
             this.getTmManager().addTable(schema, tableMeta);
         }
     }
+    @Override
+    void handleMultiMetaData(Set<StructureMeta.TableMeta> tableMetas) {
+        handleSingleMetaData(tableMetas.iterator().next());
+    }
 
 
     @Override

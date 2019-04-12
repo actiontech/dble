@@ -99,7 +99,7 @@ public final class SelectedProcessor {
                     if (referList == null) {
                         referList = new ArrayList<>();
                     }
-                    Collection<Item> pdRefers = getPushDownSel(qtn, child, referList);
+                    Collection<Item> pdRefers = getPushDownSel(qtn, referList);
                     pushSelected(child, pdRefers);
                 }
                 return qtn;
@@ -107,11 +107,21 @@ public final class SelectedProcessor {
         }
     }
 
-    private static Collection<Item> getPushDownSel(PlanNode parent, PlanNode child, List<Item> selList) {
+    private static Collection<Item> getPushDownSel(PlanNode parent, List<Item> selList) {
         // oldselectable->newselectbable
         LinkedHashMap<Item, Item> oldNewMap = new LinkedHashMap<>();
         LinkedHashMap<Item, Item> oldKeyKeyMap = new LinkedHashMap<>();
-        for (Item sel : selList) {
+        ListIterator<Item> itemIterator = selList.listIterator();
+        while (itemIterator.hasNext()) {
+            Item sel = itemIterator.next();
+            if (sel instanceof ItemFunc) {
+                ItemFunc itemFunc = (ItemFunc) sel;
+                itemIterator.remove();
+                for (Item arg : itemFunc.arguments()) {
+                    itemIterator.add(arg);
+                }
+                continue;
+            }
             Item pdSel = oldNewMap.get(sel);
             if (pdSel == null) {
                 pdSel = PlanUtil.pushDownItem(parent, sel);

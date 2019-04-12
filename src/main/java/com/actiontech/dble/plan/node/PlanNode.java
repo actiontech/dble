@@ -13,6 +13,8 @@ import com.actiontech.dble.plan.common.context.ReferContext;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
+import com.actiontech.dble.plan.common.item.function.ItemFunc;
+import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCond;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemFuncGroupConcat;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
@@ -237,19 +239,20 @@ public abstract class PlanNode {
             if (!isPushDownNode) {
                 for (Item bf : jn.getJoinFilter())
                     setUpItemRefer(bf);
-                setUpItemRefer(jn.getOtherJoinOnFilter());
+                setUpFilterRefer(jn.getOtherJoinOnFilter());
             }
         }
         // where, pushdown node does 't need where
         if (!isPushDownNode) {
-            setUpItemRefer(whereFilter);
+            whereFilter.setPushDownName(null);
+            setUpFilterRefer(whereFilter);
         }
         // group by
         for (Order groupBy : groups) {
             setUpItemRefer(groupBy.getItem());
         }
         // having
-        setUpItemRefer(havingFilter);
+        setUpFilterRefer(havingFilter);
         // order by
         for (Order orderBy : orderBys) {
             setUpItemRefer(orderBy.getItem());
@@ -472,6 +475,18 @@ public abstract class PlanNode {
         if (sel == null)
             return null;
         return sel.fixFields(nameContext);
+    }
+
+    private void setUpFilterRefer(Item filter) {
+        if (filter != null) {
+            if (filter instanceof ItemFunc) {
+                for (Item item : filter.arguments()) {
+                    setUpFilterRefer(item);
+                }
+            } else {
+                setUpItemRefer(filter);
+            }
+        }
     }
 
     private void setUpItemRefer(Item sel) {

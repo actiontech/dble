@@ -14,7 +14,6 @@ import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
-import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCond;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemFuncGroupConcat;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;

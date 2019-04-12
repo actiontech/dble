@@ -33,4 +33,8 @@ public final class XaDelayProvider {
 
     }
 
+    public static void beforeInnerRetry(int count, String xaId) {
+
+    }
+
 }

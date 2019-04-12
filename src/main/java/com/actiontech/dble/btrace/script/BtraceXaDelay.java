@@ -75,4 +75,13 @@ public final class BtraceXaDelay {
         Thread.sleep(10000L);
     }
 
+    @OnMethod(
+            clazz = "com.actiontech.dble.btrace.provider.XaDelayProvider",
+            method = "beforeInnerRetry"
+    )
+    public static void beforeInnerRetry(int count, String xaId) throws Exception {
+        BTraceUtils.println("before inner retry " + xaId + " in " + count + " time.");
+        Thread.sleep(10000L);
+    }
+
 }

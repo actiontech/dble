@@ -9,7 +9,7 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 
-import java.util.*;
+import java.util.Set;
 
 /**
  * Created by szf on 2019/4/4.
@@ -43,7 +43,12 @@ public class MultiTablesInitMetaHandler extends MultiTablesMetaHandler {
     }
     @Override
     void handleMultiMetaData(Set<StructureMeta.TableMeta> tableMetas) {
-        handleSingleMetaData(tableMetas.iterator().next());
+        for (StructureMeta.TableMeta tableMeta : tableMetas) {
+            if (tableMeta != null) {
+                handleSingleMetaData(tableMeta);
+                break;
+            }
+        }
     }
 
 

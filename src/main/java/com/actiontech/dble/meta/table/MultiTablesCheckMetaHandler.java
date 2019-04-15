@@ -39,6 +39,21 @@ public class MultiTablesCheckMetaHandler extends MultiTablesMetaHandler {
     }
 
     @Override
+    void handleMultiMetaData(Set<StructureMeta.TableMeta> tableMetas) {
+        for (StructureMeta.TableMeta tableMeta : tableMetas) {
+            if (tableMeta != null) {
+                String tableId = schema + "." + tableMeta.getTableName();
+                if (isTableModify(tableMeta)) {
+                    String errorMsg = "Table [" + tableMeta.getTableName() + "] are modified by other,Please Check IT!";
+                    LOGGER.warn(errorMsg);
+                    AlertUtil.alertSelf(AlarmCode.TABLE_NOT_CONSISTENT_IN_MEMORY, Alert.AlertLevel.WARN, errorMsg, AlertUtil.genSingleLabel("TABLE", tableId));
+                    ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY.add(tableId);
+                }
+            }
+        }
+    }
+
+    @Override
     void schemaMetaFinish() {
 
     }

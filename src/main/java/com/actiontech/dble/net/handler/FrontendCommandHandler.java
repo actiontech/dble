@@ -55,7 +55,7 @@ public class FrontendCommandHandler implements NIOHandler {
             commands.doStmtClose();
             source.stmtClose(data);
             return;
-        }else {
+        } else {
             dataTodo = data;
             if (MySQLPacket.COM_STMT_RESET == data[4]) {
                 blobDataQueue.clear();

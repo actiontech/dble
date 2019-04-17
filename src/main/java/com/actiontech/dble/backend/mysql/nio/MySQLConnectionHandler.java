@@ -219,8 +219,11 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
      * execute RowEof Packet
      */
     private void handleRowEofPacket(byte[] data) {
+        if (session != null && !source.isTesting() && this.source.getLogResponse().compareAndSet(false, true)) {
+            session.setBackendResponseEndTime(this.source);
+        }
         this.source.setRunning(false);
-        this.source.singal();
+        this.source.signal();
         if (responseHandler != null) {
             responseHandler.rowEofResponse(data, false, source);
         } else {
@@ -233,7 +236,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
         LOGGER.info(this.source.toString() + " handle data error:", e);
         dataQueue.clear();
         this.source.setRunning(false);
-        this.source.singal();
+        this.source.signal();
         ResponseHandler handler = this.responseHandler;
         if (handler != null)
             handler.connectionError(e, this.source);

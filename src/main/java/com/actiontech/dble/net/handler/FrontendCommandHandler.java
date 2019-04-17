@@ -47,13 +47,15 @@ public class FrontendCommandHandler implements NIOHandler {
             }
             return;
         }
-        if (MySQLPacket.COM_STMT_SEND_LONG_DATA != data[4]) {
-            dataTodo = data;
-        } else if (MySQLPacket.COM_STMT_RESET == data[4]) {
-            blobDataQueue.clear();
-        } else {
+
+        if (MySQLPacket.COM_STMT_SEND_LONG_DATA == data[4]) {
             blobDataQueue.offer(data);
             return;
+        } else {
+            dataTodo = data;
+            if (MySQLPacket.COM_STMT_RESET == data[4]) {
+                blobDataQueue.clear();
+            }
         }
         if (source instanceof ServerConnection) {
             ((ServerConnection) source).getSession2().resetMultiStatementStatus();

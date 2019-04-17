@@ -85,6 +85,7 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
             session.releaseConnectionIfSafe(conn, false);
         } else {
             ((MySQLConnection) conn).quit();
+            session.getTargetMap().remove(conn.getAttachment());
         }
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);

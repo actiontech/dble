@@ -77,6 +77,7 @@ public class LockTablesHandler extends MultiNodeHandler {
             session.releaseConnectionIfSafe(conn, false);
         } else {
             ((MySQLConnection) conn).quit();
+            session.getTargetMap().remove(conn.getAttachment());
         }
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);

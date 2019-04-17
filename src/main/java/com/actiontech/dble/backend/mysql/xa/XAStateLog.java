@@ -41,6 +41,7 @@ public final class XAStateLog {
         }
     }
 
+    public static final String XA_ALERT_FLAG = "XA_ALERT_FLAG";
     private static final Repository IN_MEMORY_REPOSITORY = new InMemoryRepository();
     private static ReentrantLock lock = new ReentrantLock();
     private static AtomicBoolean hasLeader = new AtomicBoolean(false);

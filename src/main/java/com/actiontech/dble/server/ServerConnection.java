@@ -359,7 +359,7 @@ public class ServerConnection extends FrontendConnection {
                     throw new Exception(msg);
                 }
                 DbleServer.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement());
-            } else if (DbleServer.getInstance().isUseUcore()) {
+            } else if (DbleServer.getInstance().isUseGeneralCluster()) {
                 DbleServer.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement());
             }
         } catch (SQLNonTransientException e) {

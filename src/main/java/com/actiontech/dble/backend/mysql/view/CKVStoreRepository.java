@@ -7,12 +7,9 @@ package com.actiontech.dble.backend.mysql.view;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.ClusterParamCfg;
-import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
-import com.actiontech.dble.config.loader.ucoreprocess.UDistributeLock;
-import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
-import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
-import com.actiontech.dble.config.loader.ucoreprocess.bean.UKvBean;
+import com.actiontech.dble.cluster.*;
+import com.actiontech.dble.cluster.bean.KvBean;
+import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.model.SchemaConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,8 +48,8 @@ public class CKVStoreRepository implements Repository {
 
     @Override
     public void init() {
-        List<UKvBean> allList = ClusterUcoreSender.getKeyTree(UcorePathUtil.getViewPath());
-        for (UKvBean bean : allList) {
+        List<KvBean> allList = ClusterHelper.getKVPath(ClusterPathUtil.getViewPath());
+        for (KvBean bean : allList) {
             String[] key = bean.getKey().split("/");
             if (key.length == 5) {
                 String[] value = key[key.length - 1].split(SCHEMA_VIEW_SPLIT);
@@ -81,14 +78,14 @@ public class CKVStoreRepository implements Repository {
     public void put(String schemaName, String viewName, String createSql) {
         Map<String, String> schemaMap = viewCreateSqlMap.get(schemaName);
 
-        StringBuffer sb = new StringBuffer().append(UcorePathUtil.getViewPath()).
+        StringBuffer sb = new StringBuffer().append(ClusterPathUtil.getViewPath()).
                 append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(viewName);
-        StringBuffer lsb = new StringBuffer().append(UcorePathUtil.getViewPath()).
+        StringBuffer lsb = new StringBuffer().append(ClusterPathUtil.getViewPath()).
                 append(SEPARATOR).append(LOCK).append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(viewName);
-        StringBuffer nsb = new StringBuffer().append(UcorePathUtil.getViewPath()).
+        StringBuffer nsb = new StringBuffer().append(ClusterPathUtil.getViewPath()).
                 append(SEPARATOR).append(UPDATE).append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(viewName);
-        UDistributeLock distributeLock = new UDistributeLock(lsb.toString(),
-                UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + UPDATE);
+        DistributeLock distributeLock = new DistributeLock(lsb.toString(),
+                ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + UPDATE);
 
 
         try {
@@ -102,14 +99,14 @@ public class CKVStoreRepository implements Repository {
 
             ClusterDelayProvider.delayAfterGetLock();
             schemaMap.put(viewName, createSql);
-            ClusterUcoreSender.sendDataToUcore(sb.toString(), createSql);
+            ClusterHelper.setKV(sb.toString(), createSql);
             ClusterDelayProvider.delayAfterViewSetKey();
-            ClusterUcoreSender.sendDataToUcore(nsb.toString(), UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + UPDATE);
+            ClusterHelper.setKV(nsb.toString(), ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + UPDATE);
             ClusterDelayProvider.delayAfterViewNotic();
             //self reponse set
-            ClusterUcoreSender.sendDataToUcore(nsb.toString() + UcorePathUtil.SEPARATOR + UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), UcorePathUtil.SUCCESS);
+            ClusterHelper.setKV(nsb.toString() + ClusterPathUtil.SEPARATOR + ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ClusterPathUtil.SUCCESS);
 
-            String errorMsg = ClusterUcoreSender.waitingForAllTheNode(UcorePathUtil.SUCCESS, nsb.toString() + SEPARATOR);
+            String errorMsg = ClusterHelper.waitingForAllTheNode(ClusterPathUtil.SUCCESS, nsb.toString() + SEPARATOR);
 
             if (errorMsg != null) {
                 throw new RuntimeException(errorMsg);
@@ -124,7 +121,7 @@ public class CKVStoreRepository implements Repository {
             throw new RuntimeException(e);
         } finally {
             ClusterDelayProvider.beforeDeleteViewNotic();
-            ClusterUcoreSender.deleteKVTree(nsb.toString() + SEPARATOR);
+            ClusterHelper.cleanPath(nsb.toString() + SEPARATOR);
             ClusterDelayProvider.beforeReleaseViewLock();
             distributeLock.release();
         }
@@ -142,15 +139,15 @@ public class CKVStoreRepository implements Repository {
      */
     @Override
     public void delete(String schemaName, String view) {
-        StringBuffer sb = new StringBuffer().append(UcorePathUtil.getViewPath()).
+        StringBuffer sb = new StringBuffer().append(ClusterPathUtil.getViewPath()).
                 append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(view);
-        StringBuffer nsb = new StringBuffer().append(UcorePathUtil.getViewPath()).
+        StringBuffer nsb = new StringBuffer().append(ClusterPathUtil.getViewPath()).
                 append(SEPARATOR).append(UPDATE).append(SEPARATOR).
                 append(schemaName).append(SCHEMA_VIEW_SPLIT).append(view);
-        StringBuffer lsb = new StringBuffer().append(UcorePathUtil.getViewPath()).
+        StringBuffer lsb = new StringBuffer().append(ClusterPathUtil.getViewPath()).
                 append(SEPARATOR).append(LOCK).append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(view);
-        UDistributeLock distributeLock = new UDistributeLock(lsb.toString(),
-                UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + DELETE);
+        DistributeLock distributeLock = new DistributeLock(lsb.toString(),
+                ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + DELETE);
 
         try {
             viewCreateSqlMap.get(schemaName).remove(view);
@@ -162,15 +159,15 @@ public class CKVStoreRepository implements Repository {
                 }
             }
             ClusterDelayProvider.delayAfterGetLock();
-            ClusterUcoreSender.deleteKV(sb.toString());
+            ClusterHelper.cleanKV(sb.toString());
             ClusterDelayProvider.delayAfterViewSetKey();
-            ClusterUcoreSender.sendDataToUcore(nsb.toString(), UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + DELETE);
+            ClusterHelper.setKV(nsb.toString(), ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + DELETE);
             ClusterDelayProvider.delayAfterViewNotic();
 
             //self reponse set
-            ClusterUcoreSender.sendDataToUcore(nsb.toString() + UcorePathUtil.SEPARATOR + UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), UcorePathUtil.SUCCESS);
+            ClusterHelper.setKV(nsb.toString() + ClusterPathUtil.SEPARATOR + ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ClusterPathUtil.SUCCESS);
 
-            String errorMsg = ClusterUcoreSender.waitingForAllTheNode(UcorePathUtil.SUCCESS, nsb.toString() + SEPARATOR);
+            String errorMsg = ClusterHelper.waitingForAllTheNode(ClusterPathUtil.SUCCESS, nsb.toString() + SEPARATOR);
 
             if (errorMsg != null) {
                 throw new RuntimeException(errorMsg);
@@ -184,7 +181,7 @@ public class CKVStoreRepository implements Repository {
             throw new RuntimeException(e);
         } finally {
             ClusterDelayProvider.beforeDeleteViewNotic();
-            ClusterUcoreSender.deleteKVTree(nsb.toString() + SEPARATOR);
+            ClusterHelper.cleanPath(nsb.toString() + SEPARATOR);
             ClusterDelayProvider.beforeReleaseViewLock();
             distributeLock.release();
         }

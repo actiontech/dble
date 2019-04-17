@@ -19,6 +19,7 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
 
     private static final String SEQUENCE_TIME_PROPS = "sequence_time_conf.properties";
     private static final IncrSequenceTimeHandler INSTANCE = new IncrSequenceTimeHandler();
+    private static final long DEFAULT_START_TIMESTAMP = 1288834974657L; //Thu Nov 04 09:42:54 CST 2010
     private IdWorker workey;
 
 
@@ -31,11 +32,15 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
 
         long workid = Long.parseLong(props.getProperty("WORKID"));
         long dataCenterId = Long.parseLong(props.getProperty("DATAACENTERID"));
-        long startTimeMilliseconds = 1288834974657L; //Thu Nov 04 09:42:54 CST 2010
+        long startTimeMilliseconds = DEFAULT_START_TIMESTAMP;
         try {
             String startTimeStr = props.getProperty("START_TIME");
             if (!StringUtil.isEmpty(startTimeStr)) {
                 startTimeMilliseconds = DateUtil.parseDate(startTimeStr).getTime();
+                if (startTimeMilliseconds > System.currentTimeMillis()) {
+                    LOGGER.warn("Global sequence START_TIME mustn't be over than dble start time, starting from 2010-10-04 09:42:54");
+                    startTimeMilliseconds = DEFAULT_START_TIMESTAMP;
+                }
             }
         } catch (Exception pe) {
             LOGGER.warn("Global sequence START_TIME parse exception, starting from 2010-10-04 09:42:54");

@@ -539,7 +539,6 @@
                                 </systemProperties>
                                 <extraArguments>
                                     <extraArgument>-server</extraArgument>
-                                    <extraArgument>-XX:MaxPermSize=64M</extraArgument>
                                     <extraArgument>-XX:+AggressiveOpts</extraArgument>
                                     <extraArgument>-Dfile.encoding=UTF-8</extraArgument>
                                     <!-- 远程JMX -->
@@ -695,7 +694,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>8.1</version>
+                        <version>8.18</version>
                     </dependency>
                 </dependencies>
                 <configuration>

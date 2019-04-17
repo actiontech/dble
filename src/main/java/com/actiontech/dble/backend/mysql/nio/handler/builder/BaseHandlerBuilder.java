@@ -10,7 +10,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.GlobalVi
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.*;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.DirectGroupByHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.OrderedGroupByHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.AggregateHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.AllAnySubQueryHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.InSubQueryHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.SingleRowSubQueryHandler;
@@ -218,13 +218,13 @@ public abstract class BaseHandlerBuilder {
                 } else {
                     OrderByHandler oh = new OrderByHandler(getSequenceId(), session, node.getGroupBys());
                     addHandler(oh);
-                    OrderedGroupByHandler gh = new OrderedGroupByHandler(getSequenceId(), session, node.getGroupBys(),
+                    AggregateHandler gh = new AggregateHandler(getSequenceId(), session, node.getGroupBys(),
                             sumRefs);
                     addHandler(gh);
                 }
             } else { // @bug 1052 canDirectGroupby condition we use
                 // directgroupby already
-                OrderedGroupByHandler gh = new OrderedGroupByHandler(getSequenceId(), session, node.getGroupBys(),
+                AggregateHandler gh = new AggregateHandler(getSequenceId(), session, node.getGroupBys(),
                         sumRefs);
                 addHandler(gh);
             }
@@ -322,40 +322,23 @@ public abstract class BaseHandlerBuilder {
         // onCondition column in orderBys will be saved to onOrders,
         // eg: if jn.onCond = (t1.id=t2.id),
         // orderBys is t1.id,t2.id,t1.name, and onOrders = {t1.id,t2.id};
-        List<Order> onOrders = new ArrayList<>();
         List<Order> leftOnOrders = jn.getLeftJoinOnOrders();
-        List<Order> rightOnOrders = jn.getRightJoinOnOrders();
-        for (Order orderBy : orderBys) {
-            if (leftOnOrders.contains(orderBy) || rightOnOrders.contains(orderBy)) {
-                onOrders.add(orderBy);
-            } else {
-                break;
-            }
+        if (leftOnOrders.size() >= orderBys.size()) {
+            return PlanUtil.orderContains(leftOnOrders, orderBys);
         }
-        if (onOrders.isEmpty()) {
-            // join node must order by joinOnCondition
+        List<Order> onOrdersTest = orderBys.subList(0, leftOnOrders.size());
+        if (!PlanUtil.orderContains(leftOnOrders, onOrdersTest)) {
             return false;
-        } else {
-            List<Order> remainOrders = orderBys.subList(onOrders.size(), orderBys.size());
-            if (remainOrders.isEmpty()) {
-                return true;
-            } else {
-                List<Order> pushedOrders = PlanUtil.getPushDownOrders(jn, remainOrders);
-                if (jn.isLeftOrderMatch()) {
-                    List<Order> leftChildOrders = jn.getLeftNode().getOrderBys();
-                    List<Order> leftRemainOrders = leftChildOrders.subList(leftOnOrders.size(), leftChildOrders.size());
-                    if (PlanUtil.orderContains(leftRemainOrders, pushedOrders))
-                        return true;
-                } else if (jn.isRightOrderMatch()) {
-                    List<Order> rightChildOrders = jn.getRightNode().getOrderBys();
-                    List<Order> rightRemainOrders = rightChildOrders.subList(rightOnOrders.size(),
-                            rightChildOrders.size());
-                    if (PlanUtil.orderContains(rightRemainOrders, pushedOrders))
-                        return true;
-                }
-                return false;
-            }
         }
+
+        List<Order> pushedOrders = PlanUtil.getPushDownOrders(jn, orderBys.subList(onOrdersTest.size(), orderBys.size()));
+        if (jn.isLeftOrderMatch()) {
+            List<Order> leftChildOrders = jn.getLeftNode().getOrderBys();
+            List<Order> leftRemainOrders = leftChildOrders.subList(leftOnOrders.size(), leftChildOrders.size());
+            if (PlanUtil.orderContains(leftRemainOrders, pushedOrders))
+                return true;
+        }
+        return false;
     }
 
     /**
@@ -499,6 +482,7 @@ public abstract class BaseHandlerBuilder {
         this.getSubQueryBuilderList().add(builder);
         subQueryFinished(subNodes, lock, finished, finishSubQuery);
     }
+
     private void handleSubQuery(final ReentrantLock lock, final Condition finishSubQuery, final AtomicBoolean finished,
                                 final AtomicInteger subNodes, final CopyOnWriteArrayList<ErrorPacket> errorPackets, final PlanNode planNode, final SubQueryHandler tempHandler) {
         DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {

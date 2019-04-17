@@ -155,6 +155,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             session.releaseConnectionIfSafe(conn, false);
         } else {
             ((MySQLConnection) conn).quit();
+            session.getTargetMap().remove(conn.getAttachment());
         }
         source.setTxInterrupt(errMsg);
         session.handleSpecial(rrs, false);
@@ -242,7 +243,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
         this.netOutBytes += eof.length;
         this.resultSize += eof.length;
-        session.setBackendResponseEndTime((MySQLConnection) conn);
         // if it's call statement,it will not release connection
         if (!rrs.isCallStatement()) {
             session.releaseConnectionIfSafe(conn, false);

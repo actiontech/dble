@@ -316,7 +316,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         if (errorResponse.get()) {
             return;
         }
-        session.setBackendResponseEndTime((MySQLConnection) conn);
         final ServerConnection source = session.getSource();
         if (!rrs.isCallStatement()) {
             if (clearIfSessionClosed(session)) {
@@ -397,7 +396,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
                 binRowDataPk.read(fieldPackets, rowDataPkg);
                 binRowDataPk.setPacketId(rowDataPkg.getPacketId());
-                binRowDataPk.write(byteBuffer, session.getSource(), true);
+                byteBuffer = binRowDataPk.write(byteBuffer, session.getSource(), true);
             } else {
                 byteBuffer = session.getSource().writeToBuffer(row, byteBuffer);
             }

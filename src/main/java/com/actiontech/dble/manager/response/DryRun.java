@@ -8,11 +8,11 @@ package com.actiontech.dble.manager.response;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.PacketUtil;
+import com.actiontech.dble.cluster.ClusterGeneralConfig;
+import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.*;
-import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
-import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
-import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
+import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.model.UserConfig;
@@ -115,7 +115,7 @@ public final class DryRun {
 
         userCheck(list, serverConfig);
 
-        if (DbleServer.getInstance().isUseUcore()) {
+        if (DbleServer.getInstance().isUseGeneralCluster()) {
             ucoreConnectionTest(list);
         } else {
             list.add(new ErrorInfo("Cluster", "NOTICE", "Dble is in single mod"));
@@ -127,9 +127,9 @@ public final class DryRun {
 
     private static void ucoreConnectionTest(List<ErrorInfo> list) {
         try {
-            String serverId = UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
-            String selfPath = UcorePathUtil.getOnlinePath(serverId);
-            ClusterUcoreSender.getKey(selfPath);
+            String serverId = ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
+            String selfPath = ClusterPathUtil.getOnlinePath(serverId);
+            ClusterHelper.getKV(selfPath);
         } catch (Exception e) {
             list.add(new ErrorInfo("Cluster", "ERROR", "Dble in cluster but all the ucore can't connect"));
         }

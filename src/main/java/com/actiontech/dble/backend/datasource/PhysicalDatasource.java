@@ -184,22 +184,14 @@ public abstract class PhysicalDatasource {
 
         //the following is about the idle connection number control
         int idleCons = getIdleCount();
-        int activeCons = this.getActiveCount();
+        int totalCount = this.getTotalConCount();
         int createCount = (hostConfig.getMinCon() - idleCons) / 3;
 
         // create if idle too little
-        if ((createCount > 0) && (idleCons + activeCons < size)) {
+        if ((createCount > 0) && totalCount < size) {
             createByIdleLittle(idleCons, createCount);
         } else if (idleCons > hostConfig.getMinCon()) {
             closeByIdleMany(idleCons - hostConfig.getMinCon(), idleCons);
-        } else {
-            int activeCount = this.getActiveCount();
-            if (activeCount > size) {
-                String s = "DATASOURCE EXCEED [name=" + name +
-                        ",active=" + activeCount +
-                        ",size=" + size + ']';
-                LOGGER.info(s);
-            }
         }
     }
 
@@ -251,21 +243,19 @@ public abstract class PhysicalDatasource {
 
         final String[] schemas = dbPool.getSchemas();
         for (int i = 0; i < createCount; i++) {
-            if (this.getActiveCount() + this.getIdleCount() >= size) {
-                break;
-            }
             NewConnectionRespHandler simpleHandler = new NewConnectionRespHandler();
             try {
                 if (this.createNewCount()) {
                     // creat new connection
                     this.createNewConnection(simpleHandler, null, schemas[i % schemas.length]);
                     simpleHandler.getBackConn().release();
+                } else {
+                    break;
                 }
                 if (ToResolveContainer.CREATE_CONN_FAIL.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {
                     Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-                    if (AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", this.getConfig().getId(), labels)) {
-                        ToResolveContainer.CREATE_CONN_FAIL.remove(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-                    }
+                    AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", this.getConfig().getId(),
+                            labels, ToResolveContainer.CREATE_CONN_FAIL, this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
                 }
             } catch (IOException e) {
                 String errMsg = "create connection err ";
@@ -277,7 +267,7 @@ public abstract class PhysicalDatasource {
         }
     }
 
-    public int getActiveCount() {
+    public int getTotalConCount() {
         return this.connectionCount.get();
     }
 
@@ -335,9 +325,8 @@ public abstract class PhysicalDatasource {
                          String schema) {
         if (ToResolveContainer.CREATE_CONN_FAIL.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {
             Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-            if (AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", this.getConfig().getId(), labels)) {
-                ToResolveContainer.CREATE_CONN_FAIL.remove(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-            }
+            AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", this.getConfig().getId(), labels,
+                    ToResolveContainer.CREATE_CONN_FAIL, this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
         }
         takeCon(conn, schema);
         conn.setAttachment(attachment);
@@ -390,9 +379,9 @@ public abstract class PhysicalDatasource {
             } else { // create connection
                 if (ToResolveContainer.REACH_MAX_CON.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {
                     Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-                    if (AlertUtil.alertResolve(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, "dble", this.getConfig().getId(), labels)) {
-                        ToResolveContainer.REACH_MAX_CON.remove(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-                    }
+                    AlertUtil.alertResolve(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, "dble", this.getConfig().getId(), labels,
+                            ToResolveContainer.REACH_MAX_CON, this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+
                 }
                 LOGGER.info("no idle connection in pool,create new connection for " + this.name + " of schema " + schema);
                 createNewConnection(handler, attachment, schema);
@@ -413,9 +402,8 @@ public abstract class PhysicalDatasource {
             } else { // create connection
                 if (ToResolveContainer.REACH_MAX_CON.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {
                     Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-                    if (AlertUtil.alertResolve(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, "dble", this.getConfig().getId(), labels)) {
-                        ToResolveContainer.REACH_MAX_CON.remove(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-                    }
+                    AlertUtil.alertResolve(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, "dble", this.getConfig().getId(), labels,
+                            ToResolveContainer.REACH_MAX_CON, this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
                 }
                 LOGGER.info("no ilde connection in pool,create new connection for " + this.name + " of schema " + schema);
                 try {
@@ -424,9 +412,8 @@ public abstract class PhysicalDatasource {
                     con = simpleHandler.getBackConn();
                     if (ToResolveContainer.CREATE_CONN_FAIL.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {
                         Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-                        if (AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", this.getConfig().getId(), labels)) {
-                            ToResolveContainer.CREATE_CONN_FAIL.remove(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-                        }
+                        AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", this.getConfig().getId(), labels,
+                                ToResolveContainer.CREATE_CONN_FAIL, this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
                     }
                 } catch (IOException e) {
                     Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
@@ -487,11 +474,9 @@ public abstract class PhysicalDatasource {
     public void connectionClosed(BackendConnection conn) {
         //only used in mysqlConneciton synchronized function
         this.connectionCount.decrementAndGet();
-        if (conn.getSchema() != null) {
-            ConQueue queue = this.conMap.getSchemaConQueue(conn.getSchema());
-            if (queue != null) {
-                queue.removeCon(conn);
-            }
+        ConQueue queue = this.conMap.getSchemaConQueue(conn.getSchema());
+        if (queue != null) {
+            queue.removeCon(conn);
         }
     }
 

@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.mysql.xa.*;
 import com.actiontech.dble.backend.mysql.xa.recovery.DeserializationException;
 import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
@@ -23,6 +24,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+
+import static com.actiontech.dble.backend.mysql.xa.XAStateLog.XA_ALERT_FLAG;
 
 /**
  * Created by zhangchao on 2016/10/13.
@@ -202,15 +205,14 @@ public class FileSystemRepository implements Repository {
             }
             rwChannel.force(false);
             file.discardBackupVersion();
-            if (XAStateLog.isWriteAlert()) {
-                boolean resolved = AlertUtil.alertSelfResolve(AlarmCode.XA_WRITE_CHECK_POINT_FAIL, Alert.AlertLevel.WARN, null);
-                XAStateLog.setWriteAlert(resolved);
+            if (ToResolveContainer.XA_WRITE_CHECK_POINT_FAIL.size() > 0) {
+                AlertUtil.alertSelfResolve(AlarmCode.XA_WRITE_CHECK_POINT_FAIL, Alert.AlertLevel.WARN, null, ToResolveContainer.XA_WRITE_CHECK_POINT_FAIL, XA_ALERT_FLAG);
             }
             return true;
         } catch (Exception e) {
             LOGGER.warn("Failed to write checkpoint", e);
             AlertUtil.alertSelf(AlarmCode.XA_WRITE_CHECK_POINT_FAIL, Alert.AlertLevel.WARN, "Failed to write checkpoint" + e.getMessage(), null);
-            XAStateLog.setWriteAlert(true);
+            ToResolveContainer.XA_WRITE_CHECK_POINT_FAIL.add(XA_ALERT_FLAG);
             return false;
         }
     }

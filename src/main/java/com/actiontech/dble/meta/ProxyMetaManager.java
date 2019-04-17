@@ -17,10 +17,9 @@ import com.actiontech.dble.backend.mysql.view.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.view.KVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.Repository;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.ClusterParamCfg;
+import com.actiontech.dble.cluster.*;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.config.loader.ucoreprocess.*;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.config.model.DBHostConfig;
@@ -28,10 +27,7 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.protocol.StructureMeta;
-import com.actiontech.dble.meta.table.AbstractTablesMetaHandler;
-import com.actiontech.dble.meta.table.DDLNotifyTableMetaHandler;
-import com.actiontech.dble.meta.table.SchemaMetaHandler;
-import com.actiontech.dble.meta.table.TablesMetaCheckHandler;
+import com.actiontech.dble.meta.table.*;
 import com.actiontech.dble.meta.table.old.AbstractTableMetaHandler;
 import com.actiontech.dble.meta.table.old.TableMetaCheckHandler;
 import com.actiontech.dble.plan.node.QueryNode;
@@ -410,7 +406,7 @@ public class ProxyMetaManager {
         handler.execute();
         if (DbleServer.getInstance().isUseZK()) {
             loadViewFromKV();
-        } else if (DbleServer.getInstance().isUseUcore()) {
+        } else if (DbleServer.getInstance().isUseGeneralCluster()) {
             loadViewFromCKV();
         } else {
             loadViewFromFile();
@@ -470,8 +466,8 @@ public class ProxyMetaManager {
                     }
                 }
 
-                AbstractTablesMetaHandler tableHandler = new TablesMetaCheckHandler(this, schema.getName(), dataNodeMap, selfNode);
-                tableHandler.execute();
+                MultiTablesMetaHandler multiTablesMetaHandler = new MultiTablesCheckMetaHandler(this, schema, selfNode);
+                multiTablesMetaHandler.execute();
             }
         }
     }
@@ -496,19 +492,18 @@ public class ProxyMetaManager {
             String nodePath = ZKPaths.makePath(KVPathUtil.getDDLPath(), nodeName);
             zkConn.create().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
             ClusterDelayProvider.delayAfterDdlLockMeta();
-        } else if (DbleServer.getInstance().isUseUcore()) {
-            DDLInfo ddlInfo = new DDLInfo(schema, sql, UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), DDLInfo.DDLStatus.INIT, DDLInfo.DDLType.UNKNOWN);
+        } else if (DbleServer.getInstance().isUseGeneralCluster()) {
+            DDLInfo ddlInfo = new DDLInfo(schema, sql, ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), DDLInfo.DDLStatus.INIT, DDLInfo.DDLType.UNKNOWN);
             String nodeName = StringUtil.getUFullName(schema, table);
-            String ddlPath = UcorePathUtil.getDDLPath(nodeName);
-            UDistributeLock lock = new UDistributeLock(ddlPath, ddlInfo.toString());
-            //ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLPath(nodeName), ddlInfo.toString());
+            String ddlPath = ClusterPathUtil.getDDLPath(nodeName);
+            DistributeLock lock = new DistributeLock(ddlPath, ddlInfo.toString());
             if (!lock.acquire()) {
                 String msg = "The syncMeta.lock or metaLock about " + nodeName + " in " + ddlPath + "is Exists";
                 LOGGER.info(msg);
                 throw new Exception(msg);
             }
             ClusterDelayProvider.delayAfterDdlLockMeta();
-            UDistrbtLockManager.addLock(lock);
+            DistrbtLockManager.addLock(lock);
         }
     }
 
@@ -517,7 +512,7 @@ public class ProxyMetaManager {
         ClusterDelayProvider.delayAfterDdlExecuted();
         if (DbleServer.getInstance().isUseZK()) {
             notifyResponseZKDdl(schema, table, sql, ddlStatus, ddlType, needNotifyOther);
-        } else if (DbleServer.getInstance().isUseUcore()) {
+        } else if (DbleServer.getInstance().isUseGeneralCluster()) {
             notifyReponseUcoreDDL(schema, table, sql, ddlStatus, ddlType, needNotifyOther);
         }
     }
@@ -560,15 +555,15 @@ public class ProxyMetaManager {
      */
     public void notifyReponseUcoreDDL(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, DDLInfo.DDLType ddlType, boolean needNotifyOther) throws Exception {
         String nodeName = StringUtil.getUFullName(schema, table);
-        DDLInfo ddlInfo = new DDLInfo(schema, sql, UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ddlStatus, ddlType);
-        ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLInstancePath(nodeName), UcorePathUtil.SUCCESS);
+        DDLInfo ddlInfo = new DDLInfo(schema, sql, ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ddlStatus, ddlType);
+        ClusterHelper.setKV(ClusterPathUtil.getDDLInstancePath(nodeName), ClusterPathUtil.SUCCESS);
         if (needNotifyOther) {
             try {
                 ClusterDelayProvider.delayBeforeDdlNotice();
-                ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getDDLPath(nodeName), ddlInfo.toString());
+                ClusterHelper.setKV(ClusterPathUtil.getDDLPath(nodeName), ddlInfo.toString());
                 ClusterDelayProvider.delayAfterDdlNotice();
 
-                String errorMsg = ClusterUcoreSender.waitingForAllTheNode(UcorePathUtil.SUCCESS, UcorePathUtil.getDDLPath(nodeName));
+                String errorMsg = ClusterHelper.waitingForAllTheNode(ClusterPathUtil.SUCCESS, ClusterPathUtil.getDDLPath(nodeName));
 
                 if (errorMsg != null) {
                     throw new RuntimeException(errorMsg);
@@ -577,10 +572,10 @@ public class ProxyMetaManager {
                 throw e;
             } finally {
                 ClusterDelayProvider.delayBeforeDdlNoticeDeleted();
-                ClusterUcoreSender.deleteKVTree(UcorePathUtil.getDDLPath(nodeName) + "/");
+                ClusterHelper.cleanPath(ClusterPathUtil.getDDLPath(nodeName) + "/");
                 //release the lock
                 ClusterDelayProvider.delayBeforeDdlLockRelease();
-                UDistrbtLockManager.releaseLock(UcorePathUtil.getDDLPath(nodeName));
+                DistrbtLockManager.releaseLock(ClusterPathUtil.getDDLPath(nodeName));
             }
         }
 
@@ -604,8 +599,8 @@ public class ProxyMetaManager {
                 for (String dataNode : tbConfig.getDataNodes()) {
                     showDataNode = dataNode;
                     String tableId = "DataNode[" + dataNode + "]:Table[" + tableName + "]";
-                    if (ToResolveContainer.TABLE_LACK.contains(tableId) && AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
-                        ToResolveContainer.TABLE_LACK.remove(tableId);
+                    if (ToResolveContainer.TABLE_LACK.contains(tableId)) {
+                        AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId), ToResolveContainer.TABLE_LACK, tableId);
                     }
                 }
             }

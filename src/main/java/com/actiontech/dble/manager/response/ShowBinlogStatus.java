@@ -9,14 +9,11 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.PacketUtil;
-import com.actiontech.dble.cluster.ClusterParamCfg;
+import com.actiontech.dble.cluster.*;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.config.loader.ucoreprocess.ClusterUcoreSender;
-import com.actiontech.dble.config.loader.ucoreprocess.KVtoXml.UcoreToXml;
-import com.actiontech.dble.config.loader.ucoreprocess.UDistributeLock;
-import com.actiontech.dble.config.loader.ucoreprocess.UcoreConfig;
-import com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil;
+import com.actiontech.dble.cluster.kVtoXml.ClusterToXml;
+import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.BinlogPause;
 import com.actiontech.dble.manager.ManagerConnection;
@@ -50,7 +47,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
-import static com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil.SEPARATOR;
+import static com.actiontech.dble.cluster.ClusterPathUtil.SEPARATOR;
 import static com.actiontech.dble.config.loader.zkprocess.zookeeper.process.BinlogPause.BinlogPauseStatus;
 
 public final class ShowBinlogStatus {
@@ -87,7 +84,7 @@ public final class ShowBinlogStatus {
         long timeout = DbleServer.getInstance().getConfig().getSystem().getShowBinlogStatusTimeout();
         if (isUseZK) {
             showBinlogWithZK(c, timeout);
-        } else if (DbleServer.getInstance().isUseUcore()) {
+        } else if (DbleServer.getInstance().isUseGeneralCluster()) {
             showBinlogWithUcore(c, timeout);
         } else {
             if (!DbleServer.getInstance().getBackupLocked().compareAndSet(false, true)) {
@@ -110,7 +107,7 @@ public final class ShowBinlogStatus {
     private static void showBinlogWithUcore(ManagerConnection c, long timeout) {
 
         //step 1 get the distributeLock of the ucore
-        UDistributeLock distributeLock = new UDistributeLock(UcorePathUtil.getBinlogPauseLockPath(), UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+        DistributeLock distributeLock = new DistributeLock(ClusterPathUtil.getBinlogPauseLockPath(), ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
         try {
             if (!distributeLock.acquire()) {
                 c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "There is another command is showing BinlogStatus");
@@ -122,7 +119,7 @@ public final class ShowBinlogStatus {
                     c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "There is another command is showing BinlogStatus");
                 } else {
                     //step 3 notify other dble to stop the commit & set self status
-                    BinlogPause pauseOnInfo = new BinlogPause(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), BinlogPauseStatus.ON);
+                    BinlogPause pauseOnInfo = new BinlogPause(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), BinlogPauseStatus.ON);
 
                     //step 4 wait til other dbles to feedback the ucore flag
                     long beginTime = TimeUtil.currentTimeMillis();
@@ -131,13 +128,13 @@ public final class ShowBinlogStatus {
                         writeResponse(c);
                         return;
                     }
-                    ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getBinlogPauseStatus(), pauseOnInfo.toString());
-                    ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getBinlogPauseStatusSelf(), UcorePathUtil.SUCCESS);
+                    ClusterHelper.setKV(ClusterPathUtil.getBinlogPauseStatus(), pauseOnInfo.toString());
+                    ClusterHelper.setKV(ClusterPathUtil.getBinlogPauseStatusSelf(), ClusterPathUtil.SUCCESS);
 
-                    Map<String, String> expectedMap = UcoreToXml.getOnlineMap();
+                    Map<String, String> expectedMap = ClusterToXml.getOnlineMap();
                     while (true) {
                         StringBuffer errorStringBuf = new StringBuffer();
-                        if (ClusterUcoreSender.checkResponseForOneTime(UcorePathUtil.SUCCESS, UcorePathUtil.getBinlogPauseStatus(), expectedMap, errorStringBuf)) {
+                        if (ClusterHelper.checkResponseForOneTime(ClusterPathUtil.SUCCESS, ClusterPathUtil.getBinlogPauseStatus(), expectedMap, errorStringBuf)) {
                             errMsg = errorStringBuf.length() <= 0 ? null : errorStringBuf.toString();
                             break;
                         } else if (TimeUtil.currentTimeMillis() > beginTime + 2 * timeout) {
@@ -154,9 +151,9 @@ public final class ShowBinlogStatus {
                     writeResponse(c);
 
                     //step 7 delete the KVtree and notify the cluster
-                    ClusterUcoreSender.deleteKVTree(UcorePathUtil.getBinlogPauseStatus() + SEPARATOR);
-                    BinlogPause pauseOffInfo = new BinlogPause(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), BinlogPauseStatus.OFF);
-                    ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getBinlogPauseStatus(), pauseOffInfo.toString());
+                    ClusterHelper.cleanPath(ClusterPathUtil.getBinlogPauseStatus() + SEPARATOR);
+                    BinlogPause pauseOffInfo = new BinlogPause(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), BinlogPauseStatus.OFF);
+                    ClusterHelper.setKV(ClusterPathUtil.getBinlogPauseStatus(), pauseOffInfo.toString());
 
                 }
             } catch (Exception e) {

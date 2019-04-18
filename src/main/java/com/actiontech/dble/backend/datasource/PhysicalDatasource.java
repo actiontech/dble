@@ -258,7 +258,7 @@ public abstract class PhysicalDatasource {
                             labels, ToResolveContainer.CREATE_CONN_FAIL, this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
                 }
             } catch (IOException e) {
-                String errMsg = "create connection err ";
+                String errMsg = "create connection err:";
                 LOGGER.warn(errMsg, e);
                 Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
                 AlertUtil.alert(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, errMsg + e.getMessage(), "mysql", this.getConfig().getId(), labels);

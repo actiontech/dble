@@ -30,9 +30,9 @@ public class FrontendCommandHandler implements NIOHandler {
     protected final FrontendConnection source;
     protected final CommandCount commands;
     private volatile byte[] dataTodo;
-    Queue<byte[]> blobDataQueue = new ConcurrentLinkedQueue<byte[]>();
+    private Queue<byte[]> blobDataQueue = new ConcurrentLinkedQueue<byte[]>();
 
-    public FrontendCommandHandler(FrontendConnection source) {
+    FrontendCommandHandler(FrontendConnection source) {
         this.source = source;
         this.commands = source.getProcessor().getCommands();
     }
@@ -49,6 +49,7 @@ public class FrontendCommandHandler implements NIOHandler {
         }
 
         if (MySQLPacket.COM_STMT_SEND_LONG_DATA == data[4]) {
+            commands.doStmtSendLongData();
             blobDataQueue.offer(data);
             return;
         } else if (MySQLPacket.COM_STMT_CLOSE == data[4]) {

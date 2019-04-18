@@ -554,7 +554,7 @@
                                     <extraArgument>-XX:+PrintGCDateStamps</extraArgument>
                                     <extraArgument>-Xloggc:./logs/gc.log</extraArgument>
                                     <extraArgument>-XX:+PrintGCTimeStamps</extraArgument>
-                                    <extraArgument>-XX:+PrintGC</extraArgument>
+                                    <extraArgument>-XX:+PrintGCDetails</extraArgument>
                                 </extraArguments>
                             </jvmSettings>
                             <generatorConfigurations>

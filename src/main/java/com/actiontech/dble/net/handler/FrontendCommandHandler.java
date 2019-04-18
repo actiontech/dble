@@ -51,6 +51,10 @@ public class FrontendCommandHandler implements NIOHandler {
         if (MySQLPacket.COM_STMT_SEND_LONG_DATA == data[4]) {
             blobDataQueue.offer(data);
             return;
+        } else if (MySQLPacket.COM_STMT_CLOSE == data[4]) {
+            commands.doStmtClose();
+            source.stmtClose(data);
+            return;
         } else {
             dataTodo = data;
             if (MySQLPacket.COM_STMT_RESET == data[4]) {
@@ -112,10 +116,6 @@ public class FrontendCommandHandler implements NIOHandler {
             case MySQLPacket.COM_STMT_EXECUTE:
                 commands.doStmtExecute();
                 source.stmtExecute(data, blobDataQueue);
-                break;
-            case MySQLPacket.COM_STMT_CLOSE:
-                commands.doStmtClose();
-                source.stmtClose(data);
                 break;
             case MySQLPacket.COM_HEARTBEAT:
                 commands.doHeartbeat();

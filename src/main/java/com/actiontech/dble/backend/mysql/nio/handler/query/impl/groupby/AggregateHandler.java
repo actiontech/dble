@@ -33,8 +33,8 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * 1.executed the ordered result of group by 2. group by of Aggregator_distinct
  */
-public class OrderedGroupByHandler extends BaseDMLHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(OrderedGroupByHandler.class);
+public class AggregateHandler extends BaseDMLHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AggregateHandler.class);
     private List<Order> groupBys;
     private List<ItemSum> referredSumFunctions;
 
@@ -63,7 +63,7 @@ public class OrderedGroupByHandler extends BaseDMLHandler {
      * @param groupBys
      * @param referredSumFunctions
      */
-    public OrderedGroupByHandler(long id, NonBlockingSession session, List<Order> groupBys, List<ItemSum> referredSumFunctions) {
+    public AggregateHandler(long id, NonBlockingSession session, List<Order> groupBys, List<ItemSum> referredSumFunctions) {
         super(id, session);
         this.groupBys = groupBys;
         this.referredSumFunctions = referredSumFunctions;

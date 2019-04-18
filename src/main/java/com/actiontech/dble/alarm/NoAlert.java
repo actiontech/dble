@@ -5,28 +5,28 @@
 
 package com.actiontech.dble.alarm;
 
-import java.util.Map;
+import com.actiontech.dble.cluster.bean.ClusterAlertBean;
 
 public class NoAlert implements Alert {
 
+
     @Override
-    public void alertSelf(String code, AlertLevel level, String desc, Map<String, String> labels) {
+    public void alertSelf(ClusterAlertBean bean) {
 
     }
 
     @Override
-    public void alert(String code, AlertLevel level, String desc, String alertComponentType, String alertComponentId, Map<String, String> labels) {
+    public void alert(ClusterAlertBean bean) {
 
     }
 
     @Override
-    public boolean alertResolve(String code, AlertLevel level, String alertComponentType, String alertComponentId, Map<String, String> labels) {
+    public boolean alertResolve(ClusterAlertBean bean) {
         return true;
     }
 
     @Override
-    public boolean alertSelfResolve(String code, AlertLevel level, Map<String, String> labels) {
+    public boolean alertSelfResolve(ClusterAlertBean bean) {
         return true;
     }
-
 }

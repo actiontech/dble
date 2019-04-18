@@ -27,10 +27,7 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.protocol.StructureMeta;
-import com.actiontech.dble.meta.table.AbstractTablesMetaHandler;
-import com.actiontech.dble.meta.table.DDLNotifyTableMetaHandler;
-import com.actiontech.dble.meta.table.SchemaMetaHandler;
-import com.actiontech.dble.meta.table.TablesMetaCheckHandler;
+import com.actiontech.dble.meta.table.*;
 import com.actiontech.dble.meta.table.old.AbstractTableMetaHandler;
 import com.actiontech.dble.meta.table.old.TableMetaCheckHandler;
 import com.actiontech.dble.plan.node.QueryNode;
@@ -469,8 +466,8 @@ public class ProxyMetaManager {
                     }
                 }
 
-                AbstractTablesMetaHandler tableHandler = new TablesMetaCheckHandler(this, schema.getName(), dataNodeMap, selfNode);
-                tableHandler.execute();
+                MultiTablesMetaHandler multiTablesMetaHandler = new MultiTablesCheckMetaHandler(this, schema, selfNode);
+                multiTablesMetaHandler.execute();
             }
         }
     }
@@ -602,8 +599,8 @@ public class ProxyMetaManager {
                 for (String dataNode : tbConfig.getDataNodes()) {
                     showDataNode = dataNode;
                     String tableId = "DataNode[" + dataNode + "]:Table[" + tableName + "]";
-                    if (ToResolveContainer.TABLE_LACK.contains(tableId) && AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId))) {
-                        ToResolveContainer.TABLE_LACK.remove(tableId);
+                    if (ToResolveContainer.TABLE_LACK.contains(tableId)) {
+                        AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId), ToResolveContainer.TABLE_LACK, tableId);
                     }
                 }
             }

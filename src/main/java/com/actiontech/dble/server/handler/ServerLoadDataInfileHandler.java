@@ -617,6 +617,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             settings.setMaxCharsPerColumn(systemConfig.getMaxCharsPerColumn());
             settings.getFormat().setLineSeparator(loadData.getLineTerminatedBy());
             settings.getFormat().setDelimiter(loadData.getFieldTerminatedBy().charAt(0));
+            settings.getFormat().setComment('\0');
             if (loadData.getEnclose() != null) {
                 settings.getFormat().setQuote(loadData.getEnclose().charAt(0));
             }
@@ -668,6 +669,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         settings.setMaxCharsPerColumn(systemConfig.getMaxCharsPerColumn());
         settings.getFormat().setLineSeparator(loadData.getLineTerminatedBy());
         settings.getFormat().setDelimiter(loadData.getFieldTerminatedBy().charAt(0));
+        settings.getFormat().setComment('\0');
         if (loadData.getEnclose() != null) {
             settings.getFormat().setQuote(loadData.getEnclose().charAt(0));
         }

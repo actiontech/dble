@@ -381,23 +381,32 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                 session.getXaState() == TxState.TX_PREPARE_UNCONNECT_STATE) {
             MySQLConnection errConn = session.releaseExcept(session.getXaState());
             if (errConn != null) {
-                XAStateLog.saveXARecoveryLog(session.getSessionXaID(), session.getXaState());
+                final String xaId = session.getSessionXaID();
+                XAStateLog.saveXARecoveryLog(xaId, session.getXaState());
                 if (++tryRollbackTimes < ROLLBACK_TIMES) {
+                    // try rollback several times
+                    LOGGER.warn("fail to ROLLBACK xa transaction " + xaId + " at the " + tryRollbackTimes + "th time!");
+                    XaDelayProvider.beforeInnerRetry(tryRollbackTimes, xaId);
                     rollback();
                 } else {
-                    StringBuilder closeReason = new StringBuilder("ROLLBACK FAILED but it will try to ROLLBACK repeatedly in backend until it is success!");
+                    StringBuilder closeReason = new StringBuilder("ROLLBACK FAILED but it will try to ROLLBACK repeatedly in background until it is success!");
                     if (error != null) {
                         closeReason.append(", the ERROR is ");
                         closeReason.append(error);
                     }
                     // close the session ,add to schedule job
                     session.getSource().close(closeReason.toString());
+                    // kill xa or retry to rollback xa in background
                     final int count = DbleServer.getInstance().getConfig().getSystem().getXaRetryCount();
                     if (!session.isRetryXa()) {
-                        session.forceClose("kill xa session by manager cmd!");
+                        String warnStr = "kill xa session by manager cmd!";
+                        LOGGER.warn(warnStr);
+                        session.forceClose(warnStr);
                     } else if (count == 0 || ++backgroundRollbackTimes <= count) {
-                        final String xaId = session.getSessionXaID();
-                        AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, "fail to try to ROLLBACK xa transaction " + xaId + " background", AlertUtil.genSingleLabel("XA_ID", xaId));
+                        String warnStr = "fail to ROLLBACK xa transaction " + xaId + " at the " + backgroundRollbackTimes + "th time in background!" ;
+                        LOGGER.warn(warnStr);
+                        AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, warnStr, AlertUtil.genSingleLabel("XA_ID", xaId));
+
                         XaDelayProvider.beforeAddXaToQueue(count, xaId);
                         DbleServer.getInstance().getXaSessionCheck().addRollbackSession(session);
                         XaDelayProvider.afterAddXaToQueue(count, xaId);
@@ -406,9 +415,11 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             } else {
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_ROLLBACKED_STATE);
                 session.setXaState(TxState.TX_INITIALIZE_STATE);
-                byte[] toSend = sendData;
+                byte[] toSend = OkPacket.OK;
                 session.clearResources(false);
                 AlertUtil.alertSelfResolve(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("XA_ID", session.getSessionXaID()));
+                // remove session in background
+                DbleServer.getInstance().getXaSessionCheck().getRollbackingSession().remove(session.getSource().getId());
                 if (!session.closed()) {
                     setResponseTime(false);
                     session.getSource().write(toSend);

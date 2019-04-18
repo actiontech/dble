@@ -160,6 +160,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             session.releaseConnectionIfSafe(conn, false);
         } else {
             ((MySQLConnection) conn).quit();
+            session.getTargetMap().remove(conn.getAttachment());
         }
         source.setTxInterrupt(errMsg);
         session.handleSpecial(rrs, false);

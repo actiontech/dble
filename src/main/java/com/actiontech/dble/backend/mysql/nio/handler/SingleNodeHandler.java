@@ -19,7 +19,6 @@ import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.statistic.stat.QueryResult;
 import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
 import com.actiontech.dble.util.StringUtil;
@@ -71,7 +70,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
     public void execute() throws Exception {
         connClosed = false;
-        if (ServerParse.LOAD_DATA_INFILE_SQL == rrs.getSqlType()) {
+        if (rrs.isLoadData()) {
             packetId = session.getSource().getLoadDataInfileHandler().getLastPackId();
         } else {
             packetId = (byte) session.getPacketId().get();

@@ -239,8 +239,10 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                 return;
 
             if (this.isFail()) {
-                session.handleSpecial(oriRrs, false);
-                handleRollbackPacket(err.toBytes());
+                if (errorResponse.compareAndSet(false, true)) {
+                    session.handleSpecial(oriRrs, false);
+                    handleRollbackPacket(err.toBytes());
+                }
             } else {
                 try {
                     if (session.isPrepared()) {

@@ -62,6 +62,8 @@ public class NIOSocketWR extends SocketWR {
                 AbstractConnection.LOGGER.debug("caught err:", e);
             }
             con.close("err:" + e);
+        } finally {
+            writing.set(false);
         }
 
     }

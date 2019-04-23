@@ -557,6 +557,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
                 closedConnSet.add(conn);
             }
+            if (this.rrs.getSqlType() == ServerParse.DDL) {
+                this.getSession().getTargetMap().remove(conn.getAttachment());
+            }
             return false;
         } finally {
             lock.unlock();

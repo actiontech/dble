@@ -20,6 +20,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * life cycle: from connection establish to close <br/>
@@ -175,8 +177,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
     private void handleRequestPacket(byte[] data) {
         ResponseHandler respHand = responseHandler;
         if (respHand != null && respHand instanceof LoadDataResponseHandler) {
-            ((LoadDataResponseHandler) respHand).requestDataResponse(data,
-                    source);
+            ((LoadDataResponseHandler) respHand).requestDataResponse(data, source);
         } else {
             closeNoHandler();
         }
@@ -234,7 +235,12 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
     @Override
     protected void handleDataError(Exception e) {
         LOGGER.info(this.source.toString() + " handle data error:", e);
-        dataQueue.clear();
+        while (dataQueue.size() > 0) {
+            dataQueue.clear();
+            // clear all data from the client
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+        }
+        resultStatus = RESULT_STATUS_INIT;
         this.source.setRunning(false);
         this.source.signal();
         ResponseHandler handler = this.responseHandler;

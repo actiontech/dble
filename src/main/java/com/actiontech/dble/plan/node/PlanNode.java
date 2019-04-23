@@ -242,7 +242,7 @@ public abstract class PlanNode {
             }
         }
         // where, pushdown node does 't need where
-        if (!isPushDownNode) {
+        if (!isPushDownNode && whereFilter != null) {
             whereFilter.setPushDownName(null);
             setUpFilterRefer(whereFilter);
         }

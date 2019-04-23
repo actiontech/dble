@@ -167,13 +167,12 @@ public abstract class MultiTablesMetaHandler {
             for (Map.Entry<String, Map<String, List<String>>> tablesStruct : tablesStructMap.entrySet()) {
                 String tableName = tablesStruct.getKey();
                 Map<String, List<String>> tableStruct = tablesStruct.getValue();
-                StructureMeta.TableMeta tableMeta = null;
                 if (tableStruct.size() > 1) {
                     // Through the SQL is different, the table Structure may still same.
                     // for example: autoIncrement number
                     Set<StructureMeta.TableMeta> tableMetas = new HashSet<>();
                     for (String sql : tableStruct.keySet()) {
-                        tableMeta = MetaHelper.initTableMeta(tableName, sql, version);
+                        StructureMeta.TableMeta tableMeta = MetaHelper.initTableMeta(tableName, sql, version);
                         tableMetas.add(tableMeta);
                     }
                     String tableId = schema + "." + tableName;
@@ -183,6 +182,7 @@ public abstract class MultiTablesMetaHandler {
                         AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId),
                                 ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, tableId);
                     }
+                    handleMultiMetaData(tableMetas);
                     tableMetas.clear();
                 } else if (tableStruct.size() == 1) {
                     String tableId = schema + "." + tableName;
@@ -196,9 +196,9 @@ public abstract class MultiTablesMetaHandler {
                         AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableDetailId),
                                 ToResolveContainer.TABLE_LACK, tableId);
                     }
-                    tableMeta = MetaHelper.initTableMeta(tableName, tableStruct.keySet().iterator().next(), version);
+                    StructureMeta.TableMeta tableMeta = MetaHelper.initTableMeta(tableName, tableStruct.keySet().iterator().next(), version);
+                    handleSingleMetaData(tableMeta);
                 }
-                handleSingleMetaData(tableMeta);
             }
             countDown();
         }
@@ -228,6 +228,7 @@ public abstract class MultiTablesMetaHandler {
 
     abstract void handleSingleMetaData(StructureMeta.TableMeta tableMeta);
 
+    abstract void handleMultiMetaData(Set<StructureMeta.TableMeta> tableMetas);
 
     abstract void schemaMetaFinish();
 

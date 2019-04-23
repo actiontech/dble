@@ -325,8 +325,8 @@ public final class DbleServer {
         short bufferPoolPageNumber = system.getBufferPoolPageNumber();
         //minimum allocation unit
         short bufferPoolChunkSize = system.getBufferPoolChunkSize();
-        if (bufferPoolPageSize * bufferPoolPageNumber > Platform.getMaxDirectMemory()) {
-            throw new IOException("Direct BufferPool size lager than MaxDirectMemory");
+        if ((long) bufferPoolPageSize * (long) bufferPoolPageNumber > Platform.getMaxDirectMemory()) {
+            throw new IOException("Direct BufferPool size[bufferPoolPageSize(" + bufferPoolPageSize + ")*bufferPoolPageNumber(" + bufferPoolPageNumber + ")] larger than MaxDirectMemory[" + Platform.getMaxDirectMemory() + "]");
         }
         bufferPool = new DirectByteBufferPool(bufferPoolPageSize, bufferPoolChunkSize, bufferPoolPageNumber);
 

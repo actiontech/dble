@@ -781,6 +781,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         tableName = null;
         partitionColumnIndex = -1;
         autoIncrementIndex = -1;
+        appendAutoIncrementColumn = false;
         if (tempFile != null) {
             File temp = new File(tempFile);
             if (temp.exists()) {

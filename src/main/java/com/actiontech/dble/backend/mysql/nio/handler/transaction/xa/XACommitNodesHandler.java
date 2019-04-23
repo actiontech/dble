@@ -122,6 +122,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 }
                 this.debugCommitDelay();
             }
+
             preparePhase(mysqlCon);
         } else if (state == TxState.TX_PREPARED_STATE) {
             if (position == 0) {
@@ -179,6 +180,9 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         String xaTxId = mysqlCon.getConnXID(session);
         String rrnName = ((RouteResultsetNode) mysqlCon.getAttachment()).getName();
         XaDelayProvider.delayBeforeXaPrepare(rrnName, xaTxId);
+        // update state of mysql conn to TX_PREPARING_STATE
+        mysqlCon.setXaStatus(TxState.TX_PREPARING_STATE);
+        XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
         mysqlCon.execCmd("XA PREPARE " + xaTxId);
     }
 
@@ -211,7 +215,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 session.setXaState(TxState.TX_ENDED_STATE);
                 nextParse();
             }
-        } else if (state == TxState.TX_ENDED_STATE) {
+        } else if (state == TxState.TX_PREPARING_STATE) {
             //PREPARE OK
             mysqlCon.setXaStatus(TxState.TX_PREPARED_STATE);
             XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);

@@ -609,11 +609,11 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 break;
             case "TIMESTAMPADD":
                 SQLIdentifierExpr addUnit = (SQLIdentifierExpr) x.getParameters().get(0);
-                item = new ItemDateAddInterval(args.get(2), args.get(1), SQLIntervalUnit.valueOf(addUnit.getSimpleName()), false);
+                item = new ItemDateAddInterval(args.get(2), args.get(1), SQLIntervalUnit.valueOf(addUnit.getSimpleName().toUpperCase()), false);
                 break;
             case "TIMESTAMPDIFF":
                 SQLIdentifierExpr diffUnit = (SQLIdentifierExpr) x.getParameters().get(0);
-                item = new ItemFuncTimestampDiff(args.get(1), args.get(2), SQLIntervalUnit.valueOf(diffUnit.getSimpleName()));
+                item = new ItemFuncTimestampDiff(args.get(1), args.get(2), SQLIntervalUnit.valueOf(diffUnit.getSimpleName().toUpperCase()));
                 break;
             case "VAR_SAMP":
                 item = new ItemSumVariance(args, 1, false, null);

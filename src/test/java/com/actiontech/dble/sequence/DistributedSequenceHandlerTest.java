@@ -13,6 +13,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.sql.SQLNonTransientException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -65,7 +66,13 @@ public class DistributedSequenceHandlerTest {
                 public void run() {
                     for (int j = 0; j < 100; j++) {
                         for (int k = 0; k < 16; k++) {
-                            idSet.put(distributedSequenceHandler[k].nextId(""), "");
+                            long id = 0;
+                            try {
+                                id = distributedSequenceHandler[k].nextId("");
+                            } catch (SQLNonTransientException e) {
+                                e.printStackTrace();
+                            }
+                            idSet.put(id, "");
                         }
                     }
 

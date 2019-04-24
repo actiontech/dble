@@ -242,8 +242,7 @@ public abstract class PlanNode {
             }
         }
         // where, pushdown node does 't need where
-        if (!isPushDownNode && whereFilter != null) {
-            whereFilter.setPushDownName(null);
+        if (!isPushDownNode) {
             setUpFilterRefer(whereFilter);
         }
         // group by
@@ -479,6 +478,7 @@ public abstract class PlanNode {
     private void setUpFilterRefer(Item filter) {
         if (filter != null) {
             if (filter instanceof ItemFunc) {
+                filter.setPushDownName(null);
                 for (Item item : filter.arguments()) {
                     setUpFilterRefer(item);
                 }

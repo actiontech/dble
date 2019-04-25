@@ -26,7 +26,6 @@ public class WhereHandler extends BaseDMLHandler {
     }
 
     private Item where = null;
-    private Item whereItem = null;
     private List<Field> sourceFields;
     // if merge handler have no order by, the row response is not thread safe
     private ReentrantLock lock = new ReentrantLock();
@@ -43,7 +42,6 @@ public class WhereHandler extends BaseDMLHandler {
             return;
         this.fieldPackets = fieldPackets;
         this.sourceFields = HandlerTool.createFields(this.fieldPackets);
-        whereItem = HandlerTool.createItem(this.where, this.sourceFields, 0, this.isAllPushDown(), this.type());
         nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, conn);
     }
 
@@ -53,6 +51,7 @@ public class WhereHandler extends BaseDMLHandler {
         lock.lock();
         try {
             HandlerTool.initFields(this.sourceFields, rowPacket.fieldValues);
+            Item whereItem = HandlerTool.createItem(this.where, this.sourceFields, 0, this.isAllPushDown(), this.type());
             /* use whereto filter */
             if (whereItem.valBool()) {
                 nextHandler.rowResponse(null, rowPacket, this.isLeft, conn);

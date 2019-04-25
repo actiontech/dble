@@ -325,8 +325,8 @@ public final class DbleServer {
         short bufferPoolPageNumber = system.getBufferPoolPageNumber();
         //minimum allocation unit
         short bufferPoolChunkSize = system.getBufferPoolChunkSize();
-        if (bufferPoolPageSize * bufferPoolPageNumber > Platform.getMaxDirectMemory()) {
-            throw new IOException("Direct BufferPool size lager than MaxDirectMemory");
+        if ((long) bufferPoolPageSize * (long) bufferPoolPageNumber > Platform.getMaxDirectMemory()) {
+            throw new IOException("Direct BufferPool size[bufferPoolPageSize(" + bufferPoolPageSize + ")*bufferPoolPageNumber(" + bufferPoolPageNumber + ")] larger than MaxDirectMemory[" + Platform.getMaxDirectMemory() + "]");
         }
         bufferPool = new DirectByteBufferPool(bufferPoolPageSize, bufferPoolChunkSize, bufferPoolPageNumber);
 
@@ -1018,7 +1018,8 @@ public final class DbleServer {
                     participantLogEntry.getTxState() != TxState.TX_PREPARE_UNCONNECT_STATE &&
                     participantLogEntry.getTxState() != TxState.TX_ROLLBACKING_STATE &&
                     participantLogEntry.getTxState() != TxState.TX_ROLLBACK_FAILED_STATE &&
-                    participantLogEntry.getTxState() != TxState.TX_PREPARED_STATE) {
+                    participantLogEntry.getTxState() != TxState.TX_PREPARED_STATE &&
+                    participantLogEntry.getTxState() != TxState.TX_PREPARING_STATE) {
                 continue;
             }
             finished = false;

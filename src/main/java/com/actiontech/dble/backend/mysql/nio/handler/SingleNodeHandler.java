@@ -70,7 +70,11 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
     public void execute() throws Exception {
         connClosed = false;
-        this.packetId = (byte) session.getPacketId().get();
+        if (rrs.isLoadData()) {
+            packetId = session.getSource().getLoadDataInfileHandler().getLastPackId();
+        } else {
+            packetId = (byte) session.getPacketId().get();
+        }
         if (session.getTargetCount() > 0) {
             BackendConnection conn = session.getTarget(node);
             if (conn == null && rrs.isGlobalTable() && rrs.getGlobalBackupNodes() != null) {

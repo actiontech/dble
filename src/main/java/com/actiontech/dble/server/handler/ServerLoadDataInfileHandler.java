@@ -29,6 +29,7 @@ import com.actiontech.dble.sqlengine.mpp.LoadData;
 import com.actiontech.dble.util.ObjectUtil;
 import com.actiontech.dble.util.SqlStringUtil;
 import com.actiontech.dble.util.StringUtil;
+import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlLoadDataInFileStatement;
@@ -76,6 +77,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     private String tableName;
     private TableConfig tableConfig;
     private int partitionColumnIndex = -1;
+    private int autoIncrementIndex = -1;
+    private boolean appendAutoIncrementColumn = false;
     private LayerCachePool tableId2DataNodeCache;
     private boolean isStartLoadData = false;
 
@@ -175,8 +178,19 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         tempFile = tempPath + "clientTemp.txt";
         tempByteBuffer = new ByteArrayOutputStream();
 
-        if (!trySetPartitionColumnIndex(statement)) {
+        if (!trySetPartitionOrAutoIncrementColumnIndex(statement)) {
             return;
+        }
+
+        if (tableConfig.isAutoIncrement() && autoIncrementIndex == -1) {
+            final String incrementColumn = tableConfig.getTrueIncrementColumn();
+            statement.getColumns().add(new SQLIdentifierExpr(incrementColumn));
+            autoIncrementIndex = statement.getColumns().size() - 1;
+            appendAutoIncrementColumn = true;
+            sql = SQLUtils.toMySqlString(statement);
+            if (incrementColumn.equalsIgnoreCase(getPartitionColumn())) {
+                partitionColumnIndex = autoIncrementIndex;
+            }
         }
 
         parseLoadDataPram();
@@ -227,18 +241,21 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     /**
      * findout the index of the partition key
      */
-    private boolean trySetPartitionColumnIndex(MySqlLoadDataInFileStatement sqlStatement) {
+    private boolean trySetPartitionOrAutoIncrementColumnIndex(MySqlLoadDataInFileStatement sqlStatement) {
         if (tableConfig != null) {
             List<SQLExpr> columns = sqlStatement.getColumns();
-
             String pColumn = getPartitionColumn();
-            if (pColumn != null) {
+            boolean autoIncrement = tableConfig.isAutoIncrement();
+            if (pColumn != null || autoIncrement) {
+                String incrementColumn = tableConfig.getTrueIncrementColumn();
                 if (columns != null && columns.size() > 0) {
                     for (int i = 0, columnsSize = columns.size(); i < columnsSize; i++) {
                         String column = StringUtil.removeBackQuote(columns.get(i).toString());
-                        if (pColumn.equalsIgnoreCase(column)) {
+                        if (column.equalsIgnoreCase(pColumn)) {
                             partitionColumnIndex = i;
-                            break;
+                        }
+                        if (autoIncrement && column.equalsIgnoreCase(incrementColumn)) {
+                            autoIncrementIndex = i;
                         }
                     }
                 } else {
@@ -246,9 +263,12 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                         StructureMeta.TableMeta tbMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schema.getName(), tableName);
                         if (tbMeta != null) {
                             for (int i = 0; i < tbMeta.getColumnsCount(); i++) {
-                                if (pColumn.equalsIgnoreCase(tbMeta.getColumns(i).getName())) {
+                                String column = tbMeta.getColumns(i).getName();
+                                if (column.equalsIgnoreCase(pColumn)) {
                                     partitionColumnIndex = i;
-                                    break;
+                                }
+                                if (autoIncrement && column.equalsIgnoreCase(incrementColumn)) {
+                                    autoIncrementIndex = i;
                                 }
                             }
                         }
@@ -317,15 +337,12 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             ctx.addTable(tableName);
 
             if (partitionColumnIndex != -1) {
-                String value;
-                if (lineList.length < partitionColumnIndex + 1) {
-                    throw new RuntimeException("Partition column is empty in line '" + StringUtil.join(lineList, loadData.getLineTerminatedBy()) + "'");
-                } else {
-                    value = lineList[partitionColumnIndex];
+                if (lineList.length < partitionColumnIndex + 1 || StringUtil.isEmpty(lineList[partitionColumnIndex])) {
+                    throw new RuntimeException("Partition column is empty in line '" + StringUtil.join(lineList, loadData.getFieldTerminatedBy()) + "'");
                 }
                 RouteCalculateUnit routeCalculateUnit = new RouteCalculateUnit();
                 routeCalculateUnit.addShardingExpr(tableName, getPartitionColumn(),
-                        parseFieldString(value, loadData.getEnclose(), loadData.getEscape()));
+                        parseFieldString(lineList[partitionColumnIndex], loadData.getEnclose(), loadData.getEscape()));
                 ctx.addRouteCalculateUnit(routeCalculateUnit);
             }
 
@@ -369,6 +386,10 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             }
         }
 
+        if (autoIncrementIndex != -1) {
+            line = rebuildRow(line);
+        }
+
         RouteResultset rrs = tryDirectRoute(sql, line);
 
         if (rrs == null || rrs.getNodes() == null || rrs.getNodes().length == 0) {
@@ -401,6 +422,25 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 }
             }
         }
+    }
+
+    private String[] rebuildRow(String[] line) throws Exception {
+        if (autoIncrementIndex >= line.length) {
+            autoIncrementIndex = line.length;
+            String[] newLine = new String[line.length + 1];
+            System.arraycopy(line, 0, newLine, 0, line.length);
+            String tableKey = StringUtil.getFullName(schema.getName(), tableName);
+            newLine[line.length] = String.valueOf(DbleServer.getInstance().getSequenceHandler().nextId(tableKey));
+            line = newLine;
+        } else {
+            if (StringUtil.isEmpty(line[autoIncrementIndex])) {
+                String tableKey = StringUtil.getFullName(schema.getName(), tableName);
+                line[autoIncrementIndex] = String.valueOf(DbleServer.getInstance().getSequenceHandler().nextId(tableKey));
+            } else if (!appendAutoIncrementColumn) {
+                throw new Exception("you can't set value for Autoincrement column!");
+            }
+        }
+        return line;
     }
 
     private void flushDataToFile() {
@@ -740,6 +780,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         tempByteBufferSize = 0;
         tableName = null;
         partitionColumnIndex = -1;
+        autoIncrementIndex = -1;
+        appendAutoIncrementColumn = false;
         if (tempFile != null) {
             File temp = new File(tempFile);
             if (temp.exists()) {
@@ -809,6 +851,5 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         }
         fileDirToDel.delete();
     }
-
 
 }

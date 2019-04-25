@@ -182,7 +182,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             return;
         }
 
-        if (tableConfig.isAutoIncrement() && autoIncrementIndex == -1) {
+        if (tableConfig != null && tableConfig.isAutoIncrement() && autoIncrementIndex == -1) {
             final String incrementColumn = tableConfig.getTrueIncrementColumn();
             statement.getColumns().add(new SQLIdentifierExpr(incrementColumn));
             autoIncrementIndex = statement.getColumns().size() - 1;

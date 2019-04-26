@@ -8,7 +8,9 @@ package com.actiontech.dble.route.sequence.handler;
 
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.route.util.PropertiesUtil;
+import com.actiontech.dble.util.DateUtil;
 import com.actiontech.dble.util.KVPathUtil;
+import com.actiontech.dble.util.StringUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.leader.CancelLeadershipException;
@@ -23,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.sql.SQLNonTransientException;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Executors;
@@ -51,6 +54,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter implements Closeable, SequenceHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(DistributedSequenceHandler.class);
+    private static final long DEFAULT_START_TIMESTAMP = 1288834974657L; //Thu Nov 04 09:42:54 CST 2010
     private static final String SEQUENCE_DB_PROPS = "sequence_distributed_conf.properties";
     private static DistributedSequenceHandler instance = new DistributedSequenceHandler();
 
@@ -80,6 +84,8 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     private volatile boolean isLeader = false;
     private volatile String slavePath;
     private volatile boolean ready = false;
+    private long startTimeMilliseconds = DEFAULT_START_TIMESTAMP;
+    private long deadline = 0L;
 
     private CuratorFramework client;
 
@@ -116,6 +122,20 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
         }
         if (instanceId > maxInstanceId || instanceId < 0) {
             throw new IllegalArgumentException(String.format("instance Id can't be greater than %d or less than 0", instanceId));
+        }
+
+        try {
+            String startTimeStr = props.getProperty("START_TIME");
+            if (!StringUtil.isEmpty(startTimeStr)) {
+                startTimeMilliseconds = DateUtil.parseDate(startTimeStr).getTime();
+                if (startTimeMilliseconds > System.currentTimeMillis()) {
+                    LOGGER.warn("START_TIME in " + SEQUENCE_DB_PROPS + " mustn't be over than dble start time, starting from 2010-10-04 09:42:54");
+                }
+            }
+        } catch (Exception pe) {
+            LOGGER.warn("START_TIME in " + SEQUENCE_DB_PROPS + " parse exception, starting from 2010-10-04 09:42:54");
+        } finally {
+            this.deadline = startTimeMilliseconds + (1L << 39);
         }
     }
 
@@ -168,7 +188,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     }
 
     @Override
-    public long nextId(String prefixName) {
+    public long nextId(String prefixName) throws SQLNonTransientException {
         // System.out.println(instanceId);
         while (!ready) {
             try {
@@ -179,6 +199,9 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
             }
         }
         long time = System.currentTimeMillis();
+        if (time >= deadline) {
+            throw new SQLNonTransientException("Global sequence has reach to max limit and can generate duplicate sequences.");
+        }
         if (threadLastTime.get() == null) {
             threadLastTime.set(time);
         }
@@ -203,7 +226,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
         long threadIdShift = instanceIdShift + instanceIdBits;
         long timestampMask = (1L << timestampBits) - 1L;
         return (((threadID.get() % maxThreadId) << threadIdShift)) | (instanceId << instanceIdShift) |
-                (clusterId << clusterIdShift) | (a << incrementShift) | (time & timestampMask);
+                (clusterId << clusterIdShift) | (a << incrementShift) | ((time - startTimeMilliseconds) & timestampMask);
     }
 
     private synchronized Long getNextThreadID() {

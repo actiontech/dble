@@ -9,8 +9,8 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.GlobalVisitor;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.*;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.DirectGroupByHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.AggregateHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.DirectGroupByHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.AllAnySubQueryHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.InSubQueryHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.SingleRowSubQueryHandler;
@@ -186,8 +186,8 @@ public abstract class BaseHandlerBuilder {
             }
         }
 
-        MultiNodeMergeHandler mh = new MultiNodeMergeHandler(getSequenceId(), rrss, session.getSource().isAutocommit() && !session.getSource().isTxStart(),
-                session, null);
+        MultiNodeMergeHandler mh = new MultiNodeEasyMergeHandler(getSequenceId(), rrss, session.getSource().isAutocommit() && !session.getSource().isTxStart(),
+                session);
         addHandler(mh);
     }
 
@@ -391,11 +391,15 @@ public abstract class BaseHandlerBuilder {
 
     protected void buildMergeHandler(PlanNode planNode, RouteResultsetNode[] rrssArray) {
         hBuilder.checkRRSs(rrssArray);
-        MultiNodeMergeHandler mh = null;
         List<Order> orderBys = planNode.getGroupBys().size() > 0 ? planNode.getGroupBys() : planNode.getOrderBys();
+        boolean isEasyMerge = rrssArray.length == 1 || (orderBys == null || orderBys.size() == 0);
 
-        mh = new MultiNodeMergeHandler(getSequenceId(), rrssArray, session.getSource().isAutocommit() && !session.getSource().isTxStart(), session,
-                orderBys);
+        MultiNodeMergeHandler mh;
+        if (isEasyMerge) {
+            mh = new MultiNodeEasyMergeHandler(getSequenceId(), rrssArray, session.getSource().isAutocommit() && !session.getSource().isTxStart(), session);
+        } else {
+            mh = new MultiNodeMergeAndOrderHandler(getSequenceId(), rrssArray, session.getSource().isAutocommit() && !session.getSource().isTxStart(), session, orderBys);
+        }
         addHandler(mh);
     }
 

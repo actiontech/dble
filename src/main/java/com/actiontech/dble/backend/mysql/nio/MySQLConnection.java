@@ -6,6 +6,7 @@
 package com.actiontech.dble.backend.mysql.nio;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.SecurityUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
@@ -13,7 +14,8 @@ import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.btrace.provider.XaDelayProvider;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.Isolations;
-import com.actiontech.dble.net.BackendAIOConnection;
+import com.actiontech.dble.net.AbstractConnection;
+import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.handler.BackEndCleaner;
 import com.actiontech.dble.net.handler.BackEndRecycleRunnable;
 import com.actiontech.dble.net.mysql.*;
@@ -28,8 +30,10 @@ import com.actiontech.dble.util.exception.UnknownTxIsolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
+import java.net.InetSocketAddress;
 import java.nio.channels.NetworkChannel;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -39,7 +43,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * @author mycat
  */
-public class MySQLConnection extends BackendAIOConnection {
+public class MySQLConnection extends AbstractConnection implements
+        BackendConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLConnection.class);
     private static final long CLIENT_FLAGS = initClientFlags();
     private volatile long lastTime;
@@ -134,12 +139,24 @@ public class MySQLConnection extends BackendAIOConnection {
         this.sysVariables = new LinkedHashMap<>();
     }
 
+    public void register() throws IOException {
+        this.asyncRead();
+    }
+
     public void resetContextStatus() {
         this.txIsolation = -1;
         this.autocommit = true;
         this.initCharacterSet(DbleServer.getInstance().getConfig().getSystem().getCharset());
         this.usrVariables.clear();
         this.sysVariables.clear();
+    }
+
+    public void setHost(String host) {
+        this.host = host;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
     }
 
     public void setRunning(boolean running) {
@@ -217,6 +234,16 @@ public class MySQLConnection extends BackendAIOConnection {
 
     public String getPassword() {
         return password;
+    }
+
+    public boolean finishConnect() throws IOException {
+        localPort = ((InetSocketAddress) channel.getLocalAddress()).getPort();
+        return true;
+    }
+
+    public void setProcessor(NIOProcessor processor) {
+        super.setProcessor(processor);
+        processor.addBackend(this);
     }
 
     void authenticate() {
@@ -854,6 +881,11 @@ public class MySQLConnection extends BackendAIOConnection {
         }
         result.append("]");
         return result.toString();
+    }
+
+    @Override
+    public void connectionCount() {
+        return;
     }
 
     public String compactInfo() {

@@ -66,8 +66,8 @@ public final class NIOProcessor {
             total += frontend.getWriteQueue().size();
         }
         for (BackendConnection back : backends.values()) {
-            if (back instanceof BackendAIOConnection) {
-                total += ((BackendAIOConnection) back).getWriteQueue().size();
+            if (back instanceof MySQLConnection) {
+                total += ((MySQLConnection) back).getWriteQueue().size();
             }
         }
         return total;

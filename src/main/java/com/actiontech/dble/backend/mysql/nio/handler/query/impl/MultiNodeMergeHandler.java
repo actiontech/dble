@@ -26,7 +26,7 @@ public abstract class MultiNodeMergeHandler extends OwnThreadDMLHandler {
     protected final ReentrantLock lock;
     final List<BaseSelectHandler> exeHandlers;
     protected RouteResultsetNode[] route;
-    int reachedConCount;
+    int reachedConCount = 0;
 
     public MultiNodeMergeHandler(long id, RouteResultsetNode[] route, boolean autocommit, NonBlockingSession session) {
         super(id, session);

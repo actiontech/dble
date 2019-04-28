@@ -23,6 +23,7 @@ import java.util.List;
  */
 public class MultiNodeEasyMergeHandler extends MultiNodeMergeHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeEasyMergeHandler.class);
+    private int rowEndConCount = 0;
 
     public MultiNodeEasyMergeHandler(long id, RouteResultsetNode[] route, boolean autocommit, NonBlockingSession session) {
         super(id, route, autocommit, session);
@@ -88,7 +89,7 @@ public class MultiNodeEasyMergeHandler extends MultiNodeMergeHandler {
             return;
         lock.lock();
         try {
-            if (reachedConCount == route.length) {
+            if (++rowEndConCount == route.length) {
                 session.setHandlerEnd(this);
                 nextHandler.rowEofResponse(null, this.isLeft, conn);
             }

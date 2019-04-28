@@ -351,7 +351,7 @@ public class MySQLConnection extends AbstractConnection implements
         if (rrn.getSqlType() == ServerParse.DDL) {
             isDDL = true;
         }
-        String xaTxId = getConnXID(session);
+        String xaTxId = getConnXID(session, rrn.getMultiplexNum().longValue());
         if (!sc.isAutocommit() && !sc.isTxStart() && modifiedSQLExecuted) {
             sc.setTxStart(true);
         }
@@ -442,19 +442,20 @@ public class MySQLConnection extends AbstractConnection implements
         if (rrn.getSqlType() == ServerParse.DDL) {
             isDDL = true;
         }
-        String xaTxId = getConnXID(session);
+        String xaTxId = getConnXID(session, rrn.getMultiplexNum().longValue());
         if (!sc.isAutocommit() && !sc.isTxStart() && modifiedSQLExecuted) {
             sc.setTxStart(true);
         }
         synAndDoExecute(xaTxId, rrn, sc.getCharset(), sc.getTxIsolation(), isAutoCommit, sc.getUsrVariables(), sc.getSysVariables());
     }
 
-    public String getConnXID(NonBlockingSession nonBlockingSession) {
+    public String getConnXID(NonBlockingSession nonBlockingSession, long multiplexNum) {
         if (nonBlockingSession.getSessionXaID() == null)
             return null;
         else {
             String sessionXaID = nonBlockingSession.getSessionXaID();
-            return sessionXaID.substring(0, sessionXaID.length() - 1) + "." + this.schema + "'";
+            String strMultiplexNum = multiplexNum == 0 ? "" : "." + multiplexNum;
+            return sessionXaID.substring(0, sessionXaID.length() - 1) + "." + this.schema + strMultiplexNum + "'";
         }
     }
 

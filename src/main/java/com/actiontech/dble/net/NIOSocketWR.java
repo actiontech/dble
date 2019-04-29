@@ -5,10 +5,12 @@
 
 package com.actiontech.dble.net;
 
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.util.TimeUtil;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -61,7 +63,18 @@ public class NIOSocketWR extends SocketWR {
             if (AbstractConnection.LOGGER.isDebugEnabled()) {
                 AbstractConnection.LOGGER.debug("caught err:", e);
             }
-            con.close("err:" + e);
+            String errMsg;
+            if (con instanceof MySQLConnection) {
+                MySQLConnection mysqlCon = (MySQLConnection) con;
+                errMsg = "Connection {DataHost[" + mysqlCon.getHost() + ":" + mysqlCon.getPort() + "],Schema[" + mysqlCon.getSchema() + "],threadID[" +
+                        mysqlCon.getThreadId() + "]} was closed ";
+                if (!(e instanceof ClosedChannelException)) {
+                    errMsg += "reason is:" + e + "";
+                }
+            } else {
+                errMsg = "err:" + e;
+            }
+            con.close(errMsg);
         } finally {
             writing.set(false);
         }

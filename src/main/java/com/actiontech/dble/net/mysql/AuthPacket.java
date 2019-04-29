@@ -9,8 +9,8 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.backend.mysql.StreamUtil;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.Capabilities;
-import com.actiontech.dble.net.BackendAIOConnection;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -112,7 +112,7 @@ public class AuthPacket extends MySQLPacket {
     }
 
     @Override
-    public void write(BackendAIOConnection c) {
+    public void write(MySQLConnection c) {
         ByteBuffer buffer = c.allocate();
         BufferUtil.writeUB3(buffer, calcPacketSize());
         buffer.put(packetId);

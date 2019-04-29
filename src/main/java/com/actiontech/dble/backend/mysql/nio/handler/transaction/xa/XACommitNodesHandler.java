@@ -260,7 +260,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 }
 
                 // 'xa prepare' error
-            } else if (mysqlCon.getXaStatus() == TxState.TX_ENDED_STATE) {
+            } else if (mysqlCon.getXaStatus() == TxState.TX_PREPARING_STATE) {
                 mysqlCon.quit();
                 mysqlCon.setXaStatus(TxState.TX_CONN_QUIT);
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);

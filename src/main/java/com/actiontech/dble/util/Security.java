@@ -4,6 +4,9 @@
 */
 package com.actiontech.dble.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -18,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class Security {
     private static final char PVERSION41_CHAR = '*';
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(Security.class);
     private static final int SHA1_HASH_SIZE = 20;
 
     private static int cachingSha2DigestLength = 32;
@@ -267,10 +271,10 @@ public final class Security {
 
     public static byte[] getBytes(String value) {
         try {
-            return getBytes(value);
+            return value.getBytes();
         } catch (Exception e) {
             // can't happen, emulating new String(byte[])
-            e.printStackTrace();
+            LOGGER.debug(e.getMessage());
         }
         return null;
     }

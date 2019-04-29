@@ -232,7 +232,7 @@ public class ConfigInitializer implements ProblemReporter {
             BoolPtr isDSConnectedPtr = new BoolPtr(false);
             TestTask testDsTask = new TestTask(ds, errNodeKeys, isDSConnectedPtr);
             testDsTask.start();
-            testDsTask.join(120000);
+            testDsTask.join(3000);
             boolean isDataSourceConnected = isDSConnectedPtr.get();
             ds.setTestConnSuccess(isDataSourceConnected);
             if (!isDataSourceConnected) {

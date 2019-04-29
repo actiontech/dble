@@ -257,7 +257,8 @@ public class MySQLConnection extends AbstractConnection implements
         packet.setUser(user);
         try {
             String authPluginName = new String(handshake.getAuthPluginName());
-            if (authPluginName.equals(new String(handshake.getDefaultAuthPluginName()))) {
+
+            if (authPluginName.equals(new String(HandshakeV10Packet.NATIVE_PASSWORD_PLUGIN))) {
                 packet.setClientFlags(clientFlags);
                 packet.setPassword(passwd(password, handshake));
                 packet.setDatabase(schema);

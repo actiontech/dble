@@ -55,16 +55,13 @@ public class HandshakeV10Packet extends MySQLPacket {
 
 
     private static final byte[] FILLER_10 = new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    byte[] defaultAuthPluginName = "mysql_native_password".getBytes();
+    public static final byte[] NATIVE_PASSWORD_PLUGIN = "mysql_native_password".getBytes();
 
     private byte protocolVersion;
     private byte[] serverVersion;
     private long threadId;
     private byte[] seed; // auth-plugin-data-part-1
 
-    public byte[] getDefaultAuthPluginName() {
-        return defaultAuthPluginName;
-    }
 
 
     public byte[] getAuthPluginName() {
@@ -76,7 +73,7 @@ public class HandshakeV10Packet extends MySQLPacket {
     private byte serverCharsetIndex;
     private int serverStatus;
     private byte[] restOfScrambleBuff; // auth-plugin-data-part-2
-    private byte[] authPluginName = defaultAuthPluginName;
+    private byte[] authPluginName = NATIVE_PASSWORD_PLUGIN;
 
     public void write(FrontendConnection c) {
         ByteBuffer buffer = c.allocate();
@@ -142,9 +139,9 @@ public class HandshakeV10Packet extends MySQLPacket {
         mm.move(10);
         restOfScrambleBuff = mm.readBytesWithInputLength(authPluginData - 9 > 12 ? 12 : authPluginData - 9);
         mm.move(1);
-        //        if ((serverCapabilities & Capabilities.CLIENT_PLUGIN_AUTH) != 0) {
-        authPluginName = mm.readBytesWithNull();
-        //        }
+        if ((serverCapabilities & Capabilities.CLIENT_PLUGIN_AUTH) != 0) {
+            authPluginName = mm.readBytesWithNull();
+        }
     }
 
     public void read(byte[] data) {

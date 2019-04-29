@@ -204,7 +204,7 @@ public class MySQLDataSource extends PhysicalDatasource {
             handshake.read(bin1);
 
             String authPluginName = new String(handshake.getAuthPluginName());
-            if (authPluginName.equals(new String(handshake.getDefaultAuthPluginName()))) {
+            if (authPluginName.equals(new String(HandshakeV10Packet.NATIVE_PASSWORD_PLUGIN))) {
                 /**
                  * Phase 2: client to MySQL. Send auth packet.
                  */
@@ -314,7 +314,7 @@ public class MySQLDataSource extends PhysicalDatasource {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.debug(e.getMessage());
         }
         return isConnected;
     }

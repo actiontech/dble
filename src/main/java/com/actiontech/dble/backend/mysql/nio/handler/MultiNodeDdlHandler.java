@@ -43,7 +43,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     private ErrorPacket err;
     private Set<BackendConnection> closedConnSet;
     private volatile boolean finishedTest = false;
-    private AtomicBoolean relieaseDDLLock = new AtomicBoolean(false);
+    private AtomicBoolean releaseDDLLock = new AtomicBoolean(false);
 
     public MultiNodeDdlHandler(RouteResultset rrs, NonBlockingSession session) {
         super(session);
@@ -158,7 +158,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                 setFail(new String(err.getMessage()));
             }
             if (--nodeCount <= 0 && errorResponse.compareAndSet(false, true)) {
-                if (relieaseDDLLock.compareAndSet(false, true)) {
+                if (releaseDDLLock.compareAndSet(false, true)) {
                     session.handleSpecial(oriRrs, false);
                 }
 
@@ -239,8 +239,10 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                 return;
 
             if (this.isFail()) {
-                session.handleSpecial(oriRrs, false);
-                handleRollbackPacket(err.toBytes());
+                if (errorResponse.compareAndSet(false, true)) {
+                    session.handleSpecial(oriRrs, false);
+                    handleRollbackPacket(err.toBytes());
+                }
             } else {
                 try {
                     if (session.isPrepared()) {
@@ -308,7 +310,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                 LOGGER.debug("session closed without execution,clear resources " + session);
             }
             session.clearResources(true);
-            if (relieaseDDLLock.compareAndSet(false, true)) {
+            if (releaseDDLLock.compareAndSet(false, true)) {
                 session.handleSpecial(oriRrs, false);
             }
             this.clearResources();

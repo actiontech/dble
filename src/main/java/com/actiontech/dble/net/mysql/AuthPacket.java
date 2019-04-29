@@ -11,6 +11,8 @@ import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.backend.mysql.StreamUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.Capabilities;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -41,9 +43,20 @@ import static com.actiontech.dble.config.Capabilities.CLIENT_PLUGIN_AUTH;
 public class AuthPacket extends MySQLPacket {
     private static final byte[] FILLER = new byte[23];
 
+
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AuthPacket.class);
+
+
     private long clientFlags;
+    private long extendedClientFlags;
     private long maxPacketSize;
     private int charsetIndex;
+
+    public void setExtendedClientFlags(long extendedClientFlags) {
+        this.extendedClientFlags = extendedClientFlags;
+    }
+
     private byte[] extra; // from FILLER(23)
     private String user;
     private byte[] password;
@@ -52,6 +65,10 @@ public class AuthPacket extends MySQLPacket {
 
 
     private boolean multStatementAllow = false;
+
+    public void setAuthPlugin(String authPlugin) {
+        this.authPlugin = authPlugin;
+    }
 
     public void read(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data);
@@ -90,7 +107,8 @@ public class AuthPacket extends MySQLPacket {
     public void write(OutputStream out) throws IOException {
         StreamUtil.writeUB3(out, calcPacketSize());
         StreamUtil.write(out, packetId);
-        StreamUtil.writeUB4(out, clientFlags);
+        StreamUtil.writeUB2(out, clientFlags);
+        StreamUtil.writeUB2(out, extendedClientFlags);
         StreamUtil.writeUB4(out, maxPacketSize);
         StreamUtil.write(out, (byte) charsetIndex);
         out.write(FILLER);
@@ -151,12 +169,90 @@ public class AuthPacket extends MySQLPacket {
         c.write(buffer);
     }
 
+
+    public void writeWithKey(OutputStream out) throws IOException {
+        StreamUtil.writeUB3(out, calcPacketSizeWithKey());
+        StreamUtil.write(out, packetId);
+        StreamUtil.writeUB2(out, clientFlags);
+        StreamUtil.writeUB2(out, extendedClientFlags);
+        StreamUtil.writeUB4(out, maxPacketSize);
+        StreamUtil.write(out, (byte) charsetIndex);
+        out.write(FILLER);
+        if (user == null) {
+            StreamUtil.write(out, (byte) 0);
+        } else {
+            StreamUtil.writeWithNull(out, user.getBytes());
+        }
+        if (password == null) {
+            StreamUtil.write(out, (byte) 0);
+        } else {
+            StreamUtil.writeWithLength(out, password);
+        }
+        if (database == null) {
+            StreamUtil.write(out, (byte) 0);
+        } else {
+            StreamUtil.writeWithNull(out, database.getBytes());
+        }
+        if (authPlugin != null) {
+            StreamUtil.writeWithNull(out, authPlugin.getBytes());
+        }
+    }
+
+    public void writeWithKey(MySQLConnection c) {
+        ByteBuffer buffer = c.allocate();
+        BufferUtil.writeUB3(buffer, calcPacketSizeWithKey());
+        buffer.put(packetId);
+        BufferUtil.writeUB2(buffer, clientFlags);       // capability flags
+        BufferUtil.writeUB2(buffer, extendedClientFlags);
+        BufferUtil.writeUB4(buffer, maxPacketSize);     // max-packet size
+        buffer.put((byte) charsetIndex);                //character set
+        buffer = c.writeToBuffer(FILLER, buffer);       // reserved (all [0])
+        if (user == null) {
+            buffer = c.checkWriteBuffer(buffer, 1, true);
+            buffer.put((byte) 0);
+        } else {
+            byte[] userData = user.getBytes();
+            buffer = c.checkWriteBuffer(buffer, userData.length + 1, true);
+            BufferUtil.writeWithNull(buffer, userData);
+        }
+        if (password == null) {
+            buffer = c.checkWriteBuffer(buffer, 1, true);
+            buffer.put((byte) 0);
+        } else {
+            buffer = c.checkWriteBuffer(buffer, BufferUtil.getLength(password), true);
+            BufferUtil.writeWithLength(buffer, password);
+        }
+        if (database == null) {
+            buffer = c.checkWriteBuffer(buffer, 1, true);
+            buffer.put((byte) 0);
+        } else {
+            byte[] databaseData = database.getBytes();
+            buffer = c.checkWriteBuffer(buffer, databaseData.length + 1, true);
+            BufferUtil.writeWithNull(buffer, databaseData);
+        }
+        //if use the mysql_native_password  is used for auth this need be replay
+        BufferUtil.writeWithNull(buffer, authPlugin.getBytes());
+
+        c.write(buffer);
+    }
+
+
+
     @Override
     public int calcPacketSize() {
         int size = 32; // 4+4+1+23;
         size += (user == null) ? 1 : user.length() + 1;
         size += (password == null) ? 1 : BufferUtil.getLength(password);
         size += (database == null) ? 1 : database.length() + 1;
+        return size;
+    }
+
+    public int calcPacketSizeWithKey() {
+        int size = 32; // 4+4+1+23;
+        size += (user == null) ? 1 : user.length() + 1;
+        size += (password == null) ? 1 : BufferUtil.getLength(password);
+        size += (database == null) ? 1 : database.length() + 1;
+        size += (authPlugin == null) ? 1 : authPlugin.length() + 1;
         return size;
     }
 

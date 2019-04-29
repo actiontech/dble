@@ -72,6 +72,8 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
                 case EOFPacket.FIELD_COUNT:
                     auth323(data[3]);
                     break;
+                case OkPacket.FIELDSWITCHREQUEST:
+                    break;
                 default:
                     packet = source.getHandshake();
                     if (packet == null) {

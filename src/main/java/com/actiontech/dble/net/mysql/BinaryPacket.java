@@ -21,12 +21,27 @@ public class BinaryPacket extends MySQLPacket {
 
     private byte[] data;
 
+    public byte[] getPublicKey() {
+        return publicKey;
+    }
+
+    private byte[] publicKey;
+
     public void read(InputStream in) throws IOException {
         packetLength = StreamUtil.readUB3(in);
         packetId = StreamUtil.read(in);
         byte[] ab = new byte[packetLength];
         StreamUtil.read(in, ab, 0, ab.length);
         data = ab;
+    }
+
+
+    public byte[] readKey(InputStream in) throws IOException {
+        packetLength = StreamUtil.readUB3(in);
+        packetId = StreamUtil.read(in);
+        byte[] ab = new byte[packetLength];
+        publicKey = StreamUtil.readKey(in, ab, 0, ab.length);
+        return publicKey;
     }
 
     @Override

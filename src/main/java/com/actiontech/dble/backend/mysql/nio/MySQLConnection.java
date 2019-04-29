@@ -35,6 +35,7 @@ import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.nio.channels.NetworkChannel;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -249,19 +250,60 @@ public class MySQLConnection extends AbstractConnection implements
     void authenticate() {
         AuthPacket packet = new AuthPacket();
         packet.setPacketId(1);
-        packet.setClientFlags(clientFlags);
         packet.setMaxPacketSize(maxPacketSize);
         int charsetIndex = CharsetUtil.getCharsetDefaultIndex(DbleServer.getInstance().getConfig().getSystem().getCharset());
         packet.setCharsetIndex(charsetIndex);
 
         packet.setUser(user);
         try {
-            packet.setPassword(passwd(password, handshake));
+            String authPluginName = new String(handshake.getAuthPluginName());
+            if (authPluginName.equals(new String(handshake.getDefaultAuthPluginName()))) {
+                packet.setClientFlags(clientFlags);
+                packet.setPassword(passwd(password, handshake));
+                packet.setDatabase(schema);
+                packet.write(this);
+            } else {
+                packet.setPassword(passwdSha256(password, handshake));
+                packet.setClientFlags(getClientFlagsSha());
+                packet.setExtendedClientFlags(getClientFlagsExtendSha());
+                packet.setAuthPlugin(authPluginName);
+                packet.setDatabase(schema);
+                packet.writeWithKey(this);
+            }
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e.getMessage());
         }
-        packet.setDatabase(schema);
-        packet.write(this);
+
+    }
+
+    private long getClientFlagsSha() {
+        int flag = 0;
+        flag |= Capabilities.CLIENT_LONG_PASSWORD;
+        flag |= Capabilities.CLIENT_FOUND_ROWS;
+        flag |= Capabilities.CLIENT_LONG_FLAG;
+        flag |= Capabilities.CLIENT_CONNECT_WITH_DB;
+        flag |= Capabilities.CLIENT_ODBC;
+        flag |= Capabilities.CLIENT_IGNORE_SPACE;
+        flag |= Capabilities.CLIENT_PROTOCOL_41;
+        flag |= Capabilities.CLIENT_INTERACTIVE;
+        flag |= Capabilities.CLIENT_IGNORE_SIGPIPE;
+        flag |= Capabilities.CLIENT_TRANSACTIONS;
+        flag |= Capabilities.CLIENT_SECURE_CONNECTION;
+        return flag;
+    }
+
+    private long getClientFlagsExtendSha() {
+        int flag = 0;
+        flag |= Capabilities.CLIENT_LONG_PASSWORD;
+        flag |= Capabilities.CLIENT_LONG_FLAG;
+        flag |= Capabilities.CLIENT_CONNECT_WITH_DB;
+        flag |= Capabilities.CLIENT_COMPRESS;
+        flag |= Capabilities.CLIENT_ODBC;
+        flag |= Capabilities.CLIENT_PROTOCOL_41;
+        flag |= Capabilities.CLIENT_SSL;
+        flag |= Capabilities.CLIENT_IGNORE_SIGPIPE;
+        flag |= Capabilities.CLIENT_TRANSACTIONS;
+        return flag;
     }
 
     public boolean isAutocommit() {
@@ -814,6 +856,56 @@ public class MySQLConnection extends AbstractConnection implements
         System.arraycopy(hs.getSeed(), 0, seed, 0, sl1);
         System.arraycopy(hs.getRestOfScrambleBuff(), 0, seed, sl1, sl2);
         return SecurityUtil.scramble411(passwd, seed);
+    }
+
+
+    private byte[] passwdSha256(String pass, HandshakeV10Packet hs) throws NoSuchAlgorithmException {
+        if (pass == null || pass.length() == 0) {
+            return null;
+        }
+        MessageDigest md ;
+        int cachingSha2DigestLength = 32;
+
+        byte[] passwd = pass.getBytes();
+        try {
+            md = MessageDigest.getInstance("SHA-256");
+            byte[] dig1 = new byte[cachingSha2DigestLength];
+            byte[] dig2 = new byte[cachingSha2DigestLength];
+            md.update(passwd, 0, passwd.length);
+            md.digest(dig1, 0, cachingSha2DigestLength);
+            md.reset();
+            md.update(dig1, 0, dig1.length);
+            md.digest(dig2, 0, cachingSha2DigestLength);
+            md.reset();
+
+            int sl1 = hs.getSeed().length;
+            int sl2 = hs.getRestOfScrambleBuff().length;
+            byte[] seed = new byte[sl1 + sl2];
+            System.arraycopy(hs.getSeed(), 0, seed, 0, sl1);
+            System.arraycopy(hs.getRestOfScrambleBuff(), 0, seed, sl1, sl2);
+            md.update(dig2, 0, dig1.length);
+            md.update(seed, 0, seed.length);
+            byte[] scramble1 = new byte[cachingSha2DigestLength];
+            md.digest(scramble1, 0, cachingSha2DigestLength);
+
+            byte[] mysqlScrambleBuff = new byte[cachingSha2DigestLength];
+            xorString(dig1, mysqlScrambleBuff, scramble1, cachingSha2DigestLength);
+            return mysqlScrambleBuff;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return passwd;
+    }
+
+
+    public void xorString(byte[] from, byte[] to, byte[] scramble, int length) {
+        int pos = 0;
+        int scrambleLength = scramble.length;
+
+        while (pos < length) {
+            to[pos] = (byte) (from[pos] ^ scramble[pos % scrambleLength]);
+            pos++;
+        }
     }
 
     @Override

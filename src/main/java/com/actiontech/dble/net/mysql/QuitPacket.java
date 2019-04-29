@@ -10,6 +10,8 @@ package com.actiontech.dble.net.mysql;
  */
 public class QuitPacket extends MySQLPacket {
     public static final byte[] QUIT = new byte[]{1, 0, 0, 0, 1};
+    public static final byte[] GETPUBLICKEY = new byte[]{1, 0, 0, 3, 2};
+
 
     @Override
     public int calcPacketSize() {

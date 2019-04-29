@@ -19,6 +19,11 @@ public final class BufferUtil {
         buffer.put((byte) (i >>> 8));
     }
 
+
+    public static void writeUB2(ByteBuffer buffer, long i) {
+        buffer.put((byte) (i & 0xff));
+        buffer.put((byte) (i >>> 8));
+    }
     public static void writeUB3(ByteBuffer buffer, int i) {
         buffer.put((byte) (i & 0xff));
         buffer.put((byte) (i >>> 8));

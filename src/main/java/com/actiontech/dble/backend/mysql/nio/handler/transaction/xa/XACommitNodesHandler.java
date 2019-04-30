@@ -375,7 +375,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     }
 
     protected void nextParse() {
-        if (this.isFail() && session.getXaState() != TxState.TX_PREPARE_UNCONNECT_STATE) {
+        if (this.isFail()) {
             session.getSource().setTxInterrupt(error);
             session.getSource().write(sendData);
             LOGGER.info("nextParse failed:" + error);

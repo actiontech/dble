@@ -107,8 +107,7 @@ public class AuthPacket extends MySQLPacket {
     public void write(OutputStream out) throws IOException {
         StreamUtil.writeUB3(out, calcPacketSize());
         StreamUtil.write(out, packetId);
-        StreamUtil.writeUB2(out, clientFlags);
-        StreamUtil.writeUB2(out, extendedClientFlags);
+        StreamUtil.writeUB4(out, clientFlags);       // capability flags
         StreamUtil.writeUB4(out, maxPacketSize);
         StreamUtil.write(out, (byte) charsetIndex);
         out.write(FILLER);
@@ -173,8 +172,7 @@ public class AuthPacket extends MySQLPacket {
     public void writeWithKey(OutputStream out) throws IOException {
         StreamUtil.writeUB3(out, calcPacketSizeWithKey());
         StreamUtil.write(out, packetId);
-        StreamUtil.writeUB2(out, clientFlags);
-        StreamUtil.writeUB2(out, extendedClientFlags);
+        StreamUtil.writeUB4(out, clientFlags);
         StreamUtil.writeUB4(out, maxPacketSize);
         StreamUtil.write(out, (byte) charsetIndex);
         out.write(FILLER);
@@ -202,8 +200,7 @@ public class AuthPacket extends MySQLPacket {
         ByteBuffer buffer = c.allocate();
         BufferUtil.writeUB3(buffer, calcPacketSizeWithKey());
         buffer.put(packetId);
-        BufferUtil.writeUB2(buffer, clientFlags);       // capability flags
-        BufferUtil.writeUB2(buffer, extendedClientFlags);
+        BufferUtil.writeUB4(buffer, clientFlags);     // capability flags
         BufferUtil.writeUB4(buffer, maxPacketSize);     // max-packet size
         buffer.put((byte) charsetIndex);                //character set
         buffer = c.writeToBuffer(FILLER, buffer);       // reserved (all [0])

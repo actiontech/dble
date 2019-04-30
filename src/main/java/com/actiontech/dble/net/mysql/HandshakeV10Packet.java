@@ -56,6 +56,8 @@ public class HandshakeV10Packet extends MySQLPacket {
 
     private static final byte[] FILLER_10 = new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     public static final byte[] NATIVE_PASSWORD_PLUGIN = "mysql_native_password".getBytes();
+    public static final byte[] CACHING_SHA2_PASSWORD_PLUGIN = "caching_sha2_password".getBytes();
+
 
     private byte protocolVersion;
     private byte[] serverVersion;

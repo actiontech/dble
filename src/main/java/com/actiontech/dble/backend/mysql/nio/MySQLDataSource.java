@@ -14,6 +14,7 @@ import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.model.DBHostConfig;
 import com.actiontech.dble.config.model.DataHostConfig;
 import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.util.PasswordAuthPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,96 +86,18 @@ public class MySQLDataSource extends PhysicalDatasource {
     }
 
 
-    private long getClientFlagsExtend(boolean isConnectWithDB) {
+    private long getClientFlagSha(boolean isConnectWithDB) {
         int flag = 0;
-        flag |= Capabilities.CLIENT_LONG_PASSWORD;
-        flag |= Capabilities.CLIENT_LONG_FLAG;
-        if (isConnectWithDB) {
-            flag |= Capabilities.CLIENT_CONNECT_WITH_DB;
-        }
-        flag |= Capabilities.CLIENT_COMPRESS;
-        flag |= Capabilities.CLIENT_ODBC;
-        flag |= Capabilities.CLIENT_PROTOCOL_41;
-        flag |= Capabilities.CLIENT_SSL;
-        flag |= Capabilities.CLIENT_IGNORE_SIGPIPE;
-        flag |= Capabilities.CLIENT_TRANSACTIONS;
+        flag |= getClientFlags(isConnectWithDB);
+        flag |= Capabilities.CLIENT_CONNECT_WITH_DB;
+        flag += PasswordAuthPlugin.getClientFlagsExtendSha() << 16;
         return flag;
     }
-
-
-    byte[] seedTotal = null;
-    private byte[] passwd(String pass, HandshakeV10Packet hs) throws NoSuchAlgorithmException {
-        if (pass == null || pass.length() == 0) {
-            return null;
-        }
-        byte[] passwd = pass.getBytes();
-        int sl1 = hs.getSeed().length;
-        int sl2 = hs.getRestOfScrambleBuff().length;
-        byte[] seed = new byte[sl1 + sl2];
-        System.arraycopy(hs.getSeed(), 0, seed, 0, sl1);
-        System.arraycopy(hs.getRestOfScrambleBuff(), 0, seed, sl1, sl2);
-        passwd = SecurityUtil.scramble411(passwd, seed);
-        return passwd;
-    }
-
-    private byte[] passwdSha256(String pass, HandshakeV10Packet hs) throws NoSuchAlgorithmException {
-        if (pass == null || pass.length() == 0) {
-            return null;
-        }
-        MessageDigest md = null;
-        int cachingSha2DigestLength = 32;
-
-        byte[] passwd = pass.getBytes();
-        try {
-            md = MessageDigest.getInstance("SHA-256");
-            byte[] dig1 = new byte[cachingSha2DigestLength];
-            byte[] dig2 = new byte[cachingSha2DigestLength];
-            md.update(passwd, 0, passwd.length);
-            md.digest(dig1, 0, cachingSha2DigestLength);
-            md.reset();
-            md.update(dig1, 0, dig1.length);
-            md.digest(dig2, 0, cachingSha2DigestLength);
-            md.reset();
-
-            int sl1 = hs.getSeed().length;
-            int sl2 = hs.getRestOfScrambleBuff().length;
-            byte[] seed = new byte[sl1 + sl2];
-            System.arraycopy(hs.getSeed(), 0, seed, 0, sl1);
-            System.arraycopy(hs.getRestOfScrambleBuff(), 0, seed, sl1, sl2);
-            md.update(dig2, 0, dig1.length);
-            md.update(seed, 0, seed.length);
-            byte[] scramble1 = new byte[cachingSha2DigestLength];
-            md.digest(scramble1, 0, cachingSha2DigestLength);
-
-            byte[] mysqlScrambleBuff = new byte[cachingSha2DigestLength];
-            xorString(dig1, mysqlScrambleBuff, scramble1, cachingSha2DigestLength);
-            seedTotal = seed;
-
-            return mysqlScrambleBuff;
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return passwd;
-    }
-
-
-    public void xorString(byte[] from, byte[] to, byte[] scramble, int length) {
-        int pos = 0;
-        int scrambleLength = scramble.length;
-
-        while (pos < length) {
-            to[pos] = (byte) (from[pos] ^ scramble[pos % scrambleLength]);
-            pos++;
-        }
-    }
-
 
     @Override
     public boolean testConnection(String schema) throws IOException {
 
         boolean isConnected = true;
-
-
         Socket socket = null;
         InputStream in = null;
         OutputStream out = null;
@@ -215,7 +138,7 @@ public class MySQLDataSource extends PhysicalDatasource {
                 authPacket.setCharsetIndex(handshake.getServerCharsetIndex() & 0xff);
                 authPacket.setUser(this.getConfig().getUser());
                 try {
-                    authPacket.setPassword(passwd(this.getConfig().getPassword(), handshake));
+                    authPacket.setPassword(PasswordAuthPlugin.passwd(this.getConfig().getPassword(), handshake));
                 } catch (NoSuchAlgorithmException e) {
                     throw new IOException(e.getMessage());
                 }
@@ -249,20 +172,19 @@ public class MySQLDataSource extends PhysicalDatasource {
                         isConnected = false;
                         break;
                 }
-            } else {
+            } else if (authPluginName.equals(new String(HandshakeV10Packet.CACHING_SHA2_PASSWORD_PLUGIN))) {
                 /**
                  * Phase 2: client to MySQL. Send auth packet.
                  */
                 AuthPacket authPacket = new AuthPacket();
                 authPacket.setPacketId(1);
-                authPacket.setClientFlags(getClientFlags(true));
-                authPacket.setExtendedClientFlags(getClientFlagsExtend(true));
+                authPacket.setClientFlags(getClientFlagSha(schema != null));
                 authPacket.setMaxPacketSize(1024 * 1024 * 16);
                 authPacket.setCharsetIndex(handshake.getServerCharsetIndex() & 0xff);
                 authPacket.setUser(this.getConfig().getUser());
                 authPacket.setAuthPlugin(authPluginName);
                 try {
-                    authPacket.setPassword(passwdSha256(this.getConfig().getPassword(), handshake));
+                    authPacket.setPassword(PasswordAuthPlugin.passwdSha256(this.getConfig().getPassword(), handshake));
                     authPacket.setDatabase(schema);
                     authPacket.writeWithKey(out);
                     out.flush();
@@ -281,8 +203,8 @@ public class MySQLDataSource extends PhysicalDatasource {
                         publicKey = binKey.getPublicKey();
                         byte[] input = this.getConfig().getPassword() != null ? getBytesNullTerminated(this.getConfig().getPassword(), "UTF-8") : new byte[]{0};
                         byte[] mysqlScrambleBuff = new byte[input.length];
-                        Security.xorString(input, mysqlScrambleBuff, seedTotal, input.length);
-                        byte[] encryptedPassword = encryptWithRSAPublicKey(mysqlScrambleBuff, decodeRSAPublicKey(new String(publicKey)), "RSA/ECB/OAEPWithSHA-1AndMGF1Padding");
+                        Security.xorString(input, mysqlScrambleBuff, PasswordAuthPlugin.seedTotal, input.length);
+                        byte[] encryptedPassword = PasswordAuthPlugin.encryptWithRSAPublicKey(mysqlScrambleBuff, PasswordAuthPlugin.decodeRSAPublicKey(new String(publicKey)), "RSA/ECB/OAEPWithSHA-1AndMGF1Padding");
                         byte[] encryPacketHead = {(byte) 0x00, (byte) 0x01, (byte) 0x00, (byte) 0x05};
                         out.write(encryPacketHead);
                         out.write(encryptedPassword);
@@ -300,26 +222,27 @@ public class MySQLDataSource extends PhysicalDatasource {
                     }
                 } catch (Exception e) {
                     LOGGER.debug("connect the schema:" + schema + " failed");
-                } finally {
-                    try {
-                        if (in != null)
-                            in.close();
-                        if (out != null)
-                            out.close();
-                        if (socket != null)
-                            socket.close();
-                    } catch (Exception e) {
-                        //ignore error
-                    }
                 }
+            } else {
+                LOGGER.info("Client don't support the password plugin " + authPluginName);
+                isConnected = false;
             }
         } catch (Exception e) {
             LOGGER.info(e.getMessage());
+        } finally {
+            try {
+                if (in != null)
+                    in.close();
+                if (out != null)
+                    out.close();
+                if (socket != null)
+                    socket.close();
+            } catch (Exception e) {
+                //ignore error
+            }
         }
         return isConnected;
     }
-
-
 
     public static byte[] getBytesNullTerminated(String value, String encoding) {
         // Charset cs = findCharset(encoding);
@@ -334,38 +257,5 @@ public class MySQLDataSource extends PhysicalDatasource {
     @Override
     public DBHeartbeat createHeartBeat() {
         return new MySQLHeartbeat(this);
-    }
-
-
-
-    public RSAPublicKey decodeRSAPublicKey(String key) throws SQLException {
-        try {
-            if (key == null) {
-                throw new SQLException("key parameter is null");
-            }
-            int offset = key.indexOf("\n") + 1;
-            int len = key.indexOf("-----END PUBLIC KEY-----") - offset;
-
-            // TODO: use standard decoders with Java 6+
-            byte[] certificateData = Base64Decoder.decode(key.getBytes(), offset, len);
-            X509EncodedKeySpec spec = new X509EncodedKeySpec(certificateData);
-            KeyFactory kf = KeyFactory.getInstance("RSA");
-            return (RSAPublicKey) kf.generatePublic(spec);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return null;
-    }
-
-
-    public byte[] encryptWithRSAPublicKey(byte[] source, RSAPublicKey key, String transformation) throws SQLException {
-        try {
-            Cipher cipher = Cipher.getInstance(transformation);
-            cipher.init(Cipher.ENCRYPT_MODE, key);
-            return cipher.doFinal(source);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            return null;
-        }
     }
 }

@@ -314,7 +314,7 @@ public class MySQLDataSource extends PhysicalDatasource {
                 }
             }
         } catch (Exception e) {
-            LOGGER.debug(e.getMessage());
+            LOGGER.info(e.getMessage());
         }
         return isConnected;
     }
@@ -348,7 +348,6 @@ public class MySQLDataSource extends PhysicalDatasource {
 
             // TODO: use standard decoders with Java 6+
             byte[] certificateData = Base64Decoder.decode(key.getBytes(), offset, len);
-
             X509EncodedKeySpec spec = new X509EncodedKeySpec(certificateData);
             KeyFactory kf = KeyFactory.getInstance("RSA");
             return (RSAPublicKey) kf.generatePublic(spec);

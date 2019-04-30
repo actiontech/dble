@@ -249,35 +249,6 @@ public final class Security {
      * @throws NoSuchAlgorithmException
      *             if the message digest 'SHA-1' is not available.
      */
-    static byte[] passwordHashStage1(String password) throws NoSuchAlgorithmException {
-        MessageDigest md = MessageDigest.getInstance("SHA-1");
-        StringBuilder cleansedPassword = new StringBuilder();
-
-        int passwordLength = password.length();
-
-        for (int i = 0; i < passwordLength; i++) {
-            char c = password.charAt(i);
-
-            if ((c == ' ') || (c == '\t')) {
-                continue; /* skip space in password */
-            }
-
-            cleansedPassword.append(c);
-        }
-
-        return md.digest(getBytes(cleansedPassword.toString()));
-    }
-
-
-    public static byte[] getBytes(String value) {
-        try {
-            return value.getBytes();
-        } catch (Exception e) {
-            // can't happen, emulating new String(byte[])
-            LOGGER.debug(e.getMessage());
-        }
-        return null;
-    }
 
     public static byte[] getBytes(char[] value, String encoding) throws UnsupportedEncodingException {
         return getBytes(value, 0, value.length, encoding);

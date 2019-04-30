@@ -352,7 +352,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                     nextParse();
                 }
                 //  'xa prepare' connectionClose,conn has quit
-            } else if (mysqlCon.getXaStatus() == TxState.TX_ENDED_STATE) {
+            } else if (mysqlCon.getXaStatus() == TxState.TX_PREPARING_STATE) {
                 mysqlCon.setXaStatus(TxState.TX_PREPARE_UNCONNECT_STATE);
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                 session.setXaState(TxState.TX_PREPARE_UNCONNECT_STATE);

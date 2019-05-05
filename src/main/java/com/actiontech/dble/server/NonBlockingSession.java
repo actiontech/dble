@@ -953,6 +953,8 @@ public class NonBlockingSession implements Session {
                     if (!newConn.setResponseHandler(queryHandler)) {
                         return errConn;
                     }
+                    errConn.setResponseHandler(null);
+                    errConn.quit();
                     this.bindConnection(node, newConn);
                     return newConn;
                 } catch (Exception e) {

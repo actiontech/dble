@@ -189,7 +189,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 errConnection.add(conn);
             }
             if (!conn.syncAndExecute()) {
-                return;
+                LOGGER.error("The middle part of multiple statements failed to execute, the subsequent response won't arrive any more.");
+                do {
+                    --nodeCount;
+                }
+                while ((!conn.syncAndExecute()));
             }
             if (--nodeCount == 0) {
                 session.handleSpecial(rrs, false, getDDLErrorInfo());

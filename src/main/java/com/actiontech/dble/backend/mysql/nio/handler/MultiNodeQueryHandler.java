@@ -193,7 +193,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 do {
                     --nodeCount;
                 }
-                while ((!conn.syncAndExecute()));
+                while (!conn.syncAndExecute());
             }
             if (--nodeCount == 0) {
                 session.handleSpecial(rrs, false, getDDLErrorInfo());

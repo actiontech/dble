@@ -137,9 +137,9 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
 
     private void endPhase(MySQLConnection mysqlCon) {
         if (mysqlCon.getXaStatus() == TxState.TX_STARTED_STATE) {
-            String xaTxId = mysqlCon.getConnXID(session);
-            String rrnName = ((RouteResultsetNode) mysqlCon.getAttachment()).getName();
-            XaDelayProvider.delayBeforeXaEnd(rrnName, xaTxId);
+            RouteResultsetNode rrn = (RouteResultsetNode) mysqlCon.getAttachment();
+            String xaTxId = mysqlCon.getConnXID(session, rrn.getMultiplexNum().longValue());
+            XaDelayProvider.delayBeforeXaEnd(rrn.getName(), xaTxId);
             mysqlCon.execCmd("XA END " + xaTxId + ";");
 
         } else if (mysqlCon.getXaStatus() == TxState.TX_CONN_QUIT) {
@@ -156,18 +156,18 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             MySQLConnection newConn = session.freshConn(mysqlCon, this);
             if (!newConn.equals(mysqlCon)) {
                 mysqlCon = newConn;
-                String xaTxId = mysqlCon.getConnXID(session);
-                String rrnName = ((RouteResultsetNode) mysqlCon.getAttachment()).getName();
-                XaDelayProvider.delayBeforeXaRollback(rrnName, xaTxId);
+                RouteResultsetNode rrn = (RouteResultsetNode) mysqlCon.getAttachment();
+                String xaTxId = mysqlCon.getConnXID(session, rrn.getMultiplexNum().longValue());
+                XaDelayProvider.delayBeforeXaRollback(rrn.getName(), xaTxId);
                 mysqlCon.execCmd("XA ROLLBACK " + xaTxId + ";");
             } else if (decrementCountBy(1)) {
                 cleanAndFeedback();
             }
 
         } else if (mysqlCon.getXaStatus() == TxState.TX_ENDED_STATE || mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE) {
-            String xaTxId = mysqlCon.getConnXID(session);
-            String rrnName = ((RouteResultsetNode) mysqlCon.getAttachment()).getName();
-            XaDelayProvider.delayBeforeXaRollback(rrnName, xaTxId);
+            RouteResultsetNode rrn = (RouteResultsetNode) mysqlCon.getAttachment();
+            String xaTxId = mysqlCon.getConnXID(session, rrn.getMultiplexNum().longValue());
+            XaDelayProvider.delayBeforeXaRollback(rrn.getName(), xaTxId);
             mysqlCon.execCmd("XA ROLLBACK " + xaTxId + ";");
 
         } else if (mysqlCon.getXaStatus() == TxState.TX_CONN_QUIT || mysqlCon.getXaStatus() == TxState.TX_ROLLBACKED_STATE) {

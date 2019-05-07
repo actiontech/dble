@@ -28,6 +28,7 @@ public class NormalAutoRollbackNodesHandler extends NormalRollbackNodesHandler {
             for (BackendConnection conn : errConnection) {
                 conn.close("rollback all connection error");
             }
+            session.getTargetMap().clear();
             errConnection.clear();
             session.getSource().write(sendData);
             return;

@@ -361,7 +361,7 @@ public final class ShowBinlogStatus {
                         }
 
                     });
-            SQLJob sqlJob = new SQLJob(SHOW_BINLOG_QUERY, pool.getSchemas()[0], resultHandler, source);
+            SQLJob sqlJob = new SQLJob(SHOW_BINLOG_QUERY, null, resultHandler, source);
             sqlJob.run();
         }
         while (sourceCount.get() > 0) {

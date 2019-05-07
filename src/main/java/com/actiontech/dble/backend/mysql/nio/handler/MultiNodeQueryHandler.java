@@ -557,6 +557,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
                 closedConnSet.add(conn);
             }
+            if (this.rrs.getSqlType() == ServerParse.DDL) {
+                this.getSession().getTargetMap().remove(conn.getAttachment());
+            }
             return false;
         } finally {
             lock.unlock();
@@ -611,6 +614,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
                 session.setResponseTime(isSuccess);
                 session.getSource().write(data);
+                session.multiStatementNextSql(session.getIsMultiStatement().get());
             }
         }
     }

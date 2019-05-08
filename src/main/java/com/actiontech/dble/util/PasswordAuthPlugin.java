@@ -1,20 +1,58 @@
 package com.actiontech.dble.util;
 
 import com.actiontech.dble.backend.mysql.SecurityUtil;
-import com.actiontech.dble.config.Capabilities;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+import com.actiontech.dble.net.AbstractConnection;
+import com.actiontech.dble.net.mysql.BinaryPacket;
 import com.actiontech.dble.net.mysql.HandshakeV10Packet;
+import com.actiontech.dble.net.mysql.Reply323Packet;
 
 import javax.crypto.Cipher;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.sql.SQLException;
+import java.util.Arrays;
 
-public class PasswordAuthPlugin {
+public final class PasswordAuthPlugin {
 
-    public static byte[] seedTotal = null;
+    private PasswordAuthPlugin() {
+    }
+
+
+    public static final byte[] GETPUBLICKEY = new byte[]{1, 0, 0, 3, 2};
+
+    public static final byte[] PASS_WITH_PUBLICKEY = new byte[]{0, 1, 0, 5};
+
+    public static final byte[] PASS_WITH_PUBLICKEY_NATIVE_FIRST = new byte[]{0, 1, 0, 7};
+
+    public static final byte[] GETPUBLICKEY_NATIVE_FIRST = new byte[]{1, 0, 0, 5, 2};
+
+
+    public static final byte[] WRITECACHINGPASSWORD = new byte[]{0x20, 0, 0, 3};
+
+    public static final byte[] NATIVE_PASSWORD_WITH_PLUGINDATA = new byte[]{0x14, 0, 0, 3};
+
+    public static final byte AUTH_SWITCH_PACKET = 0x01;
+
+    public static final byte AUTHSTAGE_FAST_COMPLETE = 0x03;
+
+    public static final byte AUTHSTAGE_FULL = 0x04;
+
+    public static final byte CONFIRM_PUBLIC_KEY = (byte) 0xee;
+
+
+
+
+    private static byte[] seedTotal = null;
+
     public static byte[] passwd(String pass, HandshakeV10Packet hs) throws NoSuchAlgorithmException {
         if (pass == null || pass.length() == 0) {
             return null;
@@ -111,19 +149,124 @@ public class PasswordAuthPlugin {
         }
     }
 
+    public static boolean sendEncryptedPassword(OutputStream out, InputStream in, byte[] authPluginData, byte[] getPublicKeyType, String password) throws Exception {
+        boolean isConnected = true;
+        if (Arrays.equals(getPublicKeyType, PasswordAuthPlugin.GETPUBLICKEY_NATIVE_FIRST)) {
+            out.write(PasswordAuthPlugin.GETPUBLICKEY_NATIVE_FIRST);
+        } else if (Arrays.equals(getPublicKeyType, PasswordAuthPlugin.GETPUBLICKEY)) {
+            out.write(PasswordAuthPlugin.GETPUBLICKEY);
+        } else {
+            return false;
+        }
+        out.flush();
+        BinaryPacket binKey = new BinaryPacket();
+        binKey.readKey(in);
+        byte[] publicKey = binKey.getPublicKey();
+        byte[] input = password != null ? getBytesNullTerminated(password, "UTF-8") : new byte[]{0};
+        byte[] mysqlScrambleBuff = new byte[input.length];
+        if (Arrays.equals(getPublicKeyType, PasswordAuthPlugin.GETPUBLICKEY_NATIVE_FIRST)) {
+            Security.xorString(input, mysqlScrambleBuff, authPluginData, input.length);
+        } else if (Arrays.equals(getPublicKeyType, PasswordAuthPlugin.GETPUBLICKEY)) {
+            Security.xorString(input, mysqlScrambleBuff, PasswordAuthPlugin.seedTotal, input.length);
+        } else {
+            return false;
+        }
+        byte[] encryptedPassword = PasswordAuthPlugin.encryptWithRSAPublicKey(mysqlScrambleBuff, PasswordAuthPlugin.decodeRSAPublicKey(new String(publicKey)), "RSA/ECB/OAEPWithSHA-1AndMGF1Padding");
+        if (Arrays.equals(getPublicKeyType, PasswordAuthPlugin.GETPUBLICKEY_NATIVE_FIRST)) {
+            out.write(PasswordAuthPlugin.PASS_WITH_PUBLICKEY_NATIVE_FIRST);
+        } else if (Arrays.equals(getPublicKeyType, PasswordAuthPlugin.GETPUBLICKEY)) {
+            out.write(PasswordAuthPlugin.PASS_WITH_PUBLICKEY);
+        } else {
+            return false;
+        }
+        out.write(encryptedPassword);
+        out.flush();
+        BinaryPacket resEncryBin = new BinaryPacket();
+        resEncryBin.read(in);
+        byte[] resEncResult = resEncryBin.getData();
+        if (resEncResult[4] == 0x00) {
+            isConnected = true;
+        } else {
+            isConnected = false;
+        }
+        return isConnected;
+    }
 
-    public static long getClientFlagsExtendSha() {
-        int flag = 0;
-        flag |= Capabilities.CLIENT_LONG_PASSWORD;
-        flag |= Capabilities.CLIENT_LONG_FLAG;
-        flag |= Capabilities.CLIENT_CONNECT_WITH_DB;
-        flag |= Capabilities.CLIENT_COMPRESS;
-        flag |= Capabilities.CLIENT_ODBC;
-        flag |= Capabilities.CLIENT_PROTOCOL_41;
-        flag |= Capabilities.CLIENT_SSL;
-        flag |= Capabilities.CLIENT_IGNORE_SIGPIPE;
-        flag |= Capabilities.CLIENT_TRANSACTIONS;
-        return flag;
+
+    public static void sendEnPaGetPub(byte[] getPublicKeyType, AbstractConnection s) throws Exception {
+        if (Arrays.equals(getPublicKeyType, PasswordAuthPlugin.GETPUBLICKEY_NATIVE_FIRST)) {
+            s.write(PasswordAuthPlugin.GETPUBLICKEY_NATIVE_FIRST);
+        } else if (Arrays.equals(getPublicKeyType, PasswordAuthPlugin.GETPUBLICKEY)) {
+            s.write(PasswordAuthPlugin.GETPUBLICKEY);
+        } else {
+            return;
+        }
+    }
+
+    public static void sendEnPasswordWithPublicKey(byte[] authPluginData, byte[] getPublicKeyType, byte[] publicKey, MySQLConnection s) throws Exception {
+        byte[] input = s.getPassword() != null ? getBytesNullTerminated(s.getPassword(), "UTF-8") : new byte[]{0};
+        byte[] mysqlScrambleBuff = new byte[input.length];
+        if (Arrays.equals(getPublicKeyType, PasswordAuthPlugin.GETPUBLICKEY_NATIVE_FIRST)) {
+            Security.xorString(input, mysqlScrambleBuff, authPluginData, input.length);
+        } else if (Arrays.equals(getPublicKeyType, PasswordAuthPlugin.GETPUBLICKEY)) {
+            Security.xorString(input, mysqlScrambleBuff, PasswordAuthPlugin.seedTotal, input.length);
+        } else {
+            return;
+        }
+        byte[] encryptedPassword = PasswordAuthPlugin.encryptWithRSAPublicKey(mysqlScrambleBuff, PasswordAuthPlugin.decodeRSAPublicKey(new String(publicKey)), "RSA/ECB/OAEPWithSHA-1AndMGF1Padding");
+        if (Arrays.equals(getPublicKeyType, PasswordAuthPlugin.GETPUBLICKEY_NATIVE_FIRST)) {
+            s.write(combineHeaderAndPassword(PasswordAuthPlugin.PASS_WITH_PUBLICKEY_NATIVE_FIRST, encryptedPassword));
+        } else if (Arrays.equals(getPublicKeyType, PasswordAuthPlugin.GETPUBLICKEY)) {
+            s.write(combineHeaderAndPassword(PasswordAuthPlugin.PASS_WITH_PUBLICKEY, encryptedPassword));
+        } else {
+            return;
+        }
+    }
+
+
+    public static byte[] getBytesNullTerminated(String value, String encoding) {
+        // Charset cs = findCharset(encoding);
+        Charset cs = StandardCharsets.UTF_8;
+        ByteBuffer buf = cs.encode(value);
+        int encodedLen = buf.limit();
+        byte[] asBytes = new byte[encodedLen + 1];
+        buf.get(asBytes, 0, encodedLen);
+        asBytes[encodedLen] = 0;
+        return asBytes;
+    }
+
+    public static void send323AuthPacket(OutputStream out, BinaryPacket bin2, HandshakeV10Packet handshake, String password) throws Exception {
+        Reply323Packet r323 = new Reply323Packet();
+        r323.setPacketId((byte) (bin2.getPacketId() + 1));
+        if (password != null && password.length() > 0) {
+            r323.setSeed(SecurityUtil.scramble323(password, new String(handshake.getSeed())).getBytes());
+        }
+        r323.write(out);
+        out.flush();
+    }
+
+    public static byte[] cachingSha2Password(byte[] cs2p) {
+        byte[] packetCachingSha2Password = null;
+        return packetCachingSha2Password = combineHeaderAndPassword(WRITECACHINGPASSWORD, cs2p);
+    }
+
+
+    public static byte[] nativePassword(byte[] cs2p) {
+        byte[] packetCachingSha2Password = null;
+        return packetCachingSha2Password = combineHeaderAndPassword(NATIVE_PASSWORD_WITH_PLUGINDATA, cs2p);
+    }
+
+
+    public static byte[] combineHeaderAndPassword(byte[] des1, byte[] des2) {
+        byte[] target = new byte[des1.length + des2.length];
+        int i ;
+        for (i = 0 ; i < des1.length ; i++) {
+            target[i] = des1[i];
+        }
+        for (int j = 0 ; j < des2.length ; j++, i++) {
+            target[i] = des2[j];
+        }
+        return target;
     }
 
 }

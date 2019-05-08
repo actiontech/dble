@@ -8,7 +8,6 @@ package com.actiontech.dble.backend.mysql.nio;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
-import com.actiontech.dble.backend.mysql.SecurityUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.btrace.provider.XaDelayProvider;
@@ -36,7 +35,6 @@ import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.nio.channels.NetworkChannel;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -66,6 +64,7 @@ public class MySQLConnection extends AbstractConnection implements
     private long oldTimestamp;
     private final AtomicBoolean logResponse = new AtomicBoolean(false);
     private volatile boolean testing = false;
+    private String authPluginErrorMessgae = null;
 
     private volatile BackEndCleaner recycler = null;
 
@@ -95,6 +94,7 @@ public class MySQLConnection extends AbstractConnection implements
         flag |= Capabilities.CLIENT_MULTI_RESULTS;
         return flag;
     }
+
 
     private static final CommandPacket COMMIT = new CommandPacket();
     private static final CommandPacket ROLLBACK = new CommandPacket();
@@ -258,18 +258,13 @@ public class MySQLConnection extends AbstractConnection implements
         try {
             String authPluginName = new String(handshake.getAuthPluginName());
             if (authPluginName.equals(new String(HandshakeV10Packet.NATIVE_PASSWORD_PLUGIN))) {
-                packet.setClientFlags(clientFlags);
-                packet.setPassword(PasswordAuthPlugin.passwd(password, handshake));
-                packet.setDatabase(schema);
-                packet.write(this);
-            } else if (authPluginName.equals(new String(HandshakeV10Packet.CACHING_SHA2_PASSWORD_PLUGIN))){
-                packet.setPassword(PasswordAuthPlugin.passwdSha256(password, handshake));
-                packet.setClientFlags(getClientFlagSha());
-                packet.setAuthPlugin(authPluginName);
-                packet.setDatabase(schema);
-                packet.writeWithKey(this);
+                sendAuthPacket(packet, PasswordAuthPlugin.passwd(password, handshake), authPluginName);
+            } else if (authPluginName.equals(new String(HandshakeV10Packet.CACHING_SHA2_PASSWORD_PLUGIN))) {
+                sendAuthPacket(packet, PasswordAuthPlugin.passwdSha256(password, handshake), authPluginName);
             } else {
-                LOGGER.info("Client don't support the password plugin " + authPluginName);
+                authPluginErrorMessgae = "Client don't support the password plugin " + authPluginName + ",please check the default auth Plugin";
+                LOGGER.error(authPluginErrorMessgae);
+                throw new RuntimeException(authPluginErrorMessgae);
             }
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e.getMessage());
@@ -279,9 +274,17 @@ public class MySQLConnection extends AbstractConnection implements
 
     private long getClientFlagSha() {
         int flag = 0;
-        flag |= initClientFlags() & (0x0ffff);
-        flag += (PasswordAuthPlugin.getClientFlagsExtendSha()+2) << 16;
+        flag |= initClientFlags() ;
+        flag |= Capabilities.CLIENT_PLUGIN_AUTH;
         return flag;
+    }
+
+    private void sendAuthPacket(AuthPacket packet, byte[] authPassword, String authPluginName) {
+        packet.setPassword(authPassword);
+        packet.setClientFlags(getClientFlagSha());
+        packet.setAuthPlugin(authPluginName);
+        packet.setDatabase(schema);
+        packet.writeWithKey(this);
     }
 
     public boolean isAutocommit() {

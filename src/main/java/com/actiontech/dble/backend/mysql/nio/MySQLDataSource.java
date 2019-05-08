@@ -8,7 +8,6 @@ package com.actiontech.dble.backend.mysql.nio;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.heartbeat.DBHeartbeat;
 import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
-import com.actiontech.dble.backend.mysql.SecurityUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.model.DBHostConfig;
@@ -20,22 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.Socket;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.MessageDigest;
-import java.security.interfaces.RSAPublicKey;
-import java.security.spec.X509EncodedKeySpec;
-import java.sql.SQLException;
-
-
-import com.actiontech.dble.util.Base64Decoder;
-import com.actiontech.dble.util.Security;
-
-
-import javax.crypto.Cipher;
 
 /**
  * @author mycat
@@ -86,11 +70,13 @@ public class MySQLDataSource extends PhysicalDatasource {
     }
 
 
+
     private long getClientFlagSha(boolean isConnectWithDB) {
         int flag = 0;
         flag |= getClientFlags(isConnectWithDB);
         flag |= Capabilities.CLIENT_CONNECT_WITH_DB;
-        flag += PasswordAuthPlugin.getClientFlagsExtendSha() << 16;
+        flag |= Capabilities.CLIENT_PLUGIN_AUTH;
+        flag |= Capabilities.CLIENT_MULTIPLE_STATEMENTS;
         return flag;
     }
 
@@ -127,25 +113,12 @@ public class MySQLDataSource extends PhysicalDatasource {
             handshake.read(bin1);
 
             String authPluginName = new String(handshake.getAuthPluginName());
+            byte[] authPluginData = null;
             if (authPluginName.equals(new String(HandshakeV10Packet.NATIVE_PASSWORD_PLUGIN))) {
                 /**
                  * Phase 2: client to MySQL. Send auth packet.
                  */
-                AuthPacket authPacket = new AuthPacket();
-                authPacket.setPacketId(1);
-                authPacket.setClientFlags(getClientFlags(schema != null));
-                authPacket.setMaxPacketSize(1024 * 1024 * 16);
-                authPacket.setCharsetIndex(handshake.getServerCharsetIndex() & 0xff);
-                authPacket.setUser(this.getConfig().getUser());
-                try {
-                    authPacket.setPassword(PasswordAuthPlugin.passwd(this.getConfig().getPassword(), handshake));
-                } catch (NoSuchAlgorithmException e) {
-                    throw new IOException(e.getMessage());
-                }
-                authPacket.setDatabase(schema);
-                authPacket.write(out);
-                out.flush();
-
+                startAuthPacket(out, handshake, PasswordAuthPlugin.passwd(this.getConfig().getPassword(), handshake), schema, authPluginName);
                 /**
                  * Phase 3: MySQL to client. send OK/ERROR packet.
                  */
@@ -158,15 +131,23 @@ public class MySQLDataSource extends PhysicalDatasource {
                         isConnected = false;
                         break;
                     case EOFPacket.FIELD_COUNT:
-                        // send 323 auth packet
-                        Reply323Packet r323 = new Reply323Packet();
-                        r323.setPacketId((byte) (bin2.getPacketId() + 1));
-                        String password = this.getConfig().getPassword();
-                        if (password != null && password.length() > 0) {
-                            r323.setSeed(SecurityUtil.scramble323(password, new String(handshake.getSeed())).getBytes());
+                        authPluginName = bin2.getAuthPluginName();
+                        authPluginData = bin2.getAuthPluginData();
+                        if (authPluginName.equals(new String(HandshakeV10Packet.CACHING_SHA2_PASSWORD_PLUGIN))) {
+                            out.write(PasswordAuthPlugin.cachingSha2Password(PasswordAuthPlugin.passwdSha256(this.getConfig().getPassword(), handshake)));
+                            out.flush();
+                            bin2.read(in);
+                            if (bin2.getData()[1] == PasswordAuthPlugin.AUTHSTAGE_FAST_COMPLETE) {       //fast Authentication
+                                break;
+                            } else if (bin2.getData()[1] == PasswordAuthPlugin.AUTHSTAGE_FULL) {  //full Authentication
+                                isConnected = PasswordAuthPlugin.sendEncryptedPassword(out, in, authPluginData, PasswordAuthPlugin.GETPUBLICKEY_NATIVE_FIRST, this.getConfig().getPassword());
+                            } else {
+                                isConnected = false;
+                            }
+                        } else {
+                            // send 323 auth packet
+                            PasswordAuthPlugin.send323AuthPacket(out, bin2, handshake, this.getConfig().getPassword());
                         }
-                        r323.write(out);
-                        out.flush();
                         break;
                     default:
                         isConnected = false;
@@ -176,55 +157,45 @@ public class MySQLDataSource extends PhysicalDatasource {
                 /**
                  * Phase 2: client to MySQL. Send auth packet.
                  */
-                AuthPacket authPacket = new AuthPacket();
-                authPacket.setPacketId(1);
-                authPacket.setClientFlags(getClientFlagSha(schema != null));
-                authPacket.setMaxPacketSize(1024 * 1024 * 16);
-                authPacket.setCharsetIndex(handshake.getServerCharsetIndex() & 0xff);
-                authPacket.setUser(this.getConfig().getUser());
-                authPacket.setAuthPlugin(authPluginName);
                 try {
-                    authPacket.setPassword(PasswordAuthPlugin.passwdSha256(this.getConfig().getPassword(), handshake));
-                    authPacket.setDatabase(schema);
-                    authPacket.writeWithKey(out);
-                    out.flush();
-
+                    startAuthPacket(out, handshake, PasswordAuthPlugin.passwdSha256(this.getConfig().getPassword(), handshake), schema, authPluginName);
 
                     BinaryPacket bin2 = new BinaryPacket();
                     bin2.read(in);
-                    if (bin2.getData()[1] == 0x03) {        //fast Authentication
-                        isConnected = true;
-                    } else if (bin2.getData()[1] == 0x04) {   //full Authentication
-                        out.write(QuitPacket.GETPUBLICKEY);
-                        out.flush();
-                        byte[] publicKey = null;
-                        BinaryPacket binKey = new BinaryPacket();
-                        binKey.readKey(in);
-                        publicKey = binKey.getPublicKey();
-                        byte[] input = this.getConfig().getPassword() != null ? getBytesNullTerminated(this.getConfig().getPassword(), "UTF-8") : new byte[]{0};
-                        byte[] mysqlScrambleBuff = new byte[input.length];
-                        Security.xorString(input, mysqlScrambleBuff, PasswordAuthPlugin.seedTotal, input.length);
-                        byte[] encryptedPassword = PasswordAuthPlugin.encryptWithRSAPublicKey(mysqlScrambleBuff, PasswordAuthPlugin.decodeRSAPublicKey(new String(publicKey)), "RSA/ECB/OAEPWithSHA-1AndMGF1Padding");
-                        byte[] encryPacketHead = {(byte) 0x00, (byte) 0x01, (byte) 0x00, (byte) 0x05};
-                        out.write(encryPacketHead);
-                        out.write(encryptedPassword);
-                        out.flush();
-                        BinaryPacket resEncryBin = new BinaryPacket();
-                        resEncryBin.read(in);
-                        byte[] resEncResult = resEncryBin.getData();
-                        if (resEncResult[4] == 0x00) {
-                            isConnected = true;
-                        } else {
+                    switch (bin2.getData()[0]) {
+                        case OkPacket.FIELD_COUNT:
+                            break;
+                        case PasswordAuthPlugin.AUTH_SWITCH_PACKET:
+                            if (bin2.getData()[1] == PasswordAuthPlugin.AUTHSTAGE_FAST_COMPLETE) {        //fast Authentication
+                                break;
+                            } else if (bin2.getData()[1] == PasswordAuthPlugin.AUTHSTAGE_FULL) {   //full Authentication
+                                isConnected = PasswordAuthPlugin.sendEncryptedPassword(out, in, authPluginData, PasswordAuthPlugin.GETPUBLICKEY, this.getConfig().getPassword());
+                            } else {
+                                isConnected = false;
+                            }
+                            break;
+                        case ErrorPacket.FIELD_COUNT:
                             isConnected = false;
-                        }
-                    } else {
-                        isConnected = false;
+                            break;
+                        case EOFPacket.FIELD_COUNT:
+                            authPluginName = bin2.getAuthPluginName();
+                            if (authPluginName.equals(new String(HandshakeV10Packet.NATIVE_PASSWORD_PLUGIN))) {
+                                out.write(PasswordAuthPlugin.nativePassword(PasswordAuthPlugin.passwd(this.getConfig().getPassword(), handshake)));
+                                out.flush();
+                            } else {
+                                // send 323 auth packet
+                                PasswordAuthPlugin.send323AuthPacket(out, bin2, handshake, this.getConfig().getPassword());
+                            }
+                            break;
+                        default:
+                            isConnected = false;
+                            break;
                     }
                 } catch (Exception e) {
-                    LOGGER.debug("connect the schema:" + schema + " failed");
+                    LOGGER.error("connect the schema:" + schema + " failed");
                 }
             } else {
-                LOGGER.info("Client don't support the password plugin " + authPluginName);
+                LOGGER.error("Client don't support the password plugin " + authPluginName + ",please check the default auth Plugin");
                 isConnected = false;
             }
         } catch (Exception e) {
@@ -244,18 +215,27 @@ public class MySQLDataSource extends PhysicalDatasource {
         return isConnected;
     }
 
-    public static byte[] getBytesNullTerminated(String value, String encoding) {
-        // Charset cs = findCharset(encoding);
-        Charset cs = StandardCharsets.UTF_8;
-        ByteBuffer buf = cs.encode(value);
-        int encodedLen = buf.limit();
-        byte[] asBytes = new byte[encodedLen + 1];
-        buf.get(asBytes, 0, encodedLen);
-        asBytes[encodedLen] = 0;
-        return asBytes;
-    }
     @Override
     public DBHeartbeat createHeartBeat() {
         return new MySQLHeartbeat(this);
+    }
+
+
+    public void startAuthPacket (OutputStream out, HandshakeV10Packet handshake,byte[] passwordSented, String schema, String authPluginName){
+        AuthPacket authPacket = new AuthPacket();
+        authPacket.setPacketId(1);
+        authPacket.setClientFlags(getClientFlagSha(schema != null));
+        authPacket.setMaxPacketSize(1024 * 1024 * 16);
+        authPacket.setCharsetIndex(handshake.getServerCharsetIndex() & 0xff);
+        authPacket.setUser(this.getConfig().getUser());
+        try {
+            authPacket.setPassword(passwordSented);
+            authPacket.setDatabase(schema);
+            authPacket.setAuthPlugin(authPluginName);
+            authPacket.writeWithKey(out);
+            out.flush();
+        } catch (Exception e) {
+            LOGGER.info(e.getMessage());
+        }
     }
 }

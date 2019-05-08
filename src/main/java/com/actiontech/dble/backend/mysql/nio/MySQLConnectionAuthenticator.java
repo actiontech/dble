@@ -12,8 +12,11 @@ import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.net.ConnectionException;
 import com.actiontech.dble.net.NIOHandler;
 import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.util.PasswordAuthPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
 
 /**
  * MySQLConnectionAuthenticator
@@ -24,6 +27,11 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLConnectionAuthenticator.class);
     private final MySQLConnection source;
     private final ResponseHandler listener;
+    private static byte conFfirmPublicKeyKEY = 0;
+    private static byte[] publicKey = null;
+    String authPluginName = null;
+    byte[] authPluginData = null;
+
 
     public MySQLConnectionAuthenticator(MySQLConnection source,
                                         ResponseHandler listener) {
@@ -40,6 +48,11 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
     @Override
     public void handle(byte[] data) {
         try {
+            BinaryPacket bin2 = new BinaryPacket();
+            if (checkPubicKey(data)) {
+                conFfirmPublicKeyKEY = data[4];
+                data[4] = PasswordAuthPlugin.CONFIRM_PUBLIC_KEY;
+            }
             switch (data[4]) {
                 case OkPacket.FIELD_COUNT:
                     HandshakeV10Packet packet = source.getHandshake();
@@ -68,11 +81,38 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
                     LOGGER.info("can't connect to mysql server ,errMsg:" + errMsg + " " + source);
                     //source.close(errMsg);
                     throw new ConnectionException(err.getErrNo(), errMsg);
-
                 case EOFPacket.FIELD_COUNT:
-                    auth323(data[3]);
+                    authPluginName = bin2.getAuthPluginName(data);
+                    authPluginData = bin2.getAuthPluginData(data);
+                    if (authPluginName.equals(new String(HandshakeV10Packet.NATIVE_PASSWORD_PLUGIN))) {
+                        source.write(PasswordAuthPlugin.nativePassword(PasswordAuthPlugin.passwd(source.getPassword(), source.getHandshake())));
+                    } else if (authPluginName.equals(new String(HandshakeV10Packet.CACHING_SHA2_PASSWORD_PLUGIN))) {
+                        source.write(PasswordAuthPlugin.cachingSha2Password(PasswordAuthPlugin.passwdSha256(source.getPassword(), source.getHandshake())));
+                    } else {
+                        auth323(data[3]);
+                    }
                     break;
-                case OkPacket.FIELDSWITCHREQUEST:
+                case PasswordAuthPlugin.CONFIRM_PUBLIC_KEY:
+                    data[4] = conFfirmPublicKeyKEY;
+                    publicKey = bin2.readKey(data);
+                    if (Arrays.equals(source.getHandshake().getAuthPluginName(), HandshakeV10Packet.CACHING_SHA2_PASSWORD_PLUGIN)) {
+                        PasswordAuthPlugin.sendEnPasswordWithPublicKey(authPluginData, PasswordAuthPlugin.GETPUBLICKEY, publicKey, source);
+                    } else if (Arrays.equals(source.getHandshake().getAuthPluginName(), HandshakeV10Packet.NATIVE_PASSWORD_PLUGIN)) {
+                        PasswordAuthPlugin.sendEnPasswordWithPublicKey(authPluginData, PasswordAuthPlugin.GETPUBLICKEY_NATIVE_FIRST, publicKey, source);
+                    } else {
+                        LOGGER.error("Client don't support the password plugin " + authPluginName + ",please check the default auth Plugin");
+                    }
+                    break;
+                case PasswordAuthPlugin.AUTH_SWITCH_PACKET:
+                    if (data[5] == PasswordAuthPlugin.AUTHSTAGE_FULL) {
+                        if (Arrays.equals(source.getHandshake().getAuthPluginName(), HandshakeV10Packet.CACHING_SHA2_PASSWORD_PLUGIN)) {
+                            PasswordAuthPlugin.sendEnPaGetPub(PasswordAuthPlugin.GETPUBLICKEY, source);
+                        } else if (Arrays.equals(source.getHandshake().getAuthPluginName(), HandshakeV10Packet.NATIVE_PASSWORD_PLUGIN)) {
+                            PasswordAuthPlugin.sendEnPaGetPub(PasswordAuthPlugin.GETPUBLICKEY_NATIVE_FIRST, source);
+                        } else {
+                            LOGGER.error("Client don't support the password plugin " + authPluginName + ",please check the default auth Plugin");
+                        }
+                    }
                     break;
                 default:
                     packet = source.getHandshake();
@@ -93,6 +133,8 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
                 return;
             }
             throw e;
+        } catch (Exception e) {
+            LOGGER.info(e.getMessage());
         }
     }
 
@@ -115,6 +157,10 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
             r323.setSeed(SecurityUtil.scramble323(pass, new String(seed)).getBytes());
         }
         r323.write(source);
+    }
+
+    public boolean checkPubicKey(byte[] data) {
+        return data[0] == (byte) 0xc4 && data[1] == (byte) 1 && data[2] == (byte) 0 && (data[3] == (byte) 4 || data[3] == (byte) 6);
     }
 
 }

@@ -39,6 +39,25 @@ public final class StreamUtil {
         return (byte) (got & 0xff);
     }
 
+    public static byte[] read(byte[] b, int offset, int length) {
+        byte[] fixedByte = new byte[length];
+        for (int i = 0 ; i < length ; i++) {
+            fixedByte[i] = b[offset + i];
+        }
+        return fixedByte;
+    }
+
+    public static int readBackInt(byte[] b, int offset, int length) {
+        byte[] fixedByte = new byte[length];
+        for (int i = 0 ; i < length ; i++) {
+            fixedByte[i] = b[offset + i];
+        }
+        int i = fixedByte[0] & 0xff;
+        i |= (fixedByte[1] & 0xff) << 8;
+        i |= (fixedByte[2] & 0xff) << 16;
+        return i;
+    }
+
     public static byte[] readKey(InputStream in, byte[] b, int offset, int length) throws IOException {
         byte[] key = new byte[b.length - 4];
         for (int got = 0; length > 0; ) {

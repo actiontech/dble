@@ -221,7 +221,7 @@ public class MySQLDataSource extends PhysicalDatasource {
     }
 
 
-    public void startAuthPacket (OutputStream out, HandshakeV10Packet handshake,byte[] passwordSented, String schema, String authPluginName){
+    public void startAuthPacket(OutputStream out, HandshakeV10Packet handshake, byte[] passwordSented, String schema, String authPluginName) {
         AuthPacket authPacket = new AuthPacket();
         authPacket.setPacketId(1);
         authPacket.setClientFlags(getClientFlagSha(schema != null));

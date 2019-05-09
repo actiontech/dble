@@ -27,8 +27,8 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLConnectionAuthenticator.class);
     private final MySQLConnection source;
     private final ResponseHandler listener;
-    private static byte conFfirmPublicKeyKEY = 0;
-    private static byte[] publicKey = null;
+    private byte confirmPublicKeyKEY = 0;
+    private byte[] publicKey = null;
     String authPluginName = null;
     byte[] authPluginData = null;
 
@@ -50,7 +50,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
         try {
             BinaryPacket bin2 = new BinaryPacket();
             if (checkPubicKey(data)) {
-                conFfirmPublicKeyKEY = data[4];
+                confirmPublicKeyKEY = data[4];
                 data[4] = PasswordAuthPlugin.CONFIRM_PUBLIC_KEY;
             }
             switch (data[4]) {
@@ -93,7 +93,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
                     }
                     break;
                 case PasswordAuthPlugin.CONFIRM_PUBLIC_KEY:
-                    data[4] = conFfirmPublicKeyKEY;
+                    data[4] = confirmPublicKeyKEY;
                     publicKey = bin2.readKey(data);
                     if (Arrays.equals(source.getHandshake().getAuthPluginName(), HandshakeV10Packet.CACHING_SHA2_PASSWORD_PLUGIN)) {
                         PasswordAuthPlugin.sendEnPasswordWithPublicKey(authPluginData, PasswordAuthPlugin.GETPUBLICKEY, publicKey, source);

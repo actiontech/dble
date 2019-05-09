@@ -614,6 +614,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
                 session.setResponseTime(isSuccess);
                 session.getSource().write(data);
+                session.multiStatementNextSql(session.getIsMultiStatement().get());
             }
         }
     }

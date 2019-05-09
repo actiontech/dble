@@ -109,7 +109,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     public void load() {
         // load sequnce properties
         Properties props = PropertiesUtil.loadProps(SEQUENCE_DB_PROPS);
-        if ("ZK".equals(props.getProperty("INSTANCEID"))) {
+        if ("ZK".equalsIgnoreCase(props.getProperty("INSTANCEID"))) {
             initializeZK(ZkConfig.getInstance().getZkURL());
         } else {
             this.instanceId = Long.parseLong(props.getProperty("INSTANCEID"));

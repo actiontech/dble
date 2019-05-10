@@ -186,8 +186,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (errConnection == null) {
                     errConnection = new ArrayList<>();
                 }
-                errConnection.add(conn);
             }
+            errConnection.add(conn);
             if (!conn.syncAndExecute()) {
                 return;
             }

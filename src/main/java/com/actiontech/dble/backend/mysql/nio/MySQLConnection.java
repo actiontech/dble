@@ -64,7 +64,7 @@ public class MySQLConnection extends AbstractConnection implements
     private long oldTimestamp;
     private final AtomicBoolean logResponse = new AtomicBoolean(false);
     private volatile boolean testing = false;
-    private String authPluginErrorMessgae = null;
+    private String authPluginErrorMessage = null;
 
     private volatile BackEndCleaner recycler = null;
 
@@ -262,9 +262,9 @@ public class MySQLConnection extends AbstractConnection implements
             } else if (authPluginName.equals(new String(HandshakeV10Packet.CACHING_SHA2_PASSWORD_PLUGIN))) {
                 sendAuthPacket(packet, PasswordAuthPlugin.passwdSha256(password, handshake), authPluginName);
             } else {
-                authPluginErrorMessgae = "Client don't support the password plugin " + authPluginName + ",please check the default auth Plugin";
-                LOGGER.error(authPluginErrorMessgae);
-                throw new RuntimeException(authPluginErrorMessgae);
+                authPluginErrorMessage = "Client don't support the password plugin " + authPluginName + ",please check the default auth Plugin";
+                LOGGER.warn(authPluginErrorMessage);
+                throw new RuntimeException(authPluginErrorMessage);
             }
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e.getMessage());

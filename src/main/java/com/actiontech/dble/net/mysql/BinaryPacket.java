@@ -89,25 +89,21 @@ public class BinaryPacket extends MySQLPacket {
     }
 
     public String getAuthPluginName() throws Exception {
-        String authPluginName = new String(StreamUtil.read(data, AUTH_PLUGIN_OFFSET, AUTH_PLUGIN_LENGTH)).trim();
-        return authPluginName;
+        return new String(StreamUtil.read(data, AUTH_PLUGIN_OFFSET, AUTH_PLUGIN_LENGTH)).trim();
     }
 
     public String getAuthPluginName(byte[] dataContainsPluginName) throws Exception {
-        String authPluginName = new String(StreamUtil.read(dataContainsPluginName, AUTH_PLUGIN_OFFSET + 4, AUTH_PLUGIN_LENGTH)).trim();
-        return authPluginName;
+        return new String(StreamUtil.read(dataContainsPluginName, AUTH_PLUGIN_OFFSET + 4, AUTH_PLUGIN_LENGTH)).trim();
     }
 
 
     public byte[] getAuthPluginData() throws Exception {
-        byte[] authPluginName = StreamUtil.read(data, AUTH_PLUGIN_LENGTH + 1, AUTH_PLUGIN_LENGTH - 1);
-        return authPluginName;
+        return StreamUtil.read(data, AUTH_PLUGIN_LENGTH + 1, AUTH_PLUGIN_LENGTH - 1);
     }
 
 
     public byte[] getAuthPluginData(byte[] dataContainsPluginData) throws Exception {
-        byte[] authPluginName = StreamUtil.read(dataContainsPluginData, AUTH_PLUGIN_LENGTH + 1 + 4, AUTH_PLUGIN_LENGTH - 1);
-        return authPluginName;
+        return StreamUtil.read(dataContainsPluginData, AUTH_PLUGIN_LENGTH + 1 + 4, AUTH_PLUGIN_LENGTH - 1);
     }
     public void setData(byte[] data) {
         this.data = data;

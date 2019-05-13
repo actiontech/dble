@@ -74,7 +74,6 @@ public class MySQLDataSource extends PhysicalDatasource {
     private long getClientFlagSha(boolean isConnectWithDB) {
         int flag = 0;
         flag |= getClientFlags(isConnectWithDB);
-        flag |= Capabilities.CLIENT_CONNECT_WITH_DB;
         flag |= Capabilities.CLIENT_PLUGIN_AUTH;
         flag |= Capabilities.CLIENT_MULTIPLE_STATEMENTS;
         return flag;

@@ -43,9 +43,6 @@ import static com.actiontech.dble.config.Capabilities.CLIENT_PLUGIN_AUTH;
 public class AuthPacket extends MySQLPacket {
     private static final byte[] FILLER = new byte[23];
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AuthPacket.class);
-
-
     private long clientFlags;
     private long maxPacketSize;
     private int charsetIndex;

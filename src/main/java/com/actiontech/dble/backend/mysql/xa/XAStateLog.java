@@ -11,6 +11,7 @@ import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.InMemoryRepository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.KVStoreRepository;
+import com.actiontech.dble.route.RouteResultsetNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,16 +77,18 @@ public final class XAStateLog {
     }
 
     private static void updateXARecoveryLog(String xaTxId, MySQLConnection mysqlCon, TxState txState) {
-        updateXARecoveryLog(xaTxId, mysqlCon.getHost(), mysqlCon.getPort(), mysqlCon.getSchema(), txState);
+        long expires = ((RouteResultsetNode) mysqlCon.getAttachment()).getMultiplexNum().longValue();
+        updateXARecoveryLog(xaTxId, mysqlCon.getHost(), mysqlCon.getPort(), mysqlCon.getSchema(), expires, txState);
     }
 
-    public static void updateXARecoveryLog(String xaTxId, String host, int port, String schema, TxState txState) {
+    public static void updateXARecoveryLog(String xaTxId, String host, int port, String schema, long expires, TxState txState) {
         CoordinatorLogEntry coordinatorLogEntry = IN_MEMORY_REPOSITORY.get(xaTxId);
         for (int i = 0; i < coordinatorLogEntry.getParticipants().length; i++) {
             if (coordinatorLogEntry.getParticipants()[i] != null &&
                     coordinatorLogEntry.getParticipants()[i].getSchema().equals(schema) &&
                     coordinatorLogEntry.getParticipants()[i].getHost().equals(host) &&
-                    coordinatorLogEntry.getParticipants()[i].getPort() == port) {
+                    coordinatorLogEntry.getParticipants()[i].getPort() == port &&
+                    coordinatorLogEntry.getParticipants()[i].getExpires() == expires) {
                 coordinatorLogEntry.getParticipants()[i].setTxState(txState);
             }
         }
@@ -190,7 +193,8 @@ public final class XAStateLog {
 
     public static void initRecoveryLog(String xaTxId, int position, MySQLConnection conn) {
         CoordinatorLogEntry coordinatorLogEntry = IN_MEMORY_REPOSITORY.get(xaTxId);
-        coordinatorLogEntry.getParticipants()[position] = new ParticipantLogEntry(xaTxId, conn.getHost(), conn.getPort(), 0,
+        long expires = ((RouteResultsetNode) conn.getAttachment()).getMultiplexNum().longValue();
+        coordinatorLogEntry.getParticipants()[position] = new ParticipantLogEntry(xaTxId, conn.getHost(), conn.getPort(), expires,
                 conn.getSchema(), conn.getXaStatus());
         flushMemoryRepository(xaTxId, coordinatorLogEntry);
     }

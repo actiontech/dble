@@ -149,7 +149,9 @@ create table if not exists tb_child1 (
   content varchar(250) not null,
   primary key(id)
 )engine=innodb charset=utf8;
-insert into tb_child1 values(1,1,1,'1'),(2,2,2,'2'),(513,513,513,'513');
+insert into tb_child1 values(1,1,1,'1');
+insert into tb_child1 values(2,2,2,'2');
+insert into tb_child1 values(513,513,513,'513');
 
 drop table if exists tb_grandson1;
 create table if not exists tb_grandson1 (
@@ -158,7 +160,9 @@ create table if not exists tb_grandson1 (
   content varchar(250) not null,
   primary key(id)
 )engine=innodb charset=utf8;
-insert into tb_grandson1 values(1,1,'1'),(2,2,'2'),(513,513,'513');
+insert into tb_grandson1 values(1,1,'1');
+insert into tb_grandson1 values(2,2,'2');
+insert into tb_grandson1 values(513,513,'513');
 
 drop table if exists tb_grandson2;
 create table if not exists tb_grandson2 (
@@ -167,7 +171,9 @@ create table if not exists tb_grandson2 (
   content varchar(250) not null,
   primary key(id)
 )engine=innodb charset=utf8;
-insert into tb_grandson2 values(1,1,'1'),(2,2,'2'),(513,513,'513');
+insert into tb_grandson2 values(1,1,'1');
+insert into tb_grandson2 values(2,2,'2');
+insert into tb_grandson2 values(513,513,'513');
 
 drop table if exists tb_child2;
 create table if not exists tb_child2 (
@@ -176,7 +182,9 @@ create table if not exists tb_child2 (
   content varchar(250) not null,
   primary key(id)
 )engine=innodb charset=utf8;
-insert into tb_child2 values(1,1,'1'),(2,2,'2'),(513,513,'513');
+insert into tb_child2 values(1,1,'1');
+insert into tb_child2 values(2,2,'2');
+insert into tb_child2 values(513,513,'513');
 
 drop table if exists tb_child3;
 create table if not exists tb_child3 (
@@ -185,7 +193,9 @@ create table if not exists tb_child3 (
   content varchar(250) not null,
   primary key(id)
 )engine=innodb charset=utf8;
-insert into tb_child3 values(1,1,'1'),(2,2,'2'),(513,513,'513');
+insert into tb_child3 values(1,1,'1');
+insert into tb_child3 values(2,2,'2');
+insert into tb_child3 values(513,513,'513');
 
 use testdb2;
 drop table if exists tb_test1;

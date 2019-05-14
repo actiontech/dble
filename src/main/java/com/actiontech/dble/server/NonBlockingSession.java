@@ -783,7 +783,7 @@ public class NonBlockingSession implements Session {
                 if (debug) {
                     LOGGER.debug("release connection " + c);
                 }
-                if (!c.isClosedOrQuit()) {
+                if (!c.isClosed()) {
                     if (c.isAutocommit()) {
                         c.release();
                     } else if (needClose) {

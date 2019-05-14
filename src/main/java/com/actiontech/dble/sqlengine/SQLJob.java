@@ -136,7 +136,7 @@ public class SQLJob implements ResponseHandler, Runnable {
         if (conn.syncAndExecute()) {
             conn.release();
         } else {
-            ((MySQLConnection) conn).quit();
+            ((MySQLConnection) conn).close();
         }
         doFinished(true);
     }

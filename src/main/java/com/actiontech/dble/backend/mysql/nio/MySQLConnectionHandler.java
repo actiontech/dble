@@ -210,7 +210,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
     }
 
     private void closeNoHandler() {
-        if (!source.isClosedOrQuit()) {
+        if (!source.isClosed()) {
             source.close("no handler");
             LOGGER.info("no handler bind in this con " + this + " client:" + source);
         }

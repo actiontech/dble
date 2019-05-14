@@ -180,7 +180,7 @@ public final class NIOProcessor {
             //Active/IDLE/PREPARED XA backends will not be checked
             if (c instanceof MySQLConnection) {
                 MySQLConnection m = (MySQLConnection) c;
-                if (m.isClosedOrQuit()) {
+                if (m.isClosed()) {
                     it.remove();
                     continue;
                 }

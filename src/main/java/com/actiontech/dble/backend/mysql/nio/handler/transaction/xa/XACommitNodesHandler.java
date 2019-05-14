@@ -251,7 +251,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         if (conn instanceof MySQLConnection) {
             MySQLConnection mysqlCon = (MySQLConnection) conn;
             if (mysqlCon.getXaStatus() == TxState.TX_STARTED_STATE) {
-                mysqlCon.quit();
+                mysqlCon.close();
                 mysqlCon.setXaStatus(TxState.TX_CONN_QUIT);
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                 if (decrementCountBy(1)) {
@@ -261,7 +261,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 
                 // 'xa prepare' error
             } else if (mysqlCon.getXaStatus() == TxState.TX_PREPARING_STATE) {
-                mysqlCon.quit();
+                mysqlCon.close();
                 mysqlCon.setXaStatus(TxState.TX_CONN_QUIT);
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                 if (decrementCountBy(1)) {
@@ -345,7 +345,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         if (conn instanceof MySQLConnection) {
             MySQLConnection mysqlCon = (MySQLConnection) conn;
             if (mysqlCon.getXaStatus() == TxState.TX_STARTED_STATE) {
-                mysqlCon.quit();
+                mysqlCon.close();
                 mysqlCon.setXaStatus(TxState.TX_CONN_QUIT);
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                 if (decrementCountBy(1)) {
@@ -418,7 +418,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                         LOGGER.warn(warnStr);
                         session.forceClose(warnStr);
                     } else if (count == 0 || ++backgroundCommitTimes <= count) {
-                        String warnStr = "fail to COMMIT xa transaction " + xaId + " at the " + backgroundCommitTimes + "th time in background!" ;
+                        String warnStr = "fail to COMMIT xa transaction " + xaId + " at the " + backgroundCommitTimes + "th time in background!";
                         LOGGER.warn(warnStr);
                         AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, warnStr, AlertUtil.genSingleLabel("XA_ID", xaId));
 

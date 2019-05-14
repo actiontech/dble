@@ -158,7 +158,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
                 conn.release();
             }
         } else {
-            ((MySQLConnection) conn).quit();
+            ((MySQLConnection) conn).close();
         }
     }
 

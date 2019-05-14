@@ -208,7 +208,7 @@ public abstract class PhysicalDatasource {
             BackendConnection con = linkedQueue.poll();
             if (con == null) {
                 break;
-            } else if (con.isClosedOrQuit()) {
+            } else if (con.isClosed()) {
                 continue;
             } else if (con.getLastTime() < hearBeatTime) { //if the connection is idle for a long time
                 con.setBorrowed(true);
@@ -438,7 +438,7 @@ public abstract class PhysicalDatasource {
     }
 
     private void returnCon(BackendConnection c) {
-        if (c.isClosedOrQuit()) {
+        if (c.isClosed()) {
             return;
         }
         c.setAttachment(null);

@@ -62,12 +62,6 @@ public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implem
 
     }
 
-    @Override
-    public void reset(int initCount) {
-        nodeCount = initCount;
-        packetId = 0;
-    }
-
     public void debugCommitDelay() {
 
     }

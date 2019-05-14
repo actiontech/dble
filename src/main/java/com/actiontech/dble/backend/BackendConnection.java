@@ -62,7 +62,7 @@ public interface BackendConnection extends ClosableConnection {
 
     long getId();
 
-    void terminate(String reason);
+    void closeWithoutRsp(String reason);
 
     String compactInfo();
 

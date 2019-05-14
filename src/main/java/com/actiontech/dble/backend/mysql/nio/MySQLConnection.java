@@ -703,7 +703,7 @@ public class MySQLConnection extends AbstractConnection implements
      * close connection without closeResponseHandler
      */
     @Override
-    public synchronized void terminate(String reason) {
+    public synchronized void closeWithoutRsp(String reason) {
         this.respHandler = null;
         this.close(reason);
     }

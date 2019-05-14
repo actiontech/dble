@@ -962,9 +962,12 @@ public class NonBlockingSession implements Session {
                 try {
                     MySQLConnection newConn = (MySQLConnection) dn.getConnection(dn.getDatabase(), errConn.isAutocommit(), false, errConn.getAttachment());
                     newConn.setXaStatus(errConn.getXaStatus());
+                    newConn.setSession(this);
                     if (!newConn.setResponseHandler(queryHandler)) {
                         return errConn;
                     }
+                    errConn.setResponseHandler(null);
+                    errConn.quit();
                     this.bindConnection(node, newConn);
                     return newConn;
                 } catch (Exception e) {

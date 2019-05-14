@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -165,8 +166,8 @@ public final class NIOReactor {
                 } catch (Exception e) {
                     if (c instanceof FrontendConnection) {
                         c.close("register err" + e.toString());
-                    } else if (c instanceof BackendAIOConnection) {
-                        ((BackendAIOConnection) c).onConnectFailed(e);
+                    } else if (c instanceof MySQLConnection) {
+                        ((MySQLConnection) c).onConnectFailed(e);
                     }
                     LOGGER.warn("register err", e);
                 }

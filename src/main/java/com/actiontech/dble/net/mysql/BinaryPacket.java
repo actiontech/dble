@@ -7,7 +7,7 @@ package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.backend.mysql.StreamUtil;
-import com.actiontech.dble.net.BackendAIOConnection;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.net.FrontendConnection;
 
 import java.io.IOException;
@@ -39,7 +39,7 @@ public class BinaryPacket extends MySQLPacket {
     }
 
     @Override
-    public void write(BackendAIOConnection c) {
+    public void write(MySQLConnection c) {
         ByteBuffer buffer = c.allocate();
         buffer = c.checkWriteBuffer(buffer, PACKET_HEADER_SIZE + calcPacketSize(), false);
         BufferUtil.writeUB3(buffer, calcPacketSize());

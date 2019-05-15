@@ -141,7 +141,6 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             }
             commitPhase(mysqlCon);
         } else if (state == TxState.TX_PREPARE_UNCONNECT_STATE) {
-            final String errorMsg = this.error;
             LOGGER.warn("commit error and rollback the xa");
             if (decrementCountBy(1)) {
                 DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {

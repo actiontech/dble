@@ -30,8 +30,6 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.actiontech.dble.config.ErrorCode.ER_ERROR_DURING_COMMIT;
-
 public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     private static final int COMMIT_TIMES = 5;
     private int tryCommitTimes = 0;
@@ -149,10 +147,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
                     @Override
                     public void run() {
-                        ErrorPacket error = new ErrorPacket();
-                        error.setErrNo(ER_ERROR_DURING_COMMIT);
-                        error.setMessage(errorMsg == null ? "unknown error".getBytes() : errorMsg.getBytes());
-                        XAAutoRollbackNodesHandler nextHandler = new XAAutoRollbackNodesHandler(session, error.toBytes(), null, null);
+                        XAAutoRollbackNodesHandler nextHandler = new XAAutoRollbackNodesHandler(session, sendData, null, null);
                         nextHandler.rollback();
                     }
                 });

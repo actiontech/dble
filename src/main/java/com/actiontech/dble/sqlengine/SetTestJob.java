@@ -11,6 +11,7 @@ import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResetConnHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResetConnectionPacket;
@@ -21,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SetTestJob implements ResponseHandler, Runnable {
     public static final Logger LOGGER = LoggerFactory.getLogger(SQLJob.class);
@@ -29,6 +31,7 @@ public class SetTestJob implements ResponseHandler, Runnable {
     private final String databaseName;
     private final SQLJobHandler jobHandler;
     private final ServerConnection sc;
+    private final AtomicBoolean hasReturn = new AtomicBoolean(false);
 
     public SetTestJob(String sql, String databaseName, SQLJobHandler jobHandler, ServerConnection sc) {
         super();
@@ -46,9 +49,12 @@ public class SetTestJob implements ResponseHandler, Runnable {
                 break;
             }
         } catch (Exception e) {
-            String reason = "can't get backend connection for sql :" + sql;
-            LOGGER.info(reason, e);
-            sc.close(reason);
+            if (hasReturn.compareAndSet(false, true)) {
+                String reason = "can't get backend connection for sql :" + sql + " " + e.getMessage();
+                LOGGER.info(reason, e);
+                doFinished(true);
+                sc.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, reason);
+            }
         }
     }
 
@@ -68,35 +74,45 @@ public class SetTestJob implements ResponseHandler, Runnable {
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        String reason = "can't get backend connection for sql :" + sql;
-        LOGGER.info(reason);
-        sc.close(reason);
+        if (hasReturn.compareAndSet(false, true)) {
+            String reason = "can't get backend connection for sql :" + sql + " " + e.getMessage();
+            LOGGER.info(reason);
+            doFinished(true);
+            sc.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, reason);
+        }
     }
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
-        LOGGER.info("connectionClose sql :" + sql);
-        sc.close(reason);
+        if (hasReturn.compareAndSet(false, true)) {
+            LOGGER.info("connectionClose sql :" + sql);
+            doFinished(true);
+            sc.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, "connectionClose:" + reason);
+        }
     }
 
     @Override
     public void errorResponse(byte[] err, BackendConnection conn) {
-        ErrorPacket errPg = new ErrorPacket();
-        errPg.read(err);
-        doFinished(true);
-        conn.release(); //conn context not change
-        sc.writeErrMessage(errPg.getErrNo(), new String(errPg.getMessage()));
+        if (hasReturn.compareAndSet(false, true)) {
+            ErrorPacket errPg = new ErrorPacket();
+            errPg.read(err);
+            doFinished(true);
+            conn.release(); //conn context not change
+            sc.writeErrMessage(errPg.getErrNo(), new String(errPg.getMessage()));
+        }
     }
 
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
-        doFinished(false);
-        sc.write(ok);
-        ResetConnHandler handler = new ResetConnHandler();
-        conn.setResponseHandler(handler);
-        ((MySQLConnection) conn).setComplexQuery(true);
-        MySQLConnection connection = (MySQLConnection) conn;
-        connection.write(connection.writeToBuffer(ResetConnectionPacket.RESET, connection.allocate()));
+        if (hasReturn.compareAndSet(false, true)) {
+            doFinished(false);
+            sc.write(ok);
+            ResetConnHandler handler = new ResetConnHandler();
+            conn.setResponseHandler(handler);
+            ((MySQLConnection) conn).setComplexQuery(true);
+            MySQLConnection connection = (MySQLConnection) conn;
+            connection.write(connection.writeToBuffer(ResetConnectionPacket.RESET, connection.allocate()));
+        }
     }
 
     @Override

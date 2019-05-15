@@ -22,6 +22,7 @@ import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.util.StringUtil;
 
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -415,7 +416,19 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             } else {
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_ROLLBACKED_STATE);
                 session.setXaState(TxState.TX_INITIALIZE_STATE);
-                byte[] toSend = OkPacket.OK;
+                byte[] toSend = sendData;
+                if (toSend != OkPacket.OK) {
+                    ErrorPacket errorPacket = new ErrorPacket();
+                    errorPacket.read(toSend);
+                    // faked ok package
+                    OkPacket ok = new OkPacket();
+                    ok.read(OkPacket.OK);
+                    String errMsg = "commit fail because any node has failed to prepare due to " + StringUtil.decode(errorPacket.getMessage(), session.getSource().getCharset().getResults()) +
+                            ", dble has auto rollback";
+                    ok.setMessage(errMsg.getBytes());
+                    toSend = ok.toBytes();
+                }
+
                 session.clearResources(false);
                 AlertUtil.alertSelfResolve(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("XA_ID", session.getSessionXaID()));
                 // remove session in background

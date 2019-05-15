@@ -49,9 +49,10 @@ public class SetTestJob implements ResponseHandler, Runnable {
                 break;
             }
         } catch (Exception e) {
-            String reason = "can't get backend connection for sql :" + sql;
+            String reason = "can't get backend connection for sql :" + sql + " " + e.getMessage();
             LOGGER.info(reason, e);
-            sc.close(reason);
+            doFinished(true);
+            sc.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, reason);
         }
     }
 

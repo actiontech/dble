@@ -55,7 +55,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
                 } else if (Arrays.equals(source.getHandshake().getAuthPluginName(), HandshakeV10Packet.NATIVE_PASSWORD_PLUGIN)) {
                     PasswordAuthPlugin.sendEnPasswordWithPublicKey(authPluginData, PasswordAuthPlugin.GETPUBLICKEY_NATIVE_FIRST, publicKey, source);
                 } else {
-                    LOGGER.error("Client don't support the password plugin " + authPluginName + ",please check the default auth Plugin");
+                    LOGGER.info("Client don't support the password plugin " + authPluginName + ",please check the default auth Plugin");
                 }
             }
             switch (data[4]) {
@@ -94,7 +94,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
                     } else if (authPluginName.equals(new String(HandshakeV10Packet.CACHING_SHA2_PASSWORD_PLUGIN))) {
                         source.write(PasswordAuthPlugin.cachingSha2Password(PasswordAuthPlugin.passwdSha256(source.getPassword(), source.getHandshake())));
                     } else {
-                        LOGGER.error("Client don't support the MySQL 323 plugin ");
+                        LOGGER.info("Client don't support the MySQL 323 plugin ");
                         auth323(data[3]);
                     }
                     break;
@@ -105,7 +105,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
                         } else if (Arrays.equals(source.getHandshake().getAuthPluginName(), HandshakeV10Packet.NATIVE_PASSWORD_PLUGIN)) {
                             PasswordAuthPlugin.sendEnPaGetPub(PasswordAuthPlugin.GETPUBLICKEY_NATIVE_FIRST, source);
                         } else {
-                            LOGGER.error("Client don't support the password plugin " + authPluginName + ",please check the default auth Plugin");
+                            LOGGER.info("Client don't support the password plugin " + authPluginName + ",please check the default auth Plugin");
                         }
                     }
                     break;

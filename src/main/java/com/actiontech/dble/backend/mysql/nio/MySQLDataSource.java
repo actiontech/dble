@@ -193,10 +193,10 @@ public class MySQLDataSource extends PhysicalDatasource {
                             break;
                     }
                 } catch (Exception e) {
-                    LOGGER.error("connect the schema:" + schema + " failed");
+                    LOGGER.info("connect the schema:" + schema + " failed");
                 }
             } else {
-                LOGGER.error("Client don't support the password plugin " + authPluginName + ",please check the default auth Plugin");
+                LOGGER.info("Client don't support the password plugin " + authPluginName + ",please check the default auth Plugin");
                 isConnected = false;
             }
         } catch (Exception e) {

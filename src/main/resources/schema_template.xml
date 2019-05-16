@@ -72,8 +72,7 @@
             <!-- can have multi read hosts -->
             <readHost host="hostS1" url="ip2:3306" user="your_user" password="your_psw"/>
         </writeHost>
-        <writeHost host="hostM3" url="ip3:3306" user="your_user" password="your_psw"/>
-        <!-- <writeHost host="hostM2" url="localhost:3316" user="root" password="123456"/> -->
+        <!--<writeHost host="hostM3" url="ip3:3306" user="your_user" password="your_psw"/>-->
     </dataHost>
     <dataHost name="dataHost2" maxCon="1000" minCon="10" balance="0" switchType="-1" slaveThreshold="100">
         <heartbeat>show slave status</heartbeat>

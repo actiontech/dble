@@ -27,7 +27,6 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLConnectionAuthenticator.class);
     private final MySQLConnection source;
     private final ResponseHandler listener;
-    private byte confirmPublicKeyKEY = 0;
     private byte[] publicKey = null;
     String authPluginName = null;
     byte[] authPluginData = null;
@@ -50,8 +49,14 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
         try {
             BinaryPacket bin2 = new BinaryPacket();
             if (checkPubicKey(data)) {
-                confirmPublicKeyKEY = data[4];
-                data[4] = PasswordAuthPlugin.CONFIRM_PUBLIC_KEY;
+                publicKey = bin2.readKey(data);
+                if (Arrays.equals(source.getHandshake().getAuthPluginName(), HandshakeV10Packet.CACHING_SHA2_PASSWORD_PLUGIN)) {
+                    PasswordAuthPlugin.sendEnPasswordWithPublicKey(authPluginData, PasswordAuthPlugin.GETPUBLICKEY, publicKey, source);
+                } else if (Arrays.equals(source.getHandshake().getAuthPluginName(), HandshakeV10Packet.NATIVE_PASSWORD_PLUGIN)) {
+                    PasswordAuthPlugin.sendEnPasswordWithPublicKey(authPluginData, PasswordAuthPlugin.GETPUBLICKEY_NATIVE_FIRST, publicKey, source);
+                } else {
+                    LOGGER.error("Client don't support the password plugin " + authPluginName + ",please check the default auth Plugin");
+                }
             }
             switch (data[4]) {
                 case OkPacket.FIELD_COUNT:
@@ -89,18 +94,8 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
                     } else if (authPluginName.equals(new String(HandshakeV10Packet.CACHING_SHA2_PASSWORD_PLUGIN))) {
                         source.write(PasswordAuthPlugin.cachingSha2Password(PasswordAuthPlugin.passwdSha256(source.getPassword(), source.getHandshake())));
                     } else {
+                        LOGGER.error("Client don't support the MySQL 323 plugin ");
                         auth323(data[3]);
-                    }
-                    break;
-                case PasswordAuthPlugin.CONFIRM_PUBLIC_KEY:
-                    data[4] = confirmPublicKeyKEY;
-                    publicKey = bin2.readKey(data);
-                    if (Arrays.equals(source.getHandshake().getAuthPluginName(), HandshakeV10Packet.CACHING_SHA2_PASSWORD_PLUGIN)) {
-                        PasswordAuthPlugin.sendEnPasswordWithPublicKey(authPluginData, PasswordAuthPlugin.GETPUBLICKEY, publicKey, source);
-                    } else if (Arrays.equals(source.getHandshake().getAuthPluginName(), HandshakeV10Packet.NATIVE_PASSWORD_PLUGIN)) {
-                        PasswordAuthPlugin.sendEnPasswordWithPublicKey(authPluginData, PasswordAuthPlugin.GETPUBLICKEY_NATIVE_FIRST, publicKey, source);
-                    } else {
-                        LOGGER.error("Client don't support the password plugin " + authPluginName + ",please check the default auth Plugin");
                     }
                     break;
                 case PasswordAuthPlugin.AUTH_SWITCH_PACKET:
@@ -127,14 +122,13 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
 
             }
 
-        } catch (RuntimeException e) {
+        }
+        catch (Exception e) {
+            LOGGER.info(e.getMessage());
             if (listener != null) {
                 listener.connectionError(e, source);
                 return;
             }
-            throw e;
-        } catch (Exception e) {
-            LOGGER.info(e.getMessage());
         }
     }
 

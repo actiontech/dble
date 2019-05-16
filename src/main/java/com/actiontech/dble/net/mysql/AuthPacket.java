@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-import static com.actiontech.dble.config.Capabilities.CLIENT_PLUGIN_AUTH;
 
 
 /**
@@ -88,13 +87,17 @@ public class AuthPacket extends MySQLPacket {
             multStatementAllow = true;
         }
 
-        if ((clientFlags & CLIENT_PLUGIN_AUTH) != 0) {
+        if ((clientFlags & Capabilities.CLIENT_PLUGIN_AUTH) != 0) {
             authPlugin = mm.readStringWithNull();
         }
     }
 
     public void write(OutputStream out) throws IOException {
-        StreamUtil.writeUB3(out, calcPacketSize());
+        if (database != null) {
+            StreamUtil.writeUB3(out, calcPacketSize());
+        } else {
+            StreamUtil.writeUB3(out, calcPacketSize()-1);
+        }
         StreamUtil.write(out, packetId);
         StreamUtil.writeUB4(out, clientFlags);       // capability flags
         StreamUtil.writeUB4(out, maxPacketSize);
@@ -110,9 +113,7 @@ public class AuthPacket extends MySQLPacket {
         } else {
             StreamUtil.writeWithLength(out, password);
         }
-        if (database == null) {
-            StreamUtil.write(out, (byte) 0);
-        } else {
+        if (database != null) {
             StreamUtil.writeWithNull(out, database.getBytes());
         }
     }
@@ -149,9 +150,9 @@ public class AuthPacket extends MySQLPacket {
             buffer = c.checkWriteBuffer(buffer, databaseData.length + 1, true);
             BufferUtil.writeWithNull(buffer, databaseData);
         }
-        if ((clientFlags & CLIENT_PLUGIN_AUTH) != 0) {
+        if ((clientFlags & Capabilities.CLIENT_PLUGIN_AUTH) != 0) {
             //if use the mysql_native_password  is used for auth this need be replay
-            BufferUtil.writeWithNull(buffer, "mysql_native_password".getBytes());
+            BufferUtil.writeWithNull(buffer, HandshakeV10Packet.NATIVE_PASSWORD_PLUGIN);
         }
 
         c.write(buffer);
@@ -159,7 +160,11 @@ public class AuthPacket extends MySQLPacket {
 
 
     public void writeWithKey(OutputStream out) throws IOException {
-        StreamUtil.writeUB3(out, calcPacketSizeWithKey());
+        if (database != null) {
+            StreamUtil.writeUB3(out, calcPacketSizeWithKey());
+        } else {
+            StreamUtil.writeUB3(out, calcPacketSizeWithKey()-1);
+        }
         StreamUtil.write(out, packetId);
         StreamUtil.writeUB4(out, clientFlags);
         StreamUtil.writeUB4(out, maxPacketSize);
@@ -175,9 +180,7 @@ public class AuthPacket extends MySQLPacket {
         } else {
             StreamUtil.writeWithLength(out, password);
         }
-        if (database == null) {
-            StreamUtil.write(out, (byte) 0);
-        } else {
+        if (database != null) {
             StreamUtil.writeWithNull(out, database.getBytes());
         }
         if (authPlugin != null) {

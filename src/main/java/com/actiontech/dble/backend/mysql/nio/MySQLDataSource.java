@@ -145,6 +145,7 @@ public class MySQLDataSource extends PhysicalDatasource {
                             }
                         } else {
                             // send 323 auth packet
+                            isConnected = false;
                             PasswordAuthPlugin.send323AuthPacket(out, bin2, handshake, this.getConfig().getPassword());
                         }
                         break;
@@ -183,6 +184,7 @@ public class MySQLDataSource extends PhysicalDatasource {
                                 out.flush();
                             } else {
                                 // send 323 auth packet
+                                isConnected = false;
                                 PasswordAuthPlugin.send323AuthPacket(out, bin2, handshake, this.getConfig().getPassword());
                             }
                             break;

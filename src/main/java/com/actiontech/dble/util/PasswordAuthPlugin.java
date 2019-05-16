@@ -6,6 +6,8 @@ import com.actiontech.dble.net.AbstractConnection;
 import com.actiontech.dble.net.mysql.BinaryPacket;
 import com.actiontech.dble.net.mysql.HandshakeV10Packet;
 import com.actiontech.dble.net.mysql.Reply323Packet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.crypto.Cipher;
 import java.io.InputStream;
@@ -21,7 +23,11 @@ import java.security.spec.X509EncodedKeySpec;
 import java.sql.SQLException;
 import java.util.Arrays;
 
+import java.util.Base64;
+
 public final class PasswordAuthPlugin {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PasswordAuthPlugin.class);
+
 
     private PasswordAuthPlugin() {
     }
@@ -45,8 +51,6 @@ public final class PasswordAuthPlugin {
     public static final byte AUTHSTAGE_FAST_COMPLETE = 0x03;
 
     public static final byte AUTHSTAGE_FULL = 0x04;
-
-    public static final byte CONFIRM_PUBLIC_KEY = (byte) 0xee;
 
 
 
@@ -125,9 +129,7 @@ public final class PasswordAuthPlugin {
             }
             int offset = key.indexOf("\n") + 1;
             int len = key.indexOf("-----END PUBLIC KEY-----") - offset;
-
-            // TODO: use standard decoders with Java 6+
-            byte[] certificateData = Base64Decoder.decode(key.getBytes(), offset, len);
+            byte[] certificateData = Base64.getDecoder().decode(key.substring(offset,offset + len).replace("\n",""));
             X509EncodedKeySpec spec = new X509EncodedKeySpec(certificateData);
             KeyFactory kf = KeyFactory.getInstance("RSA");
             return (RSAPublicKey) kf.generatePublic(spec);
@@ -236,6 +238,7 @@ public final class PasswordAuthPlugin {
     }
 
     public static void send323AuthPacket(OutputStream out, BinaryPacket bin2, HandshakeV10Packet handshake, String password) throws Exception {
+        LOGGER.error("Client don't support the MySQL 323 plugin ");
         Reply323Packet r323 = new Reply323Packet();
         r323.setPacketId((byte) (bin2.getPacketId() + 1));
         if (password != null && password.length() > 0) {
@@ -246,14 +249,12 @@ public final class PasswordAuthPlugin {
     }
 
     public static byte[] cachingSha2Password(byte[] cs2p) {
-        byte[] packetCachingSha2Password = null;
-        return packetCachingSha2Password = combineHeaderAndPassword(WRITECACHINGPASSWORD, cs2p);
+        return combineHeaderAndPassword(WRITECACHINGPASSWORD, cs2p);
     }
 
 
     public static byte[] nativePassword(byte[] cs2p) {
-        byte[] packetCachingSha2Password = null;
-        return packetCachingSha2Password = combineHeaderAndPassword(NATIVE_PASSWORD_WITH_PLUGINDATA, cs2p);
+        return combineHeaderAndPassword(NATIVE_PASSWORD_WITH_PLUGINDATA, cs2p);
     }
 
 

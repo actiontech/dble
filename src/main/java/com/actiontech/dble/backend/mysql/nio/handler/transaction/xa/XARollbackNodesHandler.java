@@ -415,14 +415,13 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             } else {
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_ROLLBACKED_STATE);
                 session.setXaState(TxState.TX_INITIALIZE_STATE);
-                byte[] toSend = OkPacket.OK;
                 session.clearResources(false);
                 AlertUtil.alertSelfResolve(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("XA_ID", session.getSessionXaID()));
                 // remove session in background
                 DbleServer.getInstance().getXaSessionCheck().getRollbackingSession().remove(session.getSource().getId());
                 if (!session.closed()) {
                     setResponseTime(false);
-                    session.getSource().write(toSend);
+                    session.getSource().write(sendData);
                 }
             }
 

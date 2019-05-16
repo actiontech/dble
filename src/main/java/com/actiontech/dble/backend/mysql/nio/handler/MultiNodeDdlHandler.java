@@ -228,7 +228,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         }
 
         final ServerConnection source = session.getSource();
-        if (clearIfSessionClosed(session)) {
+        if (clearIfSessionClosed()) {
             return;
         }
 

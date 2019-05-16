@@ -5,157 +5,128 @@
   -->
 
 <!-- - - Licensed under the Apache License, Version 2.0 (the "License");
-	- you may not use this file except in compliance with the License. - You 
-	may obtain a copy of the License at - - http://www.apache.org/licenses/LICENSE-2.0 
-	- - Unless required by applicable law or agreed to in writing, software - 
-	distributed under the License is distributed on an "AS IS" BASIS, - WITHOUT 
-	WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. - See the 
-	License for the specific language governing permissions and - limitations 
+	- you may not use this file except in compliance with the License. - You
+	may obtain a copy of the License at - - http://www.apache.org/licenses/LICENSE-2.0
+	- - Unless required by applicable law or agreed to in writing, software -
+	distributed under the License is distributed on an "AS IS" BASIS, - WITHOUT
+	WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. - See the
+	License for the specific language governing permissions and - limitations
 	under the License. -->
 <!DOCTYPE dble:rule SYSTEM "rule.dtd">
 <dble:rule xmlns:dble="http://dble.cloud/">
-    <tableRule name="sharding-by-enum">
+    <tableRule name="rule_enum">
         <rule>
-            <columns>id</columns>
-            <algorithm>enum</algorithm>
+            <columns>code</columns>
+            <algorithm>func_enum</algorithm>
         </rule>
     </tableRule>
 
-    <tableRule name="sharding-by-range">
+    <tableRule name="rule_range">
         <rule>
             <columns>id</columns>
-            <algorithm>rangeLong</algorithm>
+            <algorithm>func_range</algorithm>
         </rule>
     </tableRule>
 
-    <tableRule name="sharding-by-hash">
+    <tableRule name="rule_common_hash">
         <rule>
             <columns>id</columns>
-            <algorithm>hashLong</algorithm>
+            <algorithm>func_common_hash</algorithm>
         </rule>
     </tableRule>
 
-    <tableRule name="sharding-by-hash2">
+    <tableRule name="rule_common_hash2">
         <rule>
-            <columns>id</columns>
-            <algorithm>hashLong2</algorithm>
+            <columns>id2</columns>
+            <algorithm>func_common_hash</algorithm>
         </rule>
     </tableRule>
 
-    <tableRule name="sharding-by-hash3">
+    <tableRule name="rule_uneven_hash">
         <rule>
             <columns>id</columns>
-            <algorithm>hashLong3</algorithm>
+            <algorithm>func_uneven_hash</algorithm>
         </rule>
     </tableRule>
 
-    <tableRule name="sharding-by-mod">
+    <tableRule name="rule_mod">
         <rule>
             <columns>id</columns>
-            <algorithm>hashmod</algorithm>
+            <algorithm>func_mod</algorithm>
+        </rule>
+    </tableRule>
+    <tableRule name="rule_jumpHash">
+        <rule>
+            <columns>code</columns>
+            <algorithm>func_jumpHash</algorithm>
         </rule>
     </tableRule>
 
-	<tableRule name="sharding-by-mod2">
+    <tableRule name="rule_hashString">
         <rule>
-            <columns>id</columns>
-            <algorithm>hashmod2</algorithm>
+            <columns>code</columns>
+            <algorithm>func_hashString</algorithm>
         </rule>
     </tableRule>
 
-    <tableRule name="sharding-by-hash-str">
+    <tableRule name="rule_date">
         <rule>
-            <columns>id</columns>
-            <algorithm>hashString</algorithm>
+            <columns>create_date</columns>
+            <algorithm>func_date</algorithm>
         </rule>
     </tableRule>
 
-    <tableRule name="sharding-by-date">
-        <rule>
-            <columns>calldate</columns>
-            <algorithm>partbydate</algorithm>
-        </rule>
-    </tableRule>
-
-    <tableRule name="sharding-by-pattern">
+    <tableRule name="rule_pattern">
         <rule>
             <columns>id</columns>
-            <algorithm>pattern</algorithm>
-        </rule>
-    </tableRule>
-
-    <tableRule name="sharding-by-string-jump">
-        <rule>
-            <columns>id</columns>
-            <algorithm>jumphash</algorithm>
+            <algorithm>func_pattern</algorithm>
         </rule>
     </tableRule>
 
 
     <!-- enum partition -->
-    <function name="enum"
-              class="Enum">
-        <property name="mapFile">partition-hash-int.txt</property>
+    <function name="func_enum" class="Enum">
+        <property name="mapFile">partition-enum.txt</property>
         <property name="defaultNode">0</property><!--the default is -1,means unexpected value will report error-->
         <property name="type">0</property><!--0 means key is a number, 1 means key is a string-->
     </function>
 
     <!-- number range partition -->
-    <function name="rangeLong"
-              class="NumberRange">
-        <property name="mapFile">autopartition-long.txt</property>
+    <function name="func_range" class="NumberRange">
+        <property name="mapFile">partition-number-range.txt</property>
         <property name="defaultNode">0</property><!--he default is -1,means unexpected value will report error-->
     </function>
 
-    <!-- Hash partition,when partitionLength=1, it is a mod partition-->
-    <!--MAX(sum(count*length[i]) must not more then 2880-->
-    <function name="hashLong" class="Hash">
-        <property name="partitionCount">8</property>
-        <property name="partitionLength">128</property>
-        <!-- <property name="partitionCount">2,3</property>
-        <property name="partitionLength">4,5</property>-->
-    </function>
 
     <!-- Hash partition,when partitionLength=1, it is a mod partition-->
     <!--MAX(sum(count*length[i]) must not more then 2880-->
-    <function name="hashLong2" class="Hash">
+    <function name="func_common_hash" class="Hash">
         <property name="partitionCount">2</property>
         <property name="partitionLength">512</property>
-        <!-- <property name="partitionCount">2,3</property>
-        <property name="partitionLength">4,5</property>-->
     </function>
-
-    <function name="jumphash"
-              class="jumpStringHash">
-        <property name="partitionCount">2</property>
-        <property name="hashSlice">0:2</property>
-    </function>
-
     <!-- Hash partition,when partitionLength=1, it is a mod partition-->
     <!--MAX(sum(count*length[i]) must not more then 2880-->
-    <function name="hashLong3" class="Hash">
+    <function name="func_uneven_hash" class="Hash">
         <property name="partitionCount">2,1</property>
         <property name="partitionLength">256,512</property>
-        <!-- <property name="partitionCount">2,3</property>
-        <property name="partitionLength">4,5</property>-->
     </function>
 
     <!-- eg:  mod 4 -->
-    <function name="hashmod" class="Hash">
+    <function name="func_mod" class="Hash">
         <property name="partitionCount">4</property>
         <property name="partitionLength">1</property>
     </function>
 
-	<!-- eg:  mod 2 -->
-    <function name="hashmod2" class="Hash">
+    <!-- jumpStringHash partition for string-->
+    <function name="func_jumpHash" class="jumpStringHash">
         <property name="partitionCount">2</property>
-        <property name="partitionLength">1</property>
+        <property name="hashSlice">0:2</property>
     </function>
 
     <!-- Hash partition for string-->
-    <function name="hashString" class="StringHash">
-        <property name="partitionCount">8</property>
-        <property name="partitionLength">128</property>
+    <function name="func_hashString" class="StringHash">
+        <property name="partitionCount">4</property>
+        <property name="partitionLength">256</property>
         <property name="hashSlice">0:2</property>
         <!--<property name="hashSlice">-4:0</property> -->
     </function>
@@ -167,20 +138,17 @@
     3.set defaultNode without sEndDate: input <sBeginDate router to defaultNode;input>sBeginDate + (node size)*sPartionDay-1 will report error(expected is defaultNode,but can't control now)
     4.sEndDate and defaultNode are all not set: input <sBeginDate report error;input>sBeginDate + (node size)*sPartionDay-1 will report error
      -->
-    <function name="partbydate"
-              class="Date">
+    <function name="func_date" class="Date">
         <property name="dateFormat">yyyy-MM-dd</property>
         <property name="sBeginDate">2015-01-01</property>
-        <property name="sEndDate">2015-01-31
-        </property> <!--if not set sEndDate,then in fact ,the sEndDate = sBeginDate+ (node size)*sPartionDay-1 -->
+        <property name="sEndDate">2015-01-31 </property> <!--if not set sEndDate,then in fact ,the sEndDate = sBeginDate+ (node size)*sPartionDay-1 -->
         <property name="sPartionDay">10</property>
         <property name="defaultNode">0</property><!--the default is -1-->
     </function>
 
     <!-- pattern partition -->
     <!--mapFile must contains all value of 0~patternValue-1,key and value must be Continuous increase-->
-    <function name="pattern"
-              class="PatternRange">
+    <function name="func_pattern" class="PatternRange">
         <property name="mapFile">partition-pattern.txt</property>
         <property name="patternValue">1024</property>
         <property name="defaultNode">0</property><!--contains string which is not number,router to default node-->

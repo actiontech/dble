@@ -423,10 +423,16 @@ public class NonBlockingSession implements Session {
         RouteResultsetNode[] nodes = rrs.getNodes();
         if (nodes == null || nodes.length == 0 || nodes[0].getName() == null || nodes[0].getName().equals("")) {
             if (rrs.isNeedOptimizer()) {
+                if (this.getSessionXaID() != null && this.xaState == TxState.TX_INITIALIZE_STATE) {
+                    this.xaState = TxState.TX_STARTED_STATE;
+                }
                 try {
                     this.complexRrs = rrs;
                     executeMultiSelect(rrs);
                 } catch (MySQLOutPutException e) {
+                    if (this.getSessionXaID() != null) {
+                        this.xaState = TxState.TX_INITIALIZE_STATE;
+                    }
                     source.writeErrMessage(e.getSqlState(), e.getMessage(), e.getErrorCode());
                 }
             } else {
@@ -449,6 +455,9 @@ public class NonBlockingSession implements Session {
             } catch (Exception e) {
                 handleSpecial(rrs, false);
                 LOGGER.info(String.valueOf(source) + rrs, e);
+                if (this.getSessionXaID() != null) {
+                    this.xaState = TxState.TX_INITIALIZE_STATE;
+                }
                 source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.getMessage() == null ? e.toString() : e.getMessage());
             }
             if (this.isPrepared()) {
@@ -470,6 +479,9 @@ public class NonBlockingSession implements Session {
             try {
                 multiNodeDdlHandler.execute();
             } catch (Exception e) {
+                if (this.getSessionXaID() != null) {
+                    this.xaState = TxState.TX_INITIALIZE_STATE;
+                }
                 LOGGER.info(String.valueOf(source) + rrs, e);
                 try {
                     DbleServer.getInstance().getTmManager().notifyResponseClusterDDL(rrs.getSchema(), rrs.getTable(), rrs.getSrcStatement(), DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.UNKNOWN, true);
@@ -950,9 +962,12 @@ public class NonBlockingSession implements Session {
                 try {
                     MySQLConnection newConn = (MySQLConnection) dn.getConnection(dn.getDatabase(), errConn.isAutocommit(), false, errConn.getAttachment());
                     newConn.setXaStatus(errConn.getXaStatus());
+                    newConn.setSession(this);
                     if (!newConn.setResponseHandler(queryHandler)) {
                         return errConn;
                     }
+                    errConn.setResponseHandler(null);
+                    errConn.quit();
                     this.bindConnection(node, newConn);
                     return newConn;
                 } catch (Exception e) {

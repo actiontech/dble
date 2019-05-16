@@ -30,8 +30,6 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.actiontech.dble.config.ErrorCode.ER_ERROR_DURING_COMMIT;
-
 public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     private static final int COMMIT_TIMES = 5;
     private int tryCommitTimes = 0;
@@ -143,16 +141,12 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             }
             commitPhase(mysqlCon);
         } else if (state == TxState.TX_PREPARE_UNCONNECT_STATE) {
-            final String errorMsg = this.error;
             LOGGER.warn("commit error and rollback the xa");
             if (decrementCountBy(1)) {
                 DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
                     @Override
                     public void run() {
-                        ErrorPacket error = new ErrorPacket();
-                        error.setErrNo(ER_ERROR_DURING_COMMIT);
-                        error.setMessage(errorMsg == null ? "unknown error".getBytes() : errorMsg.getBytes());
-                        XAAutoRollbackNodesHandler nextHandler = new XAAutoRollbackNodesHandler(session, error.toBytes(), null, null);
+                        XAAutoRollbackNodesHandler nextHandler = new XAAutoRollbackNodesHandler(session, sendData, null, null);
                         nextHandler.rollback();
                     }
                 });
@@ -170,16 +164,16 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     }
 
     private void endPhase(MySQLConnection mysqlCon) {
-        String xaTxId = mysqlCon.getConnXID(session);
-        String rrnName = ((RouteResultsetNode) mysqlCon.getAttachment()).getName();
-        XaDelayProvider.delayBeforeXaEnd(rrnName, xaTxId);
+        RouteResultsetNode rrn = (RouteResultsetNode) mysqlCon.getAttachment();
+        String xaTxId = mysqlCon.getConnXID(session, rrn.getMultiplexNum().longValue());
+        XaDelayProvider.delayBeforeXaEnd(rrn.getName(), xaTxId);
         mysqlCon.execCmd("XA END " + xaTxId);
     }
 
     private void preparePhase(MySQLConnection mysqlCon) {
-        String xaTxId = mysqlCon.getConnXID(session);
-        String rrnName = ((RouteResultsetNode) mysqlCon.getAttachment()).getName();
-        XaDelayProvider.delayBeforeXaPrepare(rrnName, xaTxId);
+        RouteResultsetNode rrn = (RouteResultsetNode) mysqlCon.getAttachment();
+        String xaTxId = mysqlCon.getConnXID(session, rrn.getMultiplexNum().longValue());
+        XaDelayProvider.delayBeforeXaPrepare(rrn.getName(), xaTxId);
         // update state of mysql conn to TX_PREPARING_STATE
         mysqlCon.setXaStatus(TxState.TX_PREPARING_STATE);
         XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
@@ -197,9 +191,9 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 return;
             }
         }
-        String xaTxId = mysqlCon.getConnXID(session);
-        String rrnName = ((RouteResultsetNode) mysqlCon.getAttachment()).getName();
-        XaDelayProvider.delayBeforeXaCommit(rrnName, xaTxId);
+        RouteResultsetNode rrn = (RouteResultsetNode) mysqlCon.getAttachment();
+        String xaTxId = mysqlCon.getConnXID(session, rrn.getMultiplexNum().longValue());
+        XaDelayProvider.delayBeforeXaCommit(rrn.getName(), xaTxId);
         mysqlCon.execCmd("XA COMMIT " + xaTxId);
     }
 
@@ -260,7 +254,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 }
 
                 // 'xa prepare' error
-            } else if (mysqlCon.getXaStatus() == TxState.TX_ENDED_STATE) {
+            } else if (mysqlCon.getXaStatus() == TxState.TX_PREPARING_STATE) {
                 mysqlCon.quit();
                 mysqlCon.setXaStatus(TxState.TX_CONN_QUIT);
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
@@ -280,7 +274,8 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 }
             } else if (mysqlCon.getXaStatus() == TxState.TX_COMMIT_FAILED_STATE) {
                 if (errPacket.getErrNo() == ErrorCode.ER_XAER_NOTA) {
-                    String xid = mysqlCon.getConnXID(session);
+                    RouteResultsetNode rrn = (RouteResultsetNode) mysqlCon.getAttachment();
+                    String xid = mysqlCon.getConnXID(session, rrn.getMultiplexNum().longValue());
                     XACheckHandler handler = new XACheckHandler(xid, mysqlCon.getSchema(), mysqlCon.getPool().getDbPool().getSource());
                     // if mysql connection holding xa transaction wasn't released, may result in ER_XAER_NOTA.
                     // so we need check xid here
@@ -352,7 +347,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                     nextParse();
                 }
                 //  'xa prepare' connectionClose,conn has quit
-            } else if (mysqlCon.getXaStatus() == TxState.TX_ENDED_STATE) {
+            } else if (mysqlCon.getXaStatus() == TxState.TX_PREPARING_STATE) {
                 mysqlCon.setXaStatus(TxState.TX_PREPARE_UNCONNECT_STATE);
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                 session.setXaState(TxState.TX_PREPARE_UNCONNECT_STATE);

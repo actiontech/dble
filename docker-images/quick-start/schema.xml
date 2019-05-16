@@ -8,38 +8,68 @@
 <dble:schema xmlns:dble="http://dble.cloud/">
 
     <schema name="testdb">
-        <table name="travelrecord" dataNode="dn1,dn2" rule="sharding-by-hash2"/>
-        <!-- global table is auto cloned to all defined data nodes ,so can join
-            with any table whose sharding node is in the same data node -->
-        <table name="company" primaryKey="ID" type="global" dataNode="dn1,dn2,dn3,dn4"/>
-        <table name="goods" primaryKey="ID" type="global" dataNode="dn1,dn2"/>
-        <!-- random sharding using mod sharind rule -->
-        <table name="hotnews" primaryKey="ID" autoIncrement="true" dataNode="dn1,dn2,dn3,dn4"
-               rule="sharding-by-mod"/>
-        <table name="customer" primaryKey="ID" dataNode="dn1,dn2"
-               rule="sharding-by-mod2">
-            <childTable name="orders" primaryKey="ID" joinKey="customer_id"
-                        parentKey="id">
-                <childTable name="order_items" joinKey="order_id"
-                            parentKey="id"/>
+        <table name="tb_enum_sharding" primaryKey="ID" dataNode="dn1,dn2" rule="rule_enum"/>
+
+        <table name="tb_range_sharding" dataNode="dn1,dn2,dn3" rule="rule_range"/>
+
+        <!--er tables-->
+        <table name="tb_hash_sharding" dataNode="dn1,dn2" rule="rule_common_hash"/>
+        <table name="tb_hash_sharding_er1" dataNode="dn1,dn2" rule="rule_common_hash"/>
+        <table name="tb_hash_sharding_er2" primaryKey="ID" autoIncrement="true" dataNode="dn1,dn2" rule="rule_common_hash2"/>
+        <table name="tb_hash_sharding_er3" autoIncrement="true" incrementColumn="id2" dataNode="dn1,dn2" rule="rule_common_hash"/>
+
+        <table name="tb_uneven_hash" dataNode="dn1,dn2,dn3" rule="rule_uneven_hash"/>
+
+        <table name="tb_mod" dataNode="dn1,dn2,dn3,dn4" rule="rule_mod"/>
+
+        <table name="tb_jump_hash" dataNode="dn1,dn2" rule="rule_jumpHash"/>
+
+        <table name="tb_hash_string" dataNode="dn1,dn2,dn3,dn4" rule="rule_hashString"/>
+
+        <table name="tb_date" dataNode="dn1,dn2,dn3,dn4" rule="rule_date"/>
+
+        <table name="tb_pattern" dataNode="dn1,dn2" rule="rule_pattern"/>
+
+        <!--global  tables-->
+
+        <table name="tb_global1" type="global" dataNode="dn1,dn2"/>
+        <table name="tb_global2" type="global" dataNode="dn1,dn2,dn3,dn4"/>
+
+        <!--single node table-->
+        <table name="tb_single" dataNode="dn6"/>
+
+
+        <!--er tables-->
+        <table name="tb_parent" dataNode="dn1,dn2" rule="rule_common_hash">
+            <childTable name="tb_child1" joinKey="child1_id" parentKey="id">
+                <childTable name="tb_grandson1" joinKey="grandson1_id" parentKey="child1_id"/>
+                <childTable name="tb_grandson2" joinKey="grandson2_id" parentKey="child1_id2"/>
             </childTable>
-            <childTable name="customer_addr" primaryKey="ID" joinKey="customer_id"
-                        parentKey="id"/>
+            <childTable name="tb_child2" joinKey="child2_id" parentKey="id"/>
+            <childTable name="tb_child3" joinKey="child3_id" parentKey="id2"/>
         </table>
+
     </schema>
 
 
+    <!-- schema testdb2 route to database named dn5 in localhost2  -->
+    <schema name="testdb2" dataNode="dn5">
+    </schema>
+
     <dataNode name="dn1" dataHost="backend-mysql1" database="db1"/>
-    <dataNode name="dn2" dataHost="backend-mysql1" database="db2"/>
-    <dataNode name="dn3" dataHost="backend-mysql2" database="db3"/>
+    <dataNode name="dn2" dataHost="backend-mysql2" database="db2"/>
+    <dataNode name="dn3" dataHost="backend-mysql1" database="db3"/>
     <dataNode name="dn4" dataHost="backend-mysql2" database="db4"/>
-    <dataHost name="backend-mysql1" maxCon="300" minCon="10" balance="0" switchType="1" slaveThreshold="100">
+    <dataNode name="dn5" dataHost="backend-mysql1" database="db5"/>
+    <dataNode name="dn6" dataHost="backend-mysql2" database="db6"/>
+
+    <dataHost name="backend-mysql1" maxCon="300" minCon="10" balance="0" switchType="-1" slaveThreshold="100">
         <heartbeat>show slave status</heartbeat>
         <writeHost host="hostM1" url="172.18.0.2:3306" user="root"
                    password="123456">
         </writeHost>
     </dataHost>
-    <dataHost name="backend-mysql2" maxCon="300" minCon="10" balance="0" switchType="1" slaveThreshold="100">
+    <dataHost name="backend-mysql2" maxCon="300" minCon="10" balance="0" switchType="-1" slaveThreshold="100">
         <heartbeat>show slave status</heartbeat>
         <writeHost host="hostM1" url="172.18.0.3:3306" user="root"
                    password="123456">

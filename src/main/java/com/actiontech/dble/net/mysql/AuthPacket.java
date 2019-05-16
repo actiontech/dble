@@ -96,7 +96,7 @@ public class AuthPacket extends MySQLPacket {
         if (database != null) {
             StreamUtil.writeUB3(out, calcPacketSize());
         } else {
-            StreamUtil.writeUB3(out, calcPacketSize()-1);
+            StreamUtil.writeUB3(out, calcPacketSize() - 1);
         }
         StreamUtil.write(out, packetId);
         StreamUtil.writeUB4(out, clientFlags);       // capability flags
@@ -163,7 +163,7 @@ public class AuthPacket extends MySQLPacket {
         if (database != null) {
             StreamUtil.writeUB3(out, calcPacketSizeWithKey());
         } else {
-            StreamUtil.writeUB3(out, calcPacketSizeWithKey()-1);
+            StreamUtil.writeUB3(out, calcPacketSizeWithKey() - 1);
         }
         StreamUtil.write(out, packetId);
         StreamUtil.writeUB4(out, clientFlags);

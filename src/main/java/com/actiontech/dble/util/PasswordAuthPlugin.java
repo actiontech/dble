@@ -129,7 +129,7 @@ public final class PasswordAuthPlugin {
             }
             int offset = key.indexOf("\n") + 1;
             int len = key.indexOf("-----END PUBLIC KEY-----") - offset;
-            byte[] certificateData = Base64.getDecoder().decode(key.substring(offset,offset + len).replace("\n",""));
+            byte[] certificateData = Base64.getDecoder().decode(key.substring(offset, offset + len).replace("\n", ""));
             X509EncodedKeySpec spec = new X509EncodedKeySpec(certificateData);
             KeyFactory kf = KeyFactory.getInstance("RSA");
             return (RSAPublicKey) kf.generatePublic(spec);

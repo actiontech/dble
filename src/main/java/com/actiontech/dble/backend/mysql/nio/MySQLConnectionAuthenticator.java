@@ -28,8 +28,8 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
     private final MySQLConnection source;
     private final ResponseHandler listener;
     private byte[] publicKey = null;
-    String authPluginName = null;
-    byte[] authPluginData = null;
+    private String authPluginName = null;
+    private byte[] authPluginData = null;
 
 
     public MySQLConnectionAuthenticator(MySQLConnection source,
@@ -122,8 +122,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
 
             }
 
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             LOGGER.info(e.getMessage());
             if (listener != null) {
                 listener.connectionError(e, source);

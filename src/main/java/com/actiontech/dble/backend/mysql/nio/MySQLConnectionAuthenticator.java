@@ -55,7 +55,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
                 } else if (Arrays.equals(source.getHandshake().getAuthPluginName(), HandshakeV10Packet.NATIVE_PASSWORD_PLUGIN)) {
                     PasswordAuthPlugin.sendEnPasswordWithPublicKey(authPluginData, PasswordAuthPlugin.GETPUBLICKEY_NATIVE_FIRST, publicKey, source);
                 } else {
-                    LOGGER.info("Client don't support the password plugin " + authPluginName + ",please check the default auth Plugin");
+                    LOGGER.warn("Client don't support the password plugin " + authPluginName + ",please check the default auth Plugin");
                 }
             }
             switch (data[4]) {
@@ -83,7 +83,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
                     ErrorPacket err = new ErrorPacket();
                     err.read(data);
                     String errMsg = new String(err.getMessage());
-                    LOGGER.info("can't connect to mysql server ,errMsg:" + errMsg + " " + source);
+                    LOGGER.warn("can't connect to mysql server ,errMsg:" + errMsg + " " + source);
                     //source.close(errMsg);
                     throw new ConnectionException(err.getErrNo(), errMsg);
                 case EOFPacket.FIELD_COUNT:
@@ -94,7 +94,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
                     } else if (authPluginName.equals(new String(HandshakeV10Packet.CACHING_SHA2_PASSWORD_PLUGIN))) {
                         source.write(PasswordAuthPlugin.cachingSha2Password(PasswordAuthPlugin.passwdSha256(source.getPassword(), source.getHandshake())));
                     } else {
-                        LOGGER.info("Client don't support the MySQL 323 plugin ");
+                        LOGGER.warn("Client don't support the MySQL 323 plugin ");
                         auth323(data[3]);
                     }
                     break;
@@ -105,7 +105,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
                         } else if (Arrays.equals(source.getHandshake().getAuthPluginName(), HandshakeV10Packet.NATIVE_PASSWORD_PLUGIN)) {
                             PasswordAuthPlugin.sendEnPaGetPub(PasswordAuthPlugin.GETPUBLICKEY_NATIVE_FIRST, source);
                         } else {
-                            LOGGER.info("Client don't support the password plugin " + authPluginName + ",please check the default auth Plugin");
+                            LOGGER.warn("Client don't support the password plugin " + authPluginName + ",please check the default auth Plugin");
                         }
                     }
                     break;
@@ -123,7 +123,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
             }
 
         } catch (Exception e) {
-            LOGGER.info(e.getMessage());
+            LOGGER.warn(e.getMessage());
             if (listener != null) {
                 listener.connectionError(e, source);
                 return;

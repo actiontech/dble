@@ -193,14 +193,14 @@ public class MySQLDataSource extends PhysicalDatasource {
                             break;
                     }
                 } catch (Exception e) {
-                    LOGGER.info("connect the schema:" + schema + " failed");
+                    LOGGER.warn("connect the schema:" + schema + " failed");
                 }
             } else {
-                LOGGER.info("Client don't support the password plugin " + authPluginName + ",please check the default auth Plugin");
+                LOGGER.warn("Client don't support the password plugin " + authPluginName + ",please check the default auth Plugin");
                 isConnected = false;
             }
         } catch (Exception e) {
-            LOGGER.info(e.getMessage());
+            LOGGER.warn(e.getMessage());
         } finally {
             try {
                 if (in != null)
@@ -236,7 +236,7 @@ public class MySQLDataSource extends PhysicalDatasource {
             authPacket.writeWithKey(out);
             out.flush();
         } catch (Exception e) {
-            LOGGER.info(e.getMessage());
+            LOGGER.warn(e.getMessage());
         }
     }
 }

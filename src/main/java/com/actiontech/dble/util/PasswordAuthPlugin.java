@@ -238,7 +238,7 @@ public final class PasswordAuthPlugin {
     }
 
     public static void send323AuthPacket(OutputStream out, BinaryPacket bin2, HandshakeV10Packet handshake, String password) throws Exception {
-        LOGGER.info("Client don't support the MySQL 323 plugin ");
+        LOGGER.warn("Client don't support the MySQL 323 plugin ");
         Reply323Packet r323 = new Reply323Packet();
         r323.setPacketId((byte) (bin2.getPacketId() + 1));
         if (password != null && password.length() > 0) {

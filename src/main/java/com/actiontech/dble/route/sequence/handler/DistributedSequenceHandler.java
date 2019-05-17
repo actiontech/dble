@@ -68,7 +68,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     private final long clusterIdShift = incrementShift + incrementBits;
     private final long instanceIdShift = clusterIdShift + clusterIdBits;
 
-    private final long maxInstanceId = 1L << instanceIdBits;
+    private final long maxInstanceId = ~(-1L << instanceIdBits);
 
     private volatile long instanceId;
     private long clusterId;
@@ -116,12 +116,12 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
             this.ready = true;
         }
         this.clusterId = Long.parseLong(props.getProperty("CLUSTERID"));
-        long maxclusterId = 1L << clusterIdBits;
+        long maxclusterId = ~(-1L << clusterIdBits);
         if (clusterId > maxclusterId || clusterId < 0) {
-            throw new IllegalArgumentException(String.format("cluster Id can't be greater than %d or less than 0", clusterId));
+            throw new IllegalArgumentException(String.format("cluster Id can't be greater than %d or less than 0", maxclusterId));
         }
         if (instanceId > maxInstanceId || instanceId < 0) {
-            throw new IllegalArgumentException(String.format("instance Id can't be greater than %d or less than 0", instanceId));
+            throw new IllegalArgumentException(String.format("instance Id can't be greater than %d or less than 0", maxInstanceId));
         }
 
         try {

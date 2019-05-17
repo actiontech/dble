@@ -32,7 +32,7 @@ public class NIOSocketWR extends SocketWR {
         try {
             processKey = channel.register(selector, SelectionKey.OP_READ, con);
         } finally {
-            if (con.isClosed.get()) {
+            if (con.isClosed) {
                 clearSelectionKey();
             }
         }

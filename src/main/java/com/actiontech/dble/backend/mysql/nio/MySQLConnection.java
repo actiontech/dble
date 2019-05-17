@@ -632,7 +632,7 @@ public class MySQLConnection extends AbstractConnection implements
      */
     @Override
     public synchronized void close(final String reason) {
-        if (!isClosed.get()) {
+        if (!isClosed) {
             if (isAuthenticated && channel.isOpen()) {
                 try {
                     closeResion = reason;

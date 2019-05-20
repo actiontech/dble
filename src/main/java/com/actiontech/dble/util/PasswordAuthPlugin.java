@@ -190,7 +190,7 @@ public final class PasswordAuthPlugin {
         if (resEncResult[4] == 0x00) {
             isConnected = true;
         } else {
-            MySQLDataSource.testConnectionError(resEncResult);
+            MySQLDataSource.logTestConnectionError(resEncResult);
             isConnected = false;
         }
         return isConnected;

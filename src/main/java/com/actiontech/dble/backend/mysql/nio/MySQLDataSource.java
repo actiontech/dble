@@ -128,7 +128,7 @@ public class MySQLDataSource extends PhysicalDatasource {
                         break;
                     case ErrorPacket.FIELD_COUNT:
                         isConnected = false;
-                        testConnectionError(bin2.getData());
+                        logTestConnectionError(bin2.getData());
                         break;
                     case EOFPacket.FIELD_COUNT:
                         authPluginName = bin2.getAuthPluginName();
@@ -139,7 +139,7 @@ public class MySQLDataSource extends PhysicalDatasource {
                             bin2.read(in);
                             if (bin2.getData()[0] == ErrorPacket.FIELD_COUNT) {
                                 isConnected = false;
-                                testConnectionError(bin2.getData());
+                                logTestConnectionError(bin2.getData());
                                 break;
                             }
                             if (bin2.getData()[1] == PasswordAuthPlugin.AUTHSTAGE_FAST_COMPLETE) {       //fast Authentication
@@ -183,7 +183,7 @@ public class MySQLDataSource extends PhysicalDatasource {
                             break;
                         case ErrorPacket.FIELD_COUNT:
                             isConnected = false;
-                            testConnectionError(bin2.getData());
+                            logTestConnectionError(bin2.getData());
                             break;
                         case EOFPacket.FIELD_COUNT:
                             authPluginName = bin2.getAuthPluginName();
@@ -193,7 +193,7 @@ public class MySQLDataSource extends PhysicalDatasource {
                                 bin2.read(in);
                                 if (bin2.getData()[0] == ErrorPacket.FIELD_COUNT) {
                                     isConnected = false;
-                                    testConnectionError(bin2.getData());
+                                    logTestConnectionError(bin2.getData());
                                 }
                             } else {
                                 // send 323 auth packet
@@ -256,7 +256,7 @@ public class MySQLDataSource extends PhysicalDatasource {
         }
     }
 
-    public static void testConnectionError(byte[] errorData) {
+    public static void logTestConnectionError(byte[] errorData) {
         ErrorPacket err = new ErrorPacket();
         err.read(errorData);
         String errMsg = new String(err.getMessage());

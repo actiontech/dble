@@ -66,7 +66,9 @@ public final class XAStateLog {
                 //will committing, may success send but failed received,should be commit agagin
                 sessionState == TxState.TX_COMMITTING_STATE ||
                 //will rollbacking, may success send but failed received,should be rollback agagin
-                sessionState == TxState.TX_ROLLBACKING_STATE) {
+                sessionState == TxState.TX_ROLLBACKING_STATE ||
+                //there are some data node commit/rollback fail
+                sessionState == TxState.TX_COMMIT_FAILED_STATE) {
             return writeCheckpoint(xaTxId);
         }
         return true;

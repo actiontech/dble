@@ -38,11 +38,11 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
             if (!StringUtil.isEmpty(startTimeStr)) {
                 startTimeMilliseconds = DateUtil.parseDate(startTimeStr).getTime();
                 if (startTimeMilliseconds > System.currentTimeMillis()) {
-                    LOGGER.warn("START_TIME in " + SEQUENCE_TIME_PROPS + " mustn't be over than dble start time, starting from 2010-10-04 09:42:54");
+                    LOGGER.warn("START_TIME in " + SEQUENCE_TIME_PROPS + " mustn't be over than dble start time, starting from 2010-11-04 09:42:54");
                 }
             }
         } catch (Exception pe) {
-            LOGGER.warn("START_TIME in " + SEQUENCE_TIME_PROPS + " parse exception, starting from 2010-10-04 09:42:54");
+            LOGGER.warn("START_TIME in " + SEQUENCE_TIME_PROPS + " parse exception, starting from 2010-11-04 09:42:54");
         }
         workey = new IdWorker(workid, dataCenterId, startTimeMilliseconds);
     }

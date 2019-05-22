@@ -1018,6 +1018,7 @@ public final class DbleServer {
                     participantLogEntry.getTxState() != TxState.TX_PREPARE_UNCONNECT_STATE &&
                     participantLogEntry.getTxState() != TxState.TX_ROLLBACKING_STATE &&
                     participantLogEntry.getTxState() != TxState.TX_ROLLBACK_FAILED_STATE &&
+                    participantLogEntry.getTxState() != TxState.TX_ENDED_STATE &&
                     participantLogEntry.getTxState() != TxState.TX_PREPARED_STATE &&
                     participantLogEntry.getTxState() != TxState.TX_PREPARING_STATE) {
                 continue;

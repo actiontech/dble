@@ -128,6 +128,7 @@ public class MySQLDataSource extends PhysicalDatasource {
                         break;
                     case ErrorPacket.FIELD_COUNT:
                         isConnected = false;
+                        logTestConnectionError(bin2.getData());
                         break;
                     case EOFPacket.FIELD_COUNT:
                         authPluginName = bin2.getAuthPluginName();
@@ -136,6 +137,11 @@ public class MySQLDataSource extends PhysicalDatasource {
                             out.write(PasswordAuthPlugin.cachingSha2Password(PasswordAuthPlugin.passwdSha256(this.getConfig().getPassword(), handshake)));
                             out.flush();
                             bin2.read(in);
+                            if (bin2.getData()[0] == ErrorPacket.FIELD_COUNT) {
+                                isConnected = false;
+                                logTestConnectionError(bin2.getData());
+                                break;
+                            }
                             if (bin2.getData()[1] == PasswordAuthPlugin.AUTHSTAGE_FAST_COMPLETE) {       //fast Authentication
                                 break;
                             } else if (bin2.getData()[1] == PasswordAuthPlugin.AUTHSTAGE_FULL) {  //full Authentication
@@ -146,6 +152,7 @@ public class MySQLDataSource extends PhysicalDatasource {
                         } else {
                             // send 323 auth packet
                             isConnected = false;
+                            LOGGER.warn("Client don't support the MySQL 323 plugin ");
                             PasswordAuthPlugin.send323AuthPacket(out, bin2, handshake, this.getConfig().getPassword());
                         }
                         break;
@@ -176,15 +183,22 @@ public class MySQLDataSource extends PhysicalDatasource {
                             break;
                         case ErrorPacket.FIELD_COUNT:
                             isConnected = false;
+                            logTestConnectionError(bin2.getData());
                             break;
                         case EOFPacket.FIELD_COUNT:
                             authPluginName = bin2.getAuthPluginName();
                             if (authPluginName.equals(new String(HandshakeV10Packet.NATIVE_PASSWORD_PLUGIN))) {
                                 out.write(PasswordAuthPlugin.nativePassword(PasswordAuthPlugin.passwd(this.getConfig().getPassword(), handshake)));
                                 out.flush();
+                                bin2.read(in);
+                                if (bin2.getData()[0] == ErrorPacket.FIELD_COUNT) {
+                                    isConnected = false;
+                                    logTestConnectionError(bin2.getData());
+                                }
                             } else {
                                 // send 323 auth packet
                                 isConnected = false;
+                                LOGGER.warn("Client don't support the MySQL 323 plugin ");
                                 PasswordAuthPlugin.send323AuthPacket(out, bin2, handshake, this.getConfig().getPassword());
                             }
                             break;
@@ -194,6 +208,7 @@ public class MySQLDataSource extends PhysicalDatasource {
                     }
                 } catch (Exception e) {
                     LOGGER.warn("connect the schema:" + schema + " failed");
+                    isConnected = false;
                 }
             } else {
                 LOGGER.warn("Client don't support the password plugin " + authPluginName + ",please check the default auth Plugin");
@@ -201,6 +216,7 @@ public class MySQLDataSource extends PhysicalDatasource {
             }
         } catch (Exception e) {
             LOGGER.warn(e.getMessage());
+            isConnected = false;
         } finally {
             try {
                 if (in != null)
@@ -238,5 +254,12 @@ public class MySQLDataSource extends PhysicalDatasource {
         } catch (Exception e) {
             LOGGER.warn(e.getMessage());
         }
+    }
+
+    public static void logTestConnectionError(byte[] errorData) {
+        ErrorPacket err = new ErrorPacket();
+        err.read(errorData);
+        String errMsg = new String(err.getMessage());
+        LOGGER.warn("can't connect to mysql server ,errMsg:" + errMsg + " ");
     }
 }

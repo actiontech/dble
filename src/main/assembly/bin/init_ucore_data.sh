@@ -22,4 +22,10 @@ if [ ! -n "$1" ]; then
 fi
 cd $CURR_DIR
 $JAVA_CMD -Xms256M -Xmx1G  -DDBLE_HOME=$DBLE_HOME -cp "$DBLE_HOME/conf:$DBLE_HOME/lib/*" $MAIN_CLASS
-echo "---------finished------------"
+if [ $? -eq 0 ]; then
+    echo "--------finish with success -------"
+    exit 0
+  else
+    echo "--------finish with error---------"
+    exit 1
+fi

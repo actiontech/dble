@@ -410,10 +410,10 @@ public class MySQLConnection extends AbstractConnection implements
             DbleServer.getInstance().getWriteToBackendQueue().add(Collections.singletonList(sendQueryCmdTask(rrn.getStatement(), clientCharset)));
             return;
         }
-        CommandPacket schemaCmd = null;
+
         StringBuilder sb = new StringBuilder();
         if (schemaSyn == 1) {
-            schemaCmd = getChangeSchemaCommand(conSchema);
+            getChangeSchemaCommand(sb, conSchema);
         }
         if (charsetSyn == 1) {
             getCharsetCommand(sb, clientCharset);
@@ -434,17 +434,14 @@ public class MySQLConnection extends AbstractConnection implements
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("con need syn ,total syn cmd " + synCount +
                     " commands " + sb.toString() + "schema change:" +
-                    (schemaCmd != null) + " con:" + this);
+                    (schemaSyn == 1) + " con:" + this);
         }
         metaDataSynced = false;
         statusSync = new StatusSync(conSchema,
                 clientCharset, clientTxIsolation, expectAutocommit,
                 synCount, usrVariables, sysVariables, toResetSys);
         // syn schema
-        List<WriteToBackendTask> taskList = new ArrayList<>(2);
-        if (schemaCmd != null) {
-            taskList.add(new WriteToBackendTask(this, schemaCmd));
-        }
+        List<WriteToBackendTask> taskList = new ArrayList<>(1);
         // and our query sql to multi command at last
         sb.append(rrn.getStatement()).append(";");
         // syn and execute others
@@ -511,10 +508,10 @@ public class MySQLConnection extends AbstractConnection implements
             sendQueryCmd(rrn.getStatement(), clientCharset);
             return;
         }
-        CommandPacket schemaCmd = null;
+
         StringBuilder sb = new StringBuilder();
         if (schemaSyn == 1) {
-            schemaCmd = getChangeSchemaCommand(conSchema);
+            getChangeSchemaCommand(sb, conSchema);
         }
         if (charsetSyn == 1) {
             getCharsetCommand(sb, clientCharset);
@@ -535,16 +532,13 @@ public class MySQLConnection extends AbstractConnection implements
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("con need syn ,total syn cmd " + synCount +
                     " commands " + sb.toString() + "schema change:" +
-                    (schemaCmd != null) + " con:" + this);
+                    (schemaSyn == 1) + " con:" + this);
         }
         metaDataSynced = false;
         statusSync = new StatusSync(conSchema,
                 clientCharset, clientTxIsolation, expectAutocommit,
                 synCount, usrVariables, sysVariables, toResetSys);
-        // syn schema
-        if (schemaCmd != null) {
-            schemaCmd.write(this);
-        }
+
         // and our query sql to multi command at last
         sb.append(rrn.getStatement()).append(";");
         // syn and execute others
@@ -623,12 +617,10 @@ public class MySQLConnection extends AbstractConnection implements
         return sb.toString();
     }
 
-    private static CommandPacket getChangeSchemaCommand(String schema) {
-        CommandPacket cmd = new CommandPacket();
-        cmd.setPacketId(0);
-        cmd.setCommand(MySQLPacket.COM_INIT_DB);
-        cmd.setArg(schema.getBytes());
-        return cmd;
+    private static void getChangeSchemaCommand(StringBuilder sb, String schema) {
+        sb.append("use ");
+        sb.append(schema);
+        sb.append(";");
     }
 
     /**
@@ -973,10 +965,8 @@ public class MySQLConnection extends AbstractConnection implements
                 this.updateConnectionInfo(conn);
                 conn.metaDataSynced = true;
                 return false;
-            } else if (remains < 0) {
-                return true;
             }
-            return false;
+            return remains < 0;
         }
 
         private void updateConnectionInfo(MySQLConnection conn) {
@@ -997,7 +987,5 @@ public class MySQLConnection extends AbstractConnection implements
             conn.usrVariables = usrVariables;
         }
     }
-
-
 
 }

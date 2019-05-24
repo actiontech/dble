@@ -741,7 +741,7 @@ public class NonBlockingSession implements Session {
     void initiativeTerminate() {
 
         for (BackendConnection node : target.values()) {
-            node.terminate("client closed ");
+            node.closeWithoutRsp("client closed ");
         }
         target.clear();
         clearHandlesResources();
@@ -753,7 +753,7 @@ public class NonBlockingSession implements Session {
             return;
         }
         for (BackendConnection node : target.values()) {
-            node.terminate(reason);
+            node.closeWithoutRsp(reason);
         }
         target.clear();
         clearHandlesResources();
@@ -761,7 +761,7 @@ public class NonBlockingSession implements Session {
 
     public void forceClose(String reason) {
         for (BackendConnection node : target.values()) {
-            node.terminate(reason);
+            node.closeWithoutRsp(reason);
         }
         target.clear();
         clearHandlesResources();
@@ -783,7 +783,7 @@ public class NonBlockingSession implements Session {
                 if (debug) {
                     LOGGER.debug("release connection " + c);
                 }
-                if (!c.isClosedOrQuit()) {
+                if (!c.isClosed()) {
                     if (c.isAutocommit()) {
                         c.release();
                     } else if (needClose) {
@@ -967,7 +967,7 @@ public class NonBlockingSession implements Session {
                         return errConn;
                     }
                     errConn.setResponseHandler(null);
-                    errConn.quit();
+                    errConn.close();
                     this.bindConnection(node, newConn);
                     return newConn;
                 } catch (Exception e) {

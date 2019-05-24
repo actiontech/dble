@@ -125,8 +125,9 @@ public class MultiSQLJob implements ResponseHandler, Runnable {
             LOGGER.info(errMsg);
         } else if (errPg.getErrNo() == ErrorCode.ER_XAER_NOTA) {
             // ERROR 1397 (XAE04): XAER_NOTA: Unknown XID, not prepared
+            LOGGER.info(errMsg);
             conn.release();
-            doFinished(false);
+            doFinished(true);
             return;
         } else {
             LOGGER.info(errMsg);
@@ -134,7 +135,7 @@ public class MultiSQLJob implements ResponseHandler, Runnable {
         if (conn.syncAndExecute()) {
             conn.release();
         } else {
-            ((MySQLConnection) conn).quit();
+            ((MySQLConnection) conn).close();
         }
         doFinished(true);
     }

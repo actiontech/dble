@@ -120,7 +120,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         loadData.setFieldTerminatedBy(fieldTerminatedBy);
 
         SQLTextLiteralExpr rawEnclosed = (SQLTextLiteralExpr) statement.getColumnsEnclosedBy();
-        String enclose = rawEnclosed == null ? null : rawEnclosed.getText();
+        String enclose = ((rawEnclosed == null) || rawEnclosed.getText().isEmpty()) ? null : rawEnclosed.getText();
         loadData.setEnclose(enclose);
 
         SQLTextLiteralExpr escapedExpr = (SQLTextLiteralExpr) statement.getColumnsEscaped();
@@ -620,6 +620,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             settings.getFormat().setComment('\0');
             if (loadData.getEnclose() != null) {
                 settings.getFormat().setQuote(loadData.getEnclose().charAt(0));
+            } else {
+                settings.getFormat().setQuote('\0');
             }
             if (loadData.getEscape() != null) {
                 settings.getFormat().setQuoteEscape(loadData.getEscape().charAt(0));
@@ -639,6 +641,9 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 }
                 while ((row = parser.parseNext()) != null) {
                     if (ignoreNumber == 0) {
+                        if ((row.length == 1 && row[0] == null) || row.length == 0) {
+                            continue;
+                        }
                         try {
                             parseOneLine(row, true);
                         } catch (Exception e) {
@@ -672,6 +677,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         settings.getFormat().setComment('\0');
         if (loadData.getEnclose() != null) {
             settings.getFormat().setQuote(loadData.getEnclose().charAt(0));
+        } else {
+            settings.getFormat().setQuote('\0');
         }
         settings.getFormat().setNormalizedNewline(loadData.getLineTerminatedBy().charAt(0));
 
@@ -693,6 +700,9 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             boolean empty = true;
             while ((row = parser.parseNext()) != null) {
                 if (ignoreNumber == 0) {
+                    if ((row.length == 1 && row[0] == null) || row.length == 0) {
+                        continue;
+                    }
                     try {
                         parseOneLine(row, true);
                     } catch (Exception e) {

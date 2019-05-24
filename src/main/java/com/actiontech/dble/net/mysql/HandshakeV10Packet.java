@@ -10,6 +10,8 @@ import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.net.FrontendConnection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 
@@ -48,18 +50,32 @@ import java.nio.ByteBuffer;
  * @since 2016-11-13
  */
 public class HandshakeV10Packet extends MySQLPacket {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(HandshakeV10Packet.class);
+
+
     private static final byte[] FILLER_10 = new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    static final byte[] DEFAULT_AUTH_PLUGIN_NAME = "mysql_native_password".getBytes();
+    public static final byte[] NATIVE_PASSWORD_PLUGIN = "mysql_native_password".getBytes();
+    public static final byte[] CACHING_SHA2_PASSWORD_PLUGIN = "caching_sha2_password".getBytes();
+
 
     private byte protocolVersion;
     private byte[] serverVersion;
     private long threadId;
     private byte[] seed; // auth-plugin-data-part-1
+
+
+
+    public byte[] getAuthPluginName() {
+        return authPluginName;
+    }
+
+
     private int serverCapabilities;
     private byte serverCharsetIndex;
     private int serverStatus;
     private byte[] restOfScrambleBuff; // auth-plugin-data-part-2
-    private byte[] authPluginName = DEFAULT_AUTH_PLUGIN_NAME;
+    private byte[] authPluginName = NATIVE_PASSWORD_PLUGIN;
 
     public void write(FrontendConnection c) {
         ByteBuffer buffer = c.allocate();

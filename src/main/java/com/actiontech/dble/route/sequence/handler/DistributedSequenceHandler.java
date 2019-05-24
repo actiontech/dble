@@ -129,11 +129,11 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
             if (!StringUtil.isEmpty(startTimeStr)) {
                 startTimeMilliseconds = DateUtil.parseDate(startTimeStr).getTime();
                 if (startTimeMilliseconds > System.currentTimeMillis()) {
-                    LOGGER.warn("START_TIME in " + SEQUENCE_DB_PROPS + " mustn't be over than dble start time, starting from 2010-10-04 09:42:54");
+                    LOGGER.warn("START_TIME in " + SEQUENCE_DB_PROPS + " mustn't be over than dble start time, starting from 2010-11-04 09:42:54");
                 }
             }
         } catch (Exception pe) {
-            LOGGER.warn("START_TIME in " + SEQUENCE_DB_PROPS + " parse exception, starting from 2010-10-04 09:42:54");
+            LOGGER.warn("START_TIME in " + SEQUENCE_DB_PROPS + " parse exception, starting from 2010-11-04 09:42:54");
         } finally {
             this.deadline = startTimeMilliseconds + (1L << 39);
         }
@@ -202,8 +202,19 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
         if (time >= deadline) {
             throw new SQLNonTransientException("Global sequence has reach to max limit and can generate duplicate sequences.");
         }
-        if (threadLastTime.get() == null) {
-            threadLastTime.set(time);
+        Long lastTimestamp = threadLastTime.get();
+        if (lastTimestamp == null) {
+            if (time >= startTimeMilliseconds) {
+                threadLastTime.set(time);
+                lastTimestamp = time;
+            } else {
+                lastTimestamp = startTimeMilliseconds;
+            }
+        }
+
+        if (lastTimestamp > time) {
+            throw new SQLNonTransientException("Clock moved backwards.  Refusing to generate id for " +
+                    (lastTimestamp - time) + " milliseconds");
         }
         if (threadInc.get() == null) {
             threadInc.set(0L);

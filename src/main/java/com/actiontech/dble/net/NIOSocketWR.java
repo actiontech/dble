@@ -32,7 +32,7 @@ public class NIOSocketWR extends SocketWR {
         try {
             processKey = channel.register(selector, SelectionKey.OP_READ, con);
         } finally {
-            if (con.isClosed.get()) {
+            if (con.isClosed) {
                 clearSelectionKey();
             }
         }
@@ -83,10 +83,14 @@ public class NIOSocketWR extends SocketWR {
 
     private boolean write0() throws IOException {
 
+        boolean quitFlag = false;
         int written = 0;
         ByteBuffer buffer = con.writeBuffer;
         if (buffer != null) {
             while (buffer.hasRemaining()) {
+                if (buffer.remaining() == 5 && bufferIsQuit(buffer)) {
+                    quitFlag = true;
+                }
                 written = channel.write(buffer);
                 if (written > 0) {
                     con.netOutBytes += written;
@@ -97,6 +101,10 @@ public class NIOSocketWR extends SocketWR {
                 }
             }
 
+            if (quitFlag) {
+                startClearCon();
+                return true;
+            }
             if (buffer.hasRemaining()) {
                 return false;
             } else {
@@ -105,6 +113,9 @@ public class NIOSocketWR extends SocketWR {
             }
         }
         while ((buffer = con.writeQueue.poll()) != null) {
+            if (buffer.remaining() == 5 && bufferIsQuit(buffer)) {
+                quitFlag = true;
+            }
             if (buffer.limit() == 0) {
                 con.recycle(buffer);
                 con.close("quit send");
@@ -128,6 +139,12 @@ public class NIOSocketWR extends SocketWR {
                 con.recycle(buffer);
                 throw e;
             }
+
+            if (quitFlag) {
+                startClearCon();
+                return true;
+            }
+
             if (buffer.hasRemaining()) {
                 con.writeBuffer = buffer;
                 return false;
@@ -137,6 +154,14 @@ public class NIOSocketWR extends SocketWR {
         }
         return true;
     }
+
+
+    private void startClearCon() {
+        if (con instanceof MySQLConnection) {
+            ((MySQLConnection) con).closeInner(null);
+        }
+    }
+
 
     private void disableWrite() {
         try {
@@ -184,6 +209,11 @@ public class NIOSocketWR extends SocketWR {
         }
         int got = channel.read(theBuffer);
         con.onReadData(got);
+    }
+
+    private boolean bufferIsQuit(ByteBuffer buffer) {
+        byte[] data = buffer.array();
+        return data[0] == 1 && data[1] == 0 && data[2] == 0 && data[3] == 0 && data[4] == 1;
     }
 
 }

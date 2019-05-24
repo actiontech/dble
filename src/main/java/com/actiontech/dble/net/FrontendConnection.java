@@ -425,7 +425,7 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     @Override
     public void register() throws IOException {
-        if (!isClosed.get()) {
+        if (!isClosed) {
 
             // generate auth data
             byte[] rand1 = RandomUtil.randomBytes(8);

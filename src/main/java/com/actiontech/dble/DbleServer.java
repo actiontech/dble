@@ -580,7 +580,7 @@ public final class DbleServer {
                         while (iterator.hasNext()) {
                             BackendConnection con = iterator.next();
                             long lastTime = con.getLastTime();
-                            if (con.isClosedOrQuit() || !con.isBorrowed() || currentTime - lastTime > sqlTimeout) {
+                            if (con.isClosed() || !con.isBorrowed() || currentTime - lastTime > sqlTimeout) {
                                 con.close("clear old backend connection ...");
                                 iterator.remove();
                             }

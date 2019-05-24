@@ -64,8 +64,8 @@ public class MySQLConnection extends AbstractConnection implements
     private long oldTimestamp;
     private final AtomicBoolean logResponse = new AtomicBoolean(false);
     private volatile boolean testing = false;
+    private volatile String closeReason = null;
     private String authPluginErrorMessage = null;
-
     private volatile BackEndCleaner recycler = null;
 
     private static long initClientFlags() {
@@ -117,9 +117,7 @@ public class MySQLConnection extends AbstractConnection implements
     private String user;
     private String password;
     private Object attachment;
-    private ResponseHandler respHandler;
-
-    private final AtomicBoolean isQuit;
+    private volatile ResponseHandler respHandler;
 
     public MySQLConnection(NetworkChannel channel, boolean fromSlaveDB, boolean isNoSchema) {
         super(channel);
@@ -130,7 +128,6 @@ public class MySQLConnection extends AbstractConnection implements
             this.clientFlags = CLIENT_FLAGS;
         }
         this.lastTime = TimeUtil.currentTimeMillis();
-        this.isQuit = new AtomicBoolean(false);
         this.autocommit = true;
         this.fromSlaveDB = fromSlaveDB;
         /* if the txIsolation in server.xml is different from the isolation level in MySQL node,
@@ -299,9 +296,6 @@ public class MySQLConnection extends AbstractConnection implements
         this.attachment = attachment;
     }
 
-    public boolean isClosedOrQuit() {
-        return isClosed() || isQuit.get();
-    }
 
     public void sendQueryCmd(String query, CharsetNames clientCharset) {
         CommandPacket packet = new CommandPacket();
@@ -641,17 +635,34 @@ public class MySQLConnection extends AbstractConnection implements
         this.lastTime = lastTime;
     }
 
-    public void quit() {
-        if (isQuit.compareAndSet(false, true) && !isClosed()) {
-            if (isAuthenticated) {
-                write(writeToBuffer(QuitPacket.QUIT, allocate()));
-                innerTerminate("normal");
-            } else {
-                close("normal");
-            }
-        }
+    public void close() {
+        close("normal");
     }
 
+    /**
+     * Only write quit packet to backend ,when the NIOSocketWR find the QuitPacket
+     * closeInner() would be called
+     *
+     * @param reason
+     */
+    @Override
+    public synchronized void close(final String reason) {
+        if (!isClosed) {
+            if (isAuthenticated && channel.isOpen()) {
+                try {
+                    closeReason = reason;
+                    write(writeToBuffer(QuitPacket.QUIT, allocate()));
+                } catch (Throwable e) {
+                    LOGGER.info("error when try to quite the connection ,drop the error and close it anyway");
+                    closeInner(reason);
+                }
+            } else {
+                closeInner(reason);
+            }
+            this.setRunning(false);
+            this.signal();
+        }
+    }
 
     public long getOldTimestamp() {
         return oldTimestamp;
@@ -670,27 +681,6 @@ public class MySQLConnection extends AbstractConnection implements
         this.complexQuery = complexQuery;
     }
 
-    @Override
-    public void close(final String reason) {
-        if (!isClosed.get()) {
-            if (isAuthenticated) {
-                isQuit.set(true);
-                if (channel.isOpen()) {
-                    try {
-                        write(writeToBuffer(QuitPacket.QUIT, allocate()));
-                    } catch (Throwable e) {
-                        LOGGER.info("error when try to quite the connection ,drop the error and close it anyway");
-                    }
-                }
-            }
-            this.setRunning(false);
-            this.signal();
-            innerTerminate(reason);
-        }
-        if (this.respHandler != null) {
-            closeResponseHandler(reason);
-        }
-    }
 
     private void closeResponseHandler(final String reason) {
         final ResponseHandler handler = respHandler;
@@ -710,25 +700,31 @@ public class MySQLConnection extends AbstractConnection implements
         });
     }
 
+    /**
+     * MySQLConnetcion inner resource clear
+     * Only used in Net Error OR final resource clear
+     *
+     * @param reason
+     */
     public void closeInner(final String reason) {
-        if (!isClosed.get()) {
-            innerTerminate(reason);
-        }
+        innerTerminate(reason == null ? closeReason : reason);
         if (this.respHandler != null) {
-            closeResponseHandler(reason);
+            closeResponseHandler(reason == null ? closeReason : reason);
         }
     }
 
+
+    /**
+     * close connection without closeResponseHandler
+     */
     @Override
-    public void terminate(String reason) {
-        if (!isClosed.get()) {
-            innerTerminate(reason);
-        }
+    public synchronized void closeWithoutRsp(String reason) {
+        this.respHandler = null;
+        this.close(reason);
     }
 
     private synchronized void innerTerminate(String reason) {
         if (!isClosed()) {
-            isQuit.set(true);
             super.close(reason);
             pool.connectionClosed(this);
         }
@@ -987,5 +983,4 @@ public class MySQLConnection extends AbstractConnection implements
             conn.usrVariables = usrVariables;
         }
     }
-
 }

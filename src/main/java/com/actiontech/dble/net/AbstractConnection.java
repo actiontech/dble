@@ -25,7 +25,6 @@ import java.nio.channels.NetworkChannel;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author mycat
@@ -52,7 +51,7 @@ public abstract class AbstractConnection implements NIOConnection {
 
     protected volatile int readBufferOffset;
     protected long lastLargeMessageTime;
-    protected final AtomicBoolean isClosed;
+    protected volatile boolean isClosed = false;
     protected long startupTime;
     protected long lastReadTime;
     protected long lastWriteTime;
@@ -77,7 +76,6 @@ public abstract class AbstractConnection implements NIOConnection {
         } else {
             socketWR = new NIOSocketWR(this);
         }
-        this.isClosed = new AtomicBoolean(false);
         this.startupTime = TimeUtil.currentTimeMillis();
         this.lastReadTime = startupTime;
         this.lastWriteTime = startupTime;
@@ -86,7 +84,6 @@ public abstract class AbstractConnection implements NIOConnection {
     public AbstractConnection() {
         /* just for unit test */
         this.channel = null;
-        this.isClosed = new AtomicBoolean(false);
         this.socketWR = null;
     }
 
@@ -277,7 +274,7 @@ public abstract class AbstractConnection implements NIOConnection {
     }
 
     public void onReadData(int got) throws IOException {
-        if (isClosed.get()) {
+        if (isClosed) {
             return;
         }
 
@@ -477,10 +474,10 @@ public abstract class AbstractConnection implements NIOConnection {
 
     @Override
     public void close(String reason) {
-        if (!isClosed.get()) {
+        if (!isClosed) {
             this.connectionCount();
             closeSocket();
-            isClosed.set(true);
+            isClosed = true;
             if (processor != null) {
                 processor.removeConnection(this);
             }
@@ -504,7 +501,7 @@ public abstract class AbstractConnection implements NIOConnection {
     }
 
     public boolean isClosed() {
-        return isClosed.get();
+        return isClosed;
     }
 
     public void idleCheck() {

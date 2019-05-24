@@ -252,7 +252,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             session.releaseConnectionIfSafe(conn, false);
         }
 
-
         eof[3] = ++packetId;
         session.multiStatementPacket(eof, packetId);
         ServerConnection source = session.getSource();

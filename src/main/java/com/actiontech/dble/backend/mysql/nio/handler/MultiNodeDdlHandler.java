@@ -200,9 +200,6 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
             if (!isFail()) {
                 setFail(new String(errPacket.getMessage()));
             }
-            if (!conn.syncAndExecute()) {
-                return;
-            }
             if (--nodeCount > 0)
                 return;
             session.handleSpecial(oriRrs, false);

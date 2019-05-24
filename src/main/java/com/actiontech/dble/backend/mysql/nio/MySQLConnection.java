@@ -64,7 +64,7 @@ public class MySQLConnection extends AbstractConnection implements
     private long oldTimestamp;
     private final AtomicBoolean logResponse = new AtomicBoolean(false);
     private volatile boolean testing = false;
-    private volatile String closeResion = null;
+    private volatile String closeReason = null;
     private volatile BackEndCleaner recycler = null;
 
     private static long initClientFlags() {
@@ -635,7 +635,7 @@ public class MySQLConnection extends AbstractConnection implements
         if (!isClosed) {
             if (isAuthenticated && channel.isOpen()) {
                 try {
-                    closeResion = reason;
+                    closeReason = reason;
                     write(writeToBuffer(QuitPacket.QUIT, allocate()));
                 } catch (Throwable e) {
                     LOGGER.info("error when try to quite the connection ,drop the error and close it anyway");
@@ -692,9 +692,9 @@ public class MySQLConnection extends AbstractConnection implements
      * @param reason
      */
     public void closeInner(final String reason) {
-        innerTerminate(reason == null ? closeResion : reason);
+        innerTerminate(reason == null ? closeReason : reason);
         if (this.respHandler != null) {
-            closeResponseHandler(reason == null ? closeResion : reason);
+            closeResponseHandler(reason == null ? closeReason : reason);
         }
     }
 

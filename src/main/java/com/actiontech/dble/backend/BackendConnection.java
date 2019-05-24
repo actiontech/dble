@@ -26,8 +26,6 @@ public interface BackendConnection extends ClosableConnection {
 
     long getLastTime();
 
-    boolean isClosedOrQuit();
-
     void setAttachment(Object attachment);
 
     void setLastTime(long currentTimeMillis);
@@ -64,7 +62,7 @@ public interface BackendConnection extends ClosableConnection {
 
     long getId();
 
-    void terminate(String reason);
+    void closeWithoutRsp(String reason);
 
     String compactInfo();
 

@@ -12,6 +12,7 @@ import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.protocol.StructureMeta;
+import com.actiontech.dble.net.ConnectionException;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -325,16 +326,21 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
                         LOGGER.debug("to find root parent's node sql :" + findRootTBSql);
                     }
                     FetchStoreNodeOfChildTableHandler fetchHandler = new FetchStoreNodeOfChildTableHandler(findRootTBSql, sc.getSession2());
-                    String dn = fetchHandler.execute(schema.getName(), tc.getRootParent().getDataNodes());
-                    if (dn == null) {
-                        sc.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "can't find (root) parent sharding node for sql:" + sql);
-                        return;
+                    try {
+                        String dn = fetchHandler.execute(schema.getName(), tc.getRootParent().getDataNodes());
+                        if (dn == null) {
+                            sc.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "can't find (root) parent sharding node for sql:" + sql);
+                            return;
+                        }
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("found partition node for child table to insert " + dn + " sql :" + sql);
+                        }
+                        RouterUtil.routeToSingleNode(rrs, dn);
+                        sc.getSession2().execute(rrs);
+                    } catch (ConnectionException e) {
+                        sc.setTxInterrupt(e.toString());
+                        sc.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.toString());
                     }
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("found partition node for child table to insert " + dn + " sql :" + sql);
-                    }
-                    RouterUtil.routeToSingleNode(rrs, dn);
-                    sc.getSession2().execute(rrs);
                 }
             });
         }

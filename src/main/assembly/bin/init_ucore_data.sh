@@ -2,7 +2,7 @@
 
 echo "check JAVA_HOME & java"
 JAVA_CMD="$2"/bin/java
-MAIN_CLASS=com.actiontech.dble.config.loader.ucoreprocess.XmltoUcore
+MAIN_CLASS=com.actiontech.dble.cluster.xmltoKv.XmltoCluster
 if [ ! -n "$2" ]; then
     JAVA_CMD=$JAVA_HOME/bin/java
     if [ ! -d "$JAVA_HOME" ]; then
@@ -22,4 +22,10 @@ if [ ! -n "$1" ]; then
 fi
 cd $CURR_DIR
 $JAVA_CMD -Xms256M -Xmx1G  -DDBLE_HOME=$DBLE_HOME -cp "$DBLE_HOME/conf:$DBLE_HOME/lib/*" $MAIN_CLASS
-echo "---------finished------------"
+if [ $? -eq 0 ]; then
+    echo "--------finish with success -------"
+    exit 0
+  else
+    echo "--------finish with error---------"
+    exit 1
+fi

@@ -188,9 +188,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 errConnection = new ArrayList<>();
             }
             errConnection.add(conn);
-            if (!conn.syncAndExecute()) {
-                return;
-            }
             if (--nodeCount == 0) {
                 session.handleSpecial(rrs, false, getDDLErrorInfo());
                 packetId++;

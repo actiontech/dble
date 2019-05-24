@@ -81,7 +81,7 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
         if (executeResponse) {
             conn.release();
         } else {
-            ((MySQLConnection) conn).quit();
+            ((MySQLConnection) conn).close();
         }
 
     }

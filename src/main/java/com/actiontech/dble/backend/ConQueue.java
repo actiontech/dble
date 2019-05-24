@@ -23,10 +23,10 @@ public class ConQueue {
 
         }
         BackendConnection con = f1.poll();
-        if (con == null || con.isClosedOrQuit()) {
+        if (con == null || con.isClosed()) {
             con = f2.poll();
         }
-        if (con == null || con.isClosedOrQuit()) {
+        if (con == null || con.isClosed()) {
             return null;
         } else {
             return con;

@@ -42,8 +42,6 @@ import com.actiontech.dble.server.status.SlowQueryLog;
 import com.actiontech.dble.server.util.GlobalTableUtil;
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.variables.VarsExtractorHandler;
-import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
-import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.statistic.stat.SqlResultSizeRecorder;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import com.actiontech.dble.statistic.stat.UserStat;
@@ -1009,7 +1007,6 @@ public final class DbleServer {
         } else {
             xaCmd.append("XA ROLLBACK ");
         }
-        boolean finished = true;
         for (int j = 0; j < coordinatorLogEntry.getParticipants().length; j++) {
             ParticipantLogEntry participantLogEntry = coordinatorLogEntry.getParticipants()[j];
             // XA commit
@@ -1018,11 +1015,11 @@ public final class DbleServer {
                     participantLogEntry.getTxState() != TxState.TX_PREPARE_UNCONNECT_STATE &&
                     participantLogEntry.getTxState() != TxState.TX_ROLLBACKING_STATE &&
                     participantLogEntry.getTxState() != TxState.TX_ROLLBACK_FAILED_STATE &&
+                    participantLogEntry.getTxState() != TxState.TX_ENDED_STATE &&
                     participantLogEntry.getTxState() != TxState.TX_PREPARED_STATE &&
                     participantLogEntry.getTxState() != TxState.TX_PREPARING_STATE) {
                 continue;
             }
-            finished = false;
             outLoop:
             for (SchemaConfig schema : DbleServer.getInstance().getConfig().getSchemas().values()) {
                 for (TableConfig table : schema.getTables().values()) {
@@ -1037,9 +1034,12 @@ public final class DbleServer {
                                 xaCmd.append(participantLogEntry.getExpires());
                             }
                             xaCmd.append("'");
-                            OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(new String[0], new XARecoverCallback(needCommit, participantLogEntry));
-                            SQLJob sqlJob = new SQLJob(xaCmd.toString(), dn.getDatabase(), resultHandler, dn.getDbPool().getSource());
-                            sqlJob.run();
+                            XARecoverHandler handler = new XARecoverHandler(needCommit, participantLogEntry);
+                            handler.execute(xaCmd.toString(), dn.getDatabase(), dn.getDbPool().getSource());
+                            if (!handler.isSuccess()) {
+                                throw new RuntimeException("Fail to recover xa when dble start, please check backend mysql.");
+                            }
+
                             if (LOGGER.isDebugEnabled()) {
                                 LOGGER.debug(String.format("[%s] Host:[%s] schema:[%s]", xaCmd, dn.getName(), dn.getDatabase()));
                             }
@@ -1057,10 +1057,8 @@ public final class DbleServer {
                 }
             }
         }
-        if (finished) {
-            XAStateLog.saveXARecoveryLog(coordinatorLogEntry.getId(), needCommit ? TxState.TX_COMMITTED_STATE : TxState.TX_ROLLBACKED_STATE);
-            XAStateLog.writeCheckpoint(coordinatorLogEntry.getId());
-        }
+        XAStateLog.saveXARecoveryLog(coordinatorLogEntry.getId(), needCommit ? TxState.TX_COMMITTED_STATE : TxState.TX_ROLLBACKED_STATE);
+        XAStateLog.writeCheckpoint(coordinatorLogEntry.getId());
     }
 
     /**

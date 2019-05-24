@@ -30,8 +30,6 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.actiontech.dble.config.ErrorCode.ER_ERROR_DURING_COMMIT;
-
 public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     private static final int COMMIT_TIMES = 5;
     private int tryCommitTimes = 0;
@@ -143,16 +141,12 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             }
             commitPhase(mysqlCon);
         } else if (state == TxState.TX_PREPARE_UNCONNECT_STATE) {
-            final String errorMsg = this.error;
             LOGGER.warn("commit error and rollback the xa");
             if (decrementCountBy(1)) {
                 DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
                     @Override
                     public void run() {
-                        ErrorPacket error = new ErrorPacket();
-                        error.setErrNo(ER_ERROR_DURING_COMMIT);
-                        error.setMessage(errorMsg == null ? "unknown error".getBytes() : errorMsg.getBytes());
-                        XAAutoRollbackNodesHandler nextHandler = new XAAutoRollbackNodesHandler(session, error.toBytes(), null, null);
+                        XAAutoRollbackNodesHandler nextHandler = new XAAutoRollbackNodesHandler(session, sendData, null, null);
                         nextHandler.rollback();
                     }
                 });
@@ -282,7 +276,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 if (errPacket.getErrNo() == ErrorCode.ER_XAER_NOTA) {
                     RouteResultsetNode rrn = (RouteResultsetNode) mysqlCon.getAttachment();
                     String xid = mysqlCon.getConnXID(session, rrn.getMultiplexNum().longValue());
-                    XACheckHandler handler = new XACheckHandler(xid, mysqlCon.getSchema(), mysqlCon.getPool().getDbPool().getSource());
+                    XACheckHandler handler = new XACheckHandler(xid, mysqlCon.getSchema(), rrn.getName(), mysqlCon.getPool().getDbPool().getSource());
                     // if mysql connection holding xa transaction wasn't released, may result in ER_XAER_NOTA.
                     // so we need check xid here
                     handler.checkXid();

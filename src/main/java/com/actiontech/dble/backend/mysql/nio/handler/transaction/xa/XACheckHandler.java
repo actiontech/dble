@@ -17,6 +17,7 @@ public final class XACheckHandler {
     private static final String[] MYSQL_RECOVER_COLS = new String[]{"data"};
     private final String xid;
     private final String schema;
+    private final String dataNode;
     private final PhysicalDatasource ds;
     private Lock lock;
     private Condition done;
@@ -26,10 +27,11 @@ public final class XACheckHandler {
     private boolean isExistXid = false;
     private boolean isSuccess = true;
 
-    public XACheckHandler(String xid, String schema, PhysicalDatasource ds) {
+    public XACheckHandler(String xid, String schema, String dataNode, PhysicalDatasource ds) {
         this.xid = xid;
         this.ds = ds;
         this.schema = schema;
+        this.dataNode = dataNode;
         this.lock = new ReentrantLock();
         this.done = lock.newCondition();
     }
@@ -41,7 +43,7 @@ public final class XACheckHandler {
             SQLJob sqlJob = new SQLJob(sql, schema, resultHandler, ds);
             sqlJob.run();
         } else {
-            SQLJob sqlJob = new SQLJob(sql, schema, resultHandler, false);
+            SQLJob sqlJob = new SQLJob(sql, dataNode, resultHandler, false);
             sqlJob.run();
         }
         waitDone();
@@ -54,7 +56,7 @@ public final class XACheckHandler {
             SQLJob sqlJob = new SQLJob(sql, schema, resultHandler, ds);
             sqlJob.run();
         } else {
-            SQLJob sqlJob = new SQLJob(sql, schema, resultHandler, false);
+            SQLJob sqlJob = new SQLJob(sql, dataNode, resultHandler, false);
             sqlJob.run();
         }
         waitDone();

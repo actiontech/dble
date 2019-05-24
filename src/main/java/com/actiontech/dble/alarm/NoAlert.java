@@ -29,4 +29,9 @@ public class NoAlert implements Alert {
     public boolean alertSelfResolve(ClusterAlertBean bean) {
         return true;
     }
+
+    @Override
+    public void alertConfigCheck() throws Exception {
+
+    }
 }

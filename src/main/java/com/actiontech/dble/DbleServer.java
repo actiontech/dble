@@ -366,6 +366,7 @@ public final class DbleServer {
         if (system.getEnableAlert() == 1) {
             AlertUtil.switchAlert(true);
         }
+        LOGGER.info("ALert manager start loading ......");
         AlertManager.getInstance().startAlert();
         if (aio) {
             int processorCount = frontProcessorCount + backendProcessorCount;

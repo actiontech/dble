@@ -52,4 +52,9 @@ public final class UcoreAlert implements Alert {
         return alertResolve(alert.setAlertComponentType(SOURCE_COMPONENT_TYPE).setAlertComponentId(alertComponentId));
     }
 
+    @Override
+    public void alertConfigCheck() throws Exception {
+
+    }
+
 }

@@ -24,4 +24,6 @@ public interface Alert {
     boolean alertResolve(ClusterAlertBean bean);
 
     boolean alertSelfResolve(ClusterAlertBean bean);
+
+    void alertConfigCheck() throws Exception;
 }

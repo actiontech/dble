@@ -354,7 +354,7 @@ public class ServerConnection extends FrontendConnection {
                 String nodePth = ZKPaths.makePath(ddlPath, nodeName);
                 CuratorFramework zkConn = ZKUtils.getConnection();
                 if (zkConn.checkExists().forPath(KVPathUtil.getSyncMetaLockPath()) != null || zkConn.checkExists().forPath(nodePth) != null) {
-                    String msg = "The metaLock about `" + nodeName + "` is exists. It means other instance is doing DDL";
+                    String msg = "The metaLock about `" + nodeName + "` is exists. It means other instance is doing DDL.";
                     LOGGER.info(msg + " The path of DDL is " + ddlPath);
                     throw new Exception(msg);
                 }

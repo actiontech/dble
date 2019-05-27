@@ -503,7 +503,7 @@ public class ProxyMetaManager {
             String ddlPath = ClusterPathUtil.getDDLPath(nodeName);
             DistributeLock lock = new DistributeLock(ddlPath, ddlInfo.toString());
             if (!lock.acquire()) {
-                String msg = "The metaLock about `" + nodeName + "` is exists. It means other instance is doing DDL";
+                String msg = "The metaLock about `" + nodeName + "` is exists. It means other instance is doing DDL.";
                 LOGGER.info(msg + " The path of DDL is " + ddlPath);
                 throw new Exception(msg);
             }

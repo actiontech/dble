@@ -909,7 +909,9 @@ public class NonBlockingSession implements Session {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("clear session resources " + this);
         }
-        this.releaseConnections(needClosed);
+        if (!source.isLocked()) {
+            this.releaseConnections(needClosed);
+        }
         needWaitFinished = false;
         retryXa = true;
         clearHandlesResources();

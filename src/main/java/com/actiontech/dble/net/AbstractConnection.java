@@ -432,6 +432,20 @@ public abstract class AbstractConnection implements NIOConnection {
         }
     }
 
+    public final boolean registerWrite(ByteBuffer buffer) {
+
+        // if ansyn write finished event got lock before me ,then writing
+        // flag is set false but not start a write request
+        // so we check again
+        try {
+            return this.socketWR.registerWrite(buffer);
+        } catch (Exception e) {
+            LOGGER.info("write err:", e);
+            this.close("write err:" + e);
+            return false;
+        }
+    }
+
     public ByteBuffer checkWriteBuffer(ByteBuffer buffer, int capacity, boolean writeSocketIfFull) {
         if (capacity > buffer.remaining()) {
             if (writeSocketIfFull) {

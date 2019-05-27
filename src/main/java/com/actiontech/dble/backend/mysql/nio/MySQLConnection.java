@@ -661,6 +661,11 @@ public class MySQLConnection extends AbstractConnection implements
             }
             this.setRunning(false);
             this.signal();
+        } else {
+            this.cleanup();
+            if (this.respHandler != null) {
+                closeResponseHandler(reason == null ? closeReason : reason);
+            }
         }
     }
 

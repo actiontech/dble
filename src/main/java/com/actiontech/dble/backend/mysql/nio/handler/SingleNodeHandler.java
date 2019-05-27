@@ -158,7 +158,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         if (syncFinished) {
             session.releaseConnectionIfSafe(conn, false);
         } else {
-            ((MySQLConnection) conn).close();
+            conn.closeWithoutRsp("unfinished sync");
             session.getTargetMap().remove(conn.getAttachment());
         }
         source.setTxInterrupt(errMsg);

@@ -34,7 +34,8 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     private boolean hasOrCondition = false;
     private List<WhereUnit> whereUnits = new CopyOnWriteArrayList<>();
     private List<WhereUnit> storedWhereUnits = new CopyOnWriteArrayList<>();
-    private boolean notInWhere = false;
+    private boolean inSelect = false;
+    private boolean inOuterJoin = false;
     private List<SQLSelect> subQueryList = new ArrayList<>();
     private Map<String, String> aliasMap = new LinkedHashMap<>();
     private List<String> selectTableList = new ArrayList<>();
@@ -112,9 +113,9 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     public boolean visit(SQLSelectItem x) {
         //need to protect parser SQLSelectItem, or SQLBinaryOpExpr may add to whereUnit
         // eg:id =1 will add to whereUnit
-        notInWhere = true;
+        inSelect = true;
         x.getExpr().accept(this);
-        notInWhere = false;
+        inSelect = false;
 
         //alias for select item is useless
         //        String alias = x.getAlias();
@@ -138,7 +139,22 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         //        }
         return false;
     }
-
+    @Override
+    public boolean visit(SQLJoinTableSource x) {
+        switch (x.getJoinType()) {
+            case LEFT_OUTER_JOIN:
+            case RIGHT_OUTER_JOIN:
+            case FULL_OUTER_JOIN:
+                inOuterJoin = true;
+                break;
+            default:
+                inOuterJoin = false;
+                break;
+        }
+        boolean result = super.visit(x);
+        inOuterJoin = false;
+        return result;
+    }
     @Override
     public boolean visit(SQLSelectStatement x) {
         aliasMap.clear();
@@ -215,7 +231,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             case LessThanOrEqualOrGreaterThan:
             case Is:
             case IsNot:
-                if (!notInWhere) {
+                if (!inSelect && !inOuterJoin) {
                     handleCondition(x.getLeft(), x.getOperator().name, x.getRight());
                     handleCondition(x.getRight(), x.getOperator().name, x.getLeft());
                     handleRelationship(x.getLeft(), x.getOperator().name, x.getRight());
@@ -223,7 +239,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                 break;
             case BooleanOr:
                 //remove always true
-                if (!RouterUtil.isConditionAlwaysTrue(x) && !notInWhere) {
+                if (!RouterUtil.isConditionAlwaysTrue(x) && !inSelect && !inOuterJoin) {
                     hasOrCondition = true;
                     WhereUnit whereUnit;
                     whereUnit = new WhereUnit(x);

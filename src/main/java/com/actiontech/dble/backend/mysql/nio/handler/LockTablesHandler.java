@@ -123,14 +123,6 @@ public class LockTablesHandler extends MultiNodeHandler {
         }
     }
 
-    protected String byte2Str(byte[] data) {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : data) {
-            sb.append(Byte.toString(b));
-        }
-        return sb.toString();
-    }
-
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {

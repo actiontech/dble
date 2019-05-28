@@ -77,7 +77,7 @@ public class HandshakeV10Packet extends MySQLPacket {
     private byte[] restOfScrambleBuff; // auth-plugin-data-part-2
     private byte[] authPluginName = NATIVE_PASSWORD_PLUGIN;
 
-    public void write(FrontendConnection c) {
+    public boolean write(FrontendConnection c) {
         ByteBuffer buffer = c.allocate();
         BufferUtil.writeUB3(buffer, calcPacketSize());
         buffer.put(packetId);
@@ -97,7 +97,7 @@ public class HandshakeV10Packet extends MySQLPacket {
             buffer.put((byte) 0);
         }
         BufferUtil.writeWithNull(buffer, authPluginName);
-        c.write(buffer);
+        return c.registerWrite(buffer);
     }
 
     @Override

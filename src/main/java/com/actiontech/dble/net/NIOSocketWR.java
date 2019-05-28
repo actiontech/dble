@@ -81,6 +81,25 @@ public class NIOSocketWR extends SocketWR {
 
     }
 
+    public boolean registerWrite(ByteBuffer buffer) {
+
+        writing.set(true);
+        con.writeBuffer = buffer;
+        buffer.flip();
+        try {
+            write0();
+            writing.set(false);
+        } catch (IOException e) {
+            if (AbstractConnection.LOGGER.isDebugEnabled()) {
+                AbstractConnection.LOGGER.debug("caught err:", e);
+            }
+            AbstractConnection.LOGGER.info("GET IOException when registerWrite,may be just a heartbeat from SLB :" + e.getMessage());
+            con.close("err:" + e);
+            return false;
+        }
+        return true;
+    }
+
     private boolean write0() throws IOException {
 
         boolean quitFlag = false;

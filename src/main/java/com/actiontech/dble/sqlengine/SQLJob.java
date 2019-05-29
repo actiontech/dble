@@ -123,17 +123,20 @@ public class SQLJob implements ResponseHandler, Runnable {
                 " from of sql :" + sql + " at con:" + conn;
 
         LOGGER.info(errMsg);
+        if (!conn.syncAndExecute()) {
+            ((MySQLConnection) conn).close();
+            doFinished(true);
+            return;
+        }
+
         if (errPg.getErrNo() == ErrorCode.ER_XAER_NOTA) {
             // ERROR 1397 (XAE04): XAER_NOTA: Unknown XID, not prepared
             String xid = sql.substring(sql.indexOf("'"), sql.length()).trim();
-            ((MySQLConnection) conn).sendQueryCmd("xa start " + xid, conn.getCharset());
             testXid = true;
+            ((MySQLConnection) conn).sendQueryCmd("xa start " + xid, conn.getCharset());
         } else if (errPg.getErrNo() == ErrorCode.ER_XAER_DUPID) {
             // ERROR 1440 (XAE08): XAER_DUPID: The XID already exists
             conn.close("test xid existence");
-            doFinished(true);
-        } else {
-            conn.release();
             doFinished(true);
         }
     }

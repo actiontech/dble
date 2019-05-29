@@ -11,7 +11,6 @@ import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
-import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.parser.ServerParse;
@@ -37,7 +36,6 @@ public class MultiSQLJob implements ResponseHandler, Runnable {
     private final PhysicalDatasource ds;
     private boolean isMustWriteNode;
     private volatile boolean finished;
-    private volatile boolean testXid;
 
     public MultiSQLJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDatasource ds) {
         super();
@@ -121,29 +119,18 @@ public class MultiSQLJob implements ResponseHandler, Runnable {
                 " from of sql :" + sql + " at con:" + conn;
 
         LOGGER.info(errMsg);
-        if (errPg.getErrNo() == ErrorCode.ER_XAER_NOTA) {
-            // ERROR 1397 (XAE04): XAER_NOTA: Unknown XID, not prepared
-            String xid = sql.substring(sql.indexOf("'"), sql.length()).trim();
-            ((MySQLConnection) conn).sendQueryCmd("xa start " + xid, conn.getCharset());
-            testXid = true;
-        } else if (errPg.getErrNo() == ErrorCode.ER_XAER_DUPID) {
-            // ERROR 1440 (XAE08): XAER_DUPID: The XID already exists
-            conn.close("test xid existence");
-            doFinished(true);
-        } else {
+        if (conn.syncAndExecute()) {
             conn.release();
-            doFinished(true);
+        } else {
+            ((MySQLConnection) conn).close();
         }
+        doFinished(true);
     }
 
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
         if (conn.syncAndExecute()) {
-            if (testXid) {
-                conn.closeWithoutRsp("test xid existence");
-            } else {
-                conn.release();
-            }
+            conn.release();
             doFinished(false);
         }
     }
@@ -152,7 +139,6 @@ public class MultiSQLJob implements ResponseHandler, Runnable {
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
         jobHandler.onHeader(fields);
-
     }
 
     @Override
@@ -173,13 +159,13 @@ public class MultiSQLJob implements ResponseHandler, Runnable {
 
     @Override
     public void writeQueueAvailable() {
-
     }
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
         doFinished(true);
     }
+
     @Override
     public String toString() {
         return "SQLJob [dataNode=" +

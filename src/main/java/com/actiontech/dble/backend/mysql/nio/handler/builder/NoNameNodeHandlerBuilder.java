@@ -8,8 +8,12 @@ package com.actiontech.dble.backend.mysql.nio.handler.builder;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.PushDownVisitor;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeEasyMergeHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeFakeHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.MultiNodeMergeHandler;
 import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.common.item.function.ItemFuncInner;
+import com.actiontech.dble.plan.node.MergeNode;
 import com.actiontech.dble.plan.node.NoNameNode;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -57,6 +61,30 @@ class NoNameNodeHandlerBuilder extends BaseHandlerBuilder {
         hBuilder.checkRRSs(rrss);
         MultiNodeMergeHandler mh = new MultiNodeEasyMergeHandler(getSequenceId(), rrss, session.getSource().isAutocommit() && !session.getSource().isTxStart(), session);
         addHandler(mh);
+    }
+
+    @Override
+    protected void noShardBuild() {
+        this.needCommon = false;
+        //if the node is NoNameNode
+        boolean allSelectInnerFunc = true;
+        for (Item i : this.node.getColumnsSelected()) {
+            if (!(i instanceof ItemFuncInner)) {
+                allSelectInnerFunc = false;
+                break;
+            }
+        }
+        if (allSelectInnerFunc) {
+            boolean union = false;
+            if (this.node.getParent() instanceof MergeNode) {
+                union = ((MergeNode) this.node.getParent()).isUnion();
+            }
+            MultiNodeMergeHandler mh = new MultiNodeFakeHandler(getSequenceId(), session, this.node.getColumnsSelected(), union);
+            addHandler(mh);
+            return;
+        }
+        super.noShardBuild();
+
     }
 
 }

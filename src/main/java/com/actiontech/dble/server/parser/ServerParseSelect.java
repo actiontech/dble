@@ -27,6 +27,7 @@ public final class ServerParseSelect {
     public static final int SELECT_VAR_ALL = 9;
     public static final int SESSION_TX_READ_ONLY = 10;
     public static final int TRACE = 11;
+    public static final int CURRENT_USER = 12;
 
     private static final char[] TRACE_STR = "TRACE".toCharArray();
     private static final char[] VERSION_COMMENT_STR = "VERSION_COMMENT".toCharArray();
@@ -84,6 +85,7 @@ public final class ServerParseSelect {
         }
         return OTHER;
     }
+
     /**
      * SELECT @@session.auto_increment_increment
      *
@@ -498,7 +500,7 @@ public final class ServerParseSelect {
             if (stmt.length() > length && stmt.charAt(length) != ' ') {
                 return OTHER;
             }
-            return USER;
+            return CURRENT_USER;
         }
         return OTHER;
     }

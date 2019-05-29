@@ -10,6 +10,7 @@ import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
+import com.actiontech.dble.plan.common.item.function.ItemCreate;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncEqual;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
@@ -25,6 +26,7 @@ import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.*;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
+import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
@@ -100,12 +102,31 @@ public class MySQLPlanNodeVisitor {
     public boolean visit(MySqlSelectQueryBlock sqlSelectQuery) {
         SQLTableSource from = sqlSelectQuery.getFrom();
         if (from != null) {
-            visit(from);
+            String innerFuncSelectSQL = createInnerFuncSelectSQL(sqlSelectQuery.getSelectList());
+            if (innerFuncSelectSQL != null) {
+                MySQLPlanNodeVisitor mtv = new MySQLPlanNodeVisitor(this.currentDb, this.charsetIndex, this.metaManager, this.isSubQuery);
+                mtv.visit(from);
+                NoNameNode innerNode = new NoNameNode(currentDb, innerFuncSelectSQL);
+                innerNode.setFakeNode(true);
+                List<Item> selectItems = handleSelectItems(selectInnerFuncList(sqlSelectQuery.getSelectList()));
+                if (selectItems != null) {
+                    innerNode.select(selectItems);
+                }
+                JoinInnerNode joinInnerNode = new JoinInnerNode(innerNode, mtv.getTableNode());
+                this.tableNode = joinInnerNode;
+                this.containSchema = mtv.isContainSchema();
+            } else {
+                visit(from);
+            }
             if (this.tableNode instanceof NoNameNode) {
                 this.tableNode.setSql(SQLUtils.toMySqlString(sqlSelectQuery));
             }
         } else {
             this.tableNode = new NoNameNode(currentDb, SQLUtils.toMySqlString(sqlSelectQuery));
+            String innerFuncSelectSQL = createInnerFuncSelectSQL(sqlSelectQuery.getSelectList());
+            if (innerFuncSelectSQL != null) {
+                ((NoNameNode) tableNode).setFakeNode(true);
+            }
         }
 
         if (tableNode != null && (sqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCT || sqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCTROW)) {
@@ -275,6 +296,7 @@ public class MySQLPlanNodeVisitor {
         return true;
     }
 
+
     public void visit(SQLTableSource tables) {
         if (tables instanceof SQLExprTableSource) {
             SQLExprTableSource table = (SQLExprTableSource) tables;
@@ -364,12 +386,23 @@ public class MySQLPlanNodeVisitor {
         MySQLItemVisitor mev = new MySQLItemVisitor(this.currentDb, this.charsetIndex, this.metaManager);
         whereExpr.accept(mev);
         if (this.tableNode != null) {
-            Item whereFilter = mev.getItem();
-            tableNode.query(whereFilter);
-            if (whereFilter.isWithSubQuery()) {
-                tableNode.setWithSubQuery(true);
-                tableNode.setContainsSubQuery(true);
-                tableNode.setCorrelatedSubQuery(whereFilter.isCorrelatedSubQuery());
+            if (tableNode instanceof JoinInnerNode) {
+                Item whereFilter = mev.getItem();
+                PlanNode tn = ((JoinInnerNode) tableNode).getRightNode();
+                tn.query(whereFilter);
+                if (whereFilter.isWithSubQuery()) {
+                    tn.setWithSubQuery(true);
+                    tn.setContainsSubQuery(true);
+                    tn.setCorrelatedSubQuery(whereFilter.isCorrelatedSubQuery());
+                }
+            } else {
+                Item whereFilter = mev.getItem();
+                tableNode.query(whereFilter);
+                if (whereFilter.isWithSubQuery()) {
+                    tableNode.setWithSubQuery(true);
+                    tableNode.setContainsSubQuery(true);
+                    tableNode.setCorrelatedSubQuery(whereFilter.isCorrelatedSubQuery());
+                }
             }
         } else {
             throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "from expression is null,check the sql!");
@@ -507,4 +540,33 @@ public class MySQLPlanNodeVisitor {
         }
         return fds;
     }
+
+    private String createInnerFuncSelectSQL(List<SQLSelectItem> items) {
+        StringBuffer sb = new StringBuffer("SELECT ");
+        if (items != null) {
+            for (SQLSelectItem si : items) {
+                if (si.getExpr() instanceof SQLMethodInvokeExpr &&
+                        ItemCreate.getInstance().isInnerFunc(((SQLMethodInvokeExpr) si.getExpr()).getMethodName())) {
+                    sb.append(si.getExpr().toString() + ",");
+                }
+            }
+            if (sb.length() > 7) {
+                sb.setLength(sb.length() - 1);
+                return sb.toString();
+            }
+        }
+        return null;
+    }
+
+    private List<SQLSelectItem> selectInnerFuncList(List<SQLSelectItem> items) {
+        List<SQLSelectItem> result = new ArrayList<>();
+        for (SQLSelectItem si : items) {
+            if (si.getExpr() instanceof SQLMethodInvokeExpr &&
+                    ItemCreate.getInstance().isInnerFunc(((SQLMethodInvokeExpr) si.getExpr()).getMethodName())) {
+                result.add(si);
+            }
+        }
+        return result;
+    }
+
 }

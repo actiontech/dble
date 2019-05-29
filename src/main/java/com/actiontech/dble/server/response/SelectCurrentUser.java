@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * @author mycat
  */
-public final class SelectUser implements InnerFuncResponse {
+public final class SelectCurrentUser implements InnerFuncResponse {
 
     private static final int FIELD_COUNT = 1;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
@@ -32,7 +32,7 @@ public final class SelectUser implements InnerFuncResponse {
 
             byte packetId = setCurrentPacket(c);
             HEADER.setPacketId(++packetId);
-            FIELDS[0] = PacketUtil.getField("USER()", Fields.FIELD_TYPE_VAR_STRING);
+            FIELDS[0] = PacketUtil.getField("CURRENT_USER()", Fields.FIELD_TYPE_VAR_STRING);
             FIELDS[0].setPacketId(++packetId);
             EOF.setPacketId(++packetId);
 
@@ -60,7 +60,7 @@ public final class SelectUser implements InnerFuncResponse {
     }
 
     private static byte[] getUser(ServerConnection c) {
-        return StringUtil.encode(c.getUser() + '@' + c.getHost(), c.getCharset().getResults());
+        return StringUtil.encode(c.getUser() + "@%", c.getCharset().getResults());
     }
 
     public static byte setCurrentPacket(ServerConnection c) {
@@ -70,7 +70,7 @@ public final class SelectUser implements InnerFuncResponse {
 
     public List<FieldPacket> getField() {
         List<FieldPacket> result = new ArrayList<>();
-        result.add(PacketUtil.getField("USER()", Fields.FIELD_TYPE_VAR_STRING));
+        result.add(PacketUtil.getField("CURRENT_USER()", Fields.FIELD_TYPE_VAR_STRING));
         return result;
     }
 

@@ -655,6 +655,8 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
             default:
                 if (ItemCreate.getInstance().isNativeFunc(funcName)) {
                     item = ItemCreate.getInstance().createNativeFunc(funcName, args);
+                } else if (ItemCreate.getInstance().isInnerFunc(funcName)) {
+                    item = ItemCreate.getInstance().createInnerFunc(funcName, args);
                 } else {
                     // unKnownFunction
                     item = new ItemFuncUnknown(funcName, args);

@@ -40,7 +40,7 @@ public abstract class PlanNode {
     }
 
     public enum PlanNodeType {
-        NONAME, TABLE, JOIN, MERGE, QUERY
+        NONAME, TABLE, JOIN, MERGE, QUERY, JOIN_INNER
     }
 
     public abstract PlanNodeType type();

@@ -15,6 +15,7 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.common.item.function.ItemCreate;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.plan.visitor.MySQLItemVisitor;
 import com.actiontech.dble.route.RouteResultset;
@@ -94,13 +95,13 @@ public class DruidSelectParser extends DefaultDruidParser {
                     throw new SQLNonTransientException(msg);
                 }
 
-                if (DbleServer.getInstance().getTmManager().getSyncView(schemaInfo.getSchemaConfig().getName(), schemaInfo.getTable()) != null) {
+                super.visitorParse(schema, rrs, stmt, visitor, sc);
+                if (DbleServer.getInstance().getTmManager().getSyncView(schemaInfo.getSchemaConfig().getName(), schemaInfo.getTable()) != null ||
+                        hasInnerFuncSelect(visitor.getFunctions())) {
                     rrs.setNeedOptimizer(true);
                     rrs.setSqlStatement(selectStmt);
                     return schemaInfo.getSchemaConfig();
                 }
-
-                super.visitorParse(schema, rrs, stmt, visitor, sc);
                 if (visitor.getSubQueryList().size() > 0) {
                     return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size());
                 }
@@ -142,6 +143,18 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
 
         return schema;
+    }
+
+
+    private boolean hasInnerFuncSelect(List<SQLMethodInvokeExpr> funcList) {
+        if (funcList != null) {
+            for (SQLMethodInvokeExpr expr : funcList) {
+                if (ItemCreate.getInstance().isInnerFunc(expr.getMethodName())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private SchemaConfig tryRouteToOneNode(SchemaConfig schema, RouteResultset rrs, ServerConnection sc, SQLSelectStatement selectStmt, int tableSize) throws SQLException {

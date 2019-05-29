@@ -44,6 +44,8 @@ public class RowDataPacket extends MySQLPacket {
     protected static final byte EMPTY_MARK = (byte) 0;
 
     private int fieldCount;
+
+
     public final List<byte[]> fieldValues;
     private Map<RowDataComparator, List<byte[]>> cmpValues;
 
@@ -158,5 +160,10 @@ public class RowDataPacket extends MySQLPacket {
 
     public void setFieldCount(int fieldCount) {
         this.fieldCount = fieldCount;
+    }
+
+
+    public List<byte[]> getFieldValues() {
+        return fieldValues;
     }
 }

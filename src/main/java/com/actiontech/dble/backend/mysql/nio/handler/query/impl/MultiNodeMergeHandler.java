@@ -42,6 +42,12 @@ public abstract class MultiNodeMergeHandler extends OwnThreadDMLHandler {
         this.route = route;
     }
 
+    public MultiNodeMergeHandler(long id, NonBlockingSession session) {
+        super(id, session);
+        this.lock = new ReentrantLock();
+        this.exeHandlers = new ArrayList<>();
+    }
+
     public abstract void execute() throws Exception;
 
     public List<BaseSelectHandler> getExeHandlers() {

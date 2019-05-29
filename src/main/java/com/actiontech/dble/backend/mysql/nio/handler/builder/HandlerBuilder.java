@@ -93,6 +93,8 @@ public class HandlerBuilder {
             return new QueryNodeHandlerBuilder(nonBlockingSession, (QueryNode) planNode, this, isExplain);
         } else if (i == PlanNode.PlanNodeType.NONAME) {
             return new NoNameNodeHandlerBuilder(nonBlockingSession, (NoNameNode) planNode, this, isExplain);
+        } else if (i == PlanNode.PlanNodeType.JOIN_INNER) {
+            return new JoinInnerHandlerBuilder(nonBlockingSession, (JoinInnerNode) planNode, this, isExplain);
         }
         throw new RuntimeException("not supported tree node type:" + planNode.type());
     }

@@ -39,6 +39,7 @@ public class SQLJob implements ResponseHandler, Runnable {
     private final PhysicalDatasource ds;
     private boolean isMustWriteNode;
     private volatile boolean finished;
+    private volatile boolean testXid;
 
     public SQLJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDatasource ds) {
         super();
@@ -121,31 +122,33 @@ public class SQLJob implements ResponseHandler, Runnable {
         String errMsg = "error response errNo:" + errPg.getErrNo() + ", " + new String(errPg.getMessage()) +
                 " from of sql :" + sql + " at con:" + conn;
 
-
-        if (errPg.getErrNo() == ErrorCode.ER_SPECIFIC_ACCESS_DENIED_ERROR) {
-            // @see https://dev.mysql.com/doc/refman/5.6/en/error-messages-server.html
-            LOGGER.info(errMsg);
-        } else if (errPg.getErrNo() == ErrorCode.ER_XAER_NOTA) {
-            // ERROR 1397 (XAE04): XAER_NOTA: Unknown XID, not prepared
-            LOGGER.info(errMsg);
-            conn.release();
+        LOGGER.info(errMsg);
+        if (!conn.syncAndExecute()) {
+            ((MySQLConnection) conn).close();
             doFinished(true);
             return;
-        } else {
-            LOGGER.info(errMsg);
         }
-        if (conn.syncAndExecute()) {
-            conn.release();
-        } else {
-            ((MySQLConnection) conn).close();
+
+        if (errPg.getErrNo() == ErrorCode.ER_XAER_NOTA) {
+            // ERROR 1397 (XAE04): XAER_NOTA: Unknown XID, not prepared
+            String xid = sql.substring(sql.indexOf("'"), sql.length()).trim();
+            testXid = true;
+            ((MySQLConnection) conn).sendQueryCmd("xa start " + xid, conn.getCharset());
+        } else if (errPg.getErrNo() == ErrorCode.ER_XAER_DUPID) {
+            // ERROR 1440 (XAE08): XAER_DUPID: The XID already exists
+            conn.close("test xid existence");
+            doFinished(true);
         }
-        doFinished(true);
     }
 
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
         if (conn.syncAndExecute()) {
-            conn.release();
+            if (testXid) {
+                conn.closeWithoutRsp("test xid existence");
+            } else {
+                conn.release();
+            }
             doFinished(false);
         }
     }
@@ -175,13 +178,13 @@ public class SQLJob implements ResponseHandler, Runnable {
 
     @Override
     public void writeQueueAvailable() {
-
     }
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
         doFinished(true);
     }
+
     @Override
     public String toString() {
         return "SQLJob [dataNode=" +

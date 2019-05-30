@@ -138,6 +138,9 @@ public class SQLJob implements ResponseHandler, Runnable {
             // ERROR 1440 (XAE08): XAER_DUPID: The XID already exists
             conn.close("test xid existence");
             doFinished(true);
+        } else {
+            conn.release();
+            doFinished(true);
         }
     }
 

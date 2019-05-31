@@ -358,7 +358,9 @@ public class PhysicalDBPool {
         int initSize = ds.getConfig().getMinCon();
         if (initSize < this.schemas.length + 1) {
             initSize = this.schemas.length + 1;
-            LOGGER.warn("minCon size is less than (the count of schema +1), so dble will create at least 1 conn for every schema and an empty schema conn");
+            LOGGER.warn("minCon size is less than (the count of schema +1), so dble will create at least 1 conn for every schema and an empty schema conn, " +
+                    "minCon size before:{}, now:{}", ds.getConfig().getMinCon(), initSize);
+            ds.getConfig().setMinCon(initSize);
         }
 
         if (ds.getConfig().getMaxCon() < initSize) {

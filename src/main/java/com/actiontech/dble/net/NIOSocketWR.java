@@ -107,7 +107,7 @@ public class NIOSocketWR extends SocketWR {
         ByteBuffer buffer = con.writeBuffer;
         if (buffer != null) {
             while (buffer.hasRemaining()) {
-                if (buffer.remaining() == 5 && bufferIsQuit(buffer)) {
+                if (buffer.position() == 5 && bufferIsQuit(buffer)) {
                     quitFlag = true;
                 }
                 written = channel.write(buffer);
@@ -132,7 +132,7 @@ public class NIOSocketWR extends SocketWR {
             }
         }
         while ((buffer = con.writeQueue.poll()) != null) {
-            if (buffer.remaining() == 5 && bufferIsQuit(buffer)) {
+            if (buffer.position() == 5 && bufferIsQuit(buffer)) {
                 quitFlag = true;
             }
             if (buffer.limit() == 0) {
@@ -231,7 +231,9 @@ public class NIOSocketWR extends SocketWR {
     }
 
     private boolean bufferIsQuit(ByteBuffer buffer) {
-        byte[] data = buffer.array();
+        byte[] data = new byte[5];
+        buffer.position(0);
+        buffer.get(data);
         return data[0] == 1 && data[1] == 0 && data[2] == 0 && data[3] == 0 && data[4] == 1;
     }
 

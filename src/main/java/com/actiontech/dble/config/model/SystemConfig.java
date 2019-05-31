@@ -49,7 +49,7 @@ public final class SystemConfig {
     private int serverBacklog = 2048;
     private int serverNodeId = 1;
     private long showBinlogStatusTimeout = 60 * 1000;
-    private int maxCon = 1024;
+    private int maxCon = 0;
     //option
     private int useCompression = 0;
     private int usingAIO = 0;

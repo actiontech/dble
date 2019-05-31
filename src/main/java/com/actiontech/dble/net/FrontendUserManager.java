@@ -70,10 +70,9 @@ public class FrontendUserManager {
                 }
             }
             if (!isManager) {
-                if (serverMaxConnection <= serverConnection) {
+                if (serverMaxConnection > 0 && serverMaxConnection <= serverConnection) {
                     return SERVER_MAX;
                 }
-
                 serverConnection++;
             }
             userConnectionMap.put(user, ++userConnection);

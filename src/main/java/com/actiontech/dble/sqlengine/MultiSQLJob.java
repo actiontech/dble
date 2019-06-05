@@ -122,7 +122,7 @@ public class MultiSQLJob implements ResponseHandler, Runnable {
         if (conn.syncAndExecute()) {
             conn.release();
         } else {
-            ((MySQLConnection) conn).close();
+            conn.closeWithoutRsp("unfinished sync");
         }
         doFinished(true);
     }

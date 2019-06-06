@@ -11,32 +11,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class ServerParseTest {
-    /**
-     * public static final int OTHER = -1;
-     * public static final int BEGIN = 1;
-     * public static final int COMMIT = 2;
-     * public static final int DELETE = 3;
-     * public static final int INSERT = 4;
-     * public static final int REPLACE = 5;
-     * public static final int ROLLBACK = 6;
-     * public static final int SELECT = 7;
-     * public static final int SET = 8;
-     * public static final int SHOW = 9;
-     * public static final int START = 10;
-     * public static final int UPDATE = 11;
-     * public static final int KILL = 12;
-     * public static final int SAVEPOINT = 13;
-     * public static final int USE = 14;
-     * public static final int EXPLAIN = 15;
-     * public static final int KILL_QUERY = 16;
-     * public static final int HELP = 17;
-     * public static final int MYSQL_CMD_COMMENT = 18;
-     * public static final int MYSQL_COMMENT = 19;
-     * public static final int CALL = 20;
-     * public static final int DESCRIBE = 21;
-     * <p>
-     * public static final int SCRIPT_PREPARE = 101;
-     */
 
     @Test
     public void testDesc() {
@@ -342,6 +316,28 @@ public class ServerParseTest {
         sql = "update char_columns set c_char ='1;',c_char2=\";2\";";
         Assert.assertEquals(49, ParseUtil.findNextBreak(sql));
 
+        sql = "/*!dble:sql=select 1 from account */create procedure proc_test(userid1 int)\n" +
+                "begin\n" +
+                "  insert into xx select * from xxx where userid=userid1;\n" +
+                "  update xx set yy=true,zz_time=now() where userid=userid1;\n" +
+                "end;";
+        Assert.assertEquals(sql.length()-1, ParseUtil.findNextBreak(sql));
 
+        sql = "/*!dble:sql=select 1 from account */create procedure proc_test(userid1 int)\n" +
+                "select * from char_columns;";
+        Assert.assertEquals(sql.length()-1, ParseUtil.findNextBreak(sql));
+
+        String sql1 = "/*!dble:sql=select 1 from account */create procedure proc_test(userid1 int)\n" +
+                "select * from char_columns;";
+        String sql2 = "select * from char_columns;";
+        Assert.assertEquals(sql1.length()-1, ParseUtil.findNextBreak(sql1+sql2));
+
+        sql1 = "/*!dble:sql=select 1 from account */create procedure proc_arc(userid1 int)\n" +
+                "begin\n" +
+                "  insert into xx select * from xxx where userid=userid1;\n" +
+                "  update xx set yy=true,zz_time=now() where userid=userid1;\n" +
+                "end;";
+        sql2 = "select * from char_columns ;";
+        Assert.assertEquals(sql1.length()-1, ParseUtil.findNextBreak(sql1+sql2));
     }
 }

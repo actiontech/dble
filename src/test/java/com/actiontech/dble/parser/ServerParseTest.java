@@ -321,16 +321,16 @@ public class ServerParseTest {
                 "  insert into xx select * from xxx where userid=userid1;\n" +
                 "  update xx set yy=true,zz_time=now() where userid=userid1;\n" +
                 "end;";
-        Assert.assertEquals(sql.length()-1, ParseUtil.findNextBreak(sql));
+        Assert.assertEquals(sql.length() - 1, ParseUtil.findNextBreak(sql));
 
         sql = "/*!dble:sql=select 1 from account */create procedure proc_test(userid1 int)\n" +
                 "select * from char_columns;";
-        Assert.assertEquals(sql.length()-1, ParseUtil.findNextBreak(sql));
+        Assert.assertEquals(sql.length() - 1, ParseUtil.findNextBreak(sql));
 
         String sql1 = "/*!dble:sql=select 1 from account */create procedure proc_test(userid1 int)\n" +
                 "select * from char_columns;";
         String sql2 = "select * from char_columns;";
-        Assert.assertEquals(sql1.length()-1, ParseUtil.findNextBreak(sql1+sql2));
+        Assert.assertEquals(sql1.length() - 1, ParseUtil.findNextBreak(sql1 + sql2));
 
         sql1 = "/*!dble:sql=select 1 from account */create procedure proc_arc(userid1 int)\n" +
                 "begin\n" +
@@ -338,6 +338,15 @@ public class ServerParseTest {
                 "  update xx set yy=true,zz_time=now() where userid=userid1;\n" +
                 "end;";
         sql2 = "select * from char_columns ;";
-        Assert.assertEquals(sql1.length()-1, ParseUtil.findNextBreak(sql1+sql2));
+        Assert.assertEquals(sql1.length() - 1, ParseUtil.findNextBreak(sql1 + sql2));
+
+
+        sql1 = "/*!dble:sql=select 1 from account */create procedure proc_arc(userid1 int)\n" +
+                "begin\n" +
+                "  select 'GET the PART 1 END;'\n" +
+                "  update xx set yy=true,zz_time=now() where userid=userid1;\n" +
+                "end;";
+        sql2 = "select * from char_columns ;";
+        Assert.assertEquals(sql1.length() - 1, ParseUtil.findNextBreak(sql1 + sql2));
     }
 }

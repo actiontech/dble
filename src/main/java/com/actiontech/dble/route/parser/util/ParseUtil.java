@@ -395,8 +395,10 @@ public final class ParseUtil {
      * @return
      */
     private static int findNextBreak(String sql, boolean inProcedure) {
-        //if true, meams  sql not in '' or "" or PROCEDURE
-        boolean inBody = false;
+        //is the char in apostrophe
+        boolean inApostrophe = false;
+        //is the char after procedure begin
+        boolean procedureBegin = false;
         String bodyLeft = null;
         for (int i = 0; i < sql.length(); i++) {
             char c = sql.charAt(i);
@@ -406,37 +408,36 @@ public final class ParseUtil {
                     break;
                 case '\'':
                 case '\"':
-                    if (!inBody) {
-                        inBody = true;
+                    if (!inApostrophe) {
+                        inApostrophe = true;
                         bodyLeft = String.valueOf(c);
                     } else {
                         String rightTest = String.valueOf(c);
                         if (rightTest.equals(bodyLeft)) {
-                            inBody = false;
+                            inApostrophe = false;
                         }
                     }
                     break;
                 case ';':
-                    if (!inBody) {
+                    if (!inApostrophe && !procedureBegin) {
                         return i;
                     }
                     break;
                 case 'p':
                 case 'P':
-                    if (!inBody) {
+                    if (!inApostrophe) {
                         i = getProcedureEndPos(sql, i);
                     }
                     break;
                 case 'B':
-                    if (inProcedure && !inBody && isBegin(sql, i)) {
-                        inBody = true;
-                        bodyLeft = "BEGIN";
+                    if (inProcedure && !inApostrophe && isBegin(sql, i)) {
+                        procedureBegin = true;
                         i = i + 4;
                     }
                     break;
                 case 'E':
-                    if (inProcedure && inBody && isEnd(sql, i) && "BEGIN".equals(bodyLeft)) {
-                        inBody = false;
+                    if (!inApostrophe && procedureBegin && isEnd(sql, i)) {
+                        procedureBegin = false;
                         i = i + 2;
                     }
                     break;

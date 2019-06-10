@@ -40,7 +40,7 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
                     new RouteResultsetNode(seqVal.dataNode, ServerParse.UPDATE,
                             seqVal.sql), this, seqVal);
         } catch (Exception e) {
-            LOGGER.info("get connection err " + e);
+            LOGGER.warn("get connection err: " + e);
         }
 
     }
@@ -56,6 +56,7 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
         try {
             conn.query(((SequenceVal) conn.getAttachment()).sql);
         } catch (Exception e) {
+            LOGGER.warn("connection acquired error: " + e);
             handleError(conn, e.getMessage());
             conn.close(e.getMessage());
         }
@@ -63,7 +64,7 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        LOGGER.info("connectionError " + e);
+        LOGGER.warn("connect error: " + e);
         handleError(conn, e.getMessage());
         conn.closeWithoutRsp(e.getMessage());
     }
@@ -74,7 +75,7 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
         err.read(data);
         String errMsg = new String(err.getMessage());
 
-        LOGGER.info("errorResponse " + err.getErrNo() + " " + errMsg);
+        LOGGER.warn("errorResponse " + err.getErrNo() + " " + errMsg);
         handleError(conn, errMsg);
 
         boolean executeResponse = conn.syncAndExecute();
@@ -134,8 +135,8 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
-        LOGGER.info("connection closed " + conn + " reason:" + reason);
-        handleError(conn, "connection closed " + conn + " reason:" + reason);
+        LOGGER.warn("connection " + conn + " closed, reason:" + reason);
+        handleError(conn, "connection " + conn + " closed, reason:" + reason);
     }
 
     @Override

@@ -448,7 +448,7 @@ public final class ParseUtil {
     }
 
     private static boolean isBegin(String stmt, int offset) {
-        if (offset <= 0 || !ParseUtil.isSpace(stmt.charAt(offset - 1)) || stmt.length() <= offset + "EGIN".length()) {
+        if (offset <= 0 || !ParseUtil.isSpace(stmt.charAt(offset - 1)) || stmt.length() <= offset + "EGIN ".length()) {
             return false;
         }
         char c1 = stmt.charAt(++offset);
@@ -484,7 +484,7 @@ public final class ParseUtil {
     }
 
     private static int getProcedureEndPos(String stmt, int offset) {
-        if (stmt.length() > offset + "ROCEDURE".length()) {
+        if (stmt.length() > offset + "ROCEDURE ".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);

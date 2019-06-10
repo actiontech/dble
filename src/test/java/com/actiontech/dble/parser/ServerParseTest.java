@@ -273,48 +273,51 @@ public class ServerParseTest {
     @Test
     public void testDivide() {
         String sql = "delete from tablex where name = '''sdfsd;f''';";
-        Assert.assertEquals(45, ParseUtil.findNextBreak(sql));
+        Assert.assertEquals(sql.length() - 1, ParseUtil.findNextBreak(sql));
 
         sql = "delete from tablex where name = '\\'sdfsd;f\\'';";
-        Assert.assertEquals(45, ParseUtil.findNextBreak(sql));
+        Assert.assertEquals(sql.length() - 1, ParseUtil.findNextBreak(sql));
 
         sql = "delete from tablex where name = \"sdfsd;f\";";
-        Assert.assertEquals(41, ParseUtil.findNextBreak(sql));
+        Assert.assertEquals(sql.length() - 1, ParseUtil.findNextBreak(sql));
 
         sql = "delete from tablex where name = \"sdfsd';'f\";";
-        Assert.assertEquals(43, ParseUtil.findNextBreak(sql));
+        Assert.assertEquals(sql.length() - 1, ParseUtil.findNextBreak(sql));
 
         sql = "delete from tablex where name = \"sdfsd\\\";'f\";";
-        Assert.assertEquals(44, ParseUtil.findNextBreak(sql));
+        Assert.assertEquals(sql.length() - 1, ParseUtil.findNextBreak(sql));
 
         sql = "delete from tablex where name = 'sdfsd\";\"f';";
-        Assert.assertEquals(43, ParseUtil.findNextBreak(sql));
+        Assert.assertEquals(sql.length() - 1, ParseUtil.findNextBreak(sql));
 
         sql = "delete from tablex where name = 'sdfsd\";f';";
-        Assert.assertEquals(42, ParseUtil.findNextBreak(sql));
+        Assert.assertEquals(sql.length() - 1, ParseUtil.findNextBreak(sql));
 
-        sql = "delete from tablex where name = '''sdfsd;f''';commit;";
-        Assert.assertEquals(45, ParseUtil.findNextBreak(sql));
+        String sql1 = "delete from tablex where name = '''sdfsd;f''';";
+        String sql2 = "commit;";
+        Assert.assertEquals(sql1.length() - 1, ParseUtil.findNextBreak(sql1 + sql2));
 
-        sql = "commit;delete from tablex where name = '''sdfsd;f''';";
-        Assert.assertEquals(6, ParseUtil.findNextBreak(sql));
+        sql1 = "commit;";
+        sql2 = "delete from tablex where name = '''sdfsd;f''';";
+        Assert.assertEquals(sql1.length() - 1, ParseUtil.findNextBreak(sql1 + sql2));
 
-        sql = "sdfsdf\\' ;delete from tablex where name = '''sdfsd;f''';";
-        Assert.assertEquals(9, ParseUtil.findNextBreak(sql));
+        sql1 = "sdfsdf\\' ;";
+        sql2 = "delete from tablex where name = '''sdfsd;f''';";
+        Assert.assertEquals(sql1.length() - 1, ParseUtil.findNextBreak(sql1 + sql2));
 
         sql = "delete from tablex where name = 'sdfsd;f';";
-        Assert.assertEquals(41, ParseUtil.findNextBreak(sql));
+        Assert.assertEquals(sql.length() - 1, ParseUtil.findNextBreak(sql));
         sql = "delete from tablex where name = 'sdfsdf';";
-        Assert.assertEquals(40, ParseUtil.findNextBreak(sql));
+        Assert.assertEquals(sql.length() - 1, ParseUtil.findNextBreak(sql));
 
         sql = "delete from tablex where name = \"sdfsd\\\\\\\";'f\";";
-        Assert.assertEquals(46, ParseUtil.findNextBreak(sql));
+        Assert.assertEquals(sql.length() - 1, ParseUtil.findNextBreak(sql));
 
         sql = "update char_columns set c_char ='1',c_char2=\"2\";";
-        Assert.assertEquals(47, ParseUtil.findNextBreak(sql));
+        Assert.assertEquals(sql.length() - 1, ParseUtil.findNextBreak(sql));
 
         sql = "update char_columns set c_char ='1;',c_char2=\";2\";";
-        Assert.assertEquals(49, ParseUtil.findNextBreak(sql));
+        Assert.assertEquals(sql.length() - 1, ParseUtil.findNextBreak(sql));
 
         sql = "/*!dble:sql=select 1 from account */create procedure proc_test(userid1 int)\n" +
                 "begin\n" +
@@ -327,9 +330,9 @@ public class ServerParseTest {
                 "select * from char_columns;";
         Assert.assertEquals(sql.length() - 1, ParseUtil.findNextBreak(sql));
 
-        String sql1 = "/*!dble:sql=select 1 from account */create procedure proc_test(userid1 int)\n" +
+        sql1 = "/*!dble:sql=select 1 from account */create procedure proc_test(userid1 int)\n" +
                 "select * from char_columns;";
-        String sql2 = "select * from char_columns;";
+        sql2 = "select * from char_columns;";
         Assert.assertEquals(sql1.length() - 1, ParseUtil.findNextBreak(sql1 + sql2));
 
         sql1 = "/*!dble:sql=select 1 from account */create procedure proc_arc(userid1 int)\n" +
@@ -348,5 +351,13 @@ public class ServerParseTest {
                 "end;";
         sql2 = "select * from char_columns ;";
         Assert.assertEquals(sql1.length() - 1, ParseUtil.findNextBreak(sql1 + sql2));
+
+
+        sql = "INSERT INTO TEST_TABLE SET VALUE = \"/*!dble:sql=select 1 from account */create procedure proc_arc(userid1 int)\n" +
+                "begin\n" +
+                "  select 'GET the PART 1 END;'\n" +
+                "  update xx set yy=true,zz_time=now() where userid=userid1;\n" +
+                "end;\" ,ID = 11111";
+        Assert.assertEquals(sql.length() - 1, ParseUtil.findNextBreak(sql));
     }
 }

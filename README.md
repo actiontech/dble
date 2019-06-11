@@ -1,6 +1,8 @@
 ![dble](./docs/dble_logo.png)
 
 [![GitHub issues](https://img.shields.io/github/issues/actiontech/dble.svg)](https://github.com/actiontech/dble/issues)
+[![GitHub closed issues](https://img.shields.io/github/issues-closed-raw/actiontech/dble.svg)](https://github.com/actiontech/dble/issues?q=is%3Aissue+is%3Aclosed)
+
 [![GitHub forks](https://img.shields.io/github/forks/actiontech/dble.svg)](https://github.com/actiontech/dble/network/members)
 [![GitHub stars](https://img.shields.io/github/stars/actiontech/dble.svg)](https://github.com/actiontech/dble/stargazers)
 [![GitHub contributors](https://img.shields.io/github/contributors/actiontech/dble.svg)](https://github.com/actiontech/dble/graphs/contributors)

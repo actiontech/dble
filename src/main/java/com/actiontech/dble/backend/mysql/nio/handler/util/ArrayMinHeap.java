@@ -80,6 +80,8 @@ public class ArrayMinHeap<E> implements MinHeap<E> {
         int oldCapacity = heap.length;
         // Double size if small; else grow by 50%
         int newCapacity = ((oldCapacity < 64) ? ((oldCapacity + 1) * 2) : ((oldCapacity / 2) * 3));
+        if (newCapacity < 0) // overflow
+            newCapacity = Integer.MAX_VALUE;
         if (newCapacity < minCapacity)
             newCapacity = minCapacity;
         heap = Arrays.copyOf(heap, newCapacity);

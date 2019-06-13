@@ -194,7 +194,7 @@ public final class TableStatAnalyzer implements QueryResultListener {
                     }
                 }
             } catch (Exception e) {
-                LOGGER.info("TableStatAnalyzer err:", e.toString());
+                LOGGER.info("TableStatAnalyzer err:" + e.toString());
             }
 
             return tables;

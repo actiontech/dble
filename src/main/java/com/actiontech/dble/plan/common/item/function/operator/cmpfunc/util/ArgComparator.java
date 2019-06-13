@@ -273,7 +273,7 @@ public class ArgComparator {
                     }
                 }
             }
-            if (ac.setNull)
+            if (ac.setNull && ac.owner != null)
                 ac.owner.setNullValue(true);
             return ac.a.isNullValue() ? -1 : 1;
         }
@@ -296,7 +296,7 @@ public class ArgComparator {
                     return cmp != 0 ? cmp : res1Len - res2Len;
                 }
             }
-            if (ac.setNull)
+            if (ac.setNull && ac.owner != null)
                 ac.owner.setNullValue((true));
             return ac.a.isNullValue() ? -1 : 1;
 
@@ -317,7 +317,7 @@ public class ArgComparator {
                     return Integer.compare(val1.compareTo(val2), 0);
                 }
             }
-            if (ac.setNull)
+            if (ac.setNull && ac.owner != null)
                 ac.owner.setNullValue(true);
             return ac.a.isNullValue() ? -1 : 1;
         }
@@ -336,7 +336,7 @@ public class ArgComparator {
                     return val1.compareTo(val2);
                 }
             }
-            if (ac.setNull)
+            if (ac.setNull && ac.owner != null)
                 ac.owner.setNullValue((true));
             return ac.a.isNullValue() ? -1 : 1;
         }
@@ -355,7 +355,7 @@ public class ArgComparator {
                     return Integer.compare(val1.compareTo(val2), 0);
                 }
             }
-            if (ac.setNull)
+            if (ac.setNull && ac.owner != null)
                 ac.owner.setNullValue((true));
             return ac.a.isNullValue() ? -1 : 1;
         }
@@ -390,7 +390,7 @@ public class ArgComparator {
                     return Long.compare(val1, val2);
                 }
             }
-            if (ac.setNull)
+            if (ac.setNull && ac.owner != null)
                 ac.owner.setNullValue((true));
             return ac.a.isNullValue() ? -1 : 1;
         }
@@ -511,7 +511,7 @@ public class ArgComparator {
                     return 1;
                 }
             }
-            if (ac.setNull)
+            if (ac.setNull && ac.owner != null)
                 ac.owner.setNullValue((true));
             return ac.a.isNullValue() ? -1 : 1;
         }
@@ -564,13 +564,13 @@ public class ArgComparator {
             /* Get DATE/DATETIME/TIME value of the 'b' item. */
             bValue = ac.getValueBFunc.get(ac.b, ac.a, bIsNull);
             if (aIsNull.get() || bIsNull.get()) {
-                if (ac.setNull)
+                if (ac.setNull && ac.owner != null)
                     ac.owner.setNullValue((!ac.isNullsEq));
                 return ac.isNullsEq ? (aIsNull.get() == bIsNull.get()) ? 1 : 0 : -1;
             }
 
             /* Here we have two not-NULL values. */
-            if (ac.setNull)
+            if (ac.setNull && ac.owner != null)
                 ac.owner.setNullValue((false));
 
             /* Compare values. */

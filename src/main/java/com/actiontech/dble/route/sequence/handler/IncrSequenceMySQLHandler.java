@@ -86,7 +86,7 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
     }
 
     private Long getNextValidSeqVal(SequenceVal seqVal) throws SQLNonTransientException {
-        Long nexVal = seqVal.counter.getNext();
+        long nexVal = seqVal.counter.getNext();
         if (nexVal != -1) {
             return nexVal;
         } else {

@@ -51,8 +51,10 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
                 }
             }
 
-            for (SchemaConfig schemaInfo : schemaMap.values()) {
-                rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getName()));
+            if (schemaMap != null) {
+                for (SchemaConfig schemaInfo : schemaMap.values()) {
+                    rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getName()));
+                }
             }
 
             super.visitorParse(null, rrs, stmt, visitor, sc);

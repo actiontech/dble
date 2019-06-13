@@ -63,7 +63,7 @@ public class LimitHandler extends BaseDMLHandler {
         long curIndexTmp = curIndex.incrementAndGet();
         if (curIndexTmp < limitIndex) {
             return false;
-        } else if (curIndexTmp >= limitIndex && curIndexTmp < limitIndex + limitCount) {
+        } else if (curIndexTmp < limitIndex + limitCount) {
             nextHandler.rowResponse(null, rowPacket, this.isLeft, conn);
         } else {
             return true;

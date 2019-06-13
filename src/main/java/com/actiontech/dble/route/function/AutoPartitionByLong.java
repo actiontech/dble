@@ -179,7 +179,9 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
 
         } finally {
             try {
-                in.close();
+                if (in != null) {
+                    in.close();
+                }
             } catch (Exception e2) {
                 //ignore error
             }

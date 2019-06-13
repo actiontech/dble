@@ -133,8 +133,7 @@ public class UshardSender extends AbstractClusterSender {
             throw new RuntimeException("ALL the ucore connect failure");
         }
 
-        KvBean bean = new KvBean(path, output.getValue(), 0);
-        return bean;
+        return new KvBean(path, output.getValue(), 0);
     }
 
     @Override
@@ -265,7 +264,7 @@ public class UshardSender extends AbstractClusterSender {
         UshardInterface.AlertInput.Builder builder = UshardInterface.AlertInput.newBuilder().
                 setCode(alert.getCode()).
                 setDesc(alert.getDesc()).
-                setLevel(alert.getLevel().toString()).
+                setLevel(alert.getLevel()).
                 setSourceComponentType(sourceComponentType).
                 setSourceComponentId(sourceComponentId).
                 setAlertComponentId(alert.getAlertComponentId()).

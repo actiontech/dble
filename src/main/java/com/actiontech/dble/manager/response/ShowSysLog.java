@@ -43,7 +43,7 @@ public final class ShowSysLog {
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("LOG", Fields.FIELD_TYPE_VARCHAR);
-        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
     }

@@ -423,7 +423,7 @@ public final class ReloadConfig {
     private static void recycleOldBackendConnections(Map<String, PhysicalDBPool> recycleMap, boolean closeFrontCon) {
         for (PhysicalDBPool dbPool : recycleMap.values()) {
             dbPool.stopHeartbeat();
-            Long oldTimestamp = System.currentTimeMillis();
+            long oldTimestamp = System.currentTimeMillis();
             for (PhysicalDatasource ds : dbPool.getAllDataSources()) {
                 for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
                     for (BackendConnection con : processor.getBackends().values()) {

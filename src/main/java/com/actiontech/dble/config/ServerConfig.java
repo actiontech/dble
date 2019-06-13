@@ -62,32 +62,28 @@ public class ServerConfig {
     private volatile int status;
     private volatile boolean changing = false;
     private final ReentrantLock lock;
+    private ConfigInitializer confInitNew;
 
     public ServerConfig() {
         //read schema.xml,rule.xml and server.xml
-        ConfigInitializer confInit = new ConfigInitializer(true, false);
-        this.system = confInit.getSystem();
-        this.users = confInit.getUsers();
-        this.schemas = confInit.getSchemas();
-        this.dataHosts = confInit.getDataHosts();
-        this.dataNodes = confInit.getDataNodes();
-        this.erRelations = confInit.getErRelations();
-        this.dataHostWithoutWR = confInit.isDataHostWithoutWH();
+        confInitNew = new ConfigInitializer(true, false);
+        this.system = confInitNew.getSystem();
+        this.users = confInitNew.getUsers();
+        this.schemas = confInitNew.getSchemas();
+        this.dataHosts = confInitNew.getDataHosts();
+        this.dataNodes = confInitNew.getDataNodes();
+        this.erRelations = confInitNew.getErRelations();
+        this.dataHostWithoutWR = confInitNew.isDataHostWithoutWH();
         ConfigUtil.setSchemasForPool(dataHosts, dataNodes);
 
-        this.firewall = confInit.getFirewall();
+        this.firewall = confInitNew.getFirewall();
 
         this.reloadTime = TimeUtil.currentTimeMillis();
         this.rollbackTime = -1L;
         this.status = RELOAD;
 
         this.lock = new ReentrantLock();
-        try {
-            confInit.testConnection(true);
-        } catch (ConfigException e) {
-            LOGGER.warn("TestConnection fail", e);
-            AlertUtil.alertSelf(AlarmCode.TEST_CONN_FAIL, Alert.AlertLevel.WARN, "TestConnection fail:" + e.getMessage(), null);
-        }
+
     }
 
 
@@ -120,6 +116,16 @@ public class ServerConfig {
     public SystemConfig getSystem() {
         waitIfChanging();
         return system;
+    }
+
+    public void testConnection() {
+        try {
+            confInitNew.testConnection(true);
+            confInitNew = null;
+        } catch (ConfigException e) {
+            LOGGER.warn("TestConnection fail", e);
+            AlertUtil.alertSelf(AlarmCode.TEST_CONN_FAIL, Alert.AlertLevel.WARN, "TestConnection fail:" + e.getMessage(), null);
+        }
     }
 
     public boolean isDataHostWithoutWR() {

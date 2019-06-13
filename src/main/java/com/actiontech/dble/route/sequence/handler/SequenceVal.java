@@ -53,7 +53,7 @@ public class SequenceVal {
                     break;
                 }
                 String[] items = dbretVal.split(",");
-                Long curValue = Long.parseLong(items[0]);
+                long curValue = Long.parseLong(items[0]);
                 int span = Integer.parseInt(items[1]);
                 return new Long[]{curValue, curValue + span};
             } else {

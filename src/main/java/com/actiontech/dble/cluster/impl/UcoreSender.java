@@ -494,7 +494,9 @@ public final class UcoreSender extends AbstractClusterSender {
             LOGGER.info("ips set to ucore failure");
         } finally {
             try {
-                out.close();
+                if (out != null) {
+                    out.close();
+                }
             } catch (Exception e) {
                 LOGGER.info("open file error");
             }

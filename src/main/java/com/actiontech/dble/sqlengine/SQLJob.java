@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * async execute in EngineCtx or standalone (EngineCtx=null)
@@ -38,7 +39,7 @@ public class SQLJob implements ResponseHandler, Runnable {
     private final SQLJobHandler jobHandler;
     private final PhysicalDatasource ds;
     private boolean isMustWriteNode;
-    private volatile boolean finished;
+    private AtomicBoolean finished = new AtomicBoolean(false);
     private volatile boolean testXid;
 
     public SQLJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDatasource ds) {
@@ -100,12 +101,13 @@ public class SQLJob implements ResponseHandler, Runnable {
     }
 
     public boolean isFinished() {
-        return finished;
+        return finished.get();
     }
 
     private void doFinished(boolean failed) {
-        finished = true;
-        jobHandler.finished(dataNode == null ? schema : dataNode, failed);
+        if (finished.compareAndSet(false, true)) {
+            jobHandler.finished(dataNode == null ? schema : dataNode, failed);
+        }
     }
 
     @Override

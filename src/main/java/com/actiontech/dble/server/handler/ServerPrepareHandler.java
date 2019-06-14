@@ -48,13 +48,11 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
 
     private ServerConnection source;
     private volatile long pStmtId;
-    private Map<String, PreparedStatement> pStmtForSql;
     private Map<Long, PreparedStatement> pStmtForId;
 
     public ServerPrepareHandler(ServerConnection source) {
         this.source = source;
         this.pStmtId = 0L;
-        this.pStmtForSql = new HashMap<>();
         this.pStmtForId = new HashMap<>();
     }
 
@@ -63,14 +61,10 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("use server prepare, sql: " + sql);
         }
-        PreparedStatement pStmt;
-        if ((pStmt = pStmtForSql.get(sql)) == null) {
-            int columnCount = getColumnCount(sql);
-            int paramCount = getParamCount(sql);
-            pStmt = new PreparedStatement(++pStmtId, sql, columnCount, paramCount);
-            pStmtForSql.put(pStmt.getStatement(), pStmt);
-            pStmtForId.put(pStmt.getId(), pStmt);
-        }
+        int columnCount = getColumnCount(sql);
+        int paramCount = getParamCount(sql);
+        PreparedStatement pStmt = new PreparedStatement(++pStmtId, sql, columnCount, paramCount);
+        pStmtForId.put(pStmt.getId(), pStmt);
         PreparedStmtResponse.response(pStmt, source);
     }
 
@@ -113,7 +107,7 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
     @Override
     public void execute(byte[] data) {
         long psId = ByteUtil.readUB4(data, 5);
-        PreparedStatement pStmt = null;
+        PreparedStatement pStmt;
         if ((pStmt = pStmtForId.get(psId)) == null) {
             source.writeErrMessage(ErrorCode.ER_ERROR_WHEN_EXECUTING_COMMAND, "Unknown pStmtId when executing.");
         } else {
@@ -142,16 +136,12 @@ public class ServerPrepareHandler implements FrontendPrepareHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("close prepare stmt, stmtId = " + psId);
         }
-        PreparedStatement pStmt = pStmtForId.remove(psId);
-        if (pStmt != null) {
-            pStmtForSql.remove(pStmt.getStatement());
-        }
+        pStmtForId.remove(psId);
     }
 
     @Override
     public void clear() {
         this.pStmtForId.clear();
-        this.pStmtForSql.clear();
     }
 
     // TODO:the size of columns of prepared statement

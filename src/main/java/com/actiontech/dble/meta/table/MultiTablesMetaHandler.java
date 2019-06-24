@@ -146,7 +146,7 @@ public abstract class MultiTablesMetaHandler {
         Map<String, List<String>> tableStruct = tablesStructMap.get(table);
         if (tableStruct == null) {
             tableStruct = new HashMap<>();
-            List<String> dataNodeList = new LinkedList<>();
+            List<String> dataNodeList = Collections.synchronizedList(new LinkedList<>());
             dataNodeList.add(dataNode);
             tableStruct.put(sql, dataNodeList);
             tablesStructMap.put(table, tableStruct);

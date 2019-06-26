@@ -77,4 +77,8 @@ Dble has enterprise support plan, you may contact our sales team:
 * North China: 86-13718877200, Mr.Wang
 * South China: 86-18503063188, Mr.Cao
 * East China: 86-18930110869, Mr.Liang
+<<<<<<< HEAD
 * South-West China: 86-13540040119, Mr.hong
+=======
+* South-West China: 86-18328335660, Mr.Lei
+>>>>>>> parent of 76f17e6a... Update README.md

@@ -195,7 +195,7 @@ public final class SetHandler {
         Iterator<PhysicalDBPool> iterator = DbleServer.getInstance().getConfig().getDataHosts().values().iterator();
         if (iterator.hasNext()) {
             PhysicalDBPool pool = iterator.next();
-            SetTestJob sqlJob = new SetTestJob(multiStmt, null, resultHandler, c);
+            SetTestJob sqlJob = new SetTestJob(multiStmt, pool.getSchemas()[0], resultHandler, c);
             sqlJob.run();
         } else {
             c.writeErrMessage(ErrorCode.ER_YES, "no valid data host");

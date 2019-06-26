@@ -58,7 +58,7 @@ public final class SelectHandler {
                     if (iterator.hasNext()) {
                         PhysicalDBPool pool = iterator.next();
                         final PhysicalDatasource source = pool.getSource();
-                        TransformSQLJob sqlJob = new TransformSQLJob(stmt, pool.getSchemas()[0], source, c);
+                        TransformSQLJob sqlJob = new TransformSQLJob(stmt, null, source, c);
                         sqlJob.run();
                     } else {
                         c.writeErrMessage(ErrorCode.ER_YES, "no valid data host");

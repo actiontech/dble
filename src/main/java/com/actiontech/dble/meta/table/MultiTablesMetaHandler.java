@@ -205,7 +205,7 @@ public abstract class MultiTablesMetaHandler {
 
     }
 
-    private void consistentWarning(String tableName, Map<String, List<String>> tableStruct) {
+    private synchronized void consistentWarning(String tableName, Map<String, List<String>> tableStruct) {
         String errorMsg = "Table [" + tableName + "] structure are not consistent in different data node!";
         LOGGER.warn(errorMsg);
         AlertUtil.alertSelf(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, errorMsg, AlertUtil.genSingleLabel("TABLE", schema + "." + tableName));

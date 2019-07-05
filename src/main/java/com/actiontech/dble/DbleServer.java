@@ -33,6 +33,7 @@ import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.net.*;
 import com.actiontech.dble.net.handler.*;
 import com.actiontech.dble.net.mysql.WriteToBackendTask;
+import com.actiontech.dble.net.netty.NettyAcceptor;
 import com.actiontech.dble.route.RouteService;
 import com.actiontech.dble.route.sequence.handler.*;
 import com.actiontech.dble.server.ServerConnectionFactory;
@@ -99,6 +100,7 @@ public final class DbleServer {
     // System Buffer Pool Instance
     private BufferPool bufferPool;
     private boolean aio = false;
+    private boolean netty = true;
 
     private final AtomicLong xaIDInc = new AtomicLong();
     private volatile boolean metaChanging = false;
@@ -371,7 +373,20 @@ public final class DbleServer {
         if (system.getEnableSlowLog() == 1) {
             SlowQueryLog.getInstance().setEnableSlowLog(true);
         }
-        if (aio) {
+
+        if (netty) {
+
+            //第一阶段，使用NIO进行暂代
+            NIOReactorPool backendReactorPool = new NIOReactorPool(
+                    DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIO_REACTOR_BACKEND",
+                    backendProcessorCount);
+            connector = new NIOConnector(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIOConnector", backendReactorPool);
+            ((NIOConnector) connector).start();
+
+            manager = new NettyAcceptor(NAME + "Manager", system.getBindIp(), system.getManagerPort(), 100, mf);
+
+            server = new NettyAcceptor(NAME + "Server", system.getBindIp(), system.getServerPort(), system.getServerBacklog(), sf);
+        } else if (aio) {
             int processorCount = frontProcessorCount + backendProcessorCount;
             LOGGER.info("using aio network handler ");
             asyncChannelGroups = new AsynchronousChannelGroup[processorCount];

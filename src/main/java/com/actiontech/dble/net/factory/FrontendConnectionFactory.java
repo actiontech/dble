@@ -6,6 +6,8 @@
 package com.actiontech.dble.net.factory;
 
 import com.actiontech.dble.net.FrontendConnection;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
 
 import java.io.IOException;
 import java.net.StandardSocketOptions;
@@ -18,11 +20,20 @@ public abstract class FrontendConnectionFactory {
     protected abstract FrontendConnection getConnection(NetworkChannel channel)
             throws IOException;
 
+    protected abstract FrontendConnection getConnection(ChannelPipeline channelPipeline) throws IOException;
+
     public FrontendConnection make(NetworkChannel channel) throws IOException {
         channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
         channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
 
         FrontendConnection c = getConnection(channel);
+        c.setSocketParams(true);
+        return c;
+    }
+
+
+    public FrontendConnection make(ChannelPipeline channelPipeline) throws IOException {
+        FrontendConnection c = getConnection(channelPipeline);
         c.setSocketParams(true);
         return c;
     }

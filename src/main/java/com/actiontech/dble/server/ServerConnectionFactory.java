@@ -12,6 +12,8 @@ import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.factory.FrontendConnectionFactory;
 import com.actiontech.dble.server.handler.ServerLoadDataInfileHandler;
 import com.actiontech.dble.server.handler.ServerPrepareHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
 
 import java.io.IOException;
 import java.nio.channels.NetworkChannel;
@@ -29,6 +31,21 @@ public class ServerConnectionFactory extends FrontendConnectionFactory {
         c.setQueryHandler(new ServerQueryHandler(c));
         c.setLoadDataInfileHandler(new ServerLoadDataInfileHandler(c));
         c.setPrepareHandler(new ServerPrepareHandler(c));
+        SystemConfig sys = DbleServer.getInstance().getConfig().getSystem();
+        c.setTxIsolation(sys.getTxIsolation());
+        c.setSession2(new NonBlockingSession(c));
+        return c;
+    }
+
+
+    @Override
+    protected FrontendConnection getConnection(ChannelPipeline channelPipeline) throws IOException {
+        ServerConnection c = new ServerConnection(channelPipeline);
+        c.setSocketParams(true);
+        c.setPrivileges(ServerPrivileges.instance());
+        c.setQueryHandler(new ServerQueryHandler(c));
+        c.setPrepareHandler(new ServerPrepareHandler(c));
+        c.setLoadDataInfileHandler(new ServerLoadDataInfileHandler(c));
         SystemConfig sys = DbleServer.getInstance().getConfig().getSystem();
         c.setTxIsolation(sys.getTxIsolation());
         c.setSession2(new NonBlockingSession(c));

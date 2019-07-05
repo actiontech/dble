@@ -24,6 +24,8 @@ import com.actiontech.dble.server.response.InformationSchemaProfiling;
 import com.actiontech.dble.server.response.Ping;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.util.*;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
 import org.slf4j.Logger;
@@ -71,6 +73,17 @@ public class ServerConnection extends FrontendConnection {
     public ServerConnection(NetworkChannel channel)
             throws IOException {
         super(channel);
+        this.txInterrupted = false;
+        this.autocommit = true;
+        this.txID = new AtomicLong(1);
+        this.sptprepare = new ServerSptPrepare(this);
+        this.usrVariables = new LinkedHashMap<>();
+        this.sysVariables = new LinkedHashMap<>();
+    }
+
+    public ServerConnection(ChannelPipeline channelPipeline)
+            throws IOException {
+        super(channelPipeline);
         this.txInterrupted = false;
         this.autocommit = true;
         this.txID = new AtomicLong(1);

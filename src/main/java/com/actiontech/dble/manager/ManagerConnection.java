@@ -7,6 +7,8 @@ package com.actiontech.dble.manager;
 
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.util.TimeUtil;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
 
 import java.io.IOException;
 import java.nio.channels.NetworkChannel;
@@ -19,6 +21,10 @@ public class ManagerConnection extends FrontendConnection {
 
     public ManagerConnection(NetworkChannel channel) throws IOException {
         super(channel);
+    }
+
+    public ManagerConnection(ChannelPipeline channelPipeline) throws IOException {
+        super(channelPipeline);
     }
 
     @Override

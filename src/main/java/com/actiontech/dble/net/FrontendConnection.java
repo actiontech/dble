@@ -20,6 +20,8 @@ import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.RandomUtil;
 import com.actiontech.dble.util.StringUtil;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +57,26 @@ public abstract class FrontendConnection extends AbstractConnection {
     private boolean userReadOnly = true;
     private boolean sessionReadOnly = false;
     private boolean multStatementAllow = false;
+
+    public FrontendConnection(ChannelPipeline channelPipeline) throws IOException {
+        super(channelPipeline);
+        /*
+        InetSocketAddress localAddress = (InetSocketAddress) channelPipeline.channel().getLocalAddress();
+        InetSocketAddress remoteAddress = null;
+        if (channel instanceof SocketChannel) {
+            remoteAddress = (InetSocketAddress) ((SocketChannel) channel).getRemoteAddress();
+        } else if (channel instanceof AsynchronousSocketChannel) {
+            remoteAddress = (InetSocketAddress) ((AsynchronousSocketChannel) channel).getRemoteAddress();
+        } else {
+            throw new RuntimeException("FrontendConnection type is" + channel.getClass());
+        }*/
+
+        /*this.host = remoteAddress.getHostString();
+        this.port = localAddress.getPort();
+        this.localPort = remoteAddress.getPort();*/
+        this.handler = new FrontendAuthenticator(this);
+    }
+
 
     public FrontendConnection(NetworkChannel channel) throws IOException {
         super(channel);
@@ -126,6 +148,7 @@ public abstract class FrontendConnection extends AbstractConnection {
     public void setMultStatementAllow(boolean multStatementAllow) {
         this.multStatementAllow = multStatementAllow;
     }
+
     public void setQueryHandler(FrontendQueryHandler queryHandler) {
         this.queryHandler = queryHandler;
     }

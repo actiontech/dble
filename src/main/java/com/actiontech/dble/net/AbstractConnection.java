@@ -14,6 +14,7 @@ import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.base.Strings;
+import io.netty.channel.ChannelPipeline;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,13 +64,25 @@ public abstract class AbstractConnection implements NIOConnection {
     protected final ConcurrentLinkedQueue<byte[]> compressUnfinishedDataQueue = new ConcurrentLinkedQueue<>();
     protected volatile Map<String, String> usrVariables;
     protected volatile Map<String, String> sysVariables;
+    protected final ChannelPipeline channelPipeline;
 
     private long idleTimeout;
 
     private final SocketWR socketWR;
 
+    public AbstractConnection(ChannelPipeline channelPipeline) {
+        this.channel = null;
+        this.channelPipeline = channelPipeline;
+        socketWR = new NettySocketWR(this, channelPipeline);
+        this.isClosed = new AtomicBoolean(false);
+        this.startupTime = TimeUtil.currentTimeMillis();
+        this.lastReadTime = startupTime;
+        this.lastWriteTime = startupTime;
+    }
+
     public AbstractConnection(NetworkChannel channel) {
         this.channel = channel;
+        this.channelPipeline = null;
         boolean isAIO = (channel instanceof AsynchronousChannel);
         if (isAIO) {
             socketWR = new AIOSocketWR(this);
@@ -85,6 +98,7 @@ public abstract class AbstractConnection implements NIOConnection {
         /* just for unit test */
         this.channel = null;
         this.socketWR = null;
+        this.channelPipeline = null;
     }
 
     public void setCollationConnection(String collation) {
@@ -640,11 +654,13 @@ public abstract class AbstractConnection implements NIOConnection {
             soNoDelay = system.getBackSocketNoDelay();
         }
 
-        channel.setOption(StandardSocketOptions.SO_RCVBUF, soRcvBuf);
-        channel.setOption(StandardSocketOptions.SO_SNDBUF, soSndBuf);
-        channel.setOption(StandardSocketOptions.TCP_NODELAY, soNoDelay == 1);
-        channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-        channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
+        if (channel != null) {
+            channel.setOption(StandardSocketOptions.SO_RCVBUF, soRcvBuf);
+            channel.setOption(StandardSocketOptions.SO_SNDBUF, soSndBuf);
+            channel.setOption(StandardSocketOptions.TCP_NODELAY, soNoDelay == 1);
+            channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+            channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
+        }
 
         this.setMaxPacketSize(system.getMaxPacketSize());
         this.setIdleTimeout(system.getIdleTimeout());

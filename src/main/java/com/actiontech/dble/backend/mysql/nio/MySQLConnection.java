@@ -129,7 +129,6 @@ public class MySQLConnection extends AbstractConnection implements
             this.clientFlags = CLIENT_FLAGS;
         }
         this.lastTime = TimeUtil.currentTimeMillis();
-        this.isQuit = new AtomicBoolean(false);
         this.autocommit = true;
         this.fromSlaveDB = fromSlaveDB;
         /* if the txIsolation in server.xml is different from the isolation level in MySQL node,

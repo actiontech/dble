@@ -10,6 +10,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.model.DBHostConfig;
 import com.actiontech.dble.net.NIOConnector;
 import com.actiontech.dble.net.factory.BackendConnectionFactory;
+import com.actiontech.dble.net.netty.NettyConnector;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -26,26 +27,30 @@ public class MySQLConnectionFactory extends BackendConnectionFactory {
                                 String schema) throws IOException {
 
         DBHostConfig dsc = pool.getConfig();
-        NetworkChannel channel = openSocketChannel(DbleServer.getInstance().isAIO());
-
-        MySQLConnection c = new MySQLConnection(channel, pool.isReadNode(), schema == null);
-        c.setSocketParams(false);
-        c.setHost(dsc.getIp());
-        c.setPort(dsc.getPort());
-        c.setUser(dsc.getUser());
-        c.setPassword(dsc.getPassword());
-        c.setSchema(schema);
-        c.setHandler(new MySQLConnectionAuthenticator(c, handler));
-        c.setPool(pool);
-        c.setIdleTimeout(pool.getConfig().getIdleTimeout());
-        if (channel instanceof AsynchronousSocketChannel) {
-            ((AsynchronousSocketChannel) channel).connect(
-                    new InetSocketAddress(dsc.getIp(), dsc.getPort()), c,
-                    (CompletionHandler) DbleServer.getInstance().getConnector());
-        } else {
-            ((NIOConnector) DbleServer.getInstance().getConnector()).postConnect(c);
+        if(DbleServer.getInstance().isNetty()){
+            MySQLConnection c = ((NettyConnector)DbleServer.getInstance().getConnector()).createNewConnection(pool,schema,handler);
+            return c;
+        }else {
+            NetworkChannel channel = openSocketChannel(DbleServer.getInstance().isAIO());
+            MySQLConnection c = new MySQLConnection(channel, pool.isReadNode(), schema == null);
+            c.setSocketParams(false);
+            c.setHost(dsc.getIp());
+            c.setPort(dsc.getPort());
+            c.setUser(dsc.getUser());
+            c.setPassword(dsc.getPassword());
+            c.setSchema(schema);
+            c.setHandler(new MySQLConnectionAuthenticator(c, handler));
+            c.setPool(pool);
+            c.setIdleTimeout(pool.getConfig().getIdleTimeout());
+            if (channel instanceof AsynchronousSocketChannel) {
+                ((AsynchronousSocketChannel) channel).connect(
+                        new InetSocketAddress(dsc.getIp(), dsc.getPort()), c,
+                        (CompletionHandler) DbleServer.getInstance().getConnector());
+            } else {
+                ((NIOConnector) DbleServer.getInstance().getConnector()).postConnect(c);
+            }
+            return c;
         }
-        return c;
     }
 
 }

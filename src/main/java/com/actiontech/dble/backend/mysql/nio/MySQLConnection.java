@@ -27,6 +27,7 @@ import com.actiontech.dble.util.PasswordAuthPlugin;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.actiontech.dble.util.exception.UnknownTxIsolationException;
+import io.netty.channel.ChannelPipeline;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -118,6 +119,26 @@ public class MySQLConnection extends AbstractConnection implements
     private String password;
     private Object attachment;
     private volatile ResponseHandler respHandler;
+
+    public MySQLConnection(ChannelPipeline channelPipeline, boolean fromSlaveDB, boolean isNoSchema) {
+        super(channelPipeline);
+        this.clientFlags = CLIENT_FLAGS;
+        if (isNoSchema) {
+            this.clientFlags = (CLIENT_FLAGS >> 4) << 4 | (CLIENT_FLAGS & 7);
+        } else {
+            this.clientFlags = CLIENT_FLAGS;
+        }
+        this.lastTime = TimeUtil.currentTimeMillis();
+        this.isQuit = new AtomicBoolean(false);
+        this.autocommit = true;
+        this.fromSlaveDB = fromSlaveDB;
+        /* if the txIsolation in server.xml is different from the isolation level in MySQL node,
+        *  it need to sync the status firstly for new idle connection*/
+        this.txIsolation = -1;
+        this.complexQuery = false;
+        this.usrVariables = new LinkedHashMap<>();
+        this.sysVariables = new LinkedHashMap<>();
+    }
 
     public MySQLConnection(NetworkChannel channel, boolean fromSlaveDB, boolean isNoSchema) {
         super(channel);

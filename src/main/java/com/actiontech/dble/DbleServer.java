@@ -34,6 +34,7 @@ import com.actiontech.dble.net.*;
 import com.actiontech.dble.net.handler.*;
 import com.actiontech.dble.net.mysql.WriteToBackendTask;
 import com.actiontech.dble.net.netty.NettyAcceptor;
+import com.actiontech.dble.net.netty.NettyConnector;
 import com.actiontech.dble.route.RouteService;
 import com.actiontech.dble.route.sequence.handler.*;
 import com.actiontech.dble.server.ServerConnectionFactory;
@@ -375,16 +376,8 @@ public final class DbleServer {
         }
 
         if (netty) {
-
-            //第一阶段，使用NIO进行暂代
-            NIOReactorPool backendReactorPool = new NIOReactorPool(
-                    DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIO_REACTOR_BACKEND",
-                    backendProcessorCount);
-            connector = new NIOConnector(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIOConnector", backendReactorPool);
-            ((NIOConnector) connector).start();
-
+            connector = new NettyConnector();
             manager = new NettyAcceptor(NAME + "Manager", system.getBindIp(), system.getManagerPort(), 100, mf);
-
             server = new NettyAcceptor(NAME + "Server", system.getBindIp(), system.getServerPort(), system.getServerBacklog(), sf);
         } else if (aio) {
             int processorCount = frontProcessorCount + backendProcessorCount;
@@ -1099,6 +1092,10 @@ public final class DbleServer {
 
     public boolean isAIO() {
         return aio;
+    }
+
+    public boolean isNetty() {
+        return netty;
     }
 
     public PauseDatanodeManager getMiManager() {

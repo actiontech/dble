@@ -74,7 +74,6 @@ public abstract class AbstractConnection implements NIOConnection {
         this.channel = null;
         this.channelPipeline = channelPipeline;
         socketWR = new NettySocketWR(this, channelPipeline);
-        this.isClosed = new AtomicBoolean(false);
         this.startupTime = TimeUtil.currentTimeMillis();
         this.lastReadTime = startupTime;
         this.lastWriteTime = startupTime;

@@ -322,7 +322,7 @@ public final class DbleServer {
         SocketAcceptor manager;
         SocketAcceptor server;
         aio = (system.getUsingAIO() == 1);
-
+        netty = system.isNetty();
         // startup processors
         int frontProcessorCount = system.getProcessors();
         int backendProcessorCount = system.getBackendProcessors();

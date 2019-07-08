@@ -53,6 +53,7 @@ public final class SystemConfig {
     //option
     private int useCompression = 0;
     private int usingAIO = 0;
+    private boolean netty = false;
     private boolean useZKSwitch = true;
     private int useThreadUsageStat = 0;
     private int usePerformanceMode = 0;
@@ -989,6 +990,7 @@ public final class SystemConfig {
     public int getMaxCostStatSize() {
         return maxCostStatSize;
     }
+
     @SuppressWarnings("unused")
     public void setMaxCostStatSize(int maxCostStatSize) {
         if (maxCostStatSize > 0) {
@@ -1001,6 +1003,7 @@ public final class SystemConfig {
     public int getCostSamplePercent() {
         return costSamplePercent;
     }
+
     @SuppressWarnings("unused")
     public void setCostSamplePercent(int costSamplePercent) {
         if (costSamplePercent >= 0 && costSamplePercent <= 100) {
@@ -1276,4 +1279,12 @@ public final class SystemConfig {
 
     private int useOldMetaInit = 0;
 
+
+    public boolean isNetty() {
+        return netty;
+    }
+
+    public void setNetty(boolean netty) {
+        this.netty = netty;
+    }
 }

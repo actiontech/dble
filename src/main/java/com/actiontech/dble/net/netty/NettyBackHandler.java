@@ -18,6 +18,13 @@ public class NettyBackHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
+    public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
+        c.close("backend Connection closed");
+        ctx.fireChannelUnregistered();
+    }
+
+
+    @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         byte[] data = (byte[]) msg;
         c.handle(data);

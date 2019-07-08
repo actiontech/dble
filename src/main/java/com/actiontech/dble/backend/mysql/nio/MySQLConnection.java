@@ -291,7 +291,7 @@ public class MySQLConnection extends AbstractConnection implements
 
     private long getClientFlagSha() {
         int flag = 0;
-        flag |= initClientFlags() ;
+        flag |= initClientFlags();
         flag |= Capabilities.CLIENT_PLUGIN_AUTH;
         return flag;
     }
@@ -668,7 +668,15 @@ public class MySQLConnection extends AbstractConnection implements
     @Override
     public synchronized void close(final String reason) {
         if (!isClosed) {
-            if (isAuthenticated && channel.isOpen()) {
+            if (channel == null) {
+                if (isAuthenticated && channelPipeline.channel().isOpen()) {
+                    closeReason = reason;
+                    write(writeToBuffer(QuitPacket.QUIT, allocate()));
+                } else {
+                    LOGGER.info("error when try to quite the connection ,drop the error and close it anyway");
+                    closeInner(reason);
+                }
+            } else if (isAuthenticated && channel.isOpen()) {
                 try {
                     closeReason = reason;
                     write(writeToBuffer(QuitPacket.QUIT, allocate()));

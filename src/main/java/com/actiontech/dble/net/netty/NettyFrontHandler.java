@@ -18,6 +18,11 @@ public class NettyFrontHandler extends ChannelInboundHandlerAdapter {
         this.c = c;
     }
 
+    @Override
+    public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
+        c.close("frontend closed");
+        ctx.fireChannelUnregistered();
+    }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {

@@ -29,8 +29,8 @@ public class NettyConnector extends Thread implements SocketConnector {
     public MySQLConnection createNewConnection(MySQLDataSource pool, String schema, ResponseHandler handler) {
 
         DBHostConfig dsc = pool.getConfig();
+        createCallBack callBack = new createCallBack();
         try {
-            createCallBack callBack = new createCallBack();
             Bootstrap b = new Bootstrap();
             b.group(group)
                     .channel(NioSocketChannel.class)
@@ -64,6 +64,8 @@ public class NettyConnector extends Thread implements SocketConnector {
             return callBack.getConn();
         } catch (Exception e) {
             LOGGER.info("create connection error", e);
+            callBack.getConn().close("create connection error");
+            callBack.getConn().onConnectFailed(e);
         }
         return null;
     }

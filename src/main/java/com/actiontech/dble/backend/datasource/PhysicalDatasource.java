@@ -185,13 +185,13 @@ public abstract class PhysicalDatasource {
         //the following is about the idle connection number control
         int idleCons = getIdleCount();
         int totalCount = this.getTotalConCount();
-        int createCount = (hostConfig.getMinCon() - idleCons) / 3;
+        int createCount = (config.getMinCon() - idleCons) / 3;
 
         // create if idle too little
         if ((createCount > 0) && totalCount < size) {
             createByIdleLittle(idleCons, createCount);
-        } else if (idleCons > hostConfig.getMinCon()) {
-            closeByIdleMany(idleCons - hostConfig.getMinCon(), idleCons);
+        } else if (idleCons > config.getMinCon()) {
+            closeByIdleMany(idleCons - config.getMinCon(), idleCons);
         }
     }
 

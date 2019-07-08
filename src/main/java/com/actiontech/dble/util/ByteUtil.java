@@ -205,7 +205,7 @@ public final class ByteUtil {
         int microSecond = DateUtil.getMicroSecond(date);
         byte[] bytes = null;
         byte[] tmp = null;
-        if (day == 0 && hour == 0 && minute == 0 && second == 0 && microSecond == 0) {
+        if (hour == 0 && minute == 0 && second == 0 && microSecond == 0) {
             bytes = new byte[1];
             bytes[0] = (byte) 0;
         } else if (microSecond == 0) {

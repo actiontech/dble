@@ -52,8 +52,8 @@ public final class Explain2Handler {
             String dataNode = stmt.substring(stmt.indexOf("=") + 1, stmt.indexOf("sql=")).trim();
             String sql = "explain " + stmt.substring(stmt.indexOf("sql=") + 4, stmt.length()).trim();
 
-            if (dataNode == null || dataNode.isEmpty() || sql == null || sql.isEmpty()) {
-                showError(stmt, c, "dataNode or sql is null or empty");
+            if (dataNode.isEmpty() || sql.isEmpty()) {
+                showError(stmt, c, "dataNode or sql is empty");
                 return;
             }
 

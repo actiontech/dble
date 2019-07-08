@@ -423,22 +423,24 @@ public final class ReloadConfig {
     private static void recycleOldBackendConnections(Map<String, PhysicalDBPool> recycleMap, boolean closeFrontCon) {
         for (PhysicalDBPool dbPool : recycleMap.values()) {
             dbPool.stopHeartbeat();
-            Long oldTimestamp = System.currentTimeMillis();
+            long oldTimestamp = System.currentTimeMillis();
             for (PhysicalDatasource ds : dbPool.getAllDataSources()) {
                 for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
                     for (BackendConnection con : processor.getBackends().values()) {
                         if (con instanceof MySQLConnection) {
                             MySQLConnection mysqlCon = (MySQLConnection) con;
-                            LOGGER.info("mysqlCon.getPool() == " + mysqlCon.getPool() + " " + mysqlCon.getSchema() + " " + mysqlCon.getId());
                             if (mysqlCon.getPool() == ds) {
                                 if (con.isBorrowed()) {
                                     if (closeFrontCon) {
+                                        LOGGER.info("old active backend conn will be forced closed by closing front conn, conn info:" + mysqlCon);
                                         findAndcloseFrontCon(con);
                                     } else {
+                                        LOGGER.info("old active backend conn will be added to old pool, conn info:" + mysqlCon);
                                         con.setOldTimestamp(oldTimestamp);
                                         NIOProcessor.BACKENDS_OLD.add(con);
                                     }
                                 } else {
+                                    LOGGER.info("old idle backend conn will be closed, conn info:" + mysqlCon);
                                     con.close("old idle conn for reload merge");
                                 }
                             }

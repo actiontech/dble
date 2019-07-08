@@ -19,9 +19,9 @@
         <!--<property name="bindIp">0.0.0.0</property>-->
         <!-- property name="serverPort">8066</property> -->
         <!--<property name="managerPort">9066</property> -->
-        <!--<property name="maxCon">1024</property> -->
-        <!-- <property name="processors">4</property>-->
-        <!-- <property name="backendProcessors">12</property>-->
+        <!--<property name="maxCon">0</property> -->
+        <!--<property name="processors">4</property>-->
+        <!--<property name="backendProcessors">12</property>-->
         <!--<property name="processorExecutor">4</property> -->
         <!--<property name="backendProcessorExecutor">12</property> -->
         <!--<property name="complexExecutor">8</property> -->

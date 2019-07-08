@@ -448,10 +448,10 @@ public abstract class FrontendConnection extends AbstractConnection {
             hs.setServerCharsetIndex((byte) (charsetIndex & 0xff));
             hs.setServerStatus(2);
             hs.setRestOfScrambleBuff(rand2);
-            hs.write(this);
-
-            // async read response
-            this.asyncRead();
+            if (hs.write(this)) {
+                // async read response
+                this.asyncRead();
+            }
         }
     }
 

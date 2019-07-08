@@ -1,12 +1,17 @@
 ![dble](./docs/dble_logo.png)
 
 [![GitHub issues](https://img.shields.io/github/issues/actiontech/dble.svg)](https://github.com/actiontech/dble/issues)
+[![GitHub closed issues](https://img.shields.io/github/issues-closed-raw/actiontech/dble.svg)](https://github.com/actiontech/dble/issues?q=is%3Aissue+is%3Aclosed)
 [![GitHub forks](https://img.shields.io/github/forks/actiontech/dble.svg)](https://github.com/actiontech/dble/network/members)
 [![GitHub stars](https://img.shields.io/github/stars/actiontech/dble.svg)](https://github.com/actiontech/dble/stargazers)
+[![GitHub contributors](https://img.shields.io/github/contributors/actiontech/dble.svg)](https://github.com/actiontech/dble/graphs/contributors)
 [![GitHub license](https://img.shields.io/github/license/actiontech/dble.svg)](https://github.com/actiontech/dble/blob/master/LICENSE)
-[![dble](https://img.shields.io/badge/dble-working%20in%20banks-blue.svg)](https://github.com/actiontech/dble)
-[![GitHub release](https://img.shields.io/github/release/actiontech/dble.svg)](https://github.com/actiontech/dble/releases)
-<img src="https://travis-ci.org/actiontech/dble.svg?branch=master">
+
+[![Code Quality: Java](https://img.shields.io/lgtm/grade/java/github/actiontech/dble.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/actiontech/dble/context:java)
+[![Travis-ci build](https://img.shields.io/travis/com/actiontech/dble/master.svg)](https://travis-ci.com/actiontech?tab=insights)
+[![GitHub release](https://img.shields.io/github/release/actiontech/dble.svg)](https://github.com/actiontech/dble/releases) 
+[![GitHub download](https://img.shields.io/github/downloads/actiontech/dble/total.svg)](https://github.com/actiontech/dble/releases) 
+[![status](https://img.shields.io/badge/status-working%20in%20banks-blue.svg)](https://github.com/actiontech/dble)
 
 dble (pronouced "double", less bug and no "ou") is maintained by [ActionTech](https://opensource.actionsky.com).
 
@@ -81,4 +86,4 @@ Dble has enterprise support plans, you may contact our sales team:
 * North China: 86-13718877200, Mr.Wang
 * South China: 86-18503063188, Mr.Cao
 * East China: 86-18930110869, Mr.Liang
-* South-West China: 86-18328335660, Mr.Lei
+* South-West China: 86-13540040119, Mr.Hong

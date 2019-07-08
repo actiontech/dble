@@ -11,7 +11,6 @@ import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
-import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.parser.ServerParse;
@@ -119,23 +118,11 @@ public class MultiSQLJob implements ResponseHandler, Runnable {
         String errMsg = "error response errNo:" + errPg.getErrNo() + ", " + new String(errPg.getMessage()) +
                 " from of sql :" + sql + " at con:" + conn;
 
-
-        if (errPg.getErrNo() == ErrorCode.ER_SPECIFIC_ACCESS_DENIED_ERROR) {
-            // @see https://dev.mysql.com/doc/refman/5.6/en/error-messages-server.html
-            LOGGER.info(errMsg);
-        } else if (errPg.getErrNo() == ErrorCode.ER_XAER_NOTA) {
-            // ERROR 1397 (XAE04): XAER_NOTA: Unknown XID, not prepared
-            LOGGER.info(errMsg);
-            conn.release();
-            doFinished(true);
-            return;
-        } else {
-            LOGGER.info(errMsg);
-        }
+        LOGGER.info(errMsg);
         if (conn.syncAndExecute()) {
             conn.release();
         } else {
-            ((MySQLConnection) conn).close();
+            conn.closeWithoutRsp("unfinished sync");
         }
         doFinished(true);
     }
@@ -152,7 +139,6 @@ public class MultiSQLJob implements ResponseHandler, Runnable {
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
         jobHandler.onHeader(fields);
-
     }
 
     @Override
@@ -173,13 +159,13 @@ public class MultiSQLJob implements ResponseHandler, Runnable {
 
     @Override
     public void writeQueueAvailable() {
-
     }
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
         doFinished(true);
     }
+
     @Override
     public String toString() {
         return "SQLJob [dataNode=" +

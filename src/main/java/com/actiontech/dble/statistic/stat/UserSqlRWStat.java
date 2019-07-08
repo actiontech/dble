@@ -97,14 +97,11 @@ public class UserSqlRWStat {
         //SQL execute time
         if (executeTime <= 10) {
             this.timeHistogram.record(10);
-
-        } else if (executeTime > 10 && executeTime <= 200) {
+        } else if (executeTime <= 200) {
             this.timeHistogram.record(200);
-
-        } else if (executeTime > 200 && executeTime <= 1000) {
+        } else if (executeTime <= 1000) {
             this.timeHistogram.record(1000);
-
-        } else if (executeTime > 1000) {
+        } else {
             this.timeHistogram.record(2000);
         }
 
@@ -118,14 +115,11 @@ public class UserSqlRWStat {
 
         if (endTime <= hour06 || endTime > hour22) {
             this.executeHistogram.record(6);
-
-        } else if (endTime > hour06 && endTime <= hour13) {
+        } else if (endTime <= hour13) {
             this.executeHistogram.record(13);
-
-        } else if (endTime > hour13 && endTime <= hour18) {
+        } else if (endTime <= hour18) {
             this.executeHistogram.record(18);
-
-        } else if (endTime > hour18 && endTime <= hour22) {
+        } else {
             this.executeHistogram.record(22);
         }
 

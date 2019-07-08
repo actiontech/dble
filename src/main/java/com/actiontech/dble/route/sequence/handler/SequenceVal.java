@@ -48,12 +48,12 @@ public class SequenceVal {
         long start = System.currentTimeMillis();
         long end = start + 10 * 1000;
         while (System.currentTimeMillis() < end) {
-            if (IncrSequenceMySQLHandler.ERR_SEQ_RESULT.equals(dbretVal)) {
-                throw new java.lang.RuntimeException(
-                        "sequence not found in db table ");
-            } else if (dbfinished) {
+            if (dbfinished) {
+                if (dbretVal == null || IncrSequenceMySQLHandler.ERR_SEQ_RESULT.equals(dbretVal)) {
+                    break;
+                }
                 String[] items = dbretVal.split(",");
-                Long curValue = Long.parseLong(items[0]);
+                long curValue = Long.parseLong(items[0]);
                 int span = Integer.parseInt(items[1]);
                 return new Long[]{curValue, curValue + span};
             } else {
@@ -74,7 +74,7 @@ public class SequenceVal {
     public long nextValue() {
         if (!successFetched) {
             throw new java.lang.RuntimeException(
-                    "sequnce fetched failed  from db ");
+                    "sequence fetched failed  from db ");
         }
         return counter.getNext();
     }

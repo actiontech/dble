@@ -15,6 +15,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.bytes.ByteArrayDecoder;
 import io.netty.handler.codec.bytes.ByteArrayEncoder;
+import io.netty.handler.timeout.IdleStateHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,13 +30,13 @@ public class NettyConnector extends Thread implements SocketConnector {
     public MySQLConnection createNewConnection(MySQLDataSource pool, String schema, ResponseHandler handler) {
 
         DBHostConfig dsc = pool.getConfig();
-        createCallBack callBack = new createCallBack();
+        CreateCallBack callBack = new CreateCallBack();
         try {
             Bootstrap b = new Bootstrap();
-            b.group(group)
-                    .channel(NioSocketChannel.class)
-                    .option(ChannelOption.TCP_NODELAY, true)
-                    .handler(new ChannelInitializer<SocketChannel>() {
+            b.group(group).
+                    channel(NioSocketChannel.class).
+                    option(ChannelOption.TCP_NODELAY, true).
+                    handler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         public void initChannel(SocketChannel ch) throws Exception {
                             ChannelPipeline p = ch.pipeline();
@@ -50,6 +51,7 @@ public class NettyConnector extends Thread implements SocketConnector {
                             c.setPool(pool);
                             c.setIdleTimeout(pool.getConfig().getIdleTimeout());
                             p.addLast("framer", new MySQLPacketBasedFrameDecoder(65535, 0, 3));
+                            p.addLast("idleStateHandler", new IdleStateHandler(30, 30, 10));
                             p.addLast("decoder", new ByteArrayDecoder());
                             p.addLast("encoder", new ByteArrayEncoder());
                             p.addLast(new NettyBackHandler(c));
@@ -71,7 +73,7 @@ public class NettyConnector extends Thread implements SocketConnector {
     }
 
 
-    private class createCallBack {
+    private class CreateCallBack {
         private volatile MySQLConnection conn;
 
         private MySQLConnection getConn() {

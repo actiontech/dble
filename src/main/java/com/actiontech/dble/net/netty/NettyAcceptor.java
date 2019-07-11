@@ -12,18 +12,13 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.bytes.ByteArrayDecoder;
 import io.netty.handler.codec.bytes.ByteArrayEncoder;
-import io.netty.handler.codec.string.StringDecoder;
-import io.netty.handler.codec.string.StringEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.StandardSocketOptions;
-import java.nio.channels.*;
 
 /**
  * Created by szf on 2019/7/3.
@@ -41,12 +36,6 @@ public class NettyAcceptor extends Thread implements SocketAcceptor {
         super.setName(name);
         this.port = port;
         this.factory = factory;
- /*       serverChannel = AsynchronousServerSocketChannel.open(group);
-        *//** set TCP option *//*
-        serverChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-        serverChannel.setOption(StandardSocketOptions.SO_RCVBUF, 1024 * 16 * 2);
-        // backlog=100
-        serverChannel.bind(new InetSocketAddress(ip, port), backlog);*/
     }
 
 
@@ -56,9 +45,9 @@ public class NettyAcceptor extends Thread implements SocketAcceptor {
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
             ServerBootstrap b = new ServerBootstrap();
-            b.group(bossGroup, workerGroup)
-                    .channel(NioServerSocketChannel.class)
-                    .childHandler(new ChannelInitializer<io.netty.channel.socket.SocketChannel>() {
+            b.group(bossGroup, workerGroup).
+                    channel(NioServerSocketChannel.class).
+                    childHandler(new ChannelInitializer<io.netty.channel.socket.SocketChannel>() {
                         @Override
                         public void initChannel(io.netty.channel.socket.SocketChannel ch) throws Exception {
                             FrontendConnection c = factory.make(ch.pipeline());
@@ -72,9 +61,9 @@ public class NettyAcceptor extends Thread implements SocketAcceptor {
                             ch.pipeline().addLast(new NettyFrontHandler(c));
                             c.register();
                         }
-                    })
-                    .option(ChannelOption.SO_BACKLOG, 128)
-                    .childOption(ChannelOption.SO_KEEPALIVE, true);
+                    }).
+                    option(ChannelOption.SO_BACKLOG, 128).
+                    childOption(ChannelOption.SO_KEEPALIVE, true);
 
             ChannelFuture f = b.bind(new InetSocketAddress("0.0.0.0", port)).sync();
             LOGGER.info("netty start listen in port " + port);

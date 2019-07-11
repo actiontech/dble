@@ -6,7 +6,6 @@
 package com.actiontech.dble.net.factory;
 
 import com.actiontech.dble.net.FrontendConnection;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 
 import java.io.IOException;

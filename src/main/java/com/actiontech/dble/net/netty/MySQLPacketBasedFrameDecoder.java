@@ -44,16 +44,9 @@ public class MySQLPacketBasedFrameDecoder extends LengthFieldBasedFrameDecoder {
                 frameLength |= (buf.getUnsignedByte(++offset) & 0xff) << 16;
                 frameLength++;
                 break;
-            case 4:
-                frameLength = buf.getUnsignedInt(offset);
-                break;
-            case 5:
-            case 6:
-            case 7:
             default:
                 throw new DecoderException("unsupported lengthFieldLength: " + length + " (expected: 1, 2, 3, 4, or 8)");
-            case 8:
-                frameLength = buf.getLong(offset);
+
         }
 
         return frameLength;

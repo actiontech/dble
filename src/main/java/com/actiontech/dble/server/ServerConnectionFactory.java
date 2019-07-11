@@ -12,7 +12,6 @@ import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.factory.FrontendConnectionFactory;
 import com.actiontech.dble.server.handler.ServerLoadDataInfileHandler;
 import com.actiontech.dble.server.handler.ServerPrepareHandler;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 
 import java.io.IOException;

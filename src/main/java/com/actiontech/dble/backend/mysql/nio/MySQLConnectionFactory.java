@@ -27,10 +27,10 @@ public class MySQLConnectionFactory extends BackendConnectionFactory {
                                 String schema) throws IOException {
 
         DBHostConfig dsc = pool.getConfig();
-        if(DbleServer.getInstance().isNetty()){
-            MySQLConnection c = ((NettyConnector)DbleServer.getInstance().getConnector()).createNewConnection(pool,schema,handler);
+        if (DbleServer.getInstance().isNetty()) {
+            MySQLConnection c = ((NettyConnector) DbleServer.getInstance().getConnector()).createNewConnection(pool, schema, handler);
             return c;
-        }else {
+        } else {
             NetworkChannel channel = openSocketChannel(DbleServer.getInstance().isAIO());
             MySQLConnection c = new MySQLConnection(channel, pool.isReadNode(), schema == null);
             c.setSocketParams(false);

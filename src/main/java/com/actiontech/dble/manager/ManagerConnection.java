@@ -7,7 +7,6 @@ package com.actiontech.dble.manager;
 
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.util.TimeUtil;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 
 import java.io.IOException;

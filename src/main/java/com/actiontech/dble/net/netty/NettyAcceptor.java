@@ -10,8 +10,8 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.handler.codec.bytes.ByteArrayDecoder;
 import io.netty.handler.codec.bytes.ByteArrayEncoder;
 import org.slf4j.Logger;
@@ -41,12 +41,12 @@ public class NettyAcceptor extends Thread implements SocketAcceptor {
 
     @Override
     public void run() {
-        EventLoopGroup bossGroup = new NioEventLoopGroup();
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
+        EventLoopGroup bossGroup = new EpollEventLoopGroup();
+        EventLoopGroup workerGroup = new EpollEventLoopGroup();
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup).
-                    channel(NioServerSocketChannel.class).
+                    channel(EpollServerSocketChannel.class).
                     childHandler(new ChannelInitializer<io.netty.channel.socket.SocketChannel>() {
                         @Override
                         public void initChannel(io.netty.channel.socket.SocketChannel ch) throws Exception {

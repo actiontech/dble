@@ -3,6 +3,8 @@ package com.actiontech.dble.net.netty;
 import com.actiontech.dble.net.AbstractConnection;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
 
@@ -11,6 +13,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class NettyFrontHandler extends ChannelInboundHandlerAdapter {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(NettyFrontHandler.class);
     private final AbstractConnection c;
 
     NettyFrontHandler(AbstractConnection c) {
@@ -25,6 +28,7 @@ public class NettyFrontHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        LOGGER.warn("get Netty stack ++++", new Exception());
         byte[] data = (byte[]) msg;
         c.handle(data);
     }

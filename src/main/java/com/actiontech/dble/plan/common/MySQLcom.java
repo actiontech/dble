@@ -347,7 +347,7 @@ public final class MySQLcom {
     /**
      * parser rowpacket, all rowpacket's data is String
      *
-     * @param charsetIndex
+     * @param charsetName
      * @param buff
      * @return
      * @throws UnsupportedEncodingException

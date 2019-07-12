@@ -8,7 +8,6 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -76,7 +75,7 @@ public class LockTablesHandler extends MultiNodeHandler {
         if (executeResponse) {
             session.releaseConnectionIfSafe(conn, false);
         } else {
-            ((MySQLConnection) conn).close();
+            conn.closeWithoutRsp("unfinished sync");
             session.getTargetMap().remove(conn.getAttachment());
         }
         ErrorPacket errPacket = new ErrorPacket();

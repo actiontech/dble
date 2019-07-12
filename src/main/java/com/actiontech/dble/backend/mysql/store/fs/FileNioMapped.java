@@ -50,10 +50,8 @@ class FileNioMapped extends FileBase {
         try {
             reMap();
         } catch (IOException e) {
-            if (file != null) {
-                file.close();
-                file = null;
-            }
+            file.close();
+            file = null;
             throw e;
         }
     }
@@ -122,10 +120,6 @@ class FileNioMapped extends FileBase {
         int capacity = mapped.capacity();
         if (limit < fileLength || capacity < fileLength) {
             throw new IOException("Unable to map: length=" + limit + " capacity=" + capacity + " length=" + fileLength);
-        }
-        boolean nioLoadMapped = false;
-        if (nioLoadMapped) {
-            mapped.load();
         }
         this.pos = Math.min(oldPos, (int) fileLength);
     }

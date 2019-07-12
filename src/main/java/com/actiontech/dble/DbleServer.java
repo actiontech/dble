@@ -271,6 +271,15 @@ public final class DbleServer {
 
     public void startup() throws IOException {
         this.config = new ServerConfig();
+
+        SystemConfig system = config.getSystem();
+        if (system.getEnableAlert() == 1) {
+            AlertUtil.switchAlert(true);
+        }
+        AlertManager.getInstance().startAlert();
+
+        this.config.testConnection();
+
         /*
          * | offline | Change Server status to OFF |
          * | online | Change Server status to ON |
@@ -286,7 +295,6 @@ public final class DbleServer {
         }
         xaSessionCheck = new XASessionCheck();
 
-        SystemConfig system = config.getSystem();
 
         // server startup
         LOGGER.info("===============================================");
@@ -363,11 +371,6 @@ public final class DbleServer {
         if (system.getEnableSlowLog() == 1) {
             SlowQueryLog.getInstance().setEnableSlowLog(true);
         }
-        if (system.getEnableAlert() == 1) {
-            AlertUtil.switchAlert(true);
-        }
-        LOGGER.info("ALert manager start loading ......");
-        AlertManager.getInstance().startAlert();
         if (aio) {
             int processorCount = frontProcessorCount + backendProcessorCount;
             LOGGER.info("using aio network handler ");

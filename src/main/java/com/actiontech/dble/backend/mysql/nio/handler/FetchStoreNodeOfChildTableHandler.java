@@ -172,7 +172,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
                 fatalRRSSet.add(((RouteResultsetNode) conn.getAttachment()));
                 session.getTargetMap().remove(node);
             }
-            conn.close("set status error");
+            conn.closeWithoutRsp("unfinished sync");
         }
         coutResult((MySQLConnection) conn);
     }

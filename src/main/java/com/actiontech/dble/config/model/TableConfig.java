@@ -217,7 +217,7 @@ public class TableConfig {
             prevTC = tb;
             tb = tb.parentTC;
         }
-        String sql = "SELECT " +
+        return "SELECT " +
                 prevTC.parentTC.name +
                 '.' +
                 prevTC.parentKey +
@@ -225,7 +225,6 @@ public class TableConfig {
                 tableSb.substring(0, tableSb.length() - 1) +
                 " WHERE " +
                 ((level < 2) ? latestCond : condition.toString() + latestCond);
-        return sql;
 
     }
 

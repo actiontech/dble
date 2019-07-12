@@ -28,6 +28,8 @@ public final class LoadDataUtil {
         RouteResultsetNode rrn = (RouteResultsetNode) conn.getAttachment();
         LoadData loadData = rrn.getLoadData();
         List<String> loadDataData = loadData.getData();
+
+        BufferedInputStream in = null;
         try {
             if (loadDataData != null && loadDataData.size() > 0) {
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -38,11 +40,20 @@ public final class LoadDataUtil {
                 }
                 packId = writeToBackConnection(packId, new ByteArrayInputStream(bos.toByteArray()), c);
             } else {
-                packId = writeToBackConnection(packId, new BufferedInputStream(new FileInputStream(loadData.getFileName())), c);
+                in = new BufferedInputStream(new FileInputStream(loadData.getFileName()));
+                packId = writeToBackConnection(packId, in, c);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
+            try {
+                if (in != null) {
+                    in.close();
+                }
+            } catch (IOException e) {
+                // ignore error
+            }
+
             //send empty packet
             byte[] empty = new byte[]{0, 0, 0, 3};
             empty[3] = ++packId;

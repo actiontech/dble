@@ -23,6 +23,8 @@ import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -40,9 +42,11 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
     private volatile boolean sendFinishedFlag = false;
     private Lock lockForErrorHandle = new ReentrantLock();
     private Condition sendFinished = lockForErrorHandle.newCondition();
+    private ConcurrentMap<Object, Long> xaOldThreadIds;
 
     public XARollbackNodesHandler(NonBlockingSession session) {
         super(session);
+        xaOldThreadIds = new ConcurrentHashMap<>(session.getTargetCount());
     }
 
     @Override
@@ -155,8 +159,9 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
         if (mysqlCon.getXaStatus() == TxState.TX_ROLLBACK_FAILED_STATE || mysqlCon.getXaStatus() == TxState.TX_PREPARE_UNCONNECT_STATE) {
             MySQLConnection newConn = session.freshConn(mysqlCon, this);
             if (!newConn.equals(mysqlCon)) {
-                mysqlCon = newConn;
                 RouteResultsetNode rrn = (RouteResultsetNode) mysqlCon.getAttachment();
+                xaOldThreadIds.putIfAbsent(rrn, mysqlCon.getThreadId());
+                mysqlCon = newConn;
                 String xaTxId = mysqlCon.getConnXID(session, rrn.getMultiplexNum().longValue());
                 XaDelayProvider.delayBeforeXaRollback(rrn.getName(), xaTxId);
                 mysqlCon.execCmd("XA ROLLBACK " + xaTxId + ";");
@@ -242,8 +247,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                     cleanAndFeedback();
                 }
 
-                // 'xa rollback' err
-            } else if (mysqlCon.getXaStatus() == TxState.TX_ROLLBACK_FAILED_STATE || mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE) {
+            } else if (mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE) {
                 mysqlCon.setXaStatus(TxState.TX_ROLLBACK_FAILED_STATE);
                 mysqlCon.close();
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
@@ -253,19 +257,36 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                 }
 
                 // we don't know if the conn prepared or not
-            } else if (mysqlCon.getXaStatus() == TxState.TX_PREPARE_UNCONNECT_STATE) {
+                // 'xa rollback' err
+            } else if (mysqlCon.getXaStatus() == TxState.TX_PREPARE_UNCONNECT_STATE || mysqlCon.getXaStatus() == TxState.TX_ROLLBACK_FAILED_STATE) {
                 ErrorPacket errPacket = new ErrorPacket();
                 errPacket.read(err);
                 if (errPacket.getErrNo() == ErrorCode.ER_XAER_NOTA) {
-                    //ERROR 1397 (XAE04): XAER_NOTA: Unknown XID, not prepared
-                    mysqlCon.setXaStatus(TxState.TX_ROLLBACKED_STATE);
-                    XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
-                    mysqlCon.setXaStatus(TxState.TX_INITIALIZE_STATE);
-                    if (decrementCountBy(1)) {
-                        if (session.getXaState() == TxState.TX_PREPARED_STATE) {
-                            session.setXaState(TxState.TX_INITIALIZE_STATE);
+                    RouteResultsetNode rrn = (RouteResultsetNode) mysqlCon.getAttachment();
+                    String xid = mysqlCon.getConnXID(session, rrn.getMultiplexNum().longValue());
+                    XACheckHandler handler = new XACheckHandler(xid, mysqlCon.getSchema(), rrn.getName(), mysqlCon.getPool().getDbPool().getSource());
+                    // if mysql connection holding xa transaction wasn't released, may result in ER_XAER_NOTA.
+                    // so we need check xid here
+                    handler.killXaThread(xaOldThreadIds.get(rrn));
+
+                    handler.checkXid();
+                    if (handler.isSuccess() && !handler.isExistXid()) {
+                        //ERROR 1397 (XAE04): XAER_NOTA: Unknown XID, not prepared
+                        mysqlCon.setXaStatus(TxState.TX_ROLLBACKED_STATE);
+                        XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
+                        mysqlCon.setXaStatus(TxState.TX_INITIALIZE_STATE);
+                        if (decrementCountBy(1)) {
+                            if (session.getXaState() == TxState.TX_PREPARED_STATE) {
+                                session.setXaState(TxState.TX_INITIALIZE_STATE);
+                            }
+                            cleanAndFeedback();
                         }
-                        cleanAndFeedback();
+                    } else {
+                        XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
+                        session.setXaState(TxState.TX_ROLLBACK_FAILED_STATE);
+                        if (decrementCountBy(1)) {
+                            cleanAndFeedback();
+                        }
                     }
                 } else {
                     session.setXaState(TxState.TX_ROLLBACK_FAILED_STATE);
@@ -350,7 +371,8 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                     cleanAndFeedback();
                 }
                 // 'xa rollback' err
-            } else if (mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE) {
+            } else if (mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE || mysqlCon.getXaStatus() == TxState.TX_ROLLBACK_FAILED_STATE ||
+                    mysqlCon.getXaStatus() == TxState.TX_PREPARE_UNCONNECT_STATE) {
                 mysqlCon.setXaStatus(TxState.TX_ROLLBACK_FAILED_STATE);
                 mysqlCon.close();
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);

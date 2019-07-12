@@ -379,36 +379,6 @@ public final class DbleServer {
             connector = new NettyConnector();
             manager = new NettyAcceptor(NAME + "Manager", system.getBindIp(), system.getManagerPort(), 100, mf);
             server = new NettyAcceptor(NAME + "Server", system.getBindIp(), system.getServerPort(), system.getServerBacklog(), sf);
-        } else if (aio) {
-            int processorCount = frontProcessorCount + backendProcessorCount;
-            LOGGER.info("using aio network handler ");
-            asyncChannelGroups = new AsynchronousChannelGroup[processorCount];
-            // startup connector
-            connector = new AIOConnector();
-            for (int i = 0; i < processorCount; i++) {
-                asyncChannelGroups[i] = AsynchronousChannelGroup.withFixedThreadPool(processorCount,
-                        new ThreadFactory() {
-                            private int inx = 1;
-
-                            @Override
-                            public Thread newThread(Runnable r) {
-                                Thread th = new Thread(r);
-                                //TODO
-                                th.setName(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "AIO" + (inx++));
-                                LOGGER.info("created new AIO thread " + th.getName());
-                                return th;
-                            }
-                        }
-                );
-            }
-            manager = new AIOAcceptor(NAME + "Manager", system.getBindIp(),
-                    system.getManagerPort(), 100, mf, this.asyncChannelGroups[0]);
-
-            // startup server
-
-            server = new AIOAcceptor(NAME + "Server", system.getBindIp(),
-                    system.getServerPort(), system.getServerBacklog(), sf, this.asyncChannelGroups[0]);
-
         } else {
             LOGGER.info("using nio network handler ");
 

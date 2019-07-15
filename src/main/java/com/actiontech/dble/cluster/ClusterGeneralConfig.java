@@ -40,6 +40,7 @@ public final class ClusterGeneralConfig {
             INSTANCE.useCluster = true;
             INSTANCE.clusterType = CONFIG_MODE_ZK;
         } else if (CONFIG_MODE_SINGLE.equalsIgnoreCase(properties.getProperty(ClusterParamCfg.CLUSTER_FLAG.getKey()))) {
+            INSTANCE.clusterType = CONFIG_MODE_SINGLE;
             LOGGER.info("No Cluster Config .......start in single mode");
         } else {
             try {

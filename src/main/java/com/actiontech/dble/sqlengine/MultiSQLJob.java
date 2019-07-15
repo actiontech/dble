@@ -11,11 +11,10 @@ import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
+import com.actiontech.dble.meta.ReloadLogUtil;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.parser.ServerParse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -26,7 +25,7 @@ import java.util.List;
  */
 public class MultiSQLJob implements ResponseHandler, Runnable {
 
-    public static final Logger LOGGER = LoggerFactory.getLogger(MultiSQLJob.class);
+    public final ReloadLogUtil logger;
 
     private final String sql;
     private final String dataNode;
@@ -37,8 +36,9 @@ public class MultiSQLJob implements ResponseHandler, Runnable {
     private boolean isMustWriteNode;
     private volatile boolean finished;
 
-    public MultiSQLJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDatasource ds) {
+    public MultiSQLJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDatasource ds, boolean isReload) {
         super();
+        this.logger = new ReloadLogUtil(isReload);
         this.sql = sql;
         this.jobHandler = jobHandler;
         this.ds = ds;
@@ -46,7 +46,7 @@ public class MultiSQLJob implements ResponseHandler, Runnable {
         this.dataNode = null;
     }
 
-    public MultiSQLJob(String sql, String dataNode, SQLJobHandler jobHandler, boolean isMustWriteNode) {
+    public MultiSQLJob(String sql, String dataNode, SQLJobHandler jobHandler, boolean isMustWriteNode, boolean isReload) {
         super();
         this.sql = sql;
         this.jobHandler = jobHandler;
@@ -54,6 +54,7 @@ public class MultiSQLJob implements ResponseHandler, Runnable {
         this.dataNode = dataNode;
         this.schema = null;
         this.isMustWriteNode = isMustWriteNode;
+        this.logger = new ReloadLogUtil(isReload);
     }
 
     public void run() {
@@ -67,13 +68,13 @@ public class MultiSQLJob implements ResponseHandler, Runnable {
                 ds.getConnection(schema, true, this, null);
             }
         } catch (Exception e) {
-            LOGGER.warn("can't get connection", e);
+            logger.warn("can't get connection" + dataNode, e);
             doFinished(true);
         }
     }
 
     public void terminate(String reason) {
-        LOGGER.info("terminate this job reason:" + reason + " con:" + connection + " sql " + this.sql);
+        logger.info("terminate this job reason:" + reason + " con:" + connection + " sql " + this.sql);
         if (connection != null) {
             connection.close(reason);
         }
@@ -81,9 +82,7 @@ public class MultiSQLJob implements ResponseHandler, Runnable {
 
     @Override
     public void connectionAcquired(final BackendConnection conn) {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("con query sql:" + sql + " to con:" + conn);
-        }
+        logger.info("connectionAcquired on connection " + conn);
         conn.setResponseHandler(this);
         ((MySQLConnection) conn).setComplexQuery(true);
         try {
@@ -100,13 +99,14 @@ public class MultiSQLJob implements ResponseHandler, Runnable {
     }
 
     private void doFinished(boolean failed) {
+        logger.info("Finish MultiSQLJob with result " + failed + " on connection " + connection);
         finished = true;
         jobHandler.finished(dataNode == null ? schema : dataNode, failed);
     }
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        LOGGER.warn("can't get connection for sql :" + sql, e);
+        logger.warn("can't get connection for sql :" + sql, e);
         doFinished(true);
     }
 
@@ -118,7 +118,7 @@ public class MultiSQLJob implements ResponseHandler, Runnable {
         String errMsg = "error response errNo:" + errPg.getErrNo() + ", " + new String(errPg.getMessage()) +
                 " from of sql :" + sql + " at con:" + conn;
 
-        LOGGER.info(errMsg);
+        logger.info(errMsg);
         if (conn.syncAndExecute()) {
             conn.release();
         } else {

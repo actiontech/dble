@@ -213,16 +213,17 @@ public class ServerConfig {
         return dataHostWithoutWR2;
     }
 
-    public void reload(Map<String, UserConfig> newUsers, Map<String, SchemaConfig> newSchemas,
-                       Map<String, PhysicalDBNode> newDataNodes, Map<String, PhysicalDBPool> newDataHosts,
-                       Map<ERTable, Set<ERTable>> newErRelations, FirewallConfig newFirewall,
-                       SystemVariables newSystemVariables, boolean newDataHostWithoutWR, boolean reloadAll,
-                       final int loadAllMode) throws SQLNonTransientException {
+    public boolean reload(Map<String, UserConfig> newUsers, Map<String, SchemaConfig> newSchemas,
+                          Map<String, PhysicalDBNode> newDataNodes, Map<String, PhysicalDBPool> newDataHosts,
+                          Map<ERTable, Set<ERTable>> newErRelations, FirewallConfig newFirewall,
+                          SystemVariables newSystemVariables, boolean newDataHostWithoutWR, boolean reloadAll,
+                          final int loadAllMode) throws SQLNonTransientException {
 
-        apply(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall,
+        boolean result = apply(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall,
                 newSystemVariables, newDataHostWithoutWR, reloadAll, loadAllMode);
         this.reloadTime = TimeUtil.currentTimeMillis();
         this.status = reloadAll ? RELOAD_ALL : RELOAD;
+        return result;
     }
 
     private void calcDiffForMetaData(Map<String, SchemaConfig> newSchemas, Map<String, PhysicalDBNode> newDataNodes, boolean isLoadAll, int loadAllMode,
@@ -330,23 +331,24 @@ public class ServerConfig {
         return status == RELOAD && users2 != null && schemas2 != null && firewall2 != null;
     }
 
-    public void rollback(Map<String, UserConfig> backupUsers, Map<String, SchemaConfig> backupSchemas,
-                         Map<String, PhysicalDBNode> backupDataNodes, Map<String, PhysicalDBPool> backupDataHosts,
-                         Map<ERTable, Set<ERTable>> backupErRelations, FirewallConfig backFirewall, boolean backDataHostWithoutWR) throws SQLNonTransientException {
+    public boolean rollback(Map<String, UserConfig> backupUsers, Map<String, SchemaConfig> backupSchemas,
+                            Map<String, PhysicalDBNode> backupDataNodes, Map<String, PhysicalDBPool> backupDataHosts,
+                            Map<ERTable, Set<ERTable>> backupErRelations, FirewallConfig backFirewall, boolean backDataHostWithoutWR) throws SQLNonTransientException {
 
-        apply(backupUsers, backupSchemas, backupDataNodes, backupDataHosts, backupErRelations, backFirewall,
+        boolean result = apply(backupUsers, backupSchemas, backupDataNodes, backupDataHosts, backupErRelations, backFirewall,
                 DbleServer.getInstance().getSystemVariables(), backDataHostWithoutWR, status == RELOAD_ALL, ManagerParseConfig.OPTR_MODE);
         this.rollbackTime = TimeUtil.currentTimeMillis();
         this.status = ROLLBACK;
+        return result;
     }
 
-    private void apply(Map<String, UserConfig> newUsers,
-                       Map<String, SchemaConfig> newSchemas,
-                       Map<String, PhysicalDBNode> newDataNodes,
-                       Map<String, PhysicalDBPool> newDataHosts,
-                       Map<ERTable, Set<ERTable>> newErRelations,
-                       FirewallConfig newFirewall, SystemVariables newSystemVariables,
-                       boolean newDataHostWithoutWR, boolean isLoadAll, final int loadAllMode) throws SQLNonTransientException {
+    private boolean apply(Map<String, UserConfig> newUsers,
+                          Map<String, SchemaConfig> newSchemas,
+                          Map<String, PhysicalDBNode> newDataNodes,
+                          Map<String, PhysicalDBPool> newDataHosts,
+                          Map<ERTable, Set<ERTable>> newErRelations,
+                          FirewallConfig newFirewall, SystemVariables newSystemVariables,
+                          boolean newDataHostWithoutWR, boolean isLoadAll, final int loadAllMode) throws SQLNonTransientException {
         List<Pair<String, String>> delTables = new ArrayList<>();
         List<Pair<String, String>> reloadTables = new ArrayList<>();
         List<String> delSchema = new ArrayList<>();
@@ -412,15 +414,26 @@ public class ServerConfig {
             DbleServer.getInstance().getCacheService().clearCache();
             this.changing = false;
             if (!newDataHostWithoutWR) {
-                reloadMetaData(delTables, reloadTables, delSchema, reloadSchema);
+                return reloadMetaData(delTables, reloadTables, delSchema, reloadSchema);
             }
         } finally {
             this.changing = false;
             metaLock.unlock();
         }
+        return true;
     }
 
-    private void reloadMetaData(List<Pair<String, String>> delTables, List<Pair<String, String>> reloadTables, List<String> delSchema, List<String> reloadSchema) {
+    /**
+     * return the boolean of
+     *
+     * @param delTables
+     * @param reloadTables
+     * @param delSchema
+     * @param reloadSchema
+     * @return
+     */
+    private boolean reloadMetaData(List<Pair<String, String>> delTables, List<Pair<String, String>> reloadTables, List<String> delSchema, List<String> reloadSchema) {
+        boolean reloadResult = true;
         if (delSchema.size() > 0) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("metadata will delete schema:" + StringUtil.join(delSchema, ","));
@@ -464,9 +477,10 @@ public class ServerConfig {
                     tables.add(table.getValue());
                 }
             }
-            DbleServer.getInstance().reloadMetaData(this, specifiedSchemas);
+            reloadResult = DbleServer.getInstance().reloadMetaData(this, specifiedSchemas);
             LOGGER.info("metadata finished for changes of schemas and tables");
         }
+        return reloadResult;
     }
 
     private String changeTablesToString(List<Pair<String, String>> delTables) {

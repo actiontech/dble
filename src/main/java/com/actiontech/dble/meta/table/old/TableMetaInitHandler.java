@@ -14,7 +14,7 @@ public class TableMetaInitHandler extends AbstractTableMetaHandler {
     private MultiTableMetaHandler multiTableMetaHandler;
 
     public TableMetaInitHandler(MultiTableMetaHandler multiTableMetaHandler, String schema, TableConfig tbConfig, Set<String> selfNode) {
-        super(schema, tbConfig, selfNode);
+        super(schema, tbConfig, selfNode, true);
         this.multiTableMetaHandler = multiTableMetaHandler;
     }
 

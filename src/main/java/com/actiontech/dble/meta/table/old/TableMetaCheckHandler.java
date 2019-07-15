@@ -20,7 +20,7 @@ public class TableMetaCheckHandler extends AbstractTableMetaHandler {
     private final ProxyMetaManager tmManager;
 
     public TableMetaCheckHandler(ProxyMetaManager tmManager, String schema, TableConfig tbConfig, Set<String> selfNode) {
-        super(schema, tbConfig, selfNode);
+        super(schema, tbConfig, selfNode, false);
         this.tmManager = tmManager;
     }
 
@@ -34,14 +34,14 @@ public class TableMetaCheckHandler extends AbstractTableMetaHandler {
             String tableId = schema + "." + tableMeta.getTableName();
             if (isTableModify(schema, tableMeta)) {
                 String errorMsg = "Table [" + tableMeta.getTableName() + "] are modified by other,Please Check IT!";
-                LOGGER.warn(errorMsg);
+                logger.warn(errorMsg);
                 AlertUtil.alertSelf(AlarmCode.TABLE_NOT_CONSISTENT_IN_MEMORY, Alert.AlertLevel.WARN, errorMsg, AlertUtil.genSingleLabel("TABLE", tableId));
                 ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY.add(tableId);
             } else if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY.contains(tableId)) {
                 AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_MEMORY, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId),
                         ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY, tableId);
             }
-            LOGGER.debug("checking table Table [" + tableMeta.getTableName() + "]");
+            logger.info("checking table Table [" + tableMeta.getTableName() + "]");
         }
     }
 

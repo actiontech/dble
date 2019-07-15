@@ -8,10 +8,9 @@ package com.actiontech.dble.meta.table.old;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.ProxyMetaManager;
+import com.actiontech.dble.meta.ReloadLogUtil;
 import com.actiontech.dble.meta.table.SchemaMetaHandler;
 import com.actiontech.dble.util.CollectionUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.Map.Entry;
@@ -22,7 +21,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class MultiTableMetaHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MultiTableMetaHandler.class);
+    private final ReloadLogUtil logger;
     private AtomicInteger shardTableCnt;
     private AtomicInteger singleTableCnt;
     private AtomicBoolean countDownFlag = new AtomicBoolean(false);
@@ -41,6 +40,7 @@ public class MultiTableMetaHandler {
         this.selfNode = selfNode;
         this.shardTableCnt = new AtomicInteger(config.getTables().size());
         this.singleTableCnt = new AtomicInteger(0);
+        this.logger = new ReloadLogUtil(true);
     }
 
     public void execute() {
@@ -65,6 +65,7 @@ public class MultiTableMetaHandler {
             tableHandler.execute();
         }
         if (!existTable) {
+            logger.info("No table exist in MultiTableMetaHandler count down");
             countDown();
         }
     }
@@ -78,7 +79,7 @@ public class MultiTableMetaHandler {
                 if (config.getTables().containsKey(table)) {
                     newReload.put(table, config.getTables().get(table));
                 } else {
-                    LOGGER.warn("reload table[" + schema + "." + table + "] metadata, but table doesn't exist");
+                    logger.warn("reload table[" + schema + "." + table + "] metadata, but table doesn't exist");
                 }
             }
         }
@@ -94,7 +95,7 @@ public class MultiTableMetaHandler {
                 collectTables.await();
             }
         } catch (InterruptedException e) {
-            LOGGER.info("getSingleTables " + e);
+            logger.info("getSingleTables " + e);
             return new ArrayList<>();
         } finally {
             singleTableLock.unlock();

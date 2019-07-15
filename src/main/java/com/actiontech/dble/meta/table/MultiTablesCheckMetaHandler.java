@@ -27,7 +27,7 @@ public class MultiTablesCheckMetaHandler extends MultiTablesMetaHandler {
     private final String schema;
 
     public MultiTablesCheckMetaHandler(ProxyMetaManager tmManager, SchemaConfig schemaConfig, Set<String> selfNode) {
-        super(schemaConfig, selfNode);
+        super(schemaConfig, selfNode, false);
         this.tmManager = tmManager;
         this.schema = schemaConfig.getName();
     }

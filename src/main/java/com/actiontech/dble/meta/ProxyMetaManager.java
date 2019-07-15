@@ -69,6 +69,20 @@ public class ProxyMetaManager {
         this.timestamp = System.currentTimeMillis();
     }
 
+    public ProxyMetaManager(ProxyMetaManager orgin) {
+        this.catalogs = new ConcurrentHashMap<>();
+        this.lockTables = orgin.lockTables;
+        this.timestamp = orgin.timestamp;
+        this.metaLock = orgin.metaLock;
+        this.scheduler = orgin.scheduler;
+        this.metaCount = orgin.metaCount;
+        this.repository = orgin.repository;
+        this.version = orgin.version;
+        for (Map.Entry<String, SchemaMeta> entry : orgin.catalogs.entrySet()) {
+            catalogs.put(entry.getKey(), entry.getValue().deepCopy());
+        }
+    }
+
     public long getTimestamp() {
         return timestamp;
     }
@@ -291,7 +305,7 @@ public class ProxyMetaManager {
         if (DbleServer.getInstance().isUseZK()) {
             this.metaZKinit(config);
         } else {
-            initMeta(config, null);
+            initMeta(config);
         }
         LOGGER.info("init metaData end");
     }
@@ -327,7 +341,7 @@ public class ProxyMetaManager {
             times++;
         }
 
-        initMeta(config, null);
+        initMeta(config);
         // online
         ZKUtils.createTempNode(KVPathUtil.getOnlinePath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
         //add watcher
@@ -338,6 +352,16 @@ public class ProxyMetaManager {
         zkConn.delete().forPath(KVPathUtil.getSyncMetaLockPath());
     }
 
+
+    private void initViewMeta() {
+        if (DbleServer.getInstance().isUseZK()) {
+            loadViewFromKV();
+        } else if (DbleServer.getInstance().isUseGeneralCluster()) {
+            loadViewFromCKV();
+        } else {
+            loadViewFromFile();
+        }
+    }
 
     /**
      * recovery all the view info from KV system
@@ -403,24 +427,50 @@ public class ProxyMetaManager {
         }
     }
 
-
-    public void initMeta(ServerConfig config, Map<String, Set<String>> specifiedSchemas) {
+    /**
+     * init meta when dble server started
+     * no interrupted ,init the view anyway
+     *
+     * @param config
+     */
+    public void initMeta(ServerConfig config) {
         Set<String> selfNode = getSelfNodes(config);
         SchemaMetaHandler handler = new SchemaMetaHandler(this, config, selfNode);
-        handler.setFilter(specifiedSchemas);
+        handler.setFilter(null);
         handler.execute();
-        if (DbleServer.getInstance().isUseZK()) {
-            loadViewFromKV();
-        } else if (DbleServer.getInstance().isUseGeneralCluster()) {
-            loadViewFromCKV();
-        } else {
-            loadViewFromFile();
-        }
+        initViewMeta();
         SystemConfig system = config.getSystem();
         if (system.getCheckTableConsistency() == 1) {
             scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("MetaDataChecker-%d").build());
             checkTaskHandler = scheduler.scheduleWithFixedDelay(tableStructureCheckTask(selfNode), system.getCheckTableConsistencyPeriod(), system.getCheckTableConsistencyPeriod(), TimeUnit.MILLISECONDS);
         }
+    }
+
+
+    /**
+     * init new Meta from reload config/metadata
+     * can be interrupted and abandon the new config
+     *
+     * @param config
+     * @param specifiedSchemas
+     */
+    public boolean initMeta(ServerConfig config, Map<String, Set<String>> specifiedSchemas) {
+        Set<String> selfNode = getSelfNodes(config);
+        SchemaMetaHandler handler = new SchemaMetaHandler(this, config, selfNode);
+        handler.setFilter(specifiedSchemas);
+        handler.register();
+        //if the meta reload interrupted by reload release
+        // do not reload the view meta or start a new scheduler
+        if (handler.execute()) {
+            initViewMeta();
+            SystemConfig system = config.getSystem();
+            if (system.getCheckTableConsistency() == 1) {
+                scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("MetaDataChecker-%d").build());
+                checkTaskHandler = scheduler.scheduleWithFixedDelay(tableStructureCheckTask(selfNode), system.getCheckTableConsistencyPeriod(), system.getCheckTableConsistencyPeriod(), TimeUnit.MILLISECONDS);
+            }
+            return true;
+        }
+        return false;
     }
 
     public void terminate() {

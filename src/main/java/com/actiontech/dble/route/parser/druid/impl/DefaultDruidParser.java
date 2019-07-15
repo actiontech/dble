@@ -51,11 +51,21 @@ public class DefaultDruidParser implements DruidParser {
      * @param stmt
      * @param sc
      */
-    public SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, String originSql, LayerCachePool cachePool, ServerSchemaStatVisitor schemaStatVisitor, ServerConnection sc) throws SQLException {
+    public SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, String originSql, LayerCachePool cachePool, ServerSchemaStatVisitor schemaStatVisitor, ServerConnection sc, boolean isExplain) throws SQLException {
         ctx = new DruidShardingParseInfo();
-        schema = visitorParse(schema, rrs, stmt, schemaStatVisitor, sc);
+        schema = visitorParse(schema, rrs, stmt, schemaStatVisitor, sc, isExplain);
         changeSql(schema, rrs, stmt, cachePool);
         return schema;
+    }
+
+
+    /**
+     * @param schema
+     * @param stmt
+     * @param sc
+     */
+    public SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, String originSql, LayerCachePool cachePool, ServerSchemaStatVisitor schemaStatVisitor, ServerConnection sc) throws SQLException {
+        return this.parser(schema, rrs, stmt, originSql, cachePool, schemaStatVisitor, sc, false);
     }
 
 
@@ -66,7 +76,7 @@ public class DefaultDruidParser implements DruidParser {
     }
 
     @Override
-    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc)
+    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain)
             throws SQLException {
         stmt.accept(visitor);
         if (visitor.getNotSupportMsg() != null) {

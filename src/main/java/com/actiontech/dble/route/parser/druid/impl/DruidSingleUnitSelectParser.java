@@ -28,7 +28,7 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
 
     @Override
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,
-                                     ServerSchemaStatVisitor visitor, ServerConnection sc) throws SQLException {
+                                     ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain) throws SQLException {
         SQLSelectStatement selectStmt = (SQLSelectStatement) stmt;
         SQLSelectQuery sqlSelectQuery = selectStmt.getSelect().getQuery();
         String schemaName = schema == null ? null : schema.getName();
@@ -46,7 +46,7 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
                         SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, schemas, noShardingNode)) {
                     return routeToNoSharding(schema, rrs, schemas, noShardingNode);
                 } else {
-                    super.visitorParse(schema, rrs, stmt, visitor, sc);
+                    super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
                     return schema;
                 }
             }
@@ -57,7 +57,7 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
                 }
             }
 
-            super.visitorParse(null, rrs, stmt, visitor, sc);
+            super.visitorParse(null, rrs, stmt, visitor, sc, isExplain);
             if (visitor.getSubQueryList().size() > 0) {
                 this.getCtx().getRouteCalculateUnits().clear();
             }
@@ -72,7 +72,7 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
                     SchemaUtil.isNoSharding(sc, selectStmt.getSelect().getQuery(), selectStmt, selectStmt, schemaName, schemas, noShardingNode)) {
                 return routeToNoSharding(schema, rrs, schemas, noShardingNode);
             } else {
-                super.visitorParse(schema, rrs, stmt, visitor, sc);
+                super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
             }
         }
         return schema;

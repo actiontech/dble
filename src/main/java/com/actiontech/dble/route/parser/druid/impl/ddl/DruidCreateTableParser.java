@@ -35,7 +35,7 @@ import java.sql.SQLNonTransientException;
 
 public class DruidCreateTableParser extends DefaultDruidParser {
     @Override
-    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc)
+    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain)
             throws SQLException {
         MySqlCreateTableStatement createStmt = (MySqlCreateTableStatement) stmt;
         rrs.setDdlType(DDLInfo.DDLType.CREATE_TABLE);

@@ -67,9 +67,15 @@ public class DefaultRouteStrategy extends AbstractRouteStrategy {
     }
 
     @Override
+    public RouteResultset route(SchemaConfig schema, int sqlType, String origSQL, ServerConnection sc, LayerCachePool cachePool) throws SQLException {
+        return this.route(schema, sqlType, origSQL, sc, cachePool, false);
+    }
+
+
+    @Override
     public RouteResultset routeNormalSqlWithAST(SchemaConfig schema,
                                                 String originSql, RouteResultset rrs,
-                                                LayerCachePool cachePool, ServerConnection sc) throws SQLException {
+                                                LayerCachePool cachePool, ServerConnection sc, boolean isExplain) throws SQLException {
         SQLStatement statement = parserSQL(originSql, sc);
         if (sc.getSession2().getIsMultiStatement().get()) {
             originSql = statement.toString();
@@ -78,7 +84,7 @@ public class DefaultRouteStrategy extends AbstractRouteStrategy {
         }
         sc.getSession2().endParse();
         DruidParser druidParser = DruidParserFactory.create(statement, rrs.getSqlType());
-        return RouterUtil.routeFromParser(druidParser, schema, rrs, statement, originSql, cachePool, new ServerSchemaStatVisitor(), sc, null);
+        return RouterUtil.routeFromParser(druidParser, schema, rrs, statement, originSql, cachePool, new ServerSchemaStatVisitor(), sc, null, isExplain);
 
     }
 

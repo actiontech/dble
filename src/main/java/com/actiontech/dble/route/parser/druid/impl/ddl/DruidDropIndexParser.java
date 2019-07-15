@@ -23,7 +23,7 @@ import java.sql.SQLException;
  */
 public class DruidDropIndexParser extends DefaultDruidParser {
     @Override
-    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc)
+    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain)
             throws SQLException {
         String schemaName = schema == null ? null : schema.getName();
         SQLDropIndexStatement dropStmt = (SQLDropIndexStatement) stmt;

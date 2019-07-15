@@ -25,7 +25,7 @@ import java.util.Map;
 
 public class DruidDropTableParser extends DefaultDruidParser {
     @Override
-    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc)
+    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain)
             throws SQLException {
         SQLDropTableStatement dropTable = (SQLDropTableStatement) stmt;
         rrs.setDdlType(DDLInfo.DDLType.DROP_TABLE);

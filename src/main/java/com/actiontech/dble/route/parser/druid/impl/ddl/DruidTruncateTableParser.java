@@ -21,7 +21,7 @@ import java.sql.SQLException;
 
 public class DruidTruncateTableParser extends DefaultDruidParser {
     @Override
-    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc)
+    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain)
             throws SQLException {
         rrs.setDdlType(DDLInfo.DDLType.TRUNCATE_TABLE);
         String schemaName = schema == null ? null : schema.getName();

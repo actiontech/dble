@@ -24,7 +24,7 @@ import java.sql.SQLNonTransientException;
 public class DruidCreateIndexParser extends DefaultDruidParser {
     @Override
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,
-                                     ServerSchemaStatVisitor visitor, ServerConnection sc) throws SQLException {
+                                     ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain) throws SQLException {
         SQLCreateIndexStatement createStmt = (SQLCreateIndexStatement) stmt;
         SQLTableSource tableSource = createStmt.getTable();
         if (tableSource instanceof SQLExprTableSource) {

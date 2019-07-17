@@ -165,8 +165,8 @@ public final class RouterUtil {
 
     public static RouteResultset routeFromParser(DruidParser druidParser, SchemaConfig schema, RouteResultset rrs, SQLStatement statement,
                                                  String originSql, LayerCachePool cachePool, ServerSchemaStatVisitor visitor,
-                                                 ServerConnection sc, PlanNode node) throws SQLException {
-        schema = druidParser.parser(schema, rrs, statement, originSql, cachePool, visitor, sc);
+                                                 ServerConnection sc, PlanNode node, boolean isExplain) throws SQLException {
+        schema = druidParser.parser(schema, rrs, statement, originSql, cachePool, visitor, sc, isExplain);
         if (rrs.isFinishedExecute()) {
             return null;
         }

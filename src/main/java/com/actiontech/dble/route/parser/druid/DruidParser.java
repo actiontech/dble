@@ -29,11 +29,21 @@ public interface DruidParser {
      */
     SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, String originSql, LayerCachePool cachePool, ServerSchemaStatVisitor schemaStatVisitor, ServerConnection sc) throws SQLException;
 
+
+    /**
+     * use MycatSchemaStatVisitor, get the info of tables,tableAliasMap,conditions and so on
+     *
+     * @param schema
+     * @param stmt
+     * @param sc
+     */
+    SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, String originSql, LayerCachePool cachePool, ServerSchemaStatVisitor schemaStatVisitor, ServerConnection sc, boolean isExplain) throws SQLException;
+
     /**
      * @param stmt
      * @param sc
      */
-    SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc) throws SQLException;
+    SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain) throws SQLException;
 
     /**
      * changeSql: add limit

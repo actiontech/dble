@@ -552,7 +552,7 @@
                                     <extraArgument>-XX:MaxDirectMemorySize=2G</extraArgument>
                                     <extraArgument>-XX:+PrintHeapAtGC</extraArgument>
                                     <extraArgument>-XX:+PrintGCDateStamps</extraArgument>
-                                    <extraArgument>-Xloggc:./logs/gc.log</extraArgument>
+                                    <extraArgument>-Xloggc:./logs/gc_%t_%p.log</extraArgument>
                                     <extraArgument>-XX:+PrintGCTimeStamps</extraArgument>
                                     <extraArgument>-XX:+PrintGCDetails</extraArgument>
                                 </extraArguments>

@@ -100,7 +100,7 @@ public final class SelectedProcessor {
                         referList = new ArrayList<>();
                     }
                     Collection<Item> pdRefers = getPushDownSel(qtn, referList);
-                    List<Item> pushList = addExprOrderByToSelect(child, pdRefers);
+                    Set<Item> pushList = addExprOrderByToSelect(child, pdRefers);
                     pushSelected(child, pushList);
                 }
                 return qtn;
@@ -108,8 +108,8 @@ public final class SelectedProcessor {
         }
     }
     // if order by item is not FIELD_ITEM, we need to add back to select list and push down
-    private static List<Item> addExprOrderByToSelect(PlanNode child, Collection<Item> pdRefers) {
-        List<Item> pushList = new ArrayList<>();
+    private static Set<Item> addExprOrderByToSelect(PlanNode child, Collection<Item> pdRefers) {
+        Set<Item> pushList = new HashSet<Item>();
         pushList.addAll(pdRefers);
         for (Order order : child.getOrderBys()) {
             if (order.getItem().type() != Item.ItemType.FIELD_ITEM) {

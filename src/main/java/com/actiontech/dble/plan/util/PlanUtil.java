@@ -24,11 +24,8 @@ import com.actiontech.dble.plan.common.item.subquery.ItemExistsSubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemInSubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
-import com.actiontech.dble.plan.node.JoinNode;
-import com.actiontech.dble.plan.node.MergeNode;
-import com.actiontech.dble.plan.node.PlanNode;
+import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
-import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.ServerConnection;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
@@ -253,11 +250,26 @@ public final class PlanUtil {
     }
 
     public static boolean isGlobalOrER(PlanNode node) {
-        return !node.isContainsSubQuery() && ((node.getNoshardNode() != null && node.type() != PlanNodeType.TABLE && node.type() != PlanNodeType.QUERY) || isERNode(node));
+        return !node.isContainsSubQuery() && ((node.getNoshardNode() != null && node.type() != PlanNodeType.TABLE && node.type() != PlanNodeType.QUERY) || isERNode(node)) && (hasNoFakeNode(node) || (node instanceof NoNameNode));
     }
 
     public static boolean isGlobal(PlanNode node) {
-        return node.getNoshardNode() != null && node.getUnGlobalTableCount() == 0 && !node.isContainsSubQuery();
+        return node.getNoshardNode() != null && node.getUnGlobalTableCount() == 0 && !node.isContainsSubQuery() && (hasNoFakeNode(node) || (node instanceof NoNameNode));
+    }
+
+
+    public static boolean hasNoFakeNode(PlanNode node) {
+        if (node instanceof NoNameNode) {
+            return !((NoNameNode) node).isFakeNode();
+        }
+        if (node.getChildren() != null) {
+            for (PlanNode n : node.getChildren()) {
+                if (!hasNoFakeNode(n)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     /**

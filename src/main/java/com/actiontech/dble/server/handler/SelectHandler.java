@@ -31,6 +31,9 @@ public final class SelectHandler {
             case ServerParseSelect.USER:
                 SelectUser.response(c);
                 break;
+            case ServerParseSelect.CURRENT_USER:
+                SelectCurrentUser.response(c);
+                break;
             case ServerParseSelect.VERSION:
                 SelectVersion.response(c);
                 break;

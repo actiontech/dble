@@ -180,6 +180,7 @@ public final class SubQueryPreProcessor {
         PlanNode query = filter.getPlanNode();
         query = findComparisonsSubQueryToJoinNode(query, childTransform);
         QueryNode changeQuery = new QueryNode(query);
+        changeQuery.setKeepFieldSchema(true);
         String alias = AUTOALIAS + query.getPureName();
         changeQuery.setAlias(alias);
         if (query.getColumnsSelected().size() != 1)

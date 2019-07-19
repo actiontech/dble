@@ -80,4 +80,8 @@ public class ReferenceHandlerInfo {
     void addChild(String child) {
         this.children.add(child);
     }
+
+    public void setBaseSQL(String baseSQL) {
+        this.baseSQL = baseSQL;
+    }
 }

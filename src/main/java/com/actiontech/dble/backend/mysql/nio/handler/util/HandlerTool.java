@@ -23,6 +23,7 @@ import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.ItemInt;
 import com.actiontech.dble.plan.common.item.ItemRef;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
+import com.actiontech.dble.plan.common.item.function.ItemFuncInner;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemFuncGroupConcat;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.util.PlanUtil;
@@ -77,9 +78,9 @@ public final class HandlerTool {
     /**
      * create Item, the Item value referenced by field and changed by field changes
      *
-     * @param sel Item
+     * @param sel    Item
      * @param fields List<Field>
-     * @param type HandlerType
+     * @param type   HandlerType
      * @return Item
      */
     public static Item createItem(Item sel, List<Field> fields, int startIndex, boolean allPushDown, HandlerType type) {
@@ -90,7 +91,7 @@ public final class HandlerTool {
         if (sel.basicConstItem())
             return sel;
         Item.ItemType i = sel.type();
-        if (i == Item.ItemType.FUNC_ITEM || i == Item.ItemType.COND_ITEM) {
+        if ((i == Item.ItemType.FUNC_ITEM || i == Item.ItemType.COND_ITEM) && !(sel instanceof ItemFuncInner)) {
             ItemFunc func = (ItemFunc) sel;
             if (func.getPushDownName() == null || func.getPushDownName().length() == 0) {
                 ret = createFunctionItem(func, fields, startIndex, allPushDown, type);
@@ -123,7 +124,7 @@ public final class HandlerTool {
      * clone field
      *
      * @param fields List<Field>
-     * @param bs List<byte[]>
+     * @param bs     List<byte[]>
      */
     public static void initFields(List<Field> fields, List<byte[]> bs) {
         FieldUtil.initFields(fields, bs);
@@ -151,7 +152,7 @@ public final class HandlerTool {
      * 3.avg(id) avg(id) = sum[sum(id) 0...n]/sum[count(id) 0...n];
      *
      * @param sumFunction aggregate function name
-     * @param fields List<Field>
+     * @param fields      List<Field>
      * @return Item
      */
     private static Item createPushDownGroupBy(ItemSum sumFunction, List<Field> fields, int startIndex) {
@@ -206,7 +207,7 @@ public final class HandlerTool {
     }
 
     private static ItemFunc createFunctionItem(ItemFunc f, List<Field> fields, int startIndex, boolean allPushDown,
-                                                 HandlerType type) {
+                                               HandlerType type) {
         List<Item> args = new ArrayList<>();
         for (int index = 0; index < f.getArgCount(); index++) {
             Item arg = f.arguments().get(index);
@@ -225,11 +226,11 @@ public final class HandlerTool {
     }
 
     /**
-     * @param f ItemSum
-     * @param fields List<Field>
-     * @param startIndex startIndex
+     * @param f           ItemSum
+     * @param fields      List<Field>
+     * @param startIndex  startIndex
      * @param allPushDown allPushDown
-     * @param type HandlerType
+     * @param type        HandlerType
      * @return ItemSum
      */
     private static ItemSum createSumItem(ItemSum f, List<Field> fields, int startIndex, boolean allPushDown,
@@ -272,8 +273,8 @@ public final class HandlerTool {
     /**
      * findField in sel from start
      *
-     * @param sel sel
-     * @param fields fields
+     * @param sel        sel
+     * @param fields     fields
      * @param startIndex startIndex
      * @return index
      */
@@ -329,6 +330,7 @@ public final class HandlerTool {
             return false;
         }
     }
+
     /**
      * make order by from distinct
      *

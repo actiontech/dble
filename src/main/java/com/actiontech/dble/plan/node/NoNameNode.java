@@ -20,6 +20,7 @@ import java.util.Set;
 public class NoNameNode extends PlanNode {
 
     private final String catalog;
+    private boolean isFakeNode;
 
     public PlanNodeType type() {
         return PlanNodeType.NONAME;
@@ -72,5 +73,13 @@ public class NoNameNode extends PlanNode {
             ToStringUtil.appendln(sb, tabTittle + "Query from[ " + this.getSql() + " ]");
         }
         return sb.toString();
+    }
+
+    public boolean isFakeNode() {
+        return isFakeNode;
+    }
+
+    public void setFakeNode(boolean fakeNode) {
+        isFakeNode = fakeNode;
     }
 }

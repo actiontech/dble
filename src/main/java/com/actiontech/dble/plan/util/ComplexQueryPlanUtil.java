@@ -11,6 +11,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.impl.*;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.AggregateHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.DirectGroupByHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.JoinHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.JoinInnerHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.NotInHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.AllAnySubQueryHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.InSubQueryHandler;
@@ -74,16 +75,14 @@ public final class ComplexQueryPlanUtil {
         for (int i = 0; i < mergeNodeSize; i++) {
             DMLResponseHandler startHandler = endHandler.getMerges().get(i);
             MultiNodeMergeHandler mergeHandler = (MultiNodeMergeHandler) startHandler;
-            String mergeName = "MERGE";
-            if (mergeHandler instanceof MultiNodeEasyMergeHandler) {
-                mergeName = "MERGE";
-            } else if (mergeHandler instanceof MultiNodeMergeAndOrderHandler) {
-                mergeName = "MERGE_AND_ORDER";
-            }
+            String mergeName = getMergeType(mergeHandler);
             List<BaseSelectHandler> mergeList = new ArrayList<>();
             mergeList.addAll(((MultiNodeMergeHandler) startHandler).getExeHandlers());
             String mergeNode = genHandlerName(mergeName, nameMap);
             ReferenceHandlerInfo refInfo = new ReferenceHandlerInfo(mergeNode, mergeName, mergeHandler);
+            if (mergeHandler instanceof MultiNodeFakeHandler) {
+                refInfo.setBaseSQL(((MultiNodeFakeHandler) mergeHandler).toSQLString());
+            }
             handlerMap.put(mergeHandler, refInfo);
             refMap.put(mergeNode, refInfo);
             for (BaseSelectHandler exeHandler : mergeList) {
@@ -172,6 +171,16 @@ public final class ComplexQueryPlanUtil {
     }
 
 
+    private static String getMergeType(DMLResponseHandler handler) {
+        if (handler instanceof MultiNodeFakeHandler) {
+            return "INNER_FUNC_MERGE";
+        } else if (handler instanceof MultiNodeEasyMergeHandler) {
+            return "MERGE";
+        } else {
+            return "MERGE_AND_ORDER";
+        }
+    }
+
     private static String getTypeName(DMLResponseHandler handler) {
         if (handler instanceof AggregateHandler) {
             return "AGGREGATE";
@@ -191,6 +200,8 @@ public final class ComplexQueryPlanUtil {
             return "ORDER";
         } else if (handler instanceof NotInHandler) {
             return "NOT_IN";
+        } else if (handler instanceof JoinInnerHandler) {
+            return "INNER_FUNC_ADD";
         } else if (handler instanceof JoinHandler) {
             return "JOIN";
         } else if (handler instanceof DirectGroupByHandler) {

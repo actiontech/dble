@@ -15,13 +15,13 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.server.ServerConnection;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author mycat
  */
-public final class SelectVersion {
-    private SelectVersion() {
-    }
+public final class SelectVersion implements InnerFuncResponse {
 
     private static final int FIELD_COUNT = 1;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
@@ -60,6 +60,20 @@ public final class SelectVersion {
 
     public static byte setCurrentPacket(ServerConnection c) {
         return (byte) c.getSession2().getPacketId().get();
+    }
+
+    public List<FieldPacket> getField() {
+        List<FieldPacket> result = new ArrayList<>();
+        result.add(PacketUtil.getField("VERSION()", Fields.FIELD_TYPE_VAR_STRING));
+        return result;
+    }
+
+    public List<RowDataPacket> getRows(ServerConnection c) {
+        List<RowDataPacket> result = new ArrayList<>();
+        RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+        row.add(Versions.getServerVersion());
+        result.add(row);
+        return result;
     }
 
 }

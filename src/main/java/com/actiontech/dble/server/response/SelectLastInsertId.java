@@ -16,14 +16,13 @@ import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.LongUtil;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author mycat
  */
-public final class SelectLastInsertId {
-    private SelectLastInsertId() {
-    }
-
+public final class SelectLastInsertId implements InnerFuncResponse {
     private static final String ORG_NAME = "LAST_INSERT_ID()";
     private static final int FIELD_COUNT = 1;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
@@ -75,4 +74,17 @@ public final class SelectLastInsertId {
         return packetId;
     }
 
+    public List<FieldPacket> getField() {
+        List<FieldPacket> result = new ArrayList<>();
+        result.add(PacketUtil.getField(ORG_NAME, Fields.FIELD_TYPE_LONGLONG));
+        return result;
+    }
+
+    public List<RowDataPacket> getRows(ServerConnection c) {
+        List<RowDataPacket> result = new ArrayList<>();
+        RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+        row.add(LongUtil.toBytes(c.getLastInsertId()));
+        result.add(row);
+        return result;
+    }
 }

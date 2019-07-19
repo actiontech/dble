@@ -15,13 +15,13 @@ import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author mycat
  */
-public final class SelectDatabase {
-    private SelectDatabase() {
-    }
+public final class SelectDatabase implements InnerFuncResponse {
 
     private static final int FIELD_COUNT = 1;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
@@ -60,4 +60,17 @@ public final class SelectDatabase {
         return packetId;
     }
 
+    public List<FieldPacket> getField() {
+        List<FieldPacket> result = new ArrayList<>();
+        result.add(PacketUtil.getField("DATABASE()", Fields.FIELD_TYPE_VAR_STRING));
+        return result;
+    }
+
+    public List<RowDataPacket> getRows(ServerConnection c) {
+        List<RowDataPacket> result = new ArrayList<>();
+        RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+        row.add(StringUtil.encode(c.getSchema(), c.getCharset().getResults()));
+        result.add(row);
+        return result;
+    }
 }

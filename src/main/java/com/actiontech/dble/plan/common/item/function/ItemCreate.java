@@ -22,6 +22,7 @@ import com.actiontech.dble.plan.common.item.function.strfunc.*;
 import com.actiontech.dble.plan.common.item.function.strfunc.ItemFuncTrim.TrimTypeEnum;
 import com.actiontech.dble.plan.common.item.function.timefunc.*;
 import com.actiontech.dble.plan.common.time.MyTime;
+import com.actiontech.dble.server.response.*;
 
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +30,7 @@ import java.util.Map;
 
 public class ItemCreate {
     private Map<String, ItemFunc> nativFuncs = new HashMap<>();
+    private Map<String, InnerFuncResponse> innerFuncs = new HashMap<>();
     private static ItemCreate instance = null;
 
     protected ItemCreate() {
@@ -254,6 +256,13 @@ public class ItemCreate {
         nativFuncs.put("WEEKOFYEAR", new ItemFuncWeekofyear(null));
         nativFuncs.put("YEARWEEK", new ItemFuncYearweek(null));
         nativFuncs.put("YEAR", new ItemFuncYear(null));
+
+        innerFuncs.put("CURRENT_USER", new SelectCurrentUser());
+        innerFuncs.put("USER", new SelectUser());
+        innerFuncs.put("VERSION", new SelectVersion());
+        innerFuncs.put("DATABASE", new SelectDatabase());
+        innerFuncs.put("LAST_INSERT_ID", new SelectLastInsertId());
+
     }
 
     public static synchronized ItemCreate getInstance() {
@@ -266,9 +275,17 @@ public class ItemCreate {
         return nativFuncs.containsKey(funcName.toUpperCase());
     }
 
+    public boolean isInnerFunc(String funcName) {
+        return innerFuncs.containsKey(funcName.toUpperCase());
+    }
+
     public ItemFunc createNativeFunc(String funcName, List<Item> args) {
         ItemFunc nf = nativFuncs.get(funcName.toUpperCase());
         return nf.nativeConstruct(args);
+    }
+
+    public ItemFuncInner createInnerFunc(String funcName, List<Item> args) {
+        return new ItemFuncInner(funcName, args, innerFuncs.get(funcName.toUpperCase()));
     }
 
     public ItemFunc createFuncCast(Item a, CastType type) {

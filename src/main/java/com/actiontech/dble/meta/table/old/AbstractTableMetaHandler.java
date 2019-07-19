@@ -168,7 +168,7 @@ public abstract class AbstractTableMetaHandler {
             return tableMeta;
         }
 
-        private void consistentWarning() {
+        private synchronized void consistentWarning() {
             String errorMsg = "Table [" + tableName + "] structure are not consistent in different data node!";
             LOGGER.warn(errorMsg);
             AlertUtil.alertSelf(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, errorMsg, AlertUtil.genSingleLabel("TABLE", schema + "." + tableName));

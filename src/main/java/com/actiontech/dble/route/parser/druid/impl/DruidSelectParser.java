@@ -95,7 +95,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                     throw new SQLNonTransientException(msg);
                 }
 
-                super.visitorParse(schema, rrs, stmt, visitor, sc);
+                super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
                 if (DbleServer.getInstance().getTmManager().getSyncView(schemaInfo.getSchemaConfig().getName(), schemaInfo.getTable()) != null ||
                         hasInnerFuncSelect(visitor.getFunctions())) {
                     rrs.setNeedOptimizer(true);

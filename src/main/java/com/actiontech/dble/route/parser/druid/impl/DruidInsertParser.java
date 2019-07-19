@@ -21,6 +21,7 @@ import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.server.handler.ExplainHandler;
 import com.actiontech.dble.server.util.GlobalTableUtil;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
@@ -42,7 +43,7 @@ import java.util.*;
 
 public class DruidInsertParser extends DruidInsertReplaceParser {
     @Override
-    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc)
+    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain)
             throws SQLException {
 
         MySqlInsertStatement insert = (MySqlInsertStatement) stmt;
@@ -96,7 +97,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         }
         // insert childTable will finished router while parser
         if (tc.getParentTC() != null) {
-            parserChildTable(schemaInfo, rrs, insert, sc);
+            parserChildTable(schemaInfo, rrs, insert, sc, isExplain);
             return schema;
         }
         String partitionColumn = tc.getPartitionColumn();
@@ -142,7 +143,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
     }
 
     private void parserChildTable(SchemaInfo schemaInfo, final RouteResultset rrs, MySqlInsertStatement insertStmt,
-                                  final ServerConnection sc) throws SQLNonTransientException {
+                                  final ServerConnection sc, boolean isExplain) throws SQLNonTransientException {
 
         final SchemaConfig schema = schemaInfo.getSchemaConfig();
         String tableName = schemaInfo.getTable();
@@ -184,7 +185,11 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
                             LOGGER.debug("found partition node for child table to insert " + dn + " sql :" + sql);
                         }
                         RouterUtil.routeToSingleNode(rrs, dn);
-                        sc.getSession2().execute(rrs);
+                        if (isExplain) {
+                            ExplainHandler.writeOutHeadAndEof(sc, rrs);
+                        } else {
+                            sc.getSession2().execute(rrs);
+                        }
                     } catch (ConnectionException e) {
                         sc.setTxInterrupt(e.toString());
                         sc.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.toString());

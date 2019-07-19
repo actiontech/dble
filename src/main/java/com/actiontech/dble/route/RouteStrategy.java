@@ -23,4 +23,7 @@ public interface RouteStrategy {
 
     RouteResultset route(SchemaConfig schema, int sqlType, String origSQL, ServerConnection sc, LayerCachePool cachePool)
             throws SQLException;
+
+    RouteResultset route(SchemaConfig schema, int sqlType, String origSQL, ServerConnection sc, LayerCachePool cachePool, boolean isExplain)
+            throws SQLException;
 }

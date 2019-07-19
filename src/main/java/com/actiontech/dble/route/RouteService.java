@@ -44,7 +44,12 @@ public class RouteService {
     }
 
     public RouteResultset route(SchemaConfig schema,
-                                int sqlType, String stmt, ServerConnection sc)
+                                int sqlType, String stmt, ServerConnection sc) throws SQLException {
+        return this.route(schema, sqlType, stmt, sc, false);
+    }
+
+    public RouteResultset route(SchemaConfig schema,
+                                int sqlType, String stmt, ServerConnection sc, boolean isExplain)
             throws SQLException {
         RouteResultset rrs;
         String cacheKey = null;
@@ -105,11 +110,11 @@ public class RouteService {
                 }
             } else {
                 stmt = stmt.trim();
-                rrs = RouteStrategyFactory.getRouteStrategy().route(schema, sqlType, stmt, sc, tableId2DataNodeCache);
+                rrs = RouteStrategyFactory.getRouteStrategy().route(schema, sqlType, stmt, sc, tableId2DataNodeCache, isExplain);
             }
         } else {
             stmt = stmt.trim();
-            rrs = RouteStrategyFactory.getRouteStrategy().route(schema, sqlType, stmt, sc, tableId2DataNodeCache);
+            rrs = RouteStrategyFactory.getRouteStrategy().route(schema, sqlType, stmt, sc, tableId2DataNodeCache, isExplain);
         }
 
         if (rrs != null && sqlType == ServerParse.SELECT && rrs.isCacheAble() && !LOGGER.isDebugEnabled() && sqlRouteCache != null &&

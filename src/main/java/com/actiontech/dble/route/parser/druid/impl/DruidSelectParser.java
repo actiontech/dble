@@ -54,7 +54,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 
     @Override
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,
-                                     ServerSchemaStatVisitor visitor, ServerConnection sc) throws SQLException {
+                                     ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain) throws SQLException {
         SQLSelectStatement selectStmt = (SQLSelectStatement) stmt;
         SQLSelectQuery sqlSelectQuery = selectStmt.getSelect().getQuery();
         String schemaName = schema == null ? null : schema.getName();
@@ -65,7 +65,7 @@ public class DruidSelectParser extends DefaultDruidParser {
             }
             SQLTableSource mysqlFrom = mysqlSelectQuery.getFrom();
             if (mysqlFrom == null) {
-                super.visitorParse(schema, rrs, stmt, visitor, sc);
+                super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
                 if (visitor.getSubQueryList().size() > 0) {
                     return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size());
                 }
@@ -102,6 +102,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                     rrs.setSqlStatement(selectStmt);
                     return schemaInfo.getSchemaConfig();
                 }
+
                 if (visitor.getSubQueryList().size() > 0) {
                     return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size());
                 }
@@ -134,11 +135,11 @@ public class DruidSelectParser extends DefaultDruidParser {
             } else if (mysqlFrom instanceof SQLSubqueryTableSource ||
                     mysqlFrom instanceof SQLJoinTableSource ||
                     mysqlFrom instanceof SQLUnionQueryTableSource) {
-                super.visitorParse(schema, rrs, stmt, visitor, sc);
+                super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
                 return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size());
             }
         } else if (sqlSelectQuery instanceof SQLUnionQuery) {
-            super.visitorParse(schema, rrs, stmt, visitor, sc);
+            super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
             return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size());
         }
 

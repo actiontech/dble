@@ -31,7 +31,6 @@ import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlOrderingExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
-import com.alibaba.druid.sql.ast.statement.SQLUnionQuery;
 
 import java.sql.SQLNonTransientException;
 import java.util.ArrayList;
@@ -346,7 +345,11 @@ public class MySQLPlanNodeVisitor {
             if (selItem.isWithSubQuery()) {
                 setSubQueryNode(selItem);
             }
-            selItem.setAlias(item.getAlias());
+            String alias = item.getAlias();
+            if (alias != null) {
+                alias = StringUtil.removeBackQuote(alias);
+            }
+            selItem.setAlias(alias);
             if (isSubQuery && selItem.getAlias() == null) {
                 selItem.setAlias("autoalias_scalar");
             }

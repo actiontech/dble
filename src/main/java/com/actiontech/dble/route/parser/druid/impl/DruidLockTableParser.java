@@ -29,7 +29,7 @@ import java.util.*;
  */
 public class DruidLockTableParser extends DefaultDruidParser {
     @Override
-    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc)
+    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain)
             throws SQLException {
         MySqlLockTableStatement lockTableStat = (MySqlLockTableStatement) stmt;
         Map<String, List<String>> dataNodeToLocks = new HashMap<>();

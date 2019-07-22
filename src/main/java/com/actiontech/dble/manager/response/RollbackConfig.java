@@ -198,7 +198,7 @@ public final class RollbackConfig {
         c.writeErrMessage(ErrorCode.ER_YES, sb);
     }
 
-    public static void rollback() throws Exception {
+    public static boolean rollback() throws Exception {
         if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, ConfStatus.Status.ROLLBACK)) {
             throw new Exception("Reload status error ,other client or cluster may in reload");
         }
@@ -233,15 +233,16 @@ public final class RollbackConfig {
             }
             final Map<String, PhysicalDBPool> cNodes = conf.getDataHosts();
             // apply
-            conf.rollback(users, schemas, dataNodes, dataHosts, erRelations, firewall, backDataHostWithoutWR);
+            boolean result = conf.rollback(users, schemas, dataNodes, dataHosts, erRelations, firewall, backDataHostWithoutWR);
             // stop old resource heartbeat
             for (PhysicalDBPool dn : cNodes.values()) {
                 dn.clearDataSources("clear old config ");
                 dn.stopHeartbeat();
             }
-
+            return result;
         } else {
             throw new Exception("there is no old version");
         }
+        return true;
     }
 }

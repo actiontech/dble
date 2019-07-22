@@ -68,8 +68,11 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
                         return true;
                     }
                     ClusterDelayProvider.delayBeforeSlaveRollback();
-                    RollbackConfig.rollback();
+                    boolean result = RollbackConfig.rollback();
                     ReloadManager.reloadFinish();
+                    if (!checkLocalResult(result)) {
+                        return true;
+                    }
                     ClusterDelayProvider.delayAfterSlaveRollback();
                     LOGGER.info("rollback config: sent config status success to zk start");
                     ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
@@ -102,12 +105,16 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
                             "Reload status error ,other client or cluster may in reload");
                     return true;
                 }
+                boolean result;
                 if (status.getStatus() == ConfStatus.Status.RELOAD_ALL) {
-                    ReloadConfig.reloadAll(Integer.parseInt(status.getParams()));
+                    result = ReloadConfig.reloadAll(Integer.parseInt(status.getParams()));
                 } else {
-                    ReloadConfig.reload();
+                    result = ReloadConfig.reload();
                 }
                 ReloadManager.reloadFinish();
+                if (!checkLocalResult(result)) {
+                    return true;
+                }
                 ClusterDelayProvider.delayAfterSlaveReload();
                 LOGGER.info("reload config: sent config status success to zk start");
                 ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), SUCCESS.getBytes(StandardCharsets.UTF_8));
@@ -120,5 +127,15 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
             }
         }
         return true;
+    }
+
+
+    public boolean checkLocalResult(boolean result) throws Exception {
+        if (!result) {
+            LOGGER.info("reload config: sent config status success to ucore start");
+            ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
+                    "interrupt by command.should reload config again".getBytes(StandardCharsets.UTF_8));
+        }
+        return result;
     }
 }

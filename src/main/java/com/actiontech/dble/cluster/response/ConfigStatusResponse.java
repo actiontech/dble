@@ -68,8 +68,11 @@ public class ConfigStatusResponse implements ClusterXmlLoader {
                                 "Reload status error ,other client or cluster may in reload");
                         return;
                     }
-                    RollbackConfig.rollback();
+                    boolean result = RollbackConfig.rollback();
                     ReloadManager.reloadFinish();
+                    if (!checkLocalResult(result)) {
+                        return;
+                    }
                     ClusterDelayProvider.delayAfterSlaveRollback();
                     LOGGER.info("rollback config: sent config status success to ucore start");
                     ClusterHelper.setKV(ClusterPathUtil.getSelfConfStatusPath(), ClusterPathUtil.SUCCESS);
@@ -97,8 +100,11 @@ public class ConfigStatusResponse implements ClusterXmlLoader {
                                     "Reload status error ,other client or cluster may in reload");
                             return;
                         }
-                        ReloadConfig.reloadAll(Integer.parseInt(status.getParams()));
+                        boolean result = ReloadConfig.reloadAll(Integer.parseInt(status.getParams()));
                         ReloadManager.reloadFinish();
+                        if (!checkLocalResult(result)) {
+                            return;
+                        }
                     } finally {
                         lock.unlock();
                     }
@@ -113,8 +119,11 @@ public class ConfigStatusResponse implements ClusterXmlLoader {
                                     "Reload status error ,other client or cluster may in reload");
                             return;
                         }
-                        ReloadConfig.reload();
+                        boolean result = ReloadConfig.reload();
                         ReloadManager.reloadFinish();
+                        if (!checkLocalResult(result)) {
+                            return;
+                        }
                     } finally {
                         lock.unlock();
                     }
@@ -130,6 +139,16 @@ public class ConfigStatusResponse implements ClusterXmlLoader {
                 LOGGER.info("reload config: sent config status failed to ucore end");
             }
         }
+    }
+
+
+    public boolean checkLocalResult(boolean result) throws Exception {
+        if (!result) {
+            LOGGER.info("reload config: sent config status success to ucore start");
+            ClusterDelayProvider.delayAfterSlaveReload();
+            ClusterHelper.setKV(ClusterPathUtil.getSelfConfStatusPath(), "interrupt by command.should reload config again");
+        }
+        return result;
     }
 
     @Override

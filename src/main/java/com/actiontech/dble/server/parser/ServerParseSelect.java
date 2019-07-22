@@ -463,9 +463,7 @@ public final class ServerParseSelect {
     static int databaseCheck(String stmt, int offset) {
         int length = offset + DATABASE_STR.length;
         if (stmt.length() >= length && ParseUtil.compare(stmt, offset, DATABASE_STR)) {
-            if (stmt.length() > length && stmt.charAt(length) != ' ') {
-                return OTHER;
-            } else {
+            if ((stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
                 return DATABASE;
             }
         }
@@ -497,10 +495,10 @@ public final class ServerParseSelect {
     static int currentUserCheck(String stmt, int offset) {
         int length = offset + CURRENT_USER_STR.length;
         if (stmt.length() >= length && ParseUtil.compare(stmt, offset, CURRENT_USER_STR)) {
-            if (stmt.length() > length && stmt.charAt(length) != ' ') {
-                return OTHER;
+            if ((stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
+                return CURRENT_USER;
             }
-            return CURRENT_USER;
+            return OTHER;
         }
         return OTHER;
     }

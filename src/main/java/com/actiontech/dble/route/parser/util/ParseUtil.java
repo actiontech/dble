@@ -336,6 +336,29 @@ public final class ParseUtil {
         return offset;
     }
 
+    /**
+     * return whether beginning with double dash(--) in stmt
+     *
+     * @param stmt
+     * @param offset
+     * @return
+     */
+    public static boolean commentDoubleDash(String stmt, int offset) {
+        int len = stmt.length();
+        int n = offset;
+        switch (stmt.charAt(n)) {
+            case '-':
+                if (len > ++n && stmt.charAt(n) == '-' && len > ++n) {
+                    if (isSpace(stmt.charAt(n))) {
+                        return true;
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+        return false;
+    }
 
     public static boolean currentCharIsSep(String stmt, int offset) {
         if (stmt.length() > offset) {

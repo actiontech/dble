@@ -2,25 +2,16 @@ package com.actiontech.dble.cluster.xmlTokv;
 
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.loader.zkprocess.entity.Server;
-import com.actiontech.dble.config.loader.zkprocess.entity.server.FireWall;
-import com.actiontech.dble.config.loader.zkprocess.entity.server.System;
 import com.actiontech.dble.config.loader.zkprocess.entity.server.User;
 import com.actiontech.dble.config.loader.zkprocess.parse.ParseJsonServiceInf;
 import com.actiontech.dble.config.loader.zkprocess.parse.ParseXmlServiceInf;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
-import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.server.json.FireWallJsonParse;
-import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.server.json.SystemJsonParse;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.server.json.UserJsonParse;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.server.xml.ServerParseXmlImpl;
-import com.actiontech.dble.util.ResourceUtil;
 import com.alibaba.fastjson.JSONObject;
-import com.sun.xml.internal.ws.policy.AssertionSet;
 import org.junit.Assert;
 import org.junit.Test;
 
-import javax.xml.bind.JAXBException;
-import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 
 public class XmlServerLoaderTest {

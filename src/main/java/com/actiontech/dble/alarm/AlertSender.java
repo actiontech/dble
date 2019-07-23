@@ -63,10 +63,11 @@ public class AlertSender implements Runnable {
         AlertGeneralConfig confg = AlertGeneralConfig.getInstance();
         confg.initAlertConfig();
         alert = confg.customizedAlert();
-        if (DEFAULT_ALERT != alert &&
+        if (DEFAULT_ALERT == alert &&
                 DbleServer.getInstance().isUseGeneralCluster() &&
                 (ClusterController.CONFIG_MODE_UCORE.equals(ClusterGeneralConfig.getInstance().getClusterType()) ||
                         ClusterController.CONFIG_MODE_USHARD.equals(ClusterGeneralConfig.getInstance().getClusterType()))) {
+            LOGGER.info("Ucore cluster,use default alert UcoreAlert");
             alert = new UcoreAlert();
         }
     }

@@ -65,7 +65,7 @@ public class ServerParseTest {
         String sql = "flush table table_name;";
         int result = ServerParse.parse(sql);
         int sqlType = result & 0xff;
-        Assert.assertEquals(ServerParse.UNSUPPORT, sqlType);
+        Assert.assertEquals(ServerParse.FLUSH, sqlType);
     }
 
     @Test

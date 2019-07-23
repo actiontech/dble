@@ -461,13 +461,14 @@ public final class ServerParse {
                     }
                     char c6 = stmt.charAt(offset);
                     if (c6 == 'd' || c6 == 'D') {
-                        return createDatabaseCheck(stmt, offset);
+                        return databaseCheck(stmt, offset);
                     } else if (c6 == 'v' || c6 == 'V') {
-                        return createViewCheck(stmt, offset);
+                        return viewCheck(stmt, offset, false);
                     } else if (c6 == 'o' || c6 == 'O') {
-                        return createOrReplaceViewCheck(stmt, offset);
+                        return orCheck(stmt, offset);
                     }
                 }
+                return DDL;
             }
         }
         return OTHER;
@@ -480,7 +481,7 @@ public final class ServerParse {
      * @param offset
      * @return
      */
-    private static int createDatabaseCheck(String stmt, int offset) {
+    private static int databaseCheck(String stmt, int offset) {
         int len = stmt.length();
         if (len > offset + 8) {
             char c1 = stmt.charAt(++offset);
@@ -506,7 +507,7 @@ public final class ServerParse {
      * @param offset
      * @return
      */
-    private static int createOrReplaceViewCheck(String stmt, int offset) {
+    private static int orCheck(String stmt, int offset) {
         int len = stmt.length();
         if (len > ++offset) {
             char c1 = stmt.charAt(offset);
@@ -523,7 +524,7 @@ public final class ServerParse {
     }
 
 
-    private static int createViewCheck(String stmt, int offset) {
+    private static int viewCheck(String stmt, int offset, boolean isReplace) {
         int len = stmt.length();
         if (len > offset + 4) {
             char c1 = stmt.charAt(++offset);
@@ -531,7 +532,11 @@ public final class ServerParse {
             char c3 = stmt.charAt(++offset);
             if ((c1 == 'I' || c1 == 'i') && (c2 == 'E' || c2 == 'e') &&
                     (c3 == 'W' || c3 == 'w') && ParseUtil.isSpace(stmt.charAt(++offset))) {
-                return CREATE_VIEW;
+                if (isReplace) {
+                    return REPLACE_VIEW;
+                } else {
+                    return CREATE_VIEW;
+                }
             }
         }
         return DDL;
@@ -547,9 +552,13 @@ public final class ServerParse {
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
             if ((c1 == 'E' || c1 == 'e') && (c2 == 'P' || c2 == 'p') && (c3 == 'L' || c3 == 'l') &&
-                    (c4 == 'A' || c4 == 'a') && (c5 == 'C' || c5 == 'c') && (c6 == 'E' || c6 == 'e') &&
-                    ParseUtil.isSpace(stmt.charAt(++offset))) {
-                return REPLACE_VIEW;
+                    (c4 == 'A' || c4 == 'a') && (c5 == 'C' || c5 == 'c') && (c6 == 'E' || c6 == 'e')) {
+                while (len > ++offset) {
+                    if (ParseUtil.isSpace(stmt.charAt(offset))) {
+                        continue;
+                    }
+                    return viewCheck(stmt, offset, true);
+                }
             }
         }
         return DDL;

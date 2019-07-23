@@ -9,7 +9,7 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.ReloadLogHelper;
-import com.actiontech.dble.meta.table.SchemaMetaHandler;
+import com.actiontech.dble.meta.table.ServerMetaHandler;
 import com.actiontech.dble.util.CollectionUtil;
 
 import java.util.*;
@@ -27,14 +27,14 @@ public class MultiTableMetaHandler {
     private AtomicBoolean countDownFlag = new AtomicBoolean(false);
     private String schema;
     private SchemaConfig config;
-    private SchemaMetaHandler schemaMetaHandler;
+    private ServerMetaHandler serverMetaHandler;
     private Set<String> selfNode;
     private Lock singleTableLock = new ReentrantLock();
     private Condition collectTables = singleTableLock.newCondition();
     private Set<String> filterTables;
 
-    public MultiTableMetaHandler(SchemaMetaHandler schemaMetaHandler, SchemaConfig config, Set<String> selfNode) {
-        this.schemaMetaHandler = schemaMetaHandler;
+    public MultiTableMetaHandler(ServerMetaHandler serverMetaHandler, SchemaConfig config, Set<String> selfNode) {
+        this.serverMetaHandler = serverMetaHandler;
         this.config = config;
         this.schema = config.getName();
         this.selfNode = selfNode;
@@ -44,7 +44,7 @@ public class MultiTableMetaHandler {
     }
 
     public void execute() {
-        this.schemaMetaHandler.getTmManager().createDatabase(schema);
+        this.serverMetaHandler.getTmManager().createDatabase(schema);
         boolean existTable = false;
         if (config.getDataNode() != null && (selfNode == null || !selfNode.contains(config.getDataNode()))) {
             List<String> tables = getSingleTables();
@@ -127,13 +127,13 @@ public class MultiTableMetaHandler {
     private void countDown() {
         if (shardTableCnt.get() == 0 && singleTableCnt.get() == 0) {
             if (countDownFlag.compareAndSet(false, true)) {
-                schemaMetaHandler.countDown();
+                serverMetaHandler.countDown();
             }
         }
     }
 
     public ProxyMetaManager getTmManager() {
-        return this.schemaMetaHandler.getTmManager();
+        return this.serverMetaHandler.getTmManager();
     }
 
     public void setFilterTables(Set<String> filterTables) {

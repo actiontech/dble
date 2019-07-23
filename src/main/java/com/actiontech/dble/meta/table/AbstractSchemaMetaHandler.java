@@ -16,16 +16,21 @@ import com.actiontech.dble.util.CollectionUtil;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-
-public abstract class MultiTablesMetaHandler {
+/**
+ * abstract impl of the single-schema-MetaHandler
+ * extends by SchemaCheckMetaHandler & SchemaInitMetaHandler
+ */
+public abstract class AbstractSchemaMetaHandler {
     protected final ReloadLogHelper logger;
-    private AtomicInteger shardTableDNCnt;
-    private AtomicInteger singleTableDNCnt;
+    //shard-DataNode-Set when the set to be count down into the empty,means that all the dataNode have finished
+    private volatile Set<String> shardDNSet = new HashSet<String>();
+    //defaultDNflag  has no default Node/default Node has no table/ default Node table return finish ---- false
+    // schema has default Node & default Node has not return yet  ---- true
+    private AtomicBoolean defaultDNflag;
     private AtomicBoolean countDownFlag = new AtomicBoolean(false);
     private String schema;
     private SchemaConfig schemaConfig;
@@ -36,25 +41,25 @@ public abstract class MultiTablesMetaHandler {
     private Set<String> filterTables;
 
 
-    MultiTablesMetaHandler(SchemaConfig schemaConfig, Set<String> selfNode, boolean isReload) {
+    AbstractSchemaMetaHandler(SchemaConfig schemaConfig, Set<String> selfNode, boolean isReload) {
         this.schemaConfig = schemaConfig;
         this.schema = schemaConfig.getName();
         this.selfNode = selfNode;
-        this.singleTableDNCnt = new AtomicInteger(0);
         logger = new ReloadLogHelper(isReload);
+        this.defaultDNflag = new AtomicBoolean(false);
     }
 
 
     void countDownSingleTable() {
-        if (singleTableDNCnt.decrementAndGet() == 0) {
+        if (defaultDNflag.compareAndSet(true, false)) {
             logger.info("single dataNode countdown[" + schema + "]");
             countDown();
         }
     }
 
-    protected void countDown() {
-        if (shardTableDNCnt.get() == 0 && singleTableDNCnt.get() == 0) {
-            logger.info("all shardTableDNCnt&singleTableDNCnt count down[" + schema + "]");
+    protected synchronized void countDown() {
+        if (shardDNSet.isEmpty() && !defaultDNflag.get()) {
+            logger.info("all shardDNSet&defaultDNflag count down[" + schema + "]");
             if (countDownFlag.compareAndSet(false, true)) {
                 schemaMetaFinish();
             }
@@ -72,8 +77,8 @@ public abstract class MultiTablesMetaHandler {
             }
             if (tables.size() > 0) {
                 existTable = true;
-                singleTableDNCnt.set(1);
-                SingleNodeTablesMetaInitHandler tableHandler = new SingleNodeTablesMetaInitHandler(this, tables, schemaConfig.getDataNode(), logger.isReload());
+                defaultDNflag.set(true);
+                DefaultNodeTablesMetaHandler tableHandler = new DefaultNodeTablesMetaHandler(this, tables, schemaConfig.getDataNode(), logger.isReload());
                 tableHandler.execute();
             }
         }
@@ -87,14 +92,14 @@ public abstract class MultiTablesMetaHandler {
                 if (tables == null) {
                     tables = new HashSet<>();
                     dataNodeMap.put(dataNode, tables);
+                    shardDNSet.add(dataNode);
                 }
                 tables.add(tableName);
             }
         }
-        this.shardTableDNCnt = new AtomicInteger(dataNodeMap.size());
 
-        logger.infoList("try to execute show create table in dataNode", dataNodeMap.keySet());
-        AbstractTablesMetaHandler tableHandler = new TablesMetaInitHandler(this, schema, dataNodeMap, selfNode, logger.isReload());
+        logger.infoList("try to execute show create table in [" + schema + "] dataNodes:", shardDNSet);
+        SingleDataNodeTablesMetaHandler tableHandler = new SingleDataNodeTablesMetaHandler(this, schema, dataNodeMap, selfNode, logger.isReload());
         tableHandler.execute();
         if (!existTable) {
             logger.info("no table exist in schema " + schema + ",count down");
@@ -164,10 +169,15 @@ public abstract class MultiTablesMetaHandler {
         }
     }
 
+    private synchronized boolean countDownShardDN(String dataNode) {
+        shardDNSet.remove(dataNode);
+        return shardDNSet.size() == 0;
+    }
 
-    void countDownShardTable() {
-        logger.info("shard dataNode count down[" + schema + "] Count reming is " + shardTableDNCnt.get());
-        if (shardTableDNCnt.decrementAndGet() == 0) {
+
+    void countDownShardTable(String dataNode) {
+        logger.info("shard dataNode count down[" + schema + "][" + dataNode + "] ");
+        if (countDownShardDN(dataNode)) {
             long version = System.currentTimeMillis();
             for (Map.Entry<String, Map<String, List<String>>> tablesStruct : tablesStructMap.entrySet()) {
                 String tableName = tablesStruct.getKey();

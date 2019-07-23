@@ -24,7 +24,7 @@ public class Schema {
     protected String dml;
     protected List<Table> table;
 
-    public List<Table> getTables() {
+    public List<Table> getTable() {
         if (this.table == null) {
             table = new ArrayList<>();
         }

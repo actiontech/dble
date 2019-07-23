@@ -44,7 +44,7 @@ public class ReloadStatus {
         status = RELOAD_STATUS_SELF_RELOAD;
         lastReloadStart = System.currentTimeMillis();
         this.reloadType = reloadType;
-        LOGGER.info(this.getLogStage() + "_____________________reload start____________________");
+        LOGGER.info(this.getLogStage() + "_____________________reload start________" + id + "__" + reloadType);
     }
 
     public void register(SchemaMetaHandler handler) {
@@ -53,18 +53,18 @@ public class ReloadStatus {
 
     public void metaReload() {
         this.status = RELOAD_STATUS_META_RELOAD;
-        LOGGER.info(this.getLogStage() + "_____________________meta reload start____________________");
+        LOGGER.info(this.getLogStage() + "_____________________meta reload start________" + id + "__" + reloadType);
     }
 
     public void waitingOthers() {
         this.status = RELOAD_STATUS_WAITING_OTHERS;
-        LOGGER.info(this.getLogStage() + "_____________________waiting others____________________");
+        LOGGER.info(this.getLogStage() + "_____________________waiting others___________" + id + "__" + reloadType);
     }
 
     public void reloadFinish() {
         this.status = RELOAD_STATUS_NONE;
         this.lastReloadEnd = System.currentTimeMillis();
-        LOGGER.info(this.getLogStage() + "_____________________reload finished____________________");
+        LOGGER.info(this.getLogStage() + "_____________________reload finished___________" + id + "__" + reloadType);
     }
 
     public boolean isFinished() {

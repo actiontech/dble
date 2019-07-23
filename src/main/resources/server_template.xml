@@ -13,7 +13,7 @@
 	License for the specific language governing permissions and - limitations 
 	under the License. -->
 <!DOCTYPE dble:server SYSTEM "server.dtd">
-<dble:server xmlns:dble="http://dble.cloud/" version="2.19.05.0">
+<dble:server xmlns:dble="http://dble.cloud/" version="2.19.05.1">
     <system>
         <!-- base config -->
         <!--<property name="bindIp">0.0.0.0</property>-->

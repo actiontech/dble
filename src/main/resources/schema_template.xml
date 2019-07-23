@@ -5,7 +5,7 @@
   -->
 
 <!DOCTYPE dble:schema SYSTEM "schema.dtd">
-<dble:schema xmlns:dble="http://dble.cloud/" version="2.19.05.0">
+<dble:schema xmlns:dble="http://dble.cloud/" version="2.19.05.1">
 
     <schema name="testdb">
         <table name="tb_enum_sharding" primaryKey="ID" dataNode="dn1,dn2" rule="rule_enum"/>

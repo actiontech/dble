@@ -2,7 +2,7 @@ package com.actiontech.dble.meta;
 
 import com.actiontech.dble.cluster.ClusterGeneralConfig;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
-import com.actiontech.dble.meta.table.SchemaMetaHandler;
+import com.actiontech.dble.meta.table.ServerMetaHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +33,7 @@ public class ReloadStatus {
     private final long lastReloadStart;
     private volatile long lastReloadEnd = 0;
     private final AtomicBoolean interruputed = new AtomicBoolean(false);
-    private volatile SchemaMetaHandler reloadHandler;
+    private volatile ServerMetaHandler reloadHandler;
 
     private final ConfStatus.Status reloadType;
 
@@ -47,7 +47,7 @@ public class ReloadStatus {
         LOGGER.info(this.getLogStage() + "_____________________reload start________" + id + "__" + reloadType);
     }
 
-    public void register(SchemaMetaHandler handler) {
+    public void register(ServerMetaHandler handler) {
         reloadHandler = handler;
     }
 

@@ -435,7 +435,7 @@ public class ProxyMetaManager {
      */
     public void initMeta(ServerConfig config) {
         Set<String> selfNode = getSelfNodes(config);
-        SchemaMetaHandler handler = new SchemaMetaHandler(this, config, selfNode);
+        ServerMetaHandler handler = new ServerMetaHandler(this, config, selfNode);
         handler.setFilter(null);
         handler.execute();
         initViewMeta();
@@ -456,7 +456,7 @@ public class ProxyMetaManager {
      */
     public boolean initMeta(ServerConfig config, Map<String, Set<String>> specifiedSchemas) {
         Set<String> selfNode = getSelfNodes(config);
-        SchemaMetaHandler handler = new SchemaMetaHandler(this, config, selfNode);
+        ServerMetaHandler handler = new ServerMetaHandler(this, config, selfNode);
         handler.setFilter(specifiedSchemas);
         handler.register();
         //if the meta reload interrupted by reload release
@@ -521,7 +521,7 @@ public class ProxyMetaManager {
                     }
                 }
 
-                MultiTablesMetaHandler multiTablesMetaHandler = new MultiTablesCheckMetaHandler(this, schema, selfNode);
+                AbstractSchemaMetaHandler multiTablesMetaHandler = new SchemaCheckMetaHandler(this, schema, selfNode);
                 multiTablesMetaHandler.execute();
             }
         }

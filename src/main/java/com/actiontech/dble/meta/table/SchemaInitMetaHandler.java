@@ -13,26 +13,27 @@ import java.util.Set;
 
 /**
  * Created by szf on 2019/4/4.
+ * Handler for init meta of single schema
  */
-public class MultiTablesInitMetaHandler extends MultiTablesMetaHandler {
+public class SchemaInitMetaHandler extends AbstractSchemaMetaHandler {
     private String schema;
-    private SchemaMetaHandler schemaMetaHandler;
+    private ServerMetaHandler serverMetaHandler;
 
 
-    MultiTablesInitMetaHandler(SchemaMetaHandler schemaMetaHandler, SchemaConfig schemaConfig, Set<String> selfNode) {
+    SchemaInitMetaHandler(ServerMetaHandler serverMetaHandler, SchemaConfig schemaConfig, Set<String> selfNode) {
         super(schemaConfig, selfNode, true);
-        this.schemaMetaHandler = schemaMetaHandler;
+        this.serverMetaHandler = serverMetaHandler;
         this.schema = schemaConfig.getName();
     }
 
     public void execute() {
-        this.schemaMetaHandler.getTmManager().createDatabase(schema);
+        this.serverMetaHandler.getTmManager().createDatabase(schema);
         super.execute();
     }
 
 
     public ProxyMetaManager getTmManager() {
-        return this.schemaMetaHandler.getTmManager();
+        return this.serverMetaHandler.getTmManager();
     }
 
     @Override
@@ -55,7 +56,7 @@ public class MultiTablesInitMetaHandler extends MultiTablesMetaHandler {
 
     @Override
     void schemaMetaFinish() {
-        schemaMetaHandler.countDown();
+        serverMetaHandler.countDown();
     }
 
 

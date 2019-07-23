@@ -24,8 +24,12 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class SchemaMetaHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SchemaMetaHandler.class);
+/**
+ * Start handler for the entire meta init/reload event
+ *
+ */
+public class ServerMetaHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerMetaHandler.class);
     private Lock lock;
     private Condition allSchemaDone;
     private int schemaNumber;
@@ -36,7 +40,7 @@ public class SchemaMetaHandler {
     private Map<String, Set<String>> filter;
     private Map<String, SchemaConfig> reloadSchemas;
 
-    public SchemaMetaHandler(ProxyMetaManager tmManager, ServerConfig config, Set<String> selfNode) {
+    public ServerMetaHandler(ProxyMetaManager tmManager, ServerConfig config, Set<String> selfNode) {
         this.tmManager = tmManager;
         this.lock = new ReentrantLock();
         this.allSchemaDone = lock.newCondition();
@@ -78,7 +82,7 @@ public class SchemaMetaHandler {
                 }
                 multiTableMeta.execute();
             } else {
-                MultiTablesInitMetaHandler multiTableMeta = new MultiTablesInitMetaHandler(this, entry.getValue(), selfNode);
+                SchemaInitMetaHandler multiTableMeta = new SchemaInitMetaHandler(this, entry.getValue(), selfNode);
                 if (filter != null) {
                     multiTableMeta.setFilterTables(filter.get(entry.getKey()));
                     ReloadLogUtil.infoList("schema filter " + entry.getKey(), LOGGER, filter.get(entry.getKey()));

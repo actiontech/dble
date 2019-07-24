@@ -74,7 +74,8 @@ public class DistinctHandler extends BaseDMLHandler {
         if (orders == null)
             orders = HandlerTool.makeOrder(this.distinctCols);
         RowDataComparator comparator = new RowDataComparator(this.fieldPackets, orders, this.isAllPushDown(), type());
-        localResult = new DistinctSortedLocalResult(pool, sourceFields.size(), comparator, CharsetUtil.getJavaCharset(conn.getCharset().getResults())).
+        String charSet = conn != null ? CharsetUtil.getJavaCharset(conn.getCharset().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getCharset().getResults());
+        localResult = new DistinctSortedLocalResult(pool, sourceFields.size(), comparator, charSet).
                 setMemSizeController(session.getOtherBufferMC());
         nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, conn);
     }

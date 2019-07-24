@@ -143,6 +143,7 @@ public final class ShowHelp {
         HELPS.put("show @@dataNodes where schema='?' and table='?'", "Report the data nodes info of a table");
         HELPS.put("show @@algorithm where schema='?' and table='?'", "Report the algorithm info of a table");
         HELPS.put("show @@ddl", "Report all ddl info in progress");
+        HELPS.put("show @@reload_status", "Report latest reload status in this dble");
         // switch
         HELPS.put("switch @@datasource name:index", "Switch dataSource");
 
@@ -161,6 +162,7 @@ public final class ShowHelp {
         HELPS.put("reload @@sqlslow=", "Set Slow SQL Time(ms)");
         HELPS.put("reload @@user_stat", "Reset show @@sql  @@sql.sum @@sql.slow");
         HELPS.put("reload @@query_cf[=table&column]", "Reset show @@sql.conditiont");
+        HELPS.put("reload @@release", "Release reload process , unlock the config meta lock");
         // rollback
         HELPS.put("rollback @@config", "Rollback all config from memory");
 

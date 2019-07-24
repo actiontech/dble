@@ -14,6 +14,7 @@ import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.handler.codec.bytes.ByteArrayDecoder;
 import io.netty.handler.codec.bytes.ByteArrayEncoder;
+import io.netty.util.concurrent.EventExecutorGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,20 +30,22 @@ public class NettyAcceptor extends Thread implements SocketAcceptor {
     private final int port;
     // private final AsynchronousServerSocketChannel serverChannel;
     private final FrontendConnectionFactory factory;
+    private final EventLoopGroup workerGroup;
+
 
     public NettyAcceptor(String name, String ip, int port, int backlog,
-                         FrontendConnectionFactory factory)
+                         FrontendConnectionFactory factory, EventLoopGroup workerGroup)
             throws IOException {
         super.setName(name);
         this.port = port;
         this.factory = factory;
+        this.workerGroup = workerGroup;
     }
 
 
     @Override
     public void run() {
         EventLoopGroup bossGroup = new EpollEventLoopGroup();
-        EventLoopGroup workerGroup = new EpollEventLoopGroup();
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup).

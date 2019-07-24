@@ -51,6 +51,8 @@ import com.actiontech.dble.statistic.stat.UserStatAnalyzer;
 import com.actiontech.dble.util.*;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.epoll.EpollEventLoopGroup;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.slf4j.Logger;
@@ -376,9 +378,10 @@ public final class DbleServer {
         }
 
         if (netty) {
-            connector = new NettyConnector();
-            manager = new NettyAcceptor(NAME + "Manager", system.getBindIp(), system.getManagerPort(), 100, mf);
-            server = new NettyAcceptor(NAME + "Server", system.getBindIp(), system.getServerPort(), system.getServerBacklog(), sf);
+            connector = new NettyConnector(backendProcessorCount);
+            EventLoopGroup workerGroup = new EpollEventLoopGroup(frontProcessorCount);
+            manager = new NettyAcceptor(NAME + "Manager", system.getBindIp(), system.getManagerPort(), 100, mf, workerGroup);
+            server = new NettyAcceptor(NAME + "Server", system.getBindIp(), system.getServerPort(), system.getServerBacklog(), sf, workerGroup);
         } else {
             LOGGER.info("using nio network handler ");
 

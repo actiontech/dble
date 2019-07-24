@@ -25,7 +25,11 @@ import org.slf4j.LoggerFactory;
 public class NettyConnector extends Thread implements SocketConnector {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NettyAcceptor.class);
-    private EventLoopGroup group = new NioEventLoopGroup();
+    private final EventLoopGroup group;
+
+    public NettyConnector(int backendProcessorCount) {
+        this.group = new NioEventLoopGroup(backendProcessorCount);
+    }
 
     public MySQLConnection createNewConnection(MySQLDataSource pool, String schema, ResponseHandler handler) {
 

@@ -31,8 +31,8 @@ public class Schema {
         return table;
     }
 
-    public void setTables(List<Table> tables) {
-        this.table = tables;
+    public void setTable(List<Table> table) {
+        this.table = table;
     }
 
     public String getName() {

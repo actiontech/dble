@@ -50,7 +50,7 @@ public final class ShowCreateView {
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("collation_connection", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
     }

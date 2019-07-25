@@ -151,6 +151,12 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                 case ServerParse.DROP_VIEW:
                     DropViewHandler.handle(sql, c);
                     break;
+                case ServerParse.CREATE_DATABASE:
+                    CreateDatabaseHandler.handle(sql, c);
+                    break;
+                case ServerParse.FLUSH:
+                    FlushTableHandler.handle(sql, c);
+                    break;
                 case ServerParse.UNSUPPORT:
                     LOGGER.info("Unsupported statement:" + sql);
                     c.writeErrMessage(ErrorCode.ER_SYNTAX_ERROR, "Unsupported statement");

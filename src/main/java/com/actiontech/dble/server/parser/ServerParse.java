@@ -52,6 +52,8 @@ public final class ServerParse {
     public static final int EXPLAIN2 = 151;
     public static final int CREATE_DATABASE = 152;
     public static final int FLUSH = 153;
+    public static final int ROLLBACK_SAVEPOINT = 154;
+    public static final int RELEASE_SAVEPOINT = 155;
 
     public static final int MIGRATE = 203;
     /* don't set the constant to 255 */
@@ -970,8 +972,26 @@ public final class ServerParse {
                 case 'P':
                 case 'p':
                     return repCheck(stmt, offset);
+                case 'l':
+                case 'L':
+                    return release(stmt, offset);
                 default:
                     return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int release(String stmt, int offset) {
+        if (stmt.length() > offset + 5) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            if ((c1 == 'e' || c1 == 'E') && (c2 == 'a' || c2 == 'A') && (c3 == 's' || c3 == 'S') &&
+                    (c4 == 'e' || c4 == 'E') && ParseUtil.isSpace(c5)) {
+                return RELEASE_SAVEPOINT;
             }
         }
         return OTHER;
@@ -1044,14 +1064,14 @@ public final class ServerParse {
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
-            if ((c1 == 'L' || c1 == 'l') &&
-                    (c2 == 'L' || c2 == 'l') &&
-                    (c3 == 'B' || c3 == 'b') &&
-                    (c4 == 'A' || c4 == 'a') &&
-                    (c5 == 'C' || c5 == 'c') &&
-                    (c6 == 'K' || c6 == 'k') &&
-                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset) || ParseUtil.isMultiEof(stmt, offset))) {
-                return ROLLBACK;
+            if ((c1 == 'L' || c1 == 'l') && (c2 == 'L' || c2 == 'l') &&
+                    (c3 == 'B' || c3 == 'b') && (c4 == 'A' || c4 == 'a') &&
+                    (c5 == 'C' || c5 == 'c') && (c6 == 'K' || c6 == 'k')) {
+                if (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset) || ParseUtil.isMultiEof(stmt, offset)) {
+                    return ROLLBACK;
+                } else {
+                    return ROLLBACK_SAVEPOINT;
+                }
             }
         }
         return OTHER;

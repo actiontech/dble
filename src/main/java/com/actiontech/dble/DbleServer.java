@@ -358,6 +358,7 @@ public final class DbleServer {
             }
         } else {
             frontHandlerQueue = new LinkedBlockingQueue<>();
+
             for (int i = 0; i < system.getProcessorExecutor(); i++) {
                 businessExecutor.execute(new FrontEndHandlerRunnable(frontHandlerQueue));
             }

@@ -6,7 +6,6 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by szf on 2019/7/3.
@@ -28,7 +27,6 @@ public class NettyFrontHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        LOGGER.warn("get Netty stack ++++", new Exception());
         byte[] data = (byte[]) msg;
         c.handle(data);
     }
@@ -38,7 +36,6 @@ public class NettyFrontHandler extends ChannelInboundHandlerAdapter {
 
         //in netty mode only greeting will be write out
         ctx.flush();
-        TimeUnit.MILLISECONDS.sleep(200);
     }
 
     @Override

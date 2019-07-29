@@ -10,9 +10,8 @@ import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.SocketConnector;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.handler.codec.bytes.ByteArrayDecoder;
 import io.netty.handler.codec.bytes.ByteArrayEncoder;
 import io.netty.handler.timeout.IdleStateHandler;
@@ -28,7 +27,7 @@ public class NettyConnector extends Thread implements SocketConnector {
     private final EventLoopGroup group;
 
     public NettyConnector(int backendProcessorCount) {
-        this.group = new NioEventLoopGroup(backendProcessorCount);
+        this.group = new EpollEventLoopGroup(backendProcessorCount);
     }
 
     public MySQLConnection createNewConnection(MySQLDataSource pool, String schema, ResponseHandler handler) {
@@ -38,11 +37,10 @@ public class NettyConnector extends Thread implements SocketConnector {
         try {
             Bootstrap b = new Bootstrap();
             b.group(group).
-                    channel(NioSocketChannel.class).
-                    option(ChannelOption.TCP_NODELAY, true).
-                    handler(new ChannelInitializer<SocketChannel>() {
+                    channel(EpollSocketChannel.class).
+                    handler(new ChannelInitializer<io.netty.channel.epoll.EpollSocketChannel>() {
                         @Override
-                        public void initChannel(SocketChannel ch) throws Exception {
+                        public void initChannel(io.netty.channel.epoll.EpollSocketChannel ch) throws Exception {
                             ChannelPipeline p = ch.pipeline();
                             MySQLConnection c = new MySQLConnection(p, pool.isReadNode(), schema == null);
                             c.setSocketParams(false);

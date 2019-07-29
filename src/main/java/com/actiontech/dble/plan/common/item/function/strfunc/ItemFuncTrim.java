@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -8,7 +8,6 @@ package com.actiontech.dble.plan.common.item.function.strfunc;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
-import com.actiontech.dble.plan.common.item.function.ItemFuncKeyWord;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
 import org.apache.commons.lang.StringUtils;
@@ -106,10 +105,10 @@ public class ItemFuncTrim extends ItemStrFunc {
             method.setMethodName("TRIM");
             method.addParameter(args.get(0).toExpression());
             if (this.getArgCount() > 1) {
-                method.putAttribute(ItemFuncKeyWord.FROM, args.get(1).toExpression());
+                method.setFrom(args.get(1).toExpression());
             }
             if (mTrimMode != TrimTypeEnum.DEFAULT) {
-                method.putAttribute(ItemFuncKeyWord.TRIM_TYPE, mTrimMode.toString());
+                method.setTrimOption(mTrimMode.toString());
             }
         }
         return method;

@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -27,13 +27,12 @@ public final class ServerParseSelect {
     public static final int SELECT_VAR_ALL = 9;
     public static final int SESSION_TX_READ_ONLY = 10;
     public static final int TRACE = 11;
+    public static final int CURRENT_USER = 12;
 
     private static final char[] TRACE_STR = "TRACE".toCharArray();
     private static final char[] VERSION_COMMENT_STR = "VERSION_COMMENT".toCharArray();
     private static final char[] IDENTITY_STR = "IDENTITY".toCharArray();
     private static final char[] LAST_INSERT_ID_STR = "LAST_INSERT_ID".toCharArray();
-    private static final char[] DATABASE_STR = "DATABASE()".toCharArray();
-    private static final char[] CURRENT_USER_STR = "CURRENT_USER()".toCharArray();
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -84,6 +83,7 @@ public final class ServerParseSelect {
         }
         return OTHER;
     }
+
     /**
      * SELECT @@session.auto_increment_increment
      *
@@ -459,11 +459,26 @@ public final class ServerParseSelect {
      * SELECT DATABASE()
      */
     static int databaseCheck(String stmt, int offset) {
-        int length = offset + DATABASE_STR.length;
-        if (stmt.length() >= length && ParseUtil.compare(stmt, offset, DATABASE_STR)) {
-            if (stmt.length() > length && stmt.charAt(length) != ' ') {
-                return OTHER;
-            } else {
+        if (stmt.length() > offset + 9) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            char c9 = stmt.charAt(++offset);
+            if ((c1 == 'A' || c1 == 'a') &&
+                    (c2 == 'T' || c2 == 't') &&
+                    (c3 == 'A' || c3 == 'a') &&
+                    (c4 == 'B' || c4 == 'b') &&
+                    (c5 == 'A' || c5 == 'a') &&
+                    (c6 == 'S' || c6 == 's') &&
+                    (c7 == 'E' || c7 == 'e') &&
+                    (c8 == '(') &&
+                    (c9 == ')') &&
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
                 return DATABASE;
             }
         }
@@ -493,12 +508,36 @@ public final class ServerParseSelect {
      * SELECT USER()
      */
     static int currentUserCheck(String stmt, int offset) {
-        int length = offset + CURRENT_USER_STR.length;
-        if (stmt.length() >= length && ParseUtil.compare(stmt, offset, CURRENT_USER_STR)) {
-            if (stmt.length() > length && stmt.charAt(length) != ' ') {
-                return OTHER;
+        if (stmt.length() > offset + 13) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            char c9 = stmt.charAt(++offset);
+            char c10 = stmt.charAt(++offset);
+            char c11 = stmt.charAt(++offset);
+            char c12 = stmt.charAt(++offset);
+            char c13 = stmt.charAt(++offset);
+            if ((c1 == 'U' || c1 == 'u') &&
+                    (c2 == 'R' || c2 == 'r') &&
+                    (c3 == 'R' || c3 == 'r') &&
+                    (c4 == 'E' || c4 == 'e') &&
+                    (c5 == 'N' || c5 == 'n') &&
+                    (c6 == 'T' || c6 == 't') &&
+                    (c7 == '_') &&
+                    (c8 == 'U' || c8 == 'u') &&
+                    (c9 == 'S' || c9 == 's') &&
+                    (c10 == 'E' || c10 == 'e') &&
+                    (c11 == 'R' || c11 == 'r') &&
+                    (c12 == '(') &&
+                    (c13 == ')') &&
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
+                return CURRENT_USER;
             }
-            return USER;
         }
         return OTHER;
     }

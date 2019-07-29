@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -24,12 +24,12 @@ public class ItemFuncElt extends ItemStrFunc {
 
     @Override
     public String valStr() {
-        Long l = args.get(0).valInt().longValue();
+        long l = args.get(0).valInt().longValue();
         if (l < 1 || l >= args.size()) {
             this.nullValue = true;
             return EMPTY;
         }
-        Item arg = args.get(l.intValue());
+        Item arg = args.get((int) l);
         if (arg.isNull()) {
             this.nullValue = true;
             return EMPTY;

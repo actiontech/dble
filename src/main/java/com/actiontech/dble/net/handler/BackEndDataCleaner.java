@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2016-2019 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
 package com.actiontech.dble.net.handler;
 
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
@@ -36,7 +41,7 @@ public class BackEndDataCleaner implements BackEndCleaner {
     }
 
 
-    public void singal() {
+    public void signal() {
         lock.lock();
         try {
             condRelease.signal();

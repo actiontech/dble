@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -104,6 +104,9 @@ public final class ShowHandler {
             case ManagerParseShow.PROCESSOR:
                 ShowProcessor.execute(c);
                 break;
+            case ManagerParseShow.PROCESS_LIST:
+                ShowProcessList.execute(c);
+                break;
             case ManagerParseShow.SERVER:
                 ShowServer.execute(c);
                 break;
@@ -148,6 +151,9 @@ public final class ShowHandler {
                 break;
             case ManagerParseShow.SESSION:
                 ShowSession.execute(c);
+                break;
+            case ManagerParseShow.SESSION_XA:
+                ShowXASession.execute(c);
                 break;
             case ManagerParseShow.TIME_CURRENT:
                 ShowTime.execute(c, System.currentTimeMillis());
@@ -214,13 +220,16 @@ public final class ShowHandler {
             case ManagerParseShow.COLLATION:
                 ShowCollatin.execute(c);
                 break;
+            case ManagerParseShow.DDL_STATE:
+                ShowDdlState.execute(c);
+                break;
             default:
                 if (isSupportShow(stmt)) {
                     Iterator<PhysicalDBPool> iterator = DbleServer.getInstance().getConfig().getDataHosts().values().iterator();
                     if (iterator.hasNext()) {
                         PhysicalDBPool pool = iterator.next();
                         final PhysicalDatasource source = pool.getSource();
-                        TransformSQLJob sqlJob = new TransformSQLJob(stmt, pool.getSchemas()[0], source, c);
+                        TransformSQLJob sqlJob = new TransformSQLJob(stmt, null, source, c);
                         sqlJob.run();
                     } else {
                         c.writeErrMessage(ErrorCode.ER_YES, "no valid data host");

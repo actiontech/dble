@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -28,6 +28,7 @@ public class NormalAutoRollbackNodesHandler extends NormalRollbackNodesHandler {
             for (BackendConnection conn : errConnection) {
                 conn.close("rollback all connection error");
             }
+            session.getTargetMap().clear();
             errConnection.clear();
             session.getSource().write(sendData);
             return;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -8,9 +8,10 @@ package com.actiontech.dble.plan.util;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.*;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.AggregateHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.DirectGroupByHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.OrderedGroupByHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.JoinHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.JoinInnerHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.join.NotInHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.AllAnySubQueryHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.InSubQueryHandler;
@@ -74,10 +75,14 @@ public final class ComplexQueryPlanUtil {
         for (int i = 0; i < mergeNodeSize; i++) {
             DMLResponseHandler startHandler = endHandler.getMerges().get(i);
             MultiNodeMergeHandler mergeHandler = (MultiNodeMergeHandler) startHandler;
+            String mergeName = getMergeType(mergeHandler);
             List<BaseSelectHandler> mergeList = new ArrayList<>();
             mergeList.addAll(((MultiNodeMergeHandler) startHandler).getExeHandlers());
-            String mergeNode = genHandlerName("MERGE", nameMap);
-            ReferenceHandlerInfo refInfo = new ReferenceHandlerInfo(mergeNode, "MERGE", mergeHandler);
+            String mergeNode = genHandlerName(mergeName, nameMap);
+            ReferenceHandlerInfo refInfo = new ReferenceHandlerInfo(mergeNode, mergeName, mergeHandler);
+            if (mergeHandler instanceof MultiNodeFakeHandler) {
+                refInfo.setBaseSQL(((MultiNodeFakeHandler) mergeHandler).toSQLString());
+            }
             handlerMap.put(mergeHandler, refInfo);
             refMap.put(mergeNode, refInfo);
             for (BaseSelectHandler exeHandler : mergeList) {
@@ -166,9 +171,19 @@ public final class ComplexQueryPlanUtil {
     }
 
 
+    private static String getMergeType(DMLResponseHandler handler) {
+        if (handler instanceof MultiNodeFakeHandler) {
+            return "INNER_FUNC_MERGE";
+        } else if (handler instanceof MultiNodeEasyMergeHandler) {
+            return "MERGE";
+        } else {
+            return "MERGE_AND_ORDER";
+        }
+    }
+
     private static String getTypeName(DMLResponseHandler handler) {
-        if (handler instanceof OrderedGroupByHandler) {
-            return "ORDERED_GROUP";
+        if (handler instanceof AggregateHandler) {
+            return "AGGREGATE";
         } else if (handler instanceof DistinctHandler) {
             return "DISTINCT";
         } else if (handler instanceof LimitHandler) {
@@ -185,6 +200,8 @@ public final class ComplexQueryPlanUtil {
             return "ORDER";
         } else if (handler instanceof NotInHandler) {
             return "NOT_IN";
+        } else if (handler instanceof JoinInnerHandler) {
+            return "INNER_FUNC_ADD";
         } else if (handler instanceof JoinHandler) {
             return "JOIN";
         } else if (handler instanceof DirectGroupByHandler) {

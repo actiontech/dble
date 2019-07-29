@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -34,7 +34,7 @@ import java.util.Set;
  */
 public class DruidDeleteParser extends DefaultDruidParser {
     @Override
-    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc)
+    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain)
             throws SQLException {
         String schemaName = schema == null ? null : schema.getName();
         MySqlDeleteStatement delete = (MySqlDeleteStatement) stmt;
@@ -47,7 +47,7 @@ public class DruidDeleteParser extends DefaultDruidParser {
             StringPtr noShardingNode = new StringPtr(null);
             Set<String> schemas = new HashSet<>();
             if (!SchemaUtil.isNoSharding(sc, (SQLJoinTableSource) tableSource, stmt, stmt, schemaName, schemas, noShardingNode)) {
-                String msg = "DELETE query with multiple tables is not supported, sql:" + stmt;
+                String msg = "DELETE query with multiple tables is not supported, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                 throw new SQLNonTransientException(msg);
             } else {
                 return routeToNoSharding(schema, rrs, schemas, noShardingNode);
@@ -56,17 +56,17 @@ public class DruidDeleteParser extends DefaultDruidParser {
             SQLExprTableSource deleteTableSource = (SQLExprTableSource) tableSource;
             SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, deleteTableSource);
             if (!ServerPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), CheckType.DELETE)) {
-                String msg = "The statement DML privilege check is not passed, sql:" + stmt;
+                String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                 throw new SQLNonTransientException(msg);
             }
             schema = schemaInfo.getSchemaConfig();
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
-            super.visitorParse(schema, rrs, stmt, visitor, sc);
+            super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
             if (visitor.getSubQueryList().size() > 0) {
                 StringPtr noShardingNode = new StringPtr(null);
                 Set<String> schemas = new HashSet<>();
                 if (!SchemaUtil.isNoSharding(sc, deleteTableSource, stmt, stmt, schemaInfo.getSchema(), schemas, noShardingNode)) {
-                    String msg = "DELETE query with sub-query  is not supported, sql:" + stmt;
+                    String msg = "DELETE query with sub-query  is not supported, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                     throw new SQLNonTransientException(msg);
                 } else {
                     return routeToNoSharding(schema, rrs, schemas, noShardingNode);
@@ -89,7 +89,6 @@ public class DruidDeleteParser extends DefaultDruidParser {
         }
         return schema;
     }
-
 
 
 }

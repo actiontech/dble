@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -50,7 +50,7 @@ public final class ShowSQLCondition {
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("COUNT", Fields.FIELD_TYPE_LONGLONG);
-        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
     }
@@ -82,7 +82,7 @@ public final class ShowSQLCondition {
             for (int i = 0; i < size; i++) {
                 Map.Entry<Object, AtomicLong> entry = list.get(i);
                 Object value = entry.getKey();
-                Long count = entry.getValue().get();
+                long count = entry.getValue().get();
                 total += count;
 
                 RowDataPacket row = getRow(i, key, value.toString(), count, c.getCharset().getResults());

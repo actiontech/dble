@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -52,7 +52,7 @@ public class SchemaMeta {
      * @return
      */
     public QueryNode getView(String name) {
-        if (name.indexOf("`") != -1) {
+        if (name.contains("`")) {
             name = StringUtil.removeBackQuote(name);
         }
         ViewMeta view = viewMetas.get(name);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -158,7 +158,7 @@ public class PushDownVisitor extends MysqlVisitor {
             } else {
                 joinOnFilterStr.append(" and ");
             }
-            joinOnFilterStr.append(filter);
+            joinOnFilterStr.append(getItemName(filter));
         }
 
         if (join.getOtherJoinOnFilter() != null) {

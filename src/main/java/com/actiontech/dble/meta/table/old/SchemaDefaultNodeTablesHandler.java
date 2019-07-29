@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -99,9 +99,8 @@ public class SchemaDefaultNodeTablesHandler {
             if (ds != null && ToResolveContainer.DATA_NODE_LACK.contains(key)) {
                 Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName());
                 labels.put("data_node", dataNode);
-                if (AlertUtil.alertResolve(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "mysql", ds.getConfig().getId(), labels)) {
-                    ToResolveContainer.DATA_NODE_LACK.remove(key);
-                }
+                AlertUtil.alertResolve(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "mysql", ds.getConfig().getId(), labels,
+                        ToResolveContainer.DATA_NODE_LACK, key);
             }
             List<Map<String, String>> rows = result.getResult();
             for (Map<String, String> row : rows) {

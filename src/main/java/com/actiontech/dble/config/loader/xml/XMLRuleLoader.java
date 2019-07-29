@@ -1,10 +1,12 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
 package com.actiontech.dble.config.loader.xml;
 
+import com.actiontech.dble.config.ProblemReporter;
+import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.model.rule.RuleConfig;
 import com.actiontech.dble.config.model.rule.TableRuleConfig;
 import com.actiontech.dble.config.util.ConfigException;
@@ -14,6 +16,8 @@ import com.actiontech.dble.route.function.*;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.SplitUtil;
 import com.actiontech.dble.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -33,14 +37,17 @@ import java.util.Map;
 public class XMLRuleLoader {
     private static final String DEFAULT_DTD = "/rule.dtd";
     private static final String DEFAULT_XML = "/rule.xml";
+    private static final Logger LOGGER = LoggerFactory.getLogger(XMLRuleLoader.class);
 
     private final Map<String, TableRuleConfig> tableRules;
     private final Map<String, AbstractPartitionAlgorithm> functions;
+    private ProblemReporter problemReporter;
 
-    public XMLRuleLoader(String ruleFile) {
+    public XMLRuleLoader(String ruleFile, ProblemReporter problemReporter) {
         this.tableRules = new HashMap<>();
         //function-> algorithm
         this.functions = new HashMap<>();
+        this.problemReporter = problemReporter;
         load(DEFAULT_DTD, ruleFile == null ? DEFAULT_XML : ruleFile);
     }
 
@@ -56,6 +63,16 @@ public class XMLRuleLoader {
             dtd = ResourceUtil.getResourceAsStream(dtdFile);
             xml = ResourceUtil.getResourceAsStream(xmlFile);
             Element root = ConfigUtil.getDocument(dtd, xml).getDocumentElement();
+            String version = "2.18.12.0 or earlier";
+            if (root.getAttributes().getNamedItem("version") != null) {
+                version = root.getAttributes().getNamedItem("version").getNodeValue();
+            }
+            if (!version.equals(Versions.CONFIG_VERSION)) {
+                String message = "The server-version is " + Versions.CONFIG_VERSION + ",but the rule.xml version is " + version + ".There may be some incompatible config between two versions,please check it";
+                if (this.problemReporter != null) {
+                    this.problemReporter.warn(message);
+                }
+            }
             loadFunctions(root);
             loadTableRules(root);
         } catch (ConfigException e) {
@@ -167,7 +184,7 @@ public class XMLRuleLoader {
                 AbstractPartitionAlgorithm function = createFunction(name, clazz);
                 function.setName(name);
                 Map<String, Object> props = ConfigUtil.loadElements(e);
-                ParameterMapping.mapping(function, props);
+                ParameterMapping.mapping(function, props, problemReporter);
                 if (props.size() > 0) {
                     String[] propItem = new String[props.size()];
                     props.keySet().toArray(propItem);

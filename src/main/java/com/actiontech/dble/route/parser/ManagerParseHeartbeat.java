@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -27,8 +27,8 @@ public final class ManagerParseHeartbeat {
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
-            if ((c1 == 'R' || c1 == 'r') && (c2 == 'T' || c2 == 't') & (c3 == 'B' || c3 == 'b') &&
-                    (c4 == 'E' || c4 == 'e') & (c5 == 'A' || c5 == 'a') && (c6 == 'T' || c6 == 't')) {
+            if ((c1 == 'R' || c1 == 'r') && (c2 == 'T' || c2 == 't') && (c3 == 'B' || c3 == 'b') &&
+                    (c4 == 'E' || c4 == 'e') && (c5 == 'A' || c5 == 'a') && (c6 == 'T' || c6 == 't')) {
                 if (stmt.length() > offset + ".DETAIL".length()) {
                     char c7 = stmt.charAt(++offset);
                     if (c7 == '.') {
@@ -53,8 +53,8 @@ public final class ManagerParseHeartbeat {
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
-            if ((c1 == 'D' || c1 == 'd') && (c2 == 'E' || c2 == 'e') & (c3 == 'T' || c3 == 't') &&
-                    (c4 == 'A' || c4 == 'a') & (c5 == 'I' || c5 == 'i') && (c6 == 'L' || c6 == 'l')) {
+            if ((c1 == 'D' || c1 == 'd') && (c2 == 'E' || c2 == 'e') && (c3 == 'T' || c3 == 't') &&
+                    (c4 == 'A' || c4 == 'a') && (c5 == 'I' || c5 == 'i') && (c6 == 'L' || c6 == 'l')) {
                 if (stmt.length() > ++offset && stmt.charAt(offset) != ' ') {
                     return OTHER;
                 }

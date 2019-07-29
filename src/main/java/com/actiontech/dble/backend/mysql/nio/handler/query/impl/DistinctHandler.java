@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -11,7 +11,7 @@ import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
-import com.actiontech.dble.backend.mysql.store.DistinctLocalResult;
+import com.actiontech.dble.backend.mysql.store.DistinctSortedLocalResult;
 import com.actiontech.dble.backend.mysql.store.LocalResult;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -74,7 +74,8 @@ public class DistinctHandler extends BaseDMLHandler {
         if (orders == null)
             orders = HandlerTool.makeOrder(this.distinctCols);
         RowDataComparator comparator = new RowDataComparator(this.fieldPackets, orders, this.isAllPushDown(), type());
-        localResult = new DistinctLocalResult(pool, sourceFields.size(), comparator, CharsetUtil.getJavaCharset(conn.getCharset().getResults())).
+        String charSet = conn != null ? CharsetUtil.getJavaCharset(conn.getCharset().getResults()) : CharsetUtil.getJavaCharset(session.getSource().getCharset().getResults());
+        localResult = new DistinctSortedLocalResult(pool, sourceFields.size(), comparator, charSet).
                 setMemSizeController(session.getOtherBufferMC());
         nextHandler.fieldEofResponse(null, null, this.fieldPackets, null, this.isLeft, conn);
     }

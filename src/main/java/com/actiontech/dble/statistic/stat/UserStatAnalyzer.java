@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -7,8 +7,8 @@ package com.actiontech.dble.statistic.stat;
 
 import com.actiontech.dble.server.parser.ServerParse;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * UserStatAnalyzer
@@ -17,7 +17,7 @@ import java.util.Map;
  */
 public final class UserStatAnalyzer implements QueryResultListener {
 
-    private LinkedHashMap<String, UserStat> userStatMap = new LinkedHashMap<>();
+    private ConcurrentHashMap<String, UserStat> userStatMap = new ConcurrentHashMap<>();
 
     private static final UserStatAnalyzer INSTANCE = new UserStatAnalyzer();
 
@@ -45,15 +45,10 @@ public final class UserStatAnalyzer implements QueryResultListener {
                 long startTime = query.getStartTime();
                 long endTime = query.getEndTime();
                 long resultSetSize = query.getResultSize();
-                UserStat userStat = userStatMap.get(user);
+                UserStat newUserStat = new UserStat(user);
+                UserStat userStat = userStatMap.putIfAbsent(user, newUserStat);
                 if (userStat == null) {
-                    synchronized (this) {
-                        userStat = userStatMap.get(user);
-                        if (userStat == null) {
-                            userStat = new UserStat(user);
-                            userStatMap.put(user, userStat);
-                        }
-                    }
+                    userStat = newUserStat;
                 }
                 userStat.update(sqlType, sql, sqlRows, netInBytes, netOutBytes, startTime, endTime, resultSetSize);
                 break;
@@ -63,13 +58,13 @@ public final class UserStatAnalyzer implements QueryResultListener {
     }
 
     public Map<String, UserStat> getUserStatMap() {
-        Map<String, UserStat> map = new LinkedHashMap<>(userStatMap.size());
+        Map<String, UserStat> map = new ConcurrentHashMap<>(userStatMap.size());
         map.putAll(userStatMap);
         return map;
     }
 
     public void reset() {
-        userStatMap = new LinkedHashMap<>();
+        userStatMap = new ConcurrentHashMap<>();
     }
 
 }

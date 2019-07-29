@@ -21,13 +21,12 @@ This document defines the roadmap for dble development.
 	- [x] Cast Functions and Operators
 	- [x] Bit Functions and Operators  
 	- [x] Aggregate (GROUP BY) Functions  
-- [ ] VIEW
-- [ ] allowMultiQueries
-- [ ] Charset
-- [ ] allowMultiQueries 
-- [ ] System Variables 
-- [ ] User Variables
-- [ ] Kill statement
+- [x] VIEW
+- [x] allowMultiQueries
+- [x] Charset
+- [x] System Variables 
+- [x] User Variables
+- [x] Kill statement
 - [x] Show full tables
 - [ ] MySQL5.7 Client/Server Protocol 
 
@@ -52,3 +51,26 @@ This document defines the roadmap for dble development.
 - [x] Heterogeneous database
 - [x] Migrate Logic
 - [x] Other unused Code
+
+##### __Manager__ 
+- [ ] Add where filter
+- [ ] show DDL status
+- [ ] kill DDL & remove Lock
+- [ ] reload metadata for special table
+- [ ] reload metadata performance
+
+##### __Config__ 
+- [ ] Split schema.xml
+- [ ] Split server.xml
+
+##### __Protocol__ 
+- [ ] COM_CHANGE_USER
+- [ ] COM_RESET_CONNECTION
+- [ ] COM_SET_OPTION
+
+##### __Other__ 
+- [ ] keep alive if just setting a manager user
+- [ ] performance
+- [ ] refactor global table check
+- [ ] HA interface
+- [ ] alert interface

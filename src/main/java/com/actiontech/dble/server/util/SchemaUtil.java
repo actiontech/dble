@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -10,6 +10,7 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.UserConfig;
+import com.actiontech.dble.plan.common.item.function.ItemCreate;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.util.RouterUtil;
@@ -18,6 +19,7 @@ import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
@@ -53,6 +55,16 @@ public final class SchemaUtil {
         }
         return null;
     }
+
+    public static SchemaInfo getSchemaInfoWithoutCheck(String schema, String tableName) {
+        SchemaInfo schemaInfo = new SchemaInfo();
+        SchemaConfig config = DbleServer.getInstance().getConfig().getSchemas().get(schema);
+        schemaInfo.schemaConfig = config;
+        schemaInfo.table = tableName;
+        schemaInfo.schema = schema;
+        return schemaInfo;
+    }
+
 
     public static SchemaInfo getSchemaInfo(String user, SchemaConfig schemaConfig, String fullTableName) throws SQLException {
         SchemaInfo schemaInfo = new SchemaInfo();
@@ -136,6 +148,14 @@ public final class SchemaUtil {
             throws SQLException {
         if (sqlSelectQuery instanceof MySqlSelectQueryBlock) {
             MySqlSelectQueryBlock mySqlSelectQueryBlock = (MySqlSelectQueryBlock) sqlSelectQuery;
+            //CHECK IF THE SELECT LIST HAS INNER_FUNC IN,WITCH SHOULD BE DEAL BY DBLE
+            for (SQLSelectItem item : mySqlSelectQueryBlock.getSelectList()) {
+                if (item.getExpr() instanceof SQLMethodInvokeExpr) {
+                    if (ItemCreate.getInstance().isInnerFunc(((SQLMethodInvokeExpr) item.getExpr()).getMethodName())) {
+                        return false;
+                    }
+                }
+            }
             return isNoSharding(source, mySqlSelectQueryBlock.getFrom(), selectStmt, childSelectStmt, contextSchema, schemas, dataNode);
         } else if (sqlSelectQuery instanceof SQLUnionQuery) {
             return isNoSharding(source, (SQLUnionQuery) sqlSelectQuery, selectStmt, contextSchema, schemas, dataNode);
@@ -200,7 +220,7 @@ public final class SchemaUtil {
         }
 
         if (!ServerPrivileges.checkPrivilege(source, schemaInfo.schema, schemaInfo.table, checkType)) {
-            String msg = "The statement DML privilege check is not passed, sql:" + stmt;
+            String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
             throw new SQLNonTransientException(msg);
         }
         String noShardingNode = RouterUtil.isNoSharding(schemaInfo.schemaConfig, schemaInfo.table);

@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -144,12 +144,13 @@ public final class ShowDataSource {
                                         String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         //row.add(StringUtil.encode(dataNode, charset));
+        int idleCount = ds.getIdleCount();
         row.add(StringUtil.encode(ds.getName(), charset));
         row.add(StringUtil.encode(ds.getConfig().getIp(), charset));
         row.add(IntegerUtil.toBytes(ds.getConfig().getPort()));
         row.add(StringUtil.encode(ds.isReadNode() ? "R" : "W", charset));
-        row.add(IntegerUtil.toBytes(ds.getActiveCount()));
-        row.add(IntegerUtil.toBytes(ds.getIdleCount()));
+        row.add(IntegerUtil.toBytes(ds.getTotalConCount() - idleCount));
+        row.add(IntegerUtil.toBytes(idleCount));
         row.add(IntegerUtil.toBytes(ds.getSize()));
         row.add(LongUtil.toBytes(ds.getExecuteCount()));
         row.add(LongUtil.toBytes(ds.getReadCount()));

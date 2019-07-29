@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -44,6 +44,8 @@ public class RowDataPacket extends MySQLPacket {
     protected static final byte EMPTY_MARK = (byte) 0;
 
     private int fieldCount;
+
+
     public final List<byte[]> fieldValues;
     private Map<RowDataComparator, List<byte[]>> cmpValues;
 
@@ -158,5 +160,10 @@ public class RowDataPacket extends MySQLPacket {
 
     public void setFieldCount(int fieldCount) {
         this.fieldCount = fieldCount;
+    }
+
+
+    public List<byte[]> getFieldValues() {
+        return fieldValues;
     }
 }

@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -44,7 +44,12 @@ public class RouteService {
     }
 
     public RouteResultset route(SchemaConfig schema,
-                                int sqlType, String stmt, ServerConnection sc)
+                                int sqlType, String stmt, ServerConnection sc) throws SQLException {
+        return this.route(schema, sqlType, stmt, sc, false);
+    }
+
+    public RouteResultset route(SchemaConfig schema,
+                                int sqlType, String stmt, ServerConnection sc, boolean isExplain)
             throws SQLException {
         RouteResultset rrs;
         String cacheKey = null;
@@ -105,11 +110,11 @@ public class RouteService {
                 }
             } else {
                 stmt = stmt.trim();
-                rrs = RouteStrategyFactory.getRouteStrategy().route(schema, sqlType, stmt, sc, tableId2DataNodeCache);
+                rrs = RouteStrategyFactory.getRouteStrategy().route(schema, sqlType, stmt, sc, tableId2DataNodeCache, isExplain);
             }
         } else {
             stmt = stmt.trim();
-            rrs = RouteStrategyFactory.getRouteStrategy().route(schema, sqlType, stmt, sc, tableId2DataNodeCache);
+            rrs = RouteStrategyFactory.getRouteStrategy().route(schema, sqlType, stmt, sc, tableId2DataNodeCache, isExplain);
         }
 
         if (rrs != null && sqlType == ServerParse.SELECT && rrs.isCacheAble() && !LOGGER.isDebugEnabled() && sqlRouteCache != null &&

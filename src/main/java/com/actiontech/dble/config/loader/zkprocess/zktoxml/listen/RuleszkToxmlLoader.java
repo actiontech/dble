@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -112,6 +112,9 @@ public class RuleszkToxmlLoader extends ZkMultiLoader implements NotifyService {
         DataInf functionZkData = this.getZkData(zkDirectory, KVPathUtil.FUNCTION);
         List<Function> functionList = parseJsonFunctionService.parseJsonToBean(functionZkData.getDataValue());
         rules.setFunction(functionList);
+
+        DataInf version = this.getZkData(zkDirectory, KVPathUtil.VERSION);
+        rules.setVersion(version == null ? null : version.getDataValue());
 
         return rules;
     }

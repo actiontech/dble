@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -86,7 +86,7 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
     }
 
     private Long getNextValidSeqVal(SequenceVal seqVal) throws SQLNonTransientException {
-        Long nexVal = seqVal.counter.getNext();
+        long nexVal = seqVal.counter.getNext();
         if (nexVal != -1) {
             return nexVal;
         } else {

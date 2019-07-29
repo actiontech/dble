@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -205,7 +205,7 @@ public final class ByteUtil {
         int microSecond = DateUtil.getMicroSecond(date);
         byte[] bytes = null;
         byte[] tmp = null;
-        if (day == 0 && hour == 0 && minute == 0 && second == 0 && microSecond == 0) {
+        if (hour == 0 && minute == 0 && second == 0 && microSecond == 0) {
             bytes = new byte[1];
             bytes[0] = (byte) 0;
         } else if (microSecond == 0) {

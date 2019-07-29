@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2016-2019 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
 package com.actiontech.dble.net;
 
 import com.actiontech.dble.config.model.UserConfig;
@@ -65,10 +70,9 @@ public class FrontendUserManager {
                 }
             }
             if (!isManager) {
-                if (serverMaxConnection <= serverConnection) {
+                if (serverMaxConnection > 0 && serverMaxConnection <= serverConnection) {
                     return SERVER_MAX;
                 }
-
                 serverConnection++;
             }
             userConnectionMap.put(user, ++userConnection);

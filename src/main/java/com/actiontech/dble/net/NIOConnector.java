@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,15 +91,15 @@ public final class NIOConnector extends Thread implements SocketConnector {
             } catch (Exception e) {
                 LOGGER.warn("error:", e);
                 c.close(e.toString());
-                if (c instanceof BackendAIOConnection) {
-                    ((BackendAIOConnection) c).onConnectFailed(e);
+                if (c instanceof MySQLConnection) {
+                    ((MySQLConnection) c).onConnectFailed(e);
                 }
             }
         }
     }
 
     private void finishConnect(SelectionKey key, Object att) {
-        BackendAIOConnection c = (BackendAIOConnection) att;
+        MySQLConnection c = (MySQLConnection) att;
         try {
             if (finishConnect(c, (SocketChannel) c.channel)) {
                 clearSelectionKey(key);

@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -48,6 +48,9 @@ public final class ShowHandler {
                 break;
             case ServerParseShow.CREATE_VIEW:
                 ShowCreateView.response(c, stmt);
+                break;
+            case ServerParseShow.CREATE_DATABASE:
+                ShowCreateDatabase.response(c, stmt);
                 break;
             case ServerParseShow.CHARSET:
                 stmt = stmt.toLowerCase().replaceFirst("charset", "character set");

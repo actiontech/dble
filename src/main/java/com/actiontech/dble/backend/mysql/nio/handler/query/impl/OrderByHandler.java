@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -100,13 +100,13 @@ public class OrderByHandler extends OwnThreadDMLHandler {
                 RowDataPacket row = null;
                 try {
                     row = queue.take();
+                    if (row.getFieldCount() == 0) {
+                        break;
+                    }
+                    localResult.add(row);
                 } catch (InterruptedException e) {
                     //ignore error
                 }
-                if (row.getFieldCount() == 0) {
-                    break;
-                }
-                localResult.add(row);
             }
             recordElapsedTime("order write end :");
             localResult.done();

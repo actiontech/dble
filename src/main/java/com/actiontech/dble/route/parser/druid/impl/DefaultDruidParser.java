@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -41,16 +41,31 @@ public class DefaultDruidParser implements DruidParser {
     protected static final Logger LOGGER = LoggerFactory.getLogger(DefaultDruidParser.class);
     protected DruidShardingParseInfo ctx;
 
+
+    public DefaultDruidParser() {
+        ctx = new DruidShardingParseInfo();
+    }
+
+    /**
+     * @param schema
+     * @param stmt
+     * @param sc
+     */
+    public SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, String originSql, LayerCachePool cachePool, ServerSchemaStatVisitor schemaStatVisitor, ServerConnection sc, boolean isExplain) throws SQLException {
+        ctx = new DruidShardingParseInfo();
+        schema = visitorParse(schema, rrs, stmt, schemaStatVisitor, sc, isExplain);
+        changeSql(schema, rrs, stmt, cachePool);
+        return schema;
+    }
+
+
     /**
      * @param schema
      * @param stmt
      * @param sc
      */
     public SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, String originSql, LayerCachePool cachePool, ServerSchemaStatVisitor schemaStatVisitor, ServerConnection sc) throws SQLException {
-        ctx = new DruidShardingParseInfo();
-        schema = visitorParse(schema, rrs, stmt, schemaStatVisitor, sc);
-        changeSql(schema, rrs, stmt, cachePool);
-        return schema;
+        return this.parser(schema, rrs, stmt, originSql, cachePool, schemaStatVisitor, sc, false);
     }
 
 
@@ -61,7 +76,7 @@ public class DefaultDruidParser implements DruidParser {
     }
 
     @Override
-    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc)
+    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain)
             throws SQLException {
         stmt.accept(visitor);
         if (visitor.getNotSupportMsg() != null) {

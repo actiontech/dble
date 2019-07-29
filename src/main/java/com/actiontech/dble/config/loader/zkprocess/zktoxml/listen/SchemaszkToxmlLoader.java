@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -103,6 +103,9 @@ public class SchemaszkToxmlLoader extends ZkMultiLoader implements NotifyService
         DataInf dataHostZkDirectory = this.getZkData(zkDirectory, KVPathUtil.DATA_HOST);
         List<DataHost> dataHostList = parseJsonDataHost.parseJsonToBean(dataHostZkDirectory.getDataValue());
         schema.setDataHost(dataHostList);
+
+        DataInf version = this.getZkData(zkDirectory, KVPathUtil.VERSION);
+        schema.setVersion(version == null ? null : version.getDataValue());
 
 
         return schema;

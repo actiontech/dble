@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -17,21 +17,13 @@ public class SqlResultSizeRecorder {
 
     private ConcurrentMap<String, SqlResultSet> sqlResultSetMap = new ConcurrentHashMap<>();
 
-
     public void addSql(String sql, long resultSetSize) {
         SqlResultSet sqlResultSet;
         SqlParser sqlParserHigh = new SqlParser();
         sql = sqlParserHigh.mergeSql(sql);
-        if (this.sqlResultSetMap.containsKey(sql)) {
-            sqlResultSet = this.sqlResultSetMap.get(sql);
+        sqlResultSet = this.sqlResultSetMap.putIfAbsent(sql, new SqlResultSet(sql, resultSetSize));
+        if (sqlResultSet != null) {
             sqlResultSet.count();
-            sqlResultSet.setSql(sql);
-            sqlResultSet.setResultSetSize(resultSetSize);
-        } else {
-            sqlResultSet = new SqlResultSet();
-            sqlResultSet.setResultSetSize(resultSetSize);
-            sqlResultSet.setSql(sql);
-            this.sqlResultSetMap.put(sql, sqlResultSet);
         }
     }
 

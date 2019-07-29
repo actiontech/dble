@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -23,6 +23,7 @@ public class TableConfig {
     private final String name;
     private final String primaryKey;
     private final boolean autoIncrement;
+    private final String incrementColumn;
     private final boolean needAddLimit;
     private final TableTypeEnum tableType;
     private final ArrayList<String> dataNodes;
@@ -41,18 +42,19 @@ public class TableConfig {
     private final TableConfig directRouteTC;
 
     public TableConfig(String name, String primaryKey, boolean autoIncrement, boolean needAddLimit,
-                       TableTypeEnum tableType, String dataNode, RuleConfig rule, boolean ruleRequired) {
-        this(name, primaryKey, autoIncrement, needAddLimit, tableType, dataNode, rule, ruleRequired, null, null, null);
+                       TableTypeEnum tableType, String dataNode, RuleConfig rule, boolean ruleRequired, String incrementColumn) {
+        this(name, primaryKey, autoIncrement, needAddLimit, tableType, dataNode, rule, ruleRequired, null, null, null, incrementColumn);
     }
 
     public TableConfig(String name, String primaryKey, boolean autoIncrement, boolean needAddLimit,
                        TableTypeEnum tableType, String dataNode, RuleConfig rule, boolean ruleRequired, TableConfig parentTC,
-                       String joinKey, String parentKey) {
+                       String joinKey, String parentKey, String incrementColumn) {
         if (name == null) {
             throw new IllegalArgumentException("table name is null");
         } else if (dataNode == null) {
             throw new IllegalArgumentException("dataNode name is null");
         }
+        this.incrementColumn = incrementColumn;
         this.primaryKey = primaryKey;
         this.autoIncrement = autoIncrement;
         this.needAddLimit = needAddLimit;
@@ -116,7 +118,7 @@ public class TableConfig {
 
     public TableConfig(String name, String primaryKey, boolean autoIncrement, boolean needAddLimit,
                        TableTypeEnum tableType, ArrayList<String> dataNode, RuleConfig rule, boolean ruleRequired, TableConfig parentTC,
-                       String joinKey, String parentKey) {
+                       String joinKey, String parentKey, String incrementColumn) {
         this.primaryKey = primaryKey;
         this.autoIncrement = autoIncrement;
         this.needAddLimit = needAddLimit;
@@ -125,6 +127,7 @@ public class TableConfig {
         this.dataNodes = dataNode;
         this.rule = rule;
         this.partitionColumn = (rule == null) ? null : rule.getColumn();
+        this.incrementColumn = incrementColumn;
         partionKeyIsPrimaryKey = (partitionColumn == null) ? primaryKey == null : partitionColumn.equals(primaryKey);
         this.ruleRequired = ruleRequired;
         this.parentTC = parentTC;
@@ -162,8 +165,12 @@ public class TableConfig {
 
     TableConfig lowerCaseCopy(TableConfig parent) {
         return new TableConfig(this.name.toLowerCase(), this.primaryKey, this.autoIncrement, this.needAddLimit,
-                this.tableType, this.dataNodes, this.rule, this.ruleRequired, parent, this.joinKey, this.parentKey);
+                this.tableType, this.dataNodes, this.rule, this.ruleRequired, parent, this.joinKey, this.parentKey, this.incrementColumn);
 
+    }
+
+    public String getTrueIncrementColumn() {
+        return incrementColumn != null ? incrementColumn : primaryKey;
     }
 
     public String getPrimaryKey() {
@@ -210,7 +217,7 @@ public class TableConfig {
             prevTC = tb;
             tb = tb.parentTC;
         }
-        String sql = "SELECT " +
+        return "SELECT " +
                 prevTC.parentTC.name +
                 '.' +
                 prevTC.parentKey +
@@ -218,7 +225,6 @@ public class TableConfig {
                 tableSb.substring(0, tableSb.length() - 1) +
                 " WHERE " +
                 ((level < 2) ? latestCond : condition.toString() + latestCond);
-        return sql;
 
     }
 
@@ -232,7 +238,6 @@ public class TableConfig {
 
     /**
      * get root parent
-     *
      */
     public TableConfig getRootParent() {
         if (parentTC == null) {

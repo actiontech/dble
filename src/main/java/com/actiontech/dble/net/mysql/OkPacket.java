@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -33,6 +33,7 @@ import java.nio.ByteBuffer;
 public class OkPacket extends MySQLPacket {
     public static final byte FIELD_COUNT = 0x00;
     public static final byte[] OK = new byte[]{7, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0};
+
 
     private byte fieldCount = FIELD_COUNT;
     private long affectedRows;

@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -53,7 +53,7 @@ public final class CharTypes {
     }
 
     public static boolean isIdentifierChar(char c) {
-        return c > IDENTIFIER_FLAGS.length || IDENTIFIER_FLAGS[c];
+        return c >= IDENTIFIER_FLAGS.length || IDENTIFIER_FLAGS[c];
     }
 
     private static final boolean[] WHITESPACE_FLAGS = new boolean[256];
@@ -71,7 +71,7 @@ public final class CharTypes {
      * @return false if {@link MySQLLexer#EOI}
      */
     public static boolean isWhitespace(char c) {
-        return c <= WHITESPACE_FLAGS.length && WHITESPACE_FLAGS[c];
+        return c < WHITESPACE_FLAGS.length && WHITESPACE_FLAGS[c];
     }
 
 }

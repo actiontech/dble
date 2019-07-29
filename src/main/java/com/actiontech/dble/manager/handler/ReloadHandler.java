@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -46,7 +46,8 @@ public final class ReloadHandler {
                 ReloadQueryCf.execute(c, filter);
                 break;
             case ManagerParseReload.META_DATA:
-                ReloadMetaData.execute(c);
+                String whereCondition = stmt.substring(rs >>> SHIFT).trim();
+                ReloadMetaData.execute(c, whereCondition);
                 break;
             default:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
@@ -29,6 +29,7 @@ import com.actiontech.dble.sqlengine.mpp.LoadData;
 import com.actiontech.dble.util.ObjectUtil;
 import com.actiontech.dble.util.SqlStringUtil;
 import com.actiontech.dble.util.StringUtil;
+import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlLoadDataInFileStatement;
@@ -54,6 +55,8 @@ import java.util.regex.Pattern;
  */
 public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerLoadDataInfileHandler.class);
+    //innodb limit of columns per table, https://dev.mysql.com/doc/refman/8.0/en/column-count-limit.html
+    private static final int DEFAULT_MAX_COLUMNS = 1017;
     private ServerConnection serverConnection;
     private String sql;
     private String fileName;
@@ -70,9 +73,12 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     private boolean isHasStoreToFile = false;
 
     private SchemaConfig schema;
+    private final SystemConfig systemConfig = DbleServer.getInstance().getConfig().getSystem();
     private String tableName;
     private TableConfig tableConfig;
     private int partitionColumnIndex = -1;
+    private int autoIncrementIndex = -1;
+    private boolean appendAutoIncrementColumn = false;
     private LayerCachePool tableId2DataNodeCache;
     private boolean isStartLoadData = false;
 
@@ -114,7 +120,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         loadData.setFieldTerminatedBy(fieldTerminatedBy);
 
         SQLTextLiteralExpr rawEnclosed = (SQLTextLiteralExpr) statement.getColumnsEnclosedBy();
-        String enclose = rawEnclosed == null ? null : rawEnclosed.getText();
+        String enclose = ((rawEnclosed == null) || rawEnclosed.getText().isEmpty()) ? null : rawEnclosed.getText();
         loadData.setEnclose(enclose);
 
         SQLTextLiteralExpr escapedExpr = (SQLTextLiteralExpr) statement.getColumnsEscaped();
@@ -172,8 +178,19 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         tempFile = tempPath + "clientTemp.txt";
         tempByteBuffer = new ByteArrayOutputStream();
 
-        if (!trySetPartitionColumnIndex(statement)) {
+        if (!trySetPartitionOrAutoIncrementColumnIndex(statement)) {
             return;
+        }
+
+        if (tableConfig != null && tableConfig.isAutoIncrement() && autoIncrementIndex == -1) {
+            final String incrementColumn = tableConfig.getTrueIncrementColumn();
+            statement.getColumns().add(new SQLIdentifierExpr(incrementColumn));
+            autoIncrementIndex = statement.getColumns().size() - 1;
+            appendAutoIncrementColumn = true;
+            sql = SQLUtils.toMySqlString(statement);
+            if (incrementColumn.equalsIgnoreCase(getPartitionColumn())) {
+                partitionColumnIndex = autoIncrementIndex;
+            }
         }
 
         parseLoadDataPram();
@@ -224,18 +241,21 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     /**
      * findout the index of the partition key
      */
-    private boolean trySetPartitionColumnIndex(MySqlLoadDataInFileStatement sqlStatement) {
+    private boolean trySetPartitionOrAutoIncrementColumnIndex(MySqlLoadDataInFileStatement sqlStatement) {
         if (tableConfig != null) {
             List<SQLExpr> columns = sqlStatement.getColumns();
-
             String pColumn = getPartitionColumn();
-            if (pColumn != null) {
+            boolean autoIncrement = tableConfig.isAutoIncrement();
+            if (pColumn != null || autoIncrement) {
+                String incrementColumn = tableConfig.getTrueIncrementColumn();
                 if (columns != null && columns.size() > 0) {
                     for (int i = 0, columnsSize = columns.size(); i < columnsSize; i++) {
                         String column = StringUtil.removeBackQuote(columns.get(i).toString());
-                        if (pColumn.equalsIgnoreCase(column)) {
+                        if (column.equalsIgnoreCase(pColumn)) {
                             partitionColumnIndex = i;
-                            break;
+                        }
+                        if (autoIncrement && column.equalsIgnoreCase(incrementColumn)) {
+                            autoIncrementIndex = i;
                         }
                     }
                 } else {
@@ -243,9 +263,12 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                         StructureMeta.TableMeta tbMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schema.getName(), tableName);
                         if (tbMeta != null) {
                             for (int i = 0; i < tbMeta.getColumnsCount(); i++) {
-                                if (pColumn.equalsIgnoreCase(tbMeta.getColumns(i).getName())) {
+                                String column = tbMeta.getColumns(i).getName();
+                                if (column.equalsIgnoreCase(pColumn)) {
                                     partitionColumnIndex = i;
-                                    break;
+                                }
+                                if (autoIncrement && column.equalsIgnoreCase(incrementColumn)) {
+                                    autoIncrementIndex = i;
                                 }
                             }
                         }
@@ -314,15 +337,12 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             ctx.addTable(tableName);
 
             if (partitionColumnIndex != -1) {
-                String value;
-                if (lineList.length < partitionColumnIndex + 1) {
-                    throw new RuntimeException("Partition column is empty in line '" + StringUtil.join(lineList, loadData.getLineTerminatedBy()) + "'");
-                } else {
-                    value = lineList[partitionColumnIndex];
+                if (lineList.length < partitionColumnIndex + 1 || StringUtil.isEmpty(lineList[partitionColumnIndex])) {
+                    throw new RuntimeException("Partition column is empty in line '" + StringUtil.join(lineList, loadData.getFieldTerminatedBy()) + "'");
                 }
                 RouteCalculateUnit routeCalculateUnit = new RouteCalculateUnit();
                 routeCalculateUnit.addShardingExpr(tableName, getPartitionColumn(),
-                        parseFieldString(value, loadData.getEnclose(), loadData.getEscape()));
+                        parseFieldString(lineList[partitionColumnIndex], loadData.getEnclose(), loadData.getEscape()));
                 ctx.addRouteCalculateUnit(routeCalculateUnit);
             }
 
@@ -366,6 +386,10 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             }
         }
 
+        if (autoIncrementIndex != -1) {
+            line = rebuildRow(line);
+        }
+
         RouteResultset rrs = tryDirectRoute(sql, line);
 
         if (rrs == null || rrs.getNodes() == null || rrs.getNodes().length == 0) {
@@ -392,12 +416,31 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                     data.getData().add(jLine);
                 }
 
-                if (toFile && data.getData().size() > 10000) {
+                if (toFile && data.getData().size() > systemConfig.getMaxRowSizeToFile()) {
                     //avoid OOM
                     saveDataToFile(data, name);
                 }
             }
         }
+    }
+
+    private String[] rebuildRow(String[] line) throws Exception {
+        if (autoIncrementIndex >= line.length) {
+            autoIncrementIndex = line.length;
+            String[] newLine = new String[line.length + 1];
+            System.arraycopy(line, 0, newLine, 0, line.length);
+            String tableKey = StringUtil.getFullName(schema.getName(), tableName);
+            newLine[line.length] = String.valueOf(DbleServer.getInstance().getSequenceHandler().nextId(tableKey));
+            line = newLine;
+        } else {
+            if (StringUtil.isEmpty(line[autoIncrementIndex])) {
+                String tableKey = StringUtil.getFullName(schema.getName(), tableName);
+                line[autoIncrementIndex] = String.valueOf(DbleServer.getInstance().getSequenceHandler().nextId(tableKey));
+            } else if (!appendAutoIncrementColumn) {
+                throw new Exception("you can't set value for Autoincrement column!");
+            }
+        }
+        return line;
     }
 
     private void flushDataToFile() {
@@ -570,12 +613,15 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             }
             // List<String> lines = Splitter.on(loadData.getLineTerminatedBy()).omitEmptyStrings().splitToList(content);
             CsvParserSettings settings = new CsvParserSettings();
-            settings.setMaxColumns(65535);
-            settings.setMaxCharsPerColumn(65535);
+            settings.setMaxColumns(DEFAULT_MAX_COLUMNS);
+            settings.setMaxCharsPerColumn(systemConfig.getMaxCharsPerColumn());
             settings.getFormat().setLineSeparator(loadData.getLineTerminatedBy());
             settings.getFormat().setDelimiter(loadData.getFieldTerminatedBy().charAt(0));
+            settings.getFormat().setComment('\0');
             if (loadData.getEnclose() != null) {
                 settings.getFormat().setQuote(loadData.getEnclose().charAt(0));
+            } else {
+                settings.getFormat().setQuote('\0');
             }
             if (loadData.getEscape() != null) {
                 settings.getFormat().setQuoteEscape(loadData.getEscape().charAt(0));
@@ -595,6 +641,9 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 }
                 while ((row = parser.parseNext()) != null) {
                     if (ignoreNumber == 0) {
+                        if ((row.length == 1 && row[0] == null) || row.length == 0) {
+                            continue;
+                        }
                         try {
                             parseOneLine(row, true);
                         } catch (Exception e) {
@@ -621,12 +670,15 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
     private boolean parseFileByLine(String file, String encode, String split) {
         CsvParserSettings settings = new CsvParserSettings();
-        settings.setMaxColumns(65535);
-        settings.setMaxCharsPerColumn(65535);
+        settings.setMaxColumns(DEFAULT_MAX_COLUMNS);
+        settings.setMaxCharsPerColumn(systemConfig.getMaxCharsPerColumn());
         settings.getFormat().setLineSeparator(loadData.getLineTerminatedBy());
         settings.getFormat().setDelimiter(loadData.getFieldTerminatedBy().charAt(0));
+        settings.getFormat().setComment('\0');
         if (loadData.getEnclose() != null) {
             settings.getFormat().setQuote(loadData.getEnclose().charAt(0));
+        } else {
+            settings.getFormat().setQuote('\0');
         }
         settings.getFormat().setNormalizedNewline(loadData.getLineTerminatedBy().charAt(0));
 
@@ -648,6 +700,9 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             boolean empty = true;
             while ((row = parser.parseNext()) != null) {
                 if (ignoreNumber == 0) {
+                    if ((row.length == 1 && row[0] == null) || row.length == 0) {
+                        continue;
+                    }
                     try {
                         parseOneLine(row, true);
                     } catch (Exception e) {
@@ -735,6 +790,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         tempByteBufferSize = 0;
         tableName = null;
         partitionColumnIndex = -1;
+        autoIncrementIndex = -1;
+        appendAutoIncrementColumn = false;
         if (tempFile != null) {
             File temp = new File(tempFile);
             if (temp.exists()) {
@@ -804,6 +861,5 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         }
         fileDirToDel.delete();
     }
-
 
 }

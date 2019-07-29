@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -84,5 +84,7 @@ public final class Capabilities {
     public static final int CLIENT_MULTI_RESULTS = 131072;
 
     public static final int CLIENT_PLUGIN_AUTH = 0x00080000; // 524288
+
+    public static final int CLIENT_MULTIPLE_STATEMENTS = 0x00010000;
 
 }

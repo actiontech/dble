@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -36,6 +36,12 @@ import java.util.Set;
  * AND name = 'zhangsan'
  * ORDER  BY traveldate DESC
  * LIMIT  20
+ *
+ * This class represents OR expression
+ * means that a whereUnit is an (conditionA OR conditionB)
+ * outConditions means the real out condition like (conditionA OR conditionB) and out_condition
+ * and outCondition will be split into inner conditions likes conditionA and out_condition  || conditionB and out_condition
+ * stored separately into splitedExprList
  */
 public class WhereUnit {
 

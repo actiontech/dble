@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -10,6 +10,8 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.cache.CachePool;
+import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.net.ConnectionException;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
@@ -19,11 +21,9 @@ import com.actiontech.dble.server.parser.ServerParse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -38,7 +38,8 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
     private final String sql;
     private AtomicBoolean hadResult = new AtomicBoolean(false);
     private volatile String dataNode;
-    private AtomicInteger finished = new AtomicInteger(0);
+    private Map<String, BackendConnection> receiveMap = Collections.synchronizedMap(new HashMap<>());
+    private Set<RouteResultsetNode> fatalRRSSet = Collections.synchronizedSet(new HashSet<RouteResultsetNode>());
     protected final ReentrantLock lock = new ReentrantLock();
     private Condition result = lock.newCondition();
     private final NonBlockingSession session;
@@ -48,7 +49,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
         this.session = session;
     }
 
-    public String execute(String schema, ArrayList<String> dataNodes) {
+    public String execute(String schema, ArrayList<String> dataNodes) throws ConnectionException {
         String key = schema + ":" + sql;
         CachePool cache = DbleServer.getInstance().getCacheService().getCachePool("ER_SQL2PARENTID");
         if (cache != null) {
@@ -85,7 +86,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
                     conn.setResponseHandler(this);
                     conn.setSession(session);
                     ((MySQLConnection) conn).setComplexQuery(true);
-                    conn.execute(node, session.getSource(), isAutoCommit());
+                    conn.execute(node, session.getSource(), false);
                 } else {
                     mysqlDN.getConnection(mysqlDN.getDatabase(), session.getSource().isTxStart(), session.getSource().isAutocommit(), node, this, node);
                 }
@@ -95,19 +96,26 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
         }
         lock.lock();
         try {
-            while (dataNode == null) {
+            while (receiveMap.size() < totalCount) {
                 try {
                     result.await(50, TimeUnit.MILLISECONDS);
                 } catch (InterruptedException e) {
-                    break;
-                }
-                if (dataNode != null || finished.get() >= totalCount) {
                     break;
                 }
             }
         } finally {
             lock.unlock();
         }
+
+        if (fatalRRSSet.size() != 0) {
+            StringBuffer fatalErrorMsg = new StringBuffer("Set status error for Connection to dataNode ");
+            for (RouteResultsetNode node : fatalRRSSet) {
+                fatalErrorMsg.append(node.getName() + ",");
+            }
+            fatalErrorMsg.setLength(fatalErrorMsg.length() - 1);
+            throw new ConnectionException(ErrorCode.ER_UNKNOWN_ERROR, fatalErrorMsg.toString());
+        }
+
         if (!LOGGER.isDebugEnabled()) {
             //no cached when debug
             if (dataNode != null && cache != null) {
@@ -118,15 +126,19 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 
     }
 
-    private boolean isAutoCommit() {
-        return session.getSource().isAutocommit() && !session.getSource().isTxStart();
-    }
-
-    private boolean canReleaseConn() {
-        if (session.getSource().isClosed()) {
-            return false;
+    /**
+     * Only when the connection in the target,the connection can not be release
+     * even if the session is close ,the session close would get the connection
+     * from target and close it
+     * So wo just think about one question?Is this connection need release
+     *
+     * @param con
+     */
+    private void releaseConnIfSafe(BackendConnection con) {
+        RouteResultsetNode node = (RouteResultsetNode) con.getAttachment();
+        if (session.getTarget(node) != con) {
+            con.release();
         }
-        return isAutoCommit();
     }
 
     @Override
@@ -142,24 +154,27 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        finished.incrementAndGet();
+        coutResult((MySQLConnection) conn);
         LOGGER.info("connectionError " + e);
     }
 
     @Override
     public void errorResponse(byte[] data, BackendConnection conn) {
-        finished.incrementAndGet();
         ErrorPacket err = new ErrorPacket();
         err.read(data);
         LOGGER.info("errorResponse " + err.getErrNo() + " " + new String(err.getMessage()));
         boolean executeResponse = conn.syncAndExecute();
         if (executeResponse) {
-            if (canReleaseConn()) {
-                conn.release();
-            }
+            releaseConnIfSafe(conn);
         } else {
-            ((MySQLConnection) conn).quit();
+            RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
+            if (session.getTarget(node) == conn) {
+                fatalRRSSet.add(((RouteResultsetNode) conn.getAttachment()));
+                session.getTargetMap().remove(node);
+            }
+            conn.closeWithoutRsp("unfinished sync");
         }
+        coutResult((MySQLConnection) conn);
     }
 
     @Override
@@ -169,10 +184,8 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
         }
         boolean executeResponse = conn.syncAndExecute();
         if (executeResponse) {
-            finished.incrementAndGet();
-            if (canReleaseConn()) {
-                conn.release();
-            }
+            coutResult((MySQLConnection) conn);
+            releaseConnIfSafe(conn);
         }
     }
 
@@ -201,18 +214,14 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("rowEofResponse" + conn);
         }
-        finished.incrementAndGet();
-        if (canReleaseConn()) {
-            conn.release();
-        }
+        coutResult((MySQLConnection) conn);
+        releaseConnIfSafe(conn);
     }
 
     private void executeException(BackendConnection c, Throwable e) {
-        finished.incrementAndGet();
+        coutResult((MySQLConnection) c);
         LOGGER.info("executeException   " + e);
-        if (canReleaseConn()) {
-            c.release();
-        }
+        releaseConnIfSafe(c);
     }
 
     @Override
@@ -223,10 +232,16 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
         LOGGER.info("connection closed " + conn + " reason:" + reason);
+        coutResult((MySQLConnection) conn);
     }
 
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPackets, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
+    }
+
+
+    private void coutResult(MySQLConnection con) {
+        receiveMap.put(((RouteResultsetNode) con.getAttachment()).getName(), con);
     }
 }

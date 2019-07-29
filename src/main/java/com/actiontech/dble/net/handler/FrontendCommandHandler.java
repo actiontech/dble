@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -30,9 +30,9 @@ public class FrontendCommandHandler implements NIOHandler {
     protected final FrontendConnection source;
     protected final CommandCount commands;
     private volatile byte[] dataTodo;
-    Queue<byte[]> blobDataQueue = new ConcurrentLinkedQueue<byte[]>();
+    private Queue<byte[]> blobDataQueue = new ConcurrentLinkedQueue<byte[]>();
 
-    public FrontendCommandHandler(FrontendConnection source) {
+    FrontendCommandHandler(FrontendConnection source) {
         this.source = source;
         this.commands = source.getProcessor().getCommands();
     }
@@ -47,13 +47,20 @@ public class FrontendCommandHandler implements NIOHandler {
             }
             return;
         }
-        if (MySQLPacket.COM_STMT_SEND_LONG_DATA != data[4]) {
-            dataTodo = data;
-        } else if (MySQLPacket.COM_STMT_RESET == data[4]) {
-            blobDataQueue.clear();
-        } else {
+
+        if (MySQLPacket.COM_STMT_SEND_LONG_DATA == data[4]) {
+            commands.doStmtSendLongData();
             blobDataQueue.offer(data);
             return;
+        } else if (MySQLPacket.COM_STMT_CLOSE == data[4]) {
+            commands.doStmtClose();
+            source.stmtClose(data);
+            return;
+        } else {
+            dataTodo = data;
+            if (MySQLPacket.COM_STMT_RESET == data[4]) {
+                blobDataQueue.clear();
+            }
         }
         if (source instanceof ServerConnection) {
             ((ServerConnection) source).getSession2().resetMultiStatementStatus();
@@ -110,10 +117,6 @@ public class FrontendCommandHandler implements NIOHandler {
             case MySQLPacket.COM_STMT_EXECUTE:
                 commands.doStmtExecute();
                 source.stmtExecute(data, blobDataQueue);
-                break;
-            case MySQLPacket.COM_STMT_CLOSE:
-                commands.doStmtClose();
-                source.stmtClose(data);
                 break;
             case MySQLPacket.COM_HEARTBEAT:
                 commands.doHeartbeat();

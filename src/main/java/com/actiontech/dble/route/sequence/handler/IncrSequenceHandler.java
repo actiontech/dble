@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -42,8 +42,8 @@ public abstract class IncrSequenceHandler implements SequenceHandler {
             LOGGER.info(msg);
             throw new ConfigException(msg);
         }
-        Long nextId = Long.parseLong(paraMap.get(prefixName + KEY_CUR_NAME)) + 1;
-        Long maxId = Long.parseLong(paraMap.get(prefixName + KEY_MAX_NAME));
+        long nextId = Long.parseLong(paraMap.get(prefixName + KEY_CUR_NAME)) + 1;
+        long maxId = Long.parseLong(paraMap.get(prefixName + KEY_MAX_NAME));
         if (nextId > maxId) {
             fetchNextPeriod(prefixName);
             return nextId(prefixName);

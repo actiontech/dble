@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -79,5 +79,9 @@ public class ReferenceHandlerInfo {
 
     void addChild(String child) {
         this.children.add(child);
+    }
+
+    public void setBaseSQL(String baseSQL) {
+        this.baseSQL = baseSQL;
     }
 }

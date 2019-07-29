@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -22,6 +22,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XACommitNode
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XARollbackNodesHandler;
 import com.actiontech.dble.backend.mysql.store.memalloc.MemSizeController;
 import com.actiontech.dble.backend.mysql.xa.TxState;
+import com.actiontech.dble.btrace.provider.ComplexQueryProvider;
 import com.actiontech.dble.btrace.provider.CostTimeProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
@@ -80,6 +81,7 @@ public class NonBlockingSession implements Session {
     private final ConcurrentMap<RouteResultsetNode, BackendConnection> target;
     private RollbackNodesHandler rollbackHandler;
     private CommitNodesHandler commitHandler;
+    private volatile boolean retryXa = true;
     private volatile String xaTxId;
     private volatile TxState xaState;
     private boolean prepared;
@@ -95,6 +97,7 @@ public class NonBlockingSession implements Session {
     private MemSizeController otherBufferMC;
     private QueryTimeCost queryTimeCost;
     private CostTimeProvider provider;
+    private ComplexQueryProvider xprovider;
     private volatile boolean timeCost = false;
     private AtomicBoolean firstBackConRes = new AtomicBoolean(false);
 
@@ -143,6 +146,7 @@ public class NonBlockingSession implements Session {
         }
         queryTimeCost = new QueryTimeCost();
         provider = new CostTimeProvider();
+        xprovider = new ComplexQueryProvider();
         provider.beginRequest(source.getId());
         if (requestTime == 0) {
             requestTime = System.nanoTime();
@@ -184,6 +188,20 @@ public class NonBlockingSession implements Session {
         }
         provider.endRoute(source.getId());
         queryTimeCost.setCount(rrs.getNodes() == null ? 0 : rrs.getNodes().length);
+    }
+
+    public void endComplexRoute() {
+        if (!timeCost) {
+            return;
+        }
+        xprovider.endRoute(source.getId());
+    }
+
+    public void endComplexExecute() {
+        if (!timeCost) {
+            return;
+        }
+        xprovider.endComplexExecute(source.getId());
     }
 
     public void readyToDeliver() {
@@ -303,6 +321,13 @@ public class NonBlockingSession implements Session {
             connMap.put(conn, record);
             traceResult.addToConnFinishedMap(responseHandler, connMap);
         }
+
+        if (!timeCost) {
+            return;
+        }
+        if (queryTimeCost.getFirstBackConEof().compareAndSet(false, true)) {
+            xprovider.firstComplexEof(source.getId());
+        }
     }
 
     public void setBeginCommitTime() {
@@ -398,10 +423,16 @@ public class NonBlockingSession implements Session {
         RouteResultsetNode[] nodes = rrs.getNodes();
         if (nodes == null || nodes.length == 0 || nodes[0].getName() == null || nodes[0].getName().equals("")) {
             if (rrs.isNeedOptimizer()) {
+                if (this.getSessionXaID() != null && this.xaState == TxState.TX_INITIALIZE_STATE) {
+                    this.xaState = TxState.TX_STARTED_STATE;
+                }
                 try {
                     this.complexRrs = rrs;
                     executeMultiSelect(rrs);
                 } catch (MySQLOutPutException e) {
+                    if (this.getSessionXaID() != null) {
+                        this.xaState = TxState.TX_INITIALIZE_STATE;
+                    }
                     source.writeErrMessage(e.getSqlState(), e.getMessage(), e.getErrorCode());
                 }
             } else {
@@ -422,8 +453,11 @@ public class NonBlockingSession implements Session {
             try {
                 singleNodeHandler.execute();
             } catch (Exception e) {
-                handleSpecial(rrs, source.getSchema(), false);
+                handleSpecial(rrs, false);
                 LOGGER.info(String.valueOf(source) + rrs, e);
+                if (this.getSessionXaID() != null) {
+                    this.xaState = TxState.TX_INITIALIZE_STATE;
+                }
                 source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.getMessage() == null ? e.toString() : e.getMessage());
             }
             if (this.isPrepared()) {
@@ -445,6 +479,9 @@ public class NonBlockingSession implements Session {
             try {
                 multiNodeDdlHandler.execute();
             } catch (Exception e) {
+                if (this.getSessionXaID() != null) {
+                    this.xaState = TxState.TX_INITIALIZE_STATE;
+                }
                 LOGGER.info(String.valueOf(source) + rrs, e);
                 try {
                     DbleServer.getInstance().getTmManager().notifyResponseClusterDDL(rrs.getSchema(), rrs.getTable(), rrs.getSrcStatement(), DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.UNKNOWN, true);
@@ -687,7 +724,8 @@ public class NonBlockingSession implements Session {
      */
     public void terminate() {
         // XA MUST BE FINISHED
-        if (source.isTxStart() && this.getXaState() != null && this.getXaState() != TxState.TX_INITIALIZE_STATE) {
+        if ((source.isTxStart() && this.getXaState() != null && this.getXaState() != TxState.TX_INITIALIZE_STATE) ||
+                needWaitFinished) {
             return;
         }
         for (BackendConnection node : target.values()) {
@@ -703,7 +741,7 @@ public class NonBlockingSession implements Session {
     void initiativeTerminate() {
 
         for (BackendConnection node : target.values()) {
-            node.terminate("client closed ");
+            node.closeWithoutRsp("client closed ");
         }
         target.clear();
         clearHandlesResources();
@@ -715,7 +753,15 @@ public class NonBlockingSession implements Session {
             return;
         }
         for (BackendConnection node : target.values()) {
-            node.terminate(reason);
+            node.closeWithoutRsp(reason);
+        }
+        target.clear();
+        clearHandlesResources();
+    }
+
+    public void forceClose(String reason) {
+        for (BackendConnection node : target.values()) {
+            node.closeWithoutRsp(reason);
         }
         target.clear();
         clearHandlesResources();
@@ -731,23 +777,21 @@ public class NonBlockingSession implements Session {
     }
 
     public void releaseConnection(RouteResultsetNode rrn, boolean debug, final boolean needClose) {
-
-        BackendConnection c = target.remove(rrn);
-        if (c != null) {
-            if (debug) {
-                LOGGER.debug("release connection " + c);
-            }
-            if (c.getAttachment() != null) {
-                c.setAttachment(null);
-            }
-            if (!c.isClosedOrQuit()) {
-                if (c.isAutocommit()) {
-                    c.release();
-                } else if (needClose) {
-                    //c.rollback();
-                    c.close("the  need to be closed");
-                } else {
-                    c.release();
+        if (rrn != null) {
+            BackendConnection c = target.remove(rrn);
+            if (c != null) {
+                if (debug) {
+                    LOGGER.debug("release connection " + c);
+                }
+                if (!c.isClosed()) {
+                    if (c.isAutocommit()) {
+                        c.release();
+                    } else if (needClose) {
+                        //c.rollback();
+                        c.close("the  need to be closed");
+                    } else {
+                        c.release();
+                    }
                 }
             }
         }
@@ -865,8 +909,11 @@ public class NonBlockingSession implements Session {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("clear session resources " + this);
         }
-        this.releaseConnections(needClosed);
+        if (!source.isLocked()) {
+            this.releaseConnections(needClosed);
+        }
         needWaitFinished = false;
+        retryXa = true;
         clearHandlesResources();
         source.setTxStart(false);
         source.getAndIncrementXid();
@@ -875,7 +922,7 @@ public class NonBlockingSession implements Session {
     public void clearResources(RouteResultset rrs) {
         clearResources(true);
         if (rrs.getSqlType() == DDL) {
-            this.handleSpecial(rrs, this.getSource().getSchema(), false);
+            this.handleSpecial(rrs, false);
         }
     }
 
@@ -917,9 +964,12 @@ public class NonBlockingSession implements Session {
                 try {
                     MySQLConnection newConn = (MySQLConnection) dn.getConnection(dn.getDatabase(), errConn.isAutocommit(), false, errConn.getAttachment());
                     newConn.setXaStatus(errConn.getXaStatus());
+                    newConn.setSession(this);
                     if (!newConn.setResponseHandler(queryHandler)) {
                         return errConn;
                     }
+                    errConn.setResponseHandler(null);
+                    errConn.close();
                     this.bindConnection(node, newConn);
                     return newConn;
                 } catch (Exception e) {
@@ -943,9 +993,9 @@ public class NonBlockingSession implements Session {
         return errConn;
     }
 
-    public boolean handleSpecial(RouteResultset rrs, String schema, boolean isSuccess) {
+    public boolean handleSpecial(RouteResultset rrs, boolean isSuccess) {
         if (rrs.getSchema() != null) {
-            return handleSpecial(rrs, schema, isSuccess, null);
+            return handleSpecial(rrs, isSuccess, null);
         } else {
             if (rrs.getSqlType() == ServerParse.DDL) {
                 LOGGER.info("Hint ddl do not update the meta");
@@ -954,7 +1004,7 @@ public class NonBlockingSession implements Session {
         }
     }
 
-    public boolean handleSpecial(RouteResultset rrs, String schema, boolean isSuccess, String errInfo) {
+    public boolean handleSpecial(RouteResultset rrs, boolean isSuccess, String errInfo) {
         if (rrs.getSqlType() == ServerParse.DDL && rrs.getSchema() != null) {
             String sql = rrs.getSrcStatement();
             if (source.isTxStart()) {
@@ -963,9 +1013,9 @@ public class NonBlockingSession implements Session {
             }
             if (!isSuccess) {
                 LOGGER.warn("DDL execute failed or Session closed," +
-                        "Schema[" + schema + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
+                        "Schema[" + rrs.getSchema() + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
             }
-            return DbleServer.getInstance().getTmManager().updateMetaData(schema, sql, isSuccess, true);
+            return DbleServer.getInstance().getTmManager().updateMetaData(rrs.getSchema(), rrs.getTable(), sql, isSuccess, true, rrs.getDdlType());
         }
         return true;
     }
@@ -1092,6 +1142,14 @@ public class NonBlockingSession implements Session {
 
     public RouteResultset getComplexRrs() {
         return complexRrs;
+    }
+
+    public void setRetryXa(boolean retryXa) {
+        this.retryXa = retryXa;
+    }
+
+    public boolean isRetryXa() {
+        return retryXa;
     }
 
 }

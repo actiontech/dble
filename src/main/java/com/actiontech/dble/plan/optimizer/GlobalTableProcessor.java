@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.plan.optimizer;
 
-import com.actiontech.dble.plan.node.PlanNode;
-import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.actiontech.dble.plan.node.JoinNode;
+import com.actiontech.dble.plan.node.PlanNode;
+import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.util.PlanUtil;
 
 import java.util.HashSet;
@@ -117,13 +117,14 @@ public final class GlobalTableProcessor {
                 Set<String> parentSet = new HashSet<>();
                 parentSet.addAll(tnChild.getNoshardNode());
                 tn.setNoshardNode(parentSet);
+            } else {
+                tn.setNoshardNode(new HashSet<String>());
             }
-        }
-        if (tn.getNoshardNode() != null) {
+        } else {
             if (tnChild.getNoshardNode() != null) {
                 tn.getNoshardNode().retainAll(tnChild.getNoshardNode());
             } else {
-                tn.setNoshardNode(null);
+                tn.getNoshardNode().clear();
             }
         }
     }
@@ -140,7 +141,9 @@ public final class GlobalTableProcessor {
             normal = left;
         }
         Set<String> result = new HashSet<>();
-        result.addAll(global.getNoshardNode());
+        if (global.getNoshardNode() != null) {
+            result.addAll(global.getNoshardNode());
+        }
         Set<String> normalSet = normal.getNoshardNode();
         result.retainAll(normalSet);
         return result.size() == normalSet.size();

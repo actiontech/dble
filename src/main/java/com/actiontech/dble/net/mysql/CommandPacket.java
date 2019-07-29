@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -8,7 +8,7 @@ package com.actiontech.dble.net.mysql;
 import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.backend.mysql.StreamUtil;
-import com.actiontech.dble.net.BackendAIOConnection;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -93,7 +93,7 @@ public class CommandPacket extends MySQLPacket {
     }
 
     @Override
-    public void write(BackendAIOConnection c) {
+    public void write(MySQLConnection c) {
         ByteBuffer buffer = c.allocate();
         try {
             BufferUtil.writeUB3(buffer, calcPacketSize());
@@ -110,6 +110,14 @@ public class CommandPacket extends MySQLPacket {
             buffer = c.writeToBuffer(arg, buffer);
             c.write(buffer);
         }
+    }
+
+
+
+    public void writeGetKey(OutputStream out) throws IOException {
+        StreamUtil.writeUB3(out, 1);
+        StreamUtil.write(out, packetId);
+        StreamUtil.write(out, command);
     }
 
     @Override

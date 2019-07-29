@@ -1,15 +1,18 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.backend.mysql.nio.handler.util;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.MysqlVisitor;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler.HandlerType;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
@@ -20,6 +23,7 @@ import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.common.item.ItemInt;
 import com.actiontech.dble.plan.common.item.ItemRef;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
+import com.actiontech.dble.plan.common.item.function.ItemFuncInner;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemFuncGroupConcat;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.util.PlanUtil;
@@ -74,9 +78,9 @@ public final class HandlerTool {
     /**
      * create Item, the Item value referenced by field and changed by field changes
      *
-     * @param sel Item
+     * @param sel    Item
      * @param fields List<Field>
-     * @param type HandlerType
+     * @param type   HandlerType
      * @return Item
      */
     public static Item createItem(Item sel, List<Field> fields, int startIndex, boolean allPushDown, HandlerType type) {
@@ -87,7 +91,7 @@ public final class HandlerTool {
         if (sel.basicConstItem())
             return sel;
         Item.ItemType i = sel.type();
-        if (i == Item.ItemType.FUNC_ITEM || i == Item.ItemType.COND_ITEM) {
+        if ((i == Item.ItemType.FUNC_ITEM || i == Item.ItemType.COND_ITEM) && !(sel instanceof ItemFuncInner)) {
             ItemFunc func = (ItemFunc) sel;
             if (func.getPushDownName() == null || func.getPushDownName().length() == 0) {
                 ret = createFunctionItem(func, fields, startIndex, allPushDown, type);
@@ -120,7 +124,7 @@ public final class HandlerTool {
      * clone field
      *
      * @param fields List<Field>
-     * @param bs List<byte[]>
+     * @param bs     List<byte[]>
      */
     public static void initFields(List<Field> fields, List<byte[]> bs) {
         FieldUtil.initFields(fields, bs);
@@ -148,7 +152,7 @@ public final class HandlerTool {
      * 3.avg(id) avg(id) = sum[sum(id) 0...n]/sum[count(id) 0...n];
      *
      * @param sumFunction aggregate function name
-     * @param fields List<Field>
+     * @param fields      List<Field>
      * @return Item
      */
     private static Item createPushDownGroupBy(ItemSum sumFunction, List<Field> fields, int startIndex) {
@@ -203,7 +207,7 @@ public final class HandlerTool {
     }
 
     private static ItemFunc createFunctionItem(ItemFunc f, List<Field> fields, int startIndex, boolean allPushDown,
-                                                 HandlerType type) {
+                                               HandlerType type) {
         List<Item> args = new ArrayList<>();
         for (int index = 0; index < f.getArgCount(); index++) {
             Item arg = f.arguments().get(index);
@@ -222,11 +226,11 @@ public final class HandlerTool {
     }
 
     /**
-     * @param f ItemSum
-     * @param fields List<Field>
-     * @param startIndex startIndex
+     * @param f           ItemSum
+     * @param fields      List<Field>
+     * @param startIndex  startIndex
      * @param allPushDown allPushDown
-     * @param type HandlerType
+     * @param type        HandlerType
      * @return ItemSum
      */
     private static ItemSum createSumItem(ItemSum f, List<Field> fields, int startIndex, boolean allPushDown,
@@ -269,8 +273,8 @@ public final class HandlerTool {
     /**
      * findField in sel from start
      *
-     * @param sel sel
-     * @param fields fields
+     * @param sel        sel
+     * @param fields     fields
      * @param startIndex startIndex
      * @return index
      */
@@ -278,15 +282,22 @@ public final class HandlerTool {
         String selName = (sel.getPushDownName() == null ? sel.getItemName() : sel.getPushDownName());
         selName = selName.trim();
         String tableName = sel.getTableName();
+        String schemaName = sel.getDbName();
         for (int index = startIndex; index < fields.size(); index++) {
             Field field = fields.get(index);
             // field.name==null if '' push down
             String colName2 = field.getName() == null ? null : field.getName().trim();
             String tableName2 = field.getTable();
-            if (tableName2 != null && DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
-                tableName2 = tableName2.toLowerCase();
+            String schemaName2 = field.getDbName();
+            if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+                if (tableName2 != null) {
+                    tableName2 = tableName2.toLowerCase();
+                }
+                if (schemaName2 != null) {
+                    schemaName2 = schemaName2.toLowerCase();
+                }
             }
-            if (sel instanceof ItemField && !StringUtil.equalsWithEmpty(tableName, tableName2)) {
+            if (sel instanceof ItemField && !(StringUtil.equalsWithEmpty(tableName, tableName2) && isMatchSchema(schemaName, field.getOrgTable(), schemaName2))) {
                 continue;
             }
             if (selName.equalsIgnoreCase(colName2)) {
@@ -294,6 +305,30 @@ public final class HandlerTool {
             }
         }
         return -1;
+    }
+
+    private static boolean isMatchSchema(String logicSchema, String table, String sourceSchema) {
+        if (StringUtil.isEmpty(table) || StringUtil.isEmpty(logicSchema) || StringUtil.equalsWithEmpty(logicSchema, sourceSchema)) {
+            return true;
+        }
+        SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(logicSchema);
+        if (schemaConfig.isNoSharding()) {
+            PhysicalDBNode dbNode = DbleServer.getInstance().getConfig().getDataNodes().get(schemaConfig.getDataNode());
+            return dbNode.getDatabase().equals(sourceSchema);
+        }
+        TableConfig tbConfig = schemaConfig.getTables().get(table);
+        if (tbConfig == null) {
+            PhysicalDBNode dbNode = DbleServer.getInstance().getConfig().getDataNodes().get(schemaConfig.getDataNode());
+            return dbNode.getDatabase().equals(sourceSchema);
+        } else {
+            for (String dataNode : tbConfig.getDataNodes()) {
+                PhysicalDBNode dbNode = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
+                if (dbNode.getDatabase().equals(sourceSchema)) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     /**

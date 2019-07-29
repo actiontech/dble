@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -27,7 +27,6 @@ public abstract class GetNodeTablesHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(GetNodeTablesHandler.class);
     protected static final String SQL = "show full tables where Table_type ='BASE TABLE' ";
     protected String dataNode;
-    private volatile boolean finished = false;
 
     GetNodeTablesHandler(String dataNode) {
         this.dataNode = dataNode;
@@ -36,10 +35,6 @@ public abstract class GetNodeTablesHandler {
     protected abstract void handleTables(String table);
 
     protected abstract void handleFinished();
-
-    public boolean isFinished() {
-        return finished;
-    }
 
     public void execute() {
         PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
@@ -85,16 +80,14 @@ public abstract class GetNodeTablesHandler {
                     AlertUtil.alert(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "{" + key + "} is lack", "mysql", ds.getConfig().getId(), labels);
                     ToResolveContainer.DATA_NODE_LACK.add(key);
                 }
-                finished = true;
                 handleFinished();
                 return;
             }
             if (ds != null && ToResolveContainer.DATA_NODE_LACK.contains(key)) {
                 Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName());
                 labels.put("data_node", dataNode);
-                if (AlertUtil.alertResolve(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "mysql", ds.getConfig().getId(), labels)) {
-                    ToResolveContainer.DATA_NODE_LACK.remove(key);
-                }
+                AlertUtil.alertResolve(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "mysql", ds.getConfig().getId(), labels,
+                        ToResolveContainer.DATA_NODE_LACK, key);
             }
             List<Map<String, String>> rows = result.getResult();
             for (Map<String, String> row : rows) {
@@ -104,7 +97,6 @@ public abstract class GetNodeTablesHandler {
                 }
                 handleTables(table);
             }
-            finished = true;
             handleFinished();
         }
     }

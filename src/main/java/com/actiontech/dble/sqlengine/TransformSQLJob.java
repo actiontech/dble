@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -54,7 +54,7 @@ public class TransformSQLJob implements ResponseHandler, Runnable {
         } catch (Exception e) {
             LOGGER.warn("can't get connection", e);
             ErrorPacket errPacket = new ErrorPacket();
-            errPacket.setPacketId(0);
+            errPacket.setPacketId(1);
             errPacket.setErrNo(ErrorCode.ER_YES);
             errPacket.setMessage(StringUtil.encode(e.toString(), StandardCharsets.UTF_8.toString()));
             writeError(errPacket.toBytes());
@@ -65,7 +65,7 @@ public class TransformSQLJob implements ResponseHandler, Runnable {
     public void connectionError(Throwable e, BackendConnection conn) {
         LOGGER.warn("can't get connection for sql :" + sql, e);
         ErrorPacket errPacket = new ErrorPacket();
-        errPacket.setPacketId(0);
+        errPacket.setPacketId(1);
         errPacket.setErrNo(ErrorCode.ER_YES);
         errPacket.setMessage(StringUtil.encode(e.toString(), StandardCharsets.UTF_8.toString()));
         writeError(errPacket.toBytes());
@@ -82,7 +82,7 @@ public class TransformSQLJob implements ResponseHandler, Runnable {
             ((MySQLConnection) conn).sendQueryCmd(sql, mc.getCharset());
         } catch (Exception e) { // (UnsupportedEncodingException e) {
             ErrorPacket errPacket = new ErrorPacket();
-            errPacket.setPacketId(0);
+            errPacket.setPacketId(1);
             errPacket.setErrNo(ErrorCode.ER_YES);
             errPacket.setMessage(StringUtil.encode(e.toString(), StandardCharsets.UTF_8.toString()));
             writeError(errPacket.toBytes());
@@ -129,7 +129,7 @@ public class TransformSQLJob implements ResponseHandler, Runnable {
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
         ErrorPacket errPacket = new ErrorPacket();
-        errPacket.setPacketId(0);
+        errPacket.setPacketId(1);
         errPacket.setErrNo(ErrorCode.ER_YES);
         errPacket.setMessage(StringUtil.encode(reason, StandardCharsets.UTF_8.toString()));
         writeError(errPacket.toBytes());

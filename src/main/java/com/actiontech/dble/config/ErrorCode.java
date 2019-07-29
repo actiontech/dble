@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -43,6 +43,7 @@ public final class ErrorCode {
     public static final int ER_DATA_HOST_ABORTING_CONNECTION = 5314;
     public static final int ER_CLUSTER_RELOAD = 5315;
     public static final int ER_META_DATA = 5316;
+    public static final int ER_BACKEND_CONNECTION = 5317;
     // mysql error code
     public static final int ER_HASHCHK = 1000;
     public static final int ER_NISAMCHK = 1001;

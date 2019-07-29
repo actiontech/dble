@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
         <!--
+  ~ Copyright (C) 2016-2019 ActionTech.
+  ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+  -->
+
+        <!--
          -
          - Licensed under the Apache License, Version 2.0 (the "License");
          - you may not use this file except in compliance with the License.
@@ -15,6 +20,7 @@
         -->
         <!ELEMENT dble:rule (tableRule*,function*)>
         <!ATTLIST dble:rule xmlns:dble CDATA #FIXED "http://dble.cloud/">
+        <!ATTLIST dble:rule version CDATA #IMPLIED>
 
         <!ELEMENT tableRule (rule+)>
         <!ATTLIST tableRule name CDATA #REQUIRED>

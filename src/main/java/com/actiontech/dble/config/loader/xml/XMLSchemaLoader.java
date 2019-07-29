@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -7,6 +7,7 @@ package com.actiontech.dble.config.loader.xml;
 
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.config.ProblemReporter;
+import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.loader.SchemaLoader;
 import com.actiontech.dble.config.model.*;
 import com.actiontech.dble.config.model.TableConfig.TableTypeEnum;
@@ -17,6 +18,8 @@ import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.SplitUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -33,6 +36,7 @@ import java.util.Map.Entry;
 public class XMLSchemaLoader implements SchemaLoader {
     private static final String DEFAULT_DTD = "/schema.dtd";
     private static final String DEFAULT_XML = "/schema.xml";
+    private static final Logger LOGGER = LoggerFactory.getLogger(XMLSchemaLoader.class);
 
     private final Map<String, TableRuleConfig> tableRules;
     private final Map<String, DataHostConfig> dataHosts;
@@ -45,7 +49,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 
     public XMLSchemaLoader(String schemaFile, String ruleFile, boolean lowerCaseNames, ProblemReporter problemReporter) {
         //load rule.xml
-        XMLRuleLoader ruleLoader = new XMLRuleLoader(ruleFile);
+        XMLRuleLoader ruleLoader = new XMLRuleLoader(ruleFile, problemReporter);
         this.tableRules = ruleLoader.getTableRules();
         this.dataHosts = new HashMap<>();
         this.dataNodes = new HashMap<>();
@@ -87,6 +91,16 @@ public class XMLSchemaLoader implements SchemaLoader {
             dtd = ResourceUtil.getResourceAsStream(dtdFile);
             xml = ResourceUtil.getResourceAsStream(xmlFile);
             Element root = ConfigUtil.getDocument(dtd, xml).getDocumentElement();
+            String version = "2.18.12.0 or earlier";
+            if (root.getAttributes().getNamedItem("version") != null) {
+                version = root.getAttributes().getNamedItem("version").getNodeValue();
+            }
+            if (!version.equals(Versions.CONFIG_VERSION)) {
+                String message = "The server-version is " + Versions.CONFIG_VERSION + ",but the schema.xml version is " + version + ".There may be some incompatible config between two versions,please check it";
+                if (this.problemReporter != null) {
+                    this.problemReporter.warn(message);
+                }
+            }
             loadDataHosts(root);
             loadDataNodes(root);
             loadSchemas(root);
@@ -213,18 +227,12 @@ public class XMLSchemaLoader implements SchemaLoader {
         erRelations.putAll(schemaFkERMap);
     }
 
-
     private Map<String, TableConfig> loadTables(Element node, boolean isLowerCaseNames) {
         // supprot [`] BEN GONG in table name
         Map<String, TableConfig> tables = new TableConfigMap();
         NodeList nodeList = node.getElementsByTagName("table");
         for (int i = 0; i < nodeList.getLength(); i++) {
             Element tableElement = (Element) nodeList.item(i);
-
-            //primaryKey used for cache and autoincrement
-            String primaryKey = tableElement.hasAttribute("primaryKey") ? tableElement.getAttribute("primaryKey").toUpperCase() : null;
-            //if autoIncrement,it will use sequence handler
-            boolean autoIncrement = isAutoIncrement(tableElement, primaryKey);
             //limit size of the table
             String needAddLimitStr = ConfigUtil.checkAndGetAttribute(tableElement, "needAddLimit", "true", problemReporter);
             boolean needAddLimit = Boolean.parseBoolean(needAddLimitStr);
@@ -233,10 +241,14 @@ public class XMLSchemaLoader implements SchemaLoader {
             TableTypeEnum tableType = TableTypeEnum.TYPE_SHARDING_TABLE;
             if (tableElement.hasAttribute("type")) {
                 String tableTypeStr = tableElement.getAttribute("type");
-                if ("global".equalsIgnoreCase(tableTypeStr)) {
-                    tableType = TableTypeEnum.TYPE_GLOBAL_TABLE;
-                } else {
-                    problemReporter.warn("Table[" + tableElement.getAttribute("name") + "] attribute type " + tableTypeStr + " in schema.xml is illegal, use sharding replaced");
+                switch (tableTypeStr.toLowerCase()) {
+                    case "global":
+                        tableType = TableTypeEnum.TYPE_GLOBAL_TABLE;
+                        break;
+                    case "default":
+                        break;
+                    default:
+                        problemReporter.warn("Table[" + tableElement.getAttribute("name") + "] attribute type value '" + tableTypeStr + "' in schema.xml is illegal, use default replaced");
                 }
             }
             //dataNode of table
@@ -269,9 +281,18 @@ public class XMLSchemaLoader implements SchemaLoader {
             if (tableNames == null) {
                 throw new ConfigException("table name is not found!");
             }
+            //primaryKey used for cache and autoincrement
+            String primaryKey = tableElement.hasAttribute("primaryKey") ? tableElement.getAttribute("primaryKey").toUpperCase() : null;
+            //if autoIncrement,it will use sequence handler
+            String incrementColumn = tableElement.hasAttribute("incrementColumn") ? tableElement.getAttribute("incrementColumn").toUpperCase() : null;
+            boolean autoIncrement = isAutoIncrement(tableElement, primaryKey, incrementColumn);
+
+            if (incrementColumn != null && !autoIncrement) {
+                throw new ConfigException("table " + tableNameElement + " has incrementColumn but not autoIncrement");
+            }
             for (String tableName : tableNames) {
                 TableConfig table = new TableConfig(tableName, primaryKey, autoIncrement, needAddLimit, tableType,
-                        dataNode, (tableRule != null) ? tableRule.getRule() : null, ruleRequired);
+                        dataNode, (tableRule != null) ? tableRule.getRule() : null, ruleRequired, incrementColumn);
                 checkDataNodeExists(table.getDataNodes());
                 if (table.getRule() != null) {
                     checkRuleSuitTable(table);
@@ -298,11 +319,11 @@ public class XMLSchemaLoader implements SchemaLoader {
         return tables;
     }
 
-    private boolean isAutoIncrement(Element tableElement, String primaryKey) {
+    private boolean isAutoIncrement(Element tableElement, String primaryKey, String incrementColumn) {
         String autoIncrementStr = ConfigUtil.checkAndGetAttribute(tableElement, "autoIncrement", "false", problemReporter);
         boolean autoIncrement = Boolean.parseBoolean(autoIncrementStr);
-        if (autoIncrement && primaryKey == null) {
-            throw new ConfigException("autoIncrement is true but primaryKey is not setting!");
+        if (autoIncrement && primaryKey == null && incrementColumn == null) {
+            throw new ConfigException("autoIncrement is true but primaryKey and incrementColumn is not setting!");
         }
         return autoIncrement;
     }
@@ -355,17 +376,22 @@ public class XMLSchemaLoader implements SchemaLoader {
             if (isLowerCaseNames) {
                 cdTbName = cdTbName.toLowerCase();
             }
-            String primaryKey = childTbElement.hasAttribute("primaryKey") ? childTbElement.getAttribute("primaryKey").toUpperCase() : null;
 
-            boolean autoIncrement = isAutoIncrement(childTbElement, primaryKey);
+
             String needAddLimitStr = ConfigUtil.checkAndGetAttribute(childTbElement, "needAddLimit", "true", problemReporter);
             boolean needAddLimit = Boolean.parseBoolean(needAddLimitStr);
 
             //join key ,the parent's column
             String joinKey = childTbElement.getAttribute("joinKey").toUpperCase();
             String parentKey = childTbElement.getAttribute("parentKey").toUpperCase();
+            String primaryKey = childTbElement.hasAttribute("primaryKey") ? childTbElement.getAttribute("primaryKey").toUpperCase() : null;
+            String incrementColumn = childTbElement.hasAttribute("incrementColumn") ? childTbElement.getAttribute("incrementColumn").toUpperCase() : null;
+            boolean autoIncrement = isAutoIncrement(childTbElement, primaryKey, incrementColumn);
+            if (incrementColumn != null && !autoIncrement) {
+                throw new ConfigException("table " + cdTbName + " has incrementColumn but not AutoIncrement");
+            }
             TableConfig table = new TableConfig(cdTbName, primaryKey, autoIncrement, needAddLimit,
-                    TableTypeEnum.TYPE_SHARDING_TABLE, strDatoNodes, null, false, parentTable, joinKey, parentKey);
+                    TableTypeEnum.TYPE_SHARDING_TABLE, strDatoNodes, null, false, parentTable, joinKey, parentKey, incrementColumn);
 
             if (tables.containsKey(table.getName())) {
                 throw new ConfigException("table " + table.getName() + " duplicated!");
@@ -392,7 +418,7 @@ public class XMLSchemaLoader implements SchemaLoader {
      */
     private void checkRuleSuitTable(TableConfig tableConf) {
         AbstractPartitionAlgorithm function = tableConf.getRule().getRuleAlgorithm();
-        int suitValue = function.suitableFor(tableConf);
+        int suitValue = function.suitableFor(tableConf.getDataNodes().size());
         if (suitValue < 0) {
             throw new ConfigException("Illegal table conf : table [ " + tableConf.getName() + " ] rule function [ " +
                     tableConf.getRule().getFunctionName() + " ] partition size : " + tableConf.getRule().getRuleAlgorithm().getPartitionNum() + " > table datanode size : " +

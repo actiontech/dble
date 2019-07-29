@@ -1,14 +1,17 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
 package com.actiontech.dble.route;
 
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.util.FormatUtil;
+import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * @author mycat
@@ -24,13 +27,16 @@ public final class RouteResultset implements Serializable {
     private final int sqlType;
     private RouteResultsetNode[] nodes;
     private transient SQLStatement sqlStatement;
+    private DDLInfo.DDLType ddlType = DDLInfo.DDLType.UNKNOWN;
+
+    private List<String> globalBackupNodes = null;
 
     private boolean needOptimizer;
     private int limitStart;
     private boolean cacheAble;
     // used to store table's ID->data nodes cache
-    // format is table.primaryKey
     private String primaryKey;
+    private boolean containsPrimaryFilter = false;
     // limit output total
     private int limitSize;
 
@@ -153,28 +159,28 @@ public final class RouteResultset implements Serializable {
         this.limitStart = limitStart;
     }
 
-    public String getPrimaryKey() {
-        return primaryKey;
-    }
-
     public boolean hasPrimaryKeyToCache() {
-        return primaryKey != null;
+        return schema != null && table != null && primaryKey != null;
     }
 
     public void setPrimaryKey(String primaryKey) {
-        if (!primaryKey.contains(".")) {
-            throw new java.lang.IllegalArgumentException(
-                    "must be table.primaryKey format :" + primaryKey);
-        }
         this.primaryKey = primaryKey;
     }
 
+    public boolean isContainsPrimaryFilter() {
+        return containsPrimaryFilter;
+    }
+
+    public void setContainsPrimaryFilter(boolean containsPrimaryFilter) {
+        this.containsPrimaryFilter = containsPrimaryFilter;
+    }
+
+
     /**
      * return primary key items ,first is table name ,seconds is primary key
-     *
      */
     public String[] getPrimaryKeyItems() {
-        return primaryKey.split("\\.");
+        return new String[]{StringUtil.getFullName(schema, table, '_'), primaryKey};
     }
 
     public void setSrcStatement(String srcStatement) {
@@ -285,4 +291,22 @@ public final class RouteResultset implements Serializable {
         s.append("\n}");
         return s.toString();
     }
+
+
+    public DDLInfo.DDLType getDdlType() {
+        return ddlType;
+    }
+
+    public void setDdlType(DDLInfo.DDLType ddlType) {
+        this.ddlType = ddlType;
+    }
+
+    public List<String> getGlobalBackupNodes() {
+        return globalBackupNodes;
+    }
+
+    public void setGlobalBackupNodes(List<String> globalBackupNodes) {
+        this.globalBackupNodes = globalBackupNodes;
+    }
+
 }

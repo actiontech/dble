@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -112,6 +112,7 @@ public final class ShowHelp {
         HELPS.put("show @@cache", "Report system cache usage");
         HELPS.put("show @@backend", "Report backend connection status");
         HELPS.put("show @@session", "Report front session details");
+        HELPS.put("show @@session.xa", "Report front session and associated xa transaction details");
         HELPS.put("show @@connection.sql", "Report connection sql");
         HELPS.put("show @@sql", "Report SQL list");
         // helps.put("show @@sql where id = ?", "Report  specify SQL");
@@ -135,16 +136,20 @@ public final class ShowHelp {
         HELPS.put("show @@backend.old", "Report old connections witch still alive after reload config all");
         HELPS.put("show @@binlog.status", "Report the current GTID of all backend nodes");
         HELPS.put("show @@help", "Report usage of manager port");
+        HELPS.put("show @@processlist", "Report correspondence between front and backend session");
 
         HELPS.put("show @@cost_time", "Report cost time of query , contains back End ,front End and over all");
         HELPS.put("show @@thread_used", "Report usage of threads, for optimize performance ");
-        HELPS.put("show @@dataNodes where schema=? and table=?", "Report the data nodes info of a table");
-        HELPS.put("show @@algorithm where schema=? and table=?", "Report the algorithm info of a table");
+        HELPS.put("show @@dataNodes where schema='?' and table='?'", "Report the data nodes info of a table");
+        HELPS.put("show @@algorithm where schema='?' and table='?'", "Report the algorithm info of a table");
+        HELPS.put("show @@ddl", "Report all ddl info in progress");
         // switch
         HELPS.put("switch @@datasource name:index", "Switch dataSource");
 
         // kill
         HELPS.put("kill @@connection id1,id2,...", "Kill the specified connections");
+        HELPS.put("kill @@xa_session id1,id2,...", "Kill the specified sessions that commit/rollback xa transaction in the background");
+        HELPS.put("kill @@ddl_lock where schema='?' and table='?'", "Kill ddl lock held by the specified ddl");
 
         // stop
         HELPS.put("stop @@heartbeat name:time", "Pause dataNode heartbeat");
@@ -152,7 +157,7 @@ public final class ShowHelp {
         // reload
         HELPS.put("reload @@config", "Reload basic config from file");
         HELPS.put("reload @@config_all", "Reload all config from file");
-        HELPS.put("reload @@metadata", "Reload metadata of tables");
+        HELPS.put("reload @@metadata [where schema=? [and table=?] | where table in ('schema1'.'table1',...)]", "Reload metadata of tables or specified table");
         HELPS.put("reload @@sqlslow=", "Set Slow SQL Time(ms)");
         HELPS.put("reload @@user_stat", "Reset show @@sql  @@sql.sum @@sql.slow");
         HELPS.put("reload @@query_cf[=table&column]", "Reset show @@sql.conditiont");
@@ -172,6 +177,37 @@ public final class ShowHelp {
 
         //log
         HELPS.put("log @@[file=? limit=? key=? regex=?]", "Report logs by given regex");
+
+        //dryrun
+        HELPS.put("dryrun", "Dry run to check config before reload xml");
+
+        //pause
+        HELPS.put("pause @@DataNode", "Block query requests witch specified dataNodes involved ");
+        HELPS.put("RESUME", "Resume the query requests of the paused dataNodes");
+        HELPS.put("show @@pause", "Show which dataNodes have bean pause");
+
+        //slow_query_log
+        HELPS.put("show @@slow_query_log", "Show if the slow query log is enabled");
+        HELPS.put("enable @@slow_query_log", "Turn on the slow query log");
+        HELPS.put("disable @@slow_query_log", "Turn off the slow query log");
+        HELPS.put("show @@slow_query.time", "Show the threshold of slow sql, the unit is millisecond");
+        HELPS.put("reload @@slow_query.time", "Reset the threshold of slow sql");
+        HELPS.put("show @@slow_query.flushperiod", "Show the min flush period for writing to disk");
+        HELPS.put("reload @@slow_query.flushperiod", "Reset the flush period");
+        HELPS.put("show @@slow_query.flushsize", "Show the min flush size for writing to disk");
+        HELPS.put("reload @@slow_query.flushsize", "Reset the flush size");
+
+        //create database
+        HELPS.put("create database @@dataNode ='dn......'", "create database for datanode setted in schema.xml");
+
+        //check @@metadata
+        HELPS.put("check @@metadata", "show last time of `reload @@metadata`/start dble");
+        HELPS.put("check full @@metadata", "show detail information of metadata");
+
+        //alert
+        HELPS.put("show @@alert", "Show if the alert is enabled");
+        HELPS.put("enable @@alert", "Turn on the alert");
+        HELPS.put("disable @@alert", "Turn off the alert");
 
         // list sort
         KEYS.addAll(HELPS.keySet());

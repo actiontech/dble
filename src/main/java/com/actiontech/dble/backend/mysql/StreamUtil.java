@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -38,6 +38,43 @@ public final class StreamUtil {
         }
         return (byte) (got & 0xff);
     }
+
+    public static byte[] read(byte[] b, int offset, int length) {
+        byte[] fixedByte = new byte[length];
+        for (int i = 0 ; i < length ; i++) {
+            fixedByte[i] = b[offset + i];
+        }
+        return fixedByte;
+    }
+
+    public static int readBackInt(byte[] b, int offset, int length) {
+        byte[] fixedByte = new byte[length];
+        for (int i = 0 ; i < length ; i++) {
+            fixedByte[i] = b[offset + i];
+        }
+        int i = fixedByte[0] & 0xff;
+        i |= (fixedByte[1] & 0xff) << 8;
+        i |= (fixedByte[2] & 0xff) << 16;
+        return i;
+    }
+
+    public static byte[] readKey(InputStream in, byte[] b, int offset, int length) throws IOException {
+        byte[] key = new byte[b.length - 4];
+        for (int got = 0; length > 0; ) {
+            got = in.read(b, offset, length);
+            if (got < 0) {
+                throw new EOFException();
+            }
+            offset += got;
+            length -= got;
+        }
+        for (int i = 4 ; i < b.length ; i++) {
+            key[i - 4] = b[i];
+        }
+        return key;
+    }
+
+
 
     public static int readUB2(InputStream in) throws IOException {
         byte[] b = new byte[2];
@@ -108,11 +145,16 @@ public final class StreamUtil {
         return b;
     }
 
+
+    public static void write(OutputStream out, byte[] src) throws IOException {
+        out.write(src);
+    }
+
     public static void write(OutputStream out, byte b) throws IOException {
         out.write(b & 0xff);
     }
 
-    public static void writeUB2(OutputStream out, int i) throws IOException {
+    public static void writeUB2(OutputStream out, long i) throws IOException {
         byte[] b = new byte[2];
         b[0] = (byte) (i & 0xff);
         b[1] = (byte) (i >>> 8);
@@ -221,5 +263,6 @@ public final class StreamUtil {
         }
         out.write(src);
     }
+
 
 }

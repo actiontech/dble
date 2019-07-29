@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -66,8 +66,8 @@ public final class NIOProcessor {
             total += frontend.getWriteQueue().size();
         }
         for (BackendConnection back : backends.values()) {
-            if (back instanceof BackendAIOConnection) {
-                total += ((BackendAIOConnection) back).getWriteQueue().size();
+            if (back instanceof MySQLConnection) {
+                total += ((MySQLConnection) back).getWriteQueue().size();
             }
         }
         return total;
@@ -180,7 +180,7 @@ public final class NIOProcessor {
             //Active/IDLE/PREPARED XA backends will not be checked
             if (c instanceof MySQLConnection) {
                 MySQLConnection m = (MySQLConnection) c;
-                if (m.isClosedOrQuit()) {
+                if (m.isClosed()) {
                     it.remove();
                     continue;
                 }

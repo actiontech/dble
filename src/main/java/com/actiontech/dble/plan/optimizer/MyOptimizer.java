@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -11,6 +11,7 @@ import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.TableNode;
+import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.util.SchemaUtil;
 import org.slf4j.LoggerFactory;
@@ -31,7 +32,7 @@ public final class MyOptimizer {
             node = SubQueryPreProcessor.optimize(node);
             updateReferedTableNodes(node);
             int existGlobal = checkGlobalTable(node, new HashSet<String>());
-            if (node.isExistView() || existGlobal != 1 || node.isWithSubQuery() || node.isContainsSubQuery()) {
+            if (node.isExistView() || existGlobal != 1 || node.isWithSubQuery() || node.isContainsSubQuery() || !PlanUtil.hasNoFakeNode(node)) {
                 // optimizer sub query [Derived Tables (Subqueries in the FROM Clause)]
                 //node = SubQueryProcessor.optimize(node);
                 // transform right join to left join
@@ -44,7 +45,7 @@ public final class MyOptimizer {
 
                 node = JoinERProcessor.optimize(node);
 
-                if (existGlobal == 0) {
+                if (existGlobal >= 0) {
                     node = GlobalTableProcessor.optimize(node);
                 }
                 //  push down filter
@@ -82,6 +83,7 @@ public final class MyOptimizer {
         }
         return subTables;
     }
+
     /**
      * existShardTable
      *

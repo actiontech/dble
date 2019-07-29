@@ -1,14 +1,16 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.net;
 
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.util.TimeUtil;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -30,7 +32,7 @@ public class NIOSocketWR extends SocketWR {
         try {
             processKey = channel.register(selector, SelectionKey.OP_READ, con);
         } finally {
-            if (con.isClosed.get()) {
+            if (con.isClosed) {
                 clearSelectionKey();
             }
         }
@@ -61,17 +63,53 @@ public class NIOSocketWR extends SocketWR {
             if (AbstractConnection.LOGGER.isDebugEnabled()) {
                 AbstractConnection.LOGGER.debug("caught err:", e);
             }
-            con.close("err:" + e);
+            String errMsg;
+            if (con instanceof MySQLConnection) {
+                MySQLConnection mysqlCon = (MySQLConnection) con;
+                errMsg = "Connection {DataHost[" + mysqlCon.getHost() + ":" + mysqlCon.getPort() + "],Schema[" + mysqlCon.getSchema() + "],threadID[" +
+                        mysqlCon.getThreadId() + "]} was closed ";
+                if (!(e instanceof ClosedChannelException)) {
+                    errMsg += ",reason is:" + e + "";
+                }
+            } else {
+                errMsg = "err:" + e;
+            }
+            con.close(errMsg);
+        } finally {
+            writing.set(false);
         }
 
     }
 
+    public boolean registerWrite(ByteBuffer buffer) {
+
+        writing.set(true);
+        con.writeBuffer = buffer;
+        buffer.flip();
+        try {
+            write0();
+            writing.set(false);
+        } catch (IOException e) {
+            if (AbstractConnection.LOGGER.isDebugEnabled()) {
+                AbstractConnection.LOGGER.debug("caught err:", e);
+            }
+            AbstractConnection.LOGGER.info("GET IOException when registerWrite,may be just a heartbeat from SLB :" + e.getMessage());
+            con.close("err:" + e);
+            return false;
+        }
+        return true;
+    }
+
     private boolean write0() throws IOException {
 
+        boolean quitFlag = false;
         int written = 0;
         ByteBuffer buffer = con.writeBuffer;
         if (buffer != null) {
             while (buffer.hasRemaining()) {
+                if (buffer.position() == 5 && bufferIsQuit(buffer)) {
+                    quitFlag = true;
+                }
                 written = channel.write(buffer);
                 if (written > 0) {
                     con.netOutBytes += written;
@@ -82,6 +120,10 @@ public class NIOSocketWR extends SocketWR {
                 }
             }
 
+            if (quitFlag) {
+                startClearCon();
+                return true;
+            }
             if (buffer.hasRemaining()) {
                 return false;
             } else {
@@ -90,6 +132,9 @@ public class NIOSocketWR extends SocketWR {
             }
         }
         while ((buffer = con.writeQueue.poll()) != null) {
+            if (buffer.position() == 5 && bufferIsQuit(buffer)) {
+                quitFlag = true;
+            }
             if (buffer.limit() == 0) {
                 con.recycle(buffer);
                 con.close("quit send");
@@ -113,6 +158,12 @@ public class NIOSocketWR extends SocketWR {
                 con.recycle(buffer);
                 throw e;
             }
+
+            if (quitFlag) {
+                startClearCon();
+                return true;
+            }
+
             if (buffer.hasRemaining()) {
                 con.writeBuffer = buffer;
                 return false;
@@ -122,6 +173,14 @@ public class NIOSocketWR extends SocketWR {
         }
         return true;
     }
+
+
+    private void startClearCon() {
+        if (con instanceof MySQLConnection) {
+            ((MySQLConnection) con).closeInner(null);
+        }
+    }
+
 
     private void disableWrite() {
         try {
@@ -169,6 +228,13 @@ public class NIOSocketWR extends SocketWR {
         }
         int got = channel.read(theBuffer);
         con.onReadData(got);
+    }
+
+    private boolean bufferIsQuit(ByteBuffer buffer) {
+        byte[] data = new byte[5];
+        buffer.position(0);
+        buffer.get(data);
+        return data[0] == 1 && data[1] == 0 && data[2] == 0 && data[3] == 0 && data[4] == 1;
     }
 
 }

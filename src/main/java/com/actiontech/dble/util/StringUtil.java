@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -520,6 +521,15 @@ public final class StringUtil {
 
     public static String getUFullName(String schema, String tableName) {
         return String.format("%s.%s", schema, tableName);
+    }
+
+    public static String join(List<String> list, String flag) {
+        if (list.size() < 1) {
+            return "";
+        }
+
+        String[] arr = list.toArray(new String[list.size()]);
+        return join(arr, flag);
     }
 
     public static String join(String[] list, String flag) {

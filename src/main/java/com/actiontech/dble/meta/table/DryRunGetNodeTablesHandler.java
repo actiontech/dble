@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2016-2019 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
 package com.actiontech.dble.meta.table;
 
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
@@ -17,15 +22,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class DryRunGetNodeTablesHandler extends GetNodeTablesHandler {
 
     private final AtomicInteger counter;
-    private final PhysicalDBNode dataNode;
+    private final PhysicalDBNode phyDataNode;
     private final Map<String, Set<String>> returnMap;
     private final boolean isLowerCase;
     private final List<ErrorInfo> list;
 
-    public DryRunGetNodeTablesHandler(AtomicInteger counter, PhysicalDBNode dataNode, Map<String, Set<String>> returnMap, boolean isLowerCase, List<ErrorInfo> list) {
-        super(dataNode.getName());
+    public DryRunGetNodeTablesHandler(AtomicInteger counter, PhysicalDBNode phyDataNode, Map<String, Set<String>> returnMap, boolean isLowerCase, List<ErrorInfo> list) {
+        super(phyDataNode.getName());
         this.counter = counter;
-        this.dataNode = dataNode;
+        this.phyDataNode = phyDataNode;
         this.returnMap = returnMap;
         this.isLowerCase = isLowerCase;
         this.list = list;
@@ -33,9 +38,9 @@ public class DryRunGetNodeTablesHandler extends GetNodeTablesHandler {
 
     @Override
     public void execute() {
-        String mysqlShowTableCol = "Tables_in_" + dataNode.getDatabase();
+        String mysqlShowTableCol = "Tables_in_" + phyDataNode.getDatabase();
         String[] mysqlShowTableCols = new String[]{mysqlShowTableCol};
-        PhysicalDatasource[] dsList = dataNode.getDbPool().getSources();
+        PhysicalDatasource[] dsList = phyDataNode.getDbPool().getSources();
         PhysicalDatasource ds = null;
         if (dsList != null) {
             for (PhysicalDatasource tds : dsList) {
@@ -47,17 +52,17 @@ public class DryRunGetNodeTablesHandler extends GetNodeTablesHandler {
         }
         if (ds != null) {
             MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(mysqlShowTableCols, new MySQLShowTablesListener(mysqlShowTableCol));
-            SpecialSqlJob sqlJob = new SpecialSqlJob(SQL, dataNode.getDatabase(), resultHandler, ds, list);
+            SpecialSqlJob sqlJob = new SpecialSqlJob(SQL, phyDataNode.getDatabase(), resultHandler, ds, list);
             sqlJob.run();
         } else {
-            list.add(new ErrorInfo("Backend", "WARNING", "dataNode[" + dataNode.getName() + "] has no available writeHost,The table in this dataNode has not checked"));
+            list.add(new ErrorInfo("Backend", "WARNING", "dataNode[" + phyDataNode.getName() + "] has no available writeHost,The table in this dataNode has not checked"));
             handleFinished();
         }
     }
 
     @Override
     protected void handleTables(String table) {
-        returnMap.get(dataNode.getName()).add(table);
+        returnMap.get(phyDataNode.getName()).add(table);
     }
 
     @Override
@@ -76,12 +81,12 @@ public class DryRunGetNodeTablesHandler extends GetNodeTablesHandler {
         @Override
         public void onResult(SQLQueryResult<List<Map<String, String>>> result) {
             if (!result.isSuccess()) {
-                String warnMsg = "Can't show tables from DataNode:" + dataNode + "! Maybe the data node is not initialized!";
+                String warnMsg = "Can't show tables from DataNode:" + phyDataNode + "! Maybe the data node is not initialized!";
                 LOGGER.warn(warnMsg);
                 handleFinished();
                 return;
             }
-            returnMap.put(dataNode.getName(), new HashSet<String>());
+            returnMap.put(phyDataNode.getName(), new HashSet<String>());
             List<Map<String, String>> rows = result.getResult();
             for (Map<String, String> row : rows) {
                 String table = row.get(mysqlShowTableCol);

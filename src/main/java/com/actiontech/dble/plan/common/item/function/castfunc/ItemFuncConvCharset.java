@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -8,9 +8,9 @@ package com.actiontech.dble.plan.common.item.function.castfunc;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
-import com.actiontech.dble.plan.common.item.function.ItemFuncKeyWord;
 import com.actiontech.dble.plan.common.item.function.strfunc.ItemStrFunc;
 import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
 
 import java.io.UnsupportedEncodingException;
@@ -56,7 +56,7 @@ public class ItemFuncConvCharset extends ItemStrFunc {
     public SQLExpr toExpression() {
         SQLMethodInvokeExpr method = new SQLMethodInvokeExpr(funcName());
         method.addParameter(args.get(0).toExpression());
-        method.putAttribute(ItemFuncKeyWord.USING, mysqlCharset);
+        method.setUsing(new SQLIdentifierExpr(mysqlCharset));
         return method;
     }
 

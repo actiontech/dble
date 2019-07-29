@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -24,7 +24,7 @@ public class ItemFuncHex extends ItemStrFunc {
 
     @Override
     public String valStr() {
-        Long l = args.get(0).valInt().longValue();
+        long l = args.get(0).valInt().longValue();
         if (args.get(0).isNull()) {
             this.nullValue = true;
             return EMPTY;

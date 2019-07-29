@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
+import java.sql.SQLSyntaxErrorException;
 import java.util.List;
 
 /**
@@ -73,49 +74,7 @@ public final class ExplainHandler {
             return;
         }
 
-        ByteBuffer buffer = c.allocate();
-
-        // write header
-        ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
-        byte packetId = header.getPacketId();
-        buffer = header.write(buffer, c, true);
-
-        // write fields
-        for (FieldPacket field : FIELDS) {
-            field.setPacketId(++packetId);
-            buffer = field.write(buffer, c, true);
-        }
-
-        // write eof
-        EOFPacket eof = new EOFPacket();
-        eof.setPacketId(++packetId);
-        buffer = eof.write(buffer, c, true);
-        if (!rrs.isNeedOptimizer()) {
-            // write rows
-            for (RouteResultsetNode node : rrs.getNodes()) {
-                RowDataPacket row = getRow(node, c.getCharset().getResults());
-                row.setPacketId(++packetId);
-                buffer = row.write(buffer, c, true);
-            }
-        } else {
-            BaseHandlerBuilder builder = buildNodes(rrs, c);
-            List<ReferenceHandlerInfo> results = ComplexQueryPlanUtil.getComplexQueryResult(builder);
-            for (ReferenceHandlerInfo result : results) {
-                RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-                row.add(StringUtil.encode(result.getName(), c.getCharset().getResults()));
-                row.add(StringUtil.encode(result.getType(), c.getCharset().getResults()));
-                row.add(StringUtil.encode(result.getRefOrSQL(), c.getCharset().getResults()));
-                row.setPacketId(++packetId);
-                buffer = row.write(buffer, c, true);
-            }
-        }
-        // write last eof
-        EOFPacket lastEof = new EOFPacket();
-        lastEof.setPacketId(++packetId);
-        buffer = lastEof.write(buffer, c, true);
-
-        // post write
-        c.write(buffer);
+        writeOutHeadAndEof(c, rrs);
     }
 
     private static BaseHandlerBuilder buildNodes(RouteResultset rrs, ServerConnection c) {
@@ -190,7 +149,7 @@ public final class ExplainHandler {
                 c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "insert sql using sequence,the explain result depends by sequence");
                 return null;
             }
-            return DbleServer.getInstance().getRouterService().route(schema, sqlType, stmt, c);
+            return DbleServer.getInstance().getRouterService().route(schema, sqlType, stmt, c, true);
         } catch (Exception e) {
             if (e instanceof SQLException && !(e instanceof SQLNonTransientException)) {
                 SQLException sqlException = (SQLException) e;
@@ -198,6 +157,12 @@ public final class ExplainHandler {
                 LOGGER.info(s.append(c).append(stmt).toString() + " error:" + sqlException);
                 String msg = sqlException.getMessage();
                 c.writeErrMessage(sqlException.getErrorCode(), msg == null ? sqlException.getClass().getSimpleName() : msg);
+                return null;
+            } else if (e instanceof SQLSyntaxErrorException) {
+                StringBuilder s = new StringBuilder();
+                LOGGER.info(s.append(c).append(stmt).toString() + " error:" + e);
+                String msg = "druid parse sql error:" + e.getMessage();
+                c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg);
                 return null;
             } else {
                 StringBuilder s = new StringBuilder();
@@ -224,5 +189,51 @@ public final class ExplainHandler {
             return true;
         }
         return false;
+    }
+
+    public static void writeOutHeadAndEof(ServerConnection c, RouteResultset rrs) {
+        ByteBuffer buffer = c.allocate();
+        // write header
+        ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
+        byte packetId = header.getPacketId();
+        buffer = header.write(buffer, c, true);
+
+        // write fields
+        for (FieldPacket field : FIELDS) {
+            field.setPacketId(++packetId);
+            buffer = field.write(buffer, c, true);
+        }
+
+        // write eof
+        EOFPacket eof = new EOFPacket();
+        eof.setPacketId(++packetId);
+        buffer = eof.write(buffer, c, true);
+
+        if (!rrs.isNeedOptimizer()) {
+            // write rows
+            for (RouteResultsetNode node : rrs.getNodes()) {
+                RowDataPacket row = getRow(node, c.getCharset().getResults());
+                row.setPacketId(++packetId);
+                buffer = row.write(buffer, c, true);
+            }
+        } else {
+            BaseHandlerBuilder builder = buildNodes(rrs, c);
+            List<ReferenceHandlerInfo> results = ComplexQueryPlanUtil.getComplexQueryResult(builder);
+            for (ReferenceHandlerInfo result : results) {
+                RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+                row.add(StringUtil.encode(result.getName(), c.getCharset().getResults()));
+                row.add(StringUtil.encode(result.getType(), c.getCharset().getResults()));
+                row.add(StringUtil.encode(result.getRefOrSQL(), c.getCharset().getResults()));
+                row.setPacketId(++packetId);
+                buffer = row.write(buffer, c, true);
+            }
+        }
+        // write last eof
+        EOFPacket lastEof = new EOFPacket();
+        lastEof.setPacketId(++packetId);
+        buffer = lastEof.write(buffer, c, true);
+
+        // post write
+        c.write(buffer);
     }
 }

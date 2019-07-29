@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -114,6 +114,7 @@ public final class ShowSysParam {
         paramValues.add(sysConfig.getXaRecoveryLogBaseName());
         paramValues.add(sysConfig.getXaSessionCheckPeriod() + "ms");
         paramValues.add(sysConfig.getXaLogCleanPeriod() + "ms");
+        paramValues.add(sysConfig.getXaRetryCount() + "");
         paramValues.add(sysConfig.isUseJoinStrategy() + "");
         paramValues.add(sysConfig.getNestLoopConnSize() + "");
         paramValues.add(sysConfig.getNestLoopRowsSize() + "");
@@ -148,6 +149,8 @@ public final class ShowSysParam {
         paramValues.add(sysConfig.getFlushSlowLogPeriod() + "s");
         paramValues.add(sysConfig.getFlushSlowLogSize() + "");
         paramValues.add(sysConfig.getSqlSlowTime() + "ms");
+        paramValues.add(sysConfig.getMaxCharsPerColumn() + "");
+        paramValues.add(sysConfig.getMaxRowSizeToFile() + "");
 
 
         for (int i = 0; i < PARAM_NAMES.length; i++) {
@@ -212,6 +215,7 @@ public final class ShowSysParam {
             "xaRecoveryLogBaseName",
             "xaSessionCheckPeriod",
             "xaLogCleanPeriod",
+            "xaRetryCount",
             "useJoinStrategy",
             "nestLoopConnSize",
             "nestLoopRowsSize",
@@ -246,6 +250,8 @@ public final class ShowSysParam {
             "flushSlowLogPeriod",
             "flushSlowLogSize",
             "sqlSlowTime",
+            "maxCharsPerColumn",
+            "maxRowSizeToFile",
     };
 
     private static final String[] PARAM_DESCRIPTION = {
@@ -292,6 +298,7 @@ public final class ShowSysParam {
             "The name of the xa transaction record file.The default value is tmlog",
             "The xa transaction status check period.The default value is 1000ms",
             "The xa log clear period.The default value is 1000ms",
+            "Indicates the number of background retries if the xa failed to commit/rollback.The default value is 0, retry infinitely",
             "Whether nest loop join is enabled.The default value is false",
             "The nest loop temporary tables block number.The default value is 4",
             "The nest loop temporary tables rows for every block.The default value is 2000",
@@ -326,6 +333,8 @@ public final class ShowSysParam {
             "The period for flushing log to disk, the default is 1 second",
             "The max size for flushing log to disk, the default is 1000 ",
             "The threshold of Slow Query, the default is 100ms",
+            "The maximum number of characters allowed for per column when load data.The default value is 65535",
+            "The maximum row size,if over this value,row data will be saved to file when load data.The default value is 10000",
     };
 
     private static final String[] ISOLATION_LEVELS = {"", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ", "SERIALIZABLE"};

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -210,7 +210,7 @@ public class GlobalVisitor extends MysqlVisitor {
                 first = false;
             } else
                 joinOnFilterStr.append(" and ");
-            joinOnFilterStr.append(filter);
+            joinOnFilterStr.append(getItemName(filter));
         }
 
         if (join.getOtherJoinOnFilter() != null) {
@@ -361,10 +361,7 @@ public class GlobalVisitor extends MysqlVisitor {
         if (item.isWithSubQuery()) {
             return buildSubQueryItem(item, canUseAlias);
         }
-        String selName = item.getItemName();
-        if (item.type().equals(ItemType.FIELD_ITEM)) {
-            selName = "`" + item.getTableName() + "`.`" + selName + "`";
-        }
+        String selName = getItemName(item);
         String nameInMap = pushNameMap.get(selName);
         if (nameInMap != null) {
             item.setPushDownName(nameInMap);
@@ -387,6 +384,9 @@ public class GlobalVisitor extends MysqlVisitor {
             ItemInSubQuery inSubItem = (ItemInSubQuery) item;
             StringBuilder builder = new StringBuilder();
             builder.append(visitUnSelPushDownName(inSubItem.getLeftOperand(), canUseAlias));
+            if (inSubItem.isNeg()) {
+                builder.append(" not ");
+            }
             builder.append(" in ");
             PlanNode child = inSubItem.getPlanNode();
             MysqlVisitor childVisitor = new GlobalVisitor(child, true);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -22,5 +22,8 @@ public interface RouteStrategy {
     SQLStatement parserSQL(String originSql) throws SQLSyntaxErrorException;
 
     RouteResultset route(SchemaConfig schema, int sqlType, String origSQL, ServerConnection sc, LayerCachePool cachePool)
+            throws SQLException;
+
+    RouteResultset route(SchemaConfig schema, int sqlType, String origSQL, ServerConnection sc, LayerCachePool cachePool, boolean isExplain)
             throws SQLException;
 }

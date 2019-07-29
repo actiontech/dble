@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -103,32 +103,32 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
         return idxGlobal;
     }
 
-    protected int getPrimaryKeyIndex(SchemaInfo schemaInfo, String primaryKeyColumn) throws SQLNonTransientException {
-        if (primaryKeyColumn == null) {
+    protected int getIncrementKeyIndex(SchemaInfo schemaInfo, String incrementColumn) throws SQLNonTransientException {
+        if (incrementColumn == null) {
             throw new SQLNonTransientException("please make sure the primaryKey's config is not null in schemal.xml");
         }
         int primaryKeyIndex = -1;
         StructureMeta.TableMeta tbMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
                 schemaInfo.getTable());
         if (tbMeta != null) {
-            boolean hasPrimaryKey = false;
+            boolean hasIncrementColumn = false;
             StructureMeta.IndexMeta primaryKey = tbMeta.getPrimary();
             if (primaryKey != null) {
-                for (int i = 0; i < tbMeta.getPrimary().getColumnsCount(); i++) {
-                    if (primaryKeyColumn.equalsIgnoreCase(tbMeta.getPrimary().getColumns(i))) {
-                        hasPrimaryKey = true;
+                for (int i = 0; i < tbMeta.getColumnsList().size(); i++) {
+                    if (incrementColumn.equalsIgnoreCase(tbMeta.getColumns(i).getName())) {
+                        hasIncrementColumn = true;
                         break;
                     }
                 }
             }
-            if (!hasPrimaryKey) {
-                String msg = "please make sure your table structure has primaryKey";
+            if (!hasIncrementColumn) {
+                String msg = "please make sure your table structure has primaryKey or incrementColumn";
                 LOGGER.info(msg);
                 throw new SQLNonTransientException(msg);
             }
 
             for (int i = 0; i < tbMeta.getColumnsCount(); i++) {
-                if (primaryKeyColumn.equalsIgnoreCase(tbMeta.getColumns(i).getName())) {
+                if (incrementColumn.equalsIgnoreCase(tbMeta.getColumns(i).getName())) {
                     return i;
                 }
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -49,4 +49,20 @@ public class Order {
         return new Order(item.cloneStruct(), sortOrder);
     }
 
+    @Override
+    public int hashCode() {
+        return sortOrder.name.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj instanceof Order) {
+            Order order = (Order) obj;
+            return this.getItem().equals(order.getItem()) && this.getSortOrder().equals(order.getSortOrder());
+        }
+        return false;
+    }
 }

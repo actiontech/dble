@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -266,7 +266,7 @@ public final class ManagerParseReload {
         return OTHER;
     }
 
-    // RELOAD @@METADATA
+    // RELOAD @@METADATA WHERE schema=? and table=?
     private static int reload2MCheck(String stmt, int offset) {
         if (stmt.length() > offset + 7) {
             char c1 = stmt.charAt(++offset);
@@ -279,10 +279,28 @@ public final class ManagerParseReload {
 
             if ((c1 == 'E' || c1 == 'e') && (c2 == 'T' || c2 == 't') && (c3 == 'A' || c3 == 'a') &&
                     (c4 == 'D' || c4 == 'd') && (c5 == 'A' || c5 == 'a') && (c6 == 'T' || c6 == 't') && (c7 == 'A' || c7 == 'a')) {
-                if (ParseUtil.isErrorTail(++offset, stmt)) {
-                    return OTHER;
+                // skip space
+                for (++offset; offset < stmt.length(); ++offset) {
+                    if (!ParseUtil.isSpace(stmt.charAt(offset))) {
+                        break;
+                    }
                 }
-                return META_DATA;
+
+                if (stmt.length() == offset) {
+                    return (offset << 8) | META_DATA;
+                } else if (offset + 5 < stmt.length()) {
+                    char c8 = stmt.charAt(offset);
+                    char c9 = stmt.charAt(++offset);
+                    char c10 = stmt.charAt(++offset);
+                    char c11 = stmt.charAt(++offset);
+                    char c12 = stmt.charAt(++offset);
+                    if ((c8 == 'W' || c8 == 'w') && (c9 == 'H' || c9 == 'h') && (c10 == 'E' || c10 == 'e') &&
+                            (c11 == 'R' || c11 == 'r') && (c12 == 'E' || c12 == 'e')) {
+                        return (++offset << 8) | META_DATA;
+                    }
+                }
+
+                return OTHER;
             }
         }
         return OTHER;

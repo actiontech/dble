@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -21,6 +21,7 @@ import com.actiontech.dble.plan.common.item.subquery.ItemInSubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
+import com.actiontech.dble.plan.common.ptr.LongPtr;
 import com.actiontech.dble.plan.node.JoinNode;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.QueryNode;
@@ -69,7 +70,8 @@ public final class SubQueryPreProcessor {
         find.query = qtn;
         find.filter = null;
         Item where = qtn.getWhereFilter();
-        SubQueryFilter result = buildSubQuery(qtn, find, where, false, childTransform);
+        boolean canTrans = canTransform(where, new LongPtr(0));
+        SubQueryFilter result = buildSubQuery(qtn, find, where, !canTrans, childTransform);
         if (result != find) {
             // that means where filter only contains sub query,just replace it
             result.query.query(result.filter);
@@ -95,6 +97,30 @@ public final class SubQueryPreProcessor {
         return null;
     }
 
+    private static boolean canTransform(Item filter, LongPtr inSubQueryCnt) {
+        if (filter == null)
+            return true;
+        if (!filter.isWithSubQuery()) {
+            return true;
+        } else if (filter instanceof ItemCondOr) {
+            return false;
+        } else if (filter instanceof ItemCondAnd) {
+            for (int index = 0; index < filter.getArgCount(); index++) {
+                if (!canTransform(filter.arguments().get(index), inSubQueryCnt) || inSubQueryCnt.get() > 1) {
+                    return false;
+                }
+            }
+            return true;
+        } else if (filter instanceof ItemFuncNot) {
+            return false;
+        } else {
+            if (filter instanceof ItemInSubQuery) {
+                inSubQueryCnt.set(inSubQueryCnt.get() + 1);
+            }
+            return true;
+        }
+    }
+
     private static SubQueryFilter buildSubQuery(PlanNode node, SubQueryFilter qtn, Item filter, boolean noTransform, BoolPtr childTransform) {
         if (filter == null)
             return qtn;
@@ -109,7 +135,6 @@ public final class SubQueryPreProcessor {
         } else {
             return buildSubQueryByFilter(node, qtn, filter, noTransform, childTransform);
         }
-
         return qtn;
     }
 
@@ -155,6 +180,7 @@ public final class SubQueryPreProcessor {
         PlanNode query = filter.getPlanNode();
         query = findComparisonsSubQueryToJoinNode(query, childTransform);
         QueryNode changeQuery = new QueryNode(query);
+        changeQuery.setKeepFieldSchema(true);
         String alias = AUTOALIAS + query.getPureName();
         changeQuery.setAlias(alias);
         if (query.getColumnsSelected().size() != 1)
@@ -227,9 +253,9 @@ public final class SubQueryPreProcessor {
         return qtn;
     }
 
-    private static SubQueryFilter buildSubQueryWithAndFilter(PlanNode node, SubQueryFilter qtn, ItemCondAnd filter, boolean isOrChild, BoolPtr childTransform) {
+    private static SubQueryFilter buildSubQueryWithAndFilter(PlanNode node, SubQueryFilter qtn, ItemCondAnd filter, boolean noTransform, BoolPtr childTransform) {
         for (int index = 0; index < filter.getArgCount(); index++) {
-            SubQueryFilter result = buildSubQuery(node, qtn, filter.arguments().get(index), isOrChild, childTransform);
+            SubQueryFilter result = buildSubQuery(node, qtn, filter.arguments().get(index), noTransform, childTransform);
             if (result != qtn) {
                 if (result.filter == null) {
                     result.filter = new ItemInt(1);

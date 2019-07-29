@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -10,15 +10,15 @@ import com.actiontech.dble.config.loader.zkprocess.entity.server.FireWall;
 import com.actiontech.dble.config.loader.zkprocess.entity.server.System;
 import com.actiontech.dble.config.loader.zkprocess.entity.server.User;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.*;
 import java.util.List;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlRootElement(namespace = Versions.DOMAIN, name = "server")
 public class Server {
+
+    @XmlAttribute(required = false)
+    protected String version;
 
     @XmlElement(required = true)
     protected System system;
@@ -50,6 +50,14 @@ public class Server {
 
     public void setFirewall(FireWall firewall) {
         this.firewall = firewall;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -24,15 +24,15 @@ public class Schema {
     protected String dml;
     protected List<Table> table;
 
-    public List<Table> getTables() {
+    public List<Table> getTable() {
         if (this.table == null) {
             table = new ArrayList<>();
         }
         return table;
     }
 
-    public void setTables(List<Table> tables) {
-        this.table = tables;
+    public void setTable(List<Table> table) {
+        this.table = table;
     }
 
     public String getName() {

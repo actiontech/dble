@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -40,7 +40,7 @@ public class ItemFuncSysdateLocal extends ItemDatetimeFunc {
         ltime.setHour(cal.get(java.util.Calendar.HOUR_OF_DAY));
         ltime.setMinute(cal.get(java.util.Calendar.MINUTE));
         ltime.setSecond(cal.get(java.util.Calendar.SECOND));
-        ltime.setSecondPart(cal.get(java.util.Calendar.MILLISECOND) * 1000);
+        ltime.setSecondPart(cal.get(java.util.Calendar.MILLISECOND) * 1000L);
         return false;
     }
 

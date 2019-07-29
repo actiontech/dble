@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -24,11 +24,8 @@ import com.actiontech.dble.plan.common.item.subquery.ItemExistsSubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemInSubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
-import com.actiontech.dble.plan.node.JoinNode;
-import com.actiontech.dble.plan.node.MergeNode;
-import com.actiontech.dble.plan.node.PlanNode;
+import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
-import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.ServerConnection;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
@@ -62,7 +59,7 @@ public final class PlanUtil {
         // union return
         if (node.type() == PlanNodeType.MERGE)
             return null;
-        NamedField tmpField = new NamedField(column.getTableName(), column.getItemName(), null);
+        NamedField tmpField = new NamedField(column.getDbName(), column.getTableName(), column.getItemName(), null);
         NamedField coutField = node.getInnerFields().get(tmpField);
         if (coutField == null)
             return null;
@@ -253,11 +250,26 @@ public final class PlanUtil {
     }
 
     public static boolean isGlobalOrER(PlanNode node) {
-        return !node.isContainsSubQuery() && ((node.getNoshardNode() != null && node.type() != PlanNodeType.TABLE && node.type() != PlanNodeType.QUERY) || isERNode(node));
+        return !node.isContainsSubQuery() && ((node.getNoshardNode() != null && node.type() != PlanNodeType.TABLE && node.type() != PlanNodeType.QUERY) || isERNode(node)) && (hasNoFakeNode(node) || (node instanceof NoNameNode));
     }
 
     public static boolean isGlobal(PlanNode node) {
-        return node.getNoshardNode() != null && node.getUnGlobalTableCount() == 0 && !node.isContainsSubQuery();
+        return node.getNoshardNode() != null && node.getUnGlobalTableCount() == 0 && !node.isContainsSubQuery() && (hasNoFakeNode(node) || (node instanceof NoNameNode));
+    }
+
+
+    public static boolean hasNoFakeNode(PlanNode node) {
+        if (node instanceof NoNameNode) {
+            return !((NoNameNode) node).isFakeNode();
+        }
+        if (node.getChildren() != null) {
+            for (PlanNode n : node.getChildren()) {
+                if (!hasNoFakeNode(n)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     /**
@@ -319,7 +331,7 @@ public final class PlanUtil {
     // ----------------help method------------
 
     private static Item pushDownCol(PlanNode node, ItemField col) {
-        NamedField tmpField = new NamedField(col.getTableName(), col.getItemName(), null);
+        NamedField tmpField = new NamedField(col.getDbName(), col.getTableName(), col.getItemName(), null);
         NamedField coutField = node.getInnerFields().get(tmpField);
         return coutField.planNode.getOuterFields().get(coutField);
     }
@@ -569,7 +581,7 @@ public final class PlanUtil {
     public static void checkTablesPrivilege(ServerConnection source, PlanNode node, SQLSelectStatement stmt) {
         for (TableNode tn : node.getReferedTableNodes()) {
             if (!ServerPrivileges.checkPrivilege(source, tn.getSchema(), tn.getTableName(), ServerPrivileges.CheckType.SELECT)) {
-                String msg = "The statement DML privilege check is not passed, sql:" + stmt;
+                String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                 throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "", msg);
             }
         }

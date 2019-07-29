@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -128,6 +128,8 @@ public final class KVPathUtil {
     //depth:4,child node of conf_base_path/rules/
     public static final String TABLE_RULE = "tableRule";
     public static final String FUNCTION = "function";
+
+    public static final String VERSION = "version";
 
     //depth:2,sequences path:base_path/sequences
     public static final String SEQUENCES = "sequences";

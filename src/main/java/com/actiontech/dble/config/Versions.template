@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -17,6 +17,7 @@ public abstract class Versions {
     public static final String ANNOTATION_NAME = "@annotation-name@";
     public static final String ROOT_PREFIX = "@root_prefix@";
     public static final String DOMAIN = "@domain@";
+    public static final String CONFIG_VERSION = "@config_version@";
 
     public static void setServerVersion(String version) {
         byte[] mysqlVersionPart = version.getBytes();

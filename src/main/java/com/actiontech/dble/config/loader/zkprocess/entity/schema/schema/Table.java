@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -42,6 +42,8 @@ public class Table implements Named {
     protected Boolean needAddLimit;
     @XmlAttribute
     protected String type;
+    @XmlAttribute
+    protected String incrementColumn;
 
     protected List<ChildTable> childTable;
 
@@ -126,6 +128,15 @@ public class Table implements Named {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+
+    public String getIncrementColumn() {
+        return incrementColumn;
+    }
+
+    public void setIncrementColumn(String incrementColumn) {
+        this.incrementColumn = incrementColumn;
     }
 
     @Override

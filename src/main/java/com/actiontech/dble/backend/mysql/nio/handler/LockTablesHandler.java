@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -8,7 +8,6 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -16,11 +15,11 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.server.parser.ServerParse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Lock Tables Handler
@@ -32,14 +31,12 @@ public class LockTablesHandler extends MultiNodeHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(LockTablesHandler.class);
 
     private final RouteResultset rrs;
-    private final ReentrantLock lock;
     private final boolean autocommit;
 
     public LockTablesHandler(NonBlockingSession session, RouteResultset rrs) {
         super(session);
         this.rrs = rrs;
         this.autocommit = session.getSource().isAutocommit();
-        this.lock = new ReentrantLock();
     }
 
     public void execute() throws Exception {
@@ -78,7 +75,8 @@ public class LockTablesHandler extends MultiNodeHandler {
         if (executeResponse) {
             session.releaseConnectionIfSafe(conn, false);
         } else {
-            ((MySQLConnection) conn).quit();
+            conn.closeWithoutRsp("unfinished sync");
+            session.getTargetMap().remove(conn.getAttachment());
         }
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);
@@ -98,6 +96,10 @@ public class LockTablesHandler extends MultiNodeHandler {
                 return;
             }
             boolean isEndPack = decrementCountBy(1);
+            final RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
+            if (node.getSqlType() == ServerParse.UNLOCK) {
+                session.releaseConnection(conn);
+            }
             if (isEndPack) {
                 if (this.isFail() || session.closed()) {
                     tryErrorFinished(true);
@@ -118,14 +120,6 @@ public class LockTablesHandler extends MultiNodeHandler {
                 session.multiStatementNextSql(multiStatementFlag);
             }
         }
-    }
-
-    protected String byte2Str(byte[] data) {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : data) {
-            sb.append(Byte.toString(b));
-        }
-        return sb.toString();
     }
 
     @Override

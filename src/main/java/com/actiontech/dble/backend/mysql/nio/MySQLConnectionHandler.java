@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -20,6 +20,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * life cycle: from connection establish to close <br/>
@@ -175,8 +177,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
     private void handleRequestPacket(byte[] data) {
         ResponseHandler respHand = responseHandler;
         if (respHand != null && respHand instanceof LoadDataResponseHandler) {
-            ((LoadDataResponseHandler) respHand).requestDataResponse(data,
-                    source);
+            ((LoadDataResponseHandler) respHand).requestDataResponse(data, source);
         } else {
             closeNoHandler();
         }
@@ -209,7 +210,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
     }
 
     private void closeNoHandler() {
-        if (!source.isClosedOrQuit()) {
+        if (!source.isClosed()) {
             source.close("no handler");
             LOGGER.info("no handler bind in this con " + this + " client:" + source);
         }
@@ -219,8 +220,11 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
      * execute RowEof Packet
      */
     private void handleRowEofPacket(byte[] data) {
+        if (session != null && !source.isTesting() && this.source.getLogResponse().compareAndSet(false, true)) {
+            session.setBackendResponseEndTime(this.source);
+        }
         this.source.setRunning(false);
-        this.source.singal();
+        this.source.signal();
         if (responseHandler != null) {
             responseHandler.rowEofResponse(data, false, source);
         } else {
@@ -231,9 +235,14 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
     @Override
     protected void handleDataError(Exception e) {
         LOGGER.info(this.source.toString() + " handle data error:", e);
-        dataQueue.clear();
+        while (dataQueue.size() > 0) {
+            dataQueue.clear();
+            // clear all data from the client
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+        }
+        resultStatus = RESULT_STATUS_INIT;
         this.source.setRunning(false);
-        this.source.singal();
+        this.source.signal();
         ResponseHandler handler = this.responseHandler;
         if (handler != null)
             handler.connectionError(e, this.source);

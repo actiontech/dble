@@ -1,18 +1,20 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
 package com.actiontech.dble.backend.mysql.nio;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
-import com.actiontech.dble.backend.mysql.SecurityUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.backend.mysql.xa.TxState;
+import com.actiontech.dble.btrace.provider.XaDelayProvider;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.Isolations;
-import com.actiontech.dble.net.BackendAIOConnection;
+import com.actiontech.dble.net.AbstractConnection;
+import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.handler.BackEndCleaner;
 import com.actiontech.dble.net.handler.BackEndRecycleRunnable;
 import com.actiontech.dble.net.mysql.*;
@@ -21,14 +23,17 @@ import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.util.PasswordAuthPlugin;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.actiontech.dble.util.exception.UnknownTxIsolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
+import java.net.InetSocketAddress;
 import java.nio.channels.NetworkChannel;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -38,7 +43,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * @author mycat
  */
-public class MySQLConnection extends BackendAIOConnection {
+public class MySQLConnection extends AbstractConnection implements
+        BackendConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLConnection.class);
     private static final long CLIENT_FLAGS = initClientFlags();
     private volatile long lastTime;
@@ -56,8 +62,10 @@ public class MySQLConnection extends BackendAIOConnection {
     private volatile boolean complexQuery;
     private volatile NonBlockingSession session;
     private long oldTimestamp;
-
-
+    private final AtomicBoolean logResponse = new AtomicBoolean(false);
+    private volatile boolean testing = false;
+    private volatile String closeReason = null;
+    private String authPluginErrorMessage = null;
     private volatile BackEndCleaner recycler = null;
 
     private static long initClientFlags() {
@@ -87,6 +95,7 @@ public class MySQLConnection extends BackendAIOConnection {
         return flag;
     }
 
+
     private static final CommandPacket COMMIT = new CommandPacket();
     private static final CommandPacket ROLLBACK = new CommandPacket();
 
@@ -108,9 +117,7 @@ public class MySQLConnection extends BackendAIOConnection {
     private String user;
     private String password;
     private Object attachment;
-    private ResponseHandler respHandler;
-
-    private final AtomicBoolean isQuit;
+    private volatile ResponseHandler respHandler;
 
     public MySQLConnection(NetworkChannel channel, boolean fromSlaveDB, boolean isNoSchema) {
         super(channel);
@@ -121,7 +128,6 @@ public class MySQLConnection extends BackendAIOConnection {
             this.clientFlags = CLIENT_FLAGS;
         }
         this.lastTime = TimeUtil.currentTimeMillis();
-        this.isQuit = new AtomicBoolean(false);
         this.autocommit = true;
         this.fromSlaveDB = fromSlaveDB;
         /* if the txIsolation in server.xml is different from the isolation level in MySQL node,
@@ -132,12 +138,24 @@ public class MySQLConnection extends BackendAIOConnection {
         this.sysVariables = new LinkedHashMap<>();
     }
 
+    public void register() throws IOException {
+        this.asyncRead();
+    }
+
     public void resetContextStatus() {
         this.txIsolation = -1;
         this.autocommit = true;
         this.initCharacterSet(DbleServer.getInstance().getConfig().getSystem().getCharset());
         this.usrVariables.clear();
         this.sysVariables.clear();
+    }
+
+    public void setHost(String host) {
+        this.host = host;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
     }
 
     public void setRunning(boolean running) {
@@ -217,22 +235,53 @@ public class MySQLConnection extends BackendAIOConnection {
         return password;
     }
 
+    public boolean finishConnect() throws IOException {
+        localPort = ((InetSocketAddress) channel.getLocalAddress()).getPort();
+        return true;
+    }
+
+    public void setProcessor(NIOProcessor processor) {
+        super.setProcessor(processor);
+        processor.addBackend(this);
+    }
+
     void authenticate() {
         AuthPacket packet = new AuthPacket();
         packet.setPacketId(1);
-        packet.setClientFlags(clientFlags);
         packet.setMaxPacketSize(maxPacketSize);
         int charsetIndex = CharsetUtil.getCharsetDefaultIndex(DbleServer.getInstance().getConfig().getSystem().getCharset());
         packet.setCharsetIndex(charsetIndex);
-
         packet.setUser(user);
         try {
-            packet.setPassword(passwd(password, handshake));
+            String authPluginName = new String(handshake.getAuthPluginName());
+            if (authPluginName.equals(new String(HandshakeV10Packet.NATIVE_PASSWORD_PLUGIN))) {
+                sendAuthPacket(packet, PasswordAuthPlugin.passwd(password, handshake), authPluginName);
+            } else if (authPluginName.equals(new String(HandshakeV10Packet.CACHING_SHA2_PASSWORD_PLUGIN))) {
+                sendAuthPacket(packet, PasswordAuthPlugin.passwdSha256(password, handshake), authPluginName);
+            } else {
+                authPluginErrorMessage = "Client don't support the password plugin " + authPluginName + ",please check the default auth Plugin";
+                LOGGER.warn(authPluginErrorMessage);
+                throw new RuntimeException(authPluginErrorMessage);
+            }
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e.getMessage());
         }
+
+    }
+
+    private long getClientFlagSha() {
+        int flag = 0;
+        flag |= initClientFlags() ;
+        flag |= Capabilities.CLIENT_PLUGIN_AUTH;
+        return flag;
+    }
+
+    private void sendAuthPacket(AuthPacket packet, byte[] authPassword, String authPluginName) {
+        packet.setPassword(authPassword);
+        packet.setClientFlags(getClientFlagSha());
+        packet.setAuthPlugin(authPluginName);
         packet.setDatabase(schema);
-        packet.write(this);
+        packet.writeWithKey(this);
     }
 
     public boolean isAutocommit() {
@@ -247,9 +296,6 @@ public class MySQLConnection extends BackendAIOConnection {
         this.attachment = attachment;
     }
 
-    public boolean isClosedOrQuit() {
-        return isClosed() || isQuit.get();
-    }
 
     public void sendQueryCmd(String query, CharsetNames clientCharset) {
         CommandPacket packet = new CommandPacket();
@@ -322,7 +368,7 @@ public class MySQLConnection extends BackendAIOConnection {
         if (rrn.getSqlType() == ServerParse.DDL) {
             isDDL = true;
         }
-        String xaTxId = getConnXID(session);
+        String xaTxId = getConnXID(session, rrn.getMultiplexNum().longValue());
         if (!sc.isAutocommit() && !sc.isTxStart() && modifiedSQLExecuted) {
             sc.setTxStart(true);
         }
@@ -358,10 +404,10 @@ public class MySQLConnection extends BackendAIOConnection {
             DbleServer.getInstance().getWriteToBackendQueue().add(Collections.singletonList(sendQueryCmdTask(rrn.getStatement(), clientCharset)));
             return;
         }
-        CommandPacket schemaCmd = null;
+
         StringBuilder sb = new StringBuilder();
         if (schemaSyn == 1) {
-            schemaCmd = getChangeSchemaCommand(conSchema);
+            getChangeSchemaCommand(sb, conSchema);
         }
         if (charsetSyn == 1) {
             getCharsetCommand(sb, clientCharset);
@@ -376,22 +422,20 @@ public class MySQLConnection extends BackendAIOConnection {
             sb.append(setSql);
         }
         if (xaCmd != null) {
+            XaDelayProvider.delayBeforeXaStart(rrn.getName(), xaTxID);
             sb.append(xaCmd);
         }
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("con need syn ,total syn cmd " + synCount +
                     " commands " + sb.toString() + "schema change:" +
-                    (schemaCmd != null) + " con:" + this);
+                    (schemaSyn == 1) + " con:" + this);
         }
         metaDataSynced = false;
         statusSync = new StatusSync(conSchema,
                 clientCharset, clientTxIsolation, expectAutocommit,
                 synCount, usrVariables, sysVariables, toResetSys);
         // syn schema
-        List<WriteToBackendTask> taskList = new ArrayList<>(2);
-        if (schemaCmd != null) {
-            taskList.add(new WriteToBackendTask(this, schemaCmd));
-        }
+        List<WriteToBackendTask> taskList = new ArrayList<>(1);
         // and our query sql to multi command at last
         sb.append(rrn.getStatement()).append(";");
         // syn and execute others
@@ -412,19 +456,20 @@ public class MySQLConnection extends BackendAIOConnection {
         if (rrn.getSqlType() == ServerParse.DDL) {
             isDDL = true;
         }
-        String xaTxId = getConnXID(session);
+        String xaTxId = getConnXID(session, rrn.getMultiplexNum().longValue());
         if (!sc.isAutocommit() && !sc.isTxStart() && modifiedSQLExecuted) {
             sc.setTxStart(true);
         }
         synAndDoExecute(xaTxId, rrn, sc.getCharset(), sc.getTxIsolation(), isAutoCommit, sc.getUsrVariables(), sc.getSysVariables());
     }
 
-    public String getConnXID(NonBlockingSession nonBlockingSession) {
+    public String getConnXID(NonBlockingSession nonBlockingSession, long multiplexNum) {
         if (nonBlockingSession.getSessionXaID() == null)
             return null;
         else {
             String sessionXaID = nonBlockingSession.getSessionXaID();
-            return sessionXaID.substring(0, sessionXaID.length() - 1) + "." + this.schema + "'";
+            String strMultiplexNum = multiplexNum == 0 ? "" : "." + multiplexNum;
+            return sessionXaID.substring(0, sessionXaID.length() - 1) + "." + this.schema + strMultiplexNum + "'";
         }
     }
 
@@ -457,10 +502,10 @@ public class MySQLConnection extends BackendAIOConnection {
             sendQueryCmd(rrn.getStatement(), clientCharset);
             return;
         }
-        CommandPacket schemaCmd = null;
+
         StringBuilder sb = new StringBuilder();
         if (schemaSyn == 1) {
-            schemaCmd = getChangeSchemaCommand(conSchema);
+            getChangeSchemaCommand(sb, conSchema);
         }
         if (charsetSyn == 1) {
             getCharsetCommand(sb, clientCharset);
@@ -475,21 +520,19 @@ public class MySQLConnection extends BackendAIOConnection {
             sb.append(setSql);
         }
         if (xaCmd != null) {
+            XaDelayProvider.delayBeforeXaStart(rrn.getName(), xaTxID);
             sb.append(xaCmd);
         }
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("con need syn ,total syn cmd " + synCount +
                     " commands " + sb.toString() + "schema change:" +
-                    (schemaCmd != null) + " con:" + this);
+                    (schemaSyn == 1) + " con:" + this);
         }
         metaDataSynced = false;
         statusSync = new StatusSync(conSchema,
                 clientCharset, clientTxIsolation, expectAutocommit,
                 synCount, usrVariables, sysVariables, toResetSys);
-        // syn schema
-        if (schemaCmd != null) {
-            schemaCmd.write(this);
-        }
+
         // and our query sql to multi command at last
         sb.append(rrn.getStatement()).append(";");
         // syn and execute others
@@ -505,9 +548,9 @@ public class MySQLConnection extends BackendAIOConnection {
         this.recycler = recycler;
     }
 
-    public void singal() {
+    public void signal() {
         if (recycler != null) {
-            recycler.singal();
+            recycler.signal();
         }
     }
 
@@ -568,12 +611,10 @@ public class MySQLConnection extends BackendAIOConnection {
         return sb.toString();
     }
 
-    private static CommandPacket getChangeSchemaCommand(String schema) {
-        CommandPacket cmd = new CommandPacket();
-        cmd.setPacketId(0);
-        cmd.setCommand(MySQLPacket.COM_INIT_DB);
-        cmd.setArg(schema.getBytes());
-        return cmd;
+    private static void getChangeSchemaCommand(StringBuilder sb, String schema) {
+        sb.append("use ");
+        sb.append(schema);
+        sb.append(";");
     }
 
     /**
@@ -594,17 +635,39 @@ public class MySQLConnection extends BackendAIOConnection {
         this.lastTime = lastTime;
     }
 
-    public void quit() {
-        if (isQuit.compareAndSet(false, true) && !isClosed()) {
-            if (isAuthenticated) {
-                write(writeToBuffer(QuitPacket.QUIT, allocate()));
-                innerTerminate("normal");
+    public void close() {
+        close("normal");
+    }
+
+    /**
+     * Only write quit packet to backend ,when the NIOSocketWR find the QuitPacket
+     * closeInner() would be called
+     *
+     * @param reason
+     */
+    @Override
+    public synchronized void close(final String reason) {
+        if (!isClosed) {
+            if (isAuthenticated && channel.isOpen()) {
+                try {
+                    closeReason = reason;
+                    write(writeToBuffer(QuitPacket.QUIT, allocate()));
+                } catch (Throwable e) {
+                    LOGGER.info("error when try to quite the connection ,drop the error and close it anyway");
+                    closeInner(reason);
+                }
             } else {
-                close("normal");
+                closeInner(reason);
+            }
+            this.setRunning(false);
+            this.signal();
+        } else {
+            this.cleanup();
+            if (this.respHandler != null) {
+                closeResponseHandler(reason == null ? closeReason : reason);
             }
         }
     }
-
 
     public long getOldTimestamp() {
         return oldTimestamp;
@@ -623,27 +686,6 @@ public class MySQLConnection extends BackendAIOConnection {
         this.complexQuery = complexQuery;
     }
 
-    @Override
-    public void close(final String reason) {
-        if (!isClosed.get()) {
-            if (isAuthenticated) {
-                isQuit.set(true);
-                if (channel.isOpen()) {
-                    try {
-                        write(writeToBuffer(QuitPacket.QUIT, allocate()));
-                    } catch (Throwable e) {
-                        LOGGER.info("error when try to quite the connection ,drop the error and close it anyway");
-                    }
-                }
-            }
-            this.setRunning(false);
-            this.singal();
-            innerTerminate(reason);
-        }
-        if (this.respHandler != null) {
-            closeResponseHandler(reason);
-        }
-    }
 
     private void closeResponseHandler(final String reason) {
         final ResponseHandler handler = respHandler;
@@ -651,33 +693,43 @@ public class MySQLConnection extends BackendAIOConnection {
         DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
             @Override
             public void run() {
-                conn.setRunning(false);
-                conn.singal();
-                handler.connectionClose(conn, reason);
-                respHandler = null;
+                try {
+                    conn.setRunning(false);
+                    conn.signal();
+                    handler.connectionClose(conn, reason);
+                    respHandler = null;
+                } catch (Throwable e) {
+                    LOGGER.warn("get error close mysqlconnection ", e);
+                }
             }
         });
     }
 
+    /**
+     * MySQLConnetcion inner resource clear
+     * Only used in Net Error OR final resource clear
+     *
+     * @param reason
+     */
     public void closeInner(final String reason) {
-        if (!isClosed.get()) {
-            innerTerminate(reason);
-        }
+        innerTerminate(reason == null ? closeReason : reason);
         if (this.respHandler != null) {
-            closeResponseHandler(reason);
+            closeResponseHandler(reason == null ? closeReason : reason);
         }
     }
 
+
+    /**
+     * close connection without closeResponseHandler
+     */
     @Override
-    public void terminate(String reason) {
-        if (!isClosed.get()) {
-            innerTerminate(reason);
-        }
+    public synchronized void closeWithoutRsp(String reason) {
+        this.respHandler = null;
+        this.close(reason);
     }
 
     private synchronized void innerTerminate(String reason) {
         if (!isClosed()) {
-            isQuit.set(true);
             super.close(reason);
             pool.connectionClosed(this);
         }
@@ -712,6 +764,9 @@ public class MySQLConnection extends BackendAIOConnection {
             return;
         }
         if (this.isRunning()) {
+            if (logResponse.compareAndSet(false, true)) {
+                session.setBackendResponseEndTime(this);
+            }
             DbleServer.getInstance().getComplexQueryExecutor().execute(new BackEndRecycleRunnable(this));
             return;
         }
@@ -721,8 +776,10 @@ public class MySQLConnection extends BackendAIOConnection {
         statusSync = null;
         modifiedSQLExecuted = false;
         isDDL = false;
+        testing = false;
         setResponseHandler(null);
         setSession(null);
+        logResponse.set(false);
         pool.releaseChannel(this);
     }
 
@@ -748,24 +805,18 @@ public class MySQLConnection extends BackendAIOConnection {
         }
     }
 
+    public boolean isTesting() {
+        return testing;
+    }
+
+    public void setTesting(boolean testing) {
+        this.testing = testing;
+    }
+
     public void writeQueueAvailable() {
         if (respHandler != null) {
             respHandler.writeQueueAvailable();
         }
-    }
-
-    private static byte[] passwd(String pass, HandshakeV10Packet hs)
-            throws NoSuchAlgorithmException {
-        if (pass == null || pass.length() == 0) {
-            return null;
-        }
-        byte[] passwd = pass.getBytes();
-        int sl1 = hs.getSeed().length;
-        int sl2 = hs.getRestOfScrambleBuff().length;
-        byte[] seed = new byte[sl1 + sl2];
-        System.arraycopy(hs.getSeed(), 0, seed, 0, sl1);
-        System.arraycopy(hs.getRestOfScrambleBuff(), 0, seed, sl1, sl2);
-        return SecurityUtil.scramble411(passwd, seed);
     }
 
     @Override
@@ -835,6 +886,11 @@ public class MySQLConnection extends BackendAIOConnection {
         return result.toString();
     }
 
+    @Override
+    public void connectionCount() {
+        return;
+    }
+
     public String compactInfo() {
         return "MySQLConnection host=" + host + ", port=" + port + ", schema=" + schema;
     }
@@ -872,6 +928,10 @@ public class MySQLConnection extends BackendAIOConnection {
 
     }
 
+    public AtomicBoolean getLogResponse() {
+        return logResponse;
+    }
+
     private static class StatusSync {
         private final String schema;
         private final CharsetNames clientCharset;
@@ -906,10 +966,8 @@ public class MySQLConnection extends BackendAIOConnection {
                 this.updateConnectionInfo(conn);
                 conn.metaDataSynced = true;
                 return false;
-            } else if (remains < 0) {
-                return true;
             }
-            return false;
+            return remains < 0;
         }
 
         private void updateConnectionInfo(MySQLConnection conn) {
@@ -930,6 +988,4 @@ public class MySQLConnection extends BackendAIOConnection {
             conn.usrVariables = usrVariables;
         }
     }
-
-
 }

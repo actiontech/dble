@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -14,6 +14,8 @@ public class GetSchemaDefaultNodeTablesHandler extends GetNodeTablesHandler {
 
     private SchemaConfig config;
     private MultiTablesMetaHandler multiTablesMetaHandler;
+    private volatile boolean finished = false;
+
     GetSchemaDefaultNodeTablesHandler(MultiTablesMetaHandler multiTablesMetaHandler, SchemaConfig config) {
         super(config.getDataNode());
         this.multiTablesMetaHandler = multiTablesMetaHandler;
@@ -35,6 +37,11 @@ public class GetSchemaDefaultNodeTablesHandler extends GetNodeTablesHandler {
 
     @Override
     protected void handleFinished() {
+        finished = true;
         multiTablesMetaHandler.showTablesFinished();
+    }
+
+    public boolean isFinished() {
+        return finished;
     }
 }

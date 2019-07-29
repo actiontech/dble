@@ -1,3 +1,8 @@
+<!--
+  ~ Copyright (C) 2016-2019 ActionTech.
+  ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+  -->
+
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
@@ -10,6 +15,7 @@
     <description>The project of dble-server</description>
 
     <properties>
+        <java.version>1.8</java.version>
         <app.encoding>UTF-8</app.encoding>
         <version.template.file>version.txt.template</version.template.file>
         <version.file>version.txt</version.file>
@@ -90,7 +96,7 @@
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>druid</artifactId>
-            <version>1.1.10</version>
+            <version>1.1.14</version>
         </dependency>
         <dependency>
             <groupId>mysql</groupId>
@@ -250,18 +256,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.google.code.findbugs</groupId>
-            <artifactId>jsr305</artifactId>
-            <version>2.0.3</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.esotericsoftware.kryo</groupId>
-            <artifactId>kryo</artifactId>
-            <version>2.10</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-library</artifactId>
             <version>1.3</version>
@@ -368,8 +362,8 @@
                     <forceJavacCompilerUse>true</forceJavacCompilerUse>
                     <!-- maven-compiler-plugin defaults to targeting Java 5, but our javac
                         only supports >=6 -->
-                    <source>1.7</source>
-                    <target>1.7</target>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
                     <encoding>${app.encoding}</encoding>
                 </configuration>
                 <dependencies>
@@ -414,18 +408,6 @@
                                     <token>@pomversion@</token>
                                     <value>${project.version}</value>
                                 </replacement>
-                                <replacement>
-                                    <token>@giturl@</token>
-                                    <value>https://github.com/actiontech/dble</value>
-                                </replacement>
-                                <replacement>
-                                    <token>@website@</token>
-                                    <value>http://dble.cloud/</value>
-                                </replacement>
-                                <replacement>
-                                    <token>@qqgroup@</token>
-                                    <value>669663113</value>
-                                </replacement>
                             </replacements>
                         </configuration>
                     </execution>
@@ -444,6 +426,10 @@
                                 <replacement>
                                     <token>@server-version@</token>
                                     <value>5.6.29-dble-${project.version}-${git.commit.id}-${timestamp}</value>
+                                </replacement>
+                                <replacement>
+                                    <token>@config_version@</token>
+                                    <value>${project.version}</value>
                                 </replacement>
                                 <replacement>
                                     <token>@version-comment@</token>
@@ -553,7 +539,6 @@
                                 </systemProperties>
                                 <extraArguments>
                                     <extraArgument>-server</extraArgument>
-                                    <extraArgument>-XX:MaxPermSize=64M</extraArgument>
                                     <extraArgument>-XX:+AggressiveOpts</extraArgument>
                                     <extraArgument>-Dfile.encoding=UTF-8</extraArgument>
                                     <!-- 远程JMX -->
@@ -565,6 +550,11 @@
                                     <extraArgument>-Xmx4G</extraArgument>
                                     <extraArgument>-Xms1G</extraArgument>
                                     <extraArgument>-XX:MaxDirectMemorySize=2G</extraArgument>
+                                    <extraArgument>-XX:+PrintHeapAtGC</extraArgument>
+                                    <extraArgument>-XX:+PrintGCDateStamps</extraArgument>
+                                    <extraArgument>-Xloggc:./logs/gc_%t_%p.log</extraArgument>
+                                    <extraArgument>-XX:+PrintGCTimeStamps</extraArgument>
+                                    <extraArgument>-XX:+PrintGCDetails</extraArgument>
                                 </extraArguments>
                             </jvmSettings>
                             <generatorConfigurations>
@@ -580,6 +570,10 @@
                                         <property>
                                             <name>configuration.directory.in.classpath.first</name>
                                             <value>conf</value>
+                                        </property>
+                                        <property>
+                                            <name>configuration.directory.in.classpath.last</name>
+                                            <value>algorithm/*</value>
                                         </property>
                                         <property>
                                             <name>wrapper.ping.timeout</name>
@@ -700,7 +694,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>8.1</version>
+                        <version>8.18</version>
                     </dependency>
                 </dependencies>
                 <configuration>

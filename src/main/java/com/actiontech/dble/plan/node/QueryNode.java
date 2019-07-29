@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -30,6 +30,7 @@ public class QueryNode extends PlanNode {
         if (child != null) {
             child.setWithSubQuery(true); // the default is subQuery
         }
+        this.keepFieldSchema = false;
     }
 
     public void setChild(PlanNode child) {
@@ -45,7 +46,7 @@ public class QueryNode extends PlanNode {
         for (PlanNode child : children) {
             child.setUpFields();
             for (NamedField childOutField : child.outerFields.keySet()) {
-                NamedField tmpField = new NamedField(this.getAlias(), childOutField.getName(), childOutField.planNode);
+                NamedField tmpField = new NamedField(null, this.getAlias(), childOutField.getName(), childOutField.planNode);
                 if (innerFields.containsKey(tmpField) && getParent() != null)
                     throw new MySQLOutPutException(ErrorCode.ER_DUP_FIELDNAME, "42S21", "Duplicate column name '" + childOutField.getName() + "'");
                 innerFields.put(tmpField, childOutField);
@@ -55,6 +56,11 @@ public class QueryNode extends PlanNode {
     @Override
     public String getPureName() {
         return this.getChild().getAlias();
+    }
+
+    @Override
+    public String getPureSchema() {
+        return this.getChild().getPureSchema();
     }
 
     @Override

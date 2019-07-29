@@ -1,12 +1,11 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -29,13 +28,11 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UnLockTablesHandler.class);
 
-    private final NonBlockingSession session;
     private final boolean autocommit;
     private final String srcStatement;
 
     public UnLockTablesHandler(NonBlockingSession session, boolean autocommit, String sql) {
         super(session);
-        this.session = session;
         this.autocommit = autocommit;
         this.srcStatement = sql;
     }
@@ -86,7 +83,8 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
         if (executeResponse) {
             session.releaseConnectionIfSafe(conn, false);
         } else {
-            ((MySQLConnection) conn).quit();
+            conn.closeWithoutRsp("unfinished sync");
+            session.getTargetMap().remove(conn.getAttachment());
         }
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);

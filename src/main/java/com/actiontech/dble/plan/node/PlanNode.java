@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -13,6 +13,7 @@ import com.actiontech.dble.plan.common.context.ReferContext;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
+import com.actiontech.dble.plan.common.item.function.ItemFunc;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemFuncGroupConcat;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
@@ -39,7 +40,7 @@ public abstract class PlanNode {
     }
 
     public enum PlanNodeType {
-        NONAME, TABLE, JOIN, MERGE, QUERY
+        NONAME, TABLE, JOIN, MERGE, QUERY, JOIN_INNER
     }
 
     public abstract PlanNodeType type();
@@ -125,6 +126,8 @@ public abstract class PlanNode {
 
     private ReferContext referContext;
 
+    protected boolean keepFieldSchema = true;
+
     protected PlanNode() {
         nameContext = new NameResolutionContext();
         referContext = new ReferContext();
@@ -163,6 +166,8 @@ public abstract class PlanNode {
     private List<Item> nestLoopFilters = null;
 
     public abstract String getPureName();
+
+    public abstract String getPureSchema();
 
     /* height of node */
     public abstract int getHeight();
@@ -233,19 +238,19 @@ public abstract class PlanNode {
             if (!isPushDownNode) {
                 for (Item bf : jn.getJoinFilter())
                     setUpItemRefer(bf);
-                setUpItemRefer(jn.getOtherJoinOnFilter());
+                setUpFilterRefer(jn.getOtherJoinOnFilter());
             }
         }
         // where, pushdown node does 't need where
         if (!isPushDownNode) {
-            setUpItemRefer(whereFilter);
+            setUpFilterRefer(whereFilter);
         }
         // group by
         for (Order groupBy : groups) {
             setUpItemRefer(groupBy.getItem());
         }
         // having
-        setUpItemRefer(havingFilter);
+        setUpFilterRefer(havingFilter);
         // order by
         for (Order orderBy : orderBys) {
             setUpItemRefer(orderBy.getItem());
@@ -285,18 +290,21 @@ public abstract class PlanNode {
         to.setUnGlobalTableCount(unGlobalTableCount);
         to.setNoshardNode(noshardNode);
         to.getSubQueries().addAll(subQueries);
+        to.setKeepFieldSchema(keepFieldSchema);
     }
 
     protected void setUpInnerFields() {
         innerFields.clear();
-        String tmpFieldTable;
-        String tmpFieldName;
         for (PlanNode child : children) {
             child.setUpFields();
             for (NamedField coutField : child.outerFields.keySet()) {
-                tmpFieldTable = child.getAlias() == null ? coutField.getTable() : child.getAlias();
-                tmpFieldName = coutField.getName();
-                NamedField tmpField = new NamedField(tmpFieldTable, tmpFieldName, coutField.planNode);
+                String tmpFieldSchema = null;
+                if (child.isKeepFieldSchema()) {
+                    tmpFieldSchema = child.type() == PlanNodeType.TABLE ? ((TableNode) child).getSchema() : coutField.getSchema();
+                }
+                String tmpFieldTable = child.getAlias() == null ? coutField.getTable() : child.getAlias();
+                String tmpFieldName = coutField.getName();
+                NamedField tmpField = new NamedField(tmpFieldSchema, tmpFieldTable, tmpFieldName, coutField.planNode);
                 if (innerFields.containsKey(tmpField) && getParent() != null)
                     throw new MySQLOutPutException(ErrorCode.ER_DUP_FIELDNAME, "42S21", "Duplicate column name '" + tmpFieldName + "'");
                 innerFields.put(tmpField, coutField);
@@ -320,10 +328,14 @@ public abstract class PlanNode {
         nameContext.setSelectFirst(false);
         if (parent instanceof MergeNode) {
             if (parent.getChildren().get(1) != null && parent.getChildren().get(1) == this) {
-                List<Item> alaisList = parent.getChildren().get(0).getColumnsSelected();
+                List<Item> aliasList = parent.getChildren().get(0).getColumnsSelected();
+                if (aliasList.size() != columnsSelected.size()) {
+                    throw new MySQLOutPutException(ErrorCode.ER_WRONG_NUMBER_OF_COLUMNS_IN_SELECT, "21000",
+                            "The used SELECT statements have a different number of columns");
+                }
                 for (int i = 0; i < columnsSelected.size(); i++) {
                     Item sel = columnsSelected.get(i);
-                    Item beforeUnion = alaisList.get(i);
+                    Item beforeUnion = aliasList.get(i);
                     sel.setAlias(beforeUnion.getAlias() == null ? beforeUnion.getItemName() : beforeUnion.getAlias());
                 }
             }
@@ -401,7 +413,7 @@ public abstract class PlanNode {
 
     protected void dealSingleStarColumn(List<Item> newSels) {
         for (NamedField field : innerFields.keySet()) {
-            ItemField col = new ItemField(null, field.getTable(), field.getName());
+            ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName());
             newSels.add(col);
         }
     }
@@ -418,7 +430,7 @@ public abstract class PlanNode {
                     boolean found = false;
                     for (NamedField field : innerFields.keySet()) {
                         if (selTable.equals(field.getTable())) {
-                            ItemField col = new ItemField(null, field.getTable(), field.getName());
+                            ItemField col = new ItemField(field.getSchema(), field.getTable(), field.getName());
                             newSels.add(col);
                             found = true;
                         } else if (found) {
@@ -439,6 +451,13 @@ public abstract class PlanNode {
     }
 
     private NamedField makeOutNamedField(Item sel) {
+        String tmpSchema = null;
+        if (keepFieldSchema) {
+            tmpSchema = sel.getDbName();
+            if (sel.basicConstItem()) {
+                tmpSchema = getPureSchema();
+            }
+        }
         String tmpFieldTable = sel.getTableName();
         String tmpFieldName = sel.getItemName();
         if (alias != null)
@@ -447,13 +466,26 @@ public abstract class PlanNode {
             tmpFieldTable = getPureName();
         if (sel.getAlias() != null)
             tmpFieldName = sel.getAlias();
-        return new NamedField(tmpFieldTable, tmpFieldName, this);
+        return new NamedField(tmpSchema, tmpFieldTable, tmpFieldName, this);
     }
 
     Item setUpItem(Item sel) {
         if (sel == null)
             return null;
         return sel.fixFields(nameContext);
+    }
+
+    private void setUpFilterRefer(Item filter) {
+        if (filter != null) {
+            if (filter instanceof ItemFunc) {
+                filter.setPushDownName(null);
+                for (Item item : filter.arguments()) {
+                    setUpFilterRefer(item);
+                }
+            } else {
+                setUpItemRefer(filter);
+            }
+        }
     }
 
     private void setUpItemRefer(Item sel) {
@@ -738,4 +770,13 @@ public abstract class PlanNode {
      * @return String
      */
     public abstract String toString(int level);
+
+    public void setKeepFieldSchema(boolean keepFieldSchema) {
+        this.keepFieldSchema = keepFieldSchema;
+    }
+
+    public boolean isKeepFieldSchema() {
+        return keepFieldSchema;
+    }
+
 }

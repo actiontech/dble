@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -32,6 +32,7 @@ public final class ServerParseShow {
     public static final int CREATE_TABLE = 10;
     public static final int VARIABLES = 11;
     public static final int CREATE_VIEW = 12;
+    public static final int CREATE_DATABASE = 13;
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -90,7 +91,7 @@ public final class ServerParseShow {
             } else if (stmt.charAt(offset) == 'o' || stmt.charAt(offset) == 'O') {
                 return showColumns(stmt);
             } else if (stmt.charAt(offset) == 'r' || stmt.charAt(offset) == 'R') {
-                return showCreateTable(stmt, offset);
+                return showCreateCheck(stmt, offset);
             } else {
                 return OTHER;
             }
@@ -203,7 +204,7 @@ public final class ServerParseShow {
     }
 
     //show create table
-    private static int showCreateTable(String stmt, int offset) {
+    private static int showCreateCheck(String stmt, int offset) {
         if (stmt.length() > offset + "eate".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -220,34 +221,76 @@ public final class ServerParseShow {
                     switch (stmt.charAt(offset)) {
                         case 'T':
                         case 't':
-                            char c5 = stmt.charAt(++offset);
-                            char c6 = stmt.charAt(++offset);
-                            char c7 = stmt.charAt(++offset);
-                            char c8 = stmt.charAt(++offset);
-                            if ((c5 == 'A' || c5 == 'a') &&
-                                    (c6 == 'B' || c6 == 'b') &&
-                                    (c7 == 'L' || c7 == 'l') &&
-                                    (c8 == 'E' || c8 == 'e') &&
-                                    (ParseUtil.isSpace(stmt.charAt(++offset)))) {
-                                return CREATE_TABLE;
-                            }
-                            return OTHER;
+                            return showCreateTable(stmt, offset);
                         case 'V':
                         case 'v':
-                            char c9 = stmt.charAt(++offset);
-                            char c10 = stmt.charAt(++offset);
-                            char c11 = stmt.charAt(++offset);
-                            if ((c9 == 'i' || c9 == 'I') &&
-                                    (c10 == 'e' || c10 == 'E') &&
-                                    (c11 == 'w' || c11 == 'W') &&
-                                    (ParseUtil.isSpace(stmt.charAt(++offset)))) {
-                                return CREATE_VIEW;
-                            }
-                            return OTHER;
+                            return showCreateView(stmt, offset);
+                        case 'D':
+                        case 'd':
+                            return showCreateDatabase(stmt, offset);
                         default:
                             return OTHER;
                     }
                 }
+            }
+        }
+        return OTHER;
+    }
+
+    // show create table
+    private static int showCreateTable(String stmt, int offset) {
+        if (stmt.length() > offset + 5) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            if ((c1 == 'A' || c1 == 'a') &&
+                    (c2 == 'B' || c2 == 'b') &&
+                    (c3 == 'L' || c3 == 'l') &&
+                    (c4 == 'E' || c4 == 'e') &&
+                    (ParseUtil.isSpace(stmt.charAt(++offset)))) {
+                return CREATE_TABLE;
+            }
+        }
+
+        return OTHER;
+    }
+
+    // show create database
+    private static int showCreateDatabase(String stmt, int offset) {
+        if (stmt.length() > offset + 8) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            if ((c1 == 'a' || c1 == 'A') &&
+                    (c2 == 't' || c2 == 'T') &&
+                    (c3 == 'a' || c3 == 'A') &&
+                    (c4 == 'b' || c4 == 'B') &&
+                    (c5 == 'a' || c5 == 'A') &&
+                    (c6 == 's' || c6 == 'S') &&
+                    (c7 == 'e' || c7 == 'E') &&
+                    (ParseUtil.isSpace(stmt.charAt(++offset)))) {
+                return CREATE_DATABASE;
+            }
+        }
+        return OTHER;
+    }
+
+    // show create view
+    private static int showCreateView(String stmt, int offset) {
+        if (stmt.length() > offset + 4) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            if ((c1 == 'i' || c1 == 'I') &&
+                    (c2 == 'e' || c2 == 'E') &&
+                    (c3 == 'w' || c3 == 'W') &&
+                    (ParseUtil.isSpace(stmt.charAt(++offset)))) {
+                return CREATE_VIEW;
             }
         }
         return OTHER;

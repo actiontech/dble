@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -7,7 +7,7 @@ package com.actiontech.dble.backend.mysql;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.net.BackendAIOConnection;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.net.mysql.BinaryPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.sqlengine.mpp.LoadData;
@@ -24,10 +24,12 @@ public final class LoadDataUtil {
 
     public static void requestFileDataResponse(byte[] data, BackendConnection conn) {
         byte packId = data[3];
-        BackendAIOConnection backendAIOConnection = (BackendAIOConnection) conn;
+        MySQLConnection c = (MySQLConnection) conn;
         RouteResultsetNode rrn = (RouteResultsetNode) conn.getAttachment();
         LoadData loadData = rrn.getLoadData();
         List<String> loadDataData = loadData.getData();
+
+        BufferedInputStream in = null;
         try {
             if (loadDataData != null && loadDataData.size() > 0) {
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -36,24 +38,33 @@ public final class LoadDataUtil {
                     byte[] bytes = s.getBytes(CharsetUtil.getJavaCharset(loadData.getCharset()));
                     bos.write(bytes);
                 }
-                packId = writeToBackConnection(packId, new ByteArrayInputStream(bos.toByteArray()), backendAIOConnection);
+                packId = writeToBackConnection(packId, new ByteArrayInputStream(bos.toByteArray()), c);
             } else {
-                packId = writeToBackConnection(packId, new BufferedInputStream(new FileInputStream(loadData.getFileName())), backendAIOConnection);
+                in = new BufferedInputStream(new FileInputStream(loadData.getFileName()));
+                packId = writeToBackConnection(packId, in, c);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
+            try {
+                if (in != null) {
+                    in.close();
+                }
+            } catch (IOException e) {
+                // ignore error
+            }
+
             //send empty packet
             byte[] empty = new byte[]{0, 0, 0, 3};
             empty[3] = ++packId;
-            backendAIOConnection.write(empty);
+            c.write(empty);
         }
     }
 
-    public static byte writeToBackConnection(byte packID, InputStream inputStream, BackendAIOConnection backendAIOConnection) throws IOException {
+    public static byte writeToBackConnection(byte packID, InputStream inputStream, MySQLConnection c) throws IOException {
         try {
             int packSize = DbleServer.getInstance().getConfig().getSystem().getBufferPoolChunkSize() - 5;
-            // int packSize = backendAIOConnection.getMaxPacketSize() / 32;
+            // int packSize = c.getMaxPacketSize() / 32;
             //  int packSize=65530;
             byte[] buffer = new byte[packSize];
             int len = -1;
@@ -69,7 +80,7 @@ public final class LoadDataUtil {
                 BinaryPacket packet = new BinaryPacket();
                 packet.setPacketId(++packID);
                 packet.setData(temp);
-                packet.write(backendAIOConnection);
+                packet.write(c);
             }
         } finally {
             inputStream.close();

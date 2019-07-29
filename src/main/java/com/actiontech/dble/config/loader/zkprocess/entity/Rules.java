@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -11,6 +11,7 @@ import com.actiontech.dble.config.loader.zkprocess.entity.rule.tablerule.TableRu
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +19,9 @@ import java.util.List;
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlRootElement(namespace = Versions.DOMAIN, name = "rule")
 public class Rules {
+
+    @XmlAttribute(required = false)
+    protected String version;
 
     protected List<TableRule> tableRule;
 
@@ -39,6 +43,14 @@ public class Rules {
             function = new ArrayList<>();
         }
         return function;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
     }
 
     public void setFunction(List<Function> function) {

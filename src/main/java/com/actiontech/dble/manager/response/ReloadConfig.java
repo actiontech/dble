@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -13,11 +13,11 @@ import com.actiontech.dble.backend.datasource.PhysicalDBPoolDiff;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.ClusterParamCfg;
+import com.actiontech.dble.cluster.*;
+import com.actiontech.dble.cluster.xmltoKv.XmltoCluster;
 import com.actiontech.dble.config.ConfigInitializer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.config.loader.ucoreprocess.*;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.xmltozk.XmltoZkMain;
 import com.actiontech.dble.config.loader.zkprocess.zktoxml.listen.ConfigStatusListener;
@@ -50,7 +50,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.actiontech.dble.config.loader.ucoreprocess.UcorePathUtil.SEPARATOR;
+import static com.actiontech.dble.cluster.ClusterPathUtil.SEPARATOR;
 
 /**
  * @author mycat
@@ -88,6 +88,7 @@ public final class ReloadConfig {
                     return;
                 }
                 LOGGER.info("reload config: added distributeLock " + KVPathUtil.getConfChangeLockPath() + " to zk");
+                ClusterDelayProvider.delayAfterReloadLock();
                 try {
                     reloadWithZookeeper(loadAll, loadAllMode, zkConn, c);
                 } finally {
@@ -98,21 +99,21 @@ public final class ReloadConfig {
                 LOGGER.info("reload config using ZK failure", e);
                 writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
             }
-        } else if (DbleServer.getInstance().isUseUcore()) {
-            UDistributeLock distributeLock = new UDistributeLock(UcorePathUtil.getConfChangeLockPath(),
-                    UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+        } else if (DbleServer.getInstance().isUseGeneralCluster()) {
+            DistributeLock distributeLock = new DistributeLock(ClusterPathUtil.getConfChangeLockPath(),
+                    ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
             try {
                 if (!distributeLock.acquire()) {
                     c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rolling back, please try again later.");
                     return;
                 }
-                LOGGER.info("reload config: added distributeLock " + UcorePathUtil.getConfChangeLockPath() + " to ucore");
+                LOGGER.info("reload config: added distributeLock " + ClusterPathUtil.getConfChangeLockPath() + " to ucore");
                 ClusterDelayProvider.delayAfterReloadLock();
                 try {
                     reloadWithUcore(loadAll, loadAllMode, c);
                 } finally {
                     distributeLock.release();
-                    LOGGER.info("reload config: release distributeLock " + UcorePathUtil.getConfChangeLockPath() + " from ucore");
+                    LOGGER.info("reload config: release distributeLock " + ClusterPathUtil.getConfChangeLockPath() + " from ucore");
                 }
             } catch (Exception e) {
                 LOGGER.info("reload config failure using ucore", e);
@@ -154,23 +155,23 @@ public final class ReloadConfig {
             ClusterDelayProvider.delayAfterMasterLoad();
 
             //step 3 if the reload with no error ,than write the config file into ucore remote
-            XmltoUcore.initFileToUcore();
+            XmltoCluster.initFileToUcore();
             LOGGER.info("reload config: sent config file to ucore");
             //step 4 write the reload flag and self reload result into ucore,notify the other dble to reload
-            ConfStatus status = new ConfStatus(UcoreConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
+            ConfStatus status = new ConfStatus(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
                     loadAll ? ConfStatus.Status.RELOAD_ALL : ConfStatus.Status.RELOAD,
                     loadAll ? String.valueOf(loadAllMode) : null);
-            ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getConfStatusPath(), status.toString());
+            ClusterHelper.setKV(ClusterPathUtil.getConfStatusPath(), status.toString());
             LOGGER.info("reload config: sent config status to ucore");
-            ClusterUcoreSender.sendDataToUcore(UcorePathUtil.getSelfConfStatusPath(), UcorePathUtil.SUCCESS);
+            ClusterHelper.setKV(ClusterPathUtil.getSelfConfStatusPath(), ClusterPathUtil.SUCCESS);
             LOGGER.info("reload config: sent finished status to ucore, waiting other instances");
             //step 5 start a loop to check if all the dble in cluster is reload finished
 
-            final String errorMsg = ClusterUcoreSender.waitingForAllTheNode(UcorePathUtil.SUCCESS, UcorePathUtil.getConfStatusPath() + SEPARATOR);
+            final String errorMsg = ClusterHelper.waitingForAllTheNode(ClusterPathUtil.SUCCESS, ClusterPathUtil.getConfStatusPath() + SEPARATOR);
             LOGGER.info("reload config: all instances finished ");
             ClusterDelayProvider.delayBeforeDeleteReloadLock();
             //step 6 delete the reload flag
-            ClusterUcoreSender.deleteKVTree(UcorePathUtil.getConfStatusPath() + SEPARATOR);
+            ClusterHelper.cleanPath(ClusterPathUtil.getConfStatusPath() + SEPARATOR);
 
             if (errorMsg != null) {
                 writeErrorResultForCluster(c, errorMsg);
@@ -192,6 +193,8 @@ public final class ReloadConfig {
         try {
             load(loadAll, loadAllMode);
             LOGGER.info("reload config: single instance(self) finished");
+            ClusterDelayProvider.delayAfterMasterLoad();
+
             XmltoZkMain.writeConfFileToZK(loadAll, loadAllMode);
             LOGGER.info("reload config: sent config status to ucore");
             //tell zk this instance has prepared
@@ -208,6 +211,7 @@ public final class ReloadConfig {
                 preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
             }
             LOGGER.info("reload config: all instances finished ");
+            ClusterDelayProvider.delayBeforeDeleteReloadLock();
             StringBuilder sbErrorInfo = new StringBuilder();
             for (String child : preparedList) {
                 String childPath = ZKPaths.makePath(KVPathUtil.getConfStatusPath(), child);
@@ -350,8 +354,6 @@ public final class ReloadConfig {
         /* 2.2 init the dataSource with diff*/
 
 
-
-
         LOGGER.info("reload config: init new data host  start");
 
         boolean mergeReload = true;
@@ -371,13 +373,13 @@ public final class ReloadConfig {
             LOGGER.info("reload config: apply new config start");
             if (mergeReload) {
                 config.reload(newUsers, newSchemas, newDataNodes, mergedDataHosts, newErRelations, newFirewall,
-                        newSystemVariables, loader.isDataHostWithoutWH(), true);
+                        newSystemVariables, loader.isDataHostWithoutWH(), true, loadAllMode);
                 DbleServer.getInstance().getUserManager().initForLatest(newUsers, loader.getSystem().getMaxCon());
                 LOGGER.info("reload config: apply new config end");
                 recycleOldBackendConnections(recyclHost, ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
             } else {
                 config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall,
-                        newSystemVariables, loader.isDataHostWithoutWH(), true);
+                        newSystemVariables, loader.isDataHostWithoutWH(), true, loadAllMode);
                 DbleServer.getInstance().getUserManager().initForLatest(newUsers, loader.getSystem().getMaxCon());
                 LOGGER.info("reload config: apply new config end");
                 recycleOldBackendConnections(config.getBackupDataHosts(), ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
@@ -421,22 +423,24 @@ public final class ReloadConfig {
     private static void recycleOldBackendConnections(Map<String, PhysicalDBPool> recycleMap, boolean closeFrontCon) {
         for (PhysicalDBPool dbPool : recycleMap.values()) {
             dbPool.stopHeartbeat();
-            Long oldTimestamp = System.currentTimeMillis();
+            long oldTimestamp = System.currentTimeMillis();
             for (PhysicalDatasource ds : dbPool.getAllDataSources()) {
                 for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
                     for (BackendConnection con : processor.getBackends().values()) {
                         if (con instanceof MySQLConnection) {
                             MySQLConnection mysqlCon = (MySQLConnection) con;
-                            LOGGER.info("mysqlCon.getPool() == " + mysqlCon.getPool() + " " + mysqlCon.getSchema() + " " + mysqlCon.getId());
                             if (mysqlCon.getPool() == ds) {
                                 if (con.isBorrowed()) {
                                     if (closeFrontCon) {
+                                        LOGGER.info("old active backend conn will be forced closed by closing front conn, conn info:" + mysqlCon);
                                         findAndcloseFrontCon(con);
                                     } else {
+                                        LOGGER.info("old active backend conn will be added to old pool, conn info:" + mysqlCon);
                                         con.setOldTimestamp(oldTimestamp);
                                         NIOProcessor.BACKENDS_OLD.add(con);
                                     }
                                 } else {
+                                    LOGGER.info("old idle backend conn will be closed, conn info:" + mysqlCon);
                                     con.close("old idle conn for reload merge");
                                 }
                             }
@@ -486,7 +490,7 @@ public final class ReloadConfig {
 
         /* 2 apply the new conf */
         DbleServer.getInstance().getConfig().reload(users, schemas, dataNodes, dataHosts, erRelations, firewall,
-                DbleServer.getInstance().getSystemVariables(), loader.isDataHostWithoutWH(), false);
+                DbleServer.getInstance().getSystemVariables(), loader.isDataHostWithoutWH(), false, 0);
         DbleServer.getInstance().getUserManager().initForLatest(users, loader.getSystem().getMaxCon());
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -116,6 +116,9 @@ public class CompareLike {
     }
 
     private boolean compare(char[] pattern, String s, int pi, int si) {
+        if (s == null || s.length() == 0) {
+            return false;
+        }
         return pattern[pi] == s.charAt(si) || equalsChars(patternString, pi, s, si, true);
     }
 

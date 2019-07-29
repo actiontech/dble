@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -191,7 +191,7 @@ public class ServerParserTest {
     @Test
     public void testIsSelectDatabase() {
         Assert.assertEquals(ServerParseSelect.DATABASE, ServerParseSelect.parse(" select database()  ", 7));
-        Assert.assertEquals(ServerParseSelect.DATABASE, ServerParseSelect.parse("SELECT DATABASE()", 6));
+        Assert.assertEquals(ServerParseSelect.DATABASE, ServerParseSelect.parse("SELECT DATABASE()", 7));
         Assert.assertEquals(ServerParseSelect.DATABASE, ServerParseSelect.parse(" selECT    DATABASE()  ", 7));
     }
 
@@ -200,6 +200,13 @@ public class ServerParserTest {
         Assert.assertEquals(ServerParseSelect.USER, ServerParseSelect.parse(" select user()  ", 7));
         Assert.assertEquals(ServerParseSelect.USER, ServerParseSelect.parse("SELECT USER()", 6));
         Assert.assertEquals(ServerParseSelect.USER, ServerParseSelect.parse(" selECT    USER()  ", 7));
+    }
+
+    @Test
+    public void testIsSelectCurrentUser() {
+        Assert.assertEquals(ServerParseSelect.CURRENT_USER, ServerParseSelect.parse(" select current_user()  ", 7));
+        Assert.assertEquals(ServerParseSelect.CURRENT_USER, ServerParseSelect.parse("SELECT CURRENT_USER()", 6));
+        Assert.assertEquals(ServerParseSelect.CURRENT_USER, ServerParseSelect.parse(" selECT    current_USER()  ", 7));
     }
 
     @Test
@@ -355,7 +362,7 @@ public class ServerParserTest {
 
 
     @Test
-    public void testCreateView(){
+    public void testCreateView() {
         Assert.assertEquals(ServerParse.CREATE_VIEW, ServerParse.parse("create view asdfasdf as asdfasdfasdfsdf"));
         Assert.assertEquals(ServerParse.ALTER_VIEW, ServerParse.parse("ALTER view x_xx_xx as select * from suntest"));
         Assert.assertEquals(ServerParse.REPLACE_VIEW, ServerParse.parse("create or replace  view x_xx_xx as select * from suntest"));
@@ -365,7 +372,7 @@ public class ServerParserTest {
     }
 
     @Test
-    public void testDropPrepare(){
+    public void testDropPrepare() {
         Assert.assertEquals(ServerParse.SCRIPT_PREPARE, ServerParse.parse("DROP PREPARE stmt_name"));
     }
 }

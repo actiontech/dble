@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -10,8 +10,8 @@ import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.PushDown
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.plan.node.PlanNode;
+import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.route.RouteResultset;
-import com.actiontech.dble.route.parser.druid.DruidParser;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.druid.impl.DruidSingleUnitSelectParser;
 import com.actiontech.dble.route.util.RouterUtil;
@@ -60,12 +60,18 @@ public class MergeBuilder {
 
     public RouteResultset constructByStatement(String sql, SQLSelectStatement select) throws SQLException {
         ServerSchemaStatVisitor visitor = new ServerSchemaStatVisitor();
-        DruidParser druidParser = new DruidSingleUnitSelectParser();
+        DruidSingleUnitSelectParser druidParser = new DruidSingleUnitSelectParser();
 
         RouteResultset rrs = new RouteResultset(sql, ServerParse.SELECT);
         LayerCachePool pool = DbleServer.getInstance().getRouterService().getTableId2DataNodeCache();
-        SchemaConfig schemaConfig = schemaConfigMap.get(node.getReferedTableNodes().get(0).getSchema());
-        return RouterUtil.routeFromParser(druidParser, schemaConfig, rrs, select, sql, pool, visitor, session.getSource(), node);
+        Map<String, SchemaConfig> tableConfigMap = new HashMap<>();
+        for (TableNode tn : node.getReferedTableNodes()) {
+            if (schemaConfigMap.get(tn.getSchema()) != null) {
+                tableConfigMap.put(tn.getTableName(), schemaConfigMap.get(tn.getSchema()));
+            }
+        }
+        druidParser.setSchemaMap(tableConfigMap);
+        return RouterUtil.routeFromParserComplex(druidParser, tableConfigMap, rrs, select, sql, pool, visitor, session.getSource(), node);
 
     }
 

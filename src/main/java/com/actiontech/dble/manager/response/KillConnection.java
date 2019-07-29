@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -28,7 +28,7 @@ public final class KillConnection {
 
     public static void response(String stmt, int offset, ManagerConnection mc) {
         int count = 0;
-        List<FrontendConnection> list = getList(stmt, offset, mc);
+        List<FrontendConnection> list = getList(stmt, offset);
         if (list != null) {
             for (FrontendConnection c : list) {
                 StringBuilder s = new StringBuilder();
@@ -44,7 +44,7 @@ public final class KillConnection {
         packet.write(mc);
     }
 
-    private static List<FrontendConnection> getList(String stmt, int offset, ManagerConnection mc) {
+    private static List<FrontendConnection> getList(String stmt, int offset) {
         String ids = stmt.substring(offset).trim();
         if (ids.length() > 0) {
             String[] idList = SplitUtil.split(ids, ',', true);

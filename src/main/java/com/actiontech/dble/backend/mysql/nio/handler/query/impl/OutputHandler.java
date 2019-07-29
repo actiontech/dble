@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -31,7 +31,6 @@ public class OutputHandler extends BaseDMLHandler {
     protected final ReentrantLock lock;
 
     private byte packetId;
-    private NonBlockingSession session;
     private ByteBuffer buffer;
     private boolean isBinary;
     private long netOutBytes;
@@ -41,7 +40,6 @@ public class OutputHandler extends BaseDMLHandler {
         session.setOutputHandler(this);
         this.lock = new ReentrantLock();
         this.packetId = (byte) session.getPacketId().get();
-        this.session = session;
         this.isBinary = session.isPrepared();
         this.buffer = session.getSource().allocate();
     }

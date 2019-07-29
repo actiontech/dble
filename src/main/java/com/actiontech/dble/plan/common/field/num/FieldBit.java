@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -102,7 +102,7 @@ public class FieldBit extends Field {
     private long getBitInt(byte[] b) {
         if (b == null || b.length == 0)
             return 0;
-        int ret = 0;
+        long ret = 0;
         int leftShift = 0;
         for (int i = ptr.length - 1; i >= 0; i--) {
             long lb = ptr[i] << leftShift;

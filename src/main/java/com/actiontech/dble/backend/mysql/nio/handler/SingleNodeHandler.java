@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -69,20 +69,36 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
 
     public void execute() throws Exception {
-        ServerConnection sc = session.getSource();
         connClosed = false;
-        this.packetId = (byte) session.getPacketId().get();
-        final BackendConnection conn = session.getTarget(node);
-        node.setRunOnSlave(rrs.getRunOnSlave());
-        if (session.tryExistsCon(conn, node)) {
-            execute(conn);
+        if (rrs.isLoadData()) {
+            packetId = session.getSource().getLoadDataInfileHandler().getLastPackId();
         } else {
-            // create new connection
-            node.setRunOnSlave(rrs.getRunOnSlave());
-            ServerConfig conf = DbleServer.getInstance().getConfig();
-            PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
-            dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), sc.isAutocommit(), node, this, node);
+            packetId = (byte) session.getPacketId().get();
         }
+        if (session.getTargetCount() > 0) {
+            BackendConnection conn = session.getTarget(node);
+            if (conn == null && rrs.isGlobalTable() && rrs.getGlobalBackupNodes() != null) {
+                for (String dataNode : rrs.getGlobalBackupNodes()) {
+                    RouteResultsetNode tmpNode = new RouteResultsetNode(dataNode, rrs.getSqlType(), rrs.getStatement());
+                    conn = session.getTarget(tmpNode);
+                    if (conn != null) {
+                        break;
+                    }
+                }
+            }
+            node.setRunOnSlave(rrs.getRunOnSlave());
+            if (session.tryExistsCon(conn, node)) {
+                execute(conn);
+                return;
+            }
+        }
+
+        // create new connection
+        node.setRunOnSlave(rrs.getRunOnSlave());
+        ServerConfig conf = DbleServer.getInstance().getConfig();
+        PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
+        dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), session.getSource().isAutocommit(), node, this, node);
+
 
     }
 
@@ -142,10 +158,11 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         if (syncFinished) {
             session.releaseConnectionIfSafe(conn, false);
         } else {
-            ((MySQLConnection) conn).quit();
+            conn.closeWithoutRsp("unfinished sync");
+            session.getTargetMap().remove(conn.getAttachment());
         }
         source.setTxInterrupt(errMsg);
-        session.handleSpecial(rrs, session.getSource().getSchema(), false);
+        session.handleSpecial(rrs, false);
 
 
         if (buffer != null) {
@@ -173,7 +190,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         if (executeResponse) {
             this.resultSize += data.length;
             //handleSpecial
-            boolean metaInited = session.handleSpecial(rrs, session.getSource().getSchema(), true);
+            boolean metaInited = session.handleSpecial(rrs, true);
             if (!metaInited) {
                 executeMetaDataFailed(conn);
                 return;
@@ -230,12 +247,10 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
         this.netOutBytes += eof.length;
         this.resultSize += eof.length;
-        session.setBackendResponseEndTime((MySQLConnection) conn);
         // if it's call statement,it will not release connection
         if (!rrs.isCallStatement()) {
             session.releaseConnectionIfSafe(conn, false);
         }
-
 
         eof[3] = ++packetId;
         session.multiStatementPacket(eof, packetId);

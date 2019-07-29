@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -69,7 +69,7 @@ public class FirewallConfigLoader implements Loader<FirewallConfig, XMLServerLoa
                 firewall.setBlackListCheck(check);
 
                 Map<String, Object> props = ConfigUtil.loadElements((Element) node);
-                ParameterMapping.mapping(wallConfig, props);
+                ParameterMapping.mapping(wallConfig, props, xsl.problemReporter);
                 if (props.size() > 0) {
                     String[] propItem = new String[props.size()];
                     props.keySet().toArray(propItem);

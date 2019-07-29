@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -88,6 +88,15 @@ public class RulesxmlTozkLoader extends ZkMultiLoader implements NotifyService {
 
         String functionJson = this.parseJsonFunctionService.parseBeanToJson(rules.getFunction());
         this.checkAndWriteString(basePath, KVPathUtil.FUNCTION, functionJson);
+
+        String version = rules.getVersion();
+        if (version != null) {
+            this.checkAndWriteString(basePath, KVPathUtil.VERSION, version);
+        } else {
+            if (this.checkPathExists(basePath + KVPathUtil.SEPARATOR + KVPathUtil.VERSION)) {
+                this.getCurator().delete().forPath(basePath + KVPathUtil.SEPARATOR + KVPathUtil.VERSION);
+            }
+        }
     }
 
     /**

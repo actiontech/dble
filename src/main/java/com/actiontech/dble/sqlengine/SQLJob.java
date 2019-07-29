@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * async execute in EngineCtx or standalone (EngineCtx=null)
@@ -38,7 +39,8 @@ public class SQLJob implements ResponseHandler, Runnable {
     private final SQLJobHandler jobHandler;
     private final PhysicalDatasource ds;
     private boolean isMustWriteNode;
-    private volatile boolean finished;
+    private AtomicBoolean finished = new AtomicBoolean(false);
+    private volatile boolean testXid;
 
     public SQLJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDatasource ds) {
         super();
@@ -99,12 +101,13 @@ public class SQLJob implements ResponseHandler, Runnable {
     }
 
     public boolean isFinished() {
-        return finished;
+        return finished.get();
     }
 
     private void doFinished(boolean failed) {
-        finished = true;
-        jobHandler.finished(dataNode == null ? schema : dataNode, failed);
+        if (finished.compareAndSet(false, true)) {
+            jobHandler.finished(dataNode == null ? schema : dataNode, failed);
+        }
     }
 
     @Override
@@ -121,30 +124,36 @@ public class SQLJob implements ResponseHandler, Runnable {
         String errMsg = "error response errNo:" + errPg.getErrNo() + ", " + new String(errPg.getMessage()) +
                 " from of sql :" + sql + " at con:" + conn;
 
-
-        if (errPg.getErrNo() == ErrorCode.ER_SPECIFIC_ACCESS_DENIED_ERROR) {
-            // @see https://dev.mysql.com/doc/refman/5.6/en/error-messages-server.html
-            LOGGER.info(errMsg);
-        } else if (errPg.getErrNo() == ErrorCode.ER_XAER_NOTA) {
-            // ERROR 1397 (XAE04): XAER_NOTA: Unknown XID, not prepared
-            conn.release();
-            doFinished(false);
+        LOGGER.info(errMsg);
+        if (!conn.syncAndExecute()) {
+            conn.closeWithoutRsp("unfinished sync");
+            doFinished(true);
             return;
-        } else {
-            LOGGER.info(errMsg);
         }
-        if (conn.syncAndExecute()) {
+
+        if (errPg.getErrNo() == ErrorCode.ER_XAER_NOTA) {
+            // ERROR 1397 (XAE04): XAER_NOTA: Unknown XID, not prepared
+            String xid = sql.substring(sql.indexOf("'"), sql.length()).trim();
+            testXid = true;
+            ((MySQLConnection) conn).sendQueryCmd("xa start " + xid, conn.getCharset());
+        } else if (errPg.getErrNo() == ErrorCode.ER_XAER_DUPID) {
+            // ERROR 1440 (XAE08): XAER_DUPID: The XID already exists
+            conn.close("test xid existence");
+            doFinished(true);
+        } else {
             conn.release();
-        } else {
-            ((MySQLConnection) conn).quit();
+            doFinished(true);
         }
-        doFinished(true);
     }
 
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
         if (conn.syncAndExecute()) {
-            conn.release();
+            if (testXid) {
+                conn.closeWithoutRsp("test xid existence");
+            } else {
+                conn.release();
+            }
             doFinished(false);
         }
     }
@@ -174,13 +183,13 @@ public class SQLJob implements ResponseHandler, Runnable {
 
     @Override
     public void writeQueueAvailable() {
-
     }
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
         doFinished(true);
     }
+
     @Override
     public String toString() {
         return "SQLJob [dataNode=" +

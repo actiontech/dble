@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -8,13 +8,11 @@ package com.actiontech.dble.route.sequence.handler;
 
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.route.util.PropertiesUtil;
+import com.actiontech.dble.util.DateUtil;
 import com.actiontech.dble.util.KVPathUtil;
+import com.actiontech.dble.util.StringUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.recipes.leader.CancelLeadershipException;
-import org.apache.curator.framework.recipes.leader.LeaderSelector;
-import org.apache.curator.framework.recipes.leader.LeaderSelectorListenerAdapter;
-import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.zookeeper.CreateMode;
@@ -23,11 +21,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.List;
+import java.sql.SQLNonTransientException;
 import java.util.Properties;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Deprecated:
@@ -49,8 +44,9 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * |threadId|instanceId|clusterId|increment|current time millis|
  */
-public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter implements Closeable, SequenceHandler {
+public class DistributedSequenceHandler implements Closeable, SequenceHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(DistributedSequenceHandler.class);
+    private static final long DEFAULT_START_TIMESTAMP = 1288834974657L; //Thu Nov 04 09:42:54 CST 2010
     private static final String SEQUENCE_DB_PROPS = "sequence_distributed_conf.properties";
     private static DistributedSequenceHandler instance = new DistributedSequenceHandler();
 
@@ -63,9 +59,6 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     private final long incrementShift = timestampBits;
     private final long clusterIdShift = incrementShift + incrementBits;
     private final long instanceIdShift = clusterIdShift + clusterIdBits;
-
-    private final long maxInstanceId = 1L << instanceIdBits;
-
     private volatile long instanceId;
     private long clusterId;
 
@@ -75,47 +68,47 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     private long nextID = 0L;
     private static final String PATH = KVPathUtil.getSequencesPath();
     private static final String INSTANCE_PATH = KVPathUtil.getSequencesInstancePath();
-
-    private int[] mark;
-    private volatile boolean isLeader = false;
-    private volatile String slavePath;
     private volatile boolean ready = false;
+    private long startTimeMilliseconds = DEFAULT_START_TIMESTAMP;
+    private long deadline = 0L;
 
     private CuratorFramework client;
-
-    private LeaderSelector leaderSelector;
-
-    private final ScheduledExecutorService timerExecutor = Executors.newSingleThreadScheduledExecutor();
-    private ScheduledExecutorService leaderExecutor;
 
     public static DistributedSequenceHandler getInstance() {
         return DistributedSequenceHandler.instance;
     }
 
-    public LeaderSelector getLeaderSelector() {
-        return leaderSelector;
-    }
-
-    public long getInstanceId() {
-        return instanceId;
-    }
-
     public void load() {
         // load sequnce properties
         Properties props = PropertiesUtil.loadProps(SEQUENCE_DB_PROPS);
-        if ("ZK".equals(props.getProperty("INSTANCEID"))) {
+        if ("ZK".equalsIgnoreCase(props.getProperty("INSTANCEID"))) {
             initializeZK(ZkConfig.getInstance().getZkURL());
         } else {
             this.instanceId = Long.parseLong(props.getProperty("INSTANCEID"));
             this.ready = true;
         }
         this.clusterId = Long.parseLong(props.getProperty("CLUSTERID"));
-        long maxclusterId = 1L << clusterIdBits;
+        long maxclusterId = ~(-1L << clusterIdBits);
         if (clusterId > maxclusterId || clusterId < 0) {
-            throw new IllegalArgumentException(String.format("cluster Id can't be greater than %d or less than 0", clusterId));
+            throw new IllegalArgumentException(String.format("cluster Id can't be greater than %d or less than 0", maxclusterId));
         }
+        long maxInstanceId = ~(-1L << instanceIdBits);
         if (instanceId > maxInstanceId || instanceId < 0) {
-            throw new IllegalArgumentException(String.format("instance Id can't be greater than %d or less than 0", instanceId));
+            throw new IllegalArgumentException(String.format("instance Id can't be greater than %d or less than 0", maxInstanceId));
+        }
+
+        try {
+            String startTimeStr = props.getProperty("START_TIME");
+            if (!StringUtil.isEmpty(startTimeStr)) {
+                startTimeMilliseconds = DateUtil.parseDate(startTimeStr).getTime();
+                if (startTimeMilliseconds > System.currentTimeMillis()) {
+                    LOGGER.warn("START_TIME in " + SEQUENCE_DB_PROPS + " mustn't be over than dble start time, starting from 2010-11-04 09:42:54");
+                }
+            }
+        } catch (Exception pe) {
+            LOGGER.warn("START_TIME in " + SEQUENCE_DB_PROPS + " parse exception, starting from 2010-11-04 09:42:54");
+        } finally {
+            this.deadline = startTimeMilliseconds + (1L << 39);
         }
     }
 
@@ -135,40 +128,20 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
         } catch (Exception e) {
             throw new RuntimeException("create instance path " + INSTANCE_PATH + "error", e);
         }
-        this.leaderSelector = new LeaderSelector(client, KVPathUtil.getSequencesLeaderPath(), this);
-        this.leaderSelector.autoRequeue();
-        this.leaderSelector.start();
-        Runnable runnable = new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    while (leaderSelector.getLeader() == null) {
-                        Thread.currentThread().yield();
-                    }
-                    if (!leaderSelector.hasLeadership()) {
-                        isLeader = false;
-                        if (slavePath != null && client.checkExists().forPath(slavePath) != null) {
-                            return;
-                        }
-                        slavePath = client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).
-                                forPath(PATH.concat("/instance/node"), "ready".getBytes());
-                        while ("ready".equals(new String(client.getData().forPath(slavePath)))) {
-                            Thread.currentThread().yield();
-                        }
-                        instanceId = Long.parseLong(new String(client.getData().forPath(slavePath)));
-                        ready = true;
-                    }
-                } catch (Exception e) {
-                    LOGGER.info("Caught exception while handling zk!", e);
-                }
-            }
-        };
-        long selfCheckPeriod = 10L;
-        timerExecutor.scheduleAtFixedRate(runnable, 1L, selfCheckPeriod, TimeUnit.SECONDS);
+
+        try {
+            String slavePath = client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).
+                    forPath(PATH.concat("/instance/node"), "ready".getBytes());
+            String tempInstanceId = slavePath.substring(slavePath.length() - 10, slavePath.length());
+            instanceId = Long.parseLong(tempInstanceId) & ((1 << instanceIdBits) - 1);
+            ready = true;
+        } catch (Exception e) {
+            throw new RuntimeException("instanceId allocate error when using zk, reason:" + e.getMessage());
+        }
     }
 
     @Override
-    public long nextId(String prefixName) {
+    public long nextId(String prefixName) throws SQLNonTransientException {
         // System.out.println(instanceId);
         while (!ready) {
             try {
@@ -179,8 +152,22 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
             }
         }
         long time = System.currentTimeMillis();
-        if (threadLastTime.get() == null) {
-            threadLastTime.set(time);
+        if (time >= deadline) {
+            throw new SQLNonTransientException("Global sequence has reach to max limit and can generate duplicate sequences.");
+        }
+        Long lastTimestamp = threadLastTime.get();
+        if (lastTimestamp == null) {
+            if (time >= startTimeMilliseconds) {
+                threadLastTime.set(time);
+                lastTimestamp = time;
+            } else {
+                lastTimestamp = startTimeMilliseconds;
+            }
+        }
+
+        if (lastTimestamp > time) {
+            throw new SQLNonTransientException("Clock moved backwards.  Refusing to generate id for " +
+                    (lastTimestamp - time) + " milliseconds");
         }
         if (threadInc.get() == null) {
             threadInc.set(0L);
@@ -203,7 +190,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
         long threadIdShift = instanceIdShift + instanceIdBits;
         long timestampMask = (1L << timestampBits) - 1L;
         return (((threadID.get() % maxThreadId) << threadIdShift)) | (instanceId << instanceIdShift) |
-                (clusterId << clusterIdShift) | (a << incrementShift) | (time & timestampMask);
+                (clusterId << clusterIdShift) | (a << incrementShift) | ((time - startTimeMilliseconds) & timestampMask);
     }
 
     private synchronized Long getNextThreadID() {
@@ -222,89 +209,7 @@ public class DistributedSequenceHandler extends LeaderSelectorListenerAdapter im
     }
 
     @Override
-    public void stateChanged(CuratorFramework framework, ConnectionState newState) {
-        if (newState == ConnectionState.SUSPENDED || newState == ConnectionState.LOST) {
-            this.isLeader = false;
-            leaderExecutor.shutdownNow();
-            throw new CancelLeadershipException();
-        }
-    }
-
-    @Override
-    public void takeLeadership(final CuratorFramework curatorFramework) {
-        this.isLeader = true;
-        this.instanceId = 1;
-        this.ready = true;
-        this.mark = new int[(int) maxInstanceId];
-        List<String> children = null;
-        try {
-            if (this.slavePath != null) {
-                client.delete().forPath(slavePath);
-            }
-            if (client.checkExists().forPath(INSTANCE_PATH) != null) {
-                children = client.getChildren().forPath(INSTANCE_PATH);
-            }
-            if (children != null) {
-                for (String child : children) {
-                    String data = new String(client.getData().forPath(INSTANCE_PATH.concat("/").concat(child)));
-                    if (!"ready".equals(data)) {
-                        mark[Integer.parseInt(data)] = 1;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.info("Caught exception while handling zk!", e);
-        }
-
-        leaderExecutor = Executors.newSingleThreadScheduledExecutor();
-        leaderExecutor.scheduleAtFixedRate(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    while (!client.isStarted()) {
-                        Thread.currentThread().yield();
-                    }
-                    List<String> children = client.getChildren().forPath(INSTANCE_PATH);
-                    int[] mark2 = new int[(int) maxInstanceId];
-                    for (String child : children) {
-                        String data = new String(client.getData().forPath(PATH.concat("/instance/" + child)));
-                        if ("ready".equals(data)) {
-                            int i = nextFree();
-                            client.setData().forPath(INSTANCE_PATH.concat("/").concat(child), ("" + i).getBytes());
-                            mark2[i] = 1;
-                        } else {
-                            mark2[Integer.parseInt(data)] = 1;
-                        }
-                    }
-                    mark = mark2;
-                } catch (Exception e) {
-                    LOGGER.info("Caught exception while handling zk!", e);
-                }
-            }
-        }, 0L, 3L, TimeUnit.SECONDS);
-
-        while (true) {
-            Thread.currentThread().yield();
-        }
-    }
-
-    private int nextFree() {
-        for (int i = 0; i < mark.length; i++) {
-            if (i == 1) {
-                /* myself, please check in takeLeadership(): this.instanceId = 1; */
-                continue;
-            }
-            if (mark[i] != 1) {
-                mark[i] = 1;
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    @Override
     public void close() throws IOException {
-        CloseableUtils.closeQuietly(this.leaderSelector);
         CloseableUtils.closeQuietly(this.client);
     }
 }

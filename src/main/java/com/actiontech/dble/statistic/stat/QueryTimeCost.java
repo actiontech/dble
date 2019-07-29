@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -22,6 +22,8 @@ public class QueryTimeCost {
     private volatile Map<Long, QueryTimeCost> backEndTimeCosts;
 
     private AtomicBoolean firstBackConRes = new AtomicBoolean(false);
+
+    private AtomicBoolean firstBackConEof = new AtomicBoolean(false);
 
     public QueryTimeCost() {
     }
@@ -74,6 +76,10 @@ public class QueryTimeCost {
 
     public int getBackendSize() {
         return backendSize;
+    }
+
+    public AtomicBoolean getFirstBackConEof() {
+        return firstBackConEof;
     }
 
 }

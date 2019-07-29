@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -124,8 +124,6 @@ public class BaseSelectHandler extends BaseDMLHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(conn.toString() + " 's rowEof is reached.");
         }
-        session.setBackendResponseEndTime((MySQLConnection) conn);
-
         if (this.terminate.get()) {
             return;
         }
@@ -180,7 +178,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
 
     @Override
     protected void onTerminate() {
-        if (autocommit) {
+        if (autocommit && !session.getSource().isLocked()) {
             this.session.releaseConnection(rrss, LOGGER.isDebugEnabled(), false);
         } else {
             //the connection should wait until the connection running finish

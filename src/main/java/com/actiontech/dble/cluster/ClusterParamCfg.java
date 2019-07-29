@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2016-2019 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
 package com.actiontech.dble.cluster;
 
 /**
@@ -23,6 +28,12 @@ public enum ClusterParamCfg {
      * clusterId
      */
     CLUSTER_CFG_CLUSTERID("clusterId"),
+
+
+    /**
+     * node id
+     */
+    CLUSTER_CFG_ROOT("rootPath"),
 
     /**
      * node id

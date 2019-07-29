@@ -1,17 +1,20 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
 package com.actiontech.dble.config.loader.xml;
 
 import com.actiontech.dble.config.ProblemReporter;
+import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.model.FirewallConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.UserConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.util.ResourceUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
 
 import java.io.IOException;
@@ -27,6 +30,8 @@ public class XMLServerLoader {
     private final SystemConfig system;
     private final Map<String, UserConfig> users;
     private final FirewallConfig firewall;
+    private static final Logger LOGGER = LoggerFactory.getLogger(XMLSchemaLoader.class);
+
     protected ProblemReporter problemReporter;
 
     public XMLServerLoader() {
@@ -39,6 +44,16 @@ public class XMLServerLoader {
         this.users = new HashMap<>();
         this.firewall = new FirewallConfig();
         Element root = loadXml();
+        String version = "2.18.12.0 or earlier";
+        if (root.getAttributes().getNamedItem("version") != null) {
+            version = root.getAttributes().getNamedItem("version").getNodeValue();
+        }
+        if (!version.equals(Versions.CONFIG_VERSION)) {
+            String message = "The server-version is " + Versions.CONFIG_VERSION + ",but the server.xml version is " + version + ".There may be some incompatible config between two versions,please check it";
+            if (this.problemReporter != null) {
+                this.problemReporter.warn(message);
+            }
+        }
         this.load(root, new SystemConfigLoader());
         this.load(root, new UserConfigLoader());
         this.load(root, new FirewallConfigLoader());

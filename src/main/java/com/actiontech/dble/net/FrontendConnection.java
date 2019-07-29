@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -54,6 +54,7 @@ public abstract class FrontendConnection extends AbstractConnection {
     protected boolean isAuthenticated;
     private boolean userReadOnly = true;
     private boolean sessionReadOnly = false;
+    private boolean multStatementAllow = false;
 
     public FrontendConnection(NetworkChannel channel) throws IOException {
         super(channel);
@@ -118,6 +119,13 @@ public abstract class FrontendConnection extends AbstractConnection {
         this.loadDataInfileHandler = loadDataInfileHandler;
     }
 
+    public boolean isMultStatementAllow() {
+        return multStatementAllow;
+    }
+
+    public void setMultStatementAllow(boolean multStatementAllow) {
+        this.multStatementAllow = multStatementAllow;
+    }
     public void setQueryHandler(FrontendQueryHandler queryHandler) {
         this.queryHandler = queryHandler;
     }
@@ -417,7 +425,7 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     @Override
     public void register() throws IOException {
-        if (!isClosed.get()) {
+        if (!isClosed) {
 
             // generate auth data
             byte[] rand1 = RandomUtil.randomBytes(8);
@@ -440,10 +448,10 @@ public abstract class FrontendConnection extends AbstractConnection {
             hs.setServerCharsetIndex((byte) (charsetIndex & 0xff));
             hs.setServerStatus(2);
             hs.setRestOfScrambleBuff(rand2);
-            hs.write(this);
-
-            // async read response
-            this.asyncRead();
+            if (hs.write(this)) {
+                // async read response
+                this.asyncRead();
+            }
         }
     }
 
@@ -468,7 +476,12 @@ public abstract class FrontendConnection extends AbstractConnection {
         //load data infile  client send empty packet which size is 4
         if (data.length == 4 && data[0] == 0 && data[1] == 0 && data[2] == 0) {
             // load in data empty packet
-            loadDataInfileEnd(data[3]);
+            DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
+                @Override
+                public void run() {
+                    loadDataInfileEnd(data[3]);
+                }
+            });
             return;
         }
         //when TERMINATED char of load data infile is \001

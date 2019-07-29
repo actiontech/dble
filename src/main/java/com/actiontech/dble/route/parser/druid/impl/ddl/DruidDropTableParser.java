@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.route.parser.druid.impl.ddl;
 
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -24,9 +25,10 @@ import java.util.Map;
 
 public class DruidDropTableParser extends DefaultDruidParser {
     @Override
-    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc)
+    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain)
             throws SQLException {
         SQLDropTableStatement dropTable = (SQLDropTableStatement) stmt;
+        rrs.setDdlType(DDLInfo.DDLType.DROP_TABLE);
         if (dropTable.getTableSources().size() > 1) {
             String msg = "dropping multi-tables is not supported, sql:" + stmt;
             throw new SQLNonTransientException(msg);
@@ -35,7 +37,7 @@ public class DruidDropTableParser extends DefaultDruidParser {
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, dropTable.getTableSources().get(0));
         String statement = RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema());
         rrs.setStatement(statement);
-        String noShardingNode = RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable());
+        String noShardingNode = RouterUtil.isNoShardingDDL(schemaInfo.getSchemaConfig(), schemaInfo.getTable());
         if (noShardingNode != null) {
             RouterUtil.routeToSingleDDLNode(schemaInfo, rrs, noShardingNode);
             return schemaInfo.getSchemaConfig();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -96,6 +96,15 @@ public class SchemasxmlTozkLoader extends ZkMultiLoader implements NotifyService
         String dataHostValueStr = this.parseJsonDataHost.parseBeanToJson(schema.getDataHost());
 
         this.checkAndWriteString(basePath, KVPathUtil.DATA_HOST, dataHostValueStr);
+
+        String version = schema.getVersion();
+        if (version != null) {
+            this.checkAndWriteString(basePath, KVPathUtil.VERSION, version);
+        } else {
+            if (this.checkPathExists(basePath + KVPathUtil.SEPARATOR + KVPathUtil.VERSION)) {
+                this.getCurator().delete().forPath(basePath + KVPathUtil.SEPARATOR + KVPathUtil.VERSION);
+            }
+        }
 
     }
 

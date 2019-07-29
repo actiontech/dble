@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -15,6 +15,7 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.common.item.function.ItemCreate;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.plan.visitor.MySQLItemVisitor;
 import com.actiontech.dble.route.RouteResultset;
@@ -53,7 +54,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 
     @Override
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,
-                                     ServerSchemaStatVisitor visitor, ServerConnection sc) throws SQLException {
+                                     ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain) throws SQLException {
         SQLSelectStatement selectStmt = (SQLSelectStatement) stmt;
         SQLSelectQuery sqlSelectQuery = selectStmt.getSelect().getQuery();
         String schemaName = schema == null ? null : schema.getName();
@@ -64,7 +65,7 @@ public class DruidSelectParser extends DefaultDruidParser {
             }
             SQLTableSource mysqlFrom = mysqlSelectQuery.getFrom();
             if (mysqlFrom == null) {
-                super.visitorParse(schema, rrs, stmt, visitor, sc);
+                super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
                 if (visitor.getSubQueryList().size() > 0) {
                     return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size());
                 }
@@ -90,25 +91,27 @@ public class DruidSelectParser extends DefaultDruidParser {
                     throw new SQLNonTransientException(msg);
                 }
                 if (!ServerPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), CheckType.SELECT)) {
-                    String msg = "The statement DML privilege check is not passed, sql:" + stmt;
+                    String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                     throw new SQLNonTransientException(msg);
                 }
+
+                super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
+                if (DbleServer.getInstance().getTmManager().getSyncView(schemaInfo.getSchemaConfig().getName(), schemaInfo.getTable()) != null ||
+                        hasInnerFuncSelect(visitor.getFunctions())) {
+                    rrs.setNeedOptimizer(true);
+                    rrs.setSqlStatement(selectStmt);
+                    return schemaInfo.getSchemaConfig();
+                }
+
+                if (visitor.getSubQueryList().size() > 0) {
+                    return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size());
+                }
+
                 rrs.setSchema(schemaInfo.getSchema());
                 rrs.setTable(schemaInfo.getTable());
                 rrs.setTableAlias(schemaInfo.getTableAlias());
                 rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
                 schema = schemaInfo.getSchemaConfig();
-
-                if (DbleServer.getInstance().getTmManager().getSyncView(schema.getName(), schemaInfo.getTable()) != null) {
-                    rrs.setNeedOptimizer(true);
-                    rrs.setSqlStatement(selectStmt);
-                    return schema;
-                }
-
-                super.visitorParse(schema, rrs, stmt, visitor, sc);
-                if (visitor.getSubQueryList().size() > 0) {
-                    return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size());
-                }
 
                 String noShardingNode = RouterUtil.isNoSharding(schema, schemaInfo.getTable());
                 if (noShardingNode != null) {
@@ -121,6 +124,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                     String msg = "Table '" + schema.getName() + "." + schemaInfo.getTable() + "' doesn't exist";
                     throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
                 }
+                rrs.setPrimaryKey(tc.getPrimaryKey());
                 // select ...for update /in shard mode /in transaction
                 if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode()) && !sc.isAutocommit()) {
                     rrs.setCanRunInReadDB(false);
@@ -131,15 +135,27 @@ public class DruidSelectParser extends DefaultDruidParser {
             } else if (mysqlFrom instanceof SQLSubqueryTableSource ||
                     mysqlFrom instanceof SQLJoinTableSource ||
                     mysqlFrom instanceof SQLUnionQueryTableSource) {
-                super.visitorParse(schema, rrs, stmt, visitor, sc);
+                super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
                 return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size());
             }
         } else if (sqlSelectQuery instanceof SQLUnionQuery) {
-            super.visitorParse(schema, rrs, stmt, visitor, sc);
+            super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
             return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size());
         }
 
         return schema;
+    }
+
+
+    private boolean hasInnerFuncSelect(List<SQLMethodInvokeExpr> funcList) {
+        if (funcList != null) {
+            for (SQLMethodInvokeExpr expr : funcList) {
+                if (ItemCreate.getInstance().isInnerFunc(expr.getMethodName())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private SchemaConfig tryRouteToOneNode(SchemaConfig schema, RouteResultset rrs, ServerConnection sc, SQLSelectStatement selectStmt, int tableSize) throws SQLException {
@@ -158,8 +174,9 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
         return schema;
     }
+
     private boolean canRouteTablesToOneNode(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
-                                         MySqlSelectQueryBlock mysqlSelectQuery, ServerConnection sc, int tableSize) throws SQLException {
+                                            MySqlSelectQueryBlock mysqlSelectQuery, ServerConnection sc, int tableSize) throws SQLException {
         Set<String> schemaList = new HashSet<>();
         String dataNode = RouterUtil.tryRouteTablesToOneNode(sc.getUser(), rrs, schema, ctx, schemaList, tableSize, true);
         if (dataNode != null) {
@@ -347,7 +364,7 @@ public class DruidSelectParser extends DefaultDruidParser {
     }
 
     private void parseAggGroupCommon(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
-                                                    MySqlSelectQueryBlock mysqlSelectQuery, TableConfig tc) throws SQLException {
+                                     MySqlSelectQueryBlock mysqlSelectQuery, TableConfig tc) throws SQLException {
         Map<String, String> aliaColumns = new HashMap<>();
         boolean isDistinct = (mysqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCT) || (mysqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCTROW);
         parseAggExprCommon(schema, rrs, mysqlSelectQuery, aliaColumns, tc, isDistinct);
@@ -650,7 +667,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         } else if (mysqlSelectQuery.getLimit() != null) { // has already limit
             return false;
         } else if (ctx.getTables().size() == 1) {
-            if (rrs.hasPrimaryKeyToCache()) {
+            if (rrs.isContainsPrimaryFilter()) {
                 // single table and has primary key , need not limit because of only one row
                 return false;
             }

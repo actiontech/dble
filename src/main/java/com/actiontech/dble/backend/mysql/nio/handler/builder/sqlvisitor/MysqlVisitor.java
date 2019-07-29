@@ -1,15 +1,19 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor;
 
-import com.actiontech.dble.plan.node.PlanNode;
-import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.Item.ItemType;
+import com.actiontech.dble.plan.common.item.function.operator.ItemBoolFunc2;
+import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
+import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondOr;
+import com.actiontech.dble.plan.common.item.function.operator.logic.ItemFuncNot;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
+import com.actiontech.dble.plan.node.PlanNode;
+import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.alibaba.druid.sql.ast.SQLHint;
@@ -111,10 +115,7 @@ public abstract class MysqlVisitor {
         if (item.isWithSubQuery()) {
             item = PlanUtil.rebuildSubQueryItem(item);
         }
-        String selName = item.getItemName();
-        if (item.type().equals(ItemType.FIELD_ITEM)) {
-            selName = "`" + item.getTableName() + "`.`" + selName + "`";
-        }
+        String selName = getItemName(item);
         String nameInMap = pushNameMap.get(selName);
         if (nameInMap != null) {
             item.setPushDownName(nameInMap);
@@ -125,6 +126,43 @@ public abstract class MysqlVisitor {
             }
         }
         return selName;
+    }
+
+    // try to trim schema from field_item
+    protected String getItemName(Item item) {
+        if (item instanceof ItemCondOr) {
+            StringBuilder sb = new StringBuilder();
+            for (int index = 0; index < item.getArgCount(); index++) {
+                if (index > 0) {
+                    sb.append(" OR ");
+                }
+                sb.append("(");
+                sb.append(getItemName(item.arguments().get(index)));
+                sb.append(")");
+            }
+            return sb.toString();
+        } else if (item instanceof ItemCondAnd) {
+            StringBuilder sb = new StringBuilder();
+            for (int index = 0; index < item.getArgCount(); index++) {
+                if (index > 0) {
+                    sb.append(" AND ");
+                }
+                sb.append("(");
+                sb.append(getItemName(item.arguments().get(index)));
+                sb.append(")");
+            }
+            return sb.toString();
+        } else if (item instanceof ItemFuncNot) {
+            return " ( NOT " + getItemName(item.arguments().get(0)) + ")";
+        } else if (item instanceof ItemBoolFunc2) {
+            Item a = item.arguments().get(0);
+            Item b = item.arguments().get(1);
+            return getItemName(a) + " " + ((ItemBoolFunc2) item).funcName() + " " + getItemName(b);
+        } else if (item.type().equals(ItemType.FIELD_ITEM)) {
+            return "`" + item.getTableName() + "`.`" + item.getItemName() + "`";
+        } else {
+            return item.getItemName();
+        }
     }
 
     public Item getWhereFilter() {

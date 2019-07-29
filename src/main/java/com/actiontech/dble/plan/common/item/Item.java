@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -981,6 +981,9 @@ public abstract class Item {
         return null;
     }
 
+    public String getDbName() {
+        return null;
+    }
     /**
      * added to construct all refers in an item
      *

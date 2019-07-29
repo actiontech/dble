@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -113,6 +113,22 @@ public class AIOSocketWR extends SocketWR {
         }
 
 
+    }
+
+    public boolean registerWrite(ByteBuffer buffer) {
+        con.writeBuffer = buffer;
+        buffer.flip();
+        try {
+            write0();
+        } catch (Exception e) {
+            //SLB no exception in AIO
+            if (AbstractConnection.LOGGER.isDebugEnabled()) {
+                AbstractConnection.LOGGER.debug("caught err:", e);
+            }
+            con.close("err:" + e);
+            return false;
+        }
+        return true;
     }
 }
 

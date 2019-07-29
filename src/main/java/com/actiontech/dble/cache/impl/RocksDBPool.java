@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2016-2019 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
 package com.actiontech.dble.cache.impl;
 
 import com.actiontech.dble.cache.CachePool;
@@ -38,7 +43,7 @@ public class RocksDBPool implements CachePool {
     public Object get(Object key) {
         try {
             byte[] keyBytes = fst.asByteArray(key);
-            byte[] bytes = cache.get(fst.asByteArray(keyBytes));
+            byte[] bytes = cache.get(keyBytes);
             if (bytes != null) {
                 Object cached = fst.asObject(bytes);
 

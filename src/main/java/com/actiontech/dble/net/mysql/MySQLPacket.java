@@ -1,11 +1,11 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
 package com.actiontech.dble.net.mysql;
 
-import com.actiontech.dble.net.BackendAIOConnection;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.net.FrontendConnection;
 
 import java.nio.ByteBuffer;
@@ -181,7 +181,7 @@ public abstract class MySQLPacket {
     /**
      * write to backend connection
      */
-    public void write(BackendAIOConnection c) {
+    public void write(MySQLConnection c) {
         throw new UnsupportedOperationException();
     }
 

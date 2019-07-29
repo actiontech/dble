@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -49,6 +49,11 @@ public abstract class ItemIdent extends Item {
     @Override
     public String getTableName() {
         return tableName;
+    }
+
+    @Override
+    public String getDbName() {
+        return dbName;
     }
 
     public void setTableName(String tableName) {

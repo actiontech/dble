@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -30,13 +30,17 @@ public class HandlerBuilder {
         this.session = session;
     }
 
-    public void checkRRSs(RouteResultsetNode[] rrssArray) {
+    synchronized void checkRRSs(RouteResultsetNode[] rrssArray) {
         for (RouteResultsetNode rrss : rrssArray) {
             while (rrsNodes.contains(rrss)) {
                 rrss.getMultiplexNum().incrementAndGet();
             }
             rrsNodes.add(rrss);
         }
+    }
+
+    synchronized void removeRrs(RouteResultsetNode rrsNode) {
+        rrsNodes.remove(rrsNode);
     }
 
     /**
@@ -65,11 +69,13 @@ public class HandlerBuilder {
         //set slave only into rrsNode
         for (DMLResponseHandler startHandler : fh.getMerges()) {
             MultiNodeMergeHandler mergeHandler = (MultiNodeMergeHandler) startHandler;
-            for (BaseSelectHandler bshandler : mergeHandler.getExeHandlers()) {
-                bshandler.getRrss().setRunOnSlave(this.session.getComplexRrs().getRunOnSlave());
+            for (BaseSelectHandler baseHandler : mergeHandler.getExeHandlers()) {
+                baseHandler.getRrss().setRunOnSlave(this.session.getComplexRrs().getRunOnSlave());
             }
         }
+        session.endComplexRoute();
         HandlerBuilder.startHandler(fh);
+        session.endComplexExecute();
         long endTime = System.nanoTime();
         logger.debug("HandlerBuilder.build cost:" + (endTime - startTime));
         return builder;
@@ -87,6 +93,8 @@ public class HandlerBuilder {
             return new QueryNodeHandlerBuilder(nonBlockingSession, (QueryNode) planNode, this, isExplain);
         } else if (i == PlanNode.PlanNodeType.NONAME) {
             return new NoNameNodeHandlerBuilder(nonBlockingSession, (NoNameNode) planNode, this, isExplain);
+        } else if (i == PlanNode.PlanNodeType.JOIN_INNER) {
+            return new JoinInnerHandlerBuilder(nonBlockingSession, (JoinInnerNode) planNode, this, isExplain);
         }
         throw new RuntimeException("not supported tree node type:" + planNode.type());
     }

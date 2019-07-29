@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -57,7 +57,7 @@ public final class ShowTableAlgorithm {
     public static void execute(ManagerConnection c, String tableInfo) {
         Matcher ma = PATTERN_FOR_TABLE_INFO.matcher(tableInfo);
         if (!ma.matches()) {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The Correct Query Format Is:show @@algorithm where schema=? and table =?");
+            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The Correct Query Format Is:show @@algorithm where schema='?' and table ='?'");
             return;
         }
         String schemaName = ma.group(2);

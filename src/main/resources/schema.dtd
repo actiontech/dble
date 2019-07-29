@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
         <!--
+  ~ Copyright (C) 2016-2019 ActionTech.
+  ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+  -->
+
+        <!--
          -
          - Licensed under the Apache License, Version 2.0 (the "License");
          - you may not use this file except in compliance with the License.
@@ -15,6 +20,7 @@
         -->
         <!ELEMENT dble:schema (schema*,dataNode*,dataHost*)>
         <!ATTLIST dble:schema xmlns:dble CDATA #FIXED "http://dble.cloud/">
+        <!ATTLIST dble:schema version CDATA #IMPLIED>
 
         <!ELEMENT schema (table*)>
         <!ATTLIST schema name NMTOKEN #REQUIRED>
@@ -28,6 +34,7 @@
         <!ATTLIST table ruleRequired NMTOKEN #IMPLIED>
         <!ATTLIST table primaryKey NMTOKEN #IMPLIED>
         <!ATTLIST table autoIncrement NMTOKEN #IMPLIED>
+        <!ATTLIST table incrementColumn NMTOKEN #IMPLIED>
         <!ATTLIST table needAddLimit NMTOKEN #IMPLIED>
         <!ATTLIST table type NMTOKEN #IMPLIED>
 

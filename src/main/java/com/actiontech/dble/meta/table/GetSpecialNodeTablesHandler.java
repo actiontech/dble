@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -18,6 +18,7 @@ public class GetSpecialNodeTablesHandler extends GetNodeTablesHandler {
     private AbstractTablesMetaHandler handler;
     private Set<String> tables;
     private volatile Set<String> existsTables = new HashSet<>();
+    private volatile boolean finished = false;
     GetSpecialNodeTablesHandler(AbstractTablesMetaHandler handler, Set<String> tables, String dataNode) {
         super(dataNode);
         this.handler = handler;
@@ -50,6 +51,10 @@ public class GetSpecialNodeTablesHandler extends GetNodeTablesHandler {
                 }
             }
         }
+        finished = true;
         handler.showTablesFinished();
+    }
+    public boolean isFinished() {
+        return finished;
     }
 }

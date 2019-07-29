@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -23,10 +23,10 @@ public class ConQueue {
 
         }
         BackendConnection con = f1.poll();
-        if (con == null || con.isClosedOrQuit()) {
+        if (con == null || con.isClosed()) {
             con = f2.poll();
         }
-        if (con == null || con.isClosedOrQuit()) {
+        if (con == null || con.isClosed()) {
             return null;
         } else {
             return con;

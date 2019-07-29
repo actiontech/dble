@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -20,6 +20,7 @@ import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.handler.SetHandler;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.response.Heartbeat;
+import com.actiontech.dble.server.response.InformationSchemaProfiling;
 import com.actiontech.dble.server.response.Ping;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.util.*;
@@ -256,6 +257,13 @@ public class ServerConnection extends FrontendConnection {
                 return;
             }
         }
+        //fix navicat
+        // SELECT STATE AS `State`, ROUND(SUM(DURATION),7) AS `Duration`, CONCAT(ROUND(SUM(DURATION)/*100,3), '%') AS `Percentage`
+        // FROM INFORMATION_SCHEMA.PROFILING WHERE QUERY_ID= GROUP BY STATE ORDER BY SEQ
+        if (ServerParse.SELECT == type && sql.contains(" INFORMATION_SCHEMA.PROFILING ") && sql.contains("CONCAT(ROUND(SUM(DURATION)/")) {
+            InformationSchemaProfiling.response(this);
+            return;
+        }
         routeEndExecuteSQL(sql, type, schemaConfig);
 
     }
@@ -346,12 +354,12 @@ public class ServerConnection extends FrontendConnection {
                 String nodePth = ZKPaths.makePath(ddlPath, nodeName);
                 CuratorFramework zkConn = ZKUtils.getConnection();
                 if (zkConn.checkExists().forPath(KVPathUtil.getSyncMetaLockPath()) != null || zkConn.checkExists().forPath(nodePth) != null) {
-                    String msg = "The syncMeta.lock or metaLock about " + nodeName + " in " + ddlPath + "is Exists";
-                    LOGGER.info(msg);
+                    String msg = "The metaLock about `" + nodeName + "` is exists. It means other instance is doing DDL.";
+                    LOGGER.info(msg + " The path of DDL is " + ddlPath);
                     throw new Exception(msg);
                 }
                 DbleServer.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement());
-            } else if (DbleServer.getInstance().isUseUcore()) {
+            } else if (DbleServer.getInstance().isUseGeneralCluster()) {
                 DbleServer.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement());
             }
         } catch (SQLNonTransientException e) {
@@ -415,22 +423,38 @@ public class ServerConnection extends FrontendConnection {
 
     void lockTable(String sql) {
         // lock table is disable in transaction
-        if (!autocommit) {
-            writeErrMessage(ErrorCode.ER_YES, "can't lock table in transaction!");
+        if (!autocommit || isTxStart()) {
+            writeErrMessage(ErrorCode.ER_YES, "can't lock tables in transaction in dble!");
             return;
         }
-        // if lock table has been executed and unlock has not been executed, can't execute lock table again
-        if (isLocked) {
-            writeErrMessage(ErrorCode.ER_YES, "can't lock multi-table");
-            return;
+
+
+        String db = this.schema;
+        SchemaConfig schema = null;
+        if (this.schema != null) {
+            schema = DbleServer.getInstance().getConfig().getSchemas().get(this.schema);
+            if (schema == null) {
+                writeErrMessage(ErrorCode.ERR_BAD_LOGICDB, "Unknown Database '" + db + "'");
+                return;
+            }
         }
-        RouteResultset rrs = routeSQL(sql, ServerParse.LOCK);
+        RouteResultset rrs;
+        try {
+            rrs = DbleServer.getInstance().getRouterService().route(schema, ServerParse.LOCK, sql, this);
+        } catch (Exception e) {
+            executeException(e, sql);
+            return ;
+        }
         if (rrs != null) {
             session.lockTable(rrs);
         }
     }
 
     void unLockTable(String sql) {
+        if (!autocommit || isTxStart()) {
+            writeErrMessage(ErrorCode.ER_YES, "can't unlock tables in transaction in dble!");
+            return;
+        }
         sql = sql.replaceAll("\n", " ").replaceAll("\t", " ");
         String[] words = SplitUtil.split(sql, ' ', true);
         if (words.length == 2 && ("table".equalsIgnoreCase(words[1]) || "tables".equalsIgnoreCase(words[1]))) {

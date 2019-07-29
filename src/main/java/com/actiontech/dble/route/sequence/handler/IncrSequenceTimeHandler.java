@@ -1,14 +1,17 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.route.sequence.handler;
 
 import com.actiontech.dble.route.util.PropertiesUtil;
+import com.actiontech.dble.util.DateUtil;
+import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.SQLNonTransientException;
 import java.util.Properties;
 
 public final class IncrSequenceTimeHandler implements SequenceHandler {
@@ -16,6 +19,7 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
 
     private static final String SEQUENCE_TIME_PROPS = "sequence_time_conf.properties";
     private static final IncrSequenceTimeHandler INSTANCE = new IncrSequenceTimeHandler();
+    private static final long DEFAULT_START_TIMESTAMP = 1288834974657L; //Thu Nov 04 09:42:54 CST 2010
     private IdWorker workey;
 
 
@@ -28,12 +32,23 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
 
         long workid = Long.parseLong(props.getProperty("WORKID"));
         long dataCenterId = Long.parseLong(props.getProperty("DATAACENTERID"));
-
-        workey = new IdWorker(workid, dataCenterId);
+        long startTimeMilliseconds = DEFAULT_START_TIMESTAMP;
+        try {
+            String startTimeStr = props.getProperty("START_TIME");
+            if (!StringUtil.isEmpty(startTimeStr)) {
+                startTimeMilliseconds = DateUtil.parseDate(startTimeStr).getTime();
+                if (startTimeMilliseconds > System.currentTimeMillis()) {
+                    LOGGER.warn("START_TIME in " + SEQUENCE_TIME_PROPS + " mustn't be over than dble start time, starting from 2010-11-04 09:42:54");
+                }
+            }
+        } catch (Exception pe) {
+            LOGGER.warn("START_TIME in " + SEQUENCE_TIME_PROPS + " parse exception, starting from 2010-11-04 09:42:54");
+        }
+        workey = new IdWorker(workid, dataCenterId, startTimeMilliseconds);
     }
 
     @Override
-    public long nextId(String prefixName) {
+    public long nextId(String prefixName) throws SQLNonTransientException {
         return workey.nextId();
     }
 
@@ -45,7 +60,6 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
      * 64 bit ID 30 (millisecond high 30 )+5(DATA_CENTER_ID)+5(WORKER_ID)+12(autoincrement)+12 (millisecond low 12)
      */
     static class IdWorker {
-        private static final long TWEPOCH = 1288834974657L;
         private static final long TIMESTAMP_LOW_BITS = 12L;
         private static final long TIMESTAMP_LOW_MASK = 0xFFF;
 
@@ -72,8 +86,10 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
         private long sequence = 0L;
         private final long workerId;
         private final long datacenterId;
+        private final long startTimeMillisecond;
+        private final long deadline;
 
-        IdWorker(long workerId, long datacenterId) {
+        IdWorker(long workerId, long datacenterId, long startTimeMillisecond) {
             if (workerId > MAX_WORKER_ID || workerId < 0) {
                 throw new IllegalArgumentException(String.format("worker Id can't be greater than %d or less than 0", MAX_WORKER_ID));
             }
@@ -82,17 +98,15 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
             }
             this.workerId = workerId;
             this.datacenterId = datacenterId;
+            this.startTimeMillisecond = startTimeMillisecond;
+            this.deadline = startTimeMillisecond + (1L << 41);
         }
 
-        public synchronized long nextId() {
+        public synchronized long nextId() throws SQLNonTransientException {
             long timestamp = timeGen();
             if (timestamp < lastTimestamp) {
-                try {
-                    throw new Exception("Clock moved backwards.  Refusing to generate id for " +
+                throw new SQLNonTransientException("Clock moved backwards.  Refusing to generate id for " +
                             (lastTimestamp - timestamp) + " milliseconds");
-                } catch (Exception e) {
-                    LOGGER.warn("error", e);
-                }
             }
 
             if (lastTimestamp == timestamp) {
@@ -106,13 +120,15 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
                 sequence = 0;
             }
             lastTimestamp = timestamp;
-
+            if (timestamp >= deadline) {
+                throw new SQLNonTransientException("Global sequence has reach to max limit and can generate duplicate sequences.");
+            }
             //42 bit timestamp, right shift 12 bit ,get high 30 bit,than left shift 34 bit
-            return (((timestamp - TWEPOCH) >> TIMESTAMP_LOW_BITS) << TIMESTAMP_HIGH_SHIFT) |
+            return (((timestamp - startTimeMillisecond) >> TIMESTAMP_LOW_BITS) << TIMESTAMP_HIGH_SHIFT) |
                     (datacenterId << DATACENTER_ID_SHIFT) |
                     (workerId << WORKER_ID_SHIFT) |
                     (sequence << SEQUENCE_SHIFT) |
-                    ((timestamp - TWEPOCH) & TIMESTAMP_LOW_MASK);
+                    ((timestamp - startTimeMillisecond) & TIMESTAMP_LOW_MASK);
         }
 
         private long tilNextMillis(final long lastStamp) {

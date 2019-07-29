@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -304,7 +304,7 @@ public final class ShowServerLog {
         char c1 = sql.charAt(++offset);
         char c2 = sql.charAt(++offset);
         char c3 = sql.charAt(++offset);
-        if ((c1 == 'I' | c1 == 'i') && (c2 == 'l' || c2 == 'L') && (c3 == 'e' || c3 == 'E')) {
+        if ((c1 == 'I' || c1 == 'i') && (c2 == 'l' || c2 == 'L') && (c3 == 'e' || c3 == 'E')) {
             offset = ManagerParseShow.trim(++offset, sql);
             if (sql.charAt(offset) == '=') {
                 offset = ManagerParseShow.trim(++offset, sql);
@@ -329,7 +329,7 @@ public final class ShowServerLog {
         char c2 = sql.charAt(++offset);
         char c3 = sql.charAt(++offset);
         char c4 = sql.charAt(++offset);
-        if ((c1 == 'I' | c1 == 'i') && (c2 == 'm' || c2 == 'M') && (c3 == 'i' || c3 == 'I') && (c4 == 'T' || c4 == 't')) {
+        if ((c1 == 'I' || c1 == 'i') && (c2 == 'm' || c2 == 'M') && (c3 == 'i' || c3 == 'I') && (c4 == 'T' || c4 == 't')) {
             offset = ManagerParseShow.trim(++offset, sql);
             if (sql.charAt(offset) == '=') {
                 offset = ManagerParseShow.trim(++offset, sql);
@@ -354,7 +354,7 @@ public final class ShowServerLog {
         }
         char c1 = sql.charAt(++offset);
         char c2 = sql.charAt(++offset);
-        if ((c1 == 'E' | c1 == 'e') && (c2 == 'Y' || c2 == 'y')) {
+        if ((c1 == 'E' || c1 == 'e') && (c2 == 'Y' || c2 == 'y')) {
             offset = ManagerParseShow.trim(++offset, sql);
             if (sql.charAt(offset) == '=') {
                 offset = ManagerParseShow.trim(++offset, sql);
@@ -391,7 +391,7 @@ public final class ShowServerLog {
         char c2 = sql.charAt(++offset);
         char c3 = sql.charAt(++offset);
         char c4 = sql.charAt(++offset);
-        if ((c1 == 'E' | c1 == 'e') && (c2 == 'g' || c2 == 'G') && (c3 == 'e' || c3 == 'E') && (c4 == 'X' || c4 == 'x')) {
+        if ((c1 == 'E' || c1 == 'e') && (c2 == 'g' || c2 == 'G') && (c3 == 'e' || c3 == 'E') && (c4 == 'X' || c4 == 'x')) {
             offset = ManagerParseShow.trim(++offset, sql);
             if (sql.charAt(offset) == '=') {
                 offset = ManagerParseShow.trim(++offset, sql);

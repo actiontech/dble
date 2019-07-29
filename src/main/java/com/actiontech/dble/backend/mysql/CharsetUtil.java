@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -255,13 +255,13 @@ public final class CharsetUtil {
             }
         }
         CHARSET_TO_JAVA.put("big5", "Big5");
-        CHARSET_TO_JAVA.put("dec8", "ISO8859_1"); //superset? DEC Western European
+        CHARSET_TO_JAVA.put("dec8", "Cp1252"); //superset ISO8859_1? DEC Western European
         CHARSET_TO_JAVA.put("cp850", "Cp850");
-        CHARSET_TO_JAVA.put("hp8", "ISO8859_1"); //superset? HP Western European
+        CHARSET_TO_JAVA.put("hp8", "Cp1252"); //superset ISO8859_1? HP Western European
         CHARSET_TO_JAVA.put("koi8r", "KOI8_R");
         CHARSET_TO_JAVA.put("latin1", "Cp1252");
         CHARSET_TO_JAVA.put("latin2", "ISO8859_2");
-        CHARSET_TO_JAVA.put("swe7", "ISO8859_1"); //superset? 7bit Swedish
+        CHARSET_TO_JAVA.put("swe7", "Cp1252"); //superset ISO8859_1? 7bit Swedish
         CHARSET_TO_JAVA.put("ascii", "US-ASCII");
         CHARSET_TO_JAVA.put("ujis", "EUC_JP");
         CHARSET_TO_JAVA.put("sjis", "SJIS");
@@ -274,16 +274,16 @@ public final class CharsetUtil {
         CHARSET_TO_JAVA.put("cp1250", "Cp1250");
         CHARSET_TO_JAVA.put("gbk", "GBK");
         CHARSET_TO_JAVA.put("latin5", "ISO8859_9");
-        CHARSET_TO_JAVA.put("armscii8", "ISO8859_1"); //superset? https://en.wikipedia.org/wiki/ArmSCII#ArmSCII-8
+        CHARSET_TO_JAVA.put("armscii8", "Cp1252"); //superset ISO8859_1? https://en.wikipedia.org/wiki/ArmSCII#ArmSCII-8
         CHARSET_TO_JAVA.put("utf8", "UTF-8");
         CHARSET_TO_JAVA.put("ucs2", "UnicodeBig");
         CHARSET_TO_JAVA.put("cp866", "Cp866");
-        CHARSET_TO_JAVA.put("keybcs2", "Cp895");
+        CHARSET_TO_JAVA.put("keybcs2", "Cp852"); // new, Kamenicky encoding usually known as Cp895 but there is no official cp895 specification; close to Cp852, see http://ftp.muni.cz
         CHARSET_TO_JAVA.put("macce", "MacCentralEurope");
         CHARSET_TO_JAVA.put("macroman", "MacRoman");
         CHARSET_TO_JAVA.put("cp852", "Cp852");
-        CHARSET_TO_JAVA.put("latin7", "ISO8859_13");
-        CHARSET_TO_JAVA.put("utf8mb4", "MacCentralEurope"); //?
+        CHARSET_TO_JAVA.put("latin7", "ISO8859_13"); // was ISO8859_7, that's incorrect; also + "LATIN7 =latin7," is wrong java encoding name
+        CHARSET_TO_JAVA.put("utf8mb4", "UTF-8"); //https://dev.mysql.com/doc/connector-j/5.1/en/connector-j-reference-charsets.html
         CHARSET_TO_JAVA.put("cp1251", "Cp1251");
         CHARSET_TO_JAVA.put("utf16", "UTF-16");
         CHARSET_TO_JAVA.put("utf16le", "UTF-16LE");
@@ -291,7 +291,7 @@ public final class CharsetUtil {
         CHARSET_TO_JAVA.put("cp1257", "Cp1257");
         CHARSET_TO_JAVA.put("utf32", "UTF-32");
         CHARSET_TO_JAVA.put("binary", "US-ASCII");
-        CHARSET_TO_JAVA.put("geostd8", "US-ASCII"); //?
+        CHARSET_TO_JAVA.put("geostd8", "Cp1252"); //superset ISO8859_1
         CHARSET_TO_JAVA.put("cp932", "MS932");
         CHARSET_TO_JAVA.put("eucjpms", "EUC_JP_Solaris");
         CHARSET_TO_JAVA.put("gb18030", "GB18030");

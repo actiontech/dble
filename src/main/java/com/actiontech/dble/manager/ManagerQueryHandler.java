@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2018 ActionTech.
+* Copyright (C) 2016-2019 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -56,6 +56,13 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
                 break;
             case ManagerParse.KILL_CONN:
                 KillConnection.response(sql, rs >>> SHIFT, c);
+                break;
+            case ManagerParse.KILL_XA_SESSION:
+                KillXASession.response(sql, rs >>> SHIFT, c);
+                break;
+            case ManagerParse.KILL_DDL_LOCK:
+                String tableInfo = sql.substring(rs >>> SHIFT).trim();
+                KillDdlLock.response(sql, tableInfo, c);
                 break;
             case ManagerParse.OFFLINE:
                 Offline.execute(c);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -9,8 +9,8 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.GlobalVisitor;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.*;
+import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.AggregateHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.DirectGroupByHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.OrderedGroupByHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.AllAnySubQueryHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.InSubQueryHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.SingleRowSubQueryHandler;
@@ -28,11 +28,8 @@ import com.actiontech.dble.plan.common.item.subquery.ItemAllAnySubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemInSubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemSingleRowSubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
-import com.actiontech.dble.plan.node.JoinNode;
-import com.actiontech.dble.plan.node.PlanNode;
+import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.plan.node.PlanNode.PlanNodeType;
-import com.actiontech.dble.plan.node.QueryNode;
-import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -160,15 +157,34 @@ public abstract class BaseHandlerBuilder {
     /**
      * no shard-ing node,just send to the first node
      */
-    protected final void noShardBuild() {
+    protected void noShardBuild() {
         this.needCommon = false;
         GlobalVisitor visitor = new GlobalVisitor(node, true);
         visitor.visit();
         String sql = visitor.getSql().toString();
-        RouteResultsetNode[] rrss = getTableSources(node.getNoshardNode(), sql);
+        String randomDataNode = getRandomNode(node.getNoshardNode());
+        RouteResultsetNode rrsNode = new RouteResultsetNode(randomDataNode, ServerParse.SELECT, sql);
+        RouteResultsetNode[] rrss = new RouteResultsetNode[]{rrsNode};
         hBuilder.checkRRSs(rrss);
-        MultiNodeMergeHandler mh = new MultiNodeMergeHandler(getSequenceId(), rrss, session.getSource().isAutocommit() && !session.getSource().isTxStart(),
-                session, null);
+        if (session.getTargetCount() > 0 && session.getTarget(rrss[0]) == null) {
+            for (String dataNode : node.getNoshardNode()) {
+                if (!dataNode.equals(randomDataNode)) {
+                    RouteResultsetNode tmpRrsNode = new RouteResultsetNode(dataNode, ServerParse.SELECT, sql);
+                    RouteResultsetNode[] tmpRrss = new RouteResultsetNode[]{tmpRrsNode};
+                    hBuilder.checkRRSs(tmpRrss);
+                    if (session.getTarget(tmpRrsNode) != null) {
+                        rrss = tmpRrss;
+                        hBuilder.removeRrs(rrsNode);
+                        break;
+                    } else {
+                        hBuilder.removeRrs(tmpRrsNode);
+                    }
+                }
+            }
+        }
+
+        MultiNodeMergeHandler mh = new MultiNodeEasyMergeHandler(getSequenceId(), rrss, session.getSource().isAutocommit() && !session.getSource().isTxStart(),
+                session);
         addHandler(mh);
     }
 
@@ -199,13 +215,13 @@ public abstract class BaseHandlerBuilder {
                 } else {
                     OrderByHandler oh = new OrderByHandler(getSequenceId(), session, node.getGroupBys());
                     addHandler(oh);
-                    OrderedGroupByHandler gh = new OrderedGroupByHandler(getSequenceId(), session, node.getGroupBys(),
+                    AggregateHandler gh = new AggregateHandler(getSequenceId(), session, node.getGroupBys(),
                             sumRefs);
                     addHandler(gh);
                 }
             } else { // @bug 1052 canDirectGroupby condition we use
                 // directgroupby already
-                OrderedGroupByHandler gh = new OrderedGroupByHandler(getSequenceId(), session, node.getGroupBys(),
+                AggregateHandler gh = new AggregateHandler(getSequenceId(), session, node.getGroupBys(),
                         sumRefs);
                 addHandler(gh);
             }
@@ -303,40 +319,23 @@ public abstract class BaseHandlerBuilder {
         // onCondition column in orderBys will be saved to onOrders,
         // eg: if jn.onCond = (t1.id=t2.id),
         // orderBys is t1.id,t2.id,t1.name, and onOrders = {t1.id,t2.id};
-        List<Order> onOrders = new ArrayList<>();
         List<Order> leftOnOrders = jn.getLeftJoinOnOrders();
-        List<Order> rightOnOrders = jn.getRightJoinOnOrders();
-        for (Order orderBy : orderBys) {
-            if (leftOnOrders.contains(orderBy) || rightOnOrders.contains(orderBy)) {
-                onOrders.add(orderBy);
-            } else {
-                break;
-            }
+        if (leftOnOrders.size() >= orderBys.size()) {
+            return PlanUtil.orderContains(leftOnOrders, orderBys);
         }
-        if (onOrders.isEmpty()) {
-            // join node must order by joinOnCondition
+        List<Order> onOrdersTest = orderBys.subList(0, leftOnOrders.size());
+        if (!PlanUtil.orderContains(leftOnOrders, onOrdersTest)) {
             return false;
-        } else {
-            List<Order> remainOrders = orderBys.subList(onOrders.size(), orderBys.size());
-            if (remainOrders.isEmpty()) {
-                return true;
-            } else {
-                List<Order> pushedOrders = PlanUtil.getPushDownOrders(jn, remainOrders);
-                if (jn.isLeftOrderMatch()) {
-                    List<Order> leftChildOrders = jn.getLeftNode().getOrderBys();
-                    List<Order> leftRemainOrders = leftChildOrders.subList(leftOnOrders.size(), leftChildOrders.size());
-                    if (PlanUtil.orderContains(leftRemainOrders, pushedOrders))
-                        return true;
-                } else if (jn.isRightOrderMatch()) {
-                    List<Order> rightChildOrders = jn.getRightNode().getOrderBys();
-                    List<Order> rightRemainOrders = rightChildOrders.subList(rightOnOrders.size(),
-                            rightChildOrders.size());
-                    if (PlanUtil.orderContains(rightRemainOrders, pushedOrders))
-                        return true;
-                }
-                return false;
-            }
         }
+
+        List<Order> pushedOrders = PlanUtil.getPushDownOrders(jn, orderBys.subList(onOrdersTest.size(), orderBys.size()));
+        if (jn.isLeftOrderMatch()) {
+            List<Order> leftChildOrders = jn.getLeftNode().getOrderBys();
+            List<Order> leftRemainOrders = leftChildOrders.subList(leftOnOrders.size(), leftChildOrders.size());
+            if (PlanUtil.orderContains(leftRemainOrders, pushedOrders))
+                return true;
+        }
+        return false;
     }
 
     /**
@@ -389,15 +388,19 @@ public abstract class BaseHandlerBuilder {
 
     protected void buildMergeHandler(PlanNode planNode, RouteResultsetNode[] rrssArray) {
         hBuilder.checkRRSs(rrssArray);
-        MultiNodeMergeHandler mh = null;
         List<Order> orderBys = planNode.getGroupBys().size() > 0 ? planNode.getGroupBys() : planNode.getOrderBys();
+        boolean isEasyMerge = rrssArray.length == 1 || (orderBys == null || orderBys.size() == 0);
 
-        mh = new MultiNodeMergeHandler(getSequenceId(), rrssArray, session.getSource().isAutocommit() && !session.getSource().isTxStart(), session,
-                orderBys);
+        MultiNodeMergeHandler mh;
+        if (isEasyMerge) {
+            mh = new MultiNodeEasyMergeHandler(getSequenceId(), rrssArray, session.getSource().isAutocommit() && !session.getSource().isTxStart(), session);
+        } else {
+            mh = new MultiNodeMergeAndOrderHandler(getSequenceId(), rrssArray, session.getSource().isAutocommit() && !session.getSource().isTxStart(), session, orderBys);
+        }
         addHandler(mh);
     }
 
-    protected RouteResultsetNode[] getTableSources(Set<String> dataNodes, String sql) {
+    protected String getRandomNode(Set<String> dataNodes) {
         String randomDatenode = null;
         int index = (int) (System.currentTimeMillis() % dataNodes.size());
         int i = 0;
@@ -408,8 +411,7 @@ public abstract class BaseHandlerBuilder {
             }
             i++;
         }
-        RouteResultsetNode rrss = new RouteResultsetNode(randomDatenode, ServerParse.SELECT, sql);
-        return new RouteResultsetNode[]{rrss};
+        return randomDatenode;
     }
 
     protected TableConfig getTableConfig(String schema, String table) {
@@ -473,7 +475,7 @@ public abstract class BaseHandlerBuilder {
     }
 
     private void handleSubQueryForExplain(final ReentrantLock lock, final Condition finishSubQuery, final AtomicBoolean finished,
-                                final AtomicInteger subNodes, final PlanNode planNode, final SubQueryHandler tempHandler) {
+                                          final AtomicInteger subNodes, final PlanNode planNode, final SubQueryHandler tempHandler) {
         tempHandler.setForExplain();
         BaseHandlerBuilder builder = hBuilder.getBuilder(session, planNode, true);
         DMLResponseHandler endHandler = builder.getEndHandler();
@@ -481,11 +483,13 @@ public abstract class BaseHandlerBuilder {
         this.getSubQueryBuilderList().add(builder);
         subQueryFinished(subNodes, lock, finished, finishSubQuery);
     }
+
     private void handleSubQuery(final ReentrantLock lock, final Condition finishSubQuery, final AtomicBoolean finished,
                                 final AtomicInteger subNodes, final CopyOnWriteArrayList<ErrorPacket> errorPackets, final PlanNode planNode, final SubQueryHandler tempHandler) {
         DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
             @Override
             public void run() {
+                boolean startHandler = false;
                 try {
                     BaseHandlerBuilder builder = hBuilder.getBuilder(session, planNode, false);
                     DMLResponseHandler endHandler = builder.getEndHandler();
@@ -501,6 +505,7 @@ public abstract class BaseHandlerBuilder {
                         }
                     };
                     tempHandler.setTempDoneCallBack(tempDone);
+                    startHandler = true;
                     HandlerBuilder.startHandler(endHandler);
                 } catch (Exception e) {
                     LOGGER.info("execute ItemScalarSubQuery error", e);
@@ -509,6 +514,9 @@ public abstract class BaseHandlerBuilder {
                     String errorMsg = e.getMessage() == null ? e.toString() : e.getMessage();
                     errorPackage.setMessage(errorMsg.getBytes(StandardCharsets.UTF_8));
                     errorPackets.add(errorPackage);
+                    if (!startHandler) {
+                        subQueryFinished(subNodes, lock, finished, finishSubQuery);
+                    }
                 }
             }
         });

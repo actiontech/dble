@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 ActionTech.
+ * Copyright (C) 2016-2019 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -7,6 +7,7 @@ package com.actiontech.dble.route.parser.druid.impl.ddl;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.route.RouteResultset;
@@ -34,9 +35,10 @@ import java.sql.SQLNonTransientException;
 
 public class DruidCreateTableParser extends DefaultDruidParser {
     @Override
-    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc)
+    public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain)
             throws SQLException {
         MySqlCreateTableStatement createStmt = (MySqlCreateTableStatement) stmt;
+        rrs.setDdlType(DDLInfo.DDLType.CREATE_TABLE);
         //disable create table select from
         if (createStmt.getSelect() != null) {
             String msg = "create table from other table not supported :" + stmt;
@@ -66,7 +68,7 @@ public class DruidCreateTableParser extends DefaultDruidParser {
         }
 
         rrs.setStatement(statement);
-        String noShardingNode = RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable());
+        String noShardingNode = RouterUtil.isNoShardingDDL(schemaInfo.getSchemaConfig(), schemaInfo.getTable());
         if (noShardingNode != null) {
             RouterUtil.routeToSingleDDLNode(schemaInfo, rrs, noShardingNode);
             return schemaInfo.getSchemaConfig();

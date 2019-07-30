@@ -24,7 +24,7 @@ public class SavePointHandler extends MultiNodeHandler {
         SAVE, ROLLBACK, RELEASE
     }
     private byte[] sendData = OkPacket.OK;
-    private SavePoint savepoints = null;
+    private SavePoint savepoints = new SavePoint("tAiLs");
 
     public SavePointHandler(NonBlockingSession session) {
         super(session);
@@ -51,6 +51,7 @@ public class SavePointHandler extends MultiNodeHandler {
         SavePoint newSp = new SavePoint(spName);
 
         if (savepoints == null || session.getTargetCount() <= 0) {
+            newSp.setRouteNodes(session.getTargetKeys());
             addSavePoint(newSp);
             session.getSource().write(OkPacket.OK);
             return;
@@ -88,13 +89,14 @@ public class SavePointHandler extends MultiNodeHandler {
 
     private void rollbackTo(String spName) {
         SavePoint sp = findSavePoint(spName);
-        if (sp == null) {
+        if (sp == null || sp.getPrev() == null) {
             session.getSource().writeErrMessage(ER_SP_DOES_NOT_EXIST, "SAVEPOINT " + spName + " does not exist");
             return;
         }
 
         if (session.getTargetCount() <= 0) {
-            savepoints = sp;
+            savepoints = sp.getPrev();
+            sp.setPrev(null);
             session.getSource().write(OkPacket.OK);
             return;
         }
@@ -107,10 +109,11 @@ public class SavePointHandler extends MultiNodeHandler {
             lock.unlock();
         }
 
+        Set lastNodes = sp.getPrev().getRouteNodes();
         for (RouteResultsetNode rrn : session.getTargetKeys()) {
             final BackendConnection conn = session.getTarget(rrn);
             conn.setResponseHandler(this);
-            if (!sp.getRouteNodes().contains(rrn)) {
+            if (!lastNodes.contains(rrn)) {
                 // rollback connection
                 ((MySQLConnection) conn).execCmd("rollback");
             } else {
@@ -118,46 +121,44 @@ public class SavePointHandler extends MultiNodeHandler {
                 ((MySQLConnection) conn).execCmd("rollback to " + spName);
             }
         }
-        savepoints = sp;
+        savepoints = sp.getPrev();
+        sp.setPrev(null);
     }
 
     private void release(String spName) {
         SavePoint sp = findSavePoint(spName);
-        if (sp == null) {
+        if (sp == null || sp.getPrev() == null) {
             session.getSource().writeErrMessage(ER_SP_DOES_NOT_EXIST, "SAVEPOINT " + spName + " does not exist");
             return;
         }
+        sp = sp.getPrev();
         if (session.getTargetCount() > 0) {
             savepoints = sp.getPrev();
+            sp.setPrev(null);
         }
         session.getSource().write(OkPacket.OK);
     }
 
-    // find named savepoint
+    // find savepoint after named savepoint
     private SavePoint findSavePoint(String name) {
+        SavePoint latter = null;
         SavePoint sp = savepoints;
         while (sp != null) {
             if (sp.getName().equals(name)) {
                 break;
             }
-            sp = sp.getPrev();
-        }
-        return sp;
-    }
-
-    private void addSavePoint(SavePoint newSp) {
-        SavePoint latter = null;
-        SavePoint sp = savepoints;
-        while (sp != null) {
-            if (sp.getName().equals(newSp.getName())) {
-                break;
-            }
             latter = sp;
             sp = sp.getPrev();
         }
+        return latter;
+    }
+
+    private void addSavePoint(SavePoint newSp) {
+        SavePoint sp = findSavePoint(newSp.getName());
         // removed named savepoint
-        if (sp != null) {
-            latter.setPrev(sp.getPrev());
+        if (sp != null && sp.getPrev() != null) {
+            sp.getPrev().setPrev(null);
+            sp.setPrev(sp.getPrev().getPrev());
         }
         newSp.setPrev(savepoints);
         savepoints = newSp;
@@ -175,7 +176,7 @@ public class SavePointHandler extends MultiNodeHandler {
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);
         String errMsg = new String(errPacket.getMessage());
-        LOGGER.warn("get error package, content is:", errMsg);
+        LOGGER.warn("get error package, content is:" + errMsg);
         this.setFail(errMsg);
         if (decrementCountBy(1)) {
             cleanAndFeedback();

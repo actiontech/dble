@@ -19,12 +19,12 @@ import static com.actiontech.dble.config.ErrorCode.ER_SP_DOES_NOT_EXIST;
 public class SavePointHandler extends MultiNodeHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SavePointHandler.class);
-
+    private static final SavePoint TAIL = new SavePoint(null);
     public enum Type {
         SAVE, ROLLBACK, RELEASE
     }
     private byte[] sendData = OkPacket.OK;
-    private SavePoint savepoints = new SavePoint("tAiLs");
+    private SavePoint savepoints = TAIL;
 
     public SavePointHandler(NonBlockingSession session) {
         super(session);
@@ -144,7 +144,7 @@ public class SavePointHandler extends MultiNodeHandler {
         SavePoint latter = null;
         SavePoint sp = savepoints;
         while (sp != null) {
-            if (sp.getName().equals(name)) {
+            if (name.equals(sp.getName())) {
                 break;
             }
             latter = sp;
@@ -221,7 +221,8 @@ public class SavePointHandler extends MultiNodeHandler {
 
     @Override
     public void clearResources() {
-        savepoints = null;
+        TAIL.setPrev(null);
+        savepoints = TAIL;
     }
 
     @Override

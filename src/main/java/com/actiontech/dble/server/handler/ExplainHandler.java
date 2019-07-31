@@ -118,6 +118,7 @@ public final class ExplainHandler {
             case ServerParse.MYSQL_CMD_COMMENT:
             case ServerParse.HELP:
             case ServerParse.LOAD_DATA_INFILE_SQL:
+            case ServerParse.FLUSH:
                 return true;
             default:
                 return false;

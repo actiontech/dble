@@ -114,7 +114,6 @@ public class ServerConfig {
     }
 
     public SystemConfig getSystem() {
-        waitIfChanging();
         return system;
     }
 

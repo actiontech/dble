@@ -47,7 +47,7 @@
         <!--<property name="costSamplePercent">1</property>-->
 
         <!--connection -->
-        <!--<property name="charset">utf8</property>-->
+        <!--<property name="charset">utf8mb4</property>-->
         <!--<property name="maxPacketSize">16777216</property>-->
         <!--<property name="txIsolation">3</property>-->
 

@@ -9,4 +9,6 @@ public interface ProblemReporter {
     void error(String problem);
 
     void warn(String problem);
+
+    void notice(String problem);
 }

@@ -5,6 +5,9 @@
 */
 package com.actiontech.dble.config;
 
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
+
 /**
  * @author
  */
@@ -12,12 +15,13 @@ public abstract class Versions {
 
     public static final byte PROTOCOL_VERSION = 10;
 
-    private static byte[] serverVersion = "5.6.29-dble-9.9.9.9-884fc6b612d64cc22101226536f8fd1d24580857-20190221182143".getBytes();
+    private static byte[] serverVersion = "5.6.29-dble-9.9.9.9-6da82267a951206cb36528f2fa92494f3d508a9d-20190802172514".getBytes();
     public static final byte[] VERSION_COMMENT = "dble Server (ActionTech)".getBytes();
     public static final String ANNOTATION_NAME = "dble:";
     public static final String ROOT_PREFIX = "dble";
     public static final String DOMAIN = "http://dble.cloud/";
-    public static final String CONFIG_VERSION = "9.9.9.9";
+    public static final String CONFIG_VERSION = "1.0";
+    private static final Pattern VERSION_PATTERN = Pattern.compile("^(\\d{1,})\\.(\\d{1,})$", Pattern.CASE_INSENSITIVE);
 
     public static void setServerVersion(String version) {
         byte[] mysqlVersionPart = version.getBytes();
@@ -33,6 +37,18 @@ public abstract class Versions {
         System.arraycopy(serverVersion, startIndex, newVersion, mysqlVersionPart.length,
                 serverVersion.length - startIndex);
         serverVersion = newVersion;
+    }
+
+    public static boolean checkVersion(String version) {
+        Matcher matcher = VERSION_PATTERN.matcher(version);
+        if (matcher.find()) {
+            Matcher vmatcher = VERSION_PATTERN.matcher(CONFIG_VERSION);
+            vmatcher.find();
+            if (matcher.group(1).equals(vmatcher.group(1))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static byte[] getServerVersion() {

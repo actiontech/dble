@@ -543,5 +543,5 @@ public final class ErrorCode {
     public static final int ER_USER_READ_ONLY = 1495;
     public static final int CREATE_VIEW_ERROR = 1999;
     public static final int ER_CANT_EXECUTE_IN_READ_ONLY_TRANSACTION = 1792;
-
+    public static final int ER_RELOAD_INTERRUPUTED = 1555;
 }

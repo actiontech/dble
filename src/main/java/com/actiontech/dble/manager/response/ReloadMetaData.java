@@ -48,6 +48,7 @@ public final class ReloadMetaData {
 
         String msg = "data host has no write_host";
         boolean isOK = true;
+        boolean interrupt = false;
         final ReentrantLock lock = DbleServer.getInstance().getTmManager().getMetaLock();
         lock.lock();
         try {
@@ -69,6 +70,7 @@ public final class ReloadMetaData {
                         if (DbleServer.getInstance().reloadMetaData(DbleServer.getInstance().getConfig(), filter)) {
                             msg = "reload metadata success";
                         } else {
+                            interrupt = true;
                             isOK = false;
                             msg = "reload metadata interrupted by manager command";
                         }
@@ -94,7 +96,7 @@ public final class ReloadMetaData {
             ok.write(c);
         } else {
             LOGGER.warn(msg);
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, msg);
+            c.writeErrMessage(interrupt ? ErrorCode.ER_RELOAD_INTERRUPUTED : ErrorCode.ER_UNKNOWN_ERROR, msg);
         }
     }
 

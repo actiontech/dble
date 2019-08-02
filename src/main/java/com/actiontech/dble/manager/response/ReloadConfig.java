@@ -143,7 +143,7 @@ public final class ReloadConfig {
                     if (load(loadAll, loadAllMode)) {
                         writeOKResult(c);
                     } else {
-                        writeErrorResult(c, "Reload interruputed by others,metadata should be reload");
+                        writeSpecialError(c, "Reload interruputed by others,metadata should be reload");
                     }
                 } catch (Exception e) {
                     LOGGER.info("reload error", e);
@@ -290,7 +290,17 @@ public final class ReloadConfig {
     private static void writeErrorResultForCluster(ManagerConnection c, String errorMsg) {
         String sb = "Reload config failed partially. The node(s) failed because of:[" + errorMsg + "]";
         LOGGER.warn(sb);
-        c.writeErrMessage(ErrorCode.ER_CLUSTER_RELOAD, sb);
+        if (errorMsg.indexOf("interrupt by command") != -1) {
+            c.writeErrMessage(ErrorCode.ER_RELOAD_INTERRUPUTED, sb);
+        } else {
+            c.writeErrMessage(ErrorCode.ER_CLUSTER_RELOAD, sb);
+        }
+    }
+
+    private static void writeSpecialError(ManagerConnection c, String errorMsg) {
+        String sb = "Reload config failure.The reason is " + errorMsg;
+        LOGGER.warn(sb);
+        c.writeErrMessage(ErrorCode.ER_RELOAD_INTERRUPUTED, sb);
     }
 
     private static void writeErrorResult(ManagerConnection c, String errorMsg) {

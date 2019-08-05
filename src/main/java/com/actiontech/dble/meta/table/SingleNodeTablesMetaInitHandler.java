@@ -8,7 +8,7 @@ package com.actiontech.dble.meta.table;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
-import com.actiontech.dble.meta.ReloadLogUtil;
+import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.MultiSQLJob;
@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 public class SingleNodeTablesMetaInitHandler {
-    protected final ReloadLogUtil logger;
+    protected final ReloadLogHelper logger;
     private static final String[] MYSQL_SHOW_CREATE_TABLE_COLS = new String[]{
             "Table",
             "Create Table"};
@@ -32,7 +32,7 @@ public class SingleNodeTablesMetaInitHandler {
         this.multiTablesMetaHandler = multiTablesMetaHandler;
         this.tables = tables;
         this.dataNode = dataNode;
-        this.logger = new ReloadLogUtil(isReload);
+        this.logger = new ReloadLogHelper(isReload);
     }
 
     public void execute() {

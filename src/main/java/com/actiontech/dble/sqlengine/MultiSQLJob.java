@@ -11,7 +11,7 @@ import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
-import com.actiontech.dble.meta.ReloadLogUtil;
+import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.parser.ServerParse;
@@ -25,7 +25,7 @@ import java.util.List;
  */
 public class MultiSQLJob implements ResponseHandler, Runnable {
 
-    public final ReloadLogUtil logger;
+    public final ReloadLogHelper logger;
 
     private final String sql;
     private final String dataNode;
@@ -38,7 +38,7 @@ public class MultiSQLJob implements ResponseHandler, Runnable {
 
     public MultiSQLJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDatasource ds, boolean isReload) {
         super();
-        this.logger = new ReloadLogUtil(isReload);
+        this.logger = new ReloadLogHelper(isReload);
         this.sql = sql;
         this.jobHandler = jobHandler;
         this.ds = ds;
@@ -54,7 +54,7 @@ public class MultiSQLJob implements ResponseHandler, Runnable {
         this.dataNode = dataNode;
         this.schema = null;
         this.isMustWriteNode = isMustWriteNode;
-        this.logger = new ReloadLogUtil(isReload);
+        this.logger = new ReloadLogHelper(isReload);
     }
 
     public void run() {

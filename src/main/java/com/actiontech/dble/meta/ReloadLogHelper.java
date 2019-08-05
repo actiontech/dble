@@ -8,12 +8,12 @@ import java.util.Set;
 /**
  * Created by szf on 2019/7/16.
  */
-public class ReloadLogUtil {
+public class ReloadLogHelper {
     private static final Logger LOGGER = LoggerFactory.getLogger("META-REACQUIRE");
     public final ReloadStatus reload;
     private final boolean isReload;
 
-    public ReloadLogUtil(boolean isReload) {
+    public ReloadLogHelper(boolean isReload) {
         this.isReload = isReload;
         if (isReload) {
             reload = ReloadManager.getReloadInstance().getStatus();

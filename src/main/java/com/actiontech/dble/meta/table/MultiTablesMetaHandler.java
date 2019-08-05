@@ -10,7 +10,7 @@ import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.meta.ReloadLogUtil;
+import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.util.CollectionUtil;
 
@@ -23,7 +23,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 
 public abstract class MultiTablesMetaHandler {
-    protected final ReloadLogUtil logger;
+    protected final ReloadLogHelper logger;
     private AtomicInteger shardTableDNCnt;
     private AtomicInteger singleTableDNCnt;
     private AtomicBoolean countDownFlag = new AtomicBoolean(false);
@@ -41,7 +41,7 @@ public abstract class MultiTablesMetaHandler {
         this.schema = schemaConfig.getName();
         this.selfNode = selfNode;
         this.singleTableDNCnt = new AtomicInteger(0);
-        logger = new ReloadLogUtil(isReload);
+        logger = new ReloadLogHelper(isReload);
     }
 
 

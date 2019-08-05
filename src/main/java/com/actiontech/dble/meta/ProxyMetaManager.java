@@ -79,7 +79,7 @@ public class ProxyMetaManager {
         this.repository = orgin.repository;
         this.version = orgin.version;
         for (Map.Entry<String, SchemaMeta> entry : orgin.catalogs.entrySet()) {
-            catalogs.put(entry.getKey(), entry.getValue().deepCopy());
+            catalogs.put(entry.getKey(), entry.getValue().metaCopy());
         }
     }
 

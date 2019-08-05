@@ -12,7 +12,7 @@ import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
-import com.actiontech.dble.meta.ReloadLogUtil;
+import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.MultiSQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
@@ -24,7 +24,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class AbstractTablesMetaHandler {
-    protected final ReloadLogUtil logger;
+    protected final ReloadLogHelper logger;
     private static final String[] MYSQL_SHOW_CREATE_TABLE_COLS = new String[]{
             "Table",
             "Create Table"};
@@ -40,7 +40,7 @@ public abstract class AbstractTablesMetaHandler {
         this.dataNodeMap = dataNodeMap;
         this.schema = schema;
         this.selfNode = selfNode;
-        this.logger = new ReloadLogUtil(isReload);
+        this.logger = new ReloadLogHelper(isReload);
     }
 
     public void execute() {

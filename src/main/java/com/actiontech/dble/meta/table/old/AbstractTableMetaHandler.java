@@ -13,7 +13,7 @@ import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.meta.ReloadLogUtil;
+import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.meta.table.MetaHelper;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class AbstractTableMetaHandler {
-    protected final ReloadLogUtil logger;
+    protected final ReloadLogHelper logger;
     private static final String[] MYSQL_SHOW_CREATE_TABLE_COLS = new String[]{
             "Table",
             "Create Table"};
@@ -51,7 +51,7 @@ public abstract class AbstractTableMetaHandler {
         this.selfNode = selfNode;
         this.tableName = tableName;
         this.dataNodeTableStructureSQLMap = new ConcurrentHashMap<>();
-        this.logger = new ReloadLogUtil(isReload);
+        this.logger = new ReloadLogHelper(isReload);
     }
 
     public void execute() {

@@ -86,7 +86,7 @@ public class SchemaMeta {
     }
 
 
-    public SchemaMeta deepCopy() {
+    public SchemaMeta metaCopy() {
         SchemaMeta newMeta = new SchemaMeta();
         for (Map.Entry<String, StructureMeta.TableMeta> entry : this.tableMetas.entrySet()) {
             newMeta.tableMetas.put(entry.getKey(), entry.getValue());

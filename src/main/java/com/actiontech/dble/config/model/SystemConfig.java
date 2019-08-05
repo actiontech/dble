@@ -62,7 +62,7 @@ public final class SystemConfig {
     private int maxCostStatSize = 100;
     private int costSamplePercent = 1;
     //connection
-    private String charset = "utf8";
+    private String charset = "utf8mb4";
     private int maxPacketSize = 16 * 1024 * 1024;
     private int txIsolation = Isolations.REPEATABLE_READ;
 

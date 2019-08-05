@@ -273,6 +273,9 @@ public class FileSystemRepository implements Repository {
             if (',' == sb.charAt(sb.length() - 1)) {
                 sb.setCharAt(sb.length() - 1, ']');
             }
+            if (schemaSet.size() == 0) {
+                sb.append("]");
+            }
             sb.append("},");
         }
         if (',' == sb.charAt(sb.length() - 1)) {

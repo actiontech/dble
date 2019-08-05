@@ -17,7 +17,7 @@
     <system>
         <!-- base config -->
         <!--<property name="bindIp">0.0.0.0</property>-->
-        <!-- property name="serverPort">8066</property> -->
+        <!--<property name="serverPort">8066</property> -->
         <!--<property name="managerPort">9066</property> -->
         <!--<property name="maxCon">0</property> -->
         <!--<property name="processors">4</property>-->
@@ -47,7 +47,7 @@
         <!--<property name="costSamplePercent">1</property>-->
 
         <!--connection -->
-        <!--<property name="charset">utf8</property>-->
+        <!--<property name="charset">utf8mb4</property>-->
         <!--<property name="maxPacketSize">16777216</property>-->
         <!--<property name="txIsolation">3</property>-->
 

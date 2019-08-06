@@ -91,14 +91,19 @@ public class XMLSchemaLoader implements SchemaLoader {
             dtd = ResourceUtil.getResourceAsStream(dtdFile);
             xml = ResourceUtil.getResourceAsStream(xmlFile);
             Element root = ConfigUtil.getDocument(dtd, xml).getDocumentElement();
-            String version = "2.18.12.0 or earlier";
+            String version = null;
             if (root.getAttributes().getNamedItem("version") != null) {
                 version = root.getAttributes().getNamedItem("version").getNodeValue();
             }
-            if (!version.equals(Versions.CONFIG_VERSION)) {
-                String message = "The server-version is " + Versions.CONFIG_VERSION + ",but the schema.xml version is " + version + ".There may be some incompatible config between two versions,please check it";
+            if (version != null && !Versions.CONFIG_VERSION.equals(version)) {
                 if (this.problemReporter != null) {
-                    this.problemReporter.warn(message);
+                    if (Versions.checkVersion(version)) {
+                        String message = "The server-version is " + Versions.CONFIG_VERSION + ",but the schema.xml version is " + version + ".There may be some incompatible config between two versions,please check it";
+                        this.problemReporter.notice(message);
+                    } else {
+                        String message = "The server-version is " + Versions.CONFIG_VERSION + ",but the schema.xml version is " + version + ".There must be some incompatible config between two versions,please check it";
+                        this.problemReporter.warn(message);
+                    }
                 }
             }
             loadDataHosts(root);

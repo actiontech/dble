@@ -111,10 +111,10 @@ public final class SelectVariables {
     private static final Map<String, String> VARIABLES = new HashMap<>();
 
     static {
-        VARIABLES.put("@@character_set_client", "utf8");
-        VARIABLES.put("@@character_set_connection", "utf8");
-        VARIABLES.put("@@character_set_results", "utf8");
-        VARIABLES.put("@@character_set_server", "utf8");
+        VARIABLES.put("@@character_set_client", "utf8mb4");
+        VARIABLES.put("@@character_set_connection", "utf8mb4");
+        VARIABLES.put("@@character_set_results", "utf8mb4");
+        VARIABLES.put("@@character_set_server", "utf8mb4");
         VARIABLES.put("@@init_connect", "");
         VARIABLES.put("@@interactive_timeout", "172800");
         VARIABLES.put("@@license", "GPL");
@@ -131,10 +131,10 @@ public final class SelectVariables {
         VARIABLES.put("@@wait_timeout", "172800");
         VARIABLES.put("@@session.auto_increment_increment", "1");
 
-        VARIABLES.put("character_set_client", "utf8");
-        VARIABLES.put("character_set_connection", "utf8");
-        VARIABLES.put("character_set_results", "utf8");
-        VARIABLES.put("character_set_server", "utf8");
+        VARIABLES.put("character_set_client", "utf8mb4");
+        VARIABLES.put("character_set_connection", "utf8mb4");
+        VARIABLES.put("character_set_results", "utf8mb4");
+        VARIABLES.put("character_set_server", "utf8mb4");
         VARIABLES.put("init_connect", "");
         VARIABLES.put("interactive_timeout", "172800");
         VARIABLES.put("license", "GPL");

@@ -278,7 +278,7 @@ public final class ShowSysParam {
             "Whether the cost time of query can be track by Btrace.The default value is 0",
             "The max cost total percentage.The default value is 100",
             "The percentage of cost sample.The default value is 1",
-            "The initially charset of connection. The default is UTF8",
+            "The initially charset of connection. The default is utf8mb4",
             "The maximum size of one packet. The default is 16MB.",
             "The initially isolation level of the front end connection. The default is REPEATABLE_READ",
             "Whether the consistency tableStructure check is enabled.The default value is 0",

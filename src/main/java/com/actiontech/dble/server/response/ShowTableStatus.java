@@ -135,7 +135,7 @@ public final class ShowTableStatus {
             row.add(StringUtil.encode("1970-01-01 00:00:00", c.getCharset().getResults()));
             row.add(StringUtil.encode("1970-01-01 00:00:00", c.getCharset().getResults()));
             row.add(StringUtil.encode("1970-01-01 00:00:00", c.getCharset().getResults()));
-            row.add(StringUtil.encode("utf8_general_ci", c.getCharset().getResults()));
+            row.add(StringUtil.encode("utf8mb4_general_ci", c.getCharset().getResults()));
             row.add(StringUtil.encode("", c.getCharset().getResults()));
             row.add(StringUtil.encode("", c.getCharset().getResults()));
             row.add(StringUtil.encode("", c.getCharset().getResults()));

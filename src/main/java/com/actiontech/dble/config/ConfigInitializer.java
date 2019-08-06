@@ -84,6 +84,12 @@ public class ConfigInitializer implements ProblemReporter {
         throw new ConfigException(problem);
     }
 
+    @Override
+    public void notice(String problem) {
+        this.errorInfos.add(new ErrorInfo("Xml", "NOTICE", problem));
+        LOGGER.info(problem);
+    }
+
     private void checkWriteHost() {
         for (Map.Entry<String, PhysicalDBPool> pool : this.dataHosts.entrySet()) {
             PhysicalDatasource[] writeSource = pool.getValue().getSources();

@@ -5,6 +5,8 @@
 */
 package com.actiontech.dble.config;
 
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 /**
  * @author
  */
@@ -18,6 +20,7 @@ public abstract class Versions {
     public static final String ROOT_PREFIX = "@root_prefix@";
     public static final String DOMAIN = "@domain@";
     public static final String CONFIG_VERSION = "@config_version@";
+    private static final Pattern VERSION_PATTERN = Pattern.compile("^(\\d{1,})\\.(\\d{1,})$", Pattern.CASE_INSENSITIVE);
 
     public static void setServerVersion(String version) {
         byte[] mysqlVersionPart = version.getBytes();
@@ -33,6 +36,18 @@ public abstract class Versions {
         System.arraycopy(serverVersion, startIndex, newVersion, mysqlVersionPart.length,
                 serverVersion.length - startIndex);
         serverVersion = newVersion;
+    }
+
+    public static boolean checkVersion(String version) {
+        Matcher matcher = VERSION_PATTERN.matcher(version);
+        if (matcher.find()) {
+            Matcher vmatcher = VERSION_PATTERN.matcher(CONFIG_VERSION);
+            vmatcher.find();
+            if (matcher.group(1).equals(vmatcher.group(1))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static byte[] getServerVersion() {

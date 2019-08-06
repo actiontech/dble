@@ -24,7 +24,6 @@ public final class ManagerParseReload {
     public static final int SLOW_QUERY_TIME = 9;
     public static final int SLOW_QUERY_FLUSH_PERIOD = 10;
     public static final int SLOW_QUERY_FLUSH_SIZE = 11;
-    public static final int RELEASE = 12;
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -60,9 +59,6 @@ public final class ManagerParseReload {
                 case 'Q':
                 case 'q':
                     return reload2QCheck(stmt, offset);
-                case 'R':
-                case 'r':
-                    return reload2RCheck(stmt, offset);
                 case 'M':
                 case 'm':
                     return reload2MCheck(stmt, offset);
@@ -125,30 +121,6 @@ public final class ManagerParseReload {
         return OTHER;
     }
 
-
-    // RELOAD @@RELEASE
-    private static int reload2RCheck(String stmt, int offset) {
-        if (stmt.length() > offset + 6) {
-            char c1 = stmt.charAt(++offset);
-            char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-            char c4 = stmt.charAt(++offset);
-            char c5 = stmt.charAt(++offset);
-            char c6 = stmt.charAt(++offset);
-            if ((c1 == 'E' || c1 == 'e') &&
-                    (c2 == 'L' || c2 == 'l') &&
-                    (c3 == 'E' || c3 == 'e') &&
-                    (c4 == 'A' || c4 == 'a') &&
-                    (c5 == 'S' || c5 == 's') &&
-                    (c6 == 'E' || c6 == 'e')) {
-                if (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset)) {
-                    return RELEASE;
-                }
-                return OTHER;
-            }
-        }
-        return OTHER;
-    }
 
     // RELOAD @@S
     private static int reload2SCheck(String stmt, int offset) {

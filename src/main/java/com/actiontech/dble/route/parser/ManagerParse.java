@@ -37,6 +37,7 @@ public final class ManagerParse {
     public static final int DISABLE = 19;
     public static final int KILL_DDL_LOCK = 20;
     public static final int KILL_XA_SESSION = 21;
+    public static final int RELEASE_RELOAD_METADATA = 22;
 
     public static int parse(String stmt) {
         for (int i = 0; i < stmt.length(); i++) {
@@ -296,9 +297,89 @@ public final class ManagerParse {
                     return resume(stmt, offset);
                 case 'L':
                 case 'l':
-                    return reload(stmt, offset);
+                    return relCheck(stmt, offset);
                 default:
                     return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int relCheck(String stmt, int offset) {
+        if (stmt.length() > ++offset) {
+            switch (stmt.charAt(offset)) {
+                case 'O':
+                case 'o':
+                    return reload(stmt, offset);
+                case 'E':
+                case 'e':
+                    return release(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    //RELEASE
+    private static int release(String stmt, int offset) {
+        if (stmt.length() > offset + 5) {
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            if ((c2 == 'A' || c2 == 'a') &&
+                    (c3 == 'S' || c3 == 's') && (c4 == 'E' || c4 == 'e') &&
+                    (c5 == ' ' || c5 == '\t' || c5 == '\r' || c5 == '\n')) {
+                while (true) {
+                    switch (stmt.charAt(++offset)) {
+                        case ' ':
+                        case '\t':
+                        case '\r':
+                        case '\n':
+                            continue;
+                        case '/':
+                        case '#':
+                            offset = ParseUtil.comment(stmt, offset);
+                            continue;
+                        case '@':
+                            char c11 = stmt.charAt(++offset);
+                            char c12 = stmt.charAt(++offset);
+                            char c13 = stmt.charAt(++offset);
+                            char c14 = stmt.charAt(++offset);
+                            char c15 = stmt.charAt(++offset);
+                            char c16 = stmt.charAt(++offset);
+                            char c17 = stmt.charAt(++offset);
+                            char c18 = stmt.charAt(++offset);
+                            char c19 = stmt.charAt(++offset);
+                            char c1a = stmt.charAt(++offset);
+                            char c1b = stmt.charAt(++offset);
+                            char c1c = stmt.charAt(++offset);
+                            char c1d = stmt.charAt(++offset);
+                            char c1e = stmt.charAt(++offset);
+                            char c1f = stmt.charAt(++offset);
+                            char c1g = stmt.charAt(++offset);
+                            if (c11 == '@' && (c12 == 'R' || c12 == 'r') &&
+                                    (c13 == 'E' || c13 == 'e') &&
+                                    (c14 == 'L' || c14 == 'l') &&
+                                    (c15 == 'O' || c15 == 'o') &&
+                                    (c16 == 'A' || c16 == 'a') &&
+                                    (c17 == 'D' || c17 == 'd') && c18 == '_' &&
+                                    (c19 == 'M' || c19 == 'm') &&
+                                    (c1a == 'E' || c1a == 'e') &&
+                                    (c1b == 'T' || c1b == 't') &&
+                                    (c1c == 'A' || c1c == 'a') &&
+                                    (c1d == 'D' || c1d == 'd') &&
+                                    (c1e == 'A' || c1e == 'a') &&
+                                    (c1f == 'T' || c1f == 't') &&
+                                    (c1g == 'A' || c1g == 'a') &&
+                                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
+                                return RELEASE_RELOAD_METADATA;
+                            }
+                        default:
+                            return OTHER;
+                    }
+                }
             }
         }
         return OTHER;
@@ -322,13 +403,11 @@ public final class ManagerParse {
 
     // RELOAD' '
     private static int reload(String stmt, int offset) {
-        if (stmt.length() > offset + 4) {
-            char c2 = stmt.charAt(++offset);
+        if (stmt.length() > offset + 3) {
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
-            if ((c2 == 'O' || c2 == 'o') &&
-                    (c3 == 'A' || c3 == 'a') && (c4 == 'D' || c4 == 'd') &&
+            if ((c3 == 'A' || c3 == 'a') && (c4 == 'D' || c4 == 'd') &&
                     (c5 == ' ' || c5 == '\t' || c5 == '\r' || c5 == '\n')) {
                 return (offset << 8) | RELOAD;
             }

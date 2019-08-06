@@ -10,12 +10,11 @@ import org.slf4j.LoggerFactory;
 /**
  * Created by szf on 2019/7/16.
  */
-public final class ReloadRelease {
-    private ReloadRelease() {
-
+public final class ReleaseReloadMetadata {
+    private ReleaseReloadMetadata() {
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ReloadRelease.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReleaseReloadMetadata.class);
 
     public static void execute(ManagerConnection c) {
         LOGGER.info("Command reload@@release received");

@@ -49,9 +49,6 @@ public final class ReloadHandler {
                 String whereCondition = stmt.substring(rs >>> SHIFT).trim();
                 ReloadMetaData.execute(c, whereCondition);
                 break;
-            case ManagerParseReload.RELEASE:
-                ReloadRelease.execute(c);
-                break;
             default:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
         }

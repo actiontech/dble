@@ -115,6 +115,15 @@ public class DruidSelectParser extends DefaultDruidParser {
 
                 String noShardingNode = RouterUtil.isNoSharding(schema, schemaInfo.getTable());
                 if (noShardingNode != null) {
+                    boolean isNeedAddLimit = isNeedAddLimit(schema, rrs, mysqlSelectQuery, getAllConditions());
+                    if (isNeedAddLimit) {
+                        int limitSize = schema.getDefaultMaxLimit();
+                        SQLLimit limit = new SQLLimit();
+                        limit.setRowCount(new SQLIntegerExpr(limitSize));
+                        mysqlSelectQuery.setLimit(limit);
+                        rrs.setLimitSize(limitSize);
+                        rrs.setStatement(getSql(rrs, stmt, isNeedAddLimit, schemaName));
+                    }
                     RouterUtil.routeToSingleNode(rrs, noShardingNode);
                     return schema;
                 }

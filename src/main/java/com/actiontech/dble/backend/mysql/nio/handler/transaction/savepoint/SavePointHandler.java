@@ -19,18 +19,20 @@ import static com.actiontech.dble.config.ErrorCode.ER_SP_DOES_NOT_EXIST;
 public class SavePointHandler extends MultiNodeHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SavePointHandler.class);
-    private static final SavePoint TAIL = new SavePoint(null);
+    private final SavePoint savepoints = new SavePoint(null);
+    private volatile SavePoint performSp = null;
+    private Type type = Type.SAVE;
     public enum Type {
         SAVE, ROLLBACK, RELEASE
     }
     private byte[] sendData = OkPacket.OK;
-    private SavePoint savepoints = TAIL;
 
     public SavePointHandler(NonBlockingSession session) {
         super(session);
     }
 
-    public void perform(String spName, Type type) {
+    public void perform(String spName, Type typ) {
+        this.type = typ;
         switch (type) {
             case SAVE:
                 save(spName);
@@ -49,9 +51,7 @@ public class SavePointHandler extends MultiNodeHandler {
 
     private void save(String spName) {
         SavePoint newSp = new SavePoint(spName);
-
-        if (savepoints == null || session.getTargetCount() <= 0) {
-            newSp.setRouteNodes(session.getTargetKeys());
+        if (session.getTargetCount() <= 0) {
             addSavePoint(newSp);
             session.getSource().write(OkPacket.OK);
             return;
@@ -65,38 +65,30 @@ public class SavePointHandler extends MultiNodeHandler {
             lock.unlock();
         }
 
-        Set<RouteResultsetNode> newNodes = null;
+        SavePoint latestSp = savepoints.getPrev();
+        if (latestSp == null || initCount > latestSp.getRouteNodes().size()) {
+            newSp.setRouteNodes(new HashSet<>(session.getTargetKeys()));
+        } else {
+            newSp.setRouteNodes(latestSp.getRouteNodes());
+        }
+
         for (RouteResultsetNode rrn : session.getTargetKeys()) {
-            if (!savepoints.getRouteNodes().contains(rrn)) {
-                if (newNodes == null) {
-                    newNodes = new HashSet<>(session.getTargetKeys());
-                }
-                newNodes.add(rrn);
-            }
             final BackendConnection conn = session.getTarget(rrn);
             conn.setResponseHandler(this);
             ((MySQLConnection) conn).execCmd("savepoint " + spName);
         }
-
-        if (newNodes != null) {
-            newSp.setRouteNodes(newNodes);
-            addSavePoint(newSp);
-        } else {
-            newSp.setRouteNodes(savepoints.getRouteNodes());
-            addSavePoint(newSp);
-        }
+        this.performSp = newSp;
     }
 
     private void rollbackTo(String spName) {
         SavePoint sp = findSavePoint(spName);
         if (sp == null || sp.getPrev() == null) {
-            session.getSource().writeErrMessage(ER_SP_DOES_NOT_EXIST, "SAVEPOINT " + spName + " does not exist");
+            session.getSource().writeErrMessage(ER_SP_DOES_NOT_EXIST, "SAVEPOINT " + spName + " in dble does not exist");
             return;
         }
 
         if (session.getTargetCount() <= 0) {
-            savepoints = sp.getPrev();
-            sp.setPrev(null);
+            rollbackToSavepoint(sp);
             session.getSource().write(OkPacket.OK);
             return;
         }
@@ -121,19 +113,18 @@ public class SavePointHandler extends MultiNodeHandler {
                 ((MySQLConnection) conn).execCmd("rollback to " + spName);
             }
         }
-        savepoints = sp.getPrev();
-        sp.setPrev(null);
+        this.performSp = sp;
     }
 
     private void release(String spName) {
         SavePoint sp = findSavePoint(spName);
         if (sp == null || sp.getPrev() == null) {
-            session.getSource().writeErrMessage(ER_SP_DOES_NOT_EXIST, "SAVEPOINT " + spName + " does not exist");
+            session.getSource().writeErrMessage(ER_SP_DOES_NOT_EXIST, "SAVEPOINT " + spName + " in dble does not exist");
             return;
         }
         sp = sp.getPrev();
         if (session.getTargetCount() > 0) {
-            savepoints = sp.getPrev();
+            savepoints.setPrev(sp.getPrev());
             sp.setPrev(null);
         }
         session.getSource().write(OkPacket.OK);
@@ -141,8 +132,8 @@ public class SavePointHandler extends MultiNodeHandler {
 
     // find savepoint after named savepoint
     private SavePoint findSavePoint(String name) {
-        SavePoint latter = null;
-        SavePoint sp = savepoints;
+        SavePoint latter = savepoints;
+        SavePoint sp = latter.getPrev();
         while (sp != null) {
             if (name.equals(sp.getName())) {
                 break;
@@ -157,11 +148,20 @@ public class SavePointHandler extends MultiNodeHandler {
         SavePoint sp = findSavePoint(newSp.getName());
         // removed named savepoint
         if (sp != null && sp.getPrev() != null) {
+            SavePoint temp = sp.getPrev().getPrev();
+            sp.setPrev(temp);
             sp.getPrev().setPrev(null);
-            sp.setPrev(sp.getPrev().getPrev());
         }
-        newSp.setPrev(savepoints);
-        savepoints = newSp;
+        newSp.setPrev(savepoints.getPrev());
+        savepoints.setPrev(newSp);
+    }
+
+    private void rollbackToSavepoint(SavePoint rollbackTo) {
+        savepoints.setPrev(rollbackTo.getPrev());
+        // except head savepoint that name is only null
+        if (rollbackTo.getName() != null) {
+            rollbackTo.setPrev(null);
+        }
     }
 
     @Override
@@ -213,16 +213,25 @@ public class SavePointHandler extends MultiNodeHandler {
         if (this.isFail()) {
             createErrPkg(error).write(session.getSource());
         } else {
-            boolean multiStatementFlag = session.getIsMultiStatement().get();
+            switch (this.type) {
+                case SAVE:
+                    addSavePoint(performSp);
+                    break;
+                case ROLLBACK:
+                    rollbackToSavepoint(performSp);
+                    break;
+                default:
+                    LOGGER.warn("unknown savepoint perform type!");
+                    break;
+            }
             session.getSource().write(send);
-            session.multiStatementNextSql(multiStatementFlag);
+            session.multiStatementNextSql(session.getIsMultiStatement().get());
         }
     }
 
     @Override
     public void clearResources() {
-        TAIL.setPrev(null);
-        savepoints = TAIL;
+        savepoints.setPrev(null);
     }
 
     @Override

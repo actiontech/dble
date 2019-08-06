@@ -7,7 +7,7 @@ import java.util.Set;
 
 public class SavePoint {
 
-    private SavePoint prev;
+    private volatile SavePoint prev;
     private Set<RouteResultsetNode> routeNodes;
     private String name;
 

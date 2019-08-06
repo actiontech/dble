@@ -106,6 +106,9 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
             case ManagerParse.CHECK:
                 CheckHandler.handle(sql, c, rs >>> SHIFT);
                 break;
+            case ManagerParse.RELEASE_RELOAD_METADATA:
+                ReleaseReloadMetadata.execute(c);
+                break;
             default:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
         }

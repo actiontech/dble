@@ -20,7 +20,7 @@ public class MultiTablesInitMetaHandler extends MultiTablesMetaHandler {
 
 
     MultiTablesInitMetaHandler(SchemaMetaHandler schemaMetaHandler, SchemaConfig schemaConfig, Set<String> selfNode) {
-        super(schemaConfig, selfNode);
+        super(schemaConfig, selfNode, true);
         this.schemaMetaHandler = schemaMetaHandler;
         this.schema = schemaConfig.getName();
     }
@@ -41,6 +41,7 @@ public class MultiTablesInitMetaHandler extends MultiTablesMetaHandler {
             this.getTmManager().addTable(schema, tableMeta);
         }
     }
+
     @Override
     void handleMultiMetaData(Set<StructureMeta.TableMeta> tableMetas) {
         for (StructureMeta.TableMeta tableMeta : tableMetas) {

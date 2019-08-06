@@ -28,6 +28,8 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.UserConfig;
 import com.actiontech.dble.config.util.DnPropertyUtil;
 import com.actiontech.dble.manager.ManagerConnection;
+import com.actiontech.dble.meta.ReloadLogHelper;
+import com.actiontech.dble.meta.ReloadManager;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -51,6 +53,7 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static com.actiontech.dble.cluster.ClusterPathUtil.SEPARATOR;
+import static com.actiontech.dble.meta.ReloadStatus.TRIGGER_TYPE_COMMAND;
 
 /**
  * @author mycat
@@ -90,6 +93,10 @@ public final class ReloadConfig {
                 LOGGER.info("reload config: added distributeLock " + KVPathUtil.getConfChangeLockPath() + " to zk");
                 ClusterDelayProvider.delayAfterReloadLock();
                 try {
+                    if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, loadAll ? ConfStatus.Status.RELOAD_ALL : ConfStatus.Status.RELOAD)) {
+                        writeErrorResult(c, "Reload status error ,other client or cluster may in reload");
+                        return;
+                    }
                     reloadWithZookeeper(loadAll, loadAllMode, zkConn, c);
                 } finally {
                     distributeLock.release();
@@ -110,6 +117,10 @@ public final class ReloadConfig {
                 LOGGER.info("reload config: added distributeLock " + ClusterPathUtil.getConfChangeLockPath() + " to ucore");
                 ClusterDelayProvider.delayAfterReloadLock();
                 try {
+                    if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, loadAll ? ConfStatus.Status.RELOAD_ALL : ConfStatus.Status.RELOAD)) {
+                        writeErrorResult(c, "Reload status error ,other client or cluster may in reload");
+                        return;
+                    }
                     reloadWithUcore(loadAll, loadAllMode, c);
                 } finally {
                     distributeLock.release();
@@ -125,8 +136,15 @@ public final class ReloadConfig {
             lock.lock();
             try {
                 try {
-                    load(loadAll, loadAllMode);
-                    writeOKResult(c);
+                    if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, loadAll ? ConfStatus.Status.RELOAD_ALL : ConfStatus.Status.RELOAD)) {
+                        writeErrorResult(c, "Reload status error ,other client or cluster may in reload");
+                        return;
+                    }
+                    if (load(loadAll, loadAllMode)) {
+                        writeOKResult(c);
+                    } else {
+                        writeSpecialError(c, "Reload interruputed by others,metadata should be reload");
+                    }
                 } catch (Exception e) {
                     LOGGER.info("reload error", e);
                     writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
@@ -135,6 +153,8 @@ public final class ReloadConfig {
                 lock.unlock();
             }
         }
+
+        ReloadManager.reloadFinish();
     }
 
     /**
@@ -150,25 +170,29 @@ public final class ReloadConfig {
         lock.lock();
         try {
             //step 2 reload the local config file
-            load(loadAll, loadAllMode);
-            LOGGER.info("reload config: single instance(self) finished");
+            if (!load(loadAll, loadAllMode)) {
+                writeErrorResult(c, "Reload interruputed by others,config should be reload");
+                return;
+            }
+            ReloadLogHelper.info("reload config: single instance(self) finished", LOGGER);
             ClusterDelayProvider.delayAfterMasterLoad();
 
+            ReloadManager.waitingOthers();
             //step 3 if the reload with no error ,than write the config file into ucore remote
             XmltoCluster.initFileToUcore();
-            LOGGER.info("reload config: sent config file to ucore");
+            ReloadLogHelper.info("reload config: sent config file to ucore", LOGGER);
             //step 4 write the reload flag and self reload result into ucore,notify the other dble to reload
             ConfStatus status = new ConfStatus(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
                     loadAll ? ConfStatus.Status.RELOAD_ALL : ConfStatus.Status.RELOAD,
                     loadAll ? String.valueOf(loadAllMode) : null);
             ClusterHelper.setKV(ClusterPathUtil.getConfStatusPath(), status.toString());
-            LOGGER.info("reload config: sent config status to ucore");
+            ReloadLogHelper.info("reload config: sent config status to ucore", LOGGER);
             ClusterHelper.setKV(ClusterPathUtil.getSelfConfStatusPath(), ClusterPathUtil.SUCCESS);
-            LOGGER.info("reload config: sent finished status to ucore, waiting other instances");
+            ReloadLogHelper.info("reload config: sent finished status to ucore, waiting other instances", LOGGER);
             //step 5 start a loop to check if all the dble in cluster is reload finished
 
             final String errorMsg = ClusterHelper.waitingForAllTheNode(ClusterPathUtil.SUCCESS, ClusterPathUtil.getConfStatusPath() + SEPARATOR);
-            LOGGER.info("reload config: all instances finished ");
+            ReloadLogHelper.info("reload config: all instances finished ", LOGGER);
             ClusterDelayProvider.delayBeforeDeleteReloadLock();
             //step 6 delete the reload flag
             ClusterHelper.cleanPath(ClusterPathUtil.getConfStatusPath() + SEPARATOR);
@@ -191,16 +215,20 @@ public final class ReloadConfig {
         final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.lock();
         try {
-            load(loadAll, loadAllMode);
-            LOGGER.info("reload config: single instance(self) finished");
+            if (!load(loadAll, loadAllMode)) {
+                writeErrorResult(c, "Reload interruputed by others,config should be reload");
+                return;
+            }
+            ReloadLogHelper.info("reload config: single instance(self) finished", LOGGER);
             ClusterDelayProvider.delayAfterMasterLoad();
 
+            ReloadManager.waitingOthers();
             XmltoZkMain.writeConfFileToZK(loadAll, loadAllMode);
-            LOGGER.info("reload config: sent config status to ucore");
+            ReloadLogHelper.info("reload config: sent config status to ucore", LOGGER);
             //tell zk this instance has prepared
             ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
                     ConfigStatusListener.SUCCESS.getBytes(StandardCharsets.UTF_8));
-            LOGGER.info("reload config: sent finished status to ucore, waiting other instances");
+            ReloadLogHelper.info("reload config: sent finished status to ucore, waiting other instances", LOGGER);
             //check all session waiting status
             List<String> preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
             List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
@@ -210,7 +238,7 @@ public final class ReloadConfig {
                 onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
                 preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
             }
-            LOGGER.info("reload config: all instances finished ");
+            ReloadLogHelper.info("reload config: all instances finished ", LOGGER);
             ClusterDelayProvider.delayBeforeDeleteReloadLock();
             StringBuilder sbErrorInfo = new StringBuilder();
             for (String child : preparedList) {
@@ -230,7 +258,7 @@ public final class ReloadConfig {
                 writeErrorResultForCluster(c, sbErrorInfo.toString());
             }
         } catch (Exception e) {
-            LOGGER.warn("reload config failure", e);
+            ReloadLogHelper.warn("reload config failure", e, LOGGER);
             writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
         } finally {
             lock.unlock();
@@ -238,17 +266,17 @@ public final class ReloadConfig {
     }
 
 
-    private static void load(final boolean loadAll, final int loadAllMode) throws Exception {
+    private static boolean load(final boolean loadAll, final int loadAllMode) throws Exception {
         if (loadAll) {
-            reloadAll(loadAllMode);
+            return reloadAll(loadAllMode);
         } else {
-            reload();
+            return reload();
         }
     }
 
     private static void writeOKResult(ManagerConnection c) {
         if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("send ok package to client " + String.valueOf(c));
+            ReloadLogHelper.info("send ok package to client " + String.valueOf(c), LOGGER);
         }
 
         OkPacket ok = new OkPacket();
@@ -262,7 +290,17 @@ public final class ReloadConfig {
     private static void writeErrorResultForCluster(ManagerConnection c, String errorMsg) {
         String sb = "Reload config failed partially. The node(s) failed because of:[" + errorMsg + "]";
         LOGGER.warn(sb);
-        c.writeErrMessage(ErrorCode.ER_CLUSTER_RELOAD, sb);
+        if (errorMsg.indexOf("interrupt by command") != -1) {
+            c.writeErrMessage(ErrorCode.ER_RELOAD_INTERRUPUTED, sb);
+        } else {
+            c.writeErrMessage(ErrorCode.ER_CLUSTER_RELOAD, sb);
+        }
+    }
+
+    private static void writeSpecialError(ManagerConnection c, String errorMsg) {
+        String sb = "Reload config failure.The reason is " + errorMsg;
+        LOGGER.warn(sb);
+        c.writeErrMessage(ErrorCode.ER_RELOAD_INTERRUPUTED, sb);
     }
 
     private static void writeErrorResult(ManagerConnection c, String errorMsg) {
@@ -271,22 +309,22 @@ public final class ReloadConfig {
         c.writeErrMessage(ErrorCode.ER_YES, sb);
     }
 
-    public static void reloadAll(final int loadAllMode) throws Exception {
+    public static boolean reloadAll(final int loadAllMode) throws Exception {
         /*
          *  1 load new conf
          *  1.1 ConfigInitializer init adn check itself
          *  1.2 DataNode/DataHost test connection
          */
-        LOGGER.info("reload config: load all xml info start");
+        ReloadLogHelper.info("reload config: load all xml info start", LOGGER);
         ConfigInitializer loader;
         try {
             loader = new ConfigInitializer(true, false);
         } catch (Exception e) {
             throw new Exception(e);
         }
-        LOGGER.info("reload config: load all xml info end");
+        ReloadLogHelper.info("reload config: load all xml info end", LOGGER);
 
-        LOGGER.info("reload config: get variables from random alive data host start");
+        ReloadLogHelper.info("reload config: get variables from random alive data host start", LOGGER);
         SystemVariables newSystemVariables = null;
         try {
             loader.testConnection(false);
@@ -308,17 +346,17 @@ public final class ReloadConfig {
             if (!loader.isDataHostWithoutWH()) {
                 throw new Exception("Can't get variables from any data host, because all of data host can't connect to MySQL correctly");
             } else {
-                LOGGER.info("reload config: no valid data host ,keep variables as old");
+                ReloadLogHelper.info("reload config: no valid data host ,keep variables as old", LOGGER);
                 newSystemVariables = DbleServer.getInstance().getSystemVariables();
             }
         }
-        LOGGER.info("reload config: get variables from random node end");
+        ReloadLogHelper.info("reload config: get variables from random node end", LOGGER);
 
         ServerConfig serverConfig = new ServerConfig(loader);
         if (newSystemVariables.isLowerCaseTableNames()) {
-            LOGGER.info("reload config: data host's lowerCaseTableNames=1, lower the config properties start");
+            ReloadLogHelper.info("reload config: data host's lowerCaseTableNames=1, lower the config properties start", LOGGER);
             serverConfig.reviseLowerCase();
-            LOGGER.info("reload config: data host's lowerCaseTableNames=1, lower the config properties end");
+            ReloadLogHelper.info("reload config: data host's lowerCaseTableNames=1, lower the config properties end", LOGGER);
         }
         Map<String, UserConfig> newUsers = serverConfig.getUsers();
         Map<String, SchemaConfig> newSchemas = serverConfig.getSchemas();
@@ -329,9 +367,9 @@ public final class ReloadConfig {
 
         if ((loadAllMode & ManagerParseConfig.OPTS_MODE) == 0) {
             try {
-                LOGGER.info("reload config: test all data Nodes start");
+                ReloadLogHelper.info("reload config: test all data Nodes start", LOGGER);
                 loader.testConnection(false);
-                LOGGER.info("reload config: test all data Nodes end");
+                ReloadLogHelper.info("reload config: test all data Nodes end", LOGGER);
             } catch (Exception e) {
                 throw new Exception(e);
             }
@@ -354,7 +392,7 @@ public final class ReloadConfig {
         /* 2.2 init the dataSource with diff*/
 
 
-        LOGGER.info("reload config: init new data host  start");
+        ReloadLogHelper.info("reload config: init new data host  start", LOGGER);
 
         boolean mergeReload = true;
 
@@ -367,27 +405,29 @@ public final class ReloadConfig {
         } else {
             reasonMsg = initDataHostByMap(newDataHosts, newDataNodes);
         }
-        LOGGER.info("reload config: init new data host  end");
+        ReloadLogHelper.info("reload config: init new data host  end", LOGGER);
         if (reasonMsg == null) {
             /* 2.3 apply new conf */
-            LOGGER.info("reload config: apply new config start");
+            ReloadLogHelper.info("reload config: apply new config start", LOGGER);
+            boolean result;
             if (mergeReload) {
-                config.reload(newUsers, newSchemas, newDataNodes, mergedDataHosts, newErRelations, newFirewall,
+                result = config.reload(newUsers, newSchemas, newDataNodes, mergedDataHosts, newErRelations, newFirewall,
                         newSystemVariables, loader.isDataHostWithoutWH(), true, loadAllMode);
                 DbleServer.getInstance().getUserManager().initForLatest(newUsers, loader.getSystem().getMaxCon());
-                LOGGER.info("reload config: apply new config end");
+                ReloadLogHelper.info("reload config: apply new config end", LOGGER);
                 recycleOldBackendConnections(recyclHost, ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
             } else {
-                config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall,
+                result = config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall,
                         newSystemVariables, loader.isDataHostWithoutWH(), true, loadAllMode);
                 DbleServer.getInstance().getUserManager().initForLatest(newUsers, loader.getSystem().getMaxCon());
-                LOGGER.info("reload config: apply new config end");
+                ReloadLogHelper.info("reload config: apply new config end", LOGGER);
                 recycleOldBackendConnections(config.getBackupDataHosts(), ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
             }
+            return result;
 
         } else {
             // INIT FAILED
-            LOGGER.info("reload failed, clear previously created data sources ");
+            ReloadLogHelper.info("reload failed, clear previously created data sources ", LOGGER);
             for (PhysicalDBPool dbPool : newDataHosts.values()) {
                 dbPool.clearDataSources("reload config");
                 dbPool.stopHeartbeat();
@@ -432,15 +472,15 @@ public final class ReloadConfig {
                             if (mysqlCon.getPool() == ds) {
                                 if (con.isBorrowed()) {
                                     if (closeFrontCon) {
-                                        LOGGER.info("old active backend conn will be forced closed by closing front conn, conn info:" + mysqlCon);
+                                        ReloadLogHelper.info("old active backend conn will be forced closed by closing front conn, conn info:" + mysqlCon, LOGGER);
                                         findAndcloseFrontCon(con);
                                     } else {
-                                        LOGGER.info("old active backend conn will be added to old pool, conn info:" + mysqlCon);
+                                        ReloadLogHelper.info("old active backend conn will be added to old pool, conn info:" + mysqlCon, LOGGER);
                                         con.setOldTimestamp(oldTimestamp);
                                         NIOProcessor.BACKENDS_OLD.add(con);
                                     }
                                 } else {
-                                    LOGGER.info("old idle backend conn will be closed, conn info:" + mysqlCon);
+                                    ReloadLogHelper.info("old idle backend conn will be closed, conn info:" + mysqlCon, LOGGER);
                                     con.close("old idle conn for reload merge");
                                 }
                             }
@@ -465,7 +505,7 @@ public final class ReloadConfig {
     }
 
 
-    public static void reload() throws Exception {
+    public static boolean reload() throws Exception {
         /* 1 load new conf, ConfigInitializer will check itself */
         ConfigInitializer loader;
         try {
@@ -489,9 +529,10 @@ public final class ReloadConfig {
 
 
         /* 2 apply the new conf */
-        DbleServer.getInstance().getConfig().reload(users, schemas, dataNodes, dataHosts, erRelations, firewall,
+        boolean result = DbleServer.getInstance().getConfig().reload(users, schemas, dataNodes, dataHosts, erRelations, firewall,
                 DbleServer.getInstance().getSystemVariables(), loader.isDataHostWithoutWH(), false, 0);
         DbleServer.getInstance().getUserManager().initForLatest(users, loader.getSystem().getMaxCon());
+        return result;
     }
 
 
@@ -553,7 +594,7 @@ public final class ReloadConfig {
     private static String initDataHostByMap(Map<String, PhysicalDBPool> newDataHosts, Map<String, PhysicalDBNode> newDataNodes) {
         String reasonMsg = null;
         for (PhysicalDBPool dbPool : newDataHosts.values()) {
-            LOGGER.info("try to into dataSouce : " + dbPool.toString());
+            ReloadLogHelper.info("try to into dataSouce : " + dbPool.toString(), LOGGER);
             String hostName = dbPool.getHostName();
             // set schemas
             ArrayList<String> dnSchemas = new ArrayList<>(30);
@@ -568,7 +609,7 @@ public final class ReloadConfig {
             // get data host
             String dnIndex = DnPropertyUtil.loadDnIndexProps().getProperty(dbPool.getHostName(), "0");
             if (!"0".equals(dnIndex)) {
-                LOGGER.info("init data host: " + dbPool.getHostName() + " to use datasource index:" + dnIndex);
+                ReloadLogHelper.info("init data host: " + dbPool.getHostName() + " to use datasource index:" + dnIndex, LOGGER);
             }
 
             dbPool.reloadInit(Integer.parseInt(dnIndex));

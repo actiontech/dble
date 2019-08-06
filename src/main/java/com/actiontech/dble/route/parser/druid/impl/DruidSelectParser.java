@@ -315,7 +315,7 @@ public class DruidSelectParser extends DefaultDruidParser {
     }
 
     private boolean isSumFuncOrSubQuery(String schema, SQLExpr itemExpr) {
-        MySQLItemVisitor ev = new MySQLItemVisitor(schema, CharsetUtil.getCharsetDefaultIndex("utf8"), DbleServer.getInstance().getTmManager());
+        MySQLItemVisitor ev = new MySQLItemVisitor(schema, CharsetUtil.getCharsetDefaultIndex("utf8mb4"), DbleServer.getInstance().getTmManager());
         itemExpr.accept(ev);
         Item selItem = ev.getItem();
         return contaisSumFuncOrSubquery(selItem);

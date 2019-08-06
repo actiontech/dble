@@ -8,19 +8,18 @@ package com.actiontech.dble.meta.table;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.MultiSQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.sqlengine.SQLQueryResultListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
 
 public class SingleNodeTablesMetaInitHandler {
-    protected static final Logger LOGGER = LoggerFactory.getLogger(SingleNodeTablesMetaInitHandler.class);
+    protected final ReloadLogHelper logger;
     private static final String[] MYSQL_SHOW_CREATE_TABLE_COLS = new String[]{
             "Table",
             "Create Table"};
@@ -29,10 +28,11 @@ public class SingleNodeTablesMetaInitHandler {
     private MultiTablesMetaHandler multiTablesMetaHandler;
     private volatile List<String> tables;
 
-    SingleNodeTablesMetaInitHandler(MultiTablesMetaHandler multiTablesMetaHandler, List<String> tables, String dataNode) {
+    SingleNodeTablesMetaInitHandler(MultiTablesMetaHandler multiTablesMetaHandler, List<String> tables, String dataNode, boolean isReload) {
         this.multiTablesMetaHandler = multiTablesMetaHandler;
         this.tables = tables;
         this.dataNode = dataNode;
+        this.logger = new ReloadLogHelper(isReload);
     }
 
     public void execute() {
@@ -43,12 +43,14 @@ public class SingleNodeTablesMetaInitHandler {
         PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
         PhysicalDatasource ds = dn.getDbPool().getSource();
         if (ds.isAlive()) {
+            logger.info("Ds is alive execute sql in singleNode:" + dataNode);
             MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLShowCreateTablesListener());
-            MultiSQLJob sqlJob = new MultiSQLJob(sbSql.toString(), dn.getDatabase(), resultHandler, ds);
+            MultiSQLJob sqlJob = new MultiSQLJob(sbSql.toString(), dn.getDatabase(), resultHandler, ds, true);
             sqlJob.run();
         } else {
+            logger.info("Ds is not alive execute sql in singleNode:" + dataNode);
             MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLShowCreateTablesListener());
-            MultiSQLJob sqlJob = new MultiSQLJob(sbSql.toString(), dataNode, resultHandler, false);
+            MultiSQLJob sqlJob = new MultiSQLJob(sbSql.toString(), dataNode, resultHandler, false, true);
             sqlJob.run();
         }
     }
@@ -74,7 +76,7 @@ public class SingleNodeTablesMetaInitHandler {
             }
             if (tables.size() > 0) {
                 for (String table : tables) {
-                    LOGGER.warn("show create table " + table + " has no results");
+                    logger.warn("show create table " + table + " has no results");
                 }
             }
             multiTablesMetaHandler.countDownSingleTable();

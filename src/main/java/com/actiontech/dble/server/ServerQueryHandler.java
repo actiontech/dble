@@ -95,7 +95,13 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                     BeginHandler.handle(sql, c);
                     break;
                 case ServerParse.SAVEPOINT:
-                    SavepointHandler.handle(sql, c);
+                    SavepointHandler.save(sql, c);
+                    break;
+                case ServerParse.ROLLBACK_SAVEPOINT:
+                    SavepointHandler.rollback(sql, c);
+                    break;
+                case ServerParse.RELEASE_SAVEPOINT:
+                    SavepointHandler.release(sql, c);
                     break;
                 case ServerParse.KILL:
                     KillHandler.handle(sql, rs >>> 8, c);

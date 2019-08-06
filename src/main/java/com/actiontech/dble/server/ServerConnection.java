@@ -6,6 +6,7 @@
 package com.actiontech.dble.server;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
 import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
@@ -413,6 +414,18 @@ public class ServerConnection extends FrontendConnection {
         }
     }
 
+    // savepoint
+    public void performSavePoint(String spName, SavePointHandler.Type type) {
+        if (!autocommit || isTxStart()) {
+            if (type == SavePointHandler.Type.ROLLBACK && txInterrupted) {
+                txInterrupted = false;
+            }
+            session.performSavePoint(spName, type);
+        } else {
+            writeErrMessage(ErrorCode.ER_YES, "please use in transaction!");
+        }
+    }
+
     public void rollback() {
         if (txInterrupted) {
             txInterrupted = false;
@@ -427,7 +440,6 @@ public class ServerConnection extends FrontendConnection {
             writeErrMessage(ErrorCode.ER_YES, "can't lock tables in transaction in dble!");
             return;
         }
-
 
         String db = this.schema;
         SchemaConfig schema = null;

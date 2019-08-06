@@ -117,6 +117,7 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
             boolean multiStatementFlag = session.getIsMultiStatement().get();
             session.getSource().write(send);
             session.multiStatementNextSql(multiStatementFlag);
+            session.clearSavepoint();
         }
     }
 

@@ -18,6 +18,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.CommitNodesHand
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.RollbackNodesHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.NormalCommitNodesHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.NormalRollbackNodesHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XACommitNodesHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XARollbackNodesHandler;
 import com.actiontech.dble.backend.mysql.store.memalloc.MemSizeController;
@@ -81,6 +82,7 @@ public class NonBlockingSession implements Session {
     private final ConcurrentMap<RouteResultsetNode, BackendConnection> target;
     private RollbackNodesHandler rollbackHandler;
     private CommitNodesHandler commitHandler;
+    private SavePointHandler savePointHandler;
     private volatile boolean retryXa = true;
     private volatile String xaTxId;
     private volatile TxState xaState;
@@ -638,6 +640,19 @@ public class NonBlockingSession implements Session {
         checkBackupStatus();
         resetCommitNodesHandler();
         commitHandler.commit();
+    }
+
+    public void performSavePoint(String spName, SavePointHandler.Type type) {
+        if (savePointHandler == null) {
+            savePointHandler = new SavePointHandler(this);
+        }
+        savePointHandler.perform(spName, type);
+    }
+
+    public void clearSavepoint() {
+        if (savePointHandler != null) {
+            savePointHandler.clearResources();
+        }
     }
 
     public void checkBackupStatus() {

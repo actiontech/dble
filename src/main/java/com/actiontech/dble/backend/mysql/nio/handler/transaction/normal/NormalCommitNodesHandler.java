@@ -108,9 +108,10 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
             createErrPkg(error).write(session.getSource());
             setResponseTime(false);
         } else {
-            boolean multiStatementFlag = session.getIsMultiStatement().get();
             setResponseTime(true);
             session.getSource().write(send);
+            session.clearSavepoint();
+            boolean multiStatementFlag = session.getIsMultiStatement().get();
             session.multiStatementNextSql(multiStatementFlag);
         }
     }

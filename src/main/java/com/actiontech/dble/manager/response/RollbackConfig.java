@@ -20,6 +20,7 @@ import com.actiontech.dble.config.model.FirewallConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.UserConfig;
 import com.actiontech.dble.manager.ManagerConnection;
+import com.actiontech.dble.meta.ReloadManager;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
@@ -37,6 +38,7 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static com.actiontech.dble.cluster.ClusterPathUtil.SEPARATOR;
+import static com.actiontech.dble.meta.ReloadStatus.TRIGGER_TYPE_COMMAND;
 
 
 /**
@@ -109,6 +111,8 @@ public final class RollbackConfig {
         try {
             // step 2 rollback self config
             rollback();
+
+            ReloadManager.waitingOthers();
             ClusterDelayProvider.delayAfterMasterRollback();
 
             //step 3 tail the ucore & notify the other dble
@@ -148,6 +152,8 @@ public final class RollbackConfig {
         lock.lock();
         try {
             rollback();
+
+            ReloadManager.waitingOthers();
             ClusterDelayProvider.delayAfterMasterRollback();
 
             XmltoZkMain.rollbackConf();
@@ -192,7 +198,10 @@ public final class RollbackConfig {
         c.writeErrMessage(ErrorCode.ER_YES, sb);
     }
 
-    public static void rollback() throws Exception {
+    public static boolean rollback() throws Exception {
+        if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, ConfStatus.Status.ROLLBACK)) {
+            throw new Exception("Reload status error ,other client or cluster may in reload");
+        }
         ServerConfig conf = DbleServer.getInstance().getConfig();
         Map<String, PhysicalDBPool> dataHosts = conf.getBackupDataHosts();
         Map<String, UserConfig> users = conf.getBackupUsers();
@@ -224,15 +233,16 @@ public final class RollbackConfig {
             }
             final Map<String, PhysicalDBPool> cNodes = conf.getDataHosts();
             // apply
-            conf.rollback(users, schemas, dataNodes, dataHosts, erRelations, firewall, backDataHostWithoutWR);
+            boolean result = conf.rollback(users, schemas, dataNodes, dataHosts, erRelations, firewall, backDataHostWithoutWR);
             // stop old resource heartbeat
             for (PhysicalDBPool dn : cNodes.values()) {
                 dn.clearDataSources("clear old config ");
                 dn.stopHeartbeat();
             }
-
+            return result;
         } else {
             throw new Exception("there is no old version");
         }
+        return true;
     }
 }

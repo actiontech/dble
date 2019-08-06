@@ -121,6 +121,7 @@ public final class ManagerParseReload {
         return OTHER;
     }
 
+
     // RELOAD @@S
     private static int reload2SCheck(String stmt, int offset) {
         if (stmt.length() > offset + 1) {

@@ -7,7 +7,9 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
 import com.actiontech.dble.manager.ManagerConnection;
+import com.actiontech.dble.meta.ReloadManager;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.util.CollectionUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -21,6 +23,8 @@ import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static com.actiontech.dble.meta.ReloadStatus.TRIGGER_TYPE_COMMAND;
 
 public final class ReloadMetaData {
     private ReloadMetaData() {
@@ -44,6 +48,7 @@ public final class ReloadMetaData {
 
         String msg = "data host has no write_host";
         boolean isOK = true;
+        boolean interrupt = false;
         final ReentrantLock lock = DbleServer.getInstance().getTmManager().getMetaLock();
         lock.lock();
         try {
@@ -55,8 +60,23 @@ public final class ReloadMetaData {
             }
             try {
                 if (!DbleServer.getInstance().getConfig().isDataHostWithoutWR()) {
-                    DbleServer.getInstance().reloadMetaData(DbleServer.getInstance().getConfig(), filter);
-                    msg = "reload metadata success";
+                    final ReentrantLock clock = DbleServer.getInstance().getConfig().getLock();
+                    clock.lock();
+                    try {
+                        if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, ConfStatus.Status.RELOAD_META)) {
+                            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Reload status error ,other client or cluster may in reload");
+                            return;
+                        }
+                        if (DbleServer.getInstance().reloadMetaData(DbleServer.getInstance().getConfig(), filter)) {
+                            msg = "reload metadata success";
+                        } else {
+                            interrupt = true;
+                            isOK = false;
+                            msg = "reload metadata interrupted by manager command";
+                        }
+                    } finally {
+                        clock.unlock();
+                    }
                 }
             } catch (Exception e) {
                 isOK = false;
@@ -65,6 +85,7 @@ public final class ReloadMetaData {
         } finally {
             lock.unlock();
         }
+        ReloadManager.reloadFinish();
         if (isOK) {
             LOGGER.info(msg);
             OkPacket ok = new OkPacket();
@@ -75,12 +96,13 @@ public final class ReloadMetaData {
             ok.write(c);
         } else {
             LOGGER.warn(msg);
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, msg);
+            c.writeErrMessage(interrupt ? ErrorCode.ER_RELOAD_INTERRUPUTED : ErrorCode.ER_UNKNOWN_ERROR, msg);
         }
     }
 
     /**
      * get schemas and tables in where condition
+     *
      * @param whereCondition
      * @return
      */

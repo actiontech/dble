@@ -117,7 +117,7 @@ public class MySQLConsistencyChecker {
     }
 
     public void setResult(SQLQueryResult<Map<String, String>> result) {
-        // LOGGER.debug("setResult::::::::::" + JSON.toJSONString(result));
+        // logger.debug("setResult::::::::::" + JSON.toJSONString(result));
         lock.lock();
         try {
             this.jobCount.decrementAndGet();

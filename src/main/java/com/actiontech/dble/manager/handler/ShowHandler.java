@@ -98,6 +98,9 @@ public final class ShowHandler {
             case ManagerParseShow.HELP:
                 ShowHelp.execute(c);
                 break;
+            case ManagerParseShow.SHOW_RELOAD:
+                ShowReloadStatus.execute(c);
+                break;
             case ManagerParseShow.HEARTBEAT:
                 ShowHeartbeat.response(c);
                 break;

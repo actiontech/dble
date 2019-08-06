@@ -343,39 +343,7 @@ public final class ManagerParse {
                             offset = ParseUtil.comment(stmt, offset);
                             continue;
                         case '@':
-                            char c11 = stmt.charAt(++offset);
-                            char c12 = stmt.charAt(++offset);
-                            char c13 = stmt.charAt(++offset);
-                            char c14 = stmt.charAt(++offset);
-                            char c15 = stmt.charAt(++offset);
-                            char c16 = stmt.charAt(++offset);
-                            char c17 = stmt.charAt(++offset);
-                            char c18 = stmt.charAt(++offset);
-                            char c19 = stmt.charAt(++offset);
-                            char c1a = stmt.charAt(++offset);
-                            char c1b = stmt.charAt(++offset);
-                            char c1c = stmt.charAt(++offset);
-                            char c1d = stmt.charAt(++offset);
-                            char c1e = stmt.charAt(++offset);
-                            char c1f = stmt.charAt(++offset);
-                            char c1g = stmt.charAt(++offset);
-                            if (c11 == '@' && (c12 == 'R' || c12 == 'r') &&
-                                    (c13 == 'E' || c13 == 'e') &&
-                                    (c14 == 'L' || c14 == 'l') &&
-                                    (c15 == 'O' || c15 == 'o') &&
-                                    (c16 == 'A' || c16 == 'a') &&
-                                    (c17 == 'D' || c17 == 'd') && c18 == '_' &&
-                                    (c19 == 'M' || c19 == 'm') &&
-                                    (c1a == 'E' || c1a == 'e') &&
-                                    (c1b == 'T' || c1b == 't') &&
-                                    (c1c == 'A' || c1c == 'a') &&
-                                    (c1d == 'D' || c1d == 'd') &&
-                                    (c1e == 'A' || c1e == 'a') &&
-                                    (c1f == 'T' || c1f == 't') &&
-                                    (c1g == 'A' || c1g == 'a') &&
-                                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
-                                return RELEASE_RELOAD_METADATA;
-                            }
+                            return releaseReloadMetadata(stmt, offset);
                         default:
                             return OTHER;
                     }
@@ -385,6 +353,42 @@ public final class ManagerParse {
         return OTHER;
     }
 
+    private static int releaseReloadMetadata(String stmt, int offset) {
+        char c11 = stmt.charAt(++offset);
+        char c12 = stmt.charAt(++offset);
+        char c13 = stmt.charAt(++offset);
+        char c14 = stmt.charAt(++offset);
+        char c15 = stmt.charAt(++offset);
+        char c16 = stmt.charAt(++offset);
+        char c17 = stmt.charAt(++offset);
+        char c18 = stmt.charAt(++offset);
+        char c19 = stmt.charAt(++offset);
+        char c1a = stmt.charAt(++offset);
+        char c1b = stmt.charAt(++offset);
+        char c1c = stmt.charAt(++offset);
+        char c1d = stmt.charAt(++offset);
+        char c1e = stmt.charAt(++offset);
+        char c1f = stmt.charAt(++offset);
+        char c1g = stmt.charAt(++offset);
+        if (c11 == '@' && (c12 == 'R' || c12 == 'r') &&
+                (c13 == 'E' || c13 == 'e') &&
+                (c14 == 'L' || c14 == 'l') &&
+                (c15 == 'O' || c15 == 'o') &&
+                (c16 == 'A' || c16 == 'a') &&
+                (c17 == 'D' || c17 == 'd') && c18 == '_' &&
+                (c19 == 'M' || c19 == 'm') &&
+                (c1a == 'E' || c1a == 'e') &&
+                (c1b == 'T' || c1b == 't') &&
+                (c1c == 'A' || c1c == 'a') &&
+                (c1d == 'D' || c1d == 'd') &&
+                (c1e == 'A' || c1e == 'a') &&
+                (c1f == 'T' || c1f == 't') &&
+                (c1g == 'A' || c1g == 'a') &&
+                (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
+            return RELEASE_RELOAD_METADATA;
+        }
+        return OTHER;
+    }
 
     //RESUME
     private static int resume(String stmt, int offset) {

@@ -148,7 +148,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 
     private void noshardRouting(SchemaConfig schema, RouteResultset rrs, String noShardingNode, MySqlSelectQueryBlock mysqlSelectQuery, SQLStatement stmt) {
         boolean isNeedAddLimit = isNeedAddLimit(schema, rrs, mysqlSelectQuery, getAllConditions());
-        String schemaName = schema == null ? null : schema.getName();
+        String schemaName = schema.getName();
         if (isNeedAddLimit) {
             int limitSize = schema.getDefaultMaxLimit();
             SQLLimit limit = new SQLLimit();

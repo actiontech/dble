@@ -48,7 +48,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     }
 
     @Override
-    public void commit() {
+    public void commit(boolean isImplict) {
         final int initCount = session.getTargetCount();
         lock.lock();
         try {
@@ -375,7 +375,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             session.getSource().write(sendData);
             LOGGER.info("nextParse failed:" + error);
         } else {
-            commit();
+            commit(false);
         }
     }
 
@@ -401,7 +401,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                     // try commit several times
                     LOGGER.warn("fail to COMMIT xa transaction " + xaId + " at the " + tryCommitTimes + "th time!");
                     XaDelayProvider.beforeInnerRetry(tryCommitTimes, xaId);
-                    commit();
+                    commit(false);
                 } else {
                     // close this session ,add to schedule job
                     session.getSource().close("COMMIT FAILED but it will try to COMMIT repeatedly in background until it is success!");

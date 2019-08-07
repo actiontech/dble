@@ -628,7 +628,7 @@ public class NonBlockingSession implements Session {
         }
     }
 
-    public void commit() {
+    public void commit(boolean isImplict) {
         final int initCount = target.size();
         if (initCount <= 0) {
             clearResources(false);
@@ -639,7 +639,7 @@ public class NonBlockingSession implements Session {
         }
         checkBackupStatus();
         resetCommitNodesHandler();
-        commitHandler.commit();
+        commitHandler.commit(isImplict);
     }
 
     public void performSavePoint(String spName, SavePointHandler.Type type) {

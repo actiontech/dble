@@ -400,7 +400,7 @@ public class ServerConnection extends FrontendConnection {
         } else {
             TxnLogHelper.putTxnLog(this, "commit[because of " + stmt + "]");
             this.txChainBegin = true;
-            session.commit();
+            session.commit(false);
             TxnLogHelper.putTxnLog(this, stmt);
         }
     }
@@ -410,7 +410,7 @@ public class ServerConnection extends FrontendConnection {
             writeErrMessage(ErrorCode.ER_YES, txInterruptMsg);
         } else {
             TxnLogHelper.putTxnLog(this, logReason);
-            session.commit();
+            session.commit(false);
         }
     }
 
@@ -437,10 +437,13 @@ public class ServerConnection extends FrontendConnection {
     void lockTable(String sql) {
         // lock table is disable in transaction
         if (!autocommit || isTxStart()) {
-            writeErrMessage(ErrorCode.ER_YES, "can't lock tables in transaction in dble!");
+            session.commit(true);
             return;
         }
+        doLockTable(sql);
+    }
 
+    public void doLockTable(String sql) {
         String db = this.schema;
         SchemaConfig schema = null;
         if (this.schema != null) {
@@ -463,10 +466,6 @@ public class ServerConnection extends FrontendConnection {
     }
 
     void unLockTable(String sql) {
-        if (!autocommit || isTxStart()) {
-            writeErrMessage(ErrorCode.ER_YES, "can't unlock tables in transaction in dble!");
-            return;
-        }
         sql = sql.replaceAll("\n", " ").replaceAll("\t", " ");
         String[] words = SplitUtil.split(sql, ' ', true);
         if (words.length == 2 && ("table".equalsIgnoreCase(words[1]) || "tables".equalsIgnoreCase(words[1]))) {

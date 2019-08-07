@@ -16,7 +16,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     protected byte[] sendData;
 
     @Override
-    public void commit() {
+    public void commit(boolean isImplict) {
         final int initCount = session.getTargetCount();
         lock.lock();
         try {
@@ -24,8 +24,10 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
         } finally {
             lock.unlock();
         }
-        int position = 0;
 
+        this.isImplict = isImplict;
+
+        int position = 0;
         for (RouteResultsetNode rrn : session.getTargetKeys()) {
             final BackendConnection conn = session.getTarget(rrn);
             conn.setResponseHandler(this);
@@ -56,7 +58,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
         if (decrementCountBy(1)) {
-            if (sendData == null) {
+            if (!isImplict && sendData == null) {
                 sendData = session.getOkByteArray();
             }
             cleanAndFeedback();
@@ -107,13 +109,15 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
         if (this.isFail()) {
             createErrPkg(error).write(session.getSource());
             setResponseTime(false);
+        } else if (isImplict) {
+            // continue to execute lock table
+            session.getSource().doLockTable(session.getSource().getExecuteSql());
         } else {
             setResponseTime(true);
             session.getSource().write(send);
-            session.clearSavepoint();
-            boolean multiStatementFlag = session.getIsMultiStatement().get();
-            session.multiStatementNextSql(multiStatementFlag);
         }
+        session.clearSavepoint();
+        session.multiStatementNextSql(session.getIsMultiStatement().get());
     }
 
     protected void setResponseTime(boolean isSuccess) {

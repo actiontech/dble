@@ -21,6 +21,7 @@ import java.util.Set;
 public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implements CommitNodesHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractCommitNodesHandler.class);
     protected Set<BackendConnection> closedConnSet;
+    protected volatile boolean isImplict = false;
     public AbstractCommitNodesHandler(NonBlockingSession session) {
         super(session);
     }

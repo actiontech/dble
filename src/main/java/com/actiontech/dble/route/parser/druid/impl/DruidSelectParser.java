@@ -106,7 +106,6 @@ public class DruidSelectParser extends DefaultDruidParser {
                 if (visitor.getSubQueryList().size() > 0) {
                     return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size());
                 }
-
                 rrs.setSchema(schemaInfo.getSchema());
                 rrs.setTable(schemaInfo.getTable());
                 rrs.setTableAlias(schemaInfo.getTableAlias());
@@ -115,7 +114,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 
                 String noShardingNode = RouterUtil.isNoSharding(schema, schemaInfo.getTable());
                 if (noShardingNode != null) {
-                    RouterUtil.routeToSingleNode(rrs, noShardingNode);
+                    noshardRouting(schema, rrs, noShardingNode, mysqlSelectQuery, stmt);
                     return schema;
                 }
 
@@ -144,6 +143,21 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
 
         return schema;
+    }
+
+
+    private void noshardRouting(SchemaConfig schema, RouteResultset rrs, String noShardingNode, MySqlSelectQueryBlock mysqlSelectQuery, SQLStatement stmt) {
+        boolean isNeedAddLimit = isNeedAddLimit(schema, rrs, mysqlSelectQuery, getAllConditions());
+        String schemaName = schema.getName();
+        if (isNeedAddLimit) {
+            int limitSize = schema.getDefaultMaxLimit();
+            SQLLimit limit = new SQLLimit();
+            limit.setRowCount(new SQLIntegerExpr(limitSize));
+            mysqlSelectQuery.setLimit(limit);
+            rrs.setLimitSize(limitSize);
+            rrs.setStatement(getSql(rrs, stmt, isNeedAddLimit, schemaName));
+        }
+        RouterUtil.routeToSingleNode(rrs, noShardingNode);
     }
 
 

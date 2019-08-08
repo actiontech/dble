@@ -167,12 +167,27 @@ public class MySQLPlanNodeVisitor {
         SQLExpr expr = tableSource.getExpr();
         if (expr instanceof SQLPropertyExpr) {
             SQLPropertyExpr propertyExpr = (SQLPropertyExpr) expr;
+            QueryNode viewNode = null;
             try {
-                table = new TableNode(StringUtil.removeBackQuote(propertyExpr.getOwner().toString()), StringUtil.removeBackQuote(propertyExpr.getName()), this.metaManager);
+                viewNode = metaManager.getSyncView(propertyExpr.getOwnernName(), propertyExpr.getName());
             } catch (SQLNonTransientException e) {
                 throw new MySQLOutPutException(e.getErrorCode(), e.getSQLState(), e.getMessage());
             }
             containSchema = true;
+            if (viewNode != null) {
+                viewNode.setAlias(tableSource.getAlias() == null ? propertyExpr.getName() : tableSource.getAlias());
+                this.tableNode = viewNode;
+                tableNode.setWithSubQuery(true);
+                this.tableNode.setExistView(true);
+                tableNode.setKeepFieldSchema(false);
+                return true;
+            } else {
+                try {
+                    table = new TableNode(StringUtil.removeBackQuote(propertyExpr.getOwner().toString()), StringUtil.removeBackQuote(propertyExpr.getName()), this.metaManager);
+                } catch (SQLNonTransientException e) {
+                    throw new MySQLOutPutException(e.getErrorCode(), e.getSQLState(), e.getMessage());
+                }
+            }
         } else if (expr instanceof SQLIdentifierExpr) {
             SQLIdentifierExpr identifierExpr = (SQLIdentifierExpr) expr;
             if (identifierExpr.getName().equalsIgnoreCase("dual")) {

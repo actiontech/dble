@@ -10,10 +10,9 @@ import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.util.CollectionUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -24,9 +23,9 @@ import java.util.concurrent.locks.ReentrantLock;
 
 
 public abstract class MultiTablesMetaHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MultiTablesMetaHandler.class);
-    private AtomicInteger shardTableCnt;
-    private AtomicInteger singleTableCnt;
+    protected final ReloadLogHelper logger;
+    private AtomicInteger shardTableDNCnt;
+    private AtomicInteger singleTableDNCnt;
     private AtomicBoolean countDownFlag = new AtomicBoolean(false);
     private String schema;
     private SchemaConfig schemaConfig;
@@ -37,22 +36,25 @@ public abstract class MultiTablesMetaHandler {
     private Set<String> filterTables;
 
 
-    MultiTablesMetaHandler(SchemaConfig schemaConfig, Set<String> selfNode) {
+    MultiTablesMetaHandler(SchemaConfig schemaConfig, Set<String> selfNode, boolean isReload) {
         this.schemaConfig = schemaConfig;
         this.schema = schemaConfig.getName();
         this.selfNode = selfNode;
-        this.singleTableCnt = new AtomicInteger(0);
+        this.singleTableDNCnt = new AtomicInteger(0);
+        logger = new ReloadLogHelper(isReload);
     }
 
 
     void countDownSingleTable() {
-        if (singleTableCnt.decrementAndGet() == 0) {
+        if (singleTableDNCnt.decrementAndGet() == 0) {
+            logger.info("single dataNode countdown[" + schema + "]");
             countDown();
         }
     }
 
     protected void countDown() {
-        if (shardTableCnt.get() == 0 && singleTableCnt.get() == 0) {
+        if (shardTableDNCnt.get() == 0 && singleTableDNCnt.get() == 0) {
+            logger.info("all shardTableDNCnt&singleTableDNCnt count down[" + schema + "]");
             if (countDownFlag.compareAndSet(false, true)) {
                 schemaMetaFinish();
             }
@@ -70,8 +72,8 @@ public abstract class MultiTablesMetaHandler {
             }
             if (tables.size() > 0) {
                 existTable = true;
-                singleTableCnt.set(1);
-                SingleNodeTablesMetaInitHandler tableHandler = new SingleNodeTablesMetaInitHandler(this, tables, schemaConfig.getDataNode());
+                singleTableDNCnt.set(1);
+                SingleNodeTablesMetaInitHandler tableHandler = new SingleNodeTablesMetaInitHandler(this, tables, schemaConfig.getDataNode(), logger.isReload());
                 tableHandler.execute();
             }
         }
@@ -89,11 +91,13 @@ public abstract class MultiTablesMetaHandler {
                 tables.add(tableName);
             }
         }
-        this.shardTableCnt = new AtomicInteger(dataNodeMap.size());
+        this.shardTableDNCnt = new AtomicInteger(dataNodeMap.size());
 
-        AbstractTablesMetaHandler tableHandler = new TablesMetaInitHandler(this, schema, dataNodeMap, selfNode);
+        logger.infoList("try to execute show create table in dataNode", dataNodeMap.keySet());
+        AbstractTablesMetaHandler tableHandler = new TablesMetaInitHandler(this, schema, dataNodeMap, selfNode, logger.isReload());
         tableHandler.execute();
         if (!existTable) {
+            logger.info("no table exist in schema " + schema + ",count down");
             countDown();
         }
     }
@@ -107,7 +111,7 @@ public abstract class MultiTablesMetaHandler {
                 collectTables.await();
             }
         } catch (InterruptedException e) {
-            LOGGER.info("getSingleTables " + e);
+            logger.info("getSingleTables " + e);
             return new ArrayList<>();
         } finally {
             singleTableLock.unlock();
@@ -135,7 +139,7 @@ public abstract class MultiTablesMetaHandler {
                 if (schemaConfig.getTables().containsKey(table)) {
                     newReload.put(table, schemaConfig.getTables().get(table));
                 } else {
-                    LOGGER.warn("reload table[" + schema + "." + table + "] metadata, but table doesn't exist");
+                    logger.warn("reload table[" + schema + "." + table + "] metadata, but table doesn't exist");
                 }
             }
         }
@@ -162,7 +166,8 @@ public abstract class MultiTablesMetaHandler {
 
 
     void countDownShardTable() {
-        if (shardTableCnt.decrementAndGet() == 0) {
+        logger.info("shard dataNode count down[" + schema + "] Count reming is " + shardTableDNCnt.get());
+        if (shardTableDNCnt.decrementAndGet() == 0) {
             long version = System.currentTimeMillis();
             for (Map.Entry<String, Map<String, List<String>>> tablesStruct : tablesStructMap.entrySet()) {
                 String tableName = tablesStruct.getKey();
@@ -200,6 +205,7 @@ public abstract class MultiTablesMetaHandler {
                     handleSingleMetaData(tableMeta);
                 }
             }
+            logger.info("shard dataNode finish countdown to schema [" + schema + "]");
             countDown();
         }
 
@@ -207,17 +213,17 @@ public abstract class MultiTablesMetaHandler {
 
     private synchronized void consistentWarning(String tableName, Map<String, List<String>> tableStruct) {
         String errorMsg = "Table [" + tableName + "] structure are not consistent in different data node!";
-        LOGGER.warn(errorMsg);
+        logger.warn(errorMsg);
         AlertUtil.alertSelf(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, errorMsg, AlertUtil.genSingleLabel("TABLE", schema + "." + tableName));
         ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.add(schema + "." + tableName);
-        LOGGER.info("Currently detected: ");
+        logger.info("Currently detected: ");
         for (Map.Entry<String, List<String>> entry : tableStruct.entrySet()) {
             StringBuilder stringBuilder = new StringBuilder("{");
             for (String dn : entry.getValue()) {
                 stringBuilder.append("DataNode:[").append(dn).append("]");
             }
             stringBuilder.append("}_Struct:").append(entry.getKey());
-            LOGGER.info(stringBuilder.toString());
+            logger.info(stringBuilder.toString());
         }
     }
 

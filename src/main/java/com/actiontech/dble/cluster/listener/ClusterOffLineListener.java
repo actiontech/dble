@@ -113,7 +113,7 @@ public class ClusterOffLineListener implements Runnable {
                     }
                     continue;
                 }
-                //LOGGER.debug("the index of the single key "+path+" is "+index);
+                //logger.debug("the index of the single key "+path+" is "+index);
                 Map<String, String> newMap = new HashMap<>();
                 for (int i = 0; i < output.getKeysCount(); i++) {
                     newMap.put(output.getKeys(i), output.getValues(i));

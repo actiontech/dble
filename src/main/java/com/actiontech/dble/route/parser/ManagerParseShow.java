@@ -78,6 +78,7 @@ public final class ManagerParseShow {
     public static final int DDL_STATE = 61;
     public static final int PROCESS_LIST = 62;
     public static final int SESSION_XA = 63;
+    public static final int SHOW_RELOAD = 64;
 
     public static final Pattern PATTERN_FOR_TABLE_INFO = Pattern.compile("^\\s*schema\\s*=\\s*('?)([a-zA-Z_0-9]+)\\1" +
             "\\s+and\\s+table\\s*=\\s*('?)([a-zA-Z_0-9]+)\\3\\s*$", Pattern.CASE_INSENSITIVE);
@@ -153,6 +154,9 @@ public final class ManagerParseShow {
                 case 'P':
                 case 'p':
                     return show2PCheck(stmt, offset);
+                case 'R':
+                case 'r':
+                    return show2RCheck(stmt, offset);
                 case 'S':
                 case 's':
                     return show2SCheck(stmt, offset);
@@ -713,6 +717,41 @@ public final class ManagerParseShow {
                     return show2ProcessCheck(stmt, offset);
                 default:
                     return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int show2RCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "ELOAD_STATUS".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            char c9 = stmt.charAt(++offset);
+            char c10 = stmt.charAt(++offset);
+            char c11 = stmt.charAt(++offset);
+            char c12 = stmt.charAt(++offset);
+            if ((c1 == 'E' || c1 == 'e') &&
+                    (c2 == 'L' || c2 == 'l') &&
+                    (c3 == 'O' || c3 == 'o') &&
+                    (c4 == 'A' || c4 == 'a') &&
+                    (c5 == 'D' || c5 == 'd') &&
+                    (c6 == '_') &&
+                    (c7 == 'S' || c7 == 's') &&
+                    (c8 == 'T' || c8 == 't') &&
+                    (c9 == 'A' || c9 == 'a') &&
+                    (c10 == 'T' || c10 == 't') &&
+                    (c11 == 'U' || c11 == 'u') &&
+                    (c12 == 'S' || c12 == 's')) {
+                if (ParseUtil.isErrorTail(++offset, stmt)) {
+                    return OTHER;
+                }
+                return SHOW_RELOAD;
             }
         }
         return OTHER;

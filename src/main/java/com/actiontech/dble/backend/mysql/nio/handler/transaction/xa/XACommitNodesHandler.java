@@ -92,6 +92,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         backgroundCommitTimes = 0;
         participantLogEntry = null;
         sendData = OkPacket.OK;
+        implictCommitHandler = null;
         xaOldThreadIds.clear();
         if (closedConnSet != null) {
             closedConnSet.clear();
@@ -432,6 +433,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 DbleServer.getInstance().getXaSessionCheck().getCommittingSession().remove(session.getSource().getId());
                 if (!session.closed()) {
                     setResponseTime(isSuccess);
+                    session.clearSavepoint();
                     session.getSource().write(toSend);
                 }
             }
@@ -440,6 +442,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         } else {
             XAStateLog.saveXARecoveryLog(session.getSessionXaID(), session.getXaState());
             setResponseTime(isSuccess);
+            session.clearSavepoint();
             session.getSource().write(sendData);
             LOGGER.info("cleanAndFeedback:" + error);
 

@@ -13,14 +13,13 @@ import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.meta.table.MetaHelper;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.sqlengine.SQLQueryResultListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,7 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class AbstractTableMetaHandler {
-    protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractTableMetaHandler.class);
+    protected final ReloadLogHelper logger;
     private static final String[] MYSQL_SHOW_CREATE_TABLE_COLS = new String[]{
             "Table",
             "Create Table"};
@@ -41,20 +40,22 @@ public abstract class AbstractTableMetaHandler {
     private Set<String> selfNode;
     private ConcurrentMap<String, List<String>> dataNodeTableStructureSQLMap;
 
-    public AbstractTableMetaHandler(String schema, TableConfig tbConfig, Set<String> selfNode) {
-        this(schema, tbConfig.getName(), tbConfig.getDataNodes(), selfNode);
+    public AbstractTableMetaHandler(String schema, TableConfig tbConfig, Set<String> selfNode, boolean isReload) {
+        this(schema, tbConfig.getName(), tbConfig.getDataNodes(), selfNode, isReload);
     }
 
-    public AbstractTableMetaHandler(String schema, String tableName, List<String> dataNodes, Set<String> selfNode) {
+    public AbstractTableMetaHandler(String schema, String tableName, List<String> dataNodes, Set<String> selfNode, boolean isReload) {
         this.dataNodes = dataNodes;
         this.nodesNumber = new AtomicInteger(dataNodes.size());
         this.schema = schema;
         this.selfNode = selfNode;
         this.tableName = tableName;
         this.dataNodeTableStructureSQLMap = new ConcurrentHashMap<>();
+        this.logger = new ReloadLogHelper(isReload);
     }
 
     public void execute() {
+        logger.info("table " + tableName + " execute start");
         for (String dataNode : dataNodes) {
             if (selfNode != null && selfNode.contains(dataNode)) {
                 this.countdown();
@@ -93,6 +94,7 @@ public abstract class AbstractTableMetaHandler {
         @Override
         public void onResult(SQLQueryResult<Map<String, String>> result) {
             String tableId = "DataNode[" + dataNode + "]:Table[" + tableName + "]";
+            logger.info(tableId + " on result " + result.isSuccess() + " count is " + nodesNumber);
             String key = null;
             if (ds != null) {
                 key = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getConfig().getHostName() + "],data_node[" + dataNode + "],schema[" + schema + "]";
@@ -100,10 +102,11 @@ public abstract class AbstractTableMetaHandler {
             if (!result.isSuccess()) {
                 //not thread safe
                 String warnMsg = "Can't get table " + tableName + "'s config from DataNode:" + dataNode + "! Maybe the table is not initialized!";
-                LOGGER.warn(warnMsg);
+                logger.warn(warnMsg);
                 AlertUtil.alertSelf(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, warnMsg, AlertUtil.genSingleLabel("TABLE", tableId));
                 ToResolveContainer.TABLE_LACK.add(tableId);
                 if (nodesNumber.decrementAndGet() == 0) {
+                    logger.info(tableId + " count down to 0 ,try to count down the table");
                     StructureMeta.TableMeta tableMeta = genTableMeta();
                     handlerTable(tableMeta);
                     countdown();
@@ -133,6 +136,7 @@ public abstract class AbstractTableMetaHandler {
             }
 
             if (nodesNumber.decrementAndGet() == 0) {
+                logger.info(tableId + " count down to 0 ,try to count down the table");
                 StructureMeta.TableMeta tableMeta = genTableMeta();
                 handlerTable(tableMeta);
                 countdown();
@@ -170,17 +174,17 @@ public abstract class AbstractTableMetaHandler {
 
         private synchronized void consistentWarning() {
             String errorMsg = "Table [" + tableName + "] structure are not consistent in different data node!";
-            LOGGER.warn(errorMsg);
+            logger.warn(errorMsg);
             AlertUtil.alertSelf(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, errorMsg, AlertUtil.genSingleLabel("TABLE", schema + "." + tableName));
             ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.add(schema + "." + tableName);
-            LOGGER.info("Currently detected: ");
+            logger.info("Currently detected: ");
             for (Map.Entry<String, List<String>> entry : dataNodeTableStructureSQLMap.entrySet()) {
                 StringBuilder stringBuilder = new StringBuilder();
                 for (String dn : entry.getValue()) {
                     stringBuilder.append("DataNode:[").append(dn).append("]");
                 }
                 stringBuilder.append(":").append(entry);
-                LOGGER.info(stringBuilder.toString());
+                logger.info(stringBuilder.toString());
             }
         }
     }

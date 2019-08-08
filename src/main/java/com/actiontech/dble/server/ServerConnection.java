@@ -6,6 +6,8 @@
 package com.actiontech.dble.server;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplictCommitHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
 import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
@@ -413,6 +415,18 @@ public class ServerConnection extends FrontendConnection {
         }
     }
 
+    // savepoint
+    public void performSavePoint(String spName, SavePointHandler.Type type) {
+        if (!autocommit || isTxStart()) {
+            if (type == SavePointHandler.Type.ROLLBACK && txInterrupted) {
+                txInterrupted = false;
+            }
+            session.performSavePoint(spName, type);
+        } else {
+            writeErrMessage(ErrorCode.ER_YES, "please use in transaction!");
+        }
+    }
+
     public void rollback() {
         if (txInterrupted) {
             txInterrupted = false;
@@ -422,13 +436,20 @@ public class ServerConnection extends FrontendConnection {
     }
 
     void lockTable(String sql) {
-        // lock table is disable in transaction
-        if (!autocommit || isTxStart()) {
-            writeErrMessage(ErrorCode.ER_YES, "can't lock tables in transaction in dble!");
+        // except xa transaction
+        if ((!isAutocommit() || isTxStart()) && session.getSessionXaID() == null) {
+            session.implictCommit(new ImplictCommitHandler() {
+                @Override
+                public void next() {
+                    doLockTable(sql);
+                }
+            });
             return;
         }
+        doLockTable(sql);
+    }
 
-
+    private void doLockTable(String sql) {
         String db = this.schema;
         SchemaConfig schema = null;
         if (this.schema != null) {
@@ -438,6 +459,7 @@ public class ServerConnection extends FrontendConnection {
                 return;
             }
         }
+
         RouteResultset rrs;
         try {
             rrs = DbleServer.getInstance().getRouterService().route(schema, ServerParse.LOCK, sql, this);
@@ -445,16 +467,13 @@ public class ServerConnection extends FrontendConnection {
             executeException(e, sql);
             return ;
         }
+
         if (rrs != null) {
             session.lockTable(rrs);
         }
     }
 
     void unLockTable(String sql) {
-        if (!autocommit || isTxStart()) {
-            writeErrMessage(ErrorCode.ER_YES, "can't unlock tables in transaction in dble!");
-            return;
-        }
         sql = sql.replaceAll("\n", " ").replaceAll("\t", " ");
         String[] words = SplitUtil.split(sql, ' ', true);
         if (words.length == 2 && ("table".equalsIgnoreCase(words[1]) || "tables".equalsIgnoreCase(words[1]))) {
@@ -463,7 +482,6 @@ public class ServerConnection extends FrontendConnection {
         } else {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
         }
-
     }
 
     @Override

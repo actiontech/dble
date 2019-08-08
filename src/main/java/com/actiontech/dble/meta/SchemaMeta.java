@@ -85,4 +85,16 @@ public class SchemaMeta {
         return null;
     }
 
+
+    public SchemaMeta metaCopy() {
+        SchemaMeta newMeta = new SchemaMeta();
+        for (Map.Entry<String, StructureMeta.TableMeta> entry : this.tableMetas.entrySet()) {
+            newMeta.tableMetas.put(entry.getKey(), entry.getValue());
+        }
+        for (Map.Entry<String, ViewMeta> entry : this.viewMetas.entrySet()) {
+            newMeta.viewMetas.put(entry.getKey(), entry.getValue());
+        }
+        return newMeta;
+    }
+
 }

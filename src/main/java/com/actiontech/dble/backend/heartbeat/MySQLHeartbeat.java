@@ -232,17 +232,17 @@ public class MySQLHeartbeat extends DBHeartbeat {
                         if (theSourceHBStatus == DBHeartbeat.OK_STATUS) {
                             if (switchType == DataHostConfig.SYN_STATUS_SWITCH_DS) {
                                 if (Integer.valueOf(0).equals(theSourceHB.getSlaveBehindMaster())) {
-                                    LOGGER.info("try to switch datasource, slave is synchronized to master " + theSource.getConfig());
+                                    logger.info("try to switch datasource, slave is synchronized to master " + theSource.getConfig());
                                     pool.switchSource(nextId, true, reason);
                                     break;
                                 } else {
-                                    LOGGER.warn("ignored  datasource ,slave is not  synchronized to master , slave behind master :"
+                                    logger.warn("ignored  datasource ,slave is not  synchronized to master , slave behind master :"
                                             + theSourceHB.getSlaveBehindMaster()
                                             + " " + theSource.getConfig());
                                 }
                             } else {
                                 // normal switch
-                                LOGGER.info("try to switch datasource ,not checked slave synchronize status " + theSource.getConfig());
+                                logger.info("try to switch datasource ,not checked slave synchronize status " + theSource.getConfig());
                                 pool.switchSource(nextId, true, reason);
                                 break;
                             }

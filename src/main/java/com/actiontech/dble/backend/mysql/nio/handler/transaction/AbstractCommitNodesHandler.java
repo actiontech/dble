@@ -21,13 +21,13 @@ import java.util.Set;
 public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implements CommitNodesHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractCommitNodesHandler.class);
     protected Set<BackendConnection> closedConnSet;
+    protected ImplictCommitHandler implictCommitHandler = null;
+
     public AbstractCommitNodesHandler(NonBlockingSession session) {
         super(session);
     }
 
     protected abstract boolean executeCommit(MySQLConnection mysqlCon, int position);
-
-
 
     @Override
     public void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn) {
@@ -59,12 +59,11 @@ public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implem
 
     @Override
     public void writeQueueAvailable() {
-
     }
 
     public void debugCommitDelay() {
-
     }
+
     protected boolean checkClosedConn(BackendConnection conn) {
         lock.lock();
         try {
@@ -81,5 +80,10 @@ public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implem
         } finally {
             lock.unlock();
         }
+    }
+
+    @Override
+    public void setImplictCommitHandler(ImplictCommitHandler implictCommitHandler) {
+        this.implictCommitHandler = implictCommitHandler;
     }
 }

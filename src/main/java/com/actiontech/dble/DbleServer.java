@@ -30,6 +30,7 @@ import com.actiontech.dble.manager.ManagerConnectionFactory;
 import com.actiontech.dble.memory.unsafe.Platform;
 import com.actiontech.dble.meta.PauseDatanodeManager;
 import com.actiontech.dble.meta.ProxyMetaManager;
+import com.actiontech.dble.meta.ReloadManager;
 import com.actiontech.dble.net.*;
 import com.actiontech.dble.net.handler.*;
 import com.actiontech.dble.net.mysql.WriteToBackendTask;
@@ -530,22 +531,32 @@ public final class DbleServer {
         systemVariables = sys;
     }
 
-    public void reloadMetaData(ServerConfig conf, Map<String, Set<String>> specifiedSchemas) {
+    public boolean reloadMetaData(ServerConfig conf, Map<String, Set<String>> specifiedSchemas) {
         this.metaChanging = true;
+        ReloadManager.metaReload();
         try {
+            //back up orgin meta data
+            ProxyMetaManager tmpManager = tmManager;
+            ProxyMetaManager newManager;
             if (CollectionUtil.isEmpty(specifiedSchemas)) {
-                ProxyMetaManager tmpManager = tmManager;
-                ProxyMetaManager newManager = new ProxyMetaManager();
-                newManager.initMeta(conf, null);
-                tmManager = newManager;
-                tmpManager.terminate();
+                newManager = new ProxyMetaManager();
             } else {
-                tmManager.initMeta(conf, specifiedSchemas);
-                tmManager.setTimestamp(System.currentTimeMillis());
+                //if the meta just reload partly,create a deep coyp of the ProxyMetaManager as new ProxyMetaManager
+                newManager = new ProxyMetaManager(tmpManager);
             }
+            if (newManager.initMeta(conf, specifiedSchemas)) {
+                tmManager = newManager;
+                if (CollectionUtil.isEmpty(specifiedSchemas)) {
+                    //deep copy do not terminate the scheduler
+                    tmpManager.terminate();
+                }
+                return true;
+            }
+
         } finally {
             this.metaChanging = false;
         }
+        return false;
     }
 
     public void reloadDnIndex() {

@@ -44,6 +44,8 @@ public final class ErrorCode {
     public static final int ER_CLUSTER_RELOAD = 5315;
     public static final int ER_META_DATA = 5316;
     public static final int ER_BACKEND_CONNECTION = 5317;
+    public static final int CREATE_VIEW_ERROR = 5318;
+    public static final int ER_RELOAD_INTERRUPUTED = 5999;
     // mysql error code
     public static final int ER_HASHCHK = 1000;
     public static final int ER_NISAMCHK = 1001;
@@ -541,7 +543,5 @@ public final class ErrorCode {
     public static final int ER_DROP_PARTITION_WHEN_FK_DEFINED = 1493;
     public static final int ER_PLUGIN_IS_NOT_LOADED = 1494;
     public static final int ER_USER_READ_ONLY = 1495;
-    public static final int CREATE_VIEW_ERROR = 1999;
     public static final int ER_CANT_EXECUTE_IN_READ_ONLY_TRANSACTION = 1792;
-
 }

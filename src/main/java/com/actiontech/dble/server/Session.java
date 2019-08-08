@@ -31,7 +31,7 @@ public interface Session {
     /**
      * commit session
      */
-    void commit(boolean isImplict);
+    void commit();
 
     /**
      * rollback session

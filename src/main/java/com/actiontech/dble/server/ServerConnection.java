@@ -6,6 +6,7 @@
 package com.actiontech.dble.server;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplictCommitHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
 import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.config.ErrorCode;
@@ -400,7 +401,7 @@ public class ServerConnection extends FrontendConnection {
         } else {
             TxnLogHelper.putTxnLog(this, "commit[because of " + stmt + "]");
             this.txChainBegin = true;
-            session.commit(false);
+            session.commit();
             TxnLogHelper.putTxnLog(this, stmt);
         }
     }
@@ -410,7 +411,7 @@ public class ServerConnection extends FrontendConnection {
             writeErrMessage(ErrorCode.ER_YES, txInterruptMsg);
         } else {
             TxnLogHelper.putTxnLog(this, logReason);
-            session.commit(false);
+            session.commit();
         }
     }
 
@@ -435,15 +436,20 @@ public class ServerConnection extends FrontendConnection {
     }
 
     void lockTable(String sql) {
-        // lock table is disable in transaction
-        if (!autocommit || isTxStart()) {
-            session.commit(true);
+        // except xa transaction
+        if ((!isAutocommit() || isTxStart()) && session.getSessionXaID() == null) {
+            session.implictCommit(new ImplictCommitHandler() {
+                @Override
+                public void next() {
+                    doLockTable(sql);
+                }
+            });
             return;
         }
         doLockTable(sql);
     }
 
-    public void doLockTable(String sql) {
+    private void doLockTable(String sql) {
         String db = this.schema;
         SchemaConfig schema = null;
         if (this.schema != null) {
@@ -453,6 +459,7 @@ public class ServerConnection extends FrontendConnection {
                 return;
             }
         }
+
         RouteResultset rrs;
         try {
             rrs = DbleServer.getInstance().getRouterService().route(schema, ServerParse.LOCK, sql, this);
@@ -460,6 +467,7 @@ public class ServerConnection extends FrontendConnection {
             executeException(e, sql);
             return ;
         }
+
         if (rrs != null) {
             session.lockTable(rrs);
         }
@@ -474,7 +482,6 @@ public class ServerConnection extends FrontendConnection {
         } else {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
         }
-
     }
 
     @Override

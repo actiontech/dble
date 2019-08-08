@@ -15,6 +15,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.builder.HandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.CommitNodesHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplictCommitHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.RollbackNodesHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.NormalCommitNodesHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.NormalRollbackNodesHandler;
@@ -628,7 +629,7 @@ public class NonBlockingSession implements Session {
         }
     }
 
-    public void commit(boolean isImplict) {
+    public void commit() {
         final int initCount = target.size();
         if (initCount <= 0) {
             clearResources(false);
@@ -639,7 +640,12 @@ public class NonBlockingSession implements Session {
         }
         checkBackupStatus();
         resetCommitNodesHandler();
-        commitHandler.commit(isImplict);
+        commitHandler.commit();
+    }
+
+    public void implictCommit(ImplictCommitHandler handler) {
+        commit();
+        commitHandler.setImplictCommitHandler(handler);
     }
 
     public void performSavePoint(String spName, SavePointHandler.Type type) {

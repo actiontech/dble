@@ -23,7 +23,7 @@ public class XAAutoCommitNodesHandler extends XACommitNodesHandler {
             XAAutoRollbackNodesHandler autoHandler = new XAAutoRollbackNodesHandler(session, sendData, nodes, null);
             autoHandler.rollback();
         } else {
-            commit(false);
+            commit();
         }
     }
 

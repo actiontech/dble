@@ -16,7 +16,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     protected byte[] sendData;
 
     @Override
-    public void commit(boolean isImplict) {
+    public void commit() {
         final int initCount = session.getTargetCount();
         lock.lock();
         try {
@@ -24,8 +24,6 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
         } finally {
             lock.unlock();
         }
-
-        this.isImplict = isImplict;
 
         int position = 0;
         for (RouteResultsetNode rrn : session.getTargetKeys()) {
@@ -35,11 +33,12 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
                 break;
             }
         }
-
     }
+
     @Override
     public void clearResources() {
         sendData = null;
+        implictCommitHandler = null;
         if (closedConnSet != null) {
             closedConnSet.clear();
         }
@@ -58,7 +57,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
         if (decrementCountBy(1)) {
-            if (!isImplict && sendData == null) {
+            if (implictCommitHandler == null && sendData == null) {
                 sendData = session.getOkByteArray();
             }
             cleanAndFeedback();
@@ -109,9 +108,9 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
         if (this.isFail()) {
             createErrPkg(error).write(session.getSource());
             setResponseTime(false);
-        } else if (isImplict) {
-            // continue to execute lock table
-            session.getSource().doLockTable(session.getSource().getExecuteSql());
+        } else if (implictCommitHandler != null) {
+            // continue to execute sql
+            implictCommitHandler.next();
         } else {
             setResponseTime(true);
             session.getSource().write(send);
@@ -122,4 +121,5 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
 
     protected void setResponseTime(boolean isSuccess) {
     }
+
 }

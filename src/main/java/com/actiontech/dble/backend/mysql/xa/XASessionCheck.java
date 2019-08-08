@@ -42,7 +42,7 @@ public class XASessionCheck {
         for (NonBlockingSession session : commitSession.values()) {
             if (session.getXaState() == TxState.TX_COMMIT_FAILED_STATE) {
                 this.commitSession.remove(session.getSource().getId());
-                session.commit(false);
+                session.commit();
             }
         }
     }

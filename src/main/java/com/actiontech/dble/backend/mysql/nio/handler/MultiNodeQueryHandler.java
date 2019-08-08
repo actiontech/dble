@@ -582,10 +582,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 session.setBeginCommitTime();
                 if (session.getXaState() == null) {
                     NormalAutoCommitNodesHandler autoHandler = new NormalAutoCommitNodesHandler(session, data);
-                    autoHandler.commit(false);
+                    autoHandler.commit();
                 } else {
                     XAAutoCommitNodesHandler autoHandler = new XAAutoCommitNodesHandler(session, data, rrs.getNodes());
-                    autoHandler.commit(false);
+                    autoHandler.commit();
                 }
             } else {
                 if (session.getXaState() == null) {

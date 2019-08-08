@@ -63,6 +63,7 @@ For more information, please visit the [official website](https://opensource.act
 
 ## Documentation
 + [简体中文](https://actiontech.github.io/dble-docs-cn/)
++ [中文公开课](https://opensource.actionsky.com/dble-lessons/)
 + English(Comming soon)
 
 ## Contributing

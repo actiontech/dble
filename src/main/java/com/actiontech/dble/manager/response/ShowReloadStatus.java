@@ -120,7 +120,7 @@ public final class ShowReloadStatus {
             row.add(StringUtil.encode(FormatUtil.formatDate(status.getLastReloadStart()), charset));
             row.add(StringUtil.encode(FormatUtil.formatDate(status.getLastReloadEnd()), charset));
             row.add(StringUtil.encode(status.getTriggerType(), charset));
-            row.add(StringUtil.encode(status.isReloadInterrupted() ? RELOAD_INTERRUPUTED : RELOAD_END_NORMAL, charset));
+            row.add(StringUtil.encode(status.getLastReloadEnd() != 0 ? (status.isReloadInterrupted() ? RELOAD_INTERRUPUTED : RELOAD_END_NORMAL) : "", charset));
         }
         return row;
     }

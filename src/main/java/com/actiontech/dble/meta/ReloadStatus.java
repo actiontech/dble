@@ -23,7 +23,7 @@ public class ReloadStatus {
     public static final String TRIGGER_TYPE_CLUSTER = "CLUSTER_NOTIFY";
     public static final String TRIGGER_TYPE_COMMAND = "LOCAL_COMMAND";
 
-    public static final String RELOAD_END_NORMAL = "RELOAD_SUCCESS";
+    public static final String RELOAD_END_NORMAL = "RELOAD_END";
     public static final String RELOAD_INTERRUPUTED = "INTERRUPUTED";
 
     private final int id;

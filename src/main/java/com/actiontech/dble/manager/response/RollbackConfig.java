@@ -101,6 +101,7 @@ public final class RollbackConfig {
                 lock.unlock();
             }
         }
+        ReloadManager.reloadFinish();
     }
 
 

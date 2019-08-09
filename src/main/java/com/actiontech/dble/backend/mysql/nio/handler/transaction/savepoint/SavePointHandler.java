@@ -148,9 +148,9 @@ public class SavePointHandler extends MultiNodeHandler {
         SavePoint sp = findSavePoint(newSp.getName());
         // removed named savepoint
         if (sp != null && sp.getPrev() != null) {
-            SavePoint temp = sp.getPrev().getPrev();
-            sp.setPrev(temp);
-            sp.getPrev().setPrev(null);
+            SavePoint temp = sp.getPrev();
+            sp.setPrev(temp.getPrev());
+            temp.setPrev(null);
         }
         newSp.setPrev(savepoints.getPrev());
         savepoints.setPrev(newSp);

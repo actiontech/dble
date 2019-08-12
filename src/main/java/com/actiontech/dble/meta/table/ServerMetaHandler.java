@@ -5,13 +5,11 @@
 
 package com.actiontech.dble.meta.table;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.ReloadManager;
-import com.actiontech.dble.meta.table.old.MultiTableMetaHandler;
 import com.actiontech.dble.util.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +24,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Start handler for the entire meta init/reload event
- *
  */
 public class ServerMetaHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerMetaHandler.class);
@@ -74,21 +71,12 @@ public class ServerMetaHandler {
                 ReloadLogHelper.info("reload meta loop interrupted by command ,break the loop", LOGGER);
                 break;
             }
-            if (DbleServer.getInstance().getConfig().getSystem().getUseOldMetaInit() == 1) {
-                MultiTableMetaHandler multiTableMeta = new MultiTableMetaHandler(this, entry.getValue(), selfNode);
-                if (filter != null) {
-                    multiTableMeta.setFilterTables(filter.get(entry.getKey()));
-                    ReloadLogHelper.infoList("schema filter " + entry.getKey(), LOGGER, filter.get(entry.getKey()));
-                }
-                multiTableMeta.execute();
-            } else {
-                SchemaInitMetaHandler multiTableMeta = new SchemaInitMetaHandler(this, entry.getValue(), selfNode);
-                if (filter != null) {
-                    multiTableMeta.setFilterTables(filter.get(entry.getKey()));
-                    ReloadLogHelper.infoList("schema filter " + entry.getKey(), LOGGER, filter.get(entry.getKey()));
-                }
-                multiTableMeta.execute();
+            SchemaInitMetaHandler multiTableMeta = new SchemaInitMetaHandler(this, entry.getValue(), selfNode);
+            if (filter != null) {
+                multiTableMeta.setFilterTables(filter.get(entry.getKey()));
+                ReloadLogHelper.infoList("schema filter " + entry.getKey(), LOGGER, filter.get(entry.getKey()));
             }
+            multiTableMeta.execute();
         }
         return waitAllSchemaDone();
     }

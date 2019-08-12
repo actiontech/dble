@@ -989,6 +989,7 @@ public final class SystemConfig {
     public int getMaxCostStatSize() {
         return maxCostStatSize;
     }
+
     @SuppressWarnings("unused")
     public void setMaxCostStatSize(int maxCostStatSize) {
         if (maxCostStatSize > 0) {
@@ -1001,6 +1002,7 @@ public final class SystemConfig {
     public int getCostSamplePercent() {
         return costSamplePercent;
     }
+
     @SuppressWarnings("unused")
     public void setCostSamplePercent(int costSamplePercent) {
         if (costSamplePercent >= 0 && costSamplePercent <= 100) {
@@ -1264,16 +1266,5 @@ public final class SystemConfig {
                 ", xaRetryCount=" + xaRetryCount +
                 "]";
     }
-
-    //tmp
-    public int getUseOldMetaInit() {
-        return useOldMetaInit;
-    }
-
-    public void setUseOldMetaInit(int useOldMetaInit) {
-        this.useOldMetaInit = useOldMetaInit;
-    }
-
-    private int useOldMetaInit = 0;
 
 }

@@ -7,7 +7,6 @@ package com.actiontech.dble.meta.table;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.meta.protocol.StructureMeta;
-import com.actiontech.dble.meta.table.old.AbstractTableMetaHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

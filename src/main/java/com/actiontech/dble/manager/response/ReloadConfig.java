@@ -224,11 +224,11 @@ public final class ReloadConfig {
 
             ReloadManager.waitingOthers();
             XmltoZkMain.writeConfFileToZK(loadAll, loadAllMode);
-            ReloadLogHelper.info("reload config: sent config status to ucore", LOGGER);
+            ReloadLogHelper.info("reload config: sent config status to zk", LOGGER);
             //tell zk this instance has prepared
             ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
                     ConfigStatusListener.SUCCESS.getBytes(StandardCharsets.UTF_8));
-            ReloadLogHelper.info("reload config: sent finished status to ucore, waiting other instances", LOGGER);
+            ReloadLogHelper.info("reload config: sent finished status to zk, waiting other instances", LOGGER);
             //check all session waiting status
             List<String> preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
             List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());

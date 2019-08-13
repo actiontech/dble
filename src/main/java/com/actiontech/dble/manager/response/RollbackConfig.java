@@ -14,12 +14,14 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.xmltozk.XmltoZkMain;
+import com.actiontech.dble.config.loader.zkprocess.zktoxml.listen.ConfigStatusListener;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
 import com.actiontech.dble.config.model.ERTable;
 import com.actiontech.dble.config.model.FirewallConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.UserConfig;
 import com.actiontech.dble.manager.ManagerConnection;
+import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.ReloadManager;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.util.KVPathUtil;
@@ -30,6 +32,7 @@ import org.apache.curator.utils.ZKPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -81,7 +84,6 @@ public final class RollbackConfig {
                 ClusterDelayProvider.delayAfterReloadLock();
                 try {
                     rollbackWithUcore(c);
-                    writeOKResult(c);
                 } finally {
                     distributeLock.release();
                 }
@@ -93,8 +95,11 @@ public final class RollbackConfig {
             final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
             lock.lock();
             try {
-                rollback();
-                writeOKResult(c);
+                if (!rollback()) {
+                    writeSpecialError(c, "Rollback interruputed by others,config should be reload");
+                } else {
+                    writeOKResult(c);
+                }
             } catch (Exception e) {
                 writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
             } finally {
@@ -111,7 +116,10 @@ public final class RollbackConfig {
         lock.lock();
         try {
             // step 2 rollback self config
-            rollback();
+            if (!rollback()) {
+                writeSpecialError(c, "Rollback interruputed by others,config should be reload");
+                return;
+            }
 
             ReloadManager.waitingOthers();
             ClusterDelayProvider.delayAfterMasterRollback();
@@ -131,7 +139,9 @@ public final class RollbackConfig {
             ClusterHelper.cleanPath(ClusterPathUtil.getConfStatusPath());
 
             if (errorMsg != null) {
-                throw new RuntimeException(errorMsg);
+                writeErrorResultForCluster(c, errorMsg);
+            } else {
+                writeOKResult(c);
             }
         } catch (Exception e) {
             LOGGER.warn("reload config failure", e);
@@ -152,30 +162,48 @@ public final class RollbackConfig {
         final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.lock();
         try {
-            rollback();
+            if (!rollback()) {
+                writeSpecialError(c, "Rollback interruputed by others,config should be reload");
+                return;
+            }
 
             ReloadManager.waitingOthers();
             ClusterDelayProvider.delayAfterMasterRollback();
 
             XmltoZkMain.rollbackConf();
             //tell zk this instance has prepared
-            ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+            ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
+                    ConfigStatusListener.SUCCESS.getBytes(StandardCharsets.UTF_8));
             //check all session waiting status
             List<String> preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
             List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
-            // TODO: While waiting, a new instance of MyCat is upping and working.
+
             while (preparedList.size() < onlineList.size()) {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));
                 onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
                 preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
             }
-            ClusterDelayProvider.delayBeforeDeleterollbackLock();
+            ReloadLogHelper.info("rollback config: all instances finished ", LOGGER);
+            ClusterDelayProvider.delayBeforeDeleteReloadLock();
+            StringBuilder sbErrorInfo = new StringBuilder();
             for (String child : preparedList) {
+                String childPath = ZKPaths.makePath(KVPathUtil.getConfStatusPath(), child);
+                byte[] errorInfo = zkConn.getData().forPath(childPath);
+                if (!ConfigStatusListener.SUCCESS.equals(new String(errorInfo, StandardCharsets.UTF_8))) {
+                    sbErrorInfo.append(child).append(":");
+                    sbErrorInfo.append(new String(errorInfo, StandardCharsets.UTF_8));
+                    sbErrorInfo.append(";");
+                }
                 zkConn.delete().forPath(ZKPaths.makePath(KVPathUtil.getConfStatusPath(), child));
             }
-            writeOKResult(c);
+
+            if (sbErrorInfo.length() == 0) {
+                writeOKResult(c);
+            } else {
+                writeErrorResultForCluster(c, sbErrorInfo.toString());
+            }
         } catch (Exception e) {
-            LOGGER.info("reload config failure", e);
+            LOGGER.info("rollback config failure", e);
             writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
         } finally {
             lock.unlock();
@@ -197,6 +225,23 @@ public final class RollbackConfig {
         String sb = "Rollback config failure.The reason is that " + errorMsg;
         LOGGER.info(sb + "." + String.valueOf(c));
         c.writeErrMessage(ErrorCode.ER_YES, sb);
+    }
+
+    private static void writeSpecialError(ManagerConnection c, String errorMsg) {
+        String sb = "Reload config failure.The reason is " + errorMsg;
+        LOGGER.warn(sb);
+        c.writeErrMessage(ErrorCode.ER_RELOAD_INTERRUPUTED, sb);
+    }
+
+
+    private static void writeErrorResultForCluster(ManagerConnection c, String errorMsg) {
+        String sb = "Reload config failed partially. The node(s) failed because of:[" + errorMsg + "]";
+        LOGGER.warn(sb);
+        if (errorMsg.indexOf("interrupt by command") != -1) {
+            c.writeErrMessage(ErrorCode.ER_RELOAD_INTERRUPUTED, sb);
+        } else {
+            c.writeErrMessage(ErrorCode.ER_CLUSTER_RELOAD, sb);
+        }
     }
 
     public static boolean rollback() throws Exception {

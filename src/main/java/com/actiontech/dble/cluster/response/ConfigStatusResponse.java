@@ -62,12 +62,6 @@ public class ConfigStatusResponse implements ClusterXmlLoader {
                 try {
                     ClusterDelayProvider.delayBeforeSlaveRollback();
                     LOGGER.info("rollback " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
-                    if (!ReloadManager.startReload(TRIGGER_TYPE_CLUSTER, ConfStatus.Status.ROLLBACK)) {
-                        LOGGER.info("rollback config failed because self is in reloading");
-                        ClusterHelper.setKV(ClusterPathUtil.getSelfConfStatusPath(),
-                                "Reload status error ,other client or cluster may in reload");
-                        return;
-                    }
                     try {
                         boolean result = RollbackConfig.rollback();
                         if (!checkLocalResult(result)) {

@@ -61,12 +61,6 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
             LOGGER.info("ConfigStatusListener notifyProcess zk to object  :" + status);
             if (status.getStatus() == ConfStatus.Status.ROLLBACK) {
                 try {
-                    if (!ReloadManager.startReload(TRIGGER_TYPE_CLUSTER, ConfStatus.Status.ROLLBACK)) {
-                        LOGGER.info("rollback config failed because self is in reloading");
-                        ClusterHelper.setKV(ClusterPathUtil.getSelfConfStatusPath(),
-                                "Reload status error ,other client or cluster may in reload");
-                        return true;
-                    }
                     ClusterDelayProvider.delayBeforeSlaveRollback();
                     try {
                         boolean result = RollbackConfig.rollback();

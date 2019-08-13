@@ -176,6 +176,7 @@ public class MySQLPlanNodeVisitor {
                 schema = schema.toLowerCase();
                 tableName = tableName.toLowerCase();
             }
+            containSchema = true;
         } else if (expr instanceof SQLIdentifierExpr) {
             SQLIdentifierExpr identifierExpr = (SQLIdentifierExpr) expr;
             if (identifierExpr.getName().equalsIgnoreCase("dual")) {

@@ -22,7 +22,7 @@ public class ShowTablesStmtInfo {
     private static final String TABLE_PAT = "^\\s*(/\\*[\\s\\S]*\\*/)?\\s*(show)" +
             "(\\s+(full|all))?" +
             "(\\s+tables)" +
-            "(\\s+(from|in)\\s+(`?[a-zA-Z_0-9]+`?))?" +
+            "(\\s+(from|in)\\s+(`((?!`).)+`|[a-zA-Z_0-9]+))?" +
             "((\\s+(like)\\s+'((. *)*)'\\s*)|(\\s+(where)\\s+((. *)*)\\s*))?" +
             "\\s*\\s*(/\\*[\\s\\S]*\\*/)?\\s*$";
     public static final Pattern PATTERN = Pattern.compile(TABLE_PAT, Pattern.CASE_INSENSITIVE);
@@ -40,7 +40,7 @@ public class ShowTablesStmtInfo {
         isFull = ma.group(3) != null;
         isAll = isFull && ma.group(4).equalsIgnoreCase("all");
         schema = ma.group(8) == null ? null : StringUtil.removeBackQuote(ma.group(8));
-        cond = ma.group(9);
+        cond = ma.group(10);
 
         StringBuilder sb = new StringBuilder(ma.group(2));
         if (isFull) {

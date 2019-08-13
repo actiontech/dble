@@ -32,9 +32,13 @@ public final class ReloadMetaData {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReloadMetaData.class);
 
-    public static final Pattern PATTERN_IN = Pattern.compile("^\\s*table\\s+in\\s*\\((('[a-zA-Z_0-9]+\\.[a-zA-Z_0-9]+',)*('[a-zA-Z_0-9]+\\.[a-zA-Z_0-9]+'))\\)\\s*$", Pattern.CASE_INSENSITIVE);
-    public static final Pattern PATTERN_WHERE = Pattern.compile("^\\s*schema\\s*=\\s*'([a-zA-Z_0-9]+)'" +
-            "(\\s+and\\s+table\\s*=\\s*'([a-zA-Z_0-9]+)')?\\s*$", Pattern.CASE_INSENSITIVE);
+    public static final Pattern PATTERN_IN = Pattern.compile("^\\s*table\\s+in\\s*\\((('((?!`)((?!').))+'.'((?!`)((?!').))+',)*" +
+            "'((?!`)((?!').))+'.'((?!`)((?!').))+')\\)\\s*$", Pattern.CASE_INSENSITIVE);
+    public static final Pattern PATTERN_WHERE = Pattern.compile("^\\s*schema\\s*=\\s*" +
+            "(('|\")((?!`)((?!\\2).))+\\2|[a-zA-Z_0-9\\-]+)" +
+            "(\\s+and\\s+table\\s*=\\s*" +
+            "(('|\")((?!`)((?!\\7).))+\\7|[a-zA-Z_0-9\\-]+)" +
+            ")?\\s*$", Pattern.CASE_INSENSITIVE);
 
     public static void execute(ManagerConnection c, String whereCondition) {
         Map<String, Set<String>> filter = null;
@@ -111,11 +115,11 @@ public final class ReloadMetaData {
         Matcher matcher = PATTERN_WHERE.matcher(whereCondition);
         if (matcher.matches()) {
             Set<String> tables = null;
-            if (!StringUtil.isEmpty(matcher.group(3))) {
+            if (!StringUtil.isEmpty(matcher.group(6))) {
                 tables = new HashSet<>(1);
-                tables.add(matcher.group(3));
+                tables.add(StringUtil.removeAllApostrophe(matcher.group(6)));
             }
-            filter.put(matcher.group(1), tables);
+            filter.put(StringUtil.removeAllApostrophe(matcher.group(1)), tables);
         }
         matcher = PATTERN_IN.matcher(whereCondition);
         if (matcher.matches()) {

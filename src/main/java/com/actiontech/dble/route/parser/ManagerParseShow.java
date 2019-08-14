@@ -80,8 +80,11 @@ public final class ManagerParseShow {
     public static final int SESSION_XA = 63;
     public static final int SHOW_RELOAD = 64;
 
-    public static final Pattern PATTERN_FOR_TABLE_INFO = Pattern.compile("^\\s*schema\\s*=\\s*('?)([a-zA-Z_0-9]+)\\1" +
-            "\\s+and\\s+table\\s*=\\s*('?)([a-zA-Z_0-9]+)\\3\\s*$", Pattern.CASE_INSENSITIVE);
+    public static final Pattern PATTERN_FOR_TABLE_INFO = Pattern.compile("^\\s*schema\\s*=\\s*" +
+            "(('|\")((?!`)((?!\\2).))+\\2|[a-zA-Z_0-9\\-]+)" +
+            "\\s+and\\s+table\\s*=\\s*" +
+            "(('|\")((?!`)((?!\\6).))+\\6|[a-zA-Z_0-9\\-]+)" +
+            "\\s*$", Pattern.CASE_INSENSITIVE);
 
     public static int parse(String stmt, int offset) {
         int i = offset;

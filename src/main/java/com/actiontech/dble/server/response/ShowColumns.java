@@ -26,13 +26,11 @@ public final class ShowColumns {
     private ShowColumns() {
     }
 
-    private static final String COLUMNS_PAT = "^\\s*(show)" +
-            "(\\s+full)?" +
-            "(\\s+(columns|fields))" +
-            "(\\s+(from|in)\\s+([a-zA-Z_0-9.`]+))" +
-            "(\\s+(from|in)\\s+(`?[a-zA-Z_0-9]+`?))?" +
-            "((\\s+(like)\\s+'((. *)*)'\\s*)|(\\s+(where)\\s+((. *)*)\\s*))?" +
-            "\\s*$";
+    private static final String COLUMNS_PAT = "^\\s*(show)(\\s+full)?(\\s+(columns|fields))" +
+            "(\\s+(from|in)\\s+(((`((?!`).)+`|[a-zA-Z_0-9]+)\\.)?(`((?!`).)+`|[a-zA-Z_0-9]+)))" +
+            "(\\s+(from|in)\\s+((`((?!`).)+`|[a-zA-Z_0-9]+)))?" +
+            "((\\s+(like)\\s+'((. *)*)'\\s*)" +
+            "|(\\s+(where)\\s+((. *)*)\\s*))?\\s*$";
     public static final Pattern PATTERN = Pattern.compile(COLUMNS_PAT, Pattern.CASE_INSENSITIVE);
 
     public static void response(ServerConnection c, String stmt) {

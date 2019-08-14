@@ -60,8 +60,8 @@ public final class ShowTableAlgorithm {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The Correct Query Format Is:show @@algorithm where schema='?' and table ='?'");
             return;
         }
-        String schemaName = ma.group(2);
-        String tableName = ma.group(4);
+        String schemaName = StringUtil.removeAllApostrophe(ma.group(1));
+        String tableName = StringUtil.removeAllApostrophe(ma.group(5));
         if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             schemaName = schemaName.toLowerCase();
             tableName = tableName.toLowerCase();

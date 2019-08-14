@@ -28,8 +28,8 @@ public final class ShowIndex {
 
     private static final String INDEX_PAT = "^\\s*(show)" +
             "(\\s+(index|indexes|keys))" +
-            "(\\s+(from|in)\\s+([a-zA-Z_0-9.`]+))" +
-            "(\\s+(from|in)\\s+(`?[a-zA-Z_0-9]+`?))?" +
+            "(\\s+(from|in)\\s+(((`((?!`).)+`|[a-zA-Z_0-9]+)\\.)?(`((?!`).)+`|[a-zA-Z_0-9]+)))" +
+            "(\\s+(from|in)\\s+((`((?!`).)+`|[a-zA-Z_0-9]+)))?" +
             "(\\s+(where)\\s+((. *)*)\\s*)?" +
             "(\\s*\\/\\*[\\s\\S]*\\*\\/)?" +
             "\\s*$";

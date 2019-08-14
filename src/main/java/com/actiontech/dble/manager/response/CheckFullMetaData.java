@@ -44,7 +44,14 @@ public final class CheckFullMetaData {
     check full @@metadata where consistent_in_memory=0
     check full @@metadata where consistent_in_memory = 1
     */
-    private static final Pattern PATTERN = Pattern.compile("^\\s*(check\\s+full\\s+@@metadata)(\\s+where\\s+((schema\\s*=\\s*(['\"])([a-zA-Z_0-9]+)(['\"])(\\s+and\\s+table\\s*=\\s*(['\"])([a-zA-Z_0-9]+)(['\"]))?)|(reload_time\\s*([><])?=\\s*(['\"])([0-9:\\-\\s]+)(['\"]))|(reload_time\\s+is\\s+null)|((consistent_in_data_nodes|consistent_in_memory)\\s*=\\s*([01]))))?\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN = Pattern.compile("^\\s*(check\\s+full\\s+@@metadata)(\\s+where\\s+" +
+            "((schema\\s*=\\s*" +
+            "(('|\")((?!`)((?!\\6).))+\\6|[a-zA-Z_0-9\\-]+)" +
+            "(\\s+and\\s+table\\s*=\\s*" +
+            "(('|\")((?!`)((?!(\\11)).))+(\\11)|[a-zA-Z_0-9\\-]+))?)" +
+            "|(reload_time\\s*([><])?=\\s*(['\"])([0-9:\\-\\s]+)(['\"]))" +
+            "|(reload_time\\s+is\\s+null)" +
+            "|((consistent_in_data_nodes|consistent_in_memory)\\s*=\\s*([01]))))?\\s*$", Pattern.CASE_INSENSITIVE);
 
     private CheckFullMetaData() {
     }
@@ -93,13 +100,13 @@ public final class CheckFullMetaData {
             if (ma.group(2) != null) {
                 //  filter
                 if (ma.group(4) != null) {
-                    String schema = ma.group(6);
+                    String schema = StringUtil.removeAllApostrophe(ma.group(5));
                     if (DbleServer.getInstance().getConfig().getSchemas().get(schema) == null) {
                         c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The schema [" + schema + "] doesn't exist");
                         return;
                     }
-                    if (ma.group(8) != null) {
-                        String table = ma.group(10);
+                    if (ma.group(9) != null) {
+                        String table = StringUtil.removeAllApostrophe(ma.group(10));
                         if (DbleServer.getInstance().getConfig().getSchemas().get(schema).getTables().get(table) == null &&
                                 DbleServer.getInstance().getTmManager().getCatalogs().get(schema) == null &&
                                 DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getTableMeta(table) == null) {
@@ -110,9 +117,9 @@ public final class CheckFullMetaData {
                     } else {
                         rows = getSchemaRows(schema, c.getCharset().getResults());
                     }
-                } else if (ma.group(12) != null) {
-                    String cmpOperator = ma.group(13);
-                    String dateFilter = ma.group(15);
+                } else if (ma.group(16) != null) {
+                    String cmpOperator = ma.group(17);
+                    String dateFilter = ma.group(19);
                     long timeToCmp;
                     DateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                     try {
@@ -122,11 +129,11 @@ public final class CheckFullMetaData {
                         return;
                     }
                     rows = getCmpRows(cmpOperator, timeToCmp, c.getCharset().getResults());
-                } else if (ma.group(17) != null) {
+                } else if (ma.group(21) != null) {
                     rows = getAllNullRows(c.getCharset().getResults());
                 } else { //if (ma.group(18) != null)
-                    String filterKey = ma.group(19);
-                    String filterValue = ma.group(20);
+                    String filterKey = ma.group(23);
+                    String filterValue = ma.group(24);
                     rows = getConsistentRows(filterKey, filterValue, c.getCharset().getResults());
                 }
             } else {

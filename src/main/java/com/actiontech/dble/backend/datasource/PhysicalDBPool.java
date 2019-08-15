@@ -381,7 +381,7 @@ public class PhysicalDBPool {
             if (ds.getTotalConCount() <= 0) {
                 ds.initMinConnection(null, true, getConHandler, null);
             } else {
-                LOGGER.info("connection with null schema has been created,because testConnection in pool");
+                LOGGER.info("connection with null schema has been created,because we tested the connection of the datasource at first");
                 getConHandler.initIncrement();
                 hasConnectionInPool = true;
             }

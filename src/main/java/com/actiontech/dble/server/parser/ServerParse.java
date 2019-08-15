@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2019 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.server.parser;
 
 import com.actiontech.dble.config.Versions;
@@ -116,7 +116,8 @@ public final class ServerParse {
                     }
                     continue;
                 case '-':
-                    if (ParseUtil.commentDoubleDash(stmt, i)) {
+                    i = ParseUtil.commentDoubleDash(stmt, i);
+                    if (i + 1 == length) {
                         return MYSQL_COMMENT;
                     }
                     continue;

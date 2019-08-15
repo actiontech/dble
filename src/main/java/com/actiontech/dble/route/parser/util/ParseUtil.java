@@ -348,16 +348,17 @@ public final class ParseUtil {
         boolean inComment = false;
         while (len > offset) {
             char c = stmt.charAt(offset);
-            if (c == '\n' || c == '\t' || c == '\r') {
-                break;
-            } else if (!inComment && c == '-') {
+            if (!inComment && c == '-') {
                 if (len > ++offset && stmt.charAt(offset) == '-') {
-                    if (len == offset + 1 || stmt.charAt(++offset) != ' ') {
+                    if (len == offset + 1 || (stmt.charAt(++offset) != ' ' &&
+                            stmt.charAt(offset) != '\t')) {
                         break;
                     }
                     inComment = true;
+                } else {
+                    return len;
                 }
-            } else if (len == offset + 1) {
+            } else if (c == '\n' || len == offset + 1) {
                 break;
             } else {
                 ++offset;

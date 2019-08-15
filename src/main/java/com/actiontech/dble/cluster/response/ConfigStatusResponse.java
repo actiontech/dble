@@ -63,7 +63,7 @@ public class ConfigStatusResponse implements ClusterXmlLoader {
                     ClusterDelayProvider.delayBeforeSlaveRollback();
                     LOGGER.info("rollback " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
                     try {
-                        boolean result = RollbackConfig.rollback();
+                        boolean result = RollbackConfig.rollback(TRIGGER_TYPE_CLUSTER);
                         if (!checkLocalResult(result)) {
                             return;
                         }

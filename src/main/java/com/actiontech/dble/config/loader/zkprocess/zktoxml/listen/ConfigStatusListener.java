@@ -63,7 +63,7 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
                 try {
                     ClusterDelayProvider.delayBeforeSlaveRollback();
                     try {
-                        boolean result = RollbackConfig.rollback();
+                        boolean result = RollbackConfig.rollback(TRIGGER_TYPE_CLUSTER);
                         if (!checkLocalResult(result)) {
                             return true;
                         }

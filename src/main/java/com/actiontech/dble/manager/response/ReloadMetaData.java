@@ -32,8 +32,10 @@ public final class ReloadMetaData {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReloadMetaData.class);
 
-    public static final Pattern PATTERN_IN = Pattern.compile("^\\s*table\\s+in\\s*\\((('((?!`)((?!').))+'.'((?!`)((?!').))+',)*" +
-            "'((?!`)((?!').))+'.'((?!`)((?!').))+')\\)\\s*$", Pattern.CASE_INSENSITIVE);
+    public static final Pattern PATTERN_IN = Pattern.compile("^\\s*table\\s+in\\s*\\(" +
+            "(('((?!')((?!\\.)((?!`).)))+\\.((?!')((?!\\.)((?!`).)))+',)*" +
+            "'((?!')((?!\\.)((?!`).)))+\\.((?!')((?!\\.)((?!`).)))+')" +
+            "\\)\\s*$", Pattern.CASE_INSENSITIVE);
     public static final Pattern PATTERN_WHERE = Pattern.compile("^\\s*schema\\s*=\\s*" +
             "(('|\")((?!`)((?!\\2).))+\\2|[a-zA-Z_0-9\\-]+)" +
             "(\\s+and\\s+table\\s*=\\s*" +

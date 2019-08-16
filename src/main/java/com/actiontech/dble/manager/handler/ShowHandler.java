@@ -226,6 +226,12 @@ public final class ShowHandler {
             case ManagerParseShow.DDL_STATE:
                 ShowDdlState.execute(c);
                 break;
+            case ManagerParseShow.SHOW_USER:
+                ShowUser.execute(c);
+                break;
+            case ManagerParseShow.SHOW_USER_PRIVILEGE:
+                ShowUserPrivilege.execute(c);
+                break;
             default:
                 if (isSupportShow(stmt)) {
                     Iterator<PhysicalDBPool> iterator = DbleServer.getInstance().getConfig().getDataHosts().values().iterator();

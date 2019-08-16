@@ -344,4 +344,11 @@ public class ManagerParserTest {
                 ManagerParseShow.parse("show @@datasource.syndetail where name=slave ASDFASDF", 5));
     }
 
+    @Test
+    public void testShowUser() {
+        Assert.assertEquals(ManagerParseShow.SHOW_USER,
+                0xff & ManagerParseShow.parse("show @@user", 5));
+        Assert.assertEquals(ManagerParseShow.SHOW_USER_PRIVILEGE,
+                0xff & ManagerParseShow.parse("show @@user.privilege", 5));
+    }
 }

@@ -79,6 +79,8 @@ public final class ManagerParseShow {
     public static final int PROCESS_LIST = 62;
     public static final int SESSION_XA = 63;
     public static final int SHOW_RELOAD = 64;
+    public static final int SHOW_USER = 65;
+    public static final int SHOW_USER_PRIVILEGE = 66;
 
     public static final Pattern PATTERN_FOR_TABLE_INFO = Pattern.compile("^\\s*schema\\s*=\\s*" +
             "(('|\")((?!`)((?!\\2).))+\\2|[a-zA-Z_0-9\\-]+)" +
@@ -166,6 +168,9 @@ public final class ManagerParseShow {
                 case 'T':
                 case 't':
                     return show2TCheck(stmt, offset);
+                case 'U':
+                case 'u':
+                    return show2User(stmt, offset);
                 case 'V':
                 case 'v':
                     return show2VCheck(stmt, offset);
@@ -912,6 +917,41 @@ public final class ManagerParseShow {
                     return slowQueryFlushCheck(stmt, offset);
                 default:
                     return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    //show @@user.
+    private static int show2User(String stmt, int offset) {
+        int len = stmt.length();
+        if (len > offset + 3) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+
+            if ((c1 == 'S' || c1 == 's') && (c2 == 'E' || c2 == 'e') && (c3 == 'R' || c3 == 'r')) {
+                if (len == offset + 1 || ParseUtil.isEOF(stmt, offset)) {
+                    return SHOW_USER;
+                } else if (len > offset + 10) {
+                    // privilege
+                    char c0 = stmt.charAt(++offset);
+                    char c4 = stmt.charAt(++offset);
+                    char c5 = stmt.charAt(++offset);
+                    char c6 = stmt.charAt(++offset);
+                    char c7 = stmt.charAt(++offset);
+                    char c8 = stmt.charAt(++offset);
+                    char c9 = stmt.charAt(++offset);
+                    char c10 = stmt.charAt(++offset);
+                    char c11 = stmt.charAt(++offset);
+                    char c12 = stmt.charAt(++offset);
+                    if (c0 == '.' && (c4 == 'P' || c4 == 'p') && (c5 == 'R' || c5 == 'r') && (c6 == 'I' || c6 == 'i') &&
+                            (c7 == 'V' || c7 == 'v') && (c8 == 'I' || c8 == 'i') && (c9 == 'L' || c9 == 'l') &&
+                            (c10 == 'E' || c10 == 'e') && (c11 == 'G' || c11 == 'g') && (c12 == 'E' || c12 == 'e') &&
+                            (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
+                        return SHOW_USER_PRIVILEGE;
+                    }
+                }
             }
         }
         return OTHER;

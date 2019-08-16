@@ -61,8 +61,8 @@ public final class ShowUser {
         // write rows
         byte packetId = EOF.getPacketId();
         Map<String, UserConfig> users = DbleServer.getInstance().getConfig().getUsers();
-        for (String userName : users.keySet()) {
-            RowDataPacket row = getRow(userName, users.get(userName), c.getCharset().getResults());
+        for (Map.Entry<String, UserConfig> entry: users.entrySet()) {
+            RowDataPacket row = getRow(entry.getKey(), entry.getValue(), c.getCharset().getResults());
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
         }

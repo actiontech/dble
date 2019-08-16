@@ -70,8 +70,9 @@ public final class ShowUserPrivilege {
         // write rows
         byte packetId = EOF.getPacketId();
         Map<String, UserConfig> users = DbleServer.getInstance().getConfig().getUsers();
-        for (String userName : users.keySet()) {
-            UserConfig user = users.get(userName);
+        for (Map.Entry<String, UserConfig> entry: users.entrySet()) {
+            String userName = entry.getKey();
+            UserConfig user = entry.getValue();
             // skip manager
             if (user.isManager()) {
                 continue;
@@ -91,7 +92,6 @@ public final class ShowUserPrivilege {
             } else {
                 for (String schema : user.getSchemas()) {
                     UserPrivilegesConfig.SchemaPrivilege schemaPrivilege = user.getPrivilegesConfig().getSchemaPrivilege(schema);
-
                     Set<String> tables = schemaPrivilege.getTables();
                     for (String tn : tables) {
                         tableName = tn;

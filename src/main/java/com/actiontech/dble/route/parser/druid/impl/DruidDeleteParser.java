@@ -24,8 +24,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * see http://dev.mysql.com/doc/refman/5.7/en/delete.html
@@ -85,6 +84,10 @@ public class DruidDeleteParser extends DefaultDruidParser {
                 RouterUtil.routeToMultiNode(false, rrs, tc.getDataNodes(), tc.isGlobalTable());
                 rrs.setFinishedRoute(true);
                 return schema;
+            }
+
+            if (delete.getLimit() != null) {
+                this.updateAndDeleteLimitRoute(rrs, tableName, schema);
             }
         }
         return schema;

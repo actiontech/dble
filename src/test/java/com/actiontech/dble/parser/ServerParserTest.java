@@ -60,6 +60,17 @@ public class ServerParserTest {
     }
 
     @Test
+    public void testDoubleDashComment() {
+        Assert.assertEquals(ServerParse.MYSQL_COMMENT, ServerParse.parse("--     "));
+        Assert.assertEquals(ServerParse.MYSQL_COMMENT, ServerParse.parse("--\t    "));
+        Assert.assertEquals(ServerParse.OTHER, ServerParse.parse("- \n"));
+        Assert.assertEquals(ServerParse.MYSQL_COMMENT, ServerParse.parse("--         select * from test"));
+        Assert.assertEquals(ServerParse.INSERT, ServerParse.parse("-- select *\n-- fdfadsfad\ninsert into test values(1)"));
+        Assert.assertEquals(ServerParse.INSERT, ServerParse.parse("--\tselect *\n-- fdfadsfad\ninsert into test values(1)"));
+        Assert.assertEquals(ServerParse.OTHER, ServerParse.parse("-- select *\nfdfadsfad\ninsert into test values(1)"));
+    }
+
+    @Test
     public void testIsDelete() {
         Assert.assertEquals(ServerParse.DELETE, ServerParse.parse("delete ..."));
         Assert.assertEquals(ServerParse.DELETE, ServerParse.parse("DELETE ..."));
@@ -170,6 +181,7 @@ public class ServerParserTest {
         Assert.assertEquals(ServerParseStart.TRANSACTION, ServerParseStart.parse(" start transaction  ...", 6));
         Assert.assertEquals(ServerParseStart.TRANSACTION, ServerParseStart.parse("START TRANSACTION", 5));
         Assert.assertEquals(ServerParseStart.TRANSACTION, ServerParseStart.parse(" staRT   TRANSaction  ", 6));
+        Assert.assertEquals(ServerParseStart.TRANSACTION, ServerParseStart.parse(" start transaction /*!adfadfasdf*/  ", 6));
     }
 
     @Test

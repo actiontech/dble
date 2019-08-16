@@ -70,10 +70,10 @@ public class XMLRuleLoader {
             if (version != null && !Versions.CONFIG_VERSION.equals(version)) {
                 if (this.problemReporter != null) {
                     if (Versions.checkVersion(version)) {
-                        String message = "The server-version is " + Versions.CONFIG_VERSION + ",but the rule.xml version is " + version + ".There might be some incompatible config between two versions, please check it";
+                        String message = "The dble-config-version is " + Versions.CONFIG_VERSION + ",but the rule.xml version is " + version + ".There might be some incompatible config between two versions, please check it";
                         this.problemReporter.notice(message);
                     } else {
-                        String message = "The server-version is " + Versions.CONFIG_VERSION + ",but the rule.xml version is " + version + ".There must be some incompatible config between two versions, please check it";
+                        String message = "The dble-config-version is " + Versions.CONFIG_VERSION + ",but the rule.xml version is " + version + ".There must be some incompatible config between two versions, please check it";
                         this.problemReporter.notice(message);
                     }
                 }

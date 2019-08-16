@@ -95,7 +95,7 @@ public final class RollbackConfig {
             final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
             lock.lock();
             try {
-                if (!rollback()) {
+                if (!rollback(TRIGGER_TYPE_COMMAND)) {
                     writeSpecialError(c, "Rollback interruputed by others,config should be reload");
                 } else {
                     writeOKResult(c);
@@ -116,7 +116,7 @@ public final class RollbackConfig {
         lock.lock();
         try {
             // step 2 rollback self config
-            if (!rollback()) {
+            if (!rollback(TRIGGER_TYPE_COMMAND)) {
                 writeSpecialError(c, "Rollback interruputed by others,config should be reload");
                 return;
             }
@@ -162,7 +162,7 @@ public final class RollbackConfig {
         final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.lock();
         try {
-            if (!rollback()) {
+            if (!rollback(TRIGGER_TYPE_COMMAND)) {
                 writeSpecialError(c, "Rollback interruputed by others,config should be reload");
                 return;
             }
@@ -244,8 +244,8 @@ public final class RollbackConfig {
         }
     }
 
-    public static boolean rollback() throws Exception {
-        if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, ConfStatus.Status.ROLLBACK)) {
+    public static boolean rollback(String reloadType) throws Exception {
+        if (!ReloadManager.startReload(reloadType, ConfStatus.Status.ROLLBACK)) {
             throw new Exception("Reload status error ,other client or cluster may in reload");
         }
         ServerConfig conf = DbleServer.getInstance().getConfig();

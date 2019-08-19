@@ -34,8 +34,8 @@ public final class KillDdlLock {
             mc.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
             return;
         }
-        String schema = matcher.group(2);
-        String table = matcher.group(4);
+        String schema = StringUtil.removeAllApostrophe(matcher.group(1));
+        String table = StringUtil.removeAllApostrophe(matcher.group(5));
         // release distributed lock
         if (DbleServer.getInstance().isUseGeneralCluster()) {
             DistrbtLockManager.releaseLock(ClusterPathUtil.getDDLPath(StringUtil.getUFullName(schema, table)));

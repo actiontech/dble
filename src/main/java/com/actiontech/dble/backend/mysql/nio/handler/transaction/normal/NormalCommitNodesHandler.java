@@ -8,6 +8,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.transaction.normal;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AbstractCommitNodesHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplictCommitHandler;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -100,6 +101,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
 
     private void cleanAndFeedback() {
         byte[] send = sendData;
+        ImplictCommitHandler handler = implictCommitHandler;
         // clear all resources
         session.clearResources(false);
         if (session.closed()) {
@@ -108,9 +110,9 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
         if (this.isFail()) {
             createErrPkg(error).write(session.getSource());
             setResponseTime(false);
-        } else if (implictCommitHandler != null) {
+        } else if (handler != null) {
             // continue to execute sql
-            implictCommitHandler.next();
+            handler.next();
         } else {
             setResponseTime(true);
             session.getSource().write(send);

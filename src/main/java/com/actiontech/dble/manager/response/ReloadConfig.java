@@ -171,7 +171,7 @@ public final class ReloadConfig {
         try {
             //step 2 reload the local config file
             if (!load(loadAll, loadAllMode)) {
-                writeErrorResult(c, "Reload interruputed by others,config should be reload");
+                writeSpecialError(c, "Reload interruputed by others,config should be reload");
                 return;
             }
             ReloadLogHelper.info("reload config: single instance(self) finished", LOGGER);
@@ -216,7 +216,7 @@ public final class ReloadConfig {
         lock.lock();
         try {
             if (!load(loadAll, loadAllMode)) {
-                writeErrorResult(c, "Reload interruputed by others,config should be reload");
+                writeSpecialError(c, "Reload interruputed by others,config should be reload");
                 return;
             }
             ReloadLogHelper.info("reload config: single instance(self) finished", LOGGER);
@@ -224,15 +224,15 @@ public final class ReloadConfig {
 
             ReloadManager.waitingOthers();
             XmltoZkMain.writeConfFileToZK(loadAll, loadAllMode);
-            ReloadLogHelper.info("reload config: sent config status to ucore", LOGGER);
+            ReloadLogHelper.info("reload config: sent config status to zk", LOGGER);
             //tell zk this instance has prepared
             ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
                     ConfigStatusListener.SUCCESS.getBytes(StandardCharsets.UTF_8));
-            ReloadLogHelper.info("reload config: sent finished status to ucore, waiting other instances", LOGGER);
+            ReloadLogHelper.info("reload config: sent finished status to zk, waiting other instances", LOGGER);
             //check all session waiting status
             List<String> preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
             List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
-            // TODO: While waiting, a new instance of MyCat is upping and working.
+
             while (preparedList.size() < onlineList.size()) {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));
                 onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());

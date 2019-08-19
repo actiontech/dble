@@ -644,8 +644,9 @@ public class NonBlockingSession implements Session {
     }
 
     public void implictCommit(ImplictCommitHandler handler) {
-        commit();
+        resetCommitNodesHandler();
         commitHandler.setImplictCommitHandler(handler);
+        commit();
     }
 
     public void performSavePoint(String spName, SavePointHandler.Type type) {

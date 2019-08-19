@@ -343,21 +343,28 @@ public final class ParseUtil {
      * @param offset
      * @return
      */
-    public static boolean commentDoubleDash(String stmt, int offset) {
+    public static int commentDoubleDash(String stmt, int offset) {
         int len = stmt.length();
-        int n = offset;
-        switch (stmt.charAt(n)) {
-            case '-':
-                if (len > ++n && stmt.charAt(n) == '-' && len > ++n) {
-                    if (isSpace(stmt.charAt(n))) {
-                        return true;
+        boolean inComment = false;
+        while (len > offset) {
+            char c = stmt.charAt(offset);
+            if (!inComment && c == '-') {
+                if (len > ++offset && stmt.charAt(offset) == '-') {
+                    if (len == offset + 1 || (stmt.charAt(++offset) != ' ' &&
+                            stmt.charAt(offset) != '\t')) {
+                        break;
                     }
+                    inComment = true;
+                } else {
+                    return len;
                 }
+            } else if (c == '\n' || len == offset + 1) {
                 break;
-            default:
-                break;
+            } else {
+                ++offset;
+            }
         }
-        return false;
+        return offset;
     }
 
     public static boolean currentCharIsSep(String stmt, int offset) {
@@ -531,4 +538,14 @@ public final class ParseUtil {
         }
         return offset;
     }
+
+    public static int skipSpace(String stmt, int offset) {
+        do {
+            if (isSpace(stmt.charAt(offset)))
+                continue;
+            break;
+        } while (stmt.length() > ++offset);
+        return offset;
+    }
+
 }

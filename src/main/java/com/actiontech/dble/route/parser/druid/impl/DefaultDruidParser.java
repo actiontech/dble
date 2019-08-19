@@ -13,6 +13,7 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
+import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.druid.DruidParser;
 import com.actiontech.dble.route.parser.druid.DruidShardingParseInfo;
 import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
@@ -238,5 +239,38 @@ public class DefaultDruidParser implements DruidParser {
         visitor.setShardingSupport(false);
         statement.accept(visitor);
         return buf.toString();
+    }
+
+
+    /**
+     * delete / update sharding table with limit route
+     * if the update/delete with limit route to more than one sharding-table throw a new Execption
+     *
+     * @param rrs
+     * @param tableName
+     * @param schema
+     * @throws SQLException
+     */
+    protected void updateAndDeleteLimitRoute(RouteResultset rrs, String tableName, SchemaConfig schema) throws SQLException {
+        SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
+        for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
+            RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, unit, tableName, rrs, false,
+                    DbleServer.getInstance().getRouterService().getTableId2DataNodeCache(), null);
+            if (rrsTmp != null && rrsTmp.getNodes() != null) {
+                Collections.addAll(nodeSet, rrsTmp.getNodes());
+            }
+        }
+        if (nodeSet.size() > 1) {
+            throw new SQLNonTransientException("delete/update sharding table with a limit route to multiNode not support");
+        } else {
+            RouteResultsetNode[] nodes = new RouteResultsetNode[nodeSet.size()];
+            int i = 0;
+            for (RouteResultsetNode aNodeSet : nodeSet) {
+                nodes[i] = aNodeSet;
+                i++;
+            }
+            rrs.setNodes(nodes);
+            rrs.setFinishedRoute(true);
+        }
     }
 }

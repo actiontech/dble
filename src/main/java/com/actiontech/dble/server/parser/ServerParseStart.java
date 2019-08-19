@@ -38,31 +38,6 @@ public final class ServerParseStart {
         return OTHER;
     }
 
-    // START TRANSACTION
-    /*
-    static int transactionCheck(String stmt, int offset) {
-        if (stmt.length() > offset + "ransaction".length()) {
-            char c1 = stmt.charAt(++offset);
-            char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-            char c4 = stmt.charAt(++offset);
-            char c5 = stmt.charAt(++offset);
-            char c6 = stmt.charAt(++offset);
-            char c7 = stmt.charAt(++offset);
-            char c8 = stmt.charAt(++offset);
-            char c9 = stmt.charAt(++offset);
-            char c10 = stmt.charAt(++offset);
-            if ((c1 == 'R' || c1 == 'r') && (c2 == 'A' || c2 == 'a') && (c3 == 'N' || c3 == 'n')
-        && (c4 == 'S' || c4 == 's') && (c5 == 'A' || c5 == 'a') && (c6 == 'C' || c6 == 'c')
-        && (c7 == 'T' || c7 == 't') && (c8 == 'I' || c8 == 'i') && (c9 == 'O' || c9 == 'o')
-        && (c10 == 'N' || c10 == 'n')
-        && (stmt.length() == ++offset || ParseUtil.isEOF(stmt.charAt(offset)))) {
-                return TRANSACTION;
-            }
-        }
-        return OTHER;
-    }
-    */
     // transaction characteristic check
     private static int transactionCheck(String stmt, int offset) {
         int tmpOff;
@@ -102,16 +77,17 @@ public final class ServerParseStart {
     }
 
     static int readCharcsCheck(String stmt, int offset) {
-        do {
-            char c = stmt.charAt(offset);
-            if (c == ' ' || c == '\t' || c == '\r' || c == '\n')
-                continue;
-            break;
-        } while (stmt.length() > ++offset);
-
-        if (stmt.length() == offset) {
+        int currentOffset = ParseUtil.skipSpace(stmt, offset);
+        if (stmt.length() == currentOffset) {
             return TRANSACTION;
-        } else if (stmt.length() > offset + "ead ".length()) {
+        }
+
+        currentOffset = ParseUtil.commentHint(stmt, currentOffset);
+        if (stmt.length() == ++currentOffset || ParseUtil.skipSpace(stmt, currentOffset) == stmt.length()) {
+            return TRANSACTION;
+        }
+
+        if (stmt.length() > offset + "ead ".length()) {
             char c0 = stmt.charAt(offset);
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);

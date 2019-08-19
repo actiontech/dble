@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.plan.visitor;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
@@ -164,60 +165,51 @@ public class MySQLPlanNodeVisitor {
 
     public boolean visit(SQLExprTableSource tableSource) {
         PlanNode table;
+        String schema;
+        String tableName;
         SQLExpr expr = tableSource.getExpr();
         if (expr instanceof SQLPropertyExpr) {
             SQLPropertyExpr propertyExpr = (SQLPropertyExpr) expr;
-            QueryNode viewNode = null;
-            try {
-                viewNode = metaManager.getSyncView(propertyExpr.getOwnernName(), propertyExpr.getName());
-            } catch (SQLNonTransientException e) {
-                throw new MySQLOutPutException(e.getErrorCode(), e.getSQLState(), e.getMessage());
+            schema = StringUtil.removeBackQuote(propertyExpr.getOwnernName());
+            tableName = StringUtil.removeBackQuote(propertyExpr.getName());
+            if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+                schema = schema.toLowerCase();
+                tableName = tableName.toLowerCase();
             }
             containSchema = true;
-            if (viewNode != null) {
-                viewNode.setAlias(tableSource.getAlias() == null ? propertyExpr.getName() : tableSource.getAlias());
-                this.tableNode = viewNode;
-                tableNode.setWithSubQuery(true);
-                this.tableNode.setExistView(true);
-                tableNode.setKeepFieldSchema(false);
-                return true;
-            } else {
-                try {
-                    table = new TableNode(StringUtil.removeBackQuote(propertyExpr.getOwner().toString()), StringUtil.removeBackQuote(propertyExpr.getName()), this.metaManager);
-                } catch (SQLNonTransientException e) {
-                    throw new MySQLOutPutException(e.getErrorCode(), e.getSQLState(), e.getMessage());
-                }
-            }
         } else if (expr instanceof SQLIdentifierExpr) {
             SQLIdentifierExpr identifierExpr = (SQLIdentifierExpr) expr;
             if (identifierExpr.getName().equalsIgnoreCase("dual")) {
                 this.tableNode = new NoNameNode(currentDb, null);
                 return true;
             }
-            //here to check if the table name is a view in metaManager
-            QueryNode viewNode = null;
+            schema = currentDb;
+            tableName = StringUtil.removeBackQuote(identifierExpr.getName());
+        } else {
+            throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "42000", "table is " + tableSource.toString());
+        }
+
+        //here to check if the table name is a view in metaManager
+        QueryNode viewNode;
+        try {
+            viewNode = metaManager.getSyncView(schema, tableName);
+        } catch (SQLNonTransientException e) {
+            throw new MySQLOutPutException(e.getErrorCode(), e.getSQLState(), e.getMessage());
+        }
+        if (viewNode != null) {
+            //consider if the table with other name
+            viewNode.setAlias(tableSource.getAlias() == null ? tableName : tableSource.getAlias());
+            this.tableNode = viewNode;
+            tableNode.setWithSubQuery(true);
+            this.tableNode.setExistView(true);
+            tableNode.setKeepFieldSchema(false);
+            return true;
+        } else {
             try {
-                viewNode = metaManager.getSyncView(currentDb, identifierExpr.getName());
+                table = new TableNode(schema, tableName, this.metaManager);
             } catch (SQLNonTransientException e) {
                 throw new MySQLOutPutException(e.getErrorCode(), e.getSQLState(), e.getMessage());
             }
-            if (viewNode != null) {
-                //consider if the table with other name
-                viewNode.setAlias(tableSource.getAlias() == null ? identifierExpr.getName() : tableSource.getAlias());
-                this.tableNode = viewNode;
-                tableNode.setWithSubQuery(true);
-                this.tableNode.setExistView(true);
-                tableNode.setKeepFieldSchema(false);
-                return true;
-            } else {
-                try {
-                    table = new TableNode(this.currentDb, StringUtil.removeBackQuote(identifierExpr.getName()), this.metaManager);
-                } catch (SQLNonTransientException e) {
-                    throw new MySQLOutPutException(e.getErrorCode(), e.getSQLState(), e.getMessage());
-                }
-            }
-        } else {
-            throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "42000", "table is " + tableSource.toString());
         }
         ((TableNode) table).setHintList(tableSource.getHints());
         this.tableNode = table;

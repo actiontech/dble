@@ -61,18 +61,18 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
             LOGGER.info("ConfigStatusListener notifyProcess zk to object  :" + status);
             if (status.getStatus() == ConfStatus.Status.ROLLBACK) {
                 try {
-                    if (!ReloadManager.startReload(TRIGGER_TYPE_CLUSTER, ConfStatus.Status.ROLLBACK)) {
-                        LOGGER.info("rollback config failed because self is in reloading");
-                        ClusterHelper.setKV(ClusterPathUtil.getSelfConfStatusPath(),
-                                "Reload status error ,other client or cluster may in reload");
-                        return true;
-                    }
                     ClusterDelayProvider.delayBeforeSlaveRollback();
-                    boolean result = RollbackConfig.rollback();
-                    ReloadManager.reloadFinish();
-                    if (!checkLocalResult(result)) {
-                        return true;
+                    try {
+                        boolean result = RollbackConfig.rollback(TRIGGER_TYPE_CLUSTER);
+                        if (!checkLocalResult(result)) {
+                            return true;
+                        }
+                    } catch (Exception e) {
+                        throw e;
+                    } finally {
+                        ReloadManager.reloadFinish();
                     }
+
                     ClusterDelayProvider.delayAfterSlaveRollback();
                     LOGGER.info("rollback config: sent config status success to zk start");
                     ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
@@ -99,21 +99,26 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
                 ClusterDelayProvider.delayBeforeSlaveReload();
                 LOGGER.info("reload config: ready to reload config");
                 if (!ReloadManager.startReload(TRIGGER_TYPE_CLUSTER, status.getStatus() == ConfStatus.Status.RELOAD_ALL ?
-                        ConfStatus.Status.RELOAD : ConfStatus.Status.RELOAD_ALL)) {
+                        ConfStatus.Status.RELOAD_ALL : ConfStatus.Status.RELOAD)) {
                     LOGGER.info("reload config failed because self is in reloading");
                     ClusterHelper.setKV(ClusterPathUtil.getSelfConfStatusPath(),
                             "Reload status error ,other client or cluster may in reload");
                     return true;
                 }
                 boolean result;
-                if (status.getStatus() == ConfStatus.Status.RELOAD_ALL) {
-                    result = ReloadConfig.reloadAll(Integer.parseInt(status.getParams()));
-                } else {
-                    result = ReloadConfig.reload();
-                }
-                ReloadManager.reloadFinish();
-                if (!checkLocalResult(result)) {
-                    return true;
+                try {
+                    if (status.getStatus() == ConfStatus.Status.RELOAD_ALL) {
+                        result = ReloadConfig.reloadAll(Integer.parseInt(status.getParams()));
+                    } else {
+                        result = ReloadConfig.reload();
+                    }
+                    if (!checkLocalResult(result)) {
+                        return true;
+                    }
+                } catch (Exception e) {
+                    throw e;
+                } finally {
+                    ReloadManager.reloadFinish();
                 }
                 ClusterDelayProvider.delayAfterSlaveReload();
                 LOGGER.info("reload config: sent config status success to zk start");

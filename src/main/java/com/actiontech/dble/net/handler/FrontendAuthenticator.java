@@ -41,6 +41,15 @@ public class FrontendAuthenticator implements NIOHandler {
 
     @Override
     public void handle(byte[] data) {
+        DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                asynchronousHandle(data);
+            }
+        });
+    }
+
+    public void asynchronousHandle(byte[] data) {
         // check quit packet
         if (data.length == QuitPacket.QUIT.length && data[4] == MySQLPacket.COM_QUIT) {
             source.close("quit packet");

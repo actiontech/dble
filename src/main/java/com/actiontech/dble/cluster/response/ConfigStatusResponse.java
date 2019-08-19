@@ -62,17 +62,17 @@ public class ConfigStatusResponse implements ClusterXmlLoader {
                 try {
                     ClusterDelayProvider.delayBeforeSlaveRollback();
                     LOGGER.info("rollback " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
-                    if (!ReloadManager.startReload(TRIGGER_TYPE_CLUSTER, ConfStatus.Status.ROLLBACK)) {
-                        LOGGER.info("rollback config failed because self is in reloading");
-                        ClusterHelper.setKV(ClusterPathUtil.getSelfConfStatusPath(),
-                                "Reload status error ,other client or cluster may in reload");
-                        return;
+                    try {
+                        boolean result = RollbackConfig.rollback(TRIGGER_TYPE_CLUSTER);
+                        if (!checkLocalResult(result)) {
+                            return;
+                        }
+                    } catch (Exception e) {
+                        throw e;
+                    } finally {
+                        ReloadManager.reloadFinish();
                     }
-                    boolean result = RollbackConfig.rollback();
-                    ReloadManager.reloadFinish();
-                    if (!checkLocalResult(result)) {
-                        return;
-                    }
+
                     ClusterDelayProvider.delayAfterSlaveRollback();
                     LOGGER.info("rollback config: sent config status success to ucore start");
                     ClusterHelper.setKV(ClusterPathUtil.getSelfConfStatusPath(), ClusterPathUtil.SUCCESS);
@@ -100,11 +100,17 @@ public class ConfigStatusResponse implements ClusterXmlLoader {
                                     "Reload status error ,other client or cluster may in reload");
                             return;
                         }
-                        boolean result = ReloadConfig.reloadAll(Integer.parseInt(status.getParams()));
-                        ReloadManager.reloadFinish();
-                        if (!checkLocalResult(result)) {
-                            return;
+                        try {
+                            boolean result = ReloadConfig.reloadAll(Integer.parseInt(status.getParams()));
+                            if (!checkLocalResult(result)) {
+                                return;
+                            }
+                        } catch (Exception e) {
+                            throw e;
+                        } finally {
+                            ReloadManager.reloadFinish();
                         }
+
                     } finally {
                         lock.unlock();
                     }
@@ -119,11 +125,17 @@ public class ConfigStatusResponse implements ClusterXmlLoader {
                                     "Reload status error ,other client or cluster may in reload");
                             return;
                         }
-                        boolean result = ReloadConfig.reload();
-                        ReloadManager.reloadFinish();
-                        if (!checkLocalResult(result)) {
-                            return;
+                        try {
+                            boolean result = ReloadConfig.reload();
+                            if (!checkLocalResult(result)) {
+                                return;
+                            }
+                        } catch (Exception e) {
+                            throw e;
+                        } finally {
+                            ReloadManager.reloadFinish();
                         }
+
                     } finally {
                         lock.unlock();
                     }

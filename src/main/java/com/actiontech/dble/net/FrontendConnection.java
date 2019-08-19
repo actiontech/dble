@@ -51,7 +51,7 @@ public abstract class FrontendConnection extends AbstractConnection {
     protected boolean isAuthenticated;
     private boolean userReadOnly = true;
     private boolean sessionReadOnly = false;
-    private boolean multStatementAllow = false;
+    private volatile boolean multStatementAllow = false;
 
     public FrontendConnection(NetworkChannel channel) throws IOException {
         super(channel);

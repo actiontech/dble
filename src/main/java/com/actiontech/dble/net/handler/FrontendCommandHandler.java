@@ -122,6 +122,10 @@ public class FrontendCommandHandler implements NIOHandler {
                 commands.doHeartbeat();
                 source.heartbeat(data);
                 break;
+            case MySQLPacket.COM_SET_OPTION:
+                commands.doOther();
+                source.setOption(data) ;
+                break;
             default:
                 commands.doOther();
                 source.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");

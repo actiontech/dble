@@ -438,6 +438,7 @@ public class XMLSchemaLoader implements SchemaLoader {
 
     private void loadDataNodes(Element root) {
         NodeList list = root.getElementsByTagName("dataNode");
+        Set<String> checkSet = new HashSet<>();
         for (int i = 0, n = list.getLength(); i < n; i++) {
             Element element = (Element) list.item(i);
             String dnNamePre = element.getAttribute("name");
@@ -471,11 +472,11 @@ public class XMLSchemaLoader implements SchemaLoader {
                     String dnName = dnNames[k];
                     String databaseName = hd[1];
                     String hostName = hd[0];
-                    createDataNode(dnName, databaseName, hostName);
+                    createDataNode(dnName, databaseName, hostName, checkSet);
                 }
 
             } else {
-                createDataNode(dnNamePre, databaseStr, host);
+                createDataNode(dnNamePre, databaseStr, host, checkSet);
             }
 
         }
@@ -499,9 +500,14 @@ public class XMLSchemaLoader implements SchemaLoader {
         return mhdList;
     }
 
-    private void createDataNode(String dnName, String database, String host) {
+    private void createDataNode(String dnName, String database, String host, Set checkSet) {
 
         DataNodeConfig conf = new DataNodeConfig(dnName, database, host);
+        if (checkSet.contains(host + "#" + database)) {
+            throw new ConfigException("dataNode " + conf.getName() + " use the same dataHost&database with other dataNode");
+        } else {
+            checkSet.add(host + "#" + database);
+        }
         if (dataNodes.containsKey(conf.getName())) {
             throw new ConfigException("dataNode " + conf.getName() + " duplicated!");
         }

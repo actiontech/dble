@@ -8,6 +8,7 @@ package com.actiontech.dble.config.model;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -34,8 +35,7 @@ public class UserPrivilegesConfig {
     }
 
     public SchemaPrivilege getSchemaPrivilege(String schemaName) {
-        SchemaPrivilege schemaPrivilege = schemaPrivileges.get(schemaName);
-        return schemaPrivilege;
+        return schemaPrivileges.get(schemaName);
     }
 
 
@@ -78,6 +78,10 @@ public class UserPrivilegesConfig {
 
         public TablePrivilege getTablePrivilege(String tableName) {
             return tablePrivileges.get(tableName);
+        }
+
+        public Set<String> getTables() {
+            return tablePrivileges.keySet();
         }
     }
 

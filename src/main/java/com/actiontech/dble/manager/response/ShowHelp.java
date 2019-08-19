@@ -44,7 +44,7 @@ public final class ShowHelp {
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("DESCRIPTION", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
     }
@@ -144,6 +144,8 @@ public final class ShowHelp {
         HELPS.put("show @@algorithm where schema='?' and table='?'", "Report the algorithm info of a table");
         HELPS.put("show @@ddl", "Report all ddl info in progress");
         HELPS.put("show @@reload_status", "Report latest reload status in this dble");
+        HELPS.put("show @@user", "Report all user in this dble");
+        HELPS.put("show @@user.privilege", "Report privilege of all business user in this dble");
         // switch
         HELPS.put("switch @@datasource name:index", "Switch dataSource");
 

@@ -13,10 +13,7 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.handler.*;
-import com.actiontech.dble.net.mysql.ErrorPacket;
-import com.actiontech.dble.net.mysql.HandshakeV10Packet;
-import com.actiontech.dble.net.mysql.MySQLPacket;
-import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.RandomUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -54,7 +51,7 @@ public abstract class FrontendConnection extends AbstractConnection {
     protected boolean isAuthenticated;
     private boolean userReadOnly = true;
     private boolean sessionReadOnly = false;
-    private boolean multStatementAllow = false;
+    private volatile boolean multStatementAllow = false;
 
     public FrontendConnection(NetworkChannel channel) throws IOException {
         super(channel);
@@ -379,6 +376,24 @@ public abstract class FrontendConnection extends AbstractConnection {
         } else {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare unsupported!");
         }
+    }
+
+    public void setOption(byte[] data) {
+        MySQLMessage mm = new MySQLMessage(data); //see sql\protocol_classic.cc parse_packet
+        if (mm.length() == 7) {
+            mm.position(5);
+            int optCommand = mm.readUB2();
+            if (optCommand == 0) {
+                this.multStatementAllow = true;
+                write(writeToBuffer(EOFPacket.EOF, allocate()));
+                return;
+            } else if (optCommand == 1) {
+                this.multStatementAllow = false;
+                write(writeToBuffer(EOFPacket.EOF, allocate()));
+                return;
+            }
+        }
+        writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Set Option ERROR!");
     }
 
     public void stmtReset(byte[] data) {

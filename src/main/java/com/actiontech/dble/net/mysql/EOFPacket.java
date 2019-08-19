@@ -31,7 +31,7 @@ import java.nio.ByteBuffer;
  */
 public class EOFPacket extends MySQLPacket {
     public static final byte FIELD_COUNT = (byte) 0xfe;
-
+    public static final byte[] EOF = new byte[]{7, 0, 0, 1, FIELD_COUNT, 0, 0, 0, 0, 0, 0};
     private byte fieldCount = FIELD_COUNT;
     private int warningCount;
     private int status = 2;

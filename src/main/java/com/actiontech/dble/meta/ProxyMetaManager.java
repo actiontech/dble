@@ -28,8 +28,6 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.meta.table.*;
-import com.actiontech.dble.meta.table.old.AbstractTableMetaHandler;
-import com.actiontech.dble.meta.table.old.TableMetaCheckHandler;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
@@ -435,7 +433,7 @@ public class ProxyMetaManager {
      */
     public void initMeta(ServerConfig config) {
         Set<String> selfNode = getSelfNodes(config);
-        SchemaMetaHandler handler = new SchemaMetaHandler(this, config, selfNode);
+        ServerMetaHandler handler = new ServerMetaHandler(this, config, selfNode);
         handler.setFilter(null);
         handler.execute();
         initViewMeta();
@@ -456,7 +454,7 @@ public class ProxyMetaManager {
      */
     public boolean initMeta(ServerConfig config, Map<String, Set<String>> specifiedSchemas) {
         Set<String> selfNode = getSelfNodes(config);
-        SchemaMetaHandler handler = new SchemaMetaHandler(this, config, selfNode);
+        ServerMetaHandler handler = new ServerMetaHandler(this, config, selfNode);
         handler.setFilter(specifiedSchemas);
         handler.register();
         //if the meta reload interrupted by reload release
@@ -498,32 +496,22 @@ public class ProxyMetaManager {
             if (!checkDbExists(schema.getName())) {
                 continue;
             }
-            if (DbleServer.getInstance().getConfig().getSystem().getUseOldMetaInit() == 1) {
-                for (TableConfig table : schema.getTables().values()) {
-                    if (!checkTableExists(schema.getName(), table.getName())) {
-                        continue;
+            Map<String, Set<String>> dataNodeMap = new HashMap<>();
+            for (Map.Entry<String, TableConfig> entry : schema.getTables().entrySet()) {
+                String tableName = entry.getKey();
+                TableConfig tbConfig = entry.getValue();
+                for (String dataNode : tbConfig.getDataNodes()) {
+                    Set<String> tables = dataNodeMap.get(dataNode);
+                    if (tables == null) {
+                        tables = new HashSet<>();
+                        dataNodeMap.put(dataNode, tables);
                     }
-                    AbstractTableMetaHandler handler = new TableMetaCheckHandler(this, schema.getName(), table, selfNode);
-                    handler.execute();
+                    tables.add(tableName);
                 }
-            } else {
-                Map<String, Set<String>> dataNodeMap = new HashMap<>();
-                for (Map.Entry<String, TableConfig> entry : schema.getTables().entrySet()) {
-                    String tableName = entry.getKey();
-                    TableConfig tbConfig = entry.getValue();
-                    for (String dataNode : tbConfig.getDataNodes()) {
-                        Set<String> tables = dataNodeMap.get(dataNode);
-                        if (tables == null) {
-                            tables = new HashSet<>();
-                            dataNodeMap.put(dataNode, tables);
-                        }
-                        tables.add(tableName);
-                    }
-                }
-
-                MultiTablesMetaHandler multiTablesMetaHandler = new MultiTablesCheckMetaHandler(this, schema, selfNode);
-                multiTablesMetaHandler.execute();
             }
+
+            AbstractSchemaMetaHandler multiTablesMetaHandler = new SchemaCheckMetaHandler(this, schema, selfNode);
+            multiTablesMetaHandler.execute();
         }
     }
 

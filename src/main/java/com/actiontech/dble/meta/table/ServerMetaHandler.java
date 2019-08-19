@@ -5,13 +5,11 @@
 
 package com.actiontech.dble.meta.table;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.ReloadManager;
-import com.actiontech.dble.meta.table.old.MultiTableMetaHandler;
 import com.actiontech.dble.util.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,8 +22,11 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class SchemaMetaHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SchemaMetaHandler.class);
+/**
+ * Start handler for the entire meta init/reload event
+ */
+public class ServerMetaHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerMetaHandler.class);
     private Lock lock;
     private Condition allSchemaDone;
     private int schemaNumber;
@@ -36,7 +37,7 @@ public class SchemaMetaHandler {
     private Map<String, Set<String>> filter;
     private Map<String, SchemaConfig> reloadSchemas;
 
-    public SchemaMetaHandler(ProxyMetaManager tmManager, ServerConfig config, Set<String> selfNode) {
+    public ServerMetaHandler(ProxyMetaManager tmManager, ServerConfig config, Set<String> selfNode) {
         this.tmManager = tmManager;
         this.lock = new ReentrantLock();
         this.allSchemaDone = lock.newCondition();
@@ -70,23 +71,14 @@ public class SchemaMetaHandler {
                 ReloadLogHelper.info("reload meta loop interrupted by command ,break the loop", LOGGER);
                 break;
             }
-            if (DbleServer.getInstance().getConfig().getSystem().getUseOldMetaInit() == 1) {
-                MultiTableMetaHandler multiTableMeta = new MultiTableMetaHandler(this, entry.getValue(), selfNode);
-                if (filter != null) {
-                    multiTableMeta.setFilterTables(filter.get(entry.getKey()));
-                    ReloadLogHelper.infoList("schema filter " + entry.getKey(), LOGGER, filter.get(entry.getKey()));
-                }
-                multiTableMeta.execute();
-            } else {
-                MultiTablesInitMetaHandler multiTableMeta = new MultiTablesInitMetaHandler(this, entry.getValue(), selfNode);
-                if (filter != null) {
-                    multiTableMeta.setFilterTables(filter.get(entry.getKey()));
-                    ReloadLogHelper.infoList("schema filter " + entry.getKey(), LOGGER, filter.get(entry.getKey()));
-                }
-                multiTableMeta.execute();
+            SchemaInitMetaHandler multiTableMeta = new SchemaInitMetaHandler(this, entry.getValue(), selfNode);
+            if (filter != null) {
+                multiTableMeta.setFilterTables(filter.get(entry.getKey()));
+                ReloadLogHelper.infoList("schema filter " + entry.getKey(), LOGGER, filter.get(entry.getKey()));
             }
+            multiTableMeta.execute();
         }
-        return waitAllNodeDone();
+        return waitAllSchemaDone();
     }
 
     public void countDown() {
@@ -104,14 +96,14 @@ public class SchemaMetaHandler {
      *
      * @return
      */
-    public boolean waitAllNodeDone() {
+    public boolean waitAllSchemaDone() {
         lock.lock();
         try {
             while (schemaNumber != 0 && !ReloadManager.getReloadInstance().isReloadInterrupted()) {
                 allSchemaDone.await();
             }
         } catch (InterruptedException e) {
-            ReloadLogHelper.info("waitAllNodeDone " + e, LOGGER);
+            ReloadLogHelper.info("waitAllSchemaDone " + e, LOGGER);
         } finally {
             lock.unlock();
         }

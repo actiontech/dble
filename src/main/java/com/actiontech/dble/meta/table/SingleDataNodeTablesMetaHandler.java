@@ -14,7 +14,7 @@ import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
-import com.actiontech.dble.sqlengine.MultiSQLJob;
+import com.actiontech.dble.sqlengine.MultiTablesMetaJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.sqlengine.SQLQueryResultListener;
 
@@ -23,7 +23,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public abstract class AbstractTablesMetaHandler {
+public class SingleDataNodeTablesMetaHandler {
     protected final ReloadLogHelper logger;
     private static final String[] MYSQL_SHOW_CREATE_TABLE_COLS = new String[]{
             "Table",
@@ -35,12 +35,14 @@ public abstract class AbstractTablesMetaHandler {
     private Set<String> selfNode;
     private Lock showTablesLock = new ReentrantLock();
     private Condition collectTables = showTablesLock.newCondition();
+    private AbstractSchemaMetaHandler schemaMetaHandler;
 
-    AbstractTablesMetaHandler(String schema, Map<String, Set<String>> dataNodeMap, Set<String> selfNode, boolean isReload) {
+    public SingleDataNodeTablesMetaHandler(AbstractSchemaMetaHandler schemaMetaHandler, String schema, Map<String, Set<String>> dataNodeMap, Set<String> selfNode, boolean isReload) {
         this.dataNodeMap = dataNodeMap;
         this.schema = schema;
         this.selfNode = selfNode;
         this.logger = new ReloadLogHelper(isReload);
+        this.schemaMetaHandler = schemaMetaHandler;
     }
 
     public void execute() {
@@ -48,13 +50,13 @@ public abstract class AbstractTablesMetaHandler {
             String dataNode = dataNodeInfo.getKey();
             if (selfNode != null && selfNode.contains(dataNode)) {
                 logger.info("the Node " + dataNode + " is a selfNode,count down");
-                this.countdown();
+                this.countdown(dataNode);
                 continue;
             }
             Set<String> existTables = listExistTables(dataNode, dataNodeInfo.getValue());
             if (existTables.size() == 0) {
                 logger.info("the Node " + dataNode + " has no exist table,count down");
-                this.countdown();
+                this.countdown(dataNode);
                 continue;
             }
             StringBuilder sbSql = new StringBuilder();
@@ -66,12 +68,12 @@ public abstract class AbstractTablesMetaHandler {
             if (ds.isAlive()) {
                 logger.info("Datasource is alive start sqljob for dataNode:" + dataNode);
                 MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLShowCreateTablesListener(existTables, dataNode, ds));
-                MultiSQLJob sqlJob = new MultiSQLJob(sbSql.toString(), dn.getDatabase(), resultHandler, ds, logger.isReload());
+                MultiTablesMetaJob sqlJob = new MultiTablesMetaJob(sbSql.toString(), dn.getDatabase(), resultHandler, ds, logger.isReload());
                 sqlJob.run();
             } else {
                 logger.info("Datasource is not alive start sqljob for dataNode:" + dataNode);
                 MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLShowCreateTablesListener(existTables, dataNode, null));
-                MultiSQLJob sqlJob = new MultiSQLJob(sbSql.toString(), dataNode, resultHandler, false, logger.isReload());
+                MultiTablesMetaJob sqlJob = new MultiTablesMetaJob(sbSql.toString(), dataNode, resultHandler, false, logger.isReload());
                 sqlJob.run();
             }
         }
@@ -94,6 +96,15 @@ public abstract class AbstractTablesMetaHandler {
         return showTablesHandler.getExistsTables();
     }
 
+    protected void countdown(String dataNode) {
+        schemaMetaHandler.countDownShardTable(dataNode);
+    }
+
+    protected void handlerTable(String table, String dataNode, String sql) {
+        schemaMetaHandler.checkTableConsistent(table, dataNode, sql);
+    }
+
+
     void showTablesFinished() {
         showTablesLock.lock();
         try {
@@ -102,10 +113,6 @@ public abstract class AbstractTablesMetaHandler {
             showTablesLock.unlock();
         }
     }
-
-    protected abstract void countdown();
-
-    protected abstract void handlerTable(String table, String dataNode, String sql);
 
     private class MySQLShowCreateTablesListener implements SQLQueryResultListener<SQLQueryResult<List<Map<String, String>>>> {
         private Set<String> tables;
@@ -150,8 +157,9 @@ public abstract class AbstractTablesMetaHandler {
                     ToResolveContainer.TABLE_LACK.add(tableId);
                 }
             }
-            logger.info("dataNode normally count down:" + dataNode);
-            countdown();
+            logger.info("dataNode normally count down:" + dataNode + " for schema " + schema);
+            countdown(dataNode);
         }
     }
+
 }

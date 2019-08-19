@@ -13,12 +13,12 @@ import java.util.List;
 public class GetSchemaDefaultNodeTablesHandler extends GetNodeTablesHandler {
 
     private SchemaConfig config;
-    private MultiTablesMetaHandler multiTablesMetaHandler;
+    private AbstractSchemaMetaHandler schemaMetaHandler;
     private volatile boolean finished = false;
 
-    GetSchemaDefaultNodeTablesHandler(MultiTablesMetaHandler multiTablesMetaHandler, SchemaConfig config) {
+    GetSchemaDefaultNodeTablesHandler(AbstractSchemaMetaHandler schemaMetaHandler, SchemaConfig config) {
         super(config.getDataNode());
-        this.multiTablesMetaHandler = multiTablesMetaHandler;
+        this.schemaMetaHandler = schemaMetaHandler;
         this.config = config;
     }
 
@@ -38,7 +38,7 @@ public class GetSchemaDefaultNodeTablesHandler extends GetNodeTablesHandler {
     @Override
     protected void handleFinished() {
         finished = true;
-        multiTablesMetaHandler.showTablesFinished();
+        schemaMetaHandler.showTablesFinished();
     }
 
     public boolean isFinished() {

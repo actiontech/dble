@@ -17,13 +17,14 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.parser.ServerParse;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * async execute in EngineCtx or standalone (EngineCtx=null)
  *
  * @author yhq
  */
-public class MultiSQLJob implements ResponseHandler, Runnable {
+public class MultiTablesMetaJob implements ResponseHandler, Runnable {
 
     public final ReloadLogHelper logger;
 
@@ -34,9 +35,9 @@ public class MultiSQLJob implements ResponseHandler, Runnable {
     private final SQLJobHandler jobHandler;
     private final PhysicalDatasource ds;
     private boolean isMustWriteNode;
-    private volatile boolean finished;
+    private AtomicBoolean finished = new AtomicBoolean(false);
 
-    public MultiSQLJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDatasource ds, boolean isReload) {
+    public MultiTablesMetaJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDatasource ds, boolean isReload) {
         super();
         this.logger = new ReloadLogHelper(isReload);
         this.sql = sql;
@@ -46,7 +47,7 @@ public class MultiSQLJob implements ResponseHandler, Runnable {
         this.dataNode = null;
     }
 
-    public MultiSQLJob(String sql, String dataNode, SQLJobHandler jobHandler, boolean isMustWriteNode, boolean isReload) {
+    public MultiTablesMetaJob(String sql, String dataNode, SQLJobHandler jobHandler, boolean isMustWriteNode, boolean isReload) {
         super();
         this.sql = sql;
         this.jobHandler = jobHandler;
@@ -95,13 +96,14 @@ public class MultiSQLJob implements ResponseHandler, Runnable {
     }
 
     public boolean isFinished() {
-        return finished;
+        return finished.get();
     }
 
     private void doFinished(boolean failed) {
-        logger.info("Finish MultiSQLJob with result " + failed + " on connection " + connection);
-        finished = true;
-        jobHandler.finished(dataNode == null ? schema : dataNode, failed);
+        logger.info("Finish MultiTablesMetaJob with result " + failed + " on connection " + connection);
+        if (finished.compareAndSet(false, true)) {
+            jobHandler.finished(dataNode == null ? schema : dataNode, failed);
+        }
     }
 
     @Override

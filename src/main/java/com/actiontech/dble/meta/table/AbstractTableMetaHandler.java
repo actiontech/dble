@@ -3,7 +3,7 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.meta.table.old;
+package com.actiontech.dble.meta.table;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
@@ -12,10 +12,8 @@ import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
-import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.protocol.StructureMeta;
-import com.actiontech.dble.meta.table.MetaHelper;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
@@ -40,9 +38,6 @@ public abstract class AbstractTableMetaHandler {
     private Set<String> selfNode;
     private ConcurrentMap<String, List<String>> dataNodeTableStructureSQLMap;
 
-    public AbstractTableMetaHandler(String schema, TableConfig tbConfig, Set<String> selfNode, boolean isReload) {
-        this(schema, tbConfig.getName(), tbConfig.getDataNodes(), selfNode, isReload);
-    }
 
     public AbstractTableMetaHandler(String schema, String tableName, List<String> dataNodes, Set<String> selfNode, boolean isReload) {
         this.dataNodes = dataNodes;

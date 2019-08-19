@@ -11,25 +11,25 @@ import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
-import com.actiontech.dble.sqlengine.MultiSQLJob;
+import com.actiontech.dble.sqlengine.MultiTablesMetaJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.sqlengine.SQLQueryResultListener;
 
 import java.util.List;
 import java.util.Map;
 
-public class SingleNodeTablesMetaInitHandler {
+public class DefaultNodeTablesMetaHandler {
     protected final ReloadLogHelper logger;
     private static final String[] MYSQL_SHOW_CREATE_TABLE_COLS = new String[]{
             "Table",
             "Create Table"};
     private static final String SQL = "show create table `{0}`;";
     private String dataNode;
-    private MultiTablesMetaHandler multiTablesMetaHandler;
+    private AbstractSchemaMetaHandler schemaMetaHandler;
     private volatile List<String> tables;
 
-    SingleNodeTablesMetaInitHandler(MultiTablesMetaHandler multiTablesMetaHandler, List<String> tables, String dataNode, boolean isReload) {
-        this.multiTablesMetaHandler = multiTablesMetaHandler;
+    DefaultNodeTablesMetaHandler(AbstractSchemaMetaHandler schemaMetaHandler, List<String> tables, String dataNode, boolean isReload) {
+        this.schemaMetaHandler = schemaMetaHandler;
         this.tables = tables;
         this.dataNode = dataNode;
         this.logger = new ReloadLogHelper(isReload);
@@ -45,12 +45,12 @@ public class SingleNodeTablesMetaInitHandler {
         if (ds.isAlive()) {
             logger.info("Ds is alive execute sql in singleNode:" + dataNode);
             MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLShowCreateTablesListener());
-            MultiSQLJob sqlJob = new MultiSQLJob(sbSql.toString(), dn.getDatabase(), resultHandler, ds, true);
+            MultiTablesMetaJob sqlJob = new MultiTablesMetaJob(sbSql.toString(), dn.getDatabase(), resultHandler, ds, true);
             sqlJob.run();
         } else {
             logger.info("Ds is not alive execute sql in singleNode:" + dataNode);
             MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLShowCreateTablesListener());
-            MultiSQLJob sqlJob = new MultiSQLJob(sbSql.toString(), dataNode, resultHandler, false, true);
+            MultiTablesMetaJob sqlJob = new MultiTablesMetaJob(sbSql.toString(), dataNode, resultHandler, false, true);
             sqlJob.run();
         }
     }
@@ -72,14 +72,14 @@ public class SingleNodeTablesMetaInitHandler {
                 tables.remove(table);
                 String createSQL = row.get(MYSQL_SHOW_CREATE_TABLE_COLS[1]);
                 StructureMeta.TableMeta tableMeta = MetaHelper.initTableMeta(table, createSQL, System.currentTimeMillis());
-                multiTablesMetaHandler.handleSingleMetaData(tableMeta);
+                schemaMetaHandler.handleSingleMetaData(tableMeta);
             }
             if (tables.size() > 0) {
                 for (String table : tables) {
                     logger.warn("show create table " + table + " has no results");
                 }
             }
-            multiTablesMetaHandler.countDownSingleTable();
+            schemaMetaHandler.countDownSingleTable();
         }
 
     }

@@ -15,11 +15,12 @@ import java.util.Set;
 
 public class GetSpecialNodeTablesHandler extends GetNodeTablesHandler {
 
-    private AbstractTablesMetaHandler handler;
+    private SingleDataNodeTablesMetaHandler handler;
     private Set<String> tables;
     private volatile Set<String> existsTables = new HashSet<>();
     private volatile boolean finished = false;
-    GetSpecialNodeTablesHandler(AbstractTablesMetaHandler handler, Set<String> tables, String dataNode) {
+
+    GetSpecialNodeTablesHandler(SingleDataNodeTablesMetaHandler handler, Set<String> tables, String dataNode) {
         super(dataNode);
         this.handler = handler;
         this.tables = tables;
@@ -54,6 +55,7 @@ public class GetSpecialNodeTablesHandler extends GetNodeTablesHandler {
         finished = true;
         handler.showTablesFinished();
     }
+
     public boolean isFinished() {
         return finished;
     }

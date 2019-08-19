@@ -20,13 +20,15 @@ import java.util.Set;
 
 /**
  * Created by szf on 2019/4/4.
+ * Only used to table schedule structure check
+ * Get latest meta from all dataNode and just check whether the table meta is the same
  */
-public class MultiTablesCheckMetaHandler extends MultiTablesMetaHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MultiTablesCheckMetaHandler.class);
+public class SchemaCheckMetaHandler extends AbstractSchemaMetaHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SchemaCheckMetaHandler.class);
     private final ProxyMetaManager tmManager;
     private final String schema;
 
-    public MultiTablesCheckMetaHandler(ProxyMetaManager tmManager, SchemaConfig schemaConfig, Set<String> selfNode) {
+    public SchemaCheckMetaHandler(ProxyMetaManager tmManager, SchemaConfig schemaConfig, Set<String> selfNode) {
         super(schemaConfig, selfNode, false);
         this.tmManager = tmManager;
         this.schema = schemaConfig.getName();

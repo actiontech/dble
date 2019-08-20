@@ -459,6 +459,12 @@ public final class ParseUtil {
                         i = getProcedureEndPos(sql, i);
                     }
                     break;
+                case 'F':
+                case 'f':
+                    if (!inApostrophe) {
+                        i = getFinctionEndPos(sql, i);
+                    }
+                    break;
                 case 'B':
                     if (inProcedure && !inApostrophe && isBegin(sql, i)) {
                         procedureBegin = true;
@@ -511,6 +517,30 @@ public final class ParseUtil {
             return true;
         }
         return false;
+    }
+
+    private static int getFinctionEndPos(String stmt, int offset) {
+        if (stmt.length() > offset + "UNCTION ".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            if ((c1 == 'u' || c1 == 'U') &&
+                    (c2 == 'n' || c2 == 'N') &&
+                    (c3 == 'c' || c3 == 'C') &&
+                    (c4 == 't' || c4 == 'T') &&
+                    (c5 == 'i' || c5 == 'I') &&
+                    (c6 == 'o' || c6 == 'O') &&
+                    (c7 == 'n' || c7 == 'N')) {
+                String testSql = stmt.substring(++offset).toUpperCase();
+                //offset + length  -1 for checking ';' outside
+                return offset - 1 + findNextBreak(testSql, true);
+            }
+        }
+        return offset;
     }
 
     private static int getProcedureEndPos(String stmt, int offset) {

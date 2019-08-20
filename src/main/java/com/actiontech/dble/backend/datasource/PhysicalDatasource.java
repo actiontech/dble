@@ -13,7 +13,7 @@ import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.ConMap;
 import com.actiontech.dble.backend.ConQueue;
-import com.actiontech.dble.backend.heartbeat.DBHeartbeat;
+import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ConnectionHeartBeatHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.DelegateResponseHandler;
@@ -42,7 +42,7 @@ public abstract class PhysicalDatasource {
     private int size;
     private final DBHostConfig config;
     private final ConMap conMap = new ConMap();
-    private DBHeartbeat heartbeat;
+    private MySQLHeartbeat heartbeat;
     private final boolean readNode;
     private volatile long heartbeatRecoveryTime;
     private final DataHostConfig hostConfig;
@@ -118,7 +118,7 @@ public abstract class PhysicalDatasource {
         return dbPool;
     }
 
-    public abstract DBHeartbeat createHeartBeat();
+    public abstract MySQLHeartbeat createHeartBeat();
 
 
     public void setSize(int size) {
@@ -157,7 +157,7 @@ public abstract class PhysicalDatasource {
         }
     }
 
-    public DBHeartbeat getHeartbeat() {
+    public MySQLHeartbeat getHeartbeat() {
         return heartbeat;
     }
 
@@ -498,7 +498,7 @@ public abstract class PhysicalDatasource {
     }
 
     public boolean isAlive() {
-        return (getHeartbeat().getStatus() == DBHeartbeat.OK_STATUS) || (getHeartbeat().isStop() && testConnSuccess);
+        return (getHeartbeat().getStatus() == MySQLHeartbeat.OK_STATUS) || (getHeartbeat().isStop() && testConnSuccess);
     }
 
 

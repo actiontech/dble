@@ -116,14 +116,14 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         String wsrepConnected = resultResult != null ? resultResult.get("wsrep_connected") : null; // ON
         String wsrepReady = resultResult != null ? resultResult.get("wsrep_ready") : null; // ON
         if ("ON".equals(wsrepConnected) && "ON".equals(wsrepReady) && "Primary".equals(wsrepClusterStatus)) {
-            heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_NORMAL);
+            heartbeat.setDbSynStatus(MySQLHeartbeat.DB_SYN_NORMAL);
             heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
         } else {
             MySQLHeartbeat.LOGGER.warn("found MySQL  cluster status err !!! " +
                     heartbeat.getSource().getConfig() + " wsrep_cluster_status: " + wsrepClusterStatus +
                     " wsrep_connected: " + wsrepConnected + " wsrep_ready: " + wsrepReady
             );
-            heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_ERROR);
+            heartbeat.setDbSynStatus(MySQLHeartbeat.DB_SYN_ERROR);
             heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS);
         }
         heartbeat.getAsyncRecorder().setByCluster(resultResult);
@@ -133,7 +133,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         String slaveIoRunning = resultResult != null ? resultResult.get("Slave_IO_Running") : null;
         String slaveSqlRunning = resultResult != null ? resultResult.get("Slave_SQL_Running") : null;
         if (slaveIoRunning != null && slaveIoRunning.equals(slaveSqlRunning) && slaveSqlRunning.equals("Yes")) {
-            heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_NORMAL);
+            heartbeat.setDbSynStatus(MySQLHeartbeat.DB_SYN_NORMAL);
             String secondsBehindMaster = resultResult.get("Seconds_Behind_Master");
             if (null != secondsBehindMaster && !"".equals(secondsBehindMaster) && !"NULL".equalsIgnoreCase(secondsBehindMaster)) {
                 int behindMaster = Integer.parseInt(secondsBehindMaster);
@@ -148,7 +148,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             //String Last_IO_Error = resultResult != null ? resultResult.get("Last_IO_Error") : null;
             MySQLHeartbeat.LOGGER.warn("found MySQL master/slave Replication err !!! " +
                     heartbeat.getSource().getConfig() + ", " + resultResult);
-            heartbeat.setDbSynStatus(DBHeartbeat.DB_SYN_ERROR);
+            heartbeat.setDbSynStatus(MySQLHeartbeat.DB_SYN_ERROR);
             heartbeat.setSlaveBehindMaster(null);
         }
         heartbeat.getAsyncRecorder().setBySlaveStatus(resultResult);

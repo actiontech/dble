@@ -359,5 +359,21 @@ public class ServerParseTest {
                 "  update xx set yy=true,zz_time=now() where userid=userid1;\n" +
                 "end;\" ,ID = 11111";
         Assert.assertEquals(sql.length() - 1, ParseUtil.findNextBreak(sql));
+
+
+        sql = "CREATE FUNCTION CustomerLevel(p_creditLimit double) RETURNS VARCHAR(10)\n" +
+                "    DETERMINISTIC\n" +
+                "BEGIN\n" +
+                "    DECLARE lvl varchar(10);\n" +
+                "    IF p_creditLimit > 50000 THEN\n" +
+                " SET lvl = 'PLATINUM';\n" +
+                "    ELSEIF (p_creditLimit <= 50000 AND p_creditLimit >= 10000) THEN\n" +
+                "        SET lvl = 'GOLD';\n" +
+                "    ELSEIF p_creditLimit < 10000 THEN\n" +
+                "        SET lvl = 'SILVER';\n" +
+                "    END IF;\n" +
+                " RETURN (lvl);\n" +
+                "END";
+        Assert.assertEquals(sql.length() - 1, ParseUtil.findNextBreak(sql));
     }
 }

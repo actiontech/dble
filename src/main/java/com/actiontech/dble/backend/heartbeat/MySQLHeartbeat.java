@@ -204,6 +204,7 @@ public class MySQLHeartbeat {
     }
 
     private void heartbeatRetry() {
+        LOGGER.info("heartbeat failed, retry for the " + errorCount + " times");
         heartbeat();
     }
     private void setTimeout() {

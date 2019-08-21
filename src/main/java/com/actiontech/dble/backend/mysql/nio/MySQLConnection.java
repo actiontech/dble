@@ -838,7 +838,7 @@ public class MySQLConnection extends AbstractConnection implements
     @Override
     public String toString() {
         StringBuilder result = new StringBuilder();
-        result.append("MySQLConnection [id=");
+        result.append("MySQLConnection [backendId=");
         result.append(id);
         result.append(", lastTime=");
         result.append(lastTime);

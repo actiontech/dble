@@ -5,14 +5,17 @@
 */
 package com.actiontech.dble.backend.heartbeat;
 
+import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
+import com.actiontech.dble.sqlengine.HeartbeatSQLJob;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
-import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.sqlengine.SQLQueryResultListener;
-import com.actiontech.dble.util.TimeUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -20,14 +23,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author mycat
  */
 public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<String, String>>> {
-
+    public static final Logger LOGGER = LoggerFactory.getLogger(MySQLDetector.class);
     private MySQLHeartbeat heartbeat;
 
-    private long heartbeatTimeout;
     private final AtomicBoolean isQuit;
     private volatile long lastSendQryTime;
     private volatile long lastReceivedQryTime;
-    private volatile SQLJob sqlJob;
+    private volatile HeartbeatSQLJob sqlJob;
+    private BackendConnection con;
 
     private static final String[] MYSQL_SLAVE_STATUS_COLS = new String[]{
             "Seconds_Behind_Master",
@@ -47,15 +50,18 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
     public MySQLDetector(MySQLHeartbeat heartbeat) {
         this.heartbeat = heartbeat;
         this.isQuit = new AtomicBoolean(false);
-    }
+        con = null;
+        try {
+            MySQLDataSource ds = heartbeat.getSource();
+            con = ds.getConnection(null, true, null);
+        } catch (IOException e) {
+            LOGGER.warn("heartbeat error", e);
 
-
-    public long getHeartbeatTimeout() {
-        return heartbeatTimeout;
+        }
     }
 
     public boolean isHeartbeatTimeout() {
-        return TimeUtil.currentTimeMillis() > Math.max(lastSendQryTime, lastReceivedQryTime) + heartbeatTimeout;
+        return System.currentTimeMillis() > Math.max(lastSendQryTime, lastReceivedQryTime) + heartbeat.getHeartbeatTimeout();
     }
 
 
@@ -64,8 +70,12 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
     }
 
     public void heartbeat() {
+        if (con == null) {
+            heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS);
+            return;
+        }
         lastSendQryTime = System.currentTimeMillis();
-        MySQLDataSource ds = heartbeat.getSource();
+
 
         String[] fetchCols = {};
         if (heartbeat.getSource().getHostConfig().isShowSlaveSql()) {
@@ -74,10 +84,12 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         if (heartbeat.getSource().getHostConfig().isShowClusterSql()) {
             fetchCols = MYSQL_CLUSTER_STATUS_COLS;
         }
-
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("do heartbeat,conn is " + con);
+        }
         OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(fetchCols, this);
-        sqlJob = new SQLJob(heartbeat.getHeartbeatSQL(), null, resultHandler, ds);
-        sqlJob.run();
+        sqlJob = new HeartbeatSQLJob(heartbeat.getHeartbeatSQL(), con, resultHandler);
+        sqlJob.execute();
     }
 
     public void quit() {
@@ -156,7 +168,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
     }
 
     public void close(String msg) {
-        SQLJob curJob = sqlJob;
+        HeartbeatSQLJob curJob = sqlJob;
         if (curJob != null && !curJob.isFinished()) {
             curJob.terminate(msg);
             sqlJob = null;

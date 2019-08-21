@@ -7,6 +7,7 @@ package com.actiontech.dble.config.model;
 
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.config.util.ConfigException;
+
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -36,6 +37,9 @@ public class DataHostConfig {
     private int slaveThreshold = -1;
     private final int switchType;
     private boolean tempReadHostAvailable = false;
+
+    private int heartbeatTimeout = 0;
+    private int errorRetryCount = 0;
 
     public DataHostConfig(String name,
                           DBHostConfig[] writeHosts, Map<Integer, DBHostConfig[]> readHosts, Map<Integer, DBHostConfig[]> standbyReadHosts, int switchType, int slaveThreshold, int tempReadHostAvailable) {
@@ -136,4 +140,19 @@ public class DataHostConfig {
         return this.isShowClusterSql;
     }
 
+    public int getHeartbeatTimeout() {
+        return heartbeatTimeout;
+    }
+
+    public void setHeartbeatTimeout(int heartbeatTimeout) {
+        this.heartbeatTimeout = heartbeatTimeout;
+    }
+
+    public int getErrorRetryCount() {
+        return errorRetryCount;
+    }
+
+    public void setErrorRetryCount(int errorRetryCount) {
+        this.errorRetryCount = errorRetryCount;
+    }
 }

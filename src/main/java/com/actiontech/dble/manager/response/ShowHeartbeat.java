@@ -121,7 +121,7 @@ public final class ShowHeartbeat {
                     row.add(IntegerUtil.toBytes(hb.getStatus()));
                     row.add(IntegerUtil.toBytes(hb.getErrorCount()));
                     row.add(hb.isChecking() ? "checking".getBytes() : "idle".getBytes());
-                    row.add(LongUtil.toBytes(hb.getTimeout()));
+                    row.add(LongUtil.toBytes(hb.getHeartbeatTimeout()));
                     row.add(hb.getRecorder().get().getBytes());
                     String lat = hb.getLastActiveTime();
                     row.add(lat == null ? null : lat.getBytes());

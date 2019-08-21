@@ -20,6 +20,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -31,38 +32,37 @@ public class MySQLHeartbeat {
     public static final int DB_SYN_ERROR = -1;
     public static final int DB_SYN_NORMAL = 1;
 
-    public static final int OK_STATUS = 1;
-    public static final int ERROR_STATUS = -1;
-    public static final int TIMEOUT_STATUS = -2;
     public static final int INIT_STATUS = 0;
-    private static final long DEFAULT_HEARTBEAT_TIMEOUT = 30 * 1000L;
-    private static final int DEFAULT_HEARTBEAT_RETRY = 10;
-    // heartbeat config
-    private static final int MAX_RETRY_COUNT = 5;
-    protected long heartbeatTimeout = DEFAULT_HEARTBEAT_TIMEOUT;
-    protected int heartbeatRetry = DEFAULT_HEARTBEAT_RETRY; // retry times after first error of heartbeat
-    protected String heartbeatSQL;
-    protected final AtomicBoolean isStop = new AtomicBoolean(true);
-    protected final AtomicBoolean isChecking = new AtomicBoolean(false);
-    protected int errorCount;
+    public static final int OK_STATUS = 1;
+    static final int ERROR_STATUS = -1;
+    private static final int TIMEOUT_STATUS = -2;
+
+    private String heartbeatSQL;
+    private final int errorRetryCount;
+    private long heartbeatTimeout; // during the time, heart failed will ignore
+    private volatile int errorCount = 0;
+    private AtomicLong startErrorTime = new AtomicLong(-1L);
+
+    private final AtomicBoolean isStop = new AtomicBoolean(true);
+    private final AtomicBoolean isChecking = new AtomicBoolean(false);
     protected volatile int status;
-    protected final HeartbeatRecorder recorder = new HeartbeatRecorder();
-    protected final DataSourceSyncRecorder asyncRecorder = new DataSourceSyncRecorder();
+
+    private final HeartbeatRecorder recorder = new HeartbeatRecorder();
+    private final DataSourceSyncRecorder asyncRecorder = new DataSourceSyncRecorder();
+    private volatile int dbSynStatus = DB_SYN_NORMAL;
 
     private volatile Integer slaveBehindMaster;
-    private volatile int dbSynStatus = DB_SYN_NORMAL;
     private final MySQLDataSource source;
 
     private final ReentrantLock lock;
-    private final int maxRetryCount;
-
     private MySQLDetector detector;
 
     public MySQLHeartbeat(MySQLDataSource source) {
         this.source = source;
         this.lock = new ReentrantLock(false);
-        this.maxRetryCount = MAX_RETRY_COUNT;
         this.status = INIT_STATUS;
+        this.errorRetryCount = source.getHostConfig().getErrorRetryCount();
+        this.heartbeatTimeout = source.getHostConfig().getHeartbeatTimeout();
         this.heartbeatSQL = source.getHostConfig().getHearbeatSQL();
     }
 
@@ -70,13 +70,6 @@ public class MySQLHeartbeat {
         return source;
     }
 
-
-    public long getTimeout() {
-        if (detector == null) {
-            return -1L;
-        }
-        return detector.getHeartbeatTimeout();
-    }
 
     public String getLastActiveTime() {
         if (detector == null) {
@@ -179,6 +172,7 @@ public class MySQLHeartbeat {
             case TIMEOUT_STATUS:
                 this.status = INIT_STATUS;
                 this.errorCount = 0;
+                this.startErrorTime.set(-1);
                 if (isStop.get()) {
                     detector.quit();
                 } else {
@@ -190,6 +184,7 @@ public class MySQLHeartbeat {
             default:
                 this.status = OK_STATUS;
                 this.errorCount = 0;
+                this.startErrorTime.set(-1);
         }
         if (isStop.get()) {
             detector.quit();
@@ -198,16 +193,13 @@ public class MySQLHeartbeat {
 
     private void setError() {
         // should continues check error status
-        if (++errorCount < maxRetryCount) {
-            if (detector != null && !detector.isQuit()) {
-                heartbeat(); // error count not enough, heart beat again
-            }
-        } else {
-            if (detector != null) {
-                detector.quit();
-            }
-            this.status = ERROR_STATUS;
-            this.errorCount = 0;
+        if (detector != null) {
+            detector.quit();
+        }
+        this.status = ERROR_STATUS;
+        startErrorTime.compareAndSet(-1, System.currentTimeMillis());
+        if (++errorCount < errorRetryCount) {
+            heartbeat(); // error count not enough, heart beat again
         }
     }
 
@@ -215,6 +207,67 @@ public class MySQLHeartbeat {
         this.isChecking.set(false);
         status = TIMEOUT_STATUS;
     }
+
+    public Integer getSlaveBehindMaster() {
+        return slaveBehindMaster;
+    }
+
+    public int getDbSynStatus() {
+        return dbSynStatus;
+    }
+
+    void setDbSynStatus(int dbSynStatus) {
+        this.dbSynStatus = dbSynStatus;
+    }
+
+    void setSlaveBehindMaster(Integer slaveBehindMaster) {
+        this.slaveBehindMaster = slaveBehindMaster;
+    }
+
+    public int getStatus() {
+        return status;
+    }
+
+    public boolean isChecking() {
+        return isChecking.get();
+    }
+
+    public boolean isStop() {
+        return isStop.get();
+    }
+
+    public int getErrorCount() {
+        return errorCount;
+    }
+
+    public HeartbeatRecorder getRecorder() {
+        return recorder;
+    }
+
+    public long getHeartbeatTimeout() {
+        return heartbeatTimeout;
+    }
+
+    public boolean isHeartBeatOK() {
+        if (status == OK_STATUS) {
+            return true;
+        } else if (status == INIT_STATUS) { // init or timeout->ok
+            return false;
+        } else if (status == ERROR_STATUS) {
+            return System.currentTimeMillis() - this.startErrorTime.longValue() < heartbeatTimeout;
+        } else { // TIMEOUT_STATUS
+            return false;
+        }
+    }
+
+    String getHeartbeatSQL() {
+        return heartbeatSQL;
+    }
+
+    public DataSourceSyncRecorder getAsyncRecorder() {
+        return this.asyncRecorder;
+    }
+
 
     /**
      * switch data source
@@ -275,73 +328,5 @@ public class MySQLHeartbeat {
                 }
             }
             } */
-    }
-
-    public Integer getSlaveBehindMaster() {
-        return slaveBehindMaster;
-    }
-
-    public int getDbSynStatus() {
-        return dbSynStatus;
-    }
-
-    public void setDbSynStatus(int dbSynStatus) {
-        this.dbSynStatus = dbSynStatus;
-    }
-
-    public void setSlaveBehindMaster(Integer slaveBehindMaster) {
-        this.slaveBehindMaster = slaveBehindMaster;
-    }
-
-    public int getStatus() {
-        return status;
-    }
-
-    public boolean isChecking() {
-        return isChecking.get();
-    }
-
-    public boolean isStop() {
-        return isStop.get();
-    }
-
-    public int getErrorCount() {
-        return errorCount;
-    }
-
-    public HeartbeatRecorder getRecorder() {
-        return recorder;
-    }
-
-    public long getHeartbeatTimeout() {
-        return heartbeatTimeout;
-    }
-
-    public void setHeartbeatTimeout(long heartbeatTimeout) {
-        this.heartbeatTimeout = heartbeatTimeout;
-    }
-
-    public int getHeartbeatRetry() {
-        return heartbeatRetry;
-    }
-
-    public void setHeartbeatRetry(int heartbeatRetry) {
-        this.heartbeatRetry = heartbeatRetry;
-    }
-
-    public String getHeartbeatSQL() {
-        return heartbeatSQL;
-    }
-
-    public void setHeartbeatSQL(String heartbeatSQL) {
-        this.heartbeatSQL = heartbeatSQL;
-    }
-
-    public boolean isNeedHeartbeat() {
-        return heartbeatSQL != null;
-    }
-
-    public DataSourceSyncRecorder getAsyncRecorder() {
-        return this.asyncRecorder;
     }
 }

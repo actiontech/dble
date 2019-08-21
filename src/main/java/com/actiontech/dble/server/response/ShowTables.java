@@ -141,10 +141,10 @@ public final class ShowTables {
         int i = 0;
         byte packetId = 0;
         header.setPacketId(++packetId);
-        fields[i] = PacketUtil.getField("Tables in " + cSchema, Fields.FIELD_TYPE_VAR_STRING);
+        fields[i] = PacketUtil.getField("Tables_in_" + cSchema, Fields.FIELD_TYPE_VAR_STRING);
         fields[i].setPacketId(++packetId);
         fieldPackets.add(fields[i]);
-        fields[i + 1] = PacketUtil.getField("Table_type  ", Fields.FIELD_TYPE_VAR_STRING);
+        fields[i + 1] = PacketUtil.getField("Table_type", Fields.FIELD_TYPE_VAR_STRING);
         fields[i + 1].setPacketId(++packetId);
         fieldPackets.add(fields[i + 1]);
 

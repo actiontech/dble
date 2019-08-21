@@ -83,9 +83,9 @@ public final class ShowUserPrivilege {
             int[] pri;
             // user privilege config
             UserPrivilegesConfig userPrivilegesConfig = user.getPrivilegesConfig();
-            boolean isCheck = userPrivilegesConfig == null || !userPrivilegesConfig.isCheck();
+            boolean noNeedCheck = userPrivilegesConfig == null || !userPrivilegesConfig.isCheck();
             for (String schema : user.getSchemas()) {
-                if (isCheck || userPrivilegesConfig.getSchemaPrivilege(schema) == null) {
+                if (noNeedCheck || userPrivilegesConfig.getSchemaPrivilege(schema) == null) {
                     tableName = "*";
                     pri = ALL_PRIVILEGES;
                     RowDataPacket row = getRow(userName, schema, tableName, pri, c.getCharset().getResults());

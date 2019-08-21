@@ -543,7 +543,7 @@ public abstract class FrontendConnection extends AbstractConnection {
     public String toString() {
         return "[thread=" +
                 Thread.currentThread().getName() + ",class=" +
-                getClass().getSimpleName() + ",id=" + id +
+                getClass().getSimpleName() + ",frontId=" + id +
                 ",host=" + host + ",port=" + port +
                 ",schema=" + schema + ']';
     }

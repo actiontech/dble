@@ -39,7 +39,7 @@ public final class ShowConnectionSQL {
         byte packetId = 0;
         HEADER.setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("ID", Fields.FIELD_TYPE_LONG);
+        FIELDS[i] = PacketUtil.getField("FRONT_ID", Fields.FIELD_TYPE_LONG);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("HOST", Fields.FIELD_TYPE_VAR_STRING);

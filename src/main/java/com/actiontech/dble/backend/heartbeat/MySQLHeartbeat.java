@@ -199,10 +199,13 @@ public class MySQLHeartbeat {
         this.status = ERROR_STATUS;
         startErrorTime.compareAndSet(-1, System.currentTimeMillis());
         if (++errorCount < errorRetryCount) {
-            heartbeat(); // error count not enough, heart beat again
+            heartbeatRetry(); // error count not enough, heart beat again
         }
     }
 
+    private void heartbeatRetry() {
+        heartbeat();
+    }
     private void setTimeout() {
         this.isChecking.set(false);
         status = TIMEOUT_STATUS;

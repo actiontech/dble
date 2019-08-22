@@ -54,7 +54,7 @@ public final class ShowProcessList {
         FIELDS[i] = PacketUtil.getField("Datanode", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("BconnID", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("MysqlId", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("User", Fields.FIELD_TYPE_VAR_STRING);

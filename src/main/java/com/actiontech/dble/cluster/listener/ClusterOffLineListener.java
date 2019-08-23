@@ -70,7 +70,7 @@ public class ClusterOffLineListener implements Runnable {
                 }
             }
         } catch (Exception e) {
-            LOGGER.warn(" server offline binlog status check error");
+            LOGGER.warn(" server offline binlog status check error: ", e);
         }
     }
 
@@ -92,7 +92,7 @@ public class ClusterOffLineListener implements Runnable {
             }
 
         } catch (Exception e) {
-            LOGGER.warn(" server offline binlog status check error");
+            LOGGER.warn(" server offline binlog status check error: ", e);
         }
     }
 
@@ -137,7 +137,7 @@ public class ClusterOffLineListener implements Runnable {
                 onlineMap = newMap;
                 index = output.getIndex();
             } catch (Exception e) {
-                LOGGER.warn("error in offline listener :", e);
+                LOGGER.warn("error in offline listener: ", e);
             }
         }
     }
@@ -153,7 +153,7 @@ public class ClusterOffLineListener implements Runnable {
             }
             return true;
         } catch (Exception e) {
-            LOGGER.warn("rewrite server online status failed", e);
+            LOGGER.warn("rewrite server online status failed: ", e);
             //alert
             return false;
         }

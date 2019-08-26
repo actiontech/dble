@@ -514,19 +514,20 @@ public class DruidSelectParser extends DefaultDruidParser {
         rrs.copyLimitToNodes();
         SQLSelectStatement selectStmt = (SQLSelectStatement) stmt;
         SQLSelectQuery sqlSelectQuery = selectStmt.getSelect().getQuery();
-        if (sqlSelectQuery instanceof MySqlSelectQueryBlock) {
+        SchemaConfig sqlSchema = DbleServer.getInstance().getConfig().getSchemas().get(rrs.getSchema());
+        if (sqlSelectQuery instanceof MySqlSelectQueryBlock && sqlSchema != null) {
             MySqlSelectQueryBlock mysqlSelectQuery = (MySqlSelectQueryBlock) selectStmt.getSelect().getQuery();
             int limitStart = 0;
-            int limitSize = schema.getDefaultMaxLimit();
+            int limitSize = sqlSchema.getDefaultMaxLimit();
 
             Map<String, Map<String, Set<ColumnRoutePair>>> allConditions = getAllConditions();
-            boolean isNeedAddLimit = isNeedAddLimit(schema, rrs, mysqlSelectQuery, allConditions);
+            boolean isNeedAddLimit = isNeedAddLimit(sqlSchema, rrs, mysqlSelectQuery, allConditions);
             if (isNeedAddLimit) {
                 SQLLimit limit = new SQLLimit();
                 limit.setRowCount(new SQLIntegerExpr(limitSize));
                 mysqlSelectQuery.setLimit(limit);
                 rrs.setLimitSize(limitSize);
-                String sql = getSql(rrs, stmt, isNeedAddLimit, schema.getName());
+                String sql = getSql(rrs, stmt, isNeedAddLimit, sqlSchema.getName());
                 rrs.changeNodeSqlAfterAddLimit(sql, 0, limitSize);
             }
             SQLLimit limit = mysqlSelectQuery.getLimit();
@@ -559,13 +560,13 @@ public class DruidSelectParser extends DefaultDruidParser {
                     }
 
                     mysqlSelectQuery.setLimit(changedLimit);
-                    String sql = getSql(rrs, stmt, isNeedAddLimit, schema.getName());
+                    String sql = getSql(rrs, stmt, isNeedAddLimit, sqlSchema.getName());
                     rrs.changeNodeSqlAfterAddLimit(sql, 0, limitStart + limitSize);
                 } else {
                     rrs.changeNodeSqlAfterAddLimit(rrs.getStatement(), rrs.getLimitStart(), rrs.getLimitSize());
                 }
             }
-            rrs.setCacheAble(isNeedCache(schema));
+            rrs.setCacheAble(isNeedCache(sqlSchema));
         }
 
     }

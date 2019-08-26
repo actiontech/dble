@@ -15,16 +15,16 @@ import com.actiontech.dble.cluster.AbstractClusterSender;
 import com.actiontech.dble.cluster.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterParamCfg;
-import com.actiontech.dble.cluster.bean.KvBean;
 import com.actiontech.dble.cluster.bean.ClusterAlertBean;
+import com.actiontech.dble.cluster.bean.KvBean;
 import com.actiontech.dble.cluster.bean.SubscribeRequest;
 import com.actiontech.dble.cluster.bean.SubscribeReturnBean;
 import com.actiontech.dble.server.status.OnlineLockStatus;
-import org.apache.commons.lang.StringUtils;
 import com.google.common.base.Strings;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -37,9 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
-import static com.actiontech.dble.cluster.ClusterController.CONFIG_FILE_NAME;
-import static com.actiontech.dble.cluster.ClusterController.GENERAL_GRPC_TIMEOUT;
-import static com.actiontech.dble.cluster.ClusterController.GRPC_SUBTIMEOUT;
+import static com.actiontech.dble.cluster.ClusterController.*;
 
 
 /**
@@ -490,6 +488,7 @@ public final class UcoreSender extends AbstractClusterSender {
             File file = new File(DbleServer.class.getResource(CONFIG_FILE_NAME).getFile());
             out = new FileOutputStream(file);
             properties.store(out, "");
+            LOGGER.info("ips set to ucore success:" + ips);
         } catch (Exception e) {
             LOGGER.info("ips set to ucore failure");
         } finally {
@@ -519,8 +518,11 @@ public final class UcoreSender extends AbstractClusterSender {
                             for (int i = 0; i < output.getIpsList().size(); i++) {
                                 ips.add(output.getIps(i));
                             }
+                            LOGGER.info("old ucore ips :" + StringUtils.join(ipList, ','));
                             setIpList(ips);
-                            setIp(StringUtils.join(ips, ','));
+                            String strIPs = StringUtils.join(ips, ',');
+                            LOGGER.info("new ucore ips :" + strIPs);
+                            setIp(strIPs);
                         }
 
                         if (DbleServer.getInstance().getTmManager() != null) {

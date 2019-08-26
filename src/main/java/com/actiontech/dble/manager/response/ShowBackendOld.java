@@ -40,7 +40,7 @@ public final class ShowBackendOld {
         int i = 0;
         byte packetId = 0;
         HEADER.setPacketId(++packetId);
-        FIELDS[i] = PacketUtil.getField("ID", Fields.FIELD_TYPE_LONG);
+        FIELDS[i] = PacketUtil.getField("BACKEND_ID", Fields.FIELD_TYPE_LONG);
         FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("MYSQLID", Fields.FIELD_TYPE_LONG);
         FIELDS[i++].setPacketId(++packetId);

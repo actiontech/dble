@@ -107,6 +107,7 @@ public final class SelectedProcessor {
             }
         }
     }
+
     // if order by item is not FIELD_ITEM, we need to add back to select list and push down
     private static Set<Item> addExprOrderByToSelect(PlanNode child, Collection<Item> pdRefers) {
         Set<Item> pushList = new HashSet<Item>();
@@ -128,15 +129,10 @@ public final class SelectedProcessor {
         // oldselectable->newselectbable
         LinkedHashMap<Item, Item> oldNewMap = new LinkedHashMap<>();
         LinkedHashMap<Item, Item> oldKeyKeyMap = new LinkedHashMap<>();
-        ListIterator<Item> itemIterator = selList.listIterator();
-        while (itemIterator.hasNext()) {
-            Item sel = itemIterator.next();
+        for (int i = 0; i < selList.size(); i++) {
+            Item sel = selList.get(i);
             if (sel instanceof ItemFunc) {
-                ItemFunc itemFunc = (ItemFunc) sel;
-                itemIterator.remove();
-                for (Item arg : itemFunc.arguments()) {
-                    itemIterator.add(arg);
-                }
+                selList.addAll(sel.arguments());
                 continue;
             }
             Item pdSel = oldNewMap.get(sel);

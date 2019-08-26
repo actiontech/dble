@@ -39,7 +39,7 @@ public final class ShowXASession {
         byte packetId = 0;
         HEADER.setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("SESSION", Fields.FIELD_TYPE_VARCHAR);
+        FIELDS[i] = PacketUtil.getField("FRONT_ID", Fields.FIELD_TYPE_VARCHAR);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("XA_ID", Fields.FIELD_TYPE_VARCHAR);

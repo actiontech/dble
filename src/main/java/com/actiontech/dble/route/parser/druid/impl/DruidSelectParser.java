@@ -164,6 +164,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                 //if the sql involved node more than 1 ,Aggregate function/Group by/Order by should use complexQuery
                 parseOrderAggGroupMysql(schema, selectStmt, rrs, mysqlSelectQuery, tc);
                 if (rrs.isNeedOptimizer()) {
+                    rrs.setNodes(null);
                     return;
                 }
             }

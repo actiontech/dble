@@ -10,7 +10,7 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.heartbeat.DBHeartbeat;
+import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
 import com.actiontech.dble.backend.mysql.nio.handler.GetConnectionHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.model.DataHostConfig;
@@ -236,9 +236,9 @@ public class PhysicalDBPool {
         int curDsHbStatus = getSource().getHeartbeat().getStatus();
         // read node can't switch, only write node can switch
         if (!ds.isReadNode() &&
-                curDsHbStatus != DBHeartbeat.OK_STATUS && getSources().length > 1) {
+                curDsHbStatus != MySQLHeartbeat.OK_STATUS && getSources().length > 1) {
             // try to see if need switch datasource
-            if (curDsHbStatus != DBHeartbeat.INIT_STATUS) {
+            if (curDsHbStatus != MySQLHeartbeat.INIT_STATUS) {
                 int curIndex = getActiveIndex();
                 int nextId = next(curIndex);
                 PhysicalDatasource[] allWriteNodes = getSources();
@@ -248,8 +248,8 @@ public class PhysicalDBPool {
                     }
 
                     PhysicalDatasource theDs = allWriteNodes[nextId];
-                    DBHeartbeat theDsHb = theDs.getHeartbeat();
-                    if (theDsHb.getStatus() == DBHeartbeat.OK_STATUS) {
+                    MySQLHeartbeat theDsHb = theDs.getHeartbeat();
+                    if (theDsHb.getStatus() == MySQLHeartbeat.OK_STATUS) {
                         if (switchType == DataHostConfig.SYN_STATUS_SWITCH_DS) {
                             if (Integer.valueOf(0).equals(theDsHb.getSlaveBehindMaster())) {
                                 LOGGER.warn("try to switch datasource, slave is " + "synchronized to master " + theDs.getConfig());
@@ -452,7 +452,7 @@ public class PhysicalDBPool {
         for (PhysicalDatasource ds : all) {
             // only read node or all write node
             // and current write node will check
-            if (ds != null && (ds.getHeartbeat().getStatus() == DBHeartbeat.OK_STATUS) &&
+            if (ds != null && (ds.getHeartbeat().getStatus() == MySQLHeartbeat.OK_STATUS) &&
                     (ds.isReadNode() || ds == this.getSource())) {
                 ds.connectionHeatBeatCheck(ildCheckPeriod);
             }
@@ -719,10 +719,10 @@ public class PhysicalDBPool {
     private boolean canSelectAsReadNode(PhysicalDatasource theSource) {
         Integer slaveBehindMaster = theSource.getHeartbeat().getSlaveBehindMaster();
         int dbSynStatus = theSource.getHeartbeat().getDbSynStatus();
-        if (slaveBehindMaster == null || dbSynStatus == DBHeartbeat.DB_SYN_ERROR) {
+        if (slaveBehindMaster == null || dbSynStatus == MySQLHeartbeat.DB_SYN_ERROR) {
             return false;
         }
-        boolean isSync = dbSynStatus == DBHeartbeat.DB_SYN_NORMAL;
+        boolean isSync = dbSynStatus == MySQLHeartbeat.DB_SYN_NORMAL;
         boolean isNotDelay = slaveBehindMaster < this.dataHostConfig.getSlaveThreshold();
         return isSync && isNotDelay;
     }

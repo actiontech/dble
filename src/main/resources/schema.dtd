@@ -75,6 +75,9 @@
                 disabled CDATA #IMPLIED>
 
         <!ELEMENT heartbeat (#PCDATA)>
+        <!ATTLIST heartbeat errorRetryCount NMTOKEN #IMPLIED>
+        <!ATTLIST heartbeat timeout NMTOKEN #IMPLIED>
+
         <!ELEMENT connectionInitSql (#PCDATA)>
         <!ELEMENT readHost EMPTY >
         <!ATTLIST readHost

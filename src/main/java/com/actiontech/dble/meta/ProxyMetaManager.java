@@ -340,6 +340,12 @@ public class ProxyMetaManager {
         }
 
         initMeta(config);
+        //try to delete online
+        if (ZKUtils.getConnection().checkExists().forPath(KVPathUtil.getOnlinePath()
+                + KVPathUtil.SEPARATOR + ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID)) != null) {
+            ZKUtils.getConnection().delete().forPath(KVPathUtil.getOnlinePath()
+                    + KVPathUtil.SEPARATOR + ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+        }
         // online
         ZKUtils.createTempNode(KVPathUtil.getOnlinePath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
         //add watcher

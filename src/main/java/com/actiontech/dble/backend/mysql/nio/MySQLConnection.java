@@ -852,7 +852,7 @@ public class MySQLConnection extends AbstractConnection implements
         result.append(borrowed);
         result.append(", fromSlaveDB=");
         result.append(fromSlaveDB);
-        result.append(", threadId=");
+        result.append(", mysqlId=");
         result.append(threadId);
         result.append(",");
         result.append(charsetName.toString());

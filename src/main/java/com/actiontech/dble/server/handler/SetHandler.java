@@ -136,7 +136,7 @@ public final class SetHandler {
         NamesInfo charsetInfo = checkSetNames(stmt, charsetAndCollate[0], charsetAndCollate[1]);
         if (charsetInfo != null) {
             if (charsetInfo.charset == null) {
-                c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set in statement '" + stmt + "");
+                c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set in statement '" + stmt + "'");
                 return false;
             } else if (charsetInfo.collation == null) {
                 c.writeErrMessage(ErrorCode.ER_COLLATION_CHARSET_MISMATCH, "COLLATION '" + charsetAndCollate[1] + "' is not valid for CHARACTER SET '" + charsetAndCollate[0] + "'");
@@ -172,7 +172,7 @@ public final class SetHandler {
                 return true;
             }
         } else {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set in statement '" + stmt + "");
+            c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set in statement '" + stmt + "'");
             return false;
         }
     }
@@ -824,10 +824,10 @@ public final class SetHandler {
 
     private static boolean checkSetNamesSyntax(String stmt) {
         //druid parser can't find syntax error,use regex to check again, but it is not strict
-        String regex = "^\\s*set\\s+names\\s+[`']?[a-zA-Z_0-9]+[`']?(\\s+collate\\s+[`']?[a-zA-Z_0-9]+[`']?)?;?\\s*$";
+        String regex = "set\\s+names\\s+[`']?[a-zA-Z_0-9]+[`']?(\\s+collate\\s+[`']?[a-zA-Z_0-9]+[`']?)?;?\\s*$";
         Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE);
         Matcher ma = pattern.matcher(stmt);
-        return ma.matches();
+        return ma.find();
     }
 
     private static NamesInfo checkSetNames(String stmt, String charset, String collate) {

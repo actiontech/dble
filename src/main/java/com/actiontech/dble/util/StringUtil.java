@@ -13,6 +13,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 /**
  * @author mycat
@@ -541,6 +542,15 @@ public final class StringUtil {
         }
 
         String[] arr = list.toArray(new String[list.size()]);
+        return join(arr, flag);
+    }
+
+    public static String join(Set<String> set, String flag) {
+        if (set.size() < 1) {
+            return "";
+        }
+
+        String[] arr = set.toArray(new String[set.size()]);
         return join(arr, flag);
     }
 

@@ -187,6 +187,8 @@ public final class SchemaUtil {
                 if (!isNoSharding(source, sqlSelectQuery, stmt, new SQLSelectStatement(new SQLSelect(sqlSelectQuery)), contextSchema, schemas, dataNode)) {
                     return false;
                 }
+            } else if (tables instanceof SQLUnionQueryTableSource) {
+                return isNoSharding(source, ((SQLUnionQueryTableSource) tables).getUnion(), stmt, contextSchema, schemas, dataNode);
             } else {
                 return false;
             }

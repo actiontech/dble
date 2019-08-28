@@ -6,7 +6,6 @@
 package com.actiontech.dble.backend.mysql.nio;
 
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
-import com.actiontech.dble.backend.heartbeat.DBHeartbeat;
 import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.Capabilities;
@@ -233,7 +232,7 @@ public class MySQLDataSource extends PhysicalDatasource {
     }
 
     @Override
-    public DBHeartbeat createHeartBeat() {
+    public MySQLHeartbeat createHeartBeat() {
         return new MySQLHeartbeat(this);
     }
 

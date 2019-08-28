@@ -5,12 +5,15 @@
 
 package com.actiontech.dble.route.parser.druid.impl;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
+import com.actiontech.dble.plan.node.*;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
-import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil;
@@ -32,50 +35,35 @@ public class DruidLockTableParser extends DefaultDruidParser {
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain)
             throws SQLException {
         MySqlLockTableStatement lockTableStat = (MySqlLockTableStatement) stmt;
-        Map<String, List<String>> dataNodeToLocks = new HashMap<>();
+        Map<String, Set<String>> dataNodeToLocks = new HashMap<>();
         for (MySqlLockTableStatement.Item item : lockTableStat.getItems()) {
             String schemaName = schema == null ? null : schema.getName();
             SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, item.getTableSource());
             SchemaConfig schemaConfig = schemaInfo.getSchemaConfig();
             String table = schemaInfo.getTable();
-            String noShardingNode = RouterUtil.isNoShardingDDL(schemaConfig, table);
-            if (noShardingNode != null) {
-                StringBuilder sbItem = new StringBuilder(table);
-                if (item.getTableSource().getAlias() != null) {
-                    sbItem.append(" as ");
-                    sbItem.append(item.getTableSource().getAlias());
-                }
-                sbItem.append(" ");
-                sbItem.append(item.getLockType());
-                List<String> locks = dataNodeToLocks.computeIfAbsent(noShardingNode, k -> new ArrayList<>());
-                locks.add(sbItem.toString());
+            TableConfig tableConfig = schemaConfig.getTables().get(table);
+            if (tableConfig != null) {
+                handleConfigTable(dataNodeToLocks, tableConfig, item.getTableSource().getAlias(), item.getLockType());
+                continue;
+            } else if (DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaName, table) != null) {
+                handleNoshardTable(dataNodeToLocks, table, schemaInfo.getSchemaConfig().getDataNode(), item.getTableSource().getAlias(), item.getLockType());
+                continue;
+            } else if (DbleServer.getInstance().getTmManager().getSyncView(schemaName, table) != null) {
+                handleSingleViewLock(dataNodeToLocks, DbleServer.getInstance().getTmManager().getSyncView(schemaName, table), item.getTableSource().getAlias(), item.getLockType(), schemaName);
                 continue;
             }
-            TableConfig tableConfig = schemaConfig.getTables().get(table);
-            if (tableConfig == null) {
-                String msg = "can't find table define of " + table + " in schema:" + schemaConfig.getName();
-                LOGGER.info(msg);
-                throw new SQLNonTransientException(msg);
-            }
-            List<String> dataNodes = tableConfig.getDataNodes();
-            for (String dataNode : dataNodes) {
-                StringBuilder sbItem = new StringBuilder(table);
-                if (item.getTableSource().getAlias() != null) {
-                    sbItem.append(" as ");
-                    sbItem.append(item.getTableSource().getAlias());
-                }
-                sbItem.append(" ");
-                sbItem.append(item.getLockType());
-                List<String> locks = dataNodeToLocks.computeIfAbsent(dataNode, k -> new ArrayList<>());
-                locks.add(sbItem.toString());
-            }
+            String msg = "Table '" + schemaConfig.getName() + "." + table + "' doesn't exist";
+            LOGGER.info(msg);
+            throw new SQLNonTransientException(msg);
         }
+
+
         Set<RouteResultsetNode> lockedNodes = new HashSet<>();
         if (sc.isLocked()) {
             lockedNodes.addAll(sc.getSession2().getTargetMap().keySet());
         }
         List<RouteResultsetNode> nodes = new ArrayList<>();
-        for (Map.Entry<String, List<String>> entry : dataNodeToLocks.entrySet()) {
+        for (Map.Entry<String, Set<String>> entry : dataNodeToLocks.entrySet()) {
             RouteResultsetNode node = new RouteResultsetNode(entry.getKey(), ServerParse.LOCK, " LOCK TABLES " + StringUtil.join(entry.getValue(), ","));
             nodes.add(node);
             lockedNodes.remove(node);
@@ -88,4 +76,138 @@ public class DruidLockTableParser extends DefaultDruidParser {
         rrs.setFinishedRoute(true);
         return schema;
     }
+
+
+    /**
+     * handle single config table lock
+     */
+    private void handleConfigTable(Map<String, Set<String>> dataNodeToLocks, TableConfig tableConfig, String alias, MySqlLockTableStatement.LockType lockType) {
+        List<String> dataNodes = tableConfig.getDataNodes();
+        for (String dataNode : dataNodes) {
+            StringBuilder sbItem = new StringBuilder(tableConfig.getName());
+            if (alias != null) {
+                sbItem.append(" as ");
+                sbItem.append(alias);
+            }
+            sbItem.append(" ");
+            sbItem.append(lockType);
+            Set<String> locks = dataNodeToLocks.computeIfAbsent(dataNode, k -> new HashSet<>());
+            locks.add(sbItem.toString());
+        }
+    }
+
+    private void handleNoshardTable(Map<String, Set<String>> dataNodeToLocks, String tableName, String dataNode, String alias, MySqlLockTableStatement.LockType lockType) {
+        StringBuilder sbItem = new StringBuilder(tableName);
+        if (alias != null) {
+            sbItem.append(" as ");
+            sbItem.append(alias);
+        }
+        sbItem.append(" ");
+        sbItem.append(lockType);
+        Set<String> locks = dataNodeToLocks.computeIfAbsent(dataNode, k -> new HashSet<String>());
+        locks.add(sbItem.toString());
+    }
+
+    private void handleSingleViewLock(Map<String, Set<String>> dataNodeToLocks, QueryNode viewQuery, String alias, MySqlLockTableStatement.LockType lockType, String schemaName) throws SQLNonTransientException {
+        Map<String, Set<String>> tableMap = new HashMap<>();
+        findTableInPlanNode(tableMap, viewQuery, schemaName);
+        for (Map.Entry<String, Set<String>> entry : tableMap.entrySet()) {
+            SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(entry.getKey());
+            for (String table : entry.getValue()) {
+                TableConfig tableConfig = schemaConfig.getTables().get(table);
+                if (tableConfig != null) {
+                    handleConfigTable(dataNodeToLocks, tableConfig, alias == null ? null : "view_" + alias + "_" + table, lockType);
+                } else if (DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaConfig.getName(), table) != null) {
+                    handleNoshardTable(dataNodeToLocks, table, schemaConfig.getDataNode(), alias == null ? null : "view_" + alias + "_" + table, lockType);
+                } else {
+                    String msg = "Table '" + schemaConfig.getName() + "." + table + "' doesn't exist";
+                    LOGGER.info(msg);
+                    throw new SQLNonTransientException(msg);
+                }
+            }
+        }
+        return;
+    }
+
+
+    private void findTableInPlanNode(Map<String, Set<String>> tableSet, PlanNode pnode, String schema) {
+        if (pnode instanceof QueryNode) {
+            findTableInPlanNode(tableSet, pnode.getChild(), schema);
+        } else if (pnode instanceof JoinNode) {
+            JoinNode jnode = (JoinNode) pnode;
+            for (Item x : jnode.getColumnsSelected()) {
+                findTableInItem(tableSet, x, schema);
+            }
+            for (PlanNode p : jnode.getChildren()) {
+                findTableInPlanNode(tableSet, p, schema);
+            }
+            if (jnode.getWhereFilter() != null) {
+                findTableInItem(tableSet, jnode.getWhereFilter(), schema);
+            }
+            if (jnode.getHavingFilter() != null) {
+                findTableInItem(tableSet, jnode.getHavingFilter(), schema);
+            }
+        } else if (pnode instanceof NoNameNode) {
+            NoNameNode nnode = (NoNameNode) pnode;
+            for (Item x : nnode.getColumnsSelected()) {
+                findTableInItem(tableSet, x, schema);
+            }
+        } else if (pnode instanceof JoinInnerNode) {
+            JoinInnerNode jnode = (JoinInnerNode) pnode;
+            for (Item x : jnode.getColumnsSelected()) {
+                findTableInItem(tableSet, x, schema);
+            }
+            for (PlanNode p : jnode.getChildren()) {
+                findTableInPlanNode(tableSet, p, schema);
+            }
+            if (jnode.getWhereFilter() != null) {
+                findTableInItem(tableSet, jnode.getWhereFilter(), schema);
+            }
+            if (jnode.getHavingFilter() != null) {
+                findTableInItem(tableSet, jnode.getHavingFilter(), schema);
+            }
+        } else if (pnode instanceof MergeNode) {
+            MergeNode mn = (MergeNode) pnode;
+            for (PlanNode p : mn.getChildren()) {
+                findTableInPlanNode(tableSet, p, schema);
+            }
+        } else if (pnode instanceof TableNode) {
+            TableNode tnode = (TableNode) pnode;
+            if (tnode.getSchema() == null) {
+                addTableToSet(tableSet, tnode.getSchema(), tnode.getTableName());
+            } else {
+                addTableToSet(tableSet, schema, tnode.getTableName());
+            }
+            if (tnode.getWhereFilter() != null) {
+                findTableInItem(tableSet, tnode.getWhereFilter(), schema);
+            }
+            if (tnode.getHavingFilter() != null) {
+                findTableInItem(tableSet, tnode.getHavingFilter(), schema);
+            }
+        }
+    }
+
+    private void findTableInItem(Map<String, Set<String>> tableSet, Item it, String schema) {
+        if (it instanceof ItemSubQuery) {
+            findTableInPlanNode(tableSet, ((ItemSubQuery) it).getPlanNode(), schema);
+        } else {
+            if (it.arguments() != null) {
+                for (Item x : it.arguments()) {
+                    findTableInItem(tableSet, x, schema);
+                }
+            }
+        }
+    }
+
+    private void addTableToSet(Map<String, Set<String>> tableSet, String schema, String table) {
+        if (tableSet.get(schema) == null) {
+            Set<String> set = new HashSet<>();
+            set.add(table);
+            tableSet.put(schema, set);
+        } else {
+            tableSet.get(schema).add(table);
+        }
+    }
+
+
 }

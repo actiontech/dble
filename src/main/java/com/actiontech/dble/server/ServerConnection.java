@@ -524,7 +524,7 @@ public class ServerConnection extends FrontendConnection {
     @Override
     public String toString() {
         StringBuilder result = new StringBuilder();
-        result.append("ServerConnection [id=");
+        result.append("ServerConnection [frontId=");
         result.append(id);
         result.append(", schema=");
         result.append(schema);

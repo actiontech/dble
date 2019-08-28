@@ -8,7 +8,7 @@ package com.actiontech.dble.manager.response;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
-import com.actiontech.dble.backend.heartbeat.DBHeartbeat;
+import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.ServerConfig;
@@ -145,7 +145,7 @@ public final class ShowDatasourceCluster {
                 if (ds.getConfig().isDisabled()) {
                     continue;
                 }
-                DBHeartbeat hb = ds.getHeartbeat();
+                MySQLHeartbeat hb = ds.getHeartbeat();
                 DataSourceSyncRecorder record = hb.getAsyncRecorder();
                 Map<String, String> states = record.getRecords();
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);

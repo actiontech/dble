@@ -164,6 +164,9 @@ public class MySQLHeartbeat {
     }
 
     private void setOk() {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("heartbeat setOK");
+        }
         if (this.status != OK_STATUS) {
             Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getHostConfig().getName() + "-" + this.source.getConfig().getHostName());
             AlertUtil.alertResolve(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "mysql", this.source.getConfig().getId(), labels);
@@ -192,6 +195,7 @@ public class MySQLHeartbeat {
     }
 
     private void setError() {
+        LOGGER.warn("heartbeat setError");
         // should continues check error status
         if (detector != null) {
             detector.quit();
@@ -208,6 +212,7 @@ public class MySQLHeartbeat {
         heartbeat();
     }
     private void setTimeout() {
+        LOGGER.warn("heartbeat setTimeout");
         this.isChecking.set(false);
         status = TIMEOUT_STATUS;
     }

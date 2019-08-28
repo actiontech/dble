@@ -1,7 +1,12 @@
 package com.actiontech.dble.cluster;
 
+import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.mysql.view.CKVStoreRepository;
+import com.actiontech.dble.backend.mysql.view.FileSystemRepository;
+import com.actiontech.dble.backend.mysql.view.Repository;
 import com.actiontech.dble.cluster.bean.KvBean;
 import com.actiontech.dble.cluster.kVtoXml.ClusterToXml;
+import com.actiontech.dble.server.status.OnlineLockStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,6 +86,29 @@ public abstract class AbstractClusterSender implements ClusterSender {
 
     public static <T> T last(T[] array) {
         return array[array.length - 1];
+    }
+
+    /**
+     * only be called when the dble start with cluster disconnect
+     * & dble connect to cluster after a while
+     * init some of the status from cluster
+     *
+     * @throws Exception
+     */
+    protected void firstReturnToCluster() throws Exception {
+        if (DbleServer.getInstance().getTmManager() != null) {
+            if (DbleServer.getInstance().getTmManager().getRepository() != null &&
+                    DbleServer.getInstance().getTmManager().getRepository() instanceof FileSystemRepository) {
+                LOGGER.warn("Dble first reconnect to ucore ,local view repository change to CKVStoreRepository");
+                Repository newViewRepository = new CKVStoreRepository();
+                DbleServer.getInstance().getTmManager().setRepository(newViewRepository);
+                Map<String, Map<String, String>> viewCreateSqlMap = newViewRepository.getViewCreateSqlMap();
+                DbleServer.getInstance().getTmManager().reloadViewMeta(viewCreateSqlMap);
+                //init online status
+                LOGGER.warn("Dble first reconnect to ucore ,online status rebuild");
+            }
+            OnlineLockStatus.getInstance().metaUcoreInit(true);
+        }
     }
 
 }

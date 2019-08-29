@@ -466,7 +466,7 @@ public final class DbleServer {
         scheduler.scheduleWithFixedDelay(processorCheck(), 0L, system.getProcessorCheckPeriod(), TimeUnit.MILLISECONDS);
         scheduler.scheduleAtFixedRate(dataNodeConHeartBeatCheck(dataNodeIdleCheckPeriod), 0L, dataNodeIdleCheckPeriod, TimeUnit.MILLISECONDS);
         //dataHost heartBeat  will be influence by dataHostWithoutWR
-        scheduler.scheduleAtFixedRate(dataNodeHeartbeat(), 0L, system.getDataNodeHeartbeatPeriod(), TimeUnit.MILLISECONDS);
+        scheduler.scheduleAtFixedRate(dataSourceHeartbeat(), 0L, system.getDataNodeHeartbeatPeriod(), TimeUnit.MILLISECONDS);
         scheduler.scheduleAtFixedRate(dataSourceOldConsClear(), 0L, DEFAULT_OLD_CONNECTION_CLEAR_PERIOD, TimeUnit.MILLISECONDS);
         scheduler.scheduleWithFixedDelay(xaSessionCheck(), 0L, system.getXaSessionCheckPeriod(), TimeUnit.MILLISECONDS);
         scheduler.scheduleWithFixedDelay(xaLogClean(), 0L, system.getXaLogCleanPeriod(), TimeUnit.MILLISECONDS);
@@ -927,8 +927,8 @@ public final class DbleServer {
         };
     }
 
-    // heartbeat for data node
-    private Runnable dataNodeHeartbeat() {
+    // heartbeat for data source
+    private Runnable dataSourceHeartbeat() {
         return new Runnable() {
             @Override
             public void run() {
@@ -937,9 +937,9 @@ public final class DbleServer {
                     @Override
                     public void run() {
                         if (!DbleServer.getInstance().getConfig().isDataHostWithoutWR()) {
-                            Map<String, PhysicalDBPool> nodes = DbleServer.getInstance().getConfig().getDataHosts();
-                            for (PhysicalDBPool node : nodes.values()) {
-                                node.doHeartbeat();
+                            Map<String, PhysicalDBPool> hosts = DbleServer.getInstance().getConfig().getDataHosts();
+                            for (PhysicalDBPool host : hosts.values()) {
+                                host.doHeartbeat();
                             }
                         }
                     }

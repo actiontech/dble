@@ -34,7 +34,8 @@ public class TwoTableComparator implements Comparator<RowDataPacket> {
     private List<Boolean> ascList;
 
     public TwoTableComparator(List<FieldPacket> fps1, List<FieldPacket> fps2, List<Order> leftOrders,
-                              List<Order> rightOrders, boolean isAllPushDown, DMLResponseHandler.HandlerType type) {
+                              List<Order> rightOrders, boolean isAllPushDown, DMLResponseHandler.HandlerType type,
+                              boolean caseInsensitive) {
         this.leftFields = HandlerTool.createFields(fps1);
         this.rightFields = HandlerTool.createFields(fps2);
         ascList = new ArrayList<>();
@@ -49,6 +50,7 @@ public class TwoTableComparator implements Comparator<RowDataPacket> {
             Item rightCmpItem = HandlerTool.createItem(rightOrder.getItem(), rightFields, 0, isAllPushDown,
                     type);
             ArgComparator comparator = new ArgComparator(leftCmpItem, rightCmpItem);
+            comparator.setCaseInsensitive(caseInsensitive);
             comparator.setCmpFunc(null, leftCmpItem, rightCmpItem, false);
             comparators.add(comparator);
         }

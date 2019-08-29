@@ -610,7 +610,10 @@ public class XMLSchemaLoader implements SchemaLoader {
             } else if (!"0".equals(tempReadHostAvailableStr)) {
                 problemReporter.warn("dataHost[" + name + "] attribute tempReadHostAvailable " + tempReadHostAvailableStr + " in schema.xml is illegal, use 0 replaced!");
             }
-            final String heartbeatSQL = element.getElementsByTagName("heartbeat").item(0).getTextContent();
+            Element heartbeat = (Element) element.getElementsByTagName("heartbeat").item(0);
+            final String heartbeatSQL = heartbeat.getTextContent();
+            final String strHBErrorRetryCount = ConfigUtil.checkAndGetAttribute(heartbeat, "errorRetryCount", "0", problemReporter);
+            final String strHBTimeout = ConfigUtil.checkAndGetAttribute(heartbeat, "timeout", "0", problemReporter);
 
             NodeList writeNodes = element.getElementsByTagName("writeHost");
             if (writeNodes.getLength() < 1) {
@@ -663,6 +666,8 @@ public class XMLSchemaLoader implements SchemaLoader {
             hostConf.setMinCon(minCon);
             hostConf.setBalance(balance);
             hostConf.setHearbeatSQL(heartbeatSQL);
+            hostConf.setHeartbeatTimeout(Integer.parseInt(strHBTimeout) * 1000);
+            hostConf.setErrorRetryCount(Integer.parseInt(strHBErrorRetryCount));
             dataHosts.put(hostConf.getName(), hostConf);
         }
     }

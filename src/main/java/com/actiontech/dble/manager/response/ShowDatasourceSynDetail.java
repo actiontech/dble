@@ -8,7 +8,7 @@ package com.actiontech.dble.manager.response;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
-import com.actiontech.dble.backend.heartbeat.DBHeartbeat;
+import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.ServerConfig;
@@ -38,7 +38,7 @@ public final class ShowDatasourceSynDetail {
     private ShowDatasourceSynDetail() {
     }
 
-    private static final int FIELD_COUNT = 8;
+    private static final int FIELD_COUNT = 9;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
@@ -48,6 +48,9 @@ public final class ShowDatasourceSynDetail {
         int i = 0;
         byte packetId = 0;
         HEADER.setPacketId(++packetId);
+
+        FIELDS[i] = PacketUtil.getField("DATAHOST", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
@@ -71,7 +74,7 @@ public final class ShowDatasourceSynDetail {
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("SECONDS_BEHIND_MASTER", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
     }
@@ -113,19 +116,21 @@ public final class ShowDatasourceSynDetail {
         ServerConfig conf = DbleServer.getInstance().getConfig();
         // host nodes
         Map<String, PhysicalDBPool> dataHosts = conf.getDataHosts();
-        for (PhysicalDBPool pool : dataHosts.values()) {
+        for (Map.Entry<String, PhysicalDBPool> entry : dataHosts.entrySet()) {
+            String datahost = entry.getKey();
+            PhysicalDBPool pool = entry.getValue();
             for (PhysicalDatasource ds : pool.getAllDataSources()) {
                 if (ds.getConfig().isDisabled()) {
                     continue;
                 }
-                DBHeartbeat hb = ds.getHeartbeat();
+                MySQLHeartbeat hb = ds.getHeartbeat();
                 DataSourceSyncRecorder record = hb.getAsyncRecorder();
                 Map<String, String> states = record.getRecords();
                 if (name.equals(ds.getName())) {
                     List<Record> data = record.getAsyncRecords();
                     for (Record r : data) {
                         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-
+                        row.add(StringUtil.encode(datahost, charset));
                         row.add(StringUtil.encode(ds.getName(), charset));
                         row.add(StringUtil.encode(ds.getConfig().getIp(), charset));
                         row.add(LongUtil.toBytes(ds.getConfig().getPort()));

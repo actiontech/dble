@@ -13,7 +13,7 @@ import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.ConMap;
 import com.actiontech.dble.backend.ConQueue;
-import com.actiontech.dble.backend.heartbeat.DBHeartbeat;
+import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ConnectionHeartBeatHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.DelegateResponseHandler;
@@ -42,7 +42,7 @@ public abstract class PhysicalDatasource {
     private int size;
     private final DBHostConfig config;
     private final ConMap conMap = new ConMap();
-    private DBHeartbeat heartbeat;
+    private MySQLHeartbeat heartbeat;
     private final boolean readNode;
     private volatile long heartbeatRecoveryTime;
     private final DataHostConfig hostConfig;
@@ -118,7 +118,7 @@ public abstract class PhysicalDatasource {
         return dbPool;
     }
 
-    public abstract DBHeartbeat createHeartBeat();
+    public abstract MySQLHeartbeat createHeartBeat();
 
 
     public void setSize(int size) {
@@ -157,7 +157,7 @@ public abstract class PhysicalDatasource {
         }
     }
 
-    public DBHeartbeat getHeartbeat() {
+    public MySQLHeartbeat getHeartbeat() {
         return heartbeat;
     }
 
@@ -389,6 +389,7 @@ public abstract class PhysicalDatasource {
         }
     }
 
+
     public BackendConnection getConnection(String schema, boolean autocommit, final Object attachment) throws IOException {
         BackendConnection con = this.conMap.tryTakeCon(schema, autocommit);
         if (con == null) {
@@ -406,25 +407,47 @@ public abstract class PhysicalDatasource {
                             ToResolveContainer.REACH_MAX_CON, this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
                 }
                 LOGGER.info("no ilde connection in pool,create new connection for " + this.name + " of schema " + schema);
-                try {
-                    NewConnectionRespHandler simpleHandler = new NewConnectionRespHandler();
-                    this.createNewConnection(simpleHandler, schema);
-                    con = simpleHandler.getBackConn();
-                    if (ToResolveContainer.CREATE_CONN_FAIL.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {
-                        Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-                        AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", this.getConfig().getId(), labels,
-                                ToResolveContainer.CREATE_CONN_FAIL, this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-                    }
-                } catch (IOException e) {
-                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-                    AlertUtil.alert(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "createNewConn Error" + e.getMessage(), "mysql", this.getConfig().getId(), labels);
-                    ToResolveContainer.CREATE_CONN_FAIL.add(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-                    throw e;
-                }
+                con = createNewBackendConnection(schema);
             }
         }
         con = takeCon(con, schema);
         con.setAttachment(attachment);
+        return con;
+    }
+
+    public BackendConnection getConnectionForHeartbeat(String schema, boolean autocommit) throws IOException {
+        BackendConnection con = this.conMap.tryTakeCon(schema, autocommit);
+        if (con == null) {
+            if (!this.createNewCount()) {
+                LOGGER.warn("no ilde connection in pool and reached maxCon,create new connection for heartbeat ");
+                con = createNewBackendConnection(schema);
+            } else { // create connection
+                LOGGER.info("no ilde connection in pool,create new connection for heartbeat ");
+                con = createNewBackendConnection(schema);
+            }
+        }
+        con = takeCon(con, schema);
+        con.setAttachment(null);
+        return con;
+    }
+
+    private BackendConnection createNewBackendConnection(String schema) throws IOException {
+        BackendConnection con;
+        try {
+            NewConnectionRespHandler simpleHandler = new NewConnectionRespHandler();
+            this.createNewConnection(simpleHandler, schema);
+            con = simpleHandler.getBackConn();
+            if (ToResolveContainer.CREATE_CONN_FAIL.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {
+                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", this.getConfig().getId(), labels,
+                        ToResolveContainer.CREATE_CONN_FAIL, this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+            }
+        } catch (IOException e) {
+            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+            AlertUtil.alert(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "createNewConn Error" + e.getMessage(), "mysql", this.getConfig().getId(), labels);
+            ToResolveContainer.CREATE_CONN_FAIL.add(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+            throw e;
+        }
         return con;
     }
 
@@ -498,7 +521,7 @@ public abstract class PhysicalDatasource {
     }
 
     public boolean isAlive() {
-        return (getHeartbeat().getStatus() == DBHeartbeat.OK_STATUS) || (getHeartbeat().isStop() && testConnSuccess);
+        return heartbeat.isHeartBeatOK() || (heartbeat.isStop() && testConnSuccess);
     }
 
 

@@ -369,4 +369,9 @@ public final class CharsetUtil {
     public static CollationInfo[] getAllCollationInfo() {
         return INDEX_TO_COLLATION;
     }
+
+    public static boolean isCaseInsensitive(String collation) {
+        CollationInfo info = COLLATION_TO_INDEX.get(collation.toLowerCase());
+        return (info != null) && info.getCollation().endsWith("_ci");
+    }
 }

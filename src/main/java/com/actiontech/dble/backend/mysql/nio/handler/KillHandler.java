@@ -64,7 +64,7 @@ public class KillHandler implements ResponseHandler {
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
         LOGGER.warn("connect error");
-        if (!isKillQuery) {
+        if (conn != null && !isKillQuery) {
             MySQLConnection killConn = (MySQLConnection) session.getTarget((RouteResultsetNode) conn.getAttachment());
             AlertUtil.alertSelf(AlarmCode.KILL_BACKEND_CONN_FAIL, Alert.AlertLevel.NOTICE, "get killer connection " + conn.toString() + " failed:" + e.getMessage(), null);
             killConn.close("exception:" + e.toString());

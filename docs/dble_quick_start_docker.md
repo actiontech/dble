@@ -29,7 +29,7 @@ We map TCP port 8066 and 9066 in the dble container to the same port on the Dock
    #connect dble server port
    mysql -P8066 -u root -p123456 -h 127.0.0.1 
    #connect dble manager port
-   mysql -P9066 -u man1 -p123456 -h 127.0.0.1
+   mysql -P9066 -u man1 -p654321 -h 127.0.0.1
    #connect mysql1
    mysql -P33061 -u root -p123456 -h 127.0.0.1 
    #connect mysql2

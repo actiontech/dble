@@ -237,7 +237,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                                          MySqlSelectQueryBlock mysqlSelectQuery, TableConfig tc) throws SQLException {
         //simple merge of ORDER BY has bugs,so optimizer here
         if (mysqlSelectQuery.getOrderBy() != null) {
-            tryAddLimit(schema, tc, mysqlSelectQuery);
+            tryAddLimit(schema, tc, mysqlSelectQuery, rrs);
             rrs.setSqlStatement(stmt);
             rrs.setNeedOptimizer(true);
             return;
@@ -398,7 +398,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         boolean isDistinct = (mysqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCT) || (mysqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCTROW);
         parseAggExprCommon(schema, rrs, mysqlSelectQuery, aliaColumns, tc, isDistinct);
         if (rrs.isNeedOptimizer()) {
-            tryAddLimit(schema, tc, mysqlSelectQuery);
+            tryAddLimit(schema, tc, mysqlSelectQuery, rrs);
             rrs.setSqlStatement(stmt);
             return;
         }
@@ -664,7 +664,7 @@ public class DruidSelectParser extends DefaultDruidParser {
     }
 
     private void tryAddLimit(SchemaConfig schema, TableConfig tableConfig,
-                             MySqlSelectQueryBlock mysqlSelectQuery) {
+                             MySqlSelectQueryBlock mysqlSelectQuery, RouteResultset rrs) {
         if (schema.getDefaultMaxLimit() == -1) {
             return;
         } else if (mysqlSelectQuery.getLimit() != null) {
@@ -672,6 +672,9 @@ public class DruidSelectParser extends DefaultDruidParser {
         } else if (!tableConfig.isNeedAddLimit()) {
             return;
         } else if (mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode()) {
+            return;
+        } else if (rrs.isContainsPrimaryFilter()) {
+            // single table and has primary key , need not limit because of only one row
             return;
         }
         SQLLimit limit = new SQLLimit();

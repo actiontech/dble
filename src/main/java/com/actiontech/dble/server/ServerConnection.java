@@ -485,7 +485,7 @@ public class ServerConnection extends FrontendConnection {
         }
     }
 
-    public void cleanUp() {
+    public void innerCleanUp() {
         //rollback and unlock tables  means close backend conns;
         for (BackendConnection conn : session.getTargetMap().values()) {
             conn.closeWithoutRsp("com_reset_connection");

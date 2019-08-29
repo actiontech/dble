@@ -420,7 +420,7 @@ public abstract class FrontendConnection extends AbstractConnection {
     private void innerResetConnection() {
         if (this instanceof ServerConnection) {
             ServerConnection sc = (ServerConnection) this;
-            sc.cleanUp();
+            sc.innerCleanUp();
         }
     }
 

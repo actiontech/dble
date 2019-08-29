@@ -14,6 +14,7 @@ import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.handler.*;
 import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.RandomUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -29,6 +30,7 @@ import java.nio.channels.SocketChannel;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author mycat
@@ -40,6 +42,8 @@ public abstract class FrontendConnection extends AbstractConnection {
     protected byte[] seed;
     protected String user;
     protected String schema;
+    private long clientFlags;
+
     protected String executeSql;
 
     protected FrontendPrivileges privileges;
@@ -101,6 +105,14 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     public void setAccepted(boolean accepted) {
         isAccepted = accepted;
+    }
+
+    public void setClientFlags(long clientFlags) {
+        this.clientFlags = clientFlags;
+    }
+
+    public long getClientFlags() {
+        return clientFlags;
     }
 
     public void setProcessor(NIOProcessor processor) {
@@ -396,8 +408,58 @@ public abstract class FrontendConnection extends AbstractConnection {
         writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Set Option ERROR!");
     }
 
-    public void stmtReset(byte[] data) {
+    //  mysql-server\sql\sql_class.cc void THD::cleanup_connection(void)
+    public void resetConnection() {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("resetConnection request");
+        }
+        innerResetConnection();
+        this.write(OkPacket.OK);
+    }
 
+    private void innerResetConnection() {
+        if (this instanceof ServerConnection) {
+            ServerConnection sc = (ServerConnection) this;
+            sc.cleanUp();
+        }
+    }
+
+    public void changeUser(byte[] data, ChangeUserPacket changeUserPacket, AtomicBoolean isAuthSwitch) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("changeUser request");
+        }
+        innerResetConnection();
+        changeUserPacket.read(data);
+        if ("mysql_native_password".equals(changeUserPacket.getAuthPlugin())) {
+            AuthSwitchRequestPackage authSwitch = new AuthSwitchRequestPackage(changeUserPacket.getAuthPlugin().getBytes(), this.getSeed());
+            authSwitch.setPacketId(changeUserPacket.getPacketId() + 1);
+            isAuthSwitch.set(true);
+            authSwitch.write(this);
+        } else {
+            writeErrMessage((byte) (changeUserPacket.getPacketId() + 1), ErrorCode.ER_PLUGIN_IS_NOT_LOADED, "NOT SUPPORT THIS PLUGIN!");
+        }
+    }
+
+    public void changeUserAuthSwitch(byte[] data, ChangeUserPacket changeUserPacket) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("changeUser AuthSwitch request");
+        }
+        AuthSwitchResponsePackage authSwitchResponse = new AuthSwitchResponsePackage();
+        authSwitchResponse.read(data);
+        changeUserPacket.setPassword(authSwitchResponse.getAuthPluginData());
+        if (AuthUtil.authority(this, changeUserPacket.getUser(), changeUserPacket.getPassword(), changeUserPacket.getDatabase(), false)) {
+            changeUserSuccess(changeUserPacket);
+        }
+    }
+
+    private void changeUserSuccess(ChangeUserPacket newUser) {
+        this.setUser(newUser.getUser());
+        this.setSchema(newUser.getDatabase());
+        this.initCharsetIndex(newUser.getCharsetIndex());
+        this.write(OkPacket.OK);
+    }
+
+    public void stmtReset(byte[] data) {
         if (prepareHandler != null) {
             prepareHandler.reset(data);
         } else {

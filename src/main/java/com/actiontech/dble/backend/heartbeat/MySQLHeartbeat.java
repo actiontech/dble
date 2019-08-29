@@ -263,7 +263,14 @@ public class MySQLHeartbeat {
         } else if (status == INIT_STATUS) { // init or timeout->ok
             return false;
         } else if (status == ERROR_STATUS) {
-            return System.currentTimeMillis() - this.startErrorTime.longValue() < heartbeatTimeout;
+            long timeDiff = System.currentTimeMillis() - this.startErrorTime.longValue();
+            if (timeDiff >= heartbeatTimeout) {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("error heartbaet continued for more than " + timeDiff + " Milliseconds and heartbeat Timeout is " + heartbeatTimeout + " Milliseconds");
+                }
+                return false;
+            }
+            return true;
         } else { // TIMEOUT_STATUS
             return false;
         }

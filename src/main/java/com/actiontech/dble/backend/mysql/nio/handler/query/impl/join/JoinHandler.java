@@ -172,8 +172,9 @@ public class JoinHandler extends OwnThreadDMLHandler {
         MySQLConnection conn = (MySQLConnection) objects[0];
         LocalResult leftLocal = null, rightLocal = null;
         try {
+            boolean caseInsensitive = CharsetUtil.isCaseInsensitive(session.getSource().getCharset().getCollation());
             Comparator<RowDataPacket> joinComparator = new TwoTableComparator(leftFieldPackets, rightFieldPackets,
-                    leftOrders, rightOrders, this.isAllPushDown(), this.type());
+                    leftOrders, rightOrders, this.isAllPushDown(), this.type(), caseInsensitive);
 
             // logger.debug("merge Join start");
             leftLocal = takeFirst(leftQueue);

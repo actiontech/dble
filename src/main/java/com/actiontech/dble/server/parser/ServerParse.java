@@ -34,7 +34,6 @@ public final class ServerParse {
     public static final int SAVEPOINT = 13;
     public static final int USE = 14;
     public static final int EXPLAIN = 15;
-    public static final int KILL_QUERY = 16;
     public static final int HELP = 17;
     public static final int MYSQL_CMD_COMMENT = 18;
     public static final int MYSQL_COMMENT = 19;
@@ -688,7 +687,7 @@ public final class ServerParse {
         return OTHER;
     }
 
-    // KILL' '
+    // KILL ' ' | KILL (CONNECTION|QUERY) ''
     private static int killCheck(String stmt, int offset) {
         if (stmt.length() > offset + "ILL ".length()) {
             char c1 = stmt.charAt(++offset);
@@ -698,49 +697,7 @@ public final class ServerParse {
             if ((c1 == 'I' || c1 == 'i') && (c2 == 'L' || c2 == 'l') &&
                     (c3 == 'L' || c3 == 'l') &&
                     (c4 == ' ' || c4 == '\t' || c4 == '\r' || c4 == '\n')) {
-                while (stmt.length() > ++offset) {
-                    switch (stmt.charAt(offset)) {
-                        case ' ':
-                        case '\t':
-                        case '\r':
-                        case '\n':
-                            continue;
-                        case 'Q':
-                        case 'q':
-                            return killQueryCheck(stmt, offset);
-                        default:
-                            return (offset << 8) | KILL;
-                    }
-                }
-                return OTHER;
-            }
-        }
-        return OTHER;
-    }
-
-    // KILL QUERY' '
-    private static int killQueryCheck(String stmt, int offset) {
-        if (stmt.length() > offset + "UERY ".length()) {
-            char c1 = stmt.charAt(++offset);
-            char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-            char c4 = stmt.charAt(++offset);
-            char c5 = stmt.charAt(++offset);
-            if ((c1 == 'U' || c1 == 'u') && (c2 == 'E' || c2 == 'e') &&
-                    (c3 == 'R' || c3 == 'r') && (c4 == 'Y' || c4 == 'y') &&
-                    (c5 == ' ' || c5 == '\t' || c5 == '\r' || c5 == '\n')) {
-                while (stmt.length() > ++offset) {
-                    switch (stmt.charAt(offset)) {
-                        case ' ':
-                        case '\t':
-                        case '\r':
-                        case '\n':
-                            continue;
-                        default:
-                            return (offset << 8) | KILL_QUERY;
-                    }
-                }
-                return OTHER;
+                return (offset << 8) | KILL;
             }
         }
         return OTHER;

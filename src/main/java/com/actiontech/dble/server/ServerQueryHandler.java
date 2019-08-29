@@ -104,11 +104,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                     SavepointHandler.release(sql, c);
                     break;
                 case ServerParse.KILL:
-                    KillHandler.handle(sql, rs >>> 8, c);
-                    break;
-                case ServerParse.KILL_QUERY:
-                    LOGGER.info("Unsupported command:" + sql);
-                    c.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unsupported command");
+                    KillHandler.handle(sql, c);
                     break;
                 case ServerParse.USE:
                     UseHandler.handle(sql, c, rs >>> 8);

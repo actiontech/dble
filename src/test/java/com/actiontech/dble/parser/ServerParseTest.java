@@ -209,7 +209,7 @@ public class ServerParseTest {
         String sql = "kill query 1102 ";
         int result = ServerParse.parse(sql);
         int sqlType = result & 0xff;
-        Assert.assertEquals(ServerParse.KILL_QUERY, sqlType);
+        Assert.assertEquals(ServerParse.KILL, sqlType);
     }
 
     @Test

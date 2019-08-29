@@ -865,12 +865,8 @@ public class NonBlockingSession implements Session {
         }
 
         boolean canReUse = false;
-        if (conn.isFromSlaveDB() && (node.canRunINReadDB(getSource().isAutocommit()) &&
-                (node.getRunOnSlave() == null || node.getRunOnSlave()))) {
-            canReUse = true;
-        }
-
-        if (!conn.isFromSlaveDB()) {
+        if (!conn.isFromSlaveDB() || ((node.canRunINReadDB(getSource().isAutocommit()) &&
+                (node.getRunOnSlave() == null || node.getRunOnSlave())))) {
             canReUse = true;
         }
 
@@ -883,38 +879,20 @@ public class NonBlockingSession implements Session {
         } else {
             // slave db connection and can't use anymore ,release it
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("release slave connection,can't be used in trasaction  " + conn + " for " + node);
+                LOGGER.debug("release slave connection,can't be used in transaction  " + conn + " for " + node);
             }
             releaseConnection(node, LOGGER.isDebugEnabled(), false);
         }
         return false;
     }
 
-    protected void kill() {
-        AtomicInteger count = new AtomicInteger(0);
-        Map<RouteResultsetNode, BackendConnection> toKilled = new HashMap<>();
-
-        for (Map.Entry<RouteResultsetNode, BackendConnection> entry : target.entrySet()) {
-            BackendConnection c = entry.getValue();
-            if (c != null) {
-                toKilled.put(entry.getKey(), c);
-                count.incrementAndGet();
-            }
-        }
-
-        for (Entry<RouteResultsetNode, BackendConnection> en : toKilled.entrySet()) {
-            KillConnectionHandler kill = new KillConnectionHandler(
-                    en.getValue(), this);
-            ServerConfig conf = DbleServer.getInstance().getConfig();
-            PhysicalDBNode dn = conf.getDataNodes().get(
-                    en.getKey().getName());
-            try {
-                dn.getConnectionFromSameSource(en.getValue().getSchema(), true, en.getValue(),
-                        kill, en.getKey());
-            } catch (Exception e) {
-                LOGGER.info("get killer connection failed for " + en.getKey(), e);
-                kill.connectionError(e, null);
-            }
+    public void kill(boolean isKillQuery) {
+        KillHandler handler = new KillHandler(isKillQuery, this);
+        try {
+            handler.execute();
+        } catch (Exception e) {
+            LOGGER.info("get killer connection failed for ", e);
+            handler.connectionError(e, null);
         }
     }
 

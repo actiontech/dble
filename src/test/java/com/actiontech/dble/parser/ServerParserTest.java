@@ -152,13 +152,9 @@ public class ServerParserTest {
         Assert.assertEquals(ServerParse.KILL, 0xff & ServerParse.parse(" kill  ..."));
         Assert.assertEquals(ServerParse.KILL, 0xff & ServerParse.parse("kill 111111 ..."));
         Assert.assertEquals(ServerParse.KILL, 0xff & ServerParse.parse("KILL  1335505632"));
-    }
-
-    @Test
-    public void testIsKillQuery() {
-        Assert.assertEquals(ServerParse.KILL_QUERY, 0xff & ServerParse.parse(" kill query ..."));
-        Assert.assertEquals(ServerParse.KILL_QUERY, 0xff & ServerParse.parse("kill   query 111111 ..."));
-        Assert.assertEquals(ServerParse.KILL_QUERY, 0xff & ServerParse.parse("KILL QUERY 1335505632"));
+        Assert.assertEquals(ServerParse.KILL, 0xff & ServerParse.parse(" kill query ..."));
+        Assert.assertEquals(ServerParse.KILL, 0xff & ServerParse.parse("kill   query 111111 ..."));
+        Assert.assertEquals(ServerParse.KILL, 0xff & ServerParse.parse("KILL QUERY 1335505632"));
     }
 
     @Test

@@ -517,7 +517,7 @@ public class ServerConnection extends FrontendConnection {
         } else {
             //not a xa transaction ,close it
             super.close(reason);
-            session.kill();
+            session.kill(false);
         }
     }
 

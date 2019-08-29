@@ -363,6 +363,7 @@ public class ProxyMetaManager {
                 info = ZKUtils.getConnection().getData().forPath(KVPathUtil.getOnlinePath() +
                         KVPathUtil.SEPARATOR + ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
             } catch (Exception e) {
+                LOGGER.info("can not get old online from zk,just do as it not exists");
                 return;
             }
             String oldOnlne = new String(info, StandardCharsets.UTF_8);

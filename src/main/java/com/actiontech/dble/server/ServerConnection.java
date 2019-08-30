@@ -272,29 +272,6 @@ public class ServerConnection extends FrontendConnection {
 
     }
 
-    public RouteResultset routeSQL(String sql, int type) {
-        String db = this.schema;
-        if (db == null) {
-            writeErrMessage(ErrorCode.ERR_BAD_LOGICDB, "No Database selected");
-            return null;
-        }
-        SchemaConfig schema = DbleServer.getInstance().getConfig().getSchemas().get(db);
-        if (schema == null) {
-            writeErrMessage(ErrorCode.ERR_BAD_LOGICDB, "Unknown Database '" + db + "'");
-            return null;
-        }
-
-        RouteResultset rrs;
-        try {
-            rrs = DbleServer.getInstance().getRouterService().route(schema, type, sql, this);
-        } catch (Exception e) {
-            executeException(e, sql);
-            return null;
-        }
-        return rrs;
-    }
-
-
     public void routeSystemInfoAndExecuteSQL(String stmt, SchemaUtil.SchemaInfo schemaInfo, int sqlType) {
         ServerConfig conf = DbleServer.getInstance().getConfig();
         UserConfig user = conf.getUsers().get(this.getUser());

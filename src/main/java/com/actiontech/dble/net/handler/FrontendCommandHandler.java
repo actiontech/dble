@@ -6,10 +6,12 @@
 package com.actiontech.dble.net.handler;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOHandler;
+import com.actiontech.dble.net.mysql.ChangeUserPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.statistic.CommandCount;
@@ -19,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * FrontendCommandHandler
@@ -31,6 +34,8 @@ public class FrontendCommandHandler implements NIOHandler {
     protected final CommandCount commands;
     private volatile byte[] dataTodo;
     private Queue<byte[]> blobDataQueue = new ConcurrentLinkedQueue<byte[]>();
+    private AtomicBoolean isAuthSwitch = new AtomicBoolean(false);
+    private volatile ChangeUserPacket changeUserPacket;
 
     FrontendCommandHandler(FrontendConnection source) {
         this.source = source;
@@ -85,6 +90,11 @@ public class FrontendCommandHandler implements NIOHandler {
 
     protected void handleData(byte[] data) {
         source.startProcess();
+        if (isAuthSwitch.compareAndSet(true, false)) {
+            commands.doOther();
+            source.changeUserAuthSwitch(data, changeUserPacket);
+            return;
+        }
         switch (data[4]) {
             case MySQLPacket.COM_INIT_DB:
                 commands.doInitDB();
@@ -125,6 +135,15 @@ public class FrontendCommandHandler implements NIOHandler {
             case MySQLPacket.COM_SET_OPTION:
                 commands.doOther();
                 source.setOption(data) ;
+                break;
+            case MySQLPacket.COM_CHANGE_USER:
+                commands.doOther();
+                changeUserPacket = new ChangeUserPacket(source.getClientFlags(), CharsetUtil.getCollationIndex(source.getCharset().getCollation()));
+                source.changeUser(data, changeUserPacket, isAuthSwitch) ;
+                break;
+            case MySQLPacket.COM_RESET_CONNECTION:
+                commands.doOther();
+                source.resetConnection() ;
                 break;
             default:
                 commands.doOther();

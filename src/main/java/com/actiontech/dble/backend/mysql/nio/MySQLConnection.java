@@ -112,7 +112,6 @@ public class MySQLConnection extends AbstractConnection implements
     private boolean fromSlaveDB;
     private long threadId;
     private HandshakeV10Packet handshake;
-    private long clientFlags;
     private boolean isAuthenticated;
     private String user;
     private String password;
@@ -121,12 +120,6 @@ public class MySQLConnection extends AbstractConnection implements
 
     public MySQLConnection(NetworkChannel channel, boolean fromSlaveDB, boolean isNoSchema) {
         super(channel);
-        this.clientFlags = CLIENT_FLAGS;
-        if (isNoSchema) {
-            this.clientFlags = (CLIENT_FLAGS >> 4) << 4 | (CLIENT_FLAGS & 7);
-        } else {
-            this.clientFlags = CLIENT_FLAGS;
-        }
         this.lastTime = TimeUtil.currentTimeMillis();
         this.autocommit = true;
         this.fromSlaveDB = fromSlaveDB;

@@ -6,6 +6,7 @@
 package com.actiontech.dble.server;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplictCommitHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
 import com.actiontech.dble.backend.mysql.xa.TxState;
@@ -481,6 +482,32 @@ public class ServerConnection extends FrontendConnection {
             session.unLockTable(sql);
         } else {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
+        }
+    }
+
+    public void innerCleanUp() {
+        //rollback and unlock tables  means close backend conns;
+        for (BackendConnection conn : session.getTargetMap().values()) {
+            conn.closeWithoutRsp("com_reset_connection");
+        }
+        isLocked = false;
+        txChainBegin = false;
+        txStarted = false;
+        txInterrupted = false;
+        if (session.getXaState() != null) {
+            session.setXaState(TxState.TX_INITIALIZE_STATE);
+        }
+        this.getSysVariables().clear();
+        this.getUsrVariables().clear();
+        String defaultAutocommit = DbleServer.getInstance().getSystemVariables().getDefaultValue("autocommit").toLowerCase();
+        autocommit = "1".equals(defaultAutocommit) || "on".equals(defaultAutocommit) || "true".equals(defaultAutocommit);
+        txIsolation = DbleServer.getInstance().getConfig().getSystem().getTxIsolation();
+        this.setCharacterSet(DbleServer.getInstance().getConfig().getSystem().getCharset());
+        lastInsertId = 0;
+
+        //prepare
+        if (prepareHandler != null) {
+            prepareHandler.clear();
         }
     }
 

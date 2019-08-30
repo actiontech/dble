@@ -226,7 +226,6 @@ public class AuthPacket extends MySQLPacket {
     }
 
 
-
     @Override
     public int calcPacketSize() {
         int size = 32; // 4+4+1+23;

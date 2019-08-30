@@ -806,15 +806,15 @@ public class PhysicalDBPool {
     }
 
     public String toString() {
-        StringBuffer sb = new StringBuffer("dataHost:").append(hostName).append(this.hashCode());
+        StringBuilder sb = new StringBuilder("dataHost:").append(hostName).append(this.hashCode());
         sb.append(" Max = ").append(dataHostConfig.getMaxCon()).append(" Min = ").append(this.dataHostConfig.getMinCon());
         for (int i = 0; i < writeSources.length; i++) {
             PhysicalDatasource writeHost = writeSources[0];
-            sb.append("\n\t\t\t writeHost" + i).append(" url=").append(writeHost.getConfig().getUrl());
-            PhysicalDatasource[] readSource = readSources.get(Integer.valueOf(i));
+            sb.append("t\t\t writeHost").append(i).append(" url=").append(writeHost.getConfig().getUrl());
+            PhysicalDatasource[] readSource = readSources.get(i);
             if (readSource != null) {
                 for (PhysicalDatasource read : readSource) {
-                    sb.append("\n\t\t\t\t\t readHost" + i).append(" url=").append(read.getConfig().getUrl());
+                    sb.append("t\t\t\t\t readHost").append(i).append(" url=").append(read.getConfig().getUrl());
                 }
             }
 

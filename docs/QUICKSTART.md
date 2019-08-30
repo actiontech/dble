@@ -4,15 +4,21 @@ Get package from https://github.com/actiontech/dble/releases
 
 ## 2.Prepare
 ### 2.1 MySQL 
-Make sure there is at least one MySQL Instance with url $url(e.g., localhost:3306) ,$user(e.g., test) and $password（e.g., testPsw） in your machine.   
+Make sure there is at least two MySQL Instance with url $url(e.g., localhost:3306) ,$user(e.g., test) and $password（e.g., testPsw） in your machine.   
 You also need to make sure that the url(localhost/127.0.0.1/other IP) can connect to MySQL, otherwise,you will get an error "NO ROUTE TO HOST" later. So Check your configurations of “/etc/hosts” ,“/etc/hosts.allow” ,“/etc/hosts.deny”  
-Add 4 database ,the SQL as below: 
+Add 6 database ,the SQL as below: 
  
-```
-create database db1;  
-create database db2;  
-create database db3;  
-create database db4;
+instance1:
+```  
+create database db_1;  
+create database db_3;  
+create database db_5;  
+```  
+instance2:
+```  
+create database db_2;  
+create database db_4;  
+create database db_6;  
 ```  
 
 ### 2.2 JVM 
@@ -40,6 +46,7 @@ Create a new writeHost element like
   <writeHost host="hostM1" url="$url" user="$user" password="$password"/>
 ```  
 (replace to your own MySQL information)  
+the other writehost also need to config  
 Save the schema.xml  
 
 
@@ -71,12 +78,14 @@ mysql -p -P8066 -h 127.0.0.1 -u root
 Enter the password 123456 to login in
 ```
 use testdb;
-
-create table travelrecord(
-id int,
-name char(255) ,
-PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+drop table if exists tb_enum_sharding;
+create table if not exists tb_enum_sharding (
+  id int not null,
+  code int not null,
+  content varchar(250) not null,
+  primary key(id)
+)engine=innodb charset=utf8;
+insert into tb_enum_sharding values(1,10000,'1'),(2,10010,'2'),(3,10000,'3'),(4,10010,'4');
 
 show full tables;
 ```

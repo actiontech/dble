@@ -169,7 +169,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
 
     public void close(String msg) {
         HeartbeatSQLJob curJob = sqlJob;
-        if (curJob != null && !curJob.isFinished()) {
+        if (curJob != null) {
             curJob.terminate(msg);
             sqlJob = null;
         }

@@ -56,10 +56,6 @@ public class HeartbeatSQLJob implements ResponseHandler {
         }
     }
 
-    public boolean isFinished() {
-        return finished.get();
-    }
-
     private void doFinished(boolean failed) {
         if (finished.compareAndSet(false, true)) {
             jobHandler.finished(null, failed);

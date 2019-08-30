@@ -34,7 +34,7 @@ public final class ShowDatasourceSyn {
     private ShowDatasourceSyn() {
     }
 
-    private static final int FIELD_COUNT = 12;
+    private static final int FIELD_COUNT = 13;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
@@ -44,6 +44,9 @@ public final class ShowDatasourceSyn {
         int i = 0;
         byte packetId = 0;
         HEADER.setPacketId(++packetId);
+
+        FIELDS[i] = PacketUtil.getField("DATAHOST", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
@@ -79,7 +82,7 @@ public final class ShowDatasourceSyn {
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("LAST_IO_ERROR", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
     }
@@ -120,7 +123,9 @@ public final class ShowDatasourceSyn {
         ServerConfig conf = DbleServer.getInstance().getConfig();
         // host nodes
         Map<String, PhysicalDBPool> dataHosts = conf.getDataHosts();
-        for (PhysicalDBPool pool : dataHosts.values()) {
+        for (Map.Entry<String, PhysicalDBPool> entry : dataHosts.entrySet()) {
+            String datahost = entry.getKey();
+            PhysicalDBPool pool = entry.getValue();
             for (PhysicalDatasource ds : pool.getAllDataSources()) {
                 if (ds.getConfig().isDisabled()) {
                     continue;
@@ -130,6 +135,7 @@ public final class ShowDatasourceSyn {
                 Map<String, String> states = record.getRecords();
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                 if (!states.isEmpty()) {
+                    row.add(StringUtil.encode(datahost, charset));
                     row.add(StringUtil.encode(ds.getName(), charset));
                     row.add(StringUtil.encode(ds.getConfig().getIp(), charset));
                     row.add(LongUtil.toBytes(ds.getConfig().getPort()));

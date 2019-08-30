@@ -31,6 +31,8 @@ public class ArgComparator {
     GetValueFunc getValueAFunc; // get_value_a_func name
     GetValueFunc getValueBFunc; // get_value_b_func name
 
+    private boolean caseInsensitive = false;
+
     boolean tryYearCmpFunc(Item.ItemResult type) {
         if (type == Item.ItemResult.ROW_RESULT)
             return false;
@@ -92,7 +94,6 @@ public class ArgComparator {
     }
 
     public ArgComparator() {
-
     }
 
     public ArgComparator(Item a, Item b) {
@@ -108,9 +109,9 @@ public class ArgComparator {
             return 1;
         } else if (type == Item.ItemResult.STRING_RESULT) {
             if (func instanceof CompareString)
-                func = new CompareBinaryString();
+                func = new CompareBinaryString(caseInsensitive);
             else if (func instanceof CompareEString)
-                func = new CompareEBinaryString();
+                func = new CompareEBinaryString(caseInsensitive);
         } else if (type == Item.ItemResult.INT_RESULT) {
             if (a.isTemporal() && b.isTemporal()) {
                 func = isOwnerEqualFunc() ? new CompareETimePacked() : new CompareTimePacked();
@@ -251,6 +252,10 @@ public class ArgComparator {
             b.setCmpContext(Item.ItemResult.INT_RESULT);
     }
 
+    public void setCaseInsensitive(boolean caseInsensitive) {
+        this.caseInsensitive = caseInsensitive;
+    }
+
     /**
      * compare function
      *
@@ -280,7 +285,11 @@ public class ArgComparator {
     }
 
     private static class CompareBinaryString implements ArgCmpFunc {
+        private boolean caseInsensitive;
 
+        CompareBinaryString(boolean caseInsensitive) {
+            this.caseInsensitive = caseInsensitive;
+        }
         @Override
         public int compare(ArgComparator ac) {
             String res1, res2;
@@ -288,12 +297,11 @@ public class ArgComparator {
                 if ((res2 = ac.b.valStr()) != null) {
                     if (ac.setNull && ac.owner != null)
                         ac.owner.setNullValue((false));
-                    byte[] res1b = res1.getBytes();
-                    byte[] res2b = res2.getBytes();
-                    int res1Len = res1b.length;
-                    int res2Len = res2b.length;
-                    int cmp = MySQLcom.memcmp(res1b, res2b, Math.min(res1Len, res2Len));
-                    return cmp != 0 ? cmp : res1Len - res2Len;
+                    if (caseInsensitive) {
+                        return String.CASE_INSENSITIVE_ORDER.compare(res1, res2);
+                    } else {
+                        return res1.compareTo(res2);
+                    }
                 }
             }
             if (ac.setNull && ac.owner != null)
@@ -431,7 +439,10 @@ public class ArgComparator {
     }
 
     private static class CompareEBinaryString implements ArgCmpFunc {
-
+        private boolean caseInsensitive;
+        CompareEBinaryString(boolean caseInsensitive) {
+            this.caseInsensitive = caseInsensitive;
+        }
         @Override
         public int compare(ArgComparator ac) {
             String res1, res2;
@@ -439,7 +450,11 @@ public class ArgComparator {
             res2 = ac.b.valStr();
             if (res1 == null || res2 == null)
                 return (res1 == null && res2 == null) ? 1 : 0;
-            return MySQLcom.memcmp(res1.getBytes(), res2.getBytes(), Math.min(res1.length(), res2.length())) == 0 ? 1 : 0;
+            if (caseInsensitive) {
+                return String.CASE_INSENSITIVE_ORDER.compare(res1, res2);
+            } else {
+                return res1.compareTo(res2);
+            }
         }
     }
 
@@ -579,5 +594,4 @@ public class ArgComparator {
             return Long.compare(aValue, bValue);
         }
     }
-
 }

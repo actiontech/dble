@@ -37,6 +37,7 @@ import java.nio.channels.NetworkChannel;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -487,8 +488,11 @@ public class ServerConnection extends FrontendConnection {
 
     public void innerCleanUp() {
         //rollback and unlock tables  means close backend conns;
-        for (BackendConnection conn : session.getTargetMap().values()) {
+        Iterator<BackendConnection> connIterator = session.getTargetMap().values().iterator();
+        while (connIterator.hasNext()) {
+            BackendConnection conn = connIterator.next();
             conn.closeWithoutRsp("com_reset_connection");
+            connIterator.remove();
         }
         isLocked = false;
         txChainBegin = false;

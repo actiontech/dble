@@ -290,7 +290,7 @@ public final class ReloadConfig {
     private static void writeErrorResultForCluster(ManagerConnection c, String errorMsg) {
         String sb = "Reload config failed partially. The node(s) failed because of:[" + errorMsg + "]";
         LOGGER.warn(sb);
-        if (errorMsg.indexOf("interrupt by command") != -1) {
+        if (errorMsg.contains("interrupt by command")) {
             c.writeErrMessage(ErrorCode.ER_RELOAD_INTERRUPUTED, sb);
         } else {
             c.writeErrMessage(ErrorCode.ER_CLUSTER_RELOAD, sb);
@@ -325,7 +325,7 @@ public final class ReloadConfig {
         ReloadLogHelper.info("reload config: load all xml info end", LOGGER);
 
         ReloadLogHelper.info("reload config: get variables from random alive data host start", LOGGER);
-        SystemVariables newSystemVariables = null;
+
         try {
             loader.testConnection(false);
         } catch (Exception e) {
@@ -334,23 +334,35 @@ public final class ReloadConfig {
             }
         }
 
+        boolean forceAllReload = false;
+
+        if ((loadAllMode & ManagerParseConfig.OPTR_MODE) != 0) {
+            forceAllReload = true;
+        }
+
+        if (forceAllReload) {
+            return forceReloadAll(loadAllMode, loader);
+        } else {
+            return intelligentReloadAll(loadAllMode, loader);
+        }
+
+    }
+
+    private static boolean intelligentReloadAll(int loadAllMode, ConfigInitializer loader) throws Exception {
         /* 2.1.1 get diff of dataHosts */
         ServerConfig config = DbleServer.getInstance().getConfig();
-        Set<PhysicalDBPoolDiff> dataHostDiffSet = distinguishDataHost(loader.getDataHosts(), config.getDataHosts());
-        Map<String, PhysicalDBPool> recyclHost = new HashMap<String, PhysicalDBPool>();
-        Map<String, PhysicalDBPool> mergedDataHosts = initDataHostMapWithMerge(dataHostDiffSet, recyclHost);
+        Map<String, PhysicalDBPool> addOrChangeHosts = new HashMap<>();
+        Map<String, PhysicalDBPool> noChangeHosts = new HashMap<>();
+        Map<String, PhysicalDBPool> recycleHosts = new HashMap<>();
+        distinguishDataHost(loader.getDataHosts(), config.getDataHosts(), addOrChangeHosts, noChangeHosts, recycleHosts);
 
-        VarsExtractorHandler handler = new VarsExtractorHandler(mergedDataHosts);
-        newSystemVariables = handler.execute();
-        if (newSystemVariables == null) {
-            if (!loader.isDataHostWithoutWH()) {
-                throw new Exception("Can't get variables from any data host, because all of data host can't connect to MySQL correctly");
-            } else {
-                ReloadLogHelper.info("reload config: no valid data host ,keep variables as old", LOGGER);
-                newSystemVariables = DbleServer.getInstance().getSystemVariables();
-            }
-        }
+        Map<String, PhysicalDBPool> mergedDataHosts = new HashMap<>();
+        mergedDataHosts.putAll(addOrChangeHosts);
+        mergedDataHosts.putAll(noChangeHosts);
+
+        SystemVariables newSystemVariables = getSystemVariablesFromDataHost(loader, mergedDataHosts);
         ReloadLogHelper.info("reload config: get variables from random node end", LOGGER);
+
 
         ServerConfig serverConfig = new ServerConfig(loader);
         if (newSystemVariables.isLowerCaseTableNames()) {
@@ -365,15 +377,7 @@ public final class ReloadConfig {
         FirewallConfig newFirewall = serverConfig.getFirewall();
         Map<String, PhysicalDBPool> newDataHosts = serverConfig.getDataHosts();
 
-        if ((loadAllMode & ManagerParseConfig.OPTS_MODE) == 0) {
-            try {
-                ReloadLogHelper.info("reload config: test all data Nodes start", LOGGER);
-                loader.testConnection(false);
-                ReloadLogHelper.info("reload config: test all data Nodes end", LOGGER);
-            } catch (Exception e) {
-                throw new Exception(e);
-            }
-        }
+        checkTestConnifNeed(loadAllMode, loader);
 
         /*
          *  2 transform
@@ -387,53 +391,99 @@ public final class ReloadConfig {
 
 
         String reasonMsg = null;
-
-
         /* 2.2 init the dataSource with diff*/
-
-
         ReloadLogHelper.info("reload config: init new data host  start", LOGGER);
-
-        boolean mergeReload = true;
-
-        if ((loadAllMode & ManagerParseConfig.OPTR_MODE) != 0) {
-            mergeReload = false;
-        }
-
-        if (mergeReload) {
-            reasonMsg = initDataHostByMap(mergedDataHosts, newDataNodes);
-        } else {
-            reasonMsg = initDataHostByMap(newDataHosts, newDataNodes);
-        }
-        ReloadLogHelper.info("reload config: init new data host  end", LOGGER);
+        reasonMsg = initDataHostByMap(mergedDataHosts, newDataNodes);
+        ReloadLogHelper.info("reload config: init new data host end", LOGGER);
         if (reasonMsg == null) {
             /* 2.3 apply new conf */
             ReloadLogHelper.info("reload config: apply new config start", LOGGER);
-            boolean result;
-            if (mergeReload) {
-                result = config.reload(newUsers, newSchemas, newDataNodes, mergedDataHosts, newErRelations, newFirewall,
-                        newSystemVariables, loader.isDataHostWithoutWH(), true, loadAllMode);
-                DbleServer.getInstance().getUserManager().initForLatest(newUsers, loader.getSystem().getMaxCon());
-                ReloadLogHelper.info("reload config: apply new config end", LOGGER);
-                recycleOldBackendConnections(recyclHost, ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
-            } else {
-                result = config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall,
-                        newSystemVariables, loader.isDataHostWithoutWH(), true, loadAllMode);
-                DbleServer.getInstance().getUserManager().initForLatest(newUsers, loader.getSystem().getMaxCon());
-                ReloadLogHelper.info("reload config: apply new config end", LOGGER);
-                recycleOldBackendConnections(config.getBackupDataHosts(), ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
-            }
+            final boolean result = config.reload(newUsers, newSchemas, newDataNodes, mergedDataHosts, addOrChangeHosts, recycleHosts, newErRelations, newFirewall,
+                    newSystemVariables, loader.isDataHostWithoutWH(), true, loadAllMode);
+            DbleServer.getInstance().getUserManager().initForLatest(newUsers, loader.getSystem().getMaxCon());
+            ReloadLogHelper.info("reload config: apply new config end", LOGGER);
+            recycleOldBackendConnections(recycleHosts, ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
             return result;
+        } else {
+            return initFailed(newDataHosts, reasonMsg);
 
+        }
+    }
+
+    private static boolean initFailed(Map<String, PhysicalDBPool> newDataHosts, String reasonMsg) throws Exception {
+        // INIT FAILED
+        ReloadLogHelper.info("reload failed, clear previously created data sources ", LOGGER);
+        for (PhysicalDBPool dbPool : newDataHosts.values()) {
+            dbPool.clearDataSources("reload config");
+            dbPool.stopHeartbeat();
+        }
+        throw new Exception(reasonMsg);
+    }
+
+    private static boolean forceReloadAll(final int loadAllMode, ConfigInitializer loader) throws Exception {
+        ServerConfig config = DbleServer.getInstance().getConfig();
+        ServerConfig serverConfig = new ServerConfig(loader);
+        Map<String, PhysicalDBPool> newDataHosts = serverConfig.getDataHosts();
+
+        SystemVariables newSystemVariables = getSystemVariablesFromDataHost(loader, newDataHosts);
+        ReloadLogHelper.info("reload config: get variables from random node end", LOGGER);
+
+        if (newSystemVariables.isLowerCaseTableNames()) {
+            ReloadLogHelper.info("reload config: data host's lowerCaseTableNames=1, lower the config properties start", LOGGER);
+            serverConfig.reviseLowerCase();
+            ReloadLogHelper.info("reload config: data host's lowerCaseTableNames=1, lower the config properties end", LOGGER);
+        }
+        Map<String, UserConfig> newUsers = serverConfig.getUsers();
+        Map<String, SchemaConfig> newSchemas = serverConfig.getSchemas();
+        Map<String, PhysicalDBNode> newDataNodes = serverConfig.getDataNodes();
+        Map<ERTable, Set<ERTable>> newErRelations = serverConfig.getErRelations();
+        FirewallConfig newFirewall = serverConfig.getFirewall();
+
+        checkTestConnifNeed(loadAllMode, loader);
+
+        ReloadLogHelper.info("reload config: init new data host  start", LOGGER);
+        String reasonMsg = initDataHostByMap(newDataHosts, newDataNodes);
+        ReloadLogHelper.info("reload config: init new data host end", LOGGER);
+        if (reasonMsg == null) {
+            /* 2.3 apply new conf */
+            ReloadLogHelper.info("reload config: apply new config start", LOGGER);
+            final boolean result = config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newDataHosts, config.getDataHosts(), newErRelations, newFirewall,
+                    newSystemVariables, loader.isDataHostWithoutWH(), true, loadAllMode);
+            DbleServer.getInstance().getUserManager().initForLatest(newUsers, loader.getSystem().getMaxCon());
+            ReloadLogHelper.info("reload config: apply new config end", LOGGER);
+            recycleOldBackendConnections(config.getBackupDataHosts(), ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
+            return result;
         } else {
             // INIT FAILED
-            ReloadLogHelper.info("reload failed, clear previously created data sources ", LOGGER);
-            for (PhysicalDBPool dbPool : newDataHosts.values()) {
-                dbPool.clearDataSources("reload config");
-                dbPool.stopHeartbeat();
-            }
-            throw new Exception(reasonMsg);
+            return initFailed(newDataHosts, reasonMsg);
         }
+    }
+
+    private static void checkTestConnifNeed(int loadAllMode, ConfigInitializer loader) throws Exception {
+        if ((loadAllMode & ManagerParseConfig.OPTS_MODE) == 0) {
+            try {
+                ReloadLogHelper.info("reload config: test all data Nodes start", LOGGER);
+                loader.testConnection(false);
+                ReloadLogHelper.info("reload config: test all data Nodes end", LOGGER);
+            } catch (Exception e) {
+                throw new Exception(e);
+            }
+        }
+    }
+
+    private static SystemVariables getSystemVariablesFromDataHost(ConfigInitializer loader, Map<String, PhysicalDBPool> newDataHosts) throws Exception {
+        VarsExtractorHandler handler = new VarsExtractorHandler(newDataHosts);
+        SystemVariables newSystemVariables;
+        newSystemVariables = handler.execute();
+        if (newSystemVariables == null) {
+            if (!loader.isDataHostWithoutWH()) {
+                throw new Exception("Can't get variables from any data host, because all of data host can't connect to MySQL correctly");
+            } else {
+                ReloadLogHelper.info("reload config: no valid data host ,keep variables as old", LOGGER);
+                newSystemVariables = DbleServer.getInstance().getSystemVariables();
+            }
+        }
+        return newSystemVariables;
     }
 
     private static void findAndcloseFrontCon(BackendConnection con) {
@@ -529,65 +579,59 @@ public final class ReloadConfig {
 
 
         /* 2 apply the new conf */
-        boolean result = DbleServer.getInstance().getConfig().reload(users, schemas, dataNodes, dataHosts, erRelations, firewall,
+        boolean result = DbleServer.getInstance().getConfig().reload(users, schemas, dataNodes, dataHosts, null, null, erRelations, firewall,
                 DbleServer.getInstance().getSystemVariables(), loader.isDataHostWithoutWH(), false, 0);
         DbleServer.getInstance().getUserManager().initForLatest(users, loader.getSystem().getMaxCon());
         return result;
     }
 
 
-    private static Set<PhysicalDBPoolDiff> distinguishDataHost(Map<String, PhysicalDBPool> newDataHosts, Map<String, PhysicalDBPool> oldDataHosts) {
-        Set<PhysicalDBPoolDiff> changeSet = new HashSet<>();
+    private static void distinguishDataHost(Map<String, PhysicalDBPool> newDataHosts, Map<String, PhysicalDBPool> oldDataHosts,
+                                                               Map<String, PhysicalDBPool> addOrChangeHosts, Map<String, PhysicalDBPool> noChangeHosts,
+                                                               Map<String, PhysicalDBPool> recycleHosts) {
 
         for (Map.Entry<String, PhysicalDBPool> entry : newDataHosts.entrySet()) {
-            PhysicalDBPool oldPoool = oldDataHosts.get(entry.getKey());
-            if (oldPoool == null) {
-                changeSet.add(new PhysicalDBPoolDiff(PhysicalDBPoolDiff.CHANGE_TYPE_ADD, entry.getValue(), null));
-                continue;
+            PhysicalDBPool oldPool = oldDataHosts.get(entry.getKey());
+            PhysicalDBPool newPool = entry.getValue();
+            if (oldPool == null) {
+                addOrChangeHosts.put(newPool.getHostName(), newPool);
             } else {
-                changeSet.add(new PhysicalDBPoolDiff(entry.getValue(), oldPoool));
+                calcChangedDatahosts(addOrChangeHosts, noChangeHosts, recycleHosts, entry, oldPool);
             }
         }
 
         for (Map.Entry<String, PhysicalDBPool> entry : oldDataHosts.entrySet()) {
-            PhysicalDBPool newPoool = newDataHosts.get(entry.getKey());
-            if (newPoool == null) {
-                changeSet.add(new PhysicalDBPoolDiff(PhysicalDBPoolDiff.CHANGE_TYPE_DELETE, null, entry.getValue()));
+            PhysicalDBPool newPool = newDataHosts.get(entry.getKey());
+
+            if (newPool == null) {
+                PhysicalDBPool oldPool = entry.getValue();
+                recycleHosts.put(oldPool.getHostName(), oldPool);
             }
         }
-        return changeSet;
     }
 
-
-    private static Map<String, PhysicalDBPool> initDataHostMapWithMerge(Set<PhysicalDBPoolDiff> diffSet, Map<String, PhysicalDBPool> recyclHost) {
-        Map<String, PhysicalDBPool> mergedDataHosts = new HashMap<String, PhysicalDBPool>();
-
-        //make mergeDataHosts a Deep copy of oldDataHosts
-        for (PhysicalDBPoolDiff diff : diffSet) {
-            switch (diff.getChangeType()) {
-
-                case PhysicalDBPoolDiff.CHANGE_TYPE_CHANGE:
-                    recyclHost.put(diff.getNewPool().getHostName(), diff.getOrgPool());
-                    mergedDataHosts.put(diff.getNewPool().getHostName(), diff.getNewPool());
-                    break;
-                case PhysicalDBPoolDiff.CHANGE_TYPE_ADD:
-                    //when the type is change,just delete the old one and use the new one
-                    mergedDataHosts.put(diff.getNewPool().getHostName(), diff.getNewPool());
-                    break;
-                case PhysicalDBPoolDiff.CHANGE_TYPE_NO:
-                    //add old dataHost into the new mergedDataHosts
-                    mergedDataHosts.put(diff.getNewPool().getHostName(), diff.getOrgPool());
-                    break;
-                case PhysicalDBPoolDiff.CHANGE_TYPE_DELETE:
-                    recyclHost.put(diff.getOrgPool().getHostName(), diff.getOrgPool());
-                    break;
-                //do not add into old one
-                default:
-                    break;
-
-            }
+    private static void calcChangedDatahosts(Map<String, PhysicalDBPool> addOrChangeHosts, Map<String, PhysicalDBPool> noChangeHosts, Map<String, PhysicalDBPool> recycleHosts, Map.Entry<String, PhysicalDBPool> entry, PhysicalDBPool oldPool) {
+        PhysicalDBPoolDiff toCheck = new PhysicalDBPoolDiff(entry.getValue(), oldPool);
+        switch (toCheck.getChangeType()) {
+            case PhysicalDBPoolDiff.CHANGE_TYPE_CHANGE:
+                recycleHosts.put(toCheck.getNewPool().getHostName(), toCheck.getOrgPool());
+                addOrChangeHosts.put(toCheck.getNewPool().getHostName(), toCheck.getNewPool());
+                break;
+            case PhysicalDBPoolDiff.CHANGE_TYPE_ADD:
+                //when the type is change,just delete the old one and use the new one
+                addOrChangeHosts.put(toCheck.getNewPool().getHostName(), toCheck.getNewPool());
+                break;
+            case PhysicalDBPoolDiff.CHANGE_TYPE_NO:
+                //add old dataHost into the new mergedDataHosts
+                noChangeHosts.put(toCheck.getNewPool().getHostName(), toCheck.getOrgPool());
+                break;
+            case PhysicalDBPoolDiff.CHANGE_TYPE_DELETE:
+                recycleHosts.put(toCheck.getOrgPool().getHostName(), toCheck.getOrgPool());
+                break;
+            //do not add into old one
+            default:
+                break;
         }
-        return mergedDataHosts;
     }
 
 

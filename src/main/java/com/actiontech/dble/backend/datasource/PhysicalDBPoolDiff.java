@@ -25,16 +25,7 @@ public class PhysicalDBPoolDiff {
     private PhysicalDBPool newPool = null;
 
 
-    private Set<BaseInfoDiff> baseDiff = null;
-
-    private Set<PhysicalDatasourceDiff> hostChangeSet = null;
-
-
-    public PhysicalDBPoolDiff(String changeType, PhysicalDBPool newPool, PhysicalDBPool orgPool) {
-        this.changeType = changeType;
-        this.newPool = newPool;
-        this.orgPool = orgPool;
-    }
+    //private Set<BaseInfoDiff> baseDiff = null;
 
 
     public PhysicalDBPoolDiff(PhysicalDBPool newPool, PhysicalDBPool orgPool) {
@@ -42,10 +33,10 @@ public class PhysicalDBPoolDiff {
         this.newPool = newPool;
         if (!newPool.equalsBaseInfo(orgPool)) {
             this.changeType = CHANGE_TYPE_CHANGE;
-            this.baseDiff = createBaseDiff(newPool, orgPool);
+            //this.baseDiff = createBaseDiff(newPool, orgPool);
         }
 
-        hostChangeSet = createHostChangeSet(newPool, orgPool);
+        Set<PhysicalDatasourceDiff> hostChangeSet = createHostChangeSet(newPool, orgPool);
         for (PhysicalDatasourceDiff diff : hostChangeSet) {
             if (!diff.getWriteHostChangeType().equals(CHANGE_TYPE_NO)) {
                 this.changeType = CHANGE_TYPE_CHANGE;
@@ -60,18 +51,18 @@ public class PhysicalDBPoolDiff {
 
 
     private Set<PhysicalDatasourceDiff> createHostChangeSet(PhysicalDBPool newDbPool, PhysicalDBPool orgDbPool) {
-        Set<PhysicalDatasourceDiff> hostDiff = new HashSet<PhysicalDatasourceDiff>();
+        Set<PhysicalDatasourceDiff> hostDiff = new HashSet<>();
 
         //add or not change
         for (int i = 0; i < newDbPool.getWriteSources().length; i++) {
             PhysicalDatasource writeHost = newDbPool.getWriteSources()[i];
-            PhysicalDatasource[] readHost = newDbPool.getReadSources().get(Integer.valueOf(i));
+            PhysicalDatasource[] readHost = newDbPool.getReadSources().get(i);
 
             PhysicalDatasource orgHost = null;
             PhysicalDatasource[] relatedHost = null;
             for (int j = 0; j < orgDbPool.getWriteSources().length; j++) {
                 PhysicalDatasource oldHost = orgDbPool.getWriteSources()[j];
-                PhysicalDatasource[] oldRHost = orgDbPool.getReadSources().get(Integer.valueOf(j));
+                PhysicalDatasource[] oldRHost = orgDbPool.getReadSources().get(j);
 
                 if (oldHost.equals(writeHost) &&
                         ((oldRHost == null && readHost == null) ||
@@ -94,8 +85,6 @@ public class PhysicalDBPoolDiff {
                         relatedHost = oldRHost;
                         break;
                     }
-                } else {
-                    continue;
                 }
             }
 
@@ -110,7 +99,7 @@ public class PhysicalDBPoolDiff {
         //add delete info into hostDiff & from hostDiff
         for (int i = 0; i < orgDbPool.getWriteSources().length; i++) {
             PhysicalDatasource writeHost = orgDbPool.getWriteSources()[i];
-            PhysicalDatasource[] readHost = orgDbPool.getReadSources().get(Integer.valueOf(i));
+            PhysicalDatasource[] readHost = orgDbPool.getReadSources().get(i);
             boolean findFlag = false;
             for (PhysicalDatasourceDiff diff : hostDiff) {
                 if (diff.getSelfHost().equals(writeHost) && diff.getWriteHostChangeType().equals(CHANGE_TYPE_NO)) {
@@ -126,80 +115,52 @@ public class PhysicalDBPoolDiff {
         return hostDiff;
     }
 
-    private Set<BaseInfoDiff> createBaseDiff(PhysicalDBPool newDbPool, PhysicalDBPool orgDbPool) {
-        Set<BaseInfoDiff> baseDiffSet = new HashSet<BaseInfoDiff>();
-        if (newDbPool.getDataHostConfig().getBalance() != orgDbPool.getDataHostConfig().getBalance()) {
-            baseDiffSet.add(new BaseInfoDiff("balance", newDbPool.getDataHostConfig().getBalance(), orgDbPool.getDataHostConfig().getBalance()));
-        }
-
-        if (newDbPool.getDataHostConfig().getSwitchType() != orgDbPool.getDataHostConfig().getSwitchType()) {
-            baseDiffSet.add(new BaseInfoDiff("switchType", newDbPool.getDataHostConfig().getSwitchType(), orgDbPool.getDataHostConfig().getSwitchType()));
-        }
-
-        if (newDbPool.getDataHostConfig().getMaxCon() != orgDbPool.getDataHostConfig().getMaxCon()) {
-            baseDiffSet.add(new BaseInfoDiff("maxCon", newDbPool.getDataHostConfig().getMaxCon(), orgDbPool.getDataHostConfig().getMaxCon()));
-        }
-
-        if (newDbPool.getDataHostConfig().getMinCon() != orgDbPool.getDataHostConfig().getMinCon()) {
-            baseDiffSet.add(new BaseInfoDiff("minCon", newDbPool.getDataHostConfig().getMinCon(), orgDbPool.getDataHostConfig().getMinCon()));
-        }
-
-
-        if (newDbPool.getDataHostConfig().getSlaveThreshold() != orgDbPool.getDataHostConfig().getSlaveThreshold()) {
-            baseDiffSet.add(new BaseInfoDiff("slaveThreshold", newDbPool.getDataHostConfig().getSlaveThreshold(), orgDbPool.getDataHostConfig().getSlaveThreshold()));
-        }
-
-
-        if (!newDbPool.getDataHostConfig().getHearbeatSQL().equals(orgDbPool.getDataHostConfig().getHearbeatSQL())) {
-            baseDiffSet.add(new BaseInfoDiff("minCon", newDbPool.getDataHostConfig().getHearbeatSQL(), orgDbPool.getDataHostConfig().getHearbeatSQL()));
-        }
-
-        if (newDbPool.getDataHostConfig().isTempReadHostAvailable() != orgDbPool.getDataHostConfig().isTempReadHostAvailable()) {
-            baseDiffSet.add(new BaseInfoDiff("slaveThreshold", newDbPool.getDataHostConfig().isTempReadHostAvailable() ? 1 : 0,
-                    orgDbPool.getDataHostConfig().isTempReadHostAvailable() ? 1 : 0));
-        }
-
-        return baseDiffSet;
-    }
+    //    private Set<BaseInfoDiff> createBaseDiff(PhysicalDBPool newDbPool, PhysicalDBPool orgDbPool) {
+    //        Set<BaseInfoDiff> baseDiffSet = new HashSet<BaseInfoDiff>();
+    //        if (newDbPool.getDataHostConfig().getBalance() != orgDbPool.getDataHostConfig().getBalance()) {
+    //            baseDiffSet.add(new BaseInfoDiff("balance", newDbPool.getDataHostConfig().getBalance(), orgDbPool.getDataHostConfig().getBalance()));
+    //        }
+    //
+    //        if (newDbPool.getDataHostConfig().getSwitchType() != orgDbPool.getDataHostConfig().getSwitchType()) {
+    //            baseDiffSet.add(new BaseInfoDiff("switchType", newDbPool.getDataHostConfig().getSwitchType(), orgDbPool.getDataHostConfig().getSwitchType()));
+    //        }
+    //
+    //        if (newDbPool.getDataHostConfig().getMaxCon() != orgDbPool.getDataHostConfig().getMaxCon()) {
+    //            baseDiffSet.add(new BaseInfoDiff("maxCon", newDbPool.getDataHostConfig().getMaxCon(), orgDbPool.getDataHostConfig().getMaxCon()));
+    //        }
+    //
+    //        if (newDbPool.getDataHostConfig().getMinCon() != orgDbPool.getDataHostConfig().getMinCon()) {
+    //            baseDiffSet.add(new BaseInfoDiff("minCon", newDbPool.getDataHostConfig().getMinCon(), orgDbPool.getDataHostConfig().getMinCon()));
+    //        }
+    //
+    //
+    //        if (newDbPool.getDataHostConfig().getSlaveThreshold() != orgDbPool.getDataHostConfig().getSlaveThreshold()) {
+    //            baseDiffSet.add(new BaseInfoDiff("slaveThreshold", newDbPool.getDataHostConfig().getSlaveThreshold(), orgDbPool.getDataHostConfig().getSlaveThreshold()));
+    //        }
+    //
+    //
+    //        if (!newDbPool.getDataHostConfig().getHearbeatSQL().equals(orgDbPool.getDataHostConfig().getHearbeatSQL())) {
+    //            baseDiffSet.add(new BaseInfoDiff("minCon", newDbPool.getDataHostConfig().getHearbeatSQL(), orgDbPool.getDataHostConfig().getHearbeatSQL()));
+    //        }
+    //
+    //        if (newDbPool.getDataHostConfig().isTempReadHostAvailable() != orgDbPool.getDataHostConfig().isTempReadHostAvailable()) {
+    //            baseDiffSet.add(new BaseInfoDiff("slaveThreshold", newDbPool.getDataHostConfig().isTempReadHostAvailable() ? 1 : 0,
+    //                    orgDbPool.getDataHostConfig().isTempReadHostAvailable() ? 1 : 0));
+    //        }
+    //
+    //        return baseDiffSet;
+    //    }
 
     public String getChangeType() {
         return changeType;
-    }
-
-    public void setChangeType(String changeType) {
-        this.changeType = changeType;
     }
 
     public PhysicalDBPool getOrgPool() {
         return orgPool;
     }
 
-    public void setOrgPool(PhysicalDBPool orgPool) {
-        this.orgPool = orgPool;
-    }
-
     public PhysicalDBPool getNewPool() {
         return newPool;
-    }
-
-    public void setNewPool(PhysicalDBPool newPool) {
-        this.newPool = newPool;
-    }
-
-    public Set<BaseInfoDiff> getBaseDiff() {
-        return baseDiff;
-    }
-
-    public void setBaseDiff(Set<BaseInfoDiff> baseDiff) {
-        this.baseDiff = baseDiff;
-    }
-
-    public Set<PhysicalDatasourceDiff> getHostChangeSet() {
-        return hostChangeSet;
-    }
-
-    public void setHostChangeSet(Set<PhysicalDatasourceDiff> hostChangeSet) {
-        this.hostChangeSet = hostChangeSet;
     }
 
 }

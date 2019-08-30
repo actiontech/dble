@@ -8,9 +8,6 @@ package com.actiontech.dble.cluster.impl;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.UcoreGrpc;
 import com.actiontech.dble.alarm.UcoreInterface;
-import com.actiontech.dble.backend.mysql.view.CKVStoreRepository;
-import com.actiontech.dble.backend.mysql.view.FileSystemRepository;
-import com.actiontech.dble.backend.mysql.view.Repository;
 import com.actiontech.dble.cluster.AbstractClusterSender;
 import com.actiontech.dble.cluster.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.ClusterHelper;
@@ -19,7 +16,6 @@ import com.actiontech.dble.cluster.bean.ClusterAlertBean;
 import com.actiontech.dble.cluster.bean.KvBean;
 import com.actiontech.dble.cluster.bean.SubscribeRequest;
 import com.actiontech.dble.cluster.bean.SubscribeReturnBean;
-import com.actiontech.dble.server.status.OnlineLockStatus;
 import com.google.common.base.Strings;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
@@ -31,7 +27,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -524,19 +519,7 @@ public final class UcoreSender extends AbstractClusterSender {
                             LOGGER.info("new ucore ips :" + strIPs);
                             setIp(strIPs);
                         }
-
-                        if (DbleServer.getInstance().getTmManager() != null) {
-                            if (DbleServer.getInstance().getTmManager().getRepository() instanceof FileSystemRepository) {
-                                LOGGER.warn("Dble first reconnect to ucore ,local view repository change to CKVStoreRepository");
-                                Repository newViewRepository = new CKVStoreRepository();
-                                DbleServer.getInstance().getTmManager().setRepository(newViewRepository);
-                                Map<String, Map<String, String>> viewCreateSqlMap = newViewRepository.getViewCreateSqlMap();
-                                DbleServer.getInstance().getTmManager().reloadViewMeta(viewCreateSqlMap);
-                                //init online status
-                                LOGGER.warn("Dble first reconnect to ucore ,online status rebuild");
-                                OnlineLockStatus.getInstance().metaUcoreInit(true);
-                            }
-                        }
+                        firstReturnToCluster();
                     } catch (Exception e) {
                         LOGGER.warn("error in ucore nodes watch,try for another time", e);
                     }

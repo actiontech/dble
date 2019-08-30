@@ -164,6 +164,9 @@ public class MySQLHeartbeat {
     }
 
     private void setOk() {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("heartbeat setOK");
+        }
         if (this.status != OK_STATUS) {
             Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getHostConfig().getName() + "-" + this.source.getConfig().getHostName());
             AlertUtil.alertResolve(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "mysql", this.source.getConfig().getId(), labels);
@@ -192,13 +195,14 @@ public class MySQLHeartbeat {
     }
 
     private void setError() {
+        LOGGER.warn("heartbeat setError");
         // should continues check error status
         if (detector != null) {
             detector.quit();
         }
         this.status = ERROR_STATUS;
         startErrorTime.compareAndSet(-1, System.currentTimeMillis());
-        if (++errorCount < errorRetryCount) {
+        if (++errorCount <= errorRetryCount) {
             heartbeatRetry(); // error count not enough, heart beat again
         }
     }
@@ -208,6 +212,7 @@ public class MySQLHeartbeat {
         heartbeat();
     }
     private void setTimeout() {
+        LOGGER.warn("heartbeat setTimeout");
         this.isChecking.set(false);
         status = TIMEOUT_STATUS;
     }
@@ -258,7 +263,14 @@ public class MySQLHeartbeat {
         } else if (status == INIT_STATUS) { // init or timeout->ok
             return false;
         } else if (status == ERROR_STATUS) {
-            return System.currentTimeMillis() - this.startErrorTime.longValue() < heartbeatTimeout;
+            long timeDiff = System.currentTimeMillis() - this.startErrorTime.longValue();
+            if (timeDiff >= heartbeatTimeout) {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("error heartbaet continued for more than " + timeDiff + " Milliseconds and heartbeat Timeout is " + heartbeatTimeout + " Milliseconds");
+                }
+                return false;
+            }
+            return true;
         } else { // TIMEOUT_STATUS
             return false;
         }

@@ -18,6 +18,7 @@ import com.actiontech.dble.backend.mysql.view.KVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.Repository;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.*;
+import com.actiontech.dble.cluster.bean.InstanceOnline;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
@@ -340,14 +341,40 @@ public class ProxyMetaManager {
         }
 
         initMeta(config);
+        tryDeleteOldOnline();
+
         // online
-        ZKUtils.createTempNode(KVPathUtil.getOnlinePath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+        ZKUtils.createOnline(KVPathUtil.getOnlinePath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), InstanceOnline.getInstance());
         //add watcher
         ZKUtils.addChildPathCache(ddlPath, new DDLChildListener());
         //add watcher
         ZKUtils.addViewPathCache(KVPathUtil.getViewPath(), new ViewChildListener());
         // syncMeta UNLOCK
         zkConn.delete().forPath(KVPathUtil.getSyncMetaLockPath());
+    }
+
+
+    private void tryDeleteOldOnline() throws Exception {
+        //try to delete online
+        if (ZKUtils.getConnection().checkExists().forPath(KVPathUtil.getOnlinePath() +
+                KVPathUtil.SEPARATOR + ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID)) != null) {
+            byte[] info;
+            try {
+                info = ZKUtils.getConnection().getData().forPath(KVPathUtil.getOnlinePath() +
+                        KVPathUtil.SEPARATOR + ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+            } catch (Exception e) {
+                LOGGER.info("can not get old online from zk,just do as it not exists");
+                return;
+            }
+            String oldOnlne = new String(info, StandardCharsets.UTF_8);
+            if (InstanceOnline.getInstance().canRemovePath(oldOnlne)) {
+                LOGGER.warn("remove online from zk path ,because has same IP & serverPort");
+                ZKUtils.getConnection().delete().forPath(KVPathUtil.getOnlinePath() +
+                        KVPathUtil.SEPARATOR + ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+            } else {
+                throw new RuntimeException("Online path with other IP or serverPort exist,make sure different instance has different myid");
+            }
+        }
     }
 
 

@@ -214,11 +214,13 @@ public class ServerConfig {
 
     public boolean reload(Map<String, UserConfig> newUsers, Map<String, SchemaConfig> newSchemas,
                           Map<String, PhysicalDBNode> newDataNodes, Map<String, PhysicalDBPool> newDataHosts,
+                          Map<String, PhysicalDBPool> changeOrAddDataHosts,
+                          Map<String, PhysicalDBPool> recycleDataHosts,
                           Map<ERTable, Set<ERTable>> newErRelations, FirewallConfig newFirewall,
                           SystemVariables newSystemVariables, boolean newDataHostWithoutWR, boolean reloadAll,
                           final int loadAllMode) throws SQLNonTransientException {
 
-        boolean result = apply(newUsers, newSchemas, newDataNodes, newDataHosts, newErRelations, newFirewall,
+        boolean result = apply(newUsers, newSchemas, newDataNodes, newDataHosts, changeOrAddDataHosts, recycleDataHosts, newErRelations, newFirewall,
                 newSystemVariables, newDataHostWithoutWR, reloadAll, loadAllMode);
         this.reloadTime = TimeUtil.currentTimeMillis();
         this.status = reloadAll ? RELOAD_ALL : RELOAD;
@@ -334,7 +336,7 @@ public class ServerConfig {
                             Map<String, PhysicalDBNode> backupDataNodes, Map<String, PhysicalDBPool> backupDataHosts,
                             Map<ERTable, Set<ERTable>> backupErRelations, FirewallConfig backFirewall, boolean backDataHostWithoutWR) throws SQLNonTransientException {
 
-        boolean result = apply(backupUsers, backupSchemas, backupDataNodes, backupDataHosts, backupErRelations, backFirewall,
+        boolean result = apply(backupUsers, backupSchemas, backupDataNodes, backupDataHosts, backupDataHosts, this.dataHosts, backupErRelations, backFirewall,
                 DbleServer.getInstance().getSystemVariables(), backDataHostWithoutWR, status == RELOAD_ALL, ManagerParseConfig.OPTR_MODE);
         this.rollbackTime = TimeUtil.currentTimeMillis();
         this.status = ROLLBACK;
@@ -345,6 +347,8 @@ public class ServerConfig {
                           Map<String, SchemaConfig> newSchemas,
                           Map<String, PhysicalDBNode> newDataNodes,
                           Map<String, PhysicalDBPool> newDataHosts,
+                          Map<String, PhysicalDBPool> changeOrAddDataHosts,
+                          Map<String, PhysicalDBPool> recycleDataHosts,
                           Map<ERTable, Set<ERTable>> newErRelations,
                           FirewallConfig newFirewall, SystemVariables newSystemVariables,
                           boolean newDataHostWithoutWR, boolean isLoadAll, final int loadAllMode) throws SQLNonTransientException {
@@ -367,9 +371,8 @@ public class ServerConfig {
             // 2 backup
             //--------------------------------------------
             if (isLoadAll) {
-                Map<String, PhysicalDBPool> oldDataHosts = this.dataHosts;
-                if (oldDataHosts != null) {
-                    for (PhysicalDBPool oldDbPool : oldDataHosts.values()) {
+                if (recycleDataHosts != null) {
+                    for (PhysicalDBPool oldDbPool : recycleDataHosts.values()) {
                         if (oldDbPool != null) {
                             oldDbPool.stopHeartbeat();
                         }
@@ -390,8 +393,8 @@ public class ServerConfig {
             // 2 apply the configure
             //---------------------------------------------------
             if (isLoadAll) {
-                if (newDataHosts != null) {
-                    for (PhysicalDBPool newDbPool : newDataHosts.values()) {
+                if (changeOrAddDataHosts != null) {
+                    for (PhysicalDBPool newDbPool : changeOrAddDataHosts.values()) {
                         if (newDbPool != null && !newDataHostWithoutWR) {
                             DbleServer.getInstance().saveDataHostIndex(newDbPool.getHostName(), newDbPool.getActiveIndex(),
                                     this.system.isUseZKSwitch() && DbleServer.getInstance().isUseZK());

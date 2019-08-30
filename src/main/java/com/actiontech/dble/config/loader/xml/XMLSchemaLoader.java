@@ -666,7 +666,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             hostConf.setMinCon(minCon);
             hostConf.setBalance(balance);
             hostConf.setHearbeatSQL(heartbeatSQL);
-            hostConf.setHeartbeatTimeout(Integer.parseInt(strHBTimeout));
+            hostConf.setHeartbeatTimeout(Integer.parseInt(strHBTimeout) * 1000);
             hostConf.setErrorRetryCount(Integer.parseInt(strHBErrorRetryCount));
             dataHosts.put(hostConf.getName(), hostConf);
         }

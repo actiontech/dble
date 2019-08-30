@@ -34,7 +34,7 @@ public final class ShowDataSource {
     private ShowDataSource() {
     }
 
-    private static final int FIELD_COUNT = 10;
+    private static final int FIELD_COUNT = 11;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
@@ -43,6 +43,9 @@ public final class ShowDataSource {
         int i = 0;
         byte packetId = 0;
         HEADER.setPacketId(++packetId);
+
+        FIELDS[i] = PacketUtil.getField("DATAHOST", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
@@ -101,7 +104,7 @@ public final class ShowDataSource {
                 if (w.getConfig().isDisabled()) {
                     continue;
                 }
-                RowDataPacket row = getRow(w, c.getCharset().getResults());
+                RowDataPacket row = getRow(w.getHostConfig().getName(), w, c.getCharset().getResults());
                 row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
             }
@@ -111,17 +114,18 @@ public final class ShowDataSource {
             for (Map.Entry<String, PhysicalDBPool> entry : conf.getDataHosts().entrySet()) {
 
                 PhysicalDBPool dataHost = entry.getValue();
+                String datahost = entry.getKey();
 
                 for (int i = 0; i < dataHost.getSources().length; i++) {
                     if (!dataHost.getSources()[i].getConfig().isDisabled()) {
-                        RowDataPacket row = getRow(dataHost.getSources()[i], c.getCharset().getResults());
+                        RowDataPacket row = getRow(datahost, dataHost.getSources()[i], c.getCharset().getResults());
                         row.setPacketId(++packetId);
                         buffer = row.write(buffer, c, true);
                     }
                     if (dataHost.getrReadSources().get(i) != null) {
                         for (PhysicalDatasource r : dataHost.getrReadSources().get(i)) {
                             if (!r.getConfig().isDisabled()) {
-                                RowDataPacket sRow = getRow(r, c.getCharset().getResults());
+                                RowDataPacket sRow = getRow(datahost, r, c.getCharset().getResults());
                                 sRow.setPacketId(++packetId);
                                 buffer = sRow.write(buffer, c, true);
                             }
@@ -140,11 +144,12 @@ public final class ShowDataSource {
         c.write(buffer);
     }
 
-    private static RowDataPacket getRow(PhysicalDatasource ds,
+    private static RowDataPacket getRow(String dataHost, PhysicalDatasource ds,
                                         String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         //row.add(StringUtil.encode(dataNode, charset));
         int idleCount = ds.getIdleCount();
+        row.add(StringUtil.encode(dataHost, charset));
         row.add(StringUtil.encode(ds.getName(), charset));
         row.add(StringUtil.encode(ds.getConfig().getIp(), charset));
         row.add(IntegerUtil.toBytes(ds.getConfig().getPort()));

@@ -3,6 +3,7 @@ package com.actiontech.dble.cluster.impl.ushard;
 import com.actiontech.dble.cluster.AbstractClusterSender;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterParamCfg;
+import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.bean.ClusterAlertBean;
 import com.actiontech.dble.cluster.bean.KvBean;
 import com.actiontech.dble.cluster.bean.SubscribeRequest;
@@ -52,6 +53,7 @@ public class UshardSender extends AbstractClusterSender {
         Channel channel = ManagedChannelBuilder.forAddress("127.0.0.1",
                 Integer.parseInt(getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
         stub = DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
+        startUpdateNodes();
     }
 
     @Override
@@ -275,5 +277,30 @@ public class UshardSender extends AbstractClusterSender {
             builder.putAllLabels(alert.getLabels());
         }
         return builder.build();
+    }
+
+
+    private void startUpdateNodes() {
+        Thread nodes = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                for (; ; ) {
+                    try {
+                        UshardInterface.SubscribeKvPrefixInput input = UshardInterface.SubscribeKvPrefixInput.newBuilder().
+                                setIndex(0).setDuration(60).setKeyPrefix(ClusterPathUtil.BASE_PATH).build();
+                        stub.withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS).subscribeKvPrefix(input);
+                        firstReturnToCluster();
+                        return;
+                    } catch (Exception e) {
+                        LOGGER.warn("error in ucore nodes watch,try for another time", e);
+                        Channel channel = ManagedChannelBuilder.forAddress("127.0.0.1",
+                                Integer.parseInt(getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
+                        stub = DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
+                    }
+                }
+            }
+        });
+        nodes.setName("USHARD_RECONNECT_LISTENER");
+        nodes.start();
     }
 }

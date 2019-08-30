@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author wuzhih
  */
-public class SQLJob implements ResponseHandler, Runnable {
+public class SQLJob implements ResponseHandler, Runnable, Cloneable {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(SQLJob.class);
 
@@ -196,6 +196,19 @@ public class SQLJob implements ResponseHandler, Runnable {
                 dataNode + ",schema=" +
                 schema + ",sql=" + sql + ",  jobHandler=" +
                 jobHandler + "]";
+    }
+
+    @Override
+    public Object clone() {
+        SQLJob newSqlJob = null;
+        try {
+            newSqlJob = (SQLJob) super.clone();
+            newSqlJob.finished.set(false);
+        } catch (CloneNotSupportedException e) {
+            // ignore
+            LOGGER.warn("SQLJob CloneNotSupportedException, impossible");
+        }
+        return newSqlJob;
     }
 
 }

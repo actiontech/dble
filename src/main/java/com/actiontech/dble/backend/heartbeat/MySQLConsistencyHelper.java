@@ -46,7 +46,7 @@ public class MySQLConsistencyHelper implements SQLQueryResultListener<SQLQueryRe
 
     @Override
     public void onResult(SQLQueryResult<Map<String, String>> result) {
-        LOGGER.debug("resultresultresultresult:" + JSON.toJSONString(result));
+        LOGGER.debug("result:" + JSON.toJSONString(result));
         Map<String, String> rowMap = null;
         String count = null;
         String innerCol = null;
@@ -71,7 +71,7 @@ public class MySQLConsistencyHelper implements SQLQueryResultListener<SQLQueryRe
                         //ignore error
                     }
                     this.retryTime.decrementAndGet();
-                    this.sqlJob.run();
+                    ((SQLJob) this.sqlJob.clone()).run();
                     return;
                 }
                 heartbeat.setResult(result);
@@ -85,7 +85,7 @@ public class MySQLConsistencyHelper implements SQLQueryResultListener<SQLQueryRe
                     //ignore error
                 }
                 this.retryTime.decrementAndGet();
-                this.sqlJob.run();
+                ((SQLJob) this.sqlJob.clone()).run();
                 return;
             }
             heartbeat.setResult(result);

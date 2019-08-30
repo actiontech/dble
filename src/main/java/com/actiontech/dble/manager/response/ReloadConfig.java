@@ -638,7 +638,7 @@ public final class ReloadConfig {
     private static String initDataHostByMap(Map<String, PhysicalDBPool> newDataHosts, Map<String, PhysicalDBNode> newDataNodes) {
         String reasonMsg = null;
         for (PhysicalDBPool dbPool : newDataHosts.values()) {
-            ReloadLogHelper.info("try to into dataSouce : " + dbPool.toString(), LOGGER);
+            ReloadLogHelper.info("try to inint dataSouce : " + dbPool.toString(), LOGGER);
             String hostName = dbPool.getHostName();
             // set schemas
             ArrayList<String> dnSchemas = new ArrayList<>(30);

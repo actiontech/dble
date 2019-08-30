@@ -448,15 +448,19 @@ public abstract class FrontendConnection extends AbstractConnection {
         authSwitchResponse.read(data);
         changeUserPacket.setPassword(authSwitchResponse.getAuthPluginData());
         if (AuthUtil.authority(this, changeUserPacket.getUser(), changeUserPacket.getPassword(), changeUserPacket.getDatabase(), false)) {
-            changeUserSuccess(changeUserPacket);
+            byte packetId = (byte) (authSwitchResponse.getPacketId() + 1);
+            changeUserSuccess(changeUserPacket, packetId);
         }
     }
 
-    private void changeUserSuccess(ChangeUserPacket newUser) {
+    private void changeUserSuccess(ChangeUserPacket newUser, byte packetId) {
         this.setUser(newUser.getUser());
         this.setSchema(newUser.getDatabase());
         this.initCharsetIndex(newUser.getCharsetIndex());
-        this.write(OkPacket.OK);
+        OkPacket ok = new OkPacket();
+        ok.read(OkPacket.OK);
+        ok.setPacketId(packetId);
+        ok.write(this);
     }
 
     public void stmtReset(byte[] data) {

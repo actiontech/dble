@@ -33,4 +33,6 @@ PASSWORD=${input/password=/""}
 RUN_CMD="$CORE_JAVA_HOME/bin/java -cp $APP_HOME/lib/dble*.jar com.actiontech.dble.util.DecryptUtil $PASSWORD"
 echo "$CORE_JAVA_HOME/bin/java -cp $APP_HOME/lib/dble*.jar com.actiontech.dble.util.DecryptUtil password=******"
 eval $RUN_CMD
+EXIT_STATUS=$?
+exit $EXIT_STATUS
 #==============================================================================

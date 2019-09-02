@@ -107,7 +107,8 @@ public final class ShowSysLog {
             int totalNumLines = 0;
             File logFile = new File(filename);
             in = new BufferedReader(new InputStreamReader(new FileInputStream(logFile), StandardCharsets.UTF_8));
-            while (in.readLine() != null) {
+            String line;
+            while ((line = in.readLine()) != null) {
                 totalNumLines++;
             }
             in.close();
@@ -123,7 +124,7 @@ public final class ShowSysLog {
             // DESC
             int i = 0;
             int end = lines.length - 1;
-            String line;
+
             while ((line = in.readLine()) != null && i < numLines) {
                 lines[end - i] = line;
                 i++;

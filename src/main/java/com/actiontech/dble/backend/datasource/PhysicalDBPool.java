@@ -260,7 +260,7 @@ public class PhysicalDBPool {
                             }
                         } else {
                             // normal switch
-                            LOGGER.warn("try to switch datasource ,not checked slave" + "synchronize status " +
+                            LOGGER.warn("try to switch datasource ,not checked slave synchronize status " +
                                     theDs.getConfig());
                             switchSource(nextId, reason);
                             break;

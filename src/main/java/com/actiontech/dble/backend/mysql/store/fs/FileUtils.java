@@ -312,7 +312,6 @@ public final class FileUtils {
      *                     required)
      * @param suffix       the suffix
      * @param deleteOnExit if the file should be deleted when the virtual machine exists
-     * @param inTempDir    if the file should be stored in the temporary directory
      * @return the name of the created file
      */
     public static String createTempFile(String prefix, String suffix, boolean deleteOnExit) throws IOException {

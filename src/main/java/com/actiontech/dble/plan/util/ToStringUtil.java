@@ -37,7 +37,6 @@ public final class ToStringUtil {
     /**
      * get the string of itemlist
      *
-     * @param itemList
      * @return
      */
     public static String itemString(Item item) {

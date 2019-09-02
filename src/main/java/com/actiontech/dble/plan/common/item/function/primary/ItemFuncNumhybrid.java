@@ -211,7 +211,6 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
     public abstract BigDecimal realOp();
 
     /**
-     * @param A pointer where the DECIMAL value will be allocated.
      * @return - 0 If the result is NULL - The same pointer it was given, with
      * the area initialized to the result of the operation.
      * @brief Performs the operation that this functions implements when the

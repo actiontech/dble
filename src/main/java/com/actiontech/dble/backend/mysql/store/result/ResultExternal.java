@@ -25,7 +25,7 @@ public interface ResultExternal {
     /**
      * Add a row to this object.
      *
-     * @param values the row to add
+     * @param row the row to add
      * @return the new number of rows in this object
      */
     int addRow(RowDataPacket row);
@@ -52,7 +52,7 @@ public interface ResultExternal {
      * Remove the row with the given values from this object if such a row
      * exists.
      *
-     * @param values the row
+     * @param row the row
      * @return the new row count
      */
     int removeRow(RowDataPacket row);
@@ -60,7 +60,7 @@ public interface ResultExternal {
     /**
      * Check if the given row exists in this object.
      *
-     * @param values the row
+     * @param row the row
      * @return true if it exists
      */
     boolean contains(RowDataPacket row);

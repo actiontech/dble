@@ -22,7 +22,6 @@ public class JoinStrategyChooser {
     /**
      * tryNestLoop
      *
-     * @param jn
      * @return boolean true:join can use the nest loop optimization,will not try to optimizer join's child
      * false:join can't use the nest loop optimization,try to optimizer join's child
      */
@@ -42,7 +41,6 @@ public class JoinStrategyChooser {
     }
 
     /**
-     * @param jn
      * @return
      */
     private boolean tryInnerJoinNestLoop() {
@@ -61,7 +59,6 @@ public class JoinStrategyChooser {
     }
 
     /**
-     * @param jn
      * @return
      */
     private boolean tryLeftJoinNestLoop() {

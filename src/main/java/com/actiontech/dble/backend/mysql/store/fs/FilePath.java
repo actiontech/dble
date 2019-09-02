@@ -72,9 +72,7 @@ public abstract class FilePath {
                     Map<String, FilePath> map = Collections.synchronizedMap(new HashMap<String, FilePath>());
                     FilePathDisk p = new FilePathDisk();
                     map.put(p.getScheme(), p);
-                    if (defaultProvider == null) {
-                        defaultProvider = p;
-                    }
+                    defaultProvider = p;
                     FilePathNio p2 = new FilePathNio();
                     map.put(p2.getScheme(), p2);
                     FilePathNioMapped p3 = new FilePathNioMapped();

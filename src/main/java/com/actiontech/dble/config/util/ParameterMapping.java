@@ -45,24 +45,31 @@ public final class ParameterMapping {
             Object obj = parameter.get(pd.getName());
             Object value = obj;
             Class<?> cls = pd.getPropertyType();
+            if (cls == null) {
+                if (problemReporter != null) {
+                    problemReporter.warn("unknown property [ " + pd.getName() + " ], skip");
+                }
+                continue;
+            }
+
             if (obj instanceof String) {
-                String string = (String) obj;
-                if (!StringUtil.isEmpty(string)) {
-                    string = ConfigUtil.filter(string);
+                String valStr = (String) obj;
+                if (!StringUtil.isEmpty(valStr)) {
+                    valStr = ConfigUtil.filter(valStr);
                 }
                 if (isPrimitiveType(cls)) {
                     try {
-                        value = convert(cls, string);
+                        value = convert(cls, valStr);
                     } catch (NumberFormatException nfe) {
                         if (problemReporter != null) {
-                            problemReporter.warn("property [ " + pd.getName() + " ] '" + string + "' data type should be " + cls.toString() + ", skip");
+                            problemReporter.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + ", skip");
                         }
                         parameter.remove(pd.getName());
                         continue;
                     }
                 }
             }
-            if (cls != null && value != null) {
+            if (value != null) {
                 Method method = pd.getWriteMethod();
                 if (method != null) {
                     method.invoke(object, value);

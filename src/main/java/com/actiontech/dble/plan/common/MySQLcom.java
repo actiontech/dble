@@ -288,7 +288,7 @@ public final class MySQLcom {
         byte[] bb = new byte[8];
         int index = -1;
         bb[++index] = (byte) (x >> 56);
-        if (bb[index] != 0 && retLen == -1)
+        if (bb[index] != 0)
             retLen = 8;
         bb[++index] = (byte) (x >> 48);
         if (bb[index] != 0 && retLen == -1)
@@ -308,7 +308,7 @@ public final class MySQLcom {
         bb[++index] = (byte) (x >> 8);
         if (bb[index] != 0 && retLen == -1)
             retLen = 2;
-        bb[++index] = (byte) (x >> 0);
+        bb[++index] = (byte) x;
         if (retLen == -1)
             retLen = 1;
         return Arrays.copyOfRange(bb, bb.length - retLen, bb.length);

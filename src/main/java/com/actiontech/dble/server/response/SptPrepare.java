@@ -30,13 +30,12 @@ public final class SptPrepare {
 
         if (checksync(stmt, c)) {
             String name = c.getSptPrepare().getName();
-            List<String> args = new LinkedList<String>();
+            List<String> args = new LinkedList();
             ScriptPrepareParse.parseStmt(stmt, args);
             c.getSptPrepare().setPrepare(name, args);
             c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
         } else {
             c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "SQL syntax error");
-            return;
         }
     }
 }

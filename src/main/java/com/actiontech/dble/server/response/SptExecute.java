@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2019 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.server.response;
 
 import com.actiontech.dble.config.ErrorCode;
@@ -27,20 +27,20 @@ public final class SptExecute {
             return;
         }
 
-        int argnum = 0;
+        int argNum = 0;
         List<String> args = c.getSptPrepare().getArguments();
         if (args != null) {
-            argnum = args.size();
+            argNum = args.size();
         }
         c.getSptPrepare().setArguments(null);
 
-        if (parts.size() != argnum + 1) {
+        if (parts.size() != argNum + 1) {
             c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "Incorrect arguments to EXECUTE");
             return;
         }
 
         StringBuilder stmt = new StringBuilder(parts.get(0));
-        for (int i = 1; i < parts.size() ; i++) {
+        for (int i = 1; i < parts.size(); i++) {
             String val = queryUserVar(args.get(i - 1), c);
             if (val == null) {
                 c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "Incorrect arguments to EXECUTE");

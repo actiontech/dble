@@ -18,6 +18,7 @@ import com.actiontech.dble.util.StringUtil;
 
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Show @@SYSLOG LIMIT=50
@@ -105,7 +106,7 @@ public final class ShowSysLog {
         try {
             int totalNumLines = 0;
             File logFile = new File(filename);
-            in = new BufferedReader(new InputStreamReader(new FileInputStream(logFile), "UTF-8"));
+            in = new BufferedReader(new InputStreamReader(new FileInputStream(logFile), StandardCharsets.UTF_8));
             String line;
             while ((line = in.readLine()) != null) {
                 totalNumLines++;
@@ -113,7 +114,7 @@ public final class ShowSysLog {
             in.close();
 
 
-            in = new BufferedReader(new InputStreamReader(new FileInputStream(logFile), "UTF-8"));
+            in = new BufferedReader(new InputStreamReader(new FileInputStream(logFile), StandardCharsets.UTF_8));
 
             // skip
             for (int i = 0; i < totalNumLines - numLines; i++) {

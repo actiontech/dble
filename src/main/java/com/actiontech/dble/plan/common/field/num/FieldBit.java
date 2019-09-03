@@ -82,15 +82,11 @@ public class FieldBit extends Field {
             return -1;
         } else if (v2 == null) {
             return 1;
-        } else
-            try {
-                Long b1 = getBitInt(v1);
-                Long b2 = getBitInt(v2);
-                return b1.compareTo(b2);
-            } catch (Exception e) {
-                LOGGER.info("String to biginteger exception!", e);
-                return -1;
-            }
+        } else {
+            long b1 = getBitInt(v1);
+            long b2 = getBitInt(v2);
+            return Long.compare(b1, b2);
+        }
     }
 
     /**

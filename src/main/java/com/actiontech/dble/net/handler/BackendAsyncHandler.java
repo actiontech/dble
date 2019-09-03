@@ -80,12 +80,10 @@ public abstract class BackendAsyncHandler implements NIOHandler {
         byte[] data;
 
         //threadUsageStat start
-        boolean useThreadUsageStat = false;
         String threadName = null;
         ThreadWorkUsage workUsage = null;
         long workStart = 0;
         if (DbleServer.getInstance().getConfig().getSystem().getUseThreadUsageStat() == 1) {
-            useThreadUsageStat = true;
             threadName = Thread.currentThread().getName();
             workUsage = DbleServer.getInstance().getThreadUsedMap().get(threadName);
             if (threadName.startsWith("backend")) {
@@ -102,7 +100,7 @@ public abstract class BackendAsyncHandler implements NIOHandler {
             handleData(data);
         }
         //threadUsageStat end
-        if (useThreadUsageStat && threadName.startsWith("backend")) {
+        if (workUsage != null && threadName.startsWith("backend")) {
             workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
         }
     }

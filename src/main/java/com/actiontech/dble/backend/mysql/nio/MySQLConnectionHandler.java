@@ -164,6 +164,8 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
      */
     private void handleErrorPacket(byte[] data) {
         ResponseHandler respHand = responseHandler;
+        this.source.setRunning(false);
+        this.source.signal();
         if (respHand != null) {
             respHand.errorResponse(data, source);
         } else {

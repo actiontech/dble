@@ -54,7 +54,7 @@ public class JsonProcessBase {
      *
      * @param <T>
      * @param json
-     * @param typeSchema
+     * @param classinfo
      * @return
      * @Created 2016/9/17
      */

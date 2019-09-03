@@ -18,7 +18,6 @@ import java.util.List;
 public class ItemFuncMd5 extends ItemStrFunc {
 
     /**
-     * @param name
      * @param a
      */
     public ItemFuncMd5(Item a) {

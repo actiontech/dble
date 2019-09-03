@@ -34,7 +34,7 @@ public class GroupResultDiskBuffer extends DistinctResultDiskBuffer {
 
     /**
      * @param pool
-     * @param columnCount
+     * @param fieldsCount
      * @param cmp          group by comparator
      * @param packets      packets which already contain sum_function's fieldpacket,
      *                     sum_packets are put in the front

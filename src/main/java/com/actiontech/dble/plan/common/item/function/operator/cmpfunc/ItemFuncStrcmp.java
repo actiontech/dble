@@ -19,7 +19,6 @@ import java.util.List;
 public class ItemFuncStrcmp extends ItemBoolFunc2 {
 
     /**
-     * @param name
      * @param a
      * @param b
      */

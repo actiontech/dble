@@ -14,7 +14,7 @@ public interface ParseJsonServiceInf<T> {
     /**
      * parseBeanToJson
      *
-     * @param data
+     * @param t
      * @return
      * @Created 2016/9/16
      */

@@ -46,11 +46,10 @@ public final class Security {
     /**
      * Creates key from old password to decode scramble Used in 4.1
      * authentication with passwords stored pre-4.1 hashing.
-     * @param passwd
-     *            the password to create the key from
+     *
+     * @param passwd the password to create the key from
      * @return 20 byte generated key
-     * @throws NoSuchAlgorithmException
-     *             if the message digest 'SHA-1' is not available.
+     * @throws NoSuchAlgorithmException if the message digest 'SHA-1' is not available.
      */
     static byte[] createKeyFromOldPassword(String passwd) throws NoSuchAlgorithmException {
         /* At first hash password to the string stored in password */
@@ -66,8 +65,7 @@ public final class Security {
     /**
      * @param salt
      * @param usingNewPasswords
-     * @throws NoSuchAlgorithmException
-     *             if the message digest 'SHA-1' is not available.
+     * @throws NoSuchAlgorithmException if the message digest 'SHA-1' is not available.
      */
     static byte[] getBinaryPassword(int[] salt, boolean usingNewPasswords) throws NoSuchAlgorithmException {
         int val = 0;
@@ -170,11 +168,10 @@ public final class Security {
     /**
      * Creates password to be stored in user database from raw string.
      * Handles Pre-MySQL 4.1 passwords.
-     * @param password
-     *            plaintext password
+     *
+     * @param password plaintext password
      * @return scrambled password
-     * @throws NoSuchAlgorithmException
-     *             if the message digest 'SHA-1' is not available.
+     * @throws NoSuchAlgorithmException if the message digest 'SHA-1' is not available.
      */
     static String makeScrambledPassword(String password) throws NoSuchAlgorithmException {
         long[] passwordHash = hashPre41Password(password);
@@ -219,17 +216,15 @@ public final class Security {
 
         return result;
     }
+
     /**
      * Encrypt/Decrypt function used for password encryption in authentication
      * Simple XOR is used here but it is OK as we encrypt random strings
-     * @param from
-     *            IN Data for encryption
-     * @param to
-     *            OUT Encrypt data to the buffer (may be the same)
-     * @param scramble
-     *            IN Scramble used for encryption
-     * @param length
-     *            IN Length of data to encrypt
+     *
+     * @param from     IN Data for encryption
+     * @param to       OUT Encrypt data to the buffer (may be the same)
+     * @param scramble IN Scramble used for encryption
+     * @param length   IN Length of data to encrypt
      */
     public static void xorString(byte[] from, byte[] to, byte[] scramble, int length) {
         int pos = 0;
@@ -246,8 +241,7 @@ public final class Security {
      * @param value password
      * @param encoding encode
      * @return stage one hash of password
-     * @throws NoSuchAlgorithmException
-     *             if the message digest 'SHA-1' is not available.
+     * @throws NoSuchAlgorithmException if the message digest 'SHA-1' is not available.
      */
 
     public static byte[] getBytes(char[] value, String encoding) throws UnsupportedEncodingException {
@@ -298,13 +292,11 @@ public final class Security {
 
     /**
      * Stage two password hashing used in MySQL 4.1 password handling
-     * @paramhash
-     *            from passwordHashStage1
-     * @param salt
-     *            salt used for stage two hashing
+     *
+     * @param salt salt used for stage two hashing
      * @return result of stage two password hash
-     * @throws NoSuchAlgorithmException
-     *             if the message digest 'SHA-1' is not available.
+     * @throws NoSuchAlgorithmException if the message digest 'SHA-1' is not available.
+     * @paramhash from passwordHashStage1
      */
     static byte[] passwordHashStage2(byte[] hashedPassword, byte[] salt) throws NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("SHA-1");
@@ -322,6 +314,7 @@ public final class Security {
      * <pre>
      * Scramble = XOR(SHA2(password), SHA2(SHA2(SHA2(password)), Nonce))
      * </pre>
+     *
      * @throws DigestException
      */
     public static byte[] scrambleCachingSha2(byte[] password, byte[] seed) throws DigestException {

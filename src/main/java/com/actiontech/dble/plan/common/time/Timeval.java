@@ -34,9 +34,6 @@ public class Timeval {
     /**
      * Print a timestamp with an oprional fractional part: XXXXX[.YYYYY]
      *
-     * @param tm  The timestamp value to print.
-     * @param OUT to The string pointer to print at.
-     * @param dec Precision, in the range 0..6.
      * @return The length of the result string.
      */
     public String myTimevalToStr() {

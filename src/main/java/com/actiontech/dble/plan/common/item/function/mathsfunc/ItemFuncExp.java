@@ -18,7 +18,6 @@ import java.util.List;
 public class ItemFuncExp extends ItemDecFunc {
 
     /**
-     * @param name
      * @param args
      */
     public ItemFuncExp(List<Item> args) {

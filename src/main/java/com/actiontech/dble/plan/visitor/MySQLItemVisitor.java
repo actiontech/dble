@@ -660,6 +660,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 } else {
                     // unKnownFunction
                     item = new ItemFuncUnknown(funcName, args);
+                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "Unknown function " + funcName);
                 }
                 initName(x);
         }

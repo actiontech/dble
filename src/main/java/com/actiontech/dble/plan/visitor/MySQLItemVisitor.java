@@ -45,12 +45,10 @@ import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.*;
 import com.alibaba.druid.sql.ast.expr.*;
-import com.alibaba.druid.sql.ast.statement.SQLCharacterDataType;
-import com.alibaba.druid.sql.ast.statement.SQLSelectOrderByItem;
-import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
-import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlCharExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.expr.MySqlExtractExpr;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
 import com.alibaba.druid.sql.parser.SQLExprParser;
@@ -660,7 +658,13 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 } else {
                     // unKnownFunction
                     item = new ItemFuncUnknown(funcName, args);
-                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "Unknown function " + funcName);
+                    if (x.getParent() instanceof SQLSelectItem) {
+                        if (x.getParent().getParent() instanceof MySqlSelectQueryBlock) {
+                            if (((MySqlSelectQueryBlock) x.getParent().getParent()).getFrom() != null) {
+                                throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "Unknown function " + funcName);
+                            }
+                        }
+                    }
                 }
                 initName(x);
         }

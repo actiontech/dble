@@ -236,9 +236,6 @@ public abstract class ItemFunc extends Item {
     /**
      * Calculate max_length and decimals for STRING_RESULT functions.
      *
-     * @param field_type Field type.
-     * @param items      Argument array.
-     * @param nitems     Number of arguments.
      * @retval False on success, true on error.
      */
     public boolean countStringResultLength() {

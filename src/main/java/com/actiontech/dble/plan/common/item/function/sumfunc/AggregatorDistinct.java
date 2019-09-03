@@ -35,7 +35,6 @@ public class AggregatorDistinct extends Aggregator {
      * Called before feeding the first row. Used to allocate/setup the internal
      * structures used for aggregation.
      *
-     * @param thd Thread descriptor
      * @return status
      * @throws UnsupportedEncodingException
      * @retval FALSE success

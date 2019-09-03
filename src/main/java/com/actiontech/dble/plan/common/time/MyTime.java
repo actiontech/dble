@@ -1470,20 +1470,6 @@ public final class MyTime {
         return (double) timeToUlonglong(ltime) + timeMicroseconds(ltime);
     }
 
-    /**
-     * Convert a datetime from broken-down MYSQL_TIME representation to
-     * corresponding TIMESTAMP value.
-     *
-     * @param - current thread
-     * @param t - datetime in broken-down representation,
-     * @param - pointer to bool which is set to true if t represents value
-     *          which doesn't exists (falls into the spring time-gap) or to
-     *          false otherwise.
-     * @return
-     * @retval Number seconds in UTC since start of Unix Epoch corresponding to
-     * t.
-     * @retval 0 - t contains datetime value which is out of TIMESTAMP range.
-     */
     public static long timeToTimestamp(final MySQLTime t) {
         long timestamp = t.toCalendar().getTimeInMillis() / 1000;
 
@@ -2186,9 +2172,9 @@ public final class MyTime {
      * @param args           item expression which we convert to an ASCII string
      * @param strValue       string buffer
      * @param negPtr         set to true if interval is prefixed by '-'
-     * @param count:         count of elements in result array
-     * @param values:        array of results
-     * @param transformMsec: if value is true we suppose that the last part of string value
+     * @param count         count of elements in result array
+     * @param values        array of results
+     * @param transformMsec  if value is true we suppose that the last part of string value
      *                       is microseconds and we should transform value to six digit
      *                       value. For example, '1.1' . '1.100000'
      * @details Get a array of positive numbers from a string object. Each

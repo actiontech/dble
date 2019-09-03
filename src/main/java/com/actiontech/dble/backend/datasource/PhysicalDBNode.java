@@ -75,7 +75,7 @@ public class PhysicalDBNode {
             if (activeIndex >= 0) {
                 DbleServer.getInstance().saveDataHostIndex(dbPool.getHostName(), activeIndex, false);
             } else {
-                throw new RuntimeException("DataNode[" + dbPool.getHostName() + "]'s init error, please check it can be connected." +
+                throw new RuntimeException("DataNode[" + dbPool.getHostName() + "]'s init error, please check it can be connected. " +
                         "The current Node is {DataHost[" + dbPool.getSource().getConfig().getUrl() + ",Schema[" + schema + "]}");
             }
         }

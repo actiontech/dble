@@ -1034,7 +1034,7 @@ public class NonBlockingSession implements Session {
                 source.getAndIncrementXid();
             }
             if (!isSuccess) {
-                LOGGER.warn("DDL execute failed or Session closed," +
+                LOGGER.warn("DDL execute failed or Session closed, " +
                         "Schema[" + rrs.getSchema() + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
             }
             return DbleServer.getInstance().getTmManager().updateMetaData(rrs.getSchema(), rrs.getTable(), sql, isSuccess, true, rrs.getDdlType());

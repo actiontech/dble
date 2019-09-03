@@ -14,8 +14,6 @@ public interface RuleAlgorithm {
 
     /**
      * init
-     *
-     * @param
      */
     void init();
 

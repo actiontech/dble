@@ -19,7 +19,6 @@ import java.util.zip.CRC32;
 public class ItemFuncCrc32 extends ItemIntFunc {
 
     /**
-     * @param name
      * @param a
      */
     public ItemFuncCrc32(Item a) {

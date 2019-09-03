@@ -76,7 +76,7 @@ public class OfflineStatusListener implements PathChildrenCacheListener {
                     LOGGER.info(" service instance[" + crashNode + "] has crashed. Remove MetaLock for " + ddlNode);
                 }
                 //other status should be unlocked
-                LOGGER.warn(" service instance[" + crashNode + "] has crashed." +
+                LOGGER.warn(" service instance[" + crashNode + "] has crashed. " +
                         "Please manually check ddl status on every data node and delete ddl node [" + ddlNodePath + "]  from zookeeper " +
                         "after every instance received this message");
             }
@@ -122,7 +122,7 @@ public class OfflineStatusListener implements PathChildrenCacheListener {
                 }
                 DbleServer.getInstance().getBackupLocked().compareAndSet(true, false);
             }
-            LOGGER.warn(" service instance[" + crashNode + "] has crashed." +
+            LOGGER.warn(" service instance[" + crashNode + "] has crashed. " +
                     "Please manually make sure node [" + binlogStatusPath + "] status in zookeeper " +
                     "after every instance received this message");
         } catch (Exception e) {

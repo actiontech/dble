@@ -37,16 +37,17 @@ public class DruidLockTableParser extends DefaultDruidParser {
         MySqlLockTableStatement lockTableStat = (MySqlLockTableStatement) stmt;
         Map<String, Set<String>> dataNodeToLocks = new HashMap<>();
         for (MySqlLockTableStatement.Item item : lockTableStat.getItems()) {
-            String schemaName = schema == null ? null : schema.getName();
-            SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, item.getTableSource());
-            SchemaConfig schemaConfig = schemaInfo.getSchemaConfig();
+            SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schema == null ? null : schema.getName(), item.getTableSource());
+
             String table = schemaInfo.getTable();
+            String schemaName = schemaInfo.getSchema();
+            SchemaConfig schemaConfig = schemaInfo.getSchemaConfig();
             TableConfig tableConfig = schemaConfig.getTables().get(table);
             if (tableConfig != null) {
                 handleConfigTable(dataNodeToLocks, tableConfig, item.getTableSource().getAlias(), item.getLockType());
                 continue;
             } else if (DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaName, table) != null) {
-                handleNoshardTable(dataNodeToLocks, table, schemaInfo.getSchemaConfig().getDataNode(), item.getTableSource().getAlias(), item.getLockType());
+                handleNoshardTable(dataNodeToLocks, table, schemaConfig.getDataNode(), item.getTableSource().getAlias(), item.getLockType());
                 continue;
             } else if (DbleServer.getInstance().getTmManager().getSyncView(schemaName, table) != null) {
                 handleSingleViewLock(dataNodeToLocks, DbleServer.getInstance().getTmManager().getSyncView(schemaName, table), item.getTableSource().getAlias(), item.getLockType(), schemaName);
@@ -56,7 +57,6 @@ public class DruidLockTableParser extends DefaultDruidParser {
             LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }
-
 
         Set<RouteResultsetNode> lockedNodes = new HashSet<>();
         if (sc.isLocked()) {

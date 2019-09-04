@@ -19,6 +19,14 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     @Override
     public void commit() {
         final int initCount = session.getTargetCount();
+        if (initCount <= 0) {
+            if (implictCommitHandler == null && sendData == null) {
+                sendData = session.getOkByteArray();
+            }
+            cleanAndFeedback();
+            return;
+        }
+
         lock.lock();
         try {
             reset(initCount);

@@ -630,14 +630,6 @@ public class NonBlockingSession implements Session {
     }
 
     public void commit() {
-        final int initCount = target.size();
-        if (initCount <= 0) {
-            clearResources(false);
-            ByteBuffer buffer = source.allocate();
-            buffer = source.writeToBuffer(OkPacket.OK, buffer);
-            source.write(buffer);
-            return;
-        }
         checkBackupStatus();
         resetCommitNodesHandler();
         commitHandler.commit();

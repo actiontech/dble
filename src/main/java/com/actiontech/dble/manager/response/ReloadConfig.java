@@ -398,26 +398,34 @@ public final class ReloadConfig {
         if (reasonMsg == null) {
             /* 2.3 apply new conf */
             ReloadLogHelper.info("reload config: apply new config start", LOGGER);
-            final boolean result = config.reload(newUsers, newSchemas, newDataNodes, mergedDataHosts, addOrChangeHosts, recycleHosts, newErRelations, newFirewall,
-                    newSystemVariables, loader.isDataHostWithoutWH(), true, loadAllMode);
-            DbleServer.getInstance().getUserManager().initForLatest(newUsers, loader.getSystem().getMaxCon());
-            ReloadLogHelper.info("reload config: apply new config end", LOGGER);
-            recycleOldBackendConnections(recycleHosts, ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
-            return result;
+            boolean result;
+            try {
+                result = config.reload(newUsers, newSchemas, newDataNodes, mergedDataHosts, addOrChangeHosts, recycleHosts, newErRelations, newFirewall,
+                        newSystemVariables, loader.isDataHostWithoutWH(), true, loadAllMode);
+                if (!result) {
+                    initFailed(newDataHosts);
+                }
+                DbleServer.getInstance().getUserManager().initForLatest(newUsers, loader.getSystem().getMaxCon());
+                ReloadLogHelper.info("reload config: apply new config end", LOGGER);
+                recycleOldBackendConnections(recycleHosts, ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
+                return result;
+            } catch (Exception e) {
+                initFailed(newDataHosts);
+                throw e;
+            }
         } else {
-            return initFailed(newDataHosts, reasonMsg);
-
+            initFailed(newDataHosts);
+            throw new Exception(reasonMsg);
         }
     }
 
-    private static boolean initFailed(Map<String, PhysicalDBPool> newDataHosts, String reasonMsg) throws Exception {
+    private static void initFailed(Map<String, PhysicalDBPool> newDataHosts) throws Exception {
         // INIT FAILED
         ReloadLogHelper.info("reload failed, clear previously created data sources ", LOGGER);
         for (PhysicalDBPool dbPool : newDataHosts.values()) {
             dbPool.clearDataSources("reload config");
             dbPool.stopHeartbeat();
         }
-        throw new Exception(reasonMsg);
     }
 
     private static boolean forceReloadAll(final int loadAllMode, ConfigInitializer loader) throws Exception {
@@ -447,15 +455,24 @@ public final class ReloadConfig {
         if (reasonMsg == null) {
             /* 2.3 apply new conf */
             ReloadLogHelper.info("reload config: apply new config start", LOGGER);
-            final boolean result = config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newDataHosts, config.getDataHosts(), newErRelations, newFirewall,
-                    newSystemVariables, loader.isDataHostWithoutWH(), true, loadAllMode);
-            DbleServer.getInstance().getUserManager().initForLatest(newUsers, loader.getSystem().getMaxCon());
-            ReloadLogHelper.info("reload config: apply new config end", LOGGER);
-            recycleOldBackendConnections(config.getBackupDataHosts(), ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
-            return result;
+            boolean result;
+            try {
+                result = config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newDataHosts, config.getDataHosts(), newErRelations, newFirewall,
+                        newSystemVariables, loader.isDataHostWithoutWH(), true, loadAllMode);
+                if (!result) {
+                    initFailed(newDataHosts);
+                }
+                DbleServer.getInstance().getUserManager().initForLatest(newUsers, loader.getSystem().getMaxCon());
+                ReloadLogHelper.info("reload config: apply new config end", LOGGER);
+                recycleOldBackendConnections(config.getBackupDataHosts(), ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
+                return result;
+            } catch (Exception e) {
+                initFailed(newDataHosts);
+                throw e;
+            }
         } else {
-            // INIT FAILED
-            return initFailed(newDataHosts, reasonMsg);
+            initFailed(newDataHosts);
+            throw new Exception(reasonMsg);
         }
     }
 
@@ -587,8 +604,8 @@ public final class ReloadConfig {
 
 
     private static void distinguishDataHost(Map<String, PhysicalDBPool> newDataHosts, Map<String, PhysicalDBPool> oldDataHosts,
-                                                               Map<String, PhysicalDBPool> addOrChangeHosts, Map<String, PhysicalDBPool> noChangeHosts,
-                                                               Map<String, PhysicalDBPool> recycleHosts) {
+                                            Map<String, PhysicalDBPool> addOrChangeHosts, Map<String, PhysicalDBPool> noChangeHosts,
+                                            Map<String, PhysicalDBPool> recycleHosts) {
 
         for (Map.Entry<String, PhysicalDBPool> entry : newDataHosts.entrySet()) {
             PhysicalDBPool oldPool = oldDataHosts.get(entry.getKey());

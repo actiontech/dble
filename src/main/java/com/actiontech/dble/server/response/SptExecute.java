@@ -40,14 +40,16 @@ public final class SptExecute {
         }
 
         StringBuilder stmt = new StringBuilder(parts.get(0));
-        for (int i = 1; i < parts.size(); i++) {
-            String val = queryUserVar(args.get(i - 1), c);
-            if (val == null) {
-                c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "Incorrect arguments to EXECUTE");
-                return;
+        if (args != null) {
+            for (int i = 1; i < parts.size(); i++) {
+                String val = queryUserVar(args.get(i - 1), c);
+                if (val == null) {
+                    c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "Incorrect arguments to EXECUTE");
+                    return;
+                }
+                stmt.append(val);
+                stmt.append(parts.get(i));
             }
-            stmt.append(val);
-            stmt.append(parts.get(i));
         }
         c.query(stmt.toString());
     }

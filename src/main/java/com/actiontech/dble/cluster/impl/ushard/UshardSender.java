@@ -127,7 +127,7 @@ public class UshardSender extends AbstractClusterSender {
     @Override
     public KvBean getKV(String path) {
         UshardInterface.GetKvInput input = UshardInterface.GetKvInput.newBuilder().setKey(path).build();
-        UshardInterface.GetKvOutput output = null;
+        UshardInterface.GetKvOutput output;
 
         try {
             output = stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).getKv(input);
@@ -143,17 +143,15 @@ public class UshardSender extends AbstractClusterSender {
         if (!(path.charAt(path.length() - 1) == '/')) {
             path = path + "/";
         }
-        List<KvBean> result = new ArrayList<KvBean>();
+        List<KvBean> result = new ArrayList<>();
         UshardInterface.GetKvTreeInput input = UshardInterface.GetKvTreeInput.newBuilder().setKey(path).build();
 
-        UshardInterface.GetKvTreeOutput output = null;
+        UshardInterface.GetKvTreeOutput output;
 
         try {
             output = stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).getKvTree(input);
         } catch (Exception e1) {
-            if (output == null) {
-                throw new RuntimeException("ALL the ucore connect failure");
-            }
+            throw new RuntimeException("ALL the ucore connect failure");
         }
 
         for (int i = 0; i < output.getKeysCount(); i++) {
@@ -237,7 +235,7 @@ public class UshardSender extends AbstractClusterSender {
     }
 
 
-    public boolean renewLock(String sessionId) throws Exception {
+    private boolean renewLock(String sessionId) throws Exception {
         UshardInterface.RenewSessionInput input = UshardInterface.RenewSessionInput.newBuilder().setSessionId(sessionId).build();
         try {
             stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).renewSession(input);
@@ -248,10 +246,10 @@ public class UshardSender extends AbstractClusterSender {
         }
     }
 
-    public SubscribeReturnBean groupSubscribeResult(UshardInterface.SubscribeKvPrefixOutput output) {
+    private SubscribeReturnBean groupSubscribeResult(UshardInterface.SubscribeKvPrefixOutput output) {
         SubscribeReturnBean result = new SubscribeReturnBean();
         result.setIndex(output.getIndex());
-        if (output != null && output.getKeysCount() > 0) {
+        if (output.getKeysCount() > 0) {
             List<KvBean> kvList = new ArrayList<>();
             for (int i = 0; i < output.getKeysCount(); i++) {
                 kvList.add(new KvBean(output.getKeys(i), output.getValues(i), 0));

@@ -43,7 +43,7 @@ public class ItemFuncMaketime extends ItemTimeFunc {
                 minute < 0 || minute > 59))) {
             return true;
         }
-        long scdquot = sec.longValue();
+        long scdquot = sec.longValue(); // sec can not be null
         long scdrem = (long) ((sec.doubleValue() - scdquot) * 1000000);
         if ((nullValue = (scdquot < 0 || scdquot > 59 || scdrem < 0))) {
             return true;

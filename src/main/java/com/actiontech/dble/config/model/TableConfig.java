@@ -82,7 +82,7 @@ public class TableConfig {
             this.joinKey = joinKey;
             this.parentKey = parentKey;
             if (parentTC.getParentTC() == null) {
-                if (parentKey.equals(parentTC.partitionColumn)) {
+                if (parentTC.partitionColumn.equals(parentKey)) {
                     // secondLevel ,parentKey==parent.partitionColumn
                     directRouteTC = parentTC;
                     locateRTableKeySql = null;
@@ -96,7 +96,7 @@ public class TableConfig {
                  * fatherTable joinkey =col2,parentkey = col1....so directRouteTC = grandTable
                  * thisTable joinkey = col3 ,parentkey = col2...so directRouteTC = grandTable
                  */
-                if (parentKey.equals(parentTC.joinKey)) {
+                if (parentTC.joinKey.equals(parentKey)) {
                     directRouteTC = parentTC.getDirectRouteTC();
                     locateRTableKeySql = null;
                 } else {
@@ -201,16 +201,15 @@ public class TableConfig {
         TableConfig tb = this;
         StringBuilder tableSb = new StringBuilder();
         StringBuilder condition = new StringBuilder();
-        TableConfig prevTC = null;
+        TableConfig prevTC = tb;
         int level = 0;
         String latestCond = null;
         while (tb.parentTC != null) {
             tableSb.append(tb.parentTC.name).append(',');
-            String relation = null;
             if (level == 0) {
                 latestCond = " " + tb.parentTC.getName() + '.' + tb.parentKey + "=";
             } else {
-                relation = tb.parentTC.getName() + '.' + tb.parentKey + '=' + tb.name + '.' + tb.joinKey;
+                String relation = tb.parentTC.getName() + '.' + tb.parentKey + '=' + tb.name + '.' + tb.joinKey;
                 condition.append(relation).append(" AND ");
             }
             level++;

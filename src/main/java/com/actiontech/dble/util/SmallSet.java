@@ -122,6 +122,7 @@ public final class SmallSet<E> extends AbstractSet<E> implements Set<E>, Cloneab
                         }
                         break;
                     default:
+                        //list can not be null
                         list.remove(--i);
                         if (--size == 1) {
                             single = list.get(0);

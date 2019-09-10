@@ -50,6 +50,12 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     @Override
     public void commit() {
         final int initCount = session.getTargetCount();
+        if (initCount <= 0) {
+            session.getSource().write(session.getOkByteArray());
+            session.multiStatementNextSql(session.getIsMultiStatement().get());
+            return;
+        }
+
         lock.lock();
         try {
             reset(initCount);

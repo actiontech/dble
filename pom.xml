@@ -522,6 +522,7 @@
                     <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
                     <repositoryLayout>flat</repositoryLayout>
                     <useWildcardClassPath>true</useWildcardClassPath>
+                    <externalDeltaPackDirectory>src\main\assembly\wrapper</externalDeltaPackDirectory>
                     <daemons>
                         <daemon>
                             <id>dble</id>
@@ -564,7 +565,6 @@
                                     <includes>
                                         <include>linux-x86-32</include>
                                         <include>linux-x86-64</include>
-                                        <include>linux-ppc-64</include>
                                     </includes>
 
                                     <configuration>

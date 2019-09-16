@@ -54,9 +54,9 @@ This document defines the roadmap for dble development.
 
 ##### __Manager__ 
 - [ ] Add where filter
-- [ ] show DDL status
-- [ ] kill DDL & remove Lock
-- [ ] reload metadata for special table
+- [x] show DDL status
+- [x] kill DDL & remove Lock
+- [x] reload metadata for special table
 - [ ] reload metadata performance
 
 ##### __Config__ 
@@ -64,13 +64,13 @@ This document defines the roadmap for dble development.
 - [ ] Split server.xml
 
 ##### __Protocol__ 
-- [ ] COM_CHANGE_USER
-- [ ] COM_RESET_CONNECTION
-- [ ] COM_SET_OPTION
+- [x] COM_CHANGE_USER
+- [x] COM_RESET_CONNECTION
+- [x] COM_SET_OPTION
 
 ##### __Other__ 
 - [ ] keep alive if just setting a manager user
 - [ ] performance
 - [ ] refactor global table check
 - [ ] HA interface
-- [ ] alert interface
+- [x] alert interface

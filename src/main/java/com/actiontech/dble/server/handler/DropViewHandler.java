@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.server.handler;
 
-import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.StringUtil;
@@ -60,14 +60,14 @@ public final class DropViewHandler {
             //drop all the view
             for (SQLExprTableSource table : removeList) {
                 String tableName = StringUtil.removeBackQuote(table.getName().getSimpleName()).trim();
-                DbleServer.getInstance().getTmManager().addMetaLock(table.getSchema(), tableName, stmt);
+                ProxyMeta.getInstance().getTmManager().addMetaLock(table.getSchema(), tableName, stmt);
                 try {
                     deleteFromReposoitory(table.getSchema(), tableName);
-                    DbleServer.getInstance().getTmManager().getCatalogs().get(table.getSchema()).getViewMetas().remove(tableName);
+                    ProxyMeta.getInstance().getTmManager().getCatalogs().get(table.getSchema()).getViewMetas().remove(tableName);
                 } catch (Throwable e) {
                     throw e;
                 } finally {
-                    DbleServer.getInstance().getTmManager().removeMetaLock(table.getSchema(), tableName);
+                    ProxyMeta.getInstance().getTmManager().removeMetaLock(table.getSchema(), tableName);
                 }
             }
 
@@ -85,7 +85,7 @@ public final class DropViewHandler {
     }
 
     public static void deleteFromReposoitory(String schema, String name) {
-        DbleServer.getInstance().getTmManager().getRepository().delete(schema, name);
+        ProxyMeta.getInstance().getTmManager().getRepository().delete(schema, name);
     }
 
 
@@ -96,7 +96,7 @@ public final class DropViewHandler {
             table.setSchema(defaultSchema);
         }
 
-        if (!(DbleServer.getInstance().getTmManager().getCatalogs().get(table.getSchema()).
+        if (!(ProxyMeta.getInstance().getTmManager().getCatalogs().get(table.getSchema()).
                 getViewMetas().containsKey(StringUtil.removeBackQuote(table.getName().getSimpleName())))) {
             if (!ifExistsflag) {
                 return " Unknown table '" + table.getName().toString() + "'";

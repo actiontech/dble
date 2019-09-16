@@ -6,10 +6,10 @@
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl.groupby.directgroupby;
 
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.singleton.BufferPoolManager;
 import org.apache.commons.lang.SerializationUtils;
 
 import java.io.Serializable;
@@ -95,7 +95,7 @@ public class DGRowPacket extends RowDataPacket {
     @Override
     public byte[] toBytes() {
         int size = getRealSize();
-        ByteBuffer buffer = DbleServer.getInstance().getBufferPool().allocate(size + PACKET_HEADER_SIZE);
+        ByteBuffer buffer = BufferPoolManager.getBufferPool().allocate(size + PACKET_HEADER_SIZE);
         BufferUtil.writeUB3(buffer, size);
         buffer.put(packetId);
         for (int i = 0; i < this.sumSize; i++) {
@@ -124,7 +124,7 @@ public class DGRowPacket extends RowDataPacket {
         buffer.flip();
         byte[] data = new byte[buffer.limit()];
         buffer.get(data);
-        DbleServer.getInstance().getBufferPool().recycle(buffer);
+        BufferPoolManager.getBufferPool().recycle(buffer);
         return data;
     }
 

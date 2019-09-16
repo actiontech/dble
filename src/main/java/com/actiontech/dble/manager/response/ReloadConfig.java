@@ -17,6 +17,8 @@ import com.actiontech.dble.cluster.*;
 import com.actiontech.dble.cluster.xmltoKv.XmltoCluster;
 import com.actiontech.dble.config.ConfigInitializer;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.singleton.ClusterGeneralConfig;
+import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.xmltozk.XmltoZkMain;
@@ -82,7 +84,7 @@ public final class ReloadConfig {
 
     private static void execute(ManagerConnection c, final boolean loadAll, final int loadAllMode) {
 
-        if (DbleServer.getInstance().isUseZK()) {
+        if (ClusterGeneralConfig.isUseZK()) {
             CuratorFramework zkConn = ZKUtils.getConnection();
             InterProcessMutex distributeLock = new InterProcessMutex(zkConn, KVPathUtil.getConfChangeLockPath());
             try {
@@ -106,7 +108,7 @@ public final class ReloadConfig {
                 LOGGER.info("reload config using ZK failure", e);
                 writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
             }
-        } else if (DbleServer.getInstance().isUseGeneralCluster()) {
+        } else if (ClusterGeneralConfig.isUseGeneralCluster()) {
             DistributeLock distributeLock = new DistributeLock(ClusterPathUtil.getConfChangeLockPath(),
                     ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
             try {
@@ -405,7 +407,7 @@ public final class ReloadConfig {
                 if (!result) {
                     initFailed(newDataHosts);
                 }
-                DbleServer.getInstance().getUserManager().initForLatest(newUsers, loader.getSystem().getMaxCon());
+                FrontendUserManager.getInstance().initForLatest(newUsers, loader.getSystem().getMaxCon());
                 ReloadLogHelper.info("reload config: apply new config end", LOGGER);
                 recycleOldBackendConnections(recycleHosts, ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
                 return result;
@@ -462,7 +464,7 @@ public final class ReloadConfig {
                 if (!result) {
                     initFailed(newDataHosts);
                 }
-                DbleServer.getInstance().getUserManager().initForLatest(newUsers, loader.getSystem().getMaxCon());
+                FrontendUserManager.getInstance().initForLatest(newUsers, loader.getSystem().getMaxCon());
                 ReloadLogHelper.info("reload config: apply new config end", LOGGER);
                 recycleOldBackendConnections(config.getBackupDataHosts(), ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
                 return result;
@@ -598,7 +600,7 @@ public final class ReloadConfig {
         /* 2 apply the new conf */
         boolean result = DbleServer.getInstance().getConfig().reload(users, schemas, dataNodes, dataHosts, null, null, erRelations, firewall,
                 DbleServer.getInstance().getSystemVariables(), loader.isDataHostWithoutWH(), false, 0);
-        DbleServer.getInstance().getUserManager().initForLatest(users, loader.getSystem().getMaxCon());
+        FrontendUserManager.getInstance().initForLatest(users, loader.getSystem().getMaxCon());
         return result;
     }
 

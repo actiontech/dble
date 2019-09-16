@@ -11,6 +11,7 @@ import com.actiontech.dble.cluster.*;
 import com.actiontech.dble.cluster.bean.KvBean;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

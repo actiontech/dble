@@ -5,11 +5,12 @@
 */
 package com.actiontech.dble.manager.response;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.cluster.DistrbtLockManager;
+import com.actiontech.dble.singleton.ClusterGeneralConfig;
+import com.actiontech.dble.singleton.DistrbtLockManager;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.manager.ManagerConnection;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
@@ -37,10 +38,10 @@ public final class KillDdlLock {
         String schema = StringUtil.removeAllApostrophe(matcher.group(1));
         String table = StringUtil.removeAllApostrophe(matcher.group(5));
         // release distributed lock
-        if (DbleServer.getInstance().isUseGeneralCluster()) {
+        if (ClusterGeneralConfig.isUseGeneralCluster()) {
             DistrbtLockManager.releaseLock(ClusterPathUtil.getDDLPath(StringUtil.getUFullName(schema, table)));
         }
-        boolean isRemoved = DbleServer.getInstance().getTmManager().removeMetaLock(schema, table);
+        boolean isRemoved = ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
         OkPacket packet = new OkPacket();
         packet.setPacketId(1);
         packet.setAffectedRows(0);

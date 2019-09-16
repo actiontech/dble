@@ -10,6 +10,7 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.manager.handler.PackageBufINf;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.common.field.Field;
@@ -59,7 +60,7 @@ public class ShowTablesHandler extends SingleNodeHandler {
             packetId = bufInf.getPacketId();
             buffer = bufInf.getBuffer();
             if (info.getWhere() != null) {
-                MySQLItemVisitor mev = new MySQLItemVisitor(source.getSchema(), source.getCharset().getResultsIndex(), DbleServer.getInstance().getTmManager());
+                MySQLItemVisitor mev = new MySQLItemVisitor(source.getSchema(), source.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager());
                 info.getWhereExpr().accept(mev);
                 sourceFields = HandlerTool.createFields(fieldPackets);
                 whereItem = HandlerTool.createItem(mev.getItem(), sourceFields, 0, false, DMLResponseHandler.HandlerType.WHERE);

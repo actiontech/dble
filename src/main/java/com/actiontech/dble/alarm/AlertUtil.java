@@ -6,7 +6,7 @@
 package com.actiontech.dble.alarm;
 
 import com.actiontech.dble.cluster.bean.ClusterAlertBean;
-import com.actiontech.dble.server.status.AlertManager;
+import com.actiontech.dble.singleton.AlertManager;
 
 import java.util.HashMap;
 import java.util.Map;

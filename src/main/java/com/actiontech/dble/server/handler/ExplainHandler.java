@@ -13,6 +13,8 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.singleton.RouteService;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
@@ -79,7 +81,7 @@ public final class ExplainHandler {
 
     private static BaseHandlerBuilder buildNodes(RouteResultset rrs, ServerConnection c) {
         SQLSelectStatement ast = (SQLSelectStatement) rrs.getSqlStatement();
-        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(c.getSchema(), c.getCharset().getResultsIndex(), DbleServer.getInstance().getTmManager(), false);
+        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(c.getSchema(), c.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false);
         visitor.visit(ast);
         PlanNode node = visitor.getTableNode();
         node.setSql(rrs.getStatement());
@@ -150,7 +152,7 @@ public final class ExplainHandler {
                 c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "insert sql using sequence,the explain result depends by sequence");
                 return null;
             }
-            return DbleServer.getInstance().getRouterService().route(schema, sqlType, stmt, c, true);
+            return RouteService.getInstance().route(schema, sqlType, stmt, c, true);
         } catch (Exception e) {
             if (e instanceof SQLException && !(e instanceof SQLNonTransientException)) {
                 SQLException sqlException = (SQLException) e;

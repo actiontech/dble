@@ -6,17 +6,14 @@
 package com.actiontech.dble;
 
 import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.mysql.xa.*;
 import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.KVStoreRepository;
-import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.buffer.DirectByteBufferPool;
-import com.actiontech.dble.cache.CacheService;
-import com.actiontech.dble.cluster.ClusterGeneralConfig;
+import com.actiontech.dble.singleton.*;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
@@ -27,29 +24,17 @@ import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.config.util.DnPropertyUtil;
 import com.actiontech.dble.log.transaction.TxnLogProcessor;
 import com.actiontech.dble.manager.ManagerConnectionFactory;
-import com.actiontech.dble.memory.unsafe.Platform;
-import com.actiontech.dble.meta.PauseDatanodeManager;
 import com.actiontech.dble.meta.ProxyMetaManager;
-import com.actiontech.dble.meta.ReloadManager;
 import com.actiontech.dble.net.*;
 import com.actiontech.dble.net.handler.*;
 import com.actiontech.dble.net.mysql.WriteToBackendTask;
-import com.actiontech.dble.route.RouteService;
-import com.actiontech.dble.route.sequence.handler.*;
 import com.actiontech.dble.server.ServerConnectionFactory;
-import com.actiontech.dble.server.status.AlertManager;
-import com.actiontech.dble.server.status.OnlineLockStatus;
 import com.actiontech.dble.server.status.SlowQueryLog;
-import com.actiontech.dble.server.util.GlobalTableUtil;
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.variables.VarsExtractorHandler;
-import com.actiontech.dble.statistic.stat.SqlResultSizeRecorder;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
-import com.actiontech.dble.statistic.stat.UserStat;
-import com.actiontech.dble.statistic.stat.UserStatAnalyzer;
 import com.actiontech.dble.util.*;
 import com.google.common.io.Files;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.slf4j.Logger;
@@ -62,7 +47,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
 
 /**
  * @author mycat
@@ -70,24 +54,14 @@ import java.util.concurrent.locks.LockSupport;
 public final class DbleServer {
 
     public static final String NAME = "Dble_";
-    private static final long TIME_UPDATE_PERIOD = 20L;
-    private static final long DEFAULT_SQL_STAT_RECYCLE_PERIOD = 5 * 1000L;
-    private static final long DEFAULT_OLD_CONNECTION_CLEAR_PERIOD = 5 * 1000L;
 
     private static final DbleServer INSTANCE = new DbleServer();
-
     private static final Logger LOGGER = LoggerFactory.getLogger("Server");
-    private AtomicBoolean backupLocked;
+    //used by manager command show @@binlog_status to get a stable GTID
+    private final AtomicBoolean backupLocked = new AtomicBoolean(false);
 
-    //global sequence
-    private SequenceHandler sequenceHandler;
-    private RouteService routerService;
-    private CacheService cacheService;
     private Properties dnIndexProperties;
-    private volatile ProxyMetaManager tmManager;
 
-
-    private volatile PauseDatanodeManager miManager = new PauseDatanodeManager();
     private volatile SystemVariables systemVariables = new SystemVariables();
     private TxnLogProcessor txnLogProcessor;
 
@@ -97,19 +71,17 @@ public final class DbleServer {
     private volatile int nextFrontProcessor;
     private volatile int nextBackendProcessor;
 
-    // System Buffer Pool Instance
-    private BufferPool bufferPool;
     private boolean aio = false;
 
     private final AtomicLong xaIDInc = new AtomicLong();
-    private volatile boolean metaChanging = false;
 
     public static DbleServer getInstance() {
         return INSTANCE;
     }
 
     private ServerConfig config;
-    private AtomicBoolean isOnline;
+    //dble server on/offline flag
+    private final AtomicBoolean isOnline = new AtomicBoolean(true);
     private long startupTime;
     private NIOProcessor[] frontProcessors;
     private NIOProcessor[] backendProcessors;
@@ -120,185 +92,41 @@ public final class DbleServer {
     private ExecutorService complexQueryExecutor;
     private ExecutorService timerExecutor;
     private InterProcessMutex dnIndexLock;
-    private XASessionCheck xaSessionCheck;
     private Map<String, ThreadWorkUsage> threadUsedMap = new TreeMap<>();
     private BlockingQueue<FrontendCommandHandler> frontHandlerQueue;
     private BlockingQueue<List<WriteToBackendTask>> writeToBackendQueue;
     private Queue<FrontendCommandHandler> concurrentFrontHandlerQueue;
     private Queue<BackendAsyncHandler> concurrentBackHandlerQueue;
 
-
-    private FrontendUserManager userManager = new FrontendUserManager();
-
     private DbleServer() {
     }
 
-    public SequenceHandler getSequenceHandler() {
-        return sequenceHandler;
-    }
-
-    public BufferPool getBufferPool() {
-        return bufferPool;
-    }
-
-    public ExecutorService getTimerExecutor() {
-        return timerExecutor;
-    }
-
-
-    public ExecutorService getComplexQueryExecutor() {
-        return complexQueryExecutor;
-    }
-
-    public AtomicBoolean getBackupLocked() {
-        return backupLocked;
-    }
-
-    public boolean isBackupLocked() {
-        return backupLocked.get();
-    }
-
-    public String genXaTxId() {
-        long seq = this.xaIDInc.incrementAndGet();
-        if (seq < 0) {
-            synchronized (xaIDInc) {
-                if (xaIDInc.get() < 0) {
-                    xaIDInc.set(0);
-                }
-                seq = xaIDInc.incrementAndGet();
-            }
-        }
-        StringBuilder id = new StringBuilder();
-        id.append("'" + NAME + "Server.");
-        if (isUseZK()) {
-            id.append(ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
-        } else if (isUseGeneralCluster()) {
-            id.append(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
-        } else {
-            id.append(this.getConfig().getSystem().getServerNodeId());
-
-        }
-        id.append(".");
-        id.append(seq);
-        id.append("'");
-        return id.toString();
-    }
-
-    private void genXidSeq(String xaID) {
-        String[] idSplit = xaID.replace("'", "").split("\\.");
-        long seq = Long.parseLong(idSplit[2]);
-        if (xaIDInc.get() < seq) {
-            xaIDInc.set(seq);
-        }
-    }
-
-    private SequenceHandler initSequenceHandler(int seqHandlerType) {
-        switch (seqHandlerType) {
-            case SystemConfig.SEQUENCE_HANDLER_MYSQL:
-                return IncrSequenceMySQLHandler.getInstance();
-            case SystemConfig.SEQUENCE_HANDLER_LOCAL_TIME:
-                return IncrSequenceTimeHandler.getInstance();
-            case SystemConfig.SEQUENCE_HANDLER_ZK_DISTRIBUTED:
-                return DistributedSequenceHandler.getInstance();
-            case SystemConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT:
-                return IncrSequenceZKHandler.getInstance();
-            default:
-                throw new java.lang.IllegalArgumentException("Invalid sequnce handler type " + seqHandlerType);
-        }
-    }
-
-    public XASessionCheck getXaSessionCheck() {
-        return xaSessionCheck;
-    }
-
-    /**
-     * get next AsynchronousChannel ,first is exclude if multi
-     * AsynchronousChannelGroups
-     *
-     * @return AsynchronousChannelGroup
-     */
-    public AsynchronousChannelGroup getNextAsyncChannelGroup() {
-        if (asyncChannelGroups.length == 1) {
-            return asyncChannelGroups[0];
-        } else {
-            int index = (channelIndex.incrementAndGet()) % asyncChannelGroups.length;
-            if (index == 0) {
-                channelIndex.incrementAndGet();
-                return asyncChannelGroups[1];
-            } else {
-                return asyncChannelGroups[index];
-            }
-
-        }
-    }
-
-    public ServerConfig getConfig() {
-        return config;
-    }
-
-    private void reviseSchemas() {
-        if (systemVariables.isLowerCaseTableNames()) {
-            config.reviseLowerCase();
-            ConfigUtil.setSchemasForPool(config.getDataHosts(), config.getDataNodes());
-        } else {
-            config.loadSequence();
-            config.selfChecking0();
-        }
-    }
-
-    private void pullVarAndMeta() throws IOException {
-        tmManager = new ProxyMetaManager();
-        if (!this.getConfig().isDataHostWithoutWR()) {
-            LOGGER.info("get variables Data start");
-            //init for sys VAR
-            VarsExtractorHandler handler = new VarsExtractorHandler(config.getDataHosts());
-            SystemVariables newSystemVariables = handler.execute();
-            if (newSystemVariables == null) {
-                throw new IOException("Can't get variables from data node");
-            } else {
-                systemVariables = newSystemVariables;
-            }
-            reviseSchemas();
-            initDataHost();
-            LOGGER.info("get variables Data end");
-            //init tmManager
-            try {
-                tmManager.init(this.getConfig());
-            } catch (Exception e) {
-                throw new IOException(e);
-            }
-        }
-    }
 
     public void startup() throws IOException {
+        LOGGER.info("===========================================DBLE SERVER STARTING===================================");
         this.config = new ServerConfig();
+        this.startupTime = TimeUtil.currentTimeMillis();
+        LOGGER.info("=========================================Config file read finish==================================");
+
 
         SystemConfig system = config.getSystem();
         if (system.getEnableAlert() == 1) {
             AlertUtil.switchAlert(true);
         }
         AlertManager.getInstance().startAlert();
+        LOGGER.info("========================================Alert Manager start finish================================");
 
         this.config.testConnection();
-
-        /*
-         * | offline | Change Server status to OFF |
-         * | online | Change Server status to ON |
-         */
-        this.isOnline = new AtomicBoolean(true);
-
+        LOGGER.info("==========================================Test connection finish==================================");
 
         // load data node active index from properties
         this.dnIndexProperties = DnPropertyUtil.loadDnIndexProps();
-        this.startupTime = TimeUtil.currentTimeMillis();
         if (isUseZkSwitch()) {
             dnIndexLock = new InterProcessMutex(ZKUtils.getConnection(), KVPathUtil.getDnIndexLockPath());
         }
-        xaSessionCheck = new XASessionCheck();
-
 
         // server startup
-        LOGGER.info("===============================================");
+        LOGGER.info("============================================Server start params===================================");
         LOGGER.info(NAME + "Server is ready to startup ...");
         String inf = "Startup processors ...,total processors:" +
                 system.getProcessors() + ",aio thread pool size:" +
@@ -313,35 +141,145 @@ public final class DbleServer {
         LOGGER.info(inf);
         LOGGER.info("sysconfig params:" + system.toString());
 
-        backupLocked = new AtomicBoolean(false);
-        // startup manager
-        ManagerConnectionFactory mf = new ManagerConnectionFactory();
-        ServerConnectionFactory sf = new ServerConnectionFactory();
-        SocketAcceptor manager;
-        SocketAcceptor server;
         aio = (system.getUsingAIO() == 1);
+
+        LOGGER.info("===========================================Init bufferPool start==================================");
+        BufferPoolManager.getInstance().init(system);
+        LOGGER.info("===========================================Init bufferPool finish=================================");
 
         // startup processors
         int frontProcessorCount = system.getProcessors();
         int backendProcessorCount = system.getBackendProcessors();
         frontProcessors = new NIOProcessor[frontProcessorCount];
         backendProcessors = new NIOProcessor[backendProcessorCount];
-        // a page size
-        int bufferPoolPageSize = system.getBufferPoolPageSize();
-        // total page number
-        short bufferPoolPageNumber = system.getBufferPoolPageNumber();
-        //minimum allocation unit
-        short bufferPoolChunkSize = system.getBufferPoolChunkSize();
-        if ((long) bufferPoolPageSize * (long) bufferPoolPageNumber > Platform.getMaxDirectMemory()) {
-            throw new IOException("Direct BufferPool size[bufferPoolPageSize(" + bufferPoolPageSize + ")*bufferPoolPageNumber(" + bufferPoolPageNumber + ")] larger than MaxDirectMemory[" + Platform.getMaxDirectMemory() + "]");
-        }
-        bufferPool = new DirectByteBufferPool(bufferPoolPageSize, bufferPoolChunkSize, bufferPoolPageNumber);
+
 
         businessExecutor = ExecutorUtil.createFixed("BusinessExecutor", system.getProcessorExecutor());
         backendBusinessExecutor = ExecutorUtil.createFixed("backendBusinessExecutor", system.getBackendProcessorExecutor());
         writeToBackendExecutor = ExecutorUtil.createFixed("writeToBackendExecutor", system.getWriteToBackendExecutor());
         complexQueryExecutor = ExecutorUtil.createCached("complexQueryExecutor", system.getComplexExecutor());
         timerExecutor = ExecutorUtil.createFixed("Timer", 1);
+
+        LOGGER.info("====================================Task Queue&Thread init start==================================");
+        initTaskQueue(system);
+        LOGGER.info("==================================Task Queue&Thread init finish===================================");
+
+
+        for (int i = 0; i < frontProcessorCount; i++) {
+            frontProcessors[i] = new NIOProcessor("frontProcessor" + i, BufferPoolManager.getBufferPool());
+        }
+        for (int i = 0; i < backendProcessorCount; i++) {
+            backendProcessors[i] = new NIOProcessor("backendProcessor" + i, BufferPoolManager.getBufferPool());
+        }
+
+        if (system.getEnableSlowLog() == 1) {
+            SlowQueryLog.getInstance().setEnableSlowLog(true);
+        }
+
+        LOGGER.info("==============================Connection  Connector&Acceptor init start===========================");
+        // startup manager
+        SocketAcceptor manager;
+        SocketAcceptor server;
+        if (aio) {
+            int processorCount = frontProcessorCount + backendProcessorCount;
+            LOGGER.info("using aio network handler ");
+            asyncChannelGroups = new AsynchronousChannelGroup[processorCount];
+            initAioProecssor(processorCount);
+
+            connector = new AIOConnector();
+            manager = new AIOAcceptor(NAME + "Manager", system.getBindIp(),
+                    system.getManagerPort(), 100, new ManagerConnectionFactory(), this.asyncChannelGroups[0]);
+            server = new AIOAcceptor(NAME + "Server", system.getBindIp(),
+                    system.getServerPort(), system.getServerBacklog(), new ServerConnectionFactory(), this.asyncChannelGroups[0]);
+
+        } else {
+            NIOReactorPool frontReactorPool = new NIOReactorPool(
+                    DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIO_REACTOR_FRONT",
+                    frontProcessorCount);
+            NIOReactorPool backendReactorPool = new NIOReactorPool(
+                    DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIO_REACTOR_BACKEND",
+                    backendProcessorCount);
+
+            connector = new NIOConnector(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIOConnector", backendReactorPool);
+            ((NIOConnector) connector).start();
+
+            manager = new NIOAcceptor(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + NAME + "Manager", system.getBindIp(),
+                    system.getManagerPort(), 100, new ManagerConnectionFactory(), frontReactorPool);
+            server = new NIOAcceptor(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + NAME + "Server", system.getBindIp(),
+                    system.getServerPort(), system.getServerBacklog(), new ServerConnectionFactory(), frontReactorPool);
+        }
+        LOGGER.info("==========================Connection Connector&Acceptor init finish===============================");
+
+
+        // start transaction SQL log
+        if (config.getSystem().getRecordTxn() == 1) {
+            txnLogProcessor = new TxnLogProcessor(BufferPoolManager.getBufferPool());
+            txnLogProcessor.setName("TxnLogProcessor");
+            txnLogProcessor.start();
+        }
+
+        LOGGER.info("==============================Pull metaData from MySQL start======================================");
+        pullVarAndMeta();
+        LOGGER.info("==============================Pull metaData from MySQL finish=====================================");
+
+        FrontendUserManager.getInstance().initForLatest(config.getUsers(), system.getMaxCon());
+
+
+        if (ClusterGeneralConfig.isUseGeneralCluster()) {
+            LOGGER.info("===================Init online status in cluster==================");
+            try {
+                OnlineStatus.getInstance().metaUcoreInit(true);
+            } catch (Exception e) {
+                LOGGER.warn("cluster can not connection ");
+            }
+        }
+        LOGGER.info("=======================================Cache service init=========================================");
+
+        CacheService.getInstance().init(this.systemVariables.isLowerCaseTableNames());
+
+
+        SequenceManager.init(config.getSystem().getSequnceHandlerType());
+        LOGGER.info("===================================Sequence manager init finish===================================");
+
+        LOGGER.info("=====================================Perform XA recovery log======================================");
+        performXARecoveryLog();
+        LOGGER.info("====================================Perform XA recovery finish====================================");
+
+        manager.start();
+        LOGGER.info(manager.getName() + " is started and listening on " + manager.getPort());
+        server.start();
+        LOGGER.info(server.getName() + " is started and listening on " + server.getPort());
+        LOGGER.info("=====================================Server started success=======================================");
+
+        Scheduler.getInstance().init(system, timerExecutor);
+        LOGGER.info("=======================================Scheduler started==========================================");
+
+        if (isUseZkSwitch()) {
+            initZkDnindex();
+        }
+        LOGGER.info("======================================ALL START INIT FINISH=======================================");
+    }
+
+    private void initAioProecssor(int processorCount) throws IOException {
+        for (int i = 0; i < processorCount; i++) {
+            asyncChannelGroups[i] = AsynchronousChannelGroup.withFixedThreadPool(processorCount,
+                    new ThreadFactory() {
+                        private int inx = 1;
+
+                        @Override
+                        public Thread newThread(Runnable r) {
+                            Thread th = new Thread(r);
+                            //TODO
+                            th.setName(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "AIO" + (inx++));
+                            LOGGER.info("created new AIO thread " + th.getName());
+                            return th;
+                        }
+                    }
+            );
+        }
+    }
+
+    private void initTaskQueue(SystemConfig system) {
         if (system.getUsePerformanceMode() == 1) {
             concurrentFrontHandlerQueue = new ConcurrentLinkedQueue<>();
             for (int i = 0; i < system.getProcessorExecutor(); i++) {
@@ -358,134 +296,13 @@ public final class DbleServer {
                 businessExecutor.execute(new FrontEndHandlerRunnable(frontHandlerQueue));
             }
         }
+
         writeToBackendQueue = new LinkedBlockingQueue<>();
         for (int i = 0; i < system.getWriteToBackendExecutor(); i++) {
             writeToBackendExecutor.execute(new WriteToBackendRunnable(writeToBackendQueue));
         }
-        for (int i = 0; i < frontProcessorCount; i++) {
-            frontProcessors[i] = new NIOProcessor("frontProcessor" + i, bufferPool);
-        }
-        for (int i = 0; i < backendProcessorCount; i++) {
-            backendProcessors[i] = new NIOProcessor("backendProcessor" + i, bufferPool);
-        }
-
-        if (system.getEnableSlowLog() == 1) {
-            SlowQueryLog.getInstance().setEnableSlowLog(true);
-        }
-        if (aio) {
-            int processorCount = frontProcessorCount + backendProcessorCount;
-            LOGGER.info("using aio network handler ");
-            asyncChannelGroups = new AsynchronousChannelGroup[processorCount];
-            // startup connector
-            connector = new AIOConnector();
-            for (int i = 0; i < processorCount; i++) {
-                asyncChannelGroups[i] = AsynchronousChannelGroup.withFixedThreadPool(processorCount,
-                        new ThreadFactory() {
-                            private int inx = 1;
-
-                            @Override
-                            public Thread newThread(Runnable r) {
-                                Thread th = new Thread(r);
-                                //TODO
-                                th.setName(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "AIO" + (inx++));
-                                LOGGER.info("created new AIO thread " + th.getName());
-                                return th;
-                            }
-                        }
-                );
-            }
-            manager = new AIOAcceptor(NAME + "Manager", system.getBindIp(),
-                    system.getManagerPort(), 100, mf, this.asyncChannelGroups[0]);
-
-            // startup server
-
-            server = new AIOAcceptor(NAME + "Server", system.getBindIp(),
-                    system.getServerPort(), system.getServerBacklog(), sf, this.asyncChannelGroups[0]);
-
-        } else {
-            LOGGER.info("using nio network handler ");
-
-            NIOReactorPool frontReactorPool = new NIOReactorPool(
-                    DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIO_REACTOR_FRONT",
-                    frontProcessorCount);
-            NIOReactorPool backendReactorPool = new NIOReactorPool(
-                    DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIO_REACTOR_BACKEND",
-                    backendProcessorCount);
-            connector = new NIOConnector(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIOConnector", backendReactorPool);
-            ((NIOConnector) connector).start();
-
-            manager = new NIOAcceptor(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + NAME + "Manager", system.getBindIp(),
-                    system.getManagerPort(), 100, mf, frontReactorPool);
-
-            server = new NIOAcceptor(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + NAME + "Server", system.getBindIp(),
-                    system.getServerPort(), system.getServerBacklog(), sf, frontReactorPool);
-        }
-
-        // start transaction SQL log
-        if (config.getSystem().getRecordTxn() == 1) {
-            txnLogProcessor = new TxnLogProcessor(bufferPool);
-            txnLogProcessor.setName("TxnLogProcessor");
-            txnLogProcessor.start();
-        }
-
-        pullVarAndMeta();
-
-        userManager.initForLatest(config.getUsers(), system.getMaxCon());
-
-        if (isUseGeneralCluster()) {
-            try {
-                OnlineLockStatus.getInstance().metaUcoreInit(true);
-            } catch (Exception e) {
-                LOGGER.warn("ucore can not connection ");
-            }
-        }
-        //initialized the cache service
-        cacheService = new CacheService(this.systemVariables.isLowerCaseTableNames());
-
-        //initialized the router cache and primary cache
-        routerService = new RouteService(cacheService);
-
-        sequenceHandler = initSequenceHandler(config.getSystem().getSequnceHandlerType());
-        //XA Init recovery Log
-        LOGGER.info("Perform XA recovery log ...");
-        performXARecoveryLog();
-
-        // manager start
-        manager.start();
-        LOGGER.info(manager.getName() + " is started and listening on " + manager.getPort());
-        server.start();
-
-        // server started
-        LOGGER.info(server.getName() + " is started and listening on " + server.getPort());
-
-        LOGGER.info("===============================================");
-
-        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("TimerScheduler-%d").build());
-        long dataNodeIdleCheckPeriod = system.getDataNodeIdleCheckPeriod();
-        scheduler.scheduleAtFixedRate(updateTime(), 0L, TIME_UPDATE_PERIOD, TimeUnit.MILLISECONDS);
-        scheduler.scheduleWithFixedDelay(processorCheck(), 0L, system.getProcessorCheckPeriod(), TimeUnit.MILLISECONDS);
-        scheduler.scheduleAtFixedRate(dataNodeConHeartBeatCheck(dataNodeIdleCheckPeriod), 0L, dataNodeIdleCheckPeriod, TimeUnit.MILLISECONDS);
-        //dataHost heartBeat  will be influence by dataHostWithoutWR
-        scheduler.scheduleAtFixedRate(dataSourceHeartbeat(), 0L, system.getDataNodeHeartbeatPeriod(), TimeUnit.MILLISECONDS);
-        scheduler.scheduleAtFixedRate(dataSourceOldConsClear(), 0L, DEFAULT_OLD_CONNECTION_CLEAR_PERIOD, TimeUnit.MILLISECONDS);
-        scheduler.scheduleWithFixedDelay(xaSessionCheck(), 0L, system.getXaSessionCheckPeriod(), TimeUnit.MILLISECONDS);
-        scheduler.scheduleWithFixedDelay(xaLogClean(), 0L, system.getXaLogCleanPeriod(), TimeUnit.MILLISECONDS);
-        scheduler.scheduleWithFixedDelay(resultSetMapClear(), 0L, system.getClearBigSqLResultSetMapMs(), TimeUnit.MILLISECONDS);
-        if (system.getUseSqlStat() == 1) {
-            //sql record detail timing clean
-            scheduler.scheduleWithFixedDelay(recycleSqlStat(), 0L, DEFAULT_SQL_STAT_RECYCLE_PERIOD, TimeUnit.MILLISECONDS);
-        }
-
-        if (system.getUseGlobleTableCheck() == 1) {    // will be influence by dataHostWithoutWR
-            scheduler.scheduleWithFixedDelay(globalTableConsistencyCheck(), 0L, system.getGlableTableCheckPeriod(), TimeUnit.MILLISECONDS);
-        }
-        scheduler.scheduleAtFixedRate(threadStatRenew(), 0L, 1, TimeUnit.SECONDS);
-
-
-        if (isUseZkSwitch()) {
-            initZkDnindex();
-        }
     }
+
 
     private void initDataHost() {
         // init datahost
@@ -531,34 +348,6 @@ public final class DbleServer {
         systemVariables = sys;
     }
 
-    public boolean reloadMetaData(ServerConfig conf, Map<String, Set<String>> specifiedSchemas) {
-        this.metaChanging = true;
-        ReloadManager.metaReload();
-        try {
-            //back up orgin meta data
-            ProxyMetaManager tmpManager = tmManager;
-            ProxyMetaManager newManager;
-            if (CollectionUtil.isEmpty(specifiedSchemas)) {
-                newManager = new ProxyMetaManager();
-            } else {
-                //if the meta just reload partly,create a deep coyp of the ProxyMetaManager as new ProxyMetaManager
-                newManager = new ProxyMetaManager(tmpManager);
-            }
-            if (newManager.initMeta(conf, specifiedSchemas)) {
-                tmManager = newManager;
-                if (CollectionUtil.isEmpty(specifiedSchemas)) {
-                    //deep copy do not terminate the scheduler
-                    tmpManager.terminate();
-                }
-                return true;
-            }
-
-        } finally {
-            this.metaChanging = false;
-        }
-        return false;
-    }
-
     public void reloadDnIndex() {
         if (DbleServer.getInstance().getFrontProcessors() == null) return;
         // load datanode active index from properties
@@ -576,68 +365,6 @@ public final class DbleServer {
         }
     }
 
-
-    /**
-     * after reload @@config_all ,clean old connection
-     */
-    private Runnable dataSourceOldConsClear() {
-        return new Runnable() {
-            @Override
-            public void run() {
-                timerExecutor.execute(new Runnable() {
-                    @Override
-                    public void run() {
-
-                        long sqlTimeout = DbleServer.getInstance().getConfig().getSystem().getSqlExecuteTimeout() * 1000L;
-                        //close connection if now -lastTime>sqlExecuteTimeout
-                        long currentTime = TimeUtil.currentTimeMillis();
-                        Iterator<BackendConnection> iterator = NIOProcessor.BACKENDS_OLD.iterator();
-                        while (iterator.hasNext()) {
-                            BackendConnection con = iterator.next();
-                            long lastTime = con.getLastTime();
-                            if (con.isClosed() || !con.isBorrowed() || currentTime - lastTime > sqlTimeout) {
-                                con.close("clear old backend connection ...");
-                                iterator.remove();
-                            }
-                        }
-                    }
-                });
-            }
-
-        };
-    }
-
-
-    /**
-     * clean up the data in UserStatAnalyzer
-     */
-    private Runnable resultSetMapClear() {
-        return new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    BufferPool pool = getBufferPool();
-                    long bufferSize = pool.size();
-                    long bufferCapacity = pool.capacity();
-                    long bufferUsagePercent = (bufferCapacity - bufferSize) * 100 / bufferCapacity;
-                    if (bufferUsagePercent < DbleServer.getInstance().getConfig().getSystem().getBufferUsagePercent()) {
-                        Map<String, UserStat> map = UserStatAnalyzer.getInstance().getUserStatMap();
-                        Set<String> userSet = DbleServer.getInstance().getConfig().getUsers().keySet();
-                        for (String user : userSet) {
-                            UserStat userStat = map.get(user);
-                            if (userStat != null) {
-                                SqlResultSizeRecorder recorder = userStat.getSqlResultSizeRecorder();
-                                recorder.clearSqlResultSet();
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    LOGGER.info("resultSetMapClear err " + e);
-                }
-            }
-
-        };
-    }
 
     /**
      * save cur data node index to properties file
@@ -706,41 +433,9 @@ public final class DbleServer {
     }
 
     private boolean isUseZkSwitch() {
-        return isUseZK() && this.config.getSystem().isUseZKSwitch();
+        return ClusterGeneralConfig.isUseZK() && this.config.getSystem().isUseZKSwitch();
     }
 
-    public boolean isUseZK() {
-        return ClusterGeneralConfig.getInstance().isUseCluster() && ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) != null;
-    }
-
-    public boolean isUseGeneralCluster() {
-        return ClusterGeneralConfig.getInstance().isUseCluster() &&
-                ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) == null;
-    }
-
-    public TxnLogProcessor getTxnLogProcessor() {
-        return txnLogProcessor;
-    }
-
-    public CacheService getCacheService() {
-        return cacheService;
-    }
-
-    public ExecutorService getBusinessExecutor() {
-        return businessExecutor;
-    }
-
-    public ExecutorService getWriteToBackendExecutor() {
-        return writeToBackendExecutor;
-    }
-
-    public ExecutorService getBackendBusinessExecutor() {
-        return backendBusinessExecutor;
-    }
-
-    public RouteService getRouterService() {
-        return routerService;
-    }
 
     public NIOProcessor nextFrontProcessor() {
         int i = ++nextFrontProcessor;
@@ -774,101 +469,9 @@ public final class DbleServer {
         }
     }
 
-    public Queue<BackendAsyncHandler> getBackHandlerQueue() {
-        return concurrentBackHandlerQueue;
-    }
-
-    public NIOProcessor[] getFrontProcessors() {
-        return frontProcessors;
-    }
-
-    public NIOProcessor[] getBackendProcessors() {
-        return backendProcessors;
-    }
-
-    public SocketConnector getConnector() {
-        return connector;
-    }
-
-
-    public long getStartupTime() {
-        return startupTime;
-    }
-
-    public boolean isOnline() {
-        return isOnline.get();
-    }
-
-    public void offline() {
-        isOnline.set(false);
-    }
-
-    public void online() {
-        isOnline.set(true);
-    }
-
-    public SystemVariables getSystemVariables() {
-        return systemVariables;
-    }
-
-    public ProxyMetaManager getTmManager() {
-        while (metaChanging) {
-            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
-        }
-        return tmManager;
-    }
-
-    private Runnable threadStatRenew() {
-        return new Runnable() {
-            @Override
-            public void run() {
-                for (ThreadWorkUsage obj : threadUsedMap.values()) {
-                    obj.switchToNew();
-                }
-            }
-        };
-    }
-
-    private Runnable updateTime() {
-        return new Runnable() {
-            @Override
-            public void run() {
-                TimeUtil.update();
-            }
-        };
-    }
-
-    // XA session check job
-    private Runnable xaSessionCheck() {
-        return new Runnable() {
-            @Override
-            public void run() {
-                timerExecutor.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        xaSessionCheck.checkSessions();
-                    }
-                });
-            }
-        };
-    }
-
-    private Runnable xaLogClean() {
-        return new Runnable() {
-            @Override
-            public void run() {
-                timerExecutor.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        XAStateLog.cleanCompleteRecoveryLog();
-                    }
-                });
-            }
-        };
-    }
 
     // check the closed/overtime connection
-    private Runnable processorCheck() {
+    public Runnable processorCheck() {
         return new Runnable() {
             @Override
             public void run() {
@@ -900,86 +503,40 @@ public final class DbleServer {
         };
     }
 
-    // heartbeat for idle connection
-    private Runnable dataNodeConHeartBeatCheck(final long heartPeriod) {
-        return new Runnable() {
-            @Override
-            public void run() {
-                timerExecutor.execute(new Runnable() {
-                    @Override
-                    public void run() {
 
-                        Map<String, PhysicalDBPool> nodes = DbleServer.getInstance().getConfig().getDataHosts();
-                        for (PhysicalDBPool node : nodes.values()) {
-                            node.heartbeatCheck(heartPeriod);
-                        }
-
-                        /*
-                        Map<String, PhysicalDBPool> _nodes = MycatServer.getInstance().getConfig().getBackupDataHosts();
-                        if (_nodes != null) {
-                            for (PhysicalDBPool node : _nodes.values()) {
-                                node.heartbeatCheck(heartPeriod);
-                            }
-                        }*/
-                    }
-                });
-            }
-        };
+    private void reviseSchemas() {
+        if (systemVariables.isLowerCaseTableNames()) {
+            config.reviseLowerCase();
+            ConfigUtil.setSchemasForPool(config.getDataHosts(), config.getDataNodes());
+        } else {
+            config.loadSequence();
+            config.selfChecking0();
+        }
     }
 
-    // heartbeat for data source
-    private Runnable dataSourceHeartbeat() {
-        return new Runnable() {
-            @Override
-            public void run() {
-
-                timerExecutor.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (!DbleServer.getInstance().getConfig().isDataHostWithoutWR()) {
-                            Map<String, PhysicalDBPool> hosts = DbleServer.getInstance().getConfig().getDataHosts();
-                            for (PhysicalDBPool host : hosts.values()) {
-                                host.doHeartbeat();
-                            }
-                        }
-                    }
-                });
+    private void pullVarAndMeta() throws IOException {
+        ProxyMetaManager tmManager = new ProxyMetaManager();
+        ProxyMeta.getInstance().setTmManager(tmManager);
+        if (!this.getConfig().isDataHostWithoutWR()) {
+            LOGGER.info("get variables Data start");
+            //init for sys VAR
+            VarsExtractorHandler handler = new VarsExtractorHandler(config.getDataHosts());
+            SystemVariables newSystemVariables = handler.execute();
+            if (newSystemVariables == null) {
+                throw new IOException("Can't get variables from data node");
+            } else {
+                systemVariables = newSystemVariables;
             }
-        };
-    }
-
-    //clean up the old data in SqlStat
-    private Runnable recycleSqlStat() {
-        return new Runnable() {
-            @Override
-            public void run() {
-                Map<String, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
-                for (UserStat userStat : statMap.values()) {
-                    userStat.getSqlLastStat().recycle();
-                    userStat.getSqlRecorder().recycle();
-                    userStat.getSqlHigh().recycle();
-                    userStat.getSqlLargeRowStat().recycle();
-                }
+            reviseSchemas();
+            initDataHost();
+            LOGGER.info("get variables Data end");
+            //init tmManager
+            try {
+                tmManager.init(this.getConfig());
+            } catch (Exception e) {
+                throw new IOException(e);
             }
-        };
-    }
-
-    //  Table Consistency Check for global table
-    private Runnable globalTableConsistencyCheck() {
-        return new Runnable() {
-            @Override
-            public void run() {
-
-                timerExecutor.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (!DbleServer.getInstance().getConfig().isDataHostWithoutWR()) {
-                            GlobalTableUtil.consistencyCheck();
-                        }
-                    }
-                });
-            }
-        };
+        }
     }
 
 
@@ -1080,7 +637,7 @@ public final class DbleServer {
      * covert the collection to array
      **/
     private CoordinatorLogEntry[] getCoordinatorLogEntries() {
-        Repository fileRepository = isUseZK() ? new KVStoreRepository() : new FileSystemRepository();
+        Repository fileRepository = ClusterGeneralConfig.isUseZK() ? new KVStoreRepository() : new FileSystemRepository();
         Collection<CoordinatorLogEntry> allCoordinatorLogEntries = fileRepository.getAllCoordinatorLogEntries(true);
         fileRepository.close();
         if (allCoordinatorLogEntries == null) {
@@ -1092,18 +649,142 @@ public final class DbleServer {
         return allCoordinatorLogEntries.toArray(new CoordinatorLogEntry[allCoordinatorLogEntries.size()]);
     }
 
+    public String genXaTxId() {
+        long seq = this.xaIDInc.incrementAndGet();
+        if (seq < 0) {
+            synchronized (xaIDInc) {
+                if (xaIDInc.get() < 0) {
+                    xaIDInc.set(0);
+                }
+                seq = xaIDInc.incrementAndGet();
+            }
+        }
+        StringBuilder id = new StringBuilder();
+        id.append("'" + NAME + "Server.");
+        if (ClusterGeneralConfig.isUseZK()) {
+            id.append(ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+        } else if (ClusterGeneralConfig.isUseGeneralCluster()) {
+            id.append(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+        } else {
+            id.append(this.getConfig().getSystem().getServerNodeId());
+
+        }
+        id.append(".");
+        id.append(seq);
+        id.append("'");
+        return id.toString();
+    }
+
+    private void genXidSeq(String xaID) {
+        String[] idSplit = xaID.replace("'", "").split("\\.");
+        long seq = Long.parseLong(idSplit[2]);
+        if (xaIDInc.get() < seq) {
+            xaIDInc.set(seq);
+        }
+    }
+
+
+    /**
+     * get next AsynchronousChannel ,first is exclude if multi
+     * AsynchronousChannelGroups
+     *
+     * @return AsynchronousChannelGroup
+     */
+    public AsynchronousChannelGroup getNextAsyncChannelGroup() {
+        if (asyncChannelGroups.length == 1) {
+            return asyncChannelGroups[0];
+        } else {
+            int index = (channelIndex.incrementAndGet()) % asyncChannelGroups.length;
+            if (index == 0) {
+                channelIndex.incrementAndGet();
+                return asyncChannelGroups[1];
+            } else {
+                return asyncChannelGroups[index];
+            }
+
+        }
+    }
+
 
     public boolean isAIO() {
         return aio;
     }
 
-    public PauseDatanodeManager getMiManager() {
-        return miManager;
+
+    public ExecutorService getTimerExecutor() {
+        return timerExecutor;
     }
 
-    public FrontendUserManager getUserManager() {
-        return userManager;
+
+    public ExecutorService getComplexQueryExecutor() {
+        return complexQueryExecutor;
     }
 
+    public AtomicBoolean getBackupLocked() {
+        return backupLocked;
+    }
+
+    public boolean isBackupLocked() {
+        return backupLocked.get();
+    }
+
+
+    public ServerConfig getConfig() {
+        return config;
+    }
+
+
+    public Queue<BackendAsyncHandler> getBackHandlerQueue() {
+        return concurrentBackHandlerQueue;
+    }
+
+    public NIOProcessor[] getFrontProcessors() {
+        return frontProcessors;
+    }
+
+    public NIOProcessor[] getBackendProcessors() {
+        return backendProcessors;
+    }
+
+    public SocketConnector getConnector() {
+        return connector;
+    }
+
+
+    public long getStartupTime() {
+        return startupTime;
+    }
+
+    public boolean isOnline() {
+        return isOnline.get();
+    }
+
+    public void offline() {
+        isOnline.set(false);
+    }
+
+    public void online() {
+        isOnline.set(true);
+    }
+
+    public SystemVariables getSystemVariables() {
+        return systemVariables;
+    }
+
+    public TxnLogProcessor getTxnLogProcessor() {
+        return txnLogProcessor;
+    }
+
+    public ExecutorService getBusinessExecutor() {
+        return businessExecutor;
+    }
+
+    public ExecutorService getWriteToBackendExecutor() {
+        return writeToBackendExecutor;
+    }
+
+    public ExecutorService getBackendBusinessExecutor() {
+        return backendBusinessExecutor;
+    }
 
 }

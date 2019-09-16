@@ -9,7 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.UcoreGrpc;
 import com.actiontech.dble.alarm.UcoreInterface;
 import com.actiontech.dble.cluster.AbstractClusterSender;
-import com.actiontech.dble.cluster.ClusterGeneralConfig;
+import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.bean.ClusterAlertBean;

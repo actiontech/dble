@@ -18,6 +18,7 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.singleton.CacheService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +52,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 
     public String execute(String schema, ArrayList<String> dataNodes) throws ConnectionException {
         String key = schema + ":" + sql;
-        CachePool cache = DbleServer.getInstance().getCacheService().getCachePool("ER_SQL2PARENTID");
+        CachePool cache = CacheService.getCachePoolByName("ER_SQL2PARENTID");
         if (cache != null) {
             String cacheResult = (String) cache.get(key);
             if (cacheResult != null) {

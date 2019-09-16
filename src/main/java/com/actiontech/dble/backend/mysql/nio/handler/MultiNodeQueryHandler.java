@@ -24,6 +24,7 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.singleton.CacheService;
 import com.actiontech.dble.statistic.stat.QueryResult;
 import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
 import com.actiontech.dble.util.FormatUtil;
@@ -379,7 +380,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 byte[] key = rowDataPkg.fieldValues.get(primaryKeyIndex);
                 if (key != null) {
                     String primaryKey = new String(rowDataPkg.fieldValues.get(primaryKeyIndex));
-                    LayerCachePool pool = DbleServer.getInstance().getRouterService().getTableId2DataNodeCache();
+                    LayerCachePool pool = CacheService.getTableId2DataNodeCache();
                     if (pool != null) {
                         pool.putIfAbsent(primaryKeyTable, primaryKey, dataNode);
                     }

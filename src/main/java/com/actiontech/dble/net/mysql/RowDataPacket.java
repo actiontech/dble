@@ -5,11 +5,11 @@
 */
 package com.actiontech.dble.net.mysql;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
 import com.actiontech.dble.net.FrontendConnection;
+import com.actiontech.dble.singleton.BufferPoolManager;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -125,7 +125,7 @@ public class RowDataPacket extends MySQLPacket {
 
     public byte[] toBytes() {
         int size = calcPacketSize();
-        ByteBuffer buffer = DbleServer.getInstance().getBufferPool().allocate(size + PACKET_HEADER_SIZE);
+        ByteBuffer buffer = BufferPoolManager.getBufferPool().allocate(size + PACKET_HEADER_SIZE);
         BufferUtil.writeUB3(buffer, size);
         buffer.put(packetId);
         for (int i = 0; i < fieldCount; i++) {
@@ -141,7 +141,7 @@ public class RowDataPacket extends MySQLPacket {
         buffer.flip();
         byte[] data = new byte[buffer.limit()];
         buffer.get(data);
-        DbleServer.getInstance().getBufferPool().recycle(buffer);
+        BufferPoolManager.getBufferPool().recycle(buffer);
         return data;
     }
 

@@ -13,6 +13,7 @@ import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.singleton.PauseDatanodeManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,13 +74,13 @@ public final class PauseStart {
 
 
         //clusterPauseNotic
-        if (!DbleServer.getInstance().getMiManager().clusterPauseNotic(dataNode, connectionTimeOut, queueLimit)) {
+        if (!PauseDatanodeManager.getInstance().clusterPauseNotic(dataNode, connectionTimeOut, queueLimit)) {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Other node in cluster is pausing");
             return;
         }
 
 
-        if (!DbleServer.getInstance().getMiManager().startPausing(connectionTimeOut, dataNodes, queueLimit)) {
+        if (!PauseDatanodeManager.getInstance().startPausing(connectionTimeOut, dataNodes, queueLimit)) {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Some dataNodes is paused, please resume first");
             return;
         }
@@ -92,9 +93,9 @@ public final class PauseStart {
 
         LOGGER.info("wait finished " + recycleFinish);
         if (!recycleFinish) {
-            if (DbleServer.getInstance().getMiManager().tryResume()) {
+            if (PauseDatanodeManager.getInstance().tryResume()) {
                 try {
-                    DbleServer.getInstance().getMiManager().resumeCluster();
+                    PauseDatanodeManager.getInstance().resumeCluster();
                 } catch (Exception e) {
                     LOGGER.warn(e.getMessage());
                 }
@@ -105,7 +106,7 @@ public final class PauseStart {
 
         } else {
             try {
-                if (DbleServer.getInstance().getMiManager().waitForCluster(c, beginTime, timeOut)) {
+                if (PauseDatanodeManager.getInstance().waitForCluster(c, beginTime, timeOut)) {
                     OK.write(c);
                 }
             } catch (Exception e) {
@@ -117,7 +118,7 @@ public final class PauseStart {
 
     private static boolean waitForSelfPause(long beginTime, long timeOut, Set<String> dataNodes) {
         boolean recycleFinish = false;
-        while ((System.currentTimeMillis() - beginTime < timeOut) && DbleServer.getInstance().getMiManager().getIsPausing().get()) {
+        while ((System.currentTimeMillis() - beginTime < timeOut) && PauseDatanodeManager.getInstance().getIsPausing().get()) {
             boolean nextTurn = false;
             for (NIOProcessor processor : DbleServer.getInstance().getFrontProcessors()) {
                 for (Map.Entry<Long, FrontendConnection> entry : processor.getFrontends().entrySet()) {

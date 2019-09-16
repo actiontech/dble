@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.manager.response;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.manager.ManagerConnection;
@@ -15,6 +14,7 @@ import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.singleton.BufferPoolManager;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
@@ -23,7 +23,6 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * show @@directmemory
- *
  */
 
 public final class ShowDirectMemory {
@@ -104,8 +103,7 @@ public final class ShowDirectMemory {
         // write rows
         byte packetId = DETAIL_EOF.getPacketId();
 
-        ConcurrentMap<Long, Long> networkBufferPool = DbleServer.getInstance().
-                getBufferPool().getNetDirectMemoryUsage();
+        ConcurrentMap<Long, Long> networkBufferPool = BufferPoolManager.getBufferPool().getNetDirectMemoryUsage();
 
         for (Map.Entry<Long, Long> entry : networkBufferPool.entrySet()) {
             RowDataPacket row = new RowDataPacket(DETAIL_FIELD_COUNT);
@@ -143,8 +141,7 @@ public final class ShowDirectMemory {
         // write eof
         buffer = TOTAL_EOF.write(buffer, c, true);
 
-        ConcurrentMap<Long, Long> networkBufferPool = DbleServer.getInstance().
-                getBufferPool().getNetDirectMemoryUsage();
+        ConcurrentMap<Long, Long> networkBufferPool = BufferPoolManager.getBufferPool().getNetDirectMemoryUsage();
 
         RowDataPacket row = new RowDataPacket(TOTAL_FIELD_COUNT);
         long usedForNetwork = 0;

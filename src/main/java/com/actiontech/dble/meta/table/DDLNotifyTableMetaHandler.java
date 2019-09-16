@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.meta.table;
 
-import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +46,7 @@ public class DDLNotifyTableMetaHandler extends AbstractTableMetaHandler {
     @Override
     public void handlerTable(StructureMeta.TableMeta tableMeta) {
         if (tableMeta != null) {
-            DbleServer.getInstance().getTmManager().addTable(schema, tableMeta);
+            ProxyMeta.getInstance().getTmManager().addTable(schema, tableMeta);
             metaInited = true;
         }
         signalDone();

@@ -6,13 +6,14 @@
 package com.actiontech.dble.route;
 
 import com.actiontech.dble.SimpleCachePool;
-import com.actiontech.dble.cache.CacheService;
+import com.actiontech.dble.singleton.CacheService;
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.loader.SchemaLoader;
 import com.actiontech.dble.config.loader.xml.XMLSchemaLoader;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.singleton.RouteService;
 import junit.framework.Assert;
 import org.junit.Ignore;
 import org.junit.Test;

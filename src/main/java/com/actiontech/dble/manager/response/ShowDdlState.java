@@ -5,10 +5,10 @@
 
 package com.actiontech.dble.manager.response;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.manager.ManagerConnection;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
@@ -60,7 +60,7 @@ public final class ShowDdlState {
         // write rows
         byte packetId = EOF.getPacketId();
 
-        Map<String, String> lockTables = DbleServer.getInstance().getTmManager().getLockTables();
+        Map<String, String> lockTables = ProxyMeta.getInstance().getTmManager().getLockTables();
         for (Map.Entry<String, String> entry : lockTables.entrySet()) {
             String[] infos = entry.getKey().split("\\.");
             if (infos.length == 2) {

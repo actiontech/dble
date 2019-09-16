@@ -5,9 +5,8 @@
 
 package com.actiontech.dble.manager.response;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
-import com.actiontech.dble.backend.mysql.xa.XASessionCheck;
+import com.actiontech.dble.singleton.XASessionCheck;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
@@ -70,7 +69,7 @@ public final class ShowXASession {
 
         // write rows
         byte packetId = EOF.getPacketId();
-        final XASessionCheck xaCheck = DbleServer.getInstance().getXaSessionCheck();
+        final XASessionCheck xaCheck = XASessionCheck.getInstance();
         for (NonBlockingSession commitSession : xaCheck.getCommittingSession().values()) {
             RowDataPacket row = getRow(commitSession, c.getCharset().getResults());
             row.setPacketId(++packetId);

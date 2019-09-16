@@ -5,7 +5,7 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.cluster.ClusterGeneralConfig;
+import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.ClusterPathUtil;
@@ -14,6 +14,7 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.PauseInfo;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.singleton.PauseDatanodeManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +45,7 @@ public final class PauseEnd {
 
     public static void resume(ManagerConnection c) {
 
-        if (DbleServer.getInstance().isUseGeneralCluster()) {
+        if (ClusterGeneralConfig.isUseGeneralCluster()) {
             try {
                 KvBean value = ClusterHelper.getKV(ClusterPathUtil.getPauseDataNodePath());
                 PauseInfo pauseInfo = new PauseInfo(value.getValue());
@@ -53,17 +54,17 @@ public final class PauseEnd {
                     return;
                 }
 
-                if (!DbleServer.getInstance().getMiManager().tryResume()) {
+                if (!PauseDatanodeManager.getInstance().tryResume()) {
                     c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "No dataNode paused");
                     return;
                 }
 
-                DbleServer.getInstance().getMiManager().resumeCluster();
+                PauseDatanodeManager.getInstance().resumeCluster();
             } catch (Exception e) {
                 LOGGER.warn(e.getMessage());
             }
         } else {
-            if (!DbleServer.getInstance().getMiManager().tryResume()) {
+            if (!PauseDatanodeManager.getInstance().tryResume()) {
                 c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "No dataNode paused");
                 return;
             }

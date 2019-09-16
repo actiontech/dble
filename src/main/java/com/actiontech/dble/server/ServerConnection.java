@@ -16,6 +16,9 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.model.UserConfig;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
+import com.actiontech.dble.singleton.ClusterGeneralConfig;
+import com.actiontech.dble.singleton.RouteService;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.util.Pair;
@@ -302,14 +305,14 @@ public class ServerConnection extends FrontendConnection {
     private void routeEndExecuteSQL(String sql, int type, SchemaConfig schema) {
         RouteResultset rrs;
         try {
-            rrs = DbleServer.getInstance().getRouterService().route(schema, type, sql, this);
+            rrs = RouteService.getInstance().route(schema, type, sql, this);
             if (rrs == null) {
                 return;
             }
             if (rrs.getSqlType() == ServerParse.DDL && rrs.getSchema() != null) {
                 addTableMetaLock(rrs);
-                if (DbleServer.getInstance().getTmManager().getCatalogs().get(rrs.getSchema()).getView(rrs.getTable()) != null) {
-                    DbleServer.getInstance().getTmManager().removeMetaLock(rrs.getSchema(), rrs.getTable());
+                if (ProxyMeta.getInstance().getTmManager().getCatalogs().get(rrs.getSchema()).getView(rrs.getTable()) != null) {
+                    ProxyMeta.getInstance().getTmManager().removeMetaLock(rrs.getSchema(), rrs.getTable());
                     String msg = "Table '" + rrs.getTable() + "' already exists as a view";
                     LOGGER.info(msg);
                     throw new SQLNonTransientException(msg);
@@ -328,8 +331,8 @@ public class ServerConnection extends FrontendConnection {
         String table = rrs.getTable();
         try {
             //lock self meta
-            DbleServer.getInstance().getTmManager().addMetaLock(schema, table, rrs.getSrcStatement());
-            if (DbleServer.getInstance().isUseZK()) {
+            ProxyMeta.getInstance().getTmManager().addMetaLock(schema, table, rrs.getSrcStatement());
+            if (ClusterGeneralConfig.isUseZK()) {
                 String nodeName = StringUtil.getFullName(schema, table);
                 String ddlPath = KVPathUtil.getDDLPath();
                 String nodePth = ZKPaths.makePath(ddlPath, nodeName);
@@ -339,14 +342,14 @@ public class ServerConnection extends FrontendConnection {
                     LOGGER.info(msg + " The path of DDL is " + ddlPath);
                     throw new Exception(msg);
                 }
-                DbleServer.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement());
-            } else if (DbleServer.getInstance().isUseGeneralCluster()) {
-                DbleServer.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement());
+                ProxyMeta.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement());
+            } else if (ClusterGeneralConfig.isUseGeneralCluster()) {
+                ProxyMeta.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement());
             }
         } catch (SQLNonTransientException e) {
             throw e;
         } catch (Exception e) {
-            DbleServer.getInstance().getTmManager().removeMetaLock(schema, table);
+            ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
             throw new SQLNonTransientException(e.toString() + ",sql:" + rrs.getStatement());
         }
     }
@@ -441,10 +444,10 @@ public class ServerConnection extends FrontendConnection {
 
         RouteResultset rrs;
         try {
-            rrs = DbleServer.getInstance().getRouterService().route(schema, ServerParse.LOCK, sql, this);
+            rrs = RouteService.getInstance().route(schema, ServerParse.LOCK, sql, this);
         } catch (Exception e) {
             executeException(e, sql);
-            return ;
+            return;
         }
 
         if (rrs != null) {

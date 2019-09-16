@@ -6,6 +6,7 @@
 package com.actiontech.dble.cluster;
 
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
+import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.util.ResourceUtil;
 import com.google.common.base.Strings;
 import org.slf4j.Logger;

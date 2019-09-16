@@ -8,6 +8,7 @@ package com.actiontech.dble.net.handler;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.util.AuthUtil;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOHandler;
 import com.actiontech.dble.net.mysql.*;

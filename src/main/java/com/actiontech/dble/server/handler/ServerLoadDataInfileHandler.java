@@ -12,6 +12,8 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.singleton.CacheService;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.net.handler.LoadDataInfileHandler;
 import com.actiontech.dble.net.mysql.BinaryPacket;
@@ -25,6 +27,7 @@ import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil;
+import com.actiontech.dble.singleton.SequenceManager;
 import com.actiontech.dble.sqlengine.mpp.LoadData;
 import com.actiontech.dble.util.ObjectUtil;
 import com.actiontech.dble.util.SqlStringUtil;
@@ -159,7 +162,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         }
 
         tableConfig = schema.getTables().get(tableName);
-        if (!DbleServer.getInstance().getTmManager().checkTableExists(schema.getName(), tableName)) {
+        if (!ProxyMeta.getInstance().getTmManager().checkTableExists(schema.getName(), tableName)) {
             String msg = "Table '" + schema.getName() + "." + tableName + "' or table mata doesn't exist";
             clear();
             serverConnection.writeErrMessage("42S02", msg, ErrorCode.ER_NO_SUCH_TABLE);
@@ -173,7 +176,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             return;
         }
 
-        tableId2DataNodeCache = (LayerCachePool) DbleServer.getInstance().getCacheService().getCachePool("TableID2DataNodeCache");
+        tableId2DataNodeCache = (LayerCachePool) CacheService.getCachePoolByName("TableID2DataNodeCache");
         tempPath = SystemConfig.getHomePath() + File.separator + "temp" + File.separator + serverConnection.getId() + File.separator;
         tempFile = tempPath + "clientTemp.txt";
         tempByteBuffer = new ByteArrayOutputStream();
@@ -260,7 +263,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                     }
                 } else {
                     try {
-                        StructureMeta.TableMeta tbMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schema.getName(), tableName);
+                        StructureMeta.TableMeta tbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schema.getName(), tableName);
                         if (tbMeta != null) {
                             for (int i = 0; i < tbMeta.getColumnsCount(); i++) {
                                 String column = tbMeta.getColumns(i).getName();
@@ -430,12 +433,12 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             String[] newLine = new String[line.length + 1];
             System.arraycopy(line, 0, newLine, 0, line.length);
             String tableKey = StringUtil.getFullName(schema.getName(), tableName);
-            newLine[line.length] = String.valueOf(DbleServer.getInstance().getSequenceHandler().nextId(tableKey));
+            newLine[line.length] = String.valueOf(SequenceManager.getHandler().nextId(tableKey));
             line = newLine;
         } else {
             if (StringUtil.isEmpty(line[autoIncrementIndex])) {
                 String tableKey = StringUtil.getFullName(schema.getName(), tableName);
-                line[autoIncrementIndex] = String.valueOf(DbleServer.getInstance().getSequenceHandler().nextId(tableKey));
+                line[autoIncrementIndex] = String.valueOf(SequenceManager.getHandler().nextId(tableKey));
             } else if (!appendAutoIncrementColumn) {
                 throw new Exception("you can't set value for Autoincrement column!");
             }

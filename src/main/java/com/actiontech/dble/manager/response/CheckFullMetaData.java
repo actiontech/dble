@@ -12,6 +12,7 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.manager.ManagerConnection;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.meta.SchemaMeta;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.net.mysql.EOFPacket;
@@ -93,7 +94,7 @@ public final class CheckFullMetaData {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql does not match: check full @@metadata [ where [schema='testSchema' [and table ='testTable']] | [reload_time [>|<]= 'yyyy-MM-dd HH:mm:ss']] | [reload_time is null] | [consistent_in_data_nodes =0|1] | [consistent_in_memory =0|1]");
             return;
         }
-        final ReentrantLock lock = DbleServer.getInstance().getTmManager().getMetaLock();
+        final ReentrantLock lock = ProxyMeta.getInstance().getTmManager().getMetaLock();
         lock.lock();
         List<RowDataPacket> rows;
         try {
@@ -108,8 +109,8 @@ public final class CheckFullMetaData {
                     if (ma.group(9) != null) {
                         String table = StringUtil.removeAllApostrophe(ma.group(10));
                         if (DbleServer.getInstance().getConfig().getSchemas().get(schema).getTables().get(table) == null &&
-                                DbleServer.getInstance().getTmManager().getCatalogs().get(schema) == null &&
-                                DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getTableMeta(table) == null) {
+                                ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema) == null &&
+                                ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema).getTableMeta(table) == null) {
                             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The table [" + schema + "." + table + "] doesn't exist");
                             return;
                         }
@@ -177,7 +178,7 @@ public final class CheckFullMetaData {
 
     private static List<RowDataPacket> getCmpRows(String cmpOperator, long toCmp, String charset) {
         List<RowDataPacket> list = new ArrayList<>();
-        for (Map.Entry<String, SchemaMeta> schemaMetaEntry : DbleServer.getInstance().getTmManager().getCatalogs().entrySet()) {
+        for (Map.Entry<String, SchemaMeta> schemaMetaEntry : ProxyMeta.getInstance().getTmManager().getCatalogs().entrySet()) {
             String schemaName = schemaMetaEntry.getKey();
             SchemaMeta schemaMeta = schemaMetaEntry.getValue();
             for (Map.Entry<String, StructureMeta.TableMeta> tableMetaEntry : schemaMeta.getTableMetas().entrySet()) {
@@ -228,7 +229,7 @@ public final class CheckFullMetaData {
     private static List<RowDataPacket> getTableRows(String schemaName, String tableName, String charset) {
         List<RowDataPacket> list = new ArrayList<>();
 
-        Map<String, SchemaMeta> schemaMetaMap = DbleServer.getInstance().getTmManager().getCatalogs();
+        Map<String, SchemaMeta> schemaMetaMap = ProxyMeta.getInstance().getTmManager().getCatalogs();
         Map<String, SchemaConfig> schemaConfigMap = DbleServer.getInstance().getConfig().getSchemas();
         SchemaMeta schemaMeta = schemaMetaMap.get(schemaName);
         if (schemaMeta != null) {
@@ -257,7 +258,7 @@ public final class CheckFullMetaData {
     private static List<RowDataPacket> getSchemaRows(String schemaName, String charset) {
         List<RowDataPacket> list = new ArrayList<>();
 
-        Map<String, SchemaMeta> schemaMetaMap = DbleServer.getInstance().getTmManager().getCatalogs();
+        Map<String, SchemaMeta> schemaMetaMap = ProxyMeta.getInstance().getTmManager().getCatalogs();
         Map<String, SchemaConfig> schemaConfigMap = DbleServer.getInstance().getConfig().getSchemas();
         SchemaMeta schemaMeta = schemaMetaMap.get(schemaName);
         if (schemaMeta != null) {
@@ -321,7 +322,7 @@ public final class CheckFullMetaData {
             checkFilter = ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY;
         }
 
-        Map<String, SchemaMeta> schemaMetaMap = DbleServer.getInstance().getTmManager().getCatalogs();
+        Map<String, SchemaMeta> schemaMetaMap = ProxyMeta.getInstance().getTmManager().getCatalogs();
         Map<String, SchemaConfig> schemaConfigMap = DbleServer.getInstance().getConfig().getSchemas();
         Set<String> hasMetaSchemas = new HashSet<>();
         for (Map.Entry<String, SchemaMeta> schemaMetaEntry : schemaMetaMap.entrySet()) {
@@ -369,7 +370,7 @@ public final class CheckFullMetaData {
     private static List<RowDataPacket> getAllRows(String charset) {
         List<RowDataPacket> list = new ArrayList<>();
 
-        Map<String, SchemaMeta> schemaMetaMap = DbleServer.getInstance().getTmManager().getCatalogs();
+        Map<String, SchemaMeta> schemaMetaMap = ProxyMeta.getInstance().getTmManager().getCatalogs();
         Map<String, SchemaConfig> schemaConfigMap = DbleServer.getInstance().getConfig().getSchemas();
         Set<String> hasMetaSchemas = new HashSet<>();
         for (Map.Entry<String, SchemaMeta> schemaMetaEntry : schemaMetaMap.entrySet()) {
@@ -410,7 +411,7 @@ public final class CheckFullMetaData {
     private static List<RowDataPacket> getAllNullRows(String charset) {
         List<RowDataPacket> list = new ArrayList<>();
 
-        Map<String, SchemaMeta> schemaMetaMap = DbleServer.getInstance().getTmManager().getCatalogs();
+        Map<String, SchemaMeta> schemaMetaMap = ProxyMeta.getInstance().getTmManager().getCatalogs();
         Map<String, SchemaConfig> schemaConfigMap = DbleServer.getInstance().getConfig().getSchemas();
         Set<String> hasMetaSchemas = new HashSet<>();
         for (Map.Entry<String, SchemaMeta> schemaMetaEntry : schemaMetaMap.entrySet()) {

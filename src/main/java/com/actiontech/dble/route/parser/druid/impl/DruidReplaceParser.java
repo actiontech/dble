@@ -11,6 +11,7 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.net.ConnectionException;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
@@ -24,6 +25,7 @@ import com.actiontech.dble.server.handler.ExplainHandler;
 import com.actiontech.dble.server.util.GlobalTableUtil;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
+import com.actiontech.dble.singleton.SequenceManager;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
@@ -153,7 +155,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
 
 
     private String convertReplaceSQL(SchemaInfo schemaInfo, SQLReplaceStatement replace, String originSql, TableConfig tc, boolean isGlobalCheck, ServerConnection sc) throws SQLNonTransientException {
-        StructureMeta.TableMeta orgTbMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
+        StructureMeta.TableMeta orgTbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
                 schemaInfo.getTable());
         if (orgTbMeta == null)
             return originSql;
@@ -276,7 +278,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
                 sb.append(String.valueOf(new Date().getTime()));
             } else if (i == autoIncrement) {
                 if (checkSize > size) {
-                    long id = DbleServer.getInstance().getSequenceHandler().nextId(tableKey);
+                    long id = SequenceManager.getHandler().nextId(tableKey);
                     sb.append(id);
                 } else {
                     String value = SQLUtils.toMySqlString(values.get(iValue++));

@@ -18,7 +18,6 @@ import com.actiontech.dble.backend.mysql.view.KVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.Repository;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.*;
-import com.actiontech.dble.cluster.bean.InstanceOnline;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
@@ -32,6 +31,9 @@ import com.actiontech.dble.meta.table.*;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
+import com.actiontech.dble.singleton.ClusterGeneralConfig;
+import com.actiontech.dble.singleton.DistrbtLockManager;
+import com.actiontech.dble.singleton.OnlineStatus;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.ZKUtils;
@@ -301,7 +303,7 @@ public class ProxyMetaManager {
 
     public void init(ServerConfig config) throws Exception {
         LOGGER.info("init metaData start");
-        if (DbleServer.getInstance().isUseZK()) {
+        if (ClusterGeneralConfig.isUseZK()) {
             this.metaZKinit(config);
         } else {
             initMeta(config);
@@ -344,7 +346,7 @@ public class ProxyMetaManager {
         tryDeleteOldOnline();
 
         // online
-        ZKUtils.createOnline(KVPathUtil.getOnlinePath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), InstanceOnline.getInstance());
+        ZKUtils.createOnline(KVPathUtil.getOnlinePath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), OnlineStatus.getInstance());
         //add watcher
         ZKUtils.addChildPathCache(ddlPath, new DDLChildListener());
         //add watcher
@@ -367,7 +369,7 @@ public class ProxyMetaManager {
                 return;
             }
             String oldOnlne = new String(info, StandardCharsets.UTF_8);
-            if (InstanceOnline.getInstance().canRemovePath(oldOnlne)) {
+            if (OnlineStatus.getInstance().canRemovePath(oldOnlne)) {
                 LOGGER.warn("remove online from zk path ,because has same IP & serverPort");
                 ZKUtils.getConnection().delete().forPath(KVPathUtil.getOnlinePath() +
                         KVPathUtil.SEPARATOR + ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
@@ -379,9 +381,9 @@ public class ProxyMetaManager {
 
 
     private void initViewMeta() {
-        if (DbleServer.getInstance().isUseZK()) {
+        if (ClusterGeneralConfig.isUseZK()) {
             loadViewFromKV();
-        } else if (DbleServer.getInstance().isUseGeneralCluster()) {
+        } else if (ClusterGeneralConfig.isUseGeneralCluster()) {
             loadViewFromCKV();
         } else {
             loadViewFromFile();
@@ -555,14 +557,14 @@ public class ProxyMetaManager {
     }
 
     public void notifyClusterDDL(String schema, String table, String sql) throws Exception {
-        if (DbleServer.getInstance().isUseZK()) {
+        if (ClusterGeneralConfig.isUseZK()) {
             CuratorFramework zkConn = ZKUtils.getConnection();
             DDLInfo ddlInfo = new DDLInfo(schema, sql, ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), DDLInfo.DDLStatus.INIT, DDLInfo.DDLType.UNKNOWN);
             String nodeName = StringUtil.getFullName(schema, table);
             String nodePath = ZKPaths.makePath(KVPathUtil.getDDLPath(), nodeName);
             zkConn.create().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
             ClusterDelayProvider.delayAfterDdlLockMeta();
-        } else if (DbleServer.getInstance().isUseGeneralCluster()) {
+        } else if (ClusterGeneralConfig.isUseGeneralCluster()) {
             DDLInfo ddlInfo = new DDLInfo(schema, sql, ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), DDLInfo.DDLStatus.INIT, DDLInfo.DDLType.UNKNOWN);
             String nodeName = StringUtil.getUFullName(schema, table);
             String ddlPath = ClusterPathUtil.getDDLPath(nodeName);
@@ -580,9 +582,9 @@ public class ProxyMetaManager {
 
     public void notifyResponseClusterDDL(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, DDLInfo.DDLType ddlType, boolean needNotifyOther) throws Exception {
         ClusterDelayProvider.delayAfterDdlExecuted();
-        if (DbleServer.getInstance().isUseZK()) {
+        if (ClusterGeneralConfig.isUseZK()) {
             notifyResponseZKDdl(schema, table, sql, ddlStatus, ddlType, needNotifyOther);
-        } else if (DbleServer.getInstance().isUseGeneralCluster()) {
+        } else if (ClusterGeneralConfig.isUseGeneralCluster()) {
             notifyReponseUcoreDDL(schema, table, sql, ddlStatus, ddlType, needNotifyOther);
         }
     }

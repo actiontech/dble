@@ -20,6 +20,7 @@ import com.actiontech.dble.plan.common.field.Field;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.meta.TempTable;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.singleton.BufferPoolManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +73,7 @@ public class TempTableHandler extends BaseDMLHandler {
                 this.fieldPackets = fieldPackets;
                 tempTable.setFieldPackets(this.fieldPackets);
                 tempTable.setCharset(conn.getCharset().getResults());
-                tempTable.setRowsStore(new UnSortedLocalResult(fieldPackets.size(), DbleServer.getInstance().getBufferPool(),
+                tempTable.setRowsStore(new UnSortedLocalResult(fieldPackets.size(), BufferPoolManager.getBufferPool(),
                         CharsetUtil.getJavaCharset(conn.getCharset().getResults())).setMemSizeController(session.getOtherBufferMC()));
                 List<Field> fields = HandlerTool.createFields(this.fieldPackets);
                 sourceSelIndex = HandlerTool.findField(sourceSel, fields, 0);

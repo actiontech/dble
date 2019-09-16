@@ -18,6 +18,7 @@ import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.singleton.BufferPoolManager;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +55,7 @@ public class OrderByHandler extends OwnThreadDMLHandler {
         if (terminate.get())
             return;
         if (this.pool == null)
-            this.pool = DbleServer.getInstance().getBufferPool();
+            this.pool = BufferPoolManager.getBufferPool();
 
         this.fieldPackets = fieldPackets;
         RowDataComparator cmp = new RowDataComparator(this.fieldPackets, orders, isAllPushDown(), type());

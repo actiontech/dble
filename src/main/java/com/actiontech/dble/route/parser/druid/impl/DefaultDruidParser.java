@@ -11,6 +11,8 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.singleton.CacheService;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -198,7 +200,7 @@ public class DefaultDruidParser implements DruidParser {
 
     void checkTableExists(TableConfig tc, String schemaName, String tableName, ServerPrivileges.CheckType chekcType) throws SQLException {
         if (tc == null) {
-            if (DbleServer.getInstance().getTmManager().getSyncView(schemaName, tableName) != null) {
+            if (ProxyMeta.getInstance().getTmManager().getSyncView(schemaName, tableName) != null) {
                 String msg = "View '" + schemaName + "." + tableName + "' Not Support " + chekcType;
                 throw new SQLException(msg, "HY000", ErrorCode.ERR_NOT_SUPPORTED);
             }
@@ -206,7 +208,7 @@ public class DefaultDruidParser implements DruidParser {
             throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
         } else {
             //it is strict
-            if (DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaName, tableName) == null) {
+            if (ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaName, tableName) == null) {
                 String msg = "Table meta '" + schemaName + "." + tableName + "' is lost,PLEASE reload @@metadata";
                 LOGGER.warn(msg);
                 throw new SQLException(msg, "HY000", ErrorCode.ERR_HANDLE_DATA);
@@ -255,7 +257,7 @@ public class DefaultDruidParser implements DruidParser {
         SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
         for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
             RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, unit, tableName, rrs, false,
-                    DbleServer.getInstance().getRouterService().getTableId2DataNodeCache(), null);
+                    CacheService.getTableId2DataNodeCache(), null);
             if (rrsTmp != null && rrsTmp.getNodes() != null) {
                 Collections.addAll(nodeSet, rrsTmp.getNodes());
             }

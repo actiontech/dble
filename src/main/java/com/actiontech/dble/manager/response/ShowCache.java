@@ -5,10 +5,9 @@
 */
 package com.actiontech.dble.manager.response;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.cache.CachePool;
-import com.actiontech.dble.cache.CacheService;
+import com.actiontech.dble.singleton.CacheService;
 import com.actiontech.dble.cache.CacheStatic;
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.Fields;
@@ -74,7 +73,7 @@ public final class ShowCache {
 
         // write rows
         byte packetId = EOF.getPacketId();
-        CacheService cacheService = DbleServer.getInstance().getCacheService();
+        CacheService cacheService = CacheService.getInstance();
         for (Map.Entry<String, CachePool> entry : cacheService.getAllCachePools().entrySet()) {
             String cacheName = entry.getKey();
             CachePool cachePool = entry.getValue();

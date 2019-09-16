@@ -13,6 +13,7 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.model.rule.RuleConfig;
 import com.actiontech.dble.manager.ManagerConnection;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
@@ -74,7 +75,7 @@ public final class ShowTableAlgorithm {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "the schema [" + schemaName + "] does not exists");
             return;
         } else if (schemaConfig.isNoSharding()) {
-            if (DbleServer.getInstance().getTmManager().checkTableExists(schemaName, tableName)) {
+            if (ProxyMeta.getInstance().getTmManager().checkTableExists(schemaName, tableName)) {
                 tableType = TableType.BASE;
             }
         } else {
@@ -83,7 +84,7 @@ public final class ShowTableAlgorithm {
                 if (schemaConfig.getDataNode() == null) {
                     c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "the table [" + tableName + "] in schema [" + schemaName + "] does not exists");
                     return;
-                } else if (DbleServer.getInstance().getTmManager().checkTableExists(schemaName, tableName)) {
+                } else if (ProxyMeta.getInstance().getTmManager().checkTableExists(schemaName, tableName)) {
                     tableType = TableType.BASE;
                 }
             } else if (tableConfig.isGlobalTable()) {

@@ -1,12 +1,12 @@
 package com.actiontech.dble.cluster;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.view.CKVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.view.Repository;
 import com.actiontech.dble.cluster.bean.KvBean;
 import com.actiontech.dble.cluster.kVtoXml.ClusterToXml;
-import com.actiontech.dble.server.status.OnlineLockStatus;
+import com.actiontech.dble.singleton.ProxyMeta;
+import com.actiontech.dble.singleton.OnlineStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,18 +96,18 @@ public abstract class AbstractClusterSender implements ClusterSender {
      * @throws Exception
      */
     protected void firstReturnToCluster() throws Exception {
-        if (DbleServer.getInstance().getTmManager() != null) {
-            if (DbleServer.getInstance().getTmManager().getRepository() != null &&
-                    DbleServer.getInstance().getTmManager().getRepository() instanceof FileSystemRepository) {
+        if (ProxyMeta.getInstance().getTmManager() != null) {
+            if (ProxyMeta.getInstance().getTmManager().getRepository() != null &&
+                    ProxyMeta.getInstance().getTmManager().getRepository() instanceof FileSystemRepository) {
                 LOGGER.warn("Dble first reconnect to ucore ,local view repository change to CKVStoreRepository");
                 Repository newViewRepository = new CKVStoreRepository();
-                DbleServer.getInstance().getTmManager().setRepository(newViewRepository);
+                ProxyMeta.getInstance().getTmManager().setRepository(newViewRepository);
                 Map<String, Map<String, String>> viewCreateSqlMap = newViewRepository.getViewCreateSqlMap();
-                DbleServer.getInstance().getTmManager().reloadViewMeta(viewCreateSqlMap);
+                ProxyMeta.getInstance().getTmManager().reloadViewMeta(viewCreateSqlMap);
                 //init online status
                 LOGGER.warn("Dble first reconnect to ucore ,online status rebuild");
             }
-            OnlineLockStatus.getInstance().metaUcoreInit(true);
+            OnlineStatus.getInstance().metaUcoreInit(true);
         }
     }
 

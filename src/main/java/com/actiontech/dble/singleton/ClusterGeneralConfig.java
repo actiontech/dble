@@ -1,5 +1,7 @@
-package com.actiontech.dble.cluster;
+package com.actiontech.dble.singleton;
 
+import com.actiontech.dble.cluster.AbstractClusterSender;
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.impl.UcoreSender;
 import com.actiontech.dble.cluster.impl.ushard.UshardSender;
 import com.actiontech.dble.cluster.kVtoXml.ClusterToXml;
@@ -103,6 +105,15 @@ public final class ClusterGeneralConfig {
             return properties.getProperty(param.getKey());
         }
         return null;
+    }
+
+    public static boolean isUseGeneralCluster() {
+        return INSTANCE.isUseCluster() &&
+                ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) == null;
+    }
+
+    public static boolean isUseZK() {
+        return INSTANCE.isUseCluster() && ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) != null;
     }
 
 }

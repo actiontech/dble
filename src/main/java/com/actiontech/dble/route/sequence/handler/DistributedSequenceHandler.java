@@ -78,7 +78,7 @@ public class DistributedSequenceHandler implements Closeable, SequenceHandler {
         return DistributedSequenceHandler.instance;
     }
 
-    public void load() {
+    public void load(boolean isLowerCaseTableNames) {
         // load sequnce properties
         Properties props = PropertiesUtil.loadProps(SEQUENCE_DB_PROPS);
         if ("ZK".equalsIgnoreCase(props.getProperty("INSTANCEID"))) {

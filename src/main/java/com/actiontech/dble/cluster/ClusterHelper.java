@@ -4,6 +4,7 @@ import com.actiontech.dble.cluster.bean.ClusterAlertBean;
 import com.actiontech.dble.cluster.bean.KvBean;
 import com.actiontech.dble.cluster.bean.SubscribeRequest;
 import com.actiontech.dble.cluster.bean.SubscribeReturnBean;
+import com.actiontech.dble.singleton.ClusterGeneralConfig;
 
 import java.util.List;
 import java.util.Map;

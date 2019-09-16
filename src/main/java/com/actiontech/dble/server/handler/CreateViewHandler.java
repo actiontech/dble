@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.server.handler;
 
-import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.meta.ViewMeta;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -21,7 +21,7 @@ public final class CreateViewHandler {
 
     public static void handle(String stmt, ServerConnection c, boolean isReplace) {
         //create a new object of the view
-        ViewMeta vm = new ViewMeta(stmt, c.getSchema(), DbleServer.getInstance().getTmManager());
+        ViewMeta vm = new ViewMeta(stmt, c.getSchema(), ProxyMeta.getInstance().getTmManager());
         ErrorPacket error = vm.initAndSet(isReplace, true);
         if (error != null) {
             //if any error occurs when parse sql into view object

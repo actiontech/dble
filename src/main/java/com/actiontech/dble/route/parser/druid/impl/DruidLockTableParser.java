@@ -8,6 +8,7 @@ package com.actiontech.dble.route.parser.druid.impl;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.actiontech.dble.plan.node.*;
@@ -46,11 +47,11 @@ public class DruidLockTableParser extends DefaultDruidParser {
             if (tableConfig != null) {
                 handleConfigTable(dataNodeToLocks, tableConfig, item.getTableSource().getAlias(), item.getLockType());
                 continue;
-            } else if (DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaName, table) != null) {
+            } else if (ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaName, table) != null) {
                 handleNoshardTable(dataNodeToLocks, table, schemaConfig.getDataNode(), item.getTableSource().getAlias(), item.getLockType());
                 continue;
-            } else if (DbleServer.getInstance().getTmManager().getSyncView(schemaName, table) != null) {
-                handleSingleViewLock(dataNodeToLocks, DbleServer.getInstance().getTmManager().getSyncView(schemaName, table), item.getTableSource().getAlias(), item.getLockType(), schemaName);
+            } else if (ProxyMeta.getInstance().getTmManager().getSyncView(schemaName, table) != null) {
+                handleSingleViewLock(dataNodeToLocks, ProxyMeta.getInstance().getTmManager().getSyncView(schemaName, table), item.getTableSource().getAlias(), item.getLockType(), schemaName);
                 continue;
             }
             String msg = "Table '" + schemaConfig.getName() + "." + table + "' doesn't exist";
@@ -117,7 +118,7 @@ public class DruidLockTableParser extends DefaultDruidParser {
                 TableConfig tableConfig = schemaConfig.getTables().get(table);
                 if (tableConfig != null) {
                     handleConfigTable(dataNodeToLocks, tableConfig, alias == null ? null : "view_" + alias + "_" + table, lockType);
-                } else if (DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaConfig.getName(), table) != null) {
+                } else if (ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaConfig.getName(), table) != null) {
                     handleNoshardTable(dataNodeToLocks, table, schemaConfig.getDataNode(), alias == null ? null : "view_" + alias + "_" + table, lockType);
                 } else {
                     String msg = "Table '" + schemaConfig.getName() + "." + table + "' doesn't exist";

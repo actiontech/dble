@@ -112,7 +112,7 @@ public final class SchemaUtil {
                 return schemaInfo;
             }
         }
-        schemaInfo.tableAlias = tableAlias == null ? schemaInfo.table : tableAlias;
+        schemaInfo.tableAlias = tableAlias == null ? schemaInfo.table : StringUtil.removeBackQuote(tableAlias);
         if (schemaInfo.schema == null) {
             String msg = "No database selected";
             throw new SQLException(msg, "3D000", ErrorCode.ER_NO_DB_ERROR);
@@ -261,6 +261,7 @@ public final class SchemaUtil {
         private SchemaConfig schemaConfig;
         private boolean dual = false;
         private String tableAlias;
+
         @Override
         public String toString() {
             return "SchemaInfo{" + "table='" + table + '\'' +

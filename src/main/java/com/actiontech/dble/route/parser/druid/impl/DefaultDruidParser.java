@@ -92,8 +92,7 @@ public class DefaultDruidParser implements DruidParser {
         if (originTableAliasMap == null) {
             return null;
         }
-        Map<String, String> tableAliasMap = new HashMap<>();
-        tableAliasMap.putAll(originTableAliasMap);
+        Map<String, String> tableAliasMap = new HashMap<>(originTableAliasMap);
         for (Map.Entry<String, String> entry : originTableAliasMap.entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();
@@ -117,12 +116,12 @@ public class DefaultDruidParser implements DruidParser {
                     value = value.substring(pos + 1);
                 }
             }
-            if (key != null && key.charAt(0) == '`') {
-                key = key.substring(1, key.length() - 1);
+            if (key != null) {
+                key = StringUtil.removeBackQuote(key);
             }
-            if (value != null && value.charAt(0) == '`') {
-                value = value.substring(1, value.length() - 1);
-            }
+            //            if (value != null && value.charAt(0) == '`') {
+            //                value = value.substring(1, value.length() - 1);
+            //            }
             // remove database in database.table
             if (key != null) {
                 boolean needAddTable = false;
@@ -151,7 +150,7 @@ public class DefaultDruidParser implements DruidParser {
                 }
                 if (checkConditionValues(values)) {
                     String columnName = StringUtil.removeBackQuote(condition.getColumn().getName().toUpperCase());
-                    String tableName = StringUtil.removeBackQuote(condition.getColumn().getTable());
+                    String tableName = condition.getColumn().getTable();
                     if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
                         tableName = tableName.toLowerCase();
                     }

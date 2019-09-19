@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2019 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.route;
 
 import com.actiontech.dble.server.parser.ServerParse;
@@ -15,12 +15,11 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author mycat
  */
 public final class RouteResultsetNode implements Serializable, Comparable<RouteResultsetNode> {
-    /**
-     *
-     */
+
     private static final long serialVersionUID = 1L;
     private final String name; // node name
-    private String statement; // the query for node to executr
+    private String statement; // the query for node to execute
+    private int statementHash; // the query for node to execute
     private final int sqlType;
     private volatile boolean canRunInReadDB;
     private int limitStart;
@@ -30,14 +29,14 @@ public final class RouteResultsetNode implements Serializable, Comparable<RouteR
     private Boolean runOnSlave = null;
     private AtomicLong multiplexNum;
 
-
     public RouteResultsetNode(String name, int sqlType, String srcStatement) {
         this.name = name;
-        limitStart = 0;
+        this.limitStart = 0;
         this.limitSize = -1;
         this.sqlType = sqlType;
         this.statement = srcStatement;
-        canRunInReadDB = (sqlType == ServerParse.SELECT || sqlType == ServerParse.SHOW);
+        this.statementHash = srcStatement.hashCode();
+        this.canRunInReadDB = (sqlType == ServerParse.SELECT || sqlType == ServerParse.SHOW);
         this.multiplexNum = new AtomicLong(0);
     }
 
@@ -60,7 +59,6 @@ public final class RouteResultsetNode implements Serializable, Comparable<RouteR
     public void setCanRunInReadDB(boolean canRunInReadDB) {
         this.canRunInReadDB = canRunInReadDB;
     }
-
 
     /**
      * <p>
@@ -85,6 +83,10 @@ public final class RouteResultsetNode implements Serializable, Comparable<RouteR
 
     public String getStatement() {
         return statement;
+    }
+
+    public int getStatementHash() {
+        return statementHash;
     }
 
     public int getLimitStart() {

@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author mycat
@@ -54,6 +55,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     private int fieldCount;
     private List<FieldPacket> fieldPackets = new ArrayList<>();
     private volatile boolean connClosed = false;
+    private AtomicBoolean writeToClient = new AtomicBoolean(false);
 
     public SingleNodeHandler(RouteResultset rrs, NonBlockingSession session) {
         this.rrs = rrs;
@@ -164,14 +166,15 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         source.setTxInterrupt(errMsg);
         session.handleSpecial(rrs, false);
 
-
-        if (buffer != null) {
-            /* SELECT 9223372036854775807 + 1;    response: field_count, field, eof, err */
-            buffer = source.writeToBuffer(errPkg.toBytes(), allocBuffer());
-            session.setResponseTime(false);
-            source.write(buffer);
-        } else {
-            errPkg.write(source);
+        if (writeToClient.compareAndSet(false, true)) {
+            if (buffer != null) {
+                /* SELECT 9223372036854775807 + 1;    response: field_count, field, eof, err */
+                buffer = source.writeToBuffer(errPkg.toBytes(), allocBuffer());
+                session.setResponseTime(false);
+                source.write(buffer);
+            } else {
+                errPkg.write(source);
+            }
         }
     }
 
@@ -215,7 +218,9 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             session.multiStatementPacket(ok, packetId);
             boolean multiStatementFlag = session.getIsMultiStatement().get();
             doSqlStat();
-            ok.write(source);
+            if (rrs.isCallStatement() || writeToClient.compareAndSet(false, true)) {
+                ok.write(source);
+            }
             session.multiStatementNextSql(multiStatementFlag);
         }
     }
@@ -233,7 +238,9 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         session.multiStatementPacket(errPacket, packetId);
         boolean multiStatementFlag = session.getIsMultiStatement().get();
         doSqlStat();
-        errPacket.write(session.getSource());
+        if (writeToClient.compareAndSet(false, true)) {
+            errPacket.write(session.getSource());
+        }
         session.multiStatementNextSql(multiStatementFlag);
     }
 
@@ -259,7 +266,9 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         session.setResponseTime(true);
         boolean multiStatementFlag = session.getIsMultiStatement().get();
         doSqlStat();
-        source.write(buffer);
+        if (writeToClient.compareAndSet(false, true)) {
+            source.write(buffer);
+        }
         session.multiStatementNextSql(multiStatementFlag);
     }
 

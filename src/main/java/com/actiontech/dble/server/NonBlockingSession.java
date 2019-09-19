@@ -520,6 +520,12 @@ public class NonBlockingSession implements Session {
                 multiNodeHandler.execute();
             } catch (Exception e) {
                 LOGGER.info(String.valueOf(source) + rrs, e);
+                if (!source.isAutocommit() || source.isTxStart()) {
+                    source.setTxInterrupt("ROLLBACK");
+                }
+                multiNodeHandler.waitAllConnConnectorError();
+                closeConnections();
+                setResponseTime(false);
                 source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
             }
             if (this.isPrepared()) {
@@ -813,6 +819,18 @@ public class NonBlockingSession implements Session {
 
     }
 
+    private void closeConnections() {
+        Iterator<Entry<RouteResultsetNode, BackendConnection>> iter = target.entrySet().iterator();
+        while (iter.hasNext()) {
+            Entry<RouteResultsetNode, BackendConnection> entry = iter.next();
+            BackendConnection c = entry.getValue();
+            iter.remove();
+            if (c != null) {
+                c.setResponseHandler(null);
+                c.close("other node prepare conns failed");
+            }
+        }
+    }
 
     public void waitFinishConnection(RouteResultsetNode rrn) {
         BackendConnection c = target.get(rrn);
@@ -822,7 +840,7 @@ public class NonBlockingSession implements Session {
         }
     }
 
-
+    // thread may not safe
     public void releaseConnections(final boolean needClosed) {
         boolean debug = LOGGER.isDebugEnabled();
         for (RouteResultsetNode rrn : target.keySet()) {

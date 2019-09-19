@@ -16,6 +16,7 @@ import com.actiontech.dble.server.parser.ServerParse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -39,7 +40,7 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
 
     public void execute() {
         Map<RouteResultsetNode, BackendConnection> lockedCons = session.getTargetMap();
-        this.reset(lockedCons.size());
+        this.reset();
         // if client just send an unlock tables, theres is no lock tables statement, just send back OK
         if (lockedCons.size() == 0) {
             LOGGER.info("find no locked backend connection!" + session.getSource());
@@ -50,10 +51,17 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
             ok.write(session.getSource());
             return;
         }
+        Map<RouteResultsetNode, BackendConnection> forUnlocks = new HashMap<>(lockedCons.size());
         for (Map.Entry<RouteResultsetNode, BackendConnection> entry : lockedCons.entrySet()) {
             RouteResultsetNode dataNode = entry.getKey();
+            BackendConnection conn = entry.getValue();
             RouteResultsetNode node = new RouteResultsetNode(dataNode.getName(), ServerParse.UNLOCK, srcStatement);
-            BackendConnection conn = lockedCons.get(dataNode);
+            forUnlocks.put(node, conn);
+            unResponseRrns.add(node);
+        }
+        for (Map.Entry<RouteResultsetNode, BackendConnection> entry : forUnlocks.entrySet()) {
+            RouteResultsetNode node = entry.getKey();
+            BackendConnection conn = entry.getValue();
             if (clearIfSessionClosed(session)) {
                 return;
             }
@@ -94,14 +102,14 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
         }
         LOGGER.info("error response from " + conn + " err " + errMsg + " code:" + errPacket.getErrNo());
 
-        this.tryErrorFinished(this.decrementCountBy(1));
+        this.tryErrorFinished(this.decrementToZero(conn));
     }
 
     @Override
     public void okResponse(byte[] data, BackendConnection conn) {
         boolean executeResponse = conn.syncAndExecute();
         if (executeResponse) {
-            boolean isEndPack = decrementCountBy(1);
+            boolean isEndPack = decrementToZero(conn);
             session.releaseConnection(conn);
             if (isEndPack) {
                 if (this.isFail() || session.closed()) {

@@ -8,11 +8,14 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.mysql.ErrorPacket;
+import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -27,6 +30,9 @@ public abstract class MultiNodeHandler implements ResponseHandler {
     protected volatile String error;
     protected byte packetId;
     protected final AtomicBoolean errorResponse = new AtomicBoolean(false);
+    protected Set<RouteResultsetNode> unResponseRrns = new HashSet<>();
+    protected int errorConnsCnt = 0;
+    protected boolean firstResponsed = false;
 
     public MultiNodeHandler(NonBlockingSession session) {
         if (session == null) {
@@ -44,12 +50,18 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         return isFailed.get();
     }
 
-    protected int nodeCount;
-
     public void connectionError(Throwable e, BackendConnection conn) {
         this.setFail("backend connect: " + e);
         LOGGER.info("backend connect", e);
-        this.tryErrorFinished(decrementCountBy(1));
+        boolean finished;
+        lock.lock();
+        try {
+            errorConnsCnt++;
+            finished = canResponse();
+        } finally {
+            lock.unlock();
+        }
+        this.tryErrorFinished(finished);
     }
 
 
@@ -84,20 +96,23 @@ public abstract class MultiNodeHandler implements ResponseHandler {
 
     }
 
-    protected boolean decrementCountBy(int finished) {
+    protected boolean decrementToZero(BackendConnection conn) {
         boolean zeroReached;
         lock.lock();
         try {
-            nodeCount -= finished;
-            zeroReached = nodeCount == 0;
+            RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+            unResponseRrns.remove(rNode);
+            zeroReached = canResponse();
         } finally {
             lock.unlock();
         }
         return zeroReached;
     }
 
-    protected void reset(int initCount) {
-        nodeCount = initCount;
+    protected void reset() {
+        errorConnsCnt = 0;
+        firstResponsed = false;
+        unResponseRrns.clear();
         isFailed.set(false);
         error = null;
         packetId = (byte) session.getPacketId().get();
@@ -114,6 +129,17 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         err.setErrNo(ErrorCode.ER_UNKNOWN_ERROR);
         err.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
         return err;
+    }
+
+    protected boolean canResponse() {
+        if (firstResponsed) {
+            return false;
+        }
+        if (unResponseRrns.size() == errorConnsCnt) {
+            firstResponsed = true;
+            return true;
+        }
+        return false;
     }
 
     protected void tryErrorFinished(boolean allEnd) {
@@ -140,21 +166,10 @@ public abstract class MultiNodeHandler implements ResponseHandler {
 
     public void connectionClose(BackendConnection conn, String reason) {
         this.setFail("closed connection:" + reason + " con:" + conn);
-        boolean finished;
-        lock.lock();
-        try {
-            finished = (this.nodeCount == 0);
-
-        } finally {
-            lock.unlock();
-        }
-        if (!finished) {
-            finished = this.decrementCountBy(1);
-        }
         if (error == null) {
             error = "back connection closed ";
         }
-        tryErrorFinished(finished);
+        tryErrorFinished(decrementToZero(conn));
     }
 
     public void clearResources() {

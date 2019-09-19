@@ -63,20 +63,18 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
         lock.lock();
         try {
             if (isFail()) {
-                if (--nodeCount > 0) {
-                    return;
+                if (decrementToZero(conn)) {
+                    session.resetMultiStatementStatus();
+                    handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
                 }
-                session.resetMultiStatementStatus();
-                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
             } else {
                 if (!fieldsReturned) {
                     fieldsReturned = true;
                     mergeFieldEof(fields, conn);
                 }
-                if (--nodeCount > 0) {
-                    return;
+                if (decrementToZero(conn)) {
+                    startOwnThread();
                 }
-                startOwnThread();
             }
         } catch (Exception e) {
             handleDataProcessException(e);

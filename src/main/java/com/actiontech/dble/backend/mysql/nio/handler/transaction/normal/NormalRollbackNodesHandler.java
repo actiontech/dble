@@ -30,28 +30,26 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
     }
 
     public void rollback() {
-        final int initCount = session.getTargetCount();
         lock.lock();
         try {
-            reset(initCount);
+            reset();
         } finally {
             lock.unlock();
         }
         int position = 0;
         for (final RouteResultsetNode node : session.getTargetKeys()) {
             final BackendConnection conn = session.getTarget(node);
-            if (conn.isClosed()) {
-                lock.lock();
-                try {
-                    nodeCount--;
-                } finally {
-                    lock.unlock();
-                }
-                continue;
+            if (!conn.isClosed()) {
+                unResponseRrns.add(node);
             }
-            position++;
-            conn.setResponseHandler(this);
-            conn.rollback();
+        }
+        for (final RouteResultsetNode node : session.getTargetKeys()) {
+            final BackendConnection conn = session.getTarget(node);
+            if (!conn.isClosed()) {
+                position++;
+                conn.setResponseHandler(this);
+                conn.rollback();
+            }
         }
         if (position == 0) {
             if (sendData == null) {
@@ -63,7 +61,7 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
 
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
-        if (decrementCountBy(1)) {
+        if (decrementToZero(conn)) {
             if (sendData == null) {
                 sendData = session.getOkByteArray();
             }
@@ -78,18 +76,27 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
         String errMsg = new String(errPacket.getMessage());
         this.setFail(errMsg);
         conn.close("rollback error response"); //quit to rollback
-        if (decrementCountBy(1)) {
+        if (decrementToZero(conn)) {
             cleanAndFeedback();
         }
     }
 
+    // should be not happen
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
         LOGGER.info("backend connect", e);
         String errMsg = new String(StringUtil.encode(e.getMessage(), session.getSource().getCharset().getResults()));
         this.setFail(errMsg);
         conn.close("rollback connection error"); //quit if not rollback
-        if (decrementCountBy(1)) {
+        boolean finished;
+        lock.lock();
+        try {
+            errorConnsCnt++;
+            finished = canResponse();
+        } finally {
+            lock.unlock();
+        }
+        if (finished) {
             cleanAndFeedback();
         }
     }
@@ -98,7 +105,7 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
     public void connectionClose(BackendConnection conn, String reason) {
         // quitted
         this.setFail(reason);
-        if (decrementCountBy(1)) {
+        if (decrementToZero(conn)) {
             cleanAndFeedback();
         }
     }

@@ -36,6 +36,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     private int tryCommitTimes = 0;
     private int backgroundCommitTimes = 0;
     private ParticipantLogEntry[] participantLogEntry = null;
+    private int participantLogSize = 0;
     byte[] sendData = OkPacket.OK;
 
     private Lock lockForErrorHandle = new ReentrantLock();
@@ -50,16 +51,15 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 
     @Override
     public void commit() {
-        final int initCount = session.getTargetCount();
-        if (initCount <= 0) {
+        participantLogSize = session.getTargetCount();
+        if (participantLogSize <= 0) {
             session.getSource().write(session.getOkByteArray());
             session.multiStatementNextSql(session.getIsMultiStatement().get());
             return;
         }
-
         lock.lock();
         try {
-            reset(initCount);
+            reset();
         } finally {
             lock.unlock();
         }
@@ -74,6 +74,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 
         try {
             sendFinishedFlag = false;
+            unResponseRrns.addAll(session.getTargetKeys());
             for (RouteResultsetNode rrn : session.getTargetKeys()) {
                 final BackendConnection conn = session.getTarget(rrn);
                 conn.setResponseHandler(this);
@@ -111,7 +112,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         TxState state = session.getXaState();
         if (state == TxState.TX_STARTED_STATE) {
             if (participantLogEntry == null) {
-                participantLogEntry = new ParticipantLogEntry[nodeCount];
+                participantLogEntry = new ParticipantLogEntry[participantLogSize];
                 CoordinatorLogEntry coordinatorLogEntry = new CoordinatorLogEntry(session.getSessionXaID(), participantLogEntry, session.getXaState());
                 XAStateLog.flushMemoryRepository(session.getSessionXaID(), coordinatorLogEntry);
             }
@@ -150,7 +151,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             commitPhase(mysqlCon);
         } else if (state == TxState.TX_PREPARE_UNCONNECT_STATE) {
             LOGGER.warn("commit error and rollback the xa");
-            if (decrementCountBy(1)) {
+            if (decrementToZero(mysqlCon)) {
                 DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
                     @Override
                     public void run() {
@@ -194,7 +195,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             if (!newConn.equals(mysqlCon)) {
                 xaOldThreadIds.putIfAbsent(mysqlCon.getAttachment(), mysqlCon.getThreadId());
                 mysqlCon = newConn;
-            } else if (decrementCountBy(1)) {
+            } else if (decrementToZero(mysqlCon)) {
                 cleanAndFeedback(false);
                 return;
             }
@@ -213,7 +214,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         if (state == TxState.TX_STARTED_STATE) {
             mysqlCon.setXaStatus(TxState.TX_ENDED_STATE);
             XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
-            if (decrementCountBy(1)) {
+            if (decrementToZero(mysqlCon)) {
                 session.setXaState(TxState.TX_ENDED_STATE);
                 nextParse();
             }
@@ -221,7 +222,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             //PREPARE OK
             mysqlCon.setXaStatus(TxState.TX_PREPARED_STATE);
             XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
-            if (decrementCountBy(1)) {
+            if (decrementToZero(mysqlCon)) {
                 if (session.getXaState() == TxState.TX_ENDED_STATE) {
                     session.setXaState(TxState.TX_PREPARED_STATE);
                 }
@@ -233,7 +234,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             mysqlCon.setXaStatus(TxState.TX_COMMITTED_STATE);
             XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
             mysqlCon.setXaStatus(TxState.TX_INITIALIZE_STATE);
-            if (decrementCountBy(1)) {
+            if (decrementToZero(mysqlCon)) {
                 if (session.getXaState() == TxState.TX_PREPARED_STATE) {
                     session.setXaState(TxState.TX_INITIALIZE_STATE);
                 }
@@ -256,7 +257,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 mysqlCon.close();
                 mysqlCon.setXaStatus(TxState.TX_CONN_QUIT);
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
-                if (decrementCountBy(1)) {
+                if (decrementToZero(mysqlCon)) {
                     session.setXaState(TxState.TX_ENDED_STATE);
                     nextParse();
                 }
@@ -266,7 +267,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 mysqlCon.close();
                 mysqlCon.setXaStatus(TxState.TX_CONN_QUIT);
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
-                if (decrementCountBy(1)) {
+                if (decrementToZero(mysqlCon)) {
                     if (session.getXaState() == TxState.TX_ENDED_STATE) {
                         session.setXaState(TxState.TX_PREPARED_STATE);
                     }
@@ -277,7 +278,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 mysqlCon.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                 session.setXaState(TxState.TX_COMMIT_FAILED_STATE);
-                if (decrementCountBy(1)) {
+                if (decrementToZero(mysqlCon)) {
                     cleanAndFeedback(false);
                 }
             } else if (mysqlCon.getXaStatus() == TxState.TX_COMMIT_FAILED_STATE) {
@@ -293,7 +294,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                         mysqlCon.setXaStatus(TxState.TX_COMMITTED_STATE);
                         XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                         mysqlCon.setXaStatus(TxState.TX_INITIALIZE_STATE);
-                        if (decrementCountBy(1)) {
+                        if (decrementToZero(mysqlCon)) {
                             if (session.getXaState() == TxState.TX_PREPARED_STATE) {
                                 session.setXaState(TxState.TX_INITIALIZE_STATE);
                             }
@@ -306,7 +307,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                         }
                         XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                         session.setXaState(TxState.TX_COMMIT_FAILED_STATE);
-                        if (decrementCountBy(1)) {
+                        if (decrementToZero(mysqlCon)) {
                             cleanAndFeedback(false);
                         }
                     }
@@ -314,7 +315,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                     mysqlCon.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
                     XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                     session.setXaState(TxState.TX_COMMIT_FAILED_STATE);
-                    if (decrementCountBy(1)) {
+                    if (decrementToZero(mysqlCon)) {
                         cleanAndFeedback(false);
                     }
                 }
@@ -329,7 +330,15 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         String errMsg = new String(StringUtil.encode(e.getMessage(), session.getSource().getCharset().getResults()));
         this.setFail(errMsg);
         sendData = makeErrorPacket(errMsg);
-        innerConnectError(conn);
+        boolean finished;
+        lock.lock();
+        try {
+            errorConnsCnt++;
+            finished = canResponse();
+        } finally {
+            lock.unlock();
+        }
+        innerConnectError(conn, finished);
     }
 
     @Override
@@ -340,17 +349,17 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         }
         this.setFail(reason);
         sendData = makeErrorPacket(reason);
-        innerConnectError(conn);
+        innerConnectError(conn, decrementToZero(conn));
     }
 
-    private void innerConnectError(BackendConnection conn) {
+    private void innerConnectError(BackendConnection conn, boolean finished) {
         if (conn instanceof MySQLConnection) {
             MySQLConnection mysqlCon = (MySQLConnection) conn;
             if (mysqlCon.getXaStatus() == TxState.TX_STARTED_STATE) {
                 mysqlCon.close();
                 mysqlCon.setXaStatus(TxState.TX_CONN_QUIT);
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
-                if (decrementCountBy(1)) {
+                if (finished) {
                     session.setXaState(TxState.TX_ENDED_STATE);
                     nextParse();
                 }
@@ -359,7 +368,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 mysqlCon.setXaStatus(TxState.TX_PREPARE_UNCONNECT_STATE);
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                 session.setXaState(TxState.TX_PREPARE_UNCONNECT_STATE);
-                if (decrementCountBy(1)) {
+                if (finished) {
                     nextParse();
                 }
                 // 'xa commit' connectionClose
@@ -367,7 +376,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 mysqlCon.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                 session.setXaState(TxState.TX_COMMIT_FAILED_STATE);
-                if (decrementCountBy(1)) {
+                if (finished) {
                     cleanAndFeedback(false);
                 }
             }

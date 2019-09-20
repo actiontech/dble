@@ -59,6 +59,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     private List<FieldPacket> fieldPackets = new ArrayList<>();
     private volatile ByteBuffer byteBuffer;
     private Set<BackendConnection> closedConnSet;
+    private final boolean modifiedSQL;
 
     public MultiNodeQueryHandler(RouteResultset rrs, NonBlockingSession session) {
         super(session);
@@ -73,6 +74,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             byteBuffer = session.getSource().allocate();
         }
         this.sessionAutocommit = session.getSource().isAutocommit();
+        this.modifiedSQL = rrs.getNodes()[0].isModifySQL();
     }
 
     protected void reset(int initCount) {
@@ -570,7 +572,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
     void handleEndPacket(byte[] data, AutoTxOperation txOperation, BackendConnection conn, boolean isSuccess) {
         ServerConnection source = session.getSource();
-        if (source.isAutocommit() && !source.isTxStart() && conn.isModifiedSQLExecuted()) {
+        if (source.isAutocommit() && !source.isTxStart() && this.modifiedSQL) {
             if (nodeCount < 0) {
                 return;
             }

@@ -14,8 +14,6 @@ import com.actiontech.dble.server.ServerConnection;
 import java.io.UnsupportedEncodingException;
 
 public interface BackendConnection extends ClosableConnection {
-    boolean isModifiedSQLExecuted();
-
     boolean isDDL();
 
     boolean isFromSlaveDB();

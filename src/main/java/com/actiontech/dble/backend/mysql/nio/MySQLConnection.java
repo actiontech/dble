@@ -51,7 +51,6 @@ public class MySQLConnection extends AbstractConnection implements
     private volatile String schema = null;
     private volatile String oldSchema;
     private volatile boolean borrowed = false;
-    private volatile boolean modifiedSQLExecuted = false;
     private volatile boolean isDDL = false;
     private volatile boolean isRunning = false;
     private volatile StatusSync statusSync;
@@ -355,14 +354,11 @@ public class MySQLConnection extends AbstractConnection implements
 
     public void executeMultiNode(RouteResultsetNode rrn, ServerConnection sc,
                                  boolean isAutoCommit) {
-        if (!modifiedSQLExecuted && rrn.isModifySQL()) {
-            modifiedSQLExecuted = true;
-        }
         if (rrn.getSqlType() == ServerParse.DDL) {
             isDDL = true;
         }
         String xaTxId = getConnXID(session, rrn.getMultiplexNum().longValue());
-        if (!sc.isAutocommit() && !sc.isTxStart() && modifiedSQLExecuted) {
+        if (!sc.isAutocommit() && !sc.isTxStart() && rrn.isModifySQL()) {
             sc.setTxStart(true);
         }
         synAndDoExecuteMultiNode(xaTxId, rrn, sc.getCharset(), sc.getTxIsolation(), isAutoCommit, sc.getUsrVariables(), sc.getSysVariables());
@@ -443,14 +439,11 @@ public class MySQLConnection extends AbstractConnection implements
 
     public void execute(RouteResultsetNode rrn, ServerConnection sc,
                         boolean isAutoCommit) {
-        if (!modifiedSQLExecuted && rrn.isModifySQL()) {
-            modifiedSQLExecuted = true;
-        }
         if (rrn.getSqlType() == ServerParse.DDL) {
             isDDL = true;
         }
         String xaTxId = getConnXID(session, rrn.getMultiplexNum().longValue());
-        if (!sc.isAutocommit() && !sc.isTxStart() && modifiedSQLExecuted) {
+        if (!sc.isAutocommit() && !sc.isTxStart() && rrn.isModifySQL()) {
             sc.setTxStart(true);
         }
         synAndDoExecute(xaTxId, rrn, sc.getCharset(), sc.getTxIsolation(), isAutoCommit, sc.getUsrVariables(), sc.getSysVariables());
@@ -767,7 +760,6 @@ public class MySQLConnection extends AbstractConnection implements
         metaDataSynced = true;
         attachment = null;
         statusSync = null;
-        modifiedSQLExecuted = false;
         isDDL = false;
         testing = false;
         setResponseHandler(null);
@@ -866,7 +858,6 @@ public class MySQLConnection extends AbstractConnection implements
         result.append(", writeQueue=");
         result.append(this.getWriteQueue().size());
         result.append(", modifiedSQLExecuted=");
-        result.append(modifiedSQLExecuted);
         if (sysVariables.size() > 0) {
             result.append(", ");
             result.append(getStringOfSysVariables());
@@ -888,10 +879,6 @@ public class MySQLConnection extends AbstractConnection implements
         return "MySQLConnection host=" + host + ", port=" + port + ", schema=" + schema;
     }
 
-    @Override
-    public boolean isModifiedSQLExecuted() {
-        return modifiedSQLExecuted;
-    }
 
     @Override
     public boolean isDDL() {

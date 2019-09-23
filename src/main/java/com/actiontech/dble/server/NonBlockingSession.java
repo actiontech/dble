@@ -803,14 +803,14 @@ public class NonBlockingSession implements Session {
     }
 
 
-    public void closeConnections() {
+    private void closeConnections() {
         Iterator<Entry<RouteResultsetNode, BackendConnection>> iter = target.entrySet().iterator();
         while (iter.hasNext()) {
             Entry<RouteResultsetNode, BackendConnection> entry = iter.next();
             BackendConnection c = entry.getValue();
-
             iter.remove();
             if (c != null) {
+                c.setResponseHandler(null);
                 c.close("other node prepare conns failed");
             }
         }

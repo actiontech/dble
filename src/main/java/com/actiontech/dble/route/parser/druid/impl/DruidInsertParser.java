@@ -284,9 +284,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
                 LOGGER.info(msg);
                 throw new SQLNonTransientException(msg);
             }
-            if (nodeValuesMap.get(nodeIndex) == null) {
-                nodeValuesMap.put(nodeIndex, new ArrayList<ValuesClause>());
-            }
+            nodeValuesMap.putIfAbsent(nodeIndex, new ArrayList<ValuesClause>());
             nodeValuesMap.get(nodeIndex).add(valueClause);
         }
 
@@ -380,12 +378,12 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             if (isAutoIncrement) {
                 getIncrementKeyIndex(schemaInfo, tc.getTrueIncrementColumn());
                 autoIncrement = columns.size();
-                sb.append(",").append(tc.getTrueIncrementColumn());
+                sb.append(",").append("`").append(tc.getTrueIncrementColumn()).append("`");
                 colSize++;
             }
             if (isGlobalCheck) {
                 idxGlobal = isAutoIncrement ? columns.size() + 1 : columns.size();
-                sb.append(",").append(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN);
+                sb.append(",").append("`").append(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN).append("`");
                 colSize++;
             }
             sb.append(")");
@@ -420,9 +418,9 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         for (int i = 0; i < columns.size(); i++) {
             String columnName = columns.get(i).toString();
             if (i < columns.size() - 1) {
-                sb.append(columnName).append(",");
+                sb.append("`").append(columnName).append("`").append(",");
             } else {
-                sb.append(columnName);
+                sb.append("`").append(columnName).append("`");
             }
             String simpleColumnName = StringUtil.removeBackQuote(columnName);
             if (isGlobalCheck && simpleColumnName.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {

@@ -118,20 +118,14 @@ public class DefaultDruidParser implements DruidParser {
             }
             if (key != null) {
                 key = StringUtil.removeBackQuote(key);
-            }
-            //            if (value != null && value.charAt(0) == '`') {
-            //                value = value.substring(1, value.length() - 1);
-            //            }
-            // remove database in database.table
-            if (key != null) {
+                // remove database in database.table
                 boolean needAddTable = false;
                 if (key.equals(value)) {
                     needAddTable = true;
                 }
-                if (needAddTable) {
+                if (needAddTable && !ctx.getTables().contains(key)) {
                     ctx.addTable(key);
                 }
-                tableAliasMap.put(key, value);
             }
         }
         ctx.setTableAliasMap(tableAliasMap);

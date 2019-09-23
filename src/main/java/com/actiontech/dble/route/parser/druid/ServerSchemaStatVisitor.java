@@ -301,10 +301,10 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             String ident = identName.toString();
             currentTable = ident;
 
-            aliasMap.put(ident, ident);
+            aliasMap.put(ident, ident.replace("`", ""));
             String alias = x.getTableSource().getAlias();
             if (alias != null) {
-                aliasMap.put(alias, ident);
+                aliasMap.put(alias, ident.replace("`", ""));
             }
         } else {
             x.getTableSource().accept(this);

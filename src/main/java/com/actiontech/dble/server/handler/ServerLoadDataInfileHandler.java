@@ -671,7 +671,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     }
 
 
-    private boolean parseFileByLine(byte packID, String file, String encode, String split) {
+    private boolean parseFileByLine(byte packetID, String file, String encode, String split) {
         CsvParserSettings settings = new CsvParserSettings();
         settings.setMaxColumns(DEFAULT_MAX_COLUMNS);
         settings.setMaxCharsPerColumn(systemConfig.getMaxCharsPerColumn());
@@ -710,7 +710,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                         parseOneLine(row, true);
                     } catch (Exception e) {
                         clear();
-                        serverConnection.writeErrMessage(++packID, ErrorCode.ER_WRONG_VALUE_COUNT_ON_ROW, "row data can't not calculate a sharding value," + e.getMessage());
+                        serverConnection.writeErrMessage(++packetID, ErrorCode.ER_WRONG_VALUE_COUNT_ON_ROW, "row data can't not calculate a sharding value," + e.getMessage());
                         return false;
                     }
                     empty = false;

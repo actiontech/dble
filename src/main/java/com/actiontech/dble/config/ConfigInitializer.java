@@ -22,7 +22,6 @@ import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceMySQLHandler;
-import com.actiontech.dble.singleton.SequenceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,7 +118,9 @@ public class ConfigInitializer implements ProblemReporter {
 
         // add global sequence node when it is some dedicated servers */
         if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_MYSQL) {
-            allUseDataNode.addAll(((IncrSequenceMySQLHandler) SequenceManager.getHandler()).getDataNodes());
+            IncrSequenceMySQLHandler redundancy = new IncrSequenceMySQLHandler();
+            redundancy.load(false);
+            allUseDataNode.addAll(redundancy.getDataNodes());
         }
 
         Set<String> allUseHost = new HashSet<>();

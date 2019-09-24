@@ -218,6 +218,10 @@ public final class DbleServer {
             txnLogProcessor.start();
         }
 
+        SequenceManager.init(config.getSystem().getSequnceHandlerType());
+        LOGGER.info("===================================Sequence manager init finish===================================");
+
+
         LOGGER.info("==============================Pull metaData from MySQL start======================================");
         pullVarAndMeta();
         LOGGER.info("==============================Pull metaData from MySQL finish=====================================");
@@ -233,13 +237,10 @@ public final class DbleServer {
                 LOGGER.warn("cluster can not connection ");
             }
         }
-        LOGGER.info("=======================================Cache service init=========================================");
+
 
         CacheService.getInstance().init(this.systemVariables.isLowerCaseTableNames());
-
-
-        SequenceManager.init(config.getSystem().getSequnceHandlerType());
-        LOGGER.info("===================================Sequence manager init finish===================================");
+        LOGGER.info("====================================Cache service init finish=====================================");
 
         LOGGER.info("=====================================Perform XA recovery log======================================");
         performXARecoveryLog();

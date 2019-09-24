@@ -447,9 +447,12 @@ public abstract class FrontendConnection extends AbstractConnection {
         AuthSwitchResponsePackage authSwitchResponse = new AuthSwitchResponsePackage();
         authSwitchResponse.read(data);
         changeUserPacket.setPassword(authSwitchResponse.getAuthPluginData());
-        if (AuthUtil.authority(this, changeUserPacket.getUser(), changeUserPacket.getPassword(), changeUserPacket.getDatabase(), false)) {
-            byte packetId = (byte) (authSwitchResponse.getPacketId() + 1);
+        String errMsg = AuthUtil.authority(this, changeUserPacket.getUser(), changeUserPacket.getPassword(), changeUserPacket.getDatabase(), false);
+        byte packetId = (byte) (authSwitchResponse.getPacketId() + 1);
+        if (errMsg == null) {
             changeUserSuccess(changeUserPacket, packetId);
+        } else {
+            writeErrMessage(packetId, ErrorCode.ER_ACCESS_DENIED_ERROR, errMsg);
         }
     }
 

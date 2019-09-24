@@ -19,35 +19,35 @@ import java.util.Set;
 public final class AuthUtil {
     private AuthUtil() {
     }
+
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthUtil.class);
 
-    public static boolean authority(final FrontendConnection source, String user, byte[] pwd, String schema, boolean isManager) {
+    public static String authority(final FrontendConnection source, String user, byte[] pwd, String schema, boolean isManager) {
+        boolean isManagerUser = source.getPrivileges().isManagerUser(user);
+        if (!isManager && isManagerUser) {
+            return "Access denied for manager user '" + user + "'";
+        }
+
         if (!checkUser(source, user)) {
-            failure(source, ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + user + "' with host '" + source.getHost() + "'");
-            return false;
+            return "Access denied for user '" + user + "' with host '" + source.getHost() + "'";
         }
 
         // check password
         if (!checkPassword(source, pwd, user)) {
-            failure(source, ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + user + "', because password is error ");
-            return false;
+            return "Access denied for user '" + user + "', because password is incorrect";
         }
 
         // check dataHost without writeHost flag
         if (DbleServer.getInstance().getConfig().isDataHostWithoutWR() && !isManager) {
-            failure(source, ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + user + "', because there are some dataHost is empty ");
-            return false;
+            return "Access denied for user '" + user + "', because there are some empty dataHosts";
         }
 
         // check schema
         switch (checkSchema(source, schema, user)) {
             case ErrorCode.ER_BAD_DB_ERROR:
-                failure(source, ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + schema + "'");
-                return false;
+                return "Unknown database '" + schema + "'";
             case ErrorCode.ER_DBACCESS_DENIED_ERROR:
-                String s = "Access denied for user '" + user + "' to database '" + schema + "'";
-                failure(source, ErrorCode.ER_DBACCESS_DENIED_ERROR, s);
-                return false;
+                return "Access denied for user '" + user + "' to database '" + schema + "'";
             default:
                 break;
         }
@@ -55,19 +55,14 @@ public final class AuthUtil {
         //check maxconnection
         switch (DbleServer.getInstance().getUserManager().maxConnectionCheck(user, source.getPrivileges().getMaxCon(user), (source instanceof ManagerConnection))) {
             case SERVER_MAX:
-                String s = "Access denied for user '" + user + "',too many connections for dble server";
-                failure(source, ErrorCode.ER_ACCESS_DENIED_ERROR, s);
-                return false;
+                return "Access denied for user '" + user + "',too many connections for dble server";
             case USER_MAX:
-                String s1 = "Access denied for user '" + user + "',too many connections for this user";
-                failure(source, ErrorCode.ER_ACCESS_DENIED_ERROR, s1);
-                return false;
+                return "Access denied for user '" + user + "',too many connections for this user";
             default:
                 break;
         }
-        return true;
+        return null;
     }
-
 
     private static boolean checkUser(final FrontendConnection source, String user) {
         return source.getPrivileges().userExists(user, source.getHost());
@@ -125,8 +120,4 @@ public final class AuthUtil {
         }
     }
 
-    private static void failure(final FrontendConnection source, int errNo, String info) {
-        LOGGER.info(source.toString() + info);
-        source.writeErrMessage((byte) 2, errNo, info);
-    }
 }

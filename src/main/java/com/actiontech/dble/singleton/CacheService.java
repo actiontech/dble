@@ -240,11 +240,7 @@ public final class CacheService {
         try {
             init(isLowerCaseTableNames);
         } catch (Exception e) {
-            if (e instanceof RuntimeException) {
-                throw (RuntimeException) e;
-            } else {
-                throw new RuntimeException(e);
-            }
+            throw e;
         }
     }
 

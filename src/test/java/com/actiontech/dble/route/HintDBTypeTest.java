@@ -44,8 +44,8 @@ public class HintDBTypeTest {
         SchemaConfig schema = schemaMap.get("TESTDB");
         //(new hint,/*!dble*/),runOnSlave=false force master
         String sql = "/*!dble:db_type=master*/select * from employee where sharding_id=1";
-        CacheService cacheService = new CacheService(false);
-        RouteService routerService = new RouteService(cacheService);
+        CacheService.getInstance().init(false);
+        RouteService routerService = RouteService.getInstance();
         RouteResultset rrs = routerService.route(schema, ServerParse.SELECT, sql, null);
         Assert.assertTrue(!rrs.getRunOnSlave());
 

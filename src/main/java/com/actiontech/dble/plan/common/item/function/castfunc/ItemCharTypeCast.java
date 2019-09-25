@@ -42,7 +42,7 @@ public class ItemCharTypeCast extends ItemStrFunc {
 
     @Override
     public String valStr() {
-        assert (fixed && castLength >= 0);
+        assert (fixed);
 
         String res = null;
         if ((res = args.get(0).valStr()) == null) {
@@ -50,7 +50,7 @@ public class ItemCharTypeCast extends ItemStrFunc {
             return null;
         }
         nullValue = false;
-        if (castLength < res.length()) {
+        if (castLength != -1 && castLength < res.length()) {
             res = res.substring(0, castLength);
         }
         if (charSetName != null) {

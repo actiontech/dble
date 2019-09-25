@@ -8,6 +8,7 @@ package com.actiontech.dble.singleton;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.*;
 import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.cluster.bean.InstanceOnline;
 import com.alibaba.fastjson.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,12 +28,11 @@ public final class OnlineStatus {
     private static final String START_TIME = "START_TIME";
     private volatile DistributeLock onlineLock = null;
     private volatile boolean onlineInited = false;
-    private final int serverPort;
+    private volatile int serverPort;
     private String hostAddr;
     private final long startTime;
 
     private OnlineStatus() {
-        serverPort = DbleServer.getInstance().getConfig().getSystem().getServerPort();
         startTime = System.currentTimeMillis();
         hostAddr = getHostIp();
     }
@@ -47,15 +47,24 @@ public final class OnlineStatus {
         if (!init && !onlineInited) {
             return false;
         }
+        serverPort = DbleServer.getInstance().getConfig().getSystem().getServerPort();
         //check if the online mark is on than delete the mark and renew it
-        ClusterHelper.cleanKV(ClusterPathUtil.getOnlinePath(ClusterGeneralConfig.getInstance().
-                getValue(ClusterParamCfg.CLUSTER_CFG_MYID)));
+        String oldValue = ClusterHelper.getKV(ClusterPathUtil.getOnlinePath(ClusterGeneralConfig.getInstance().
+                getValue(ClusterParamCfg.CLUSTER_CFG_MYID))).getValue();
+        if (!"".equals(oldValue)) {
+            if (InstanceOnline.getInstance().canRemovePath(oldValue)) {
+                ClusterHelper.cleanKV(ClusterPathUtil.getOnlinePath(ClusterGeneralConfig.getInstance().
+                        getValue(ClusterParamCfg.CLUSTER_CFG_MYID)));
+            } else {
+                throw new IOException("Online path with other IP or serverPort exist,make sure different instance has different myid");
+            }
+        }
         if (onlineLock != null) {
             onlineLock.release();
         }
         onlineLock = new DistributeLock(ClusterPathUtil.getOnlinePath(ClusterGeneralConfig.getInstance().
                 getValue(ClusterParamCfg.CLUSTER_CFG_MYID)),
-                "" + System.currentTimeMillis(), 6);
+                toString(), 6);
         int time = 0;
         while (!onlineLock.acquire()) {
             time++;

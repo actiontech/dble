@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2019 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.config;
 
 import com.actiontech.dble.DbleServer;
@@ -72,10 +72,10 @@ public class ServerPrivileges implements FrontendPrivileges {
     }
 
     @Override
-    public Boolean isReadOnly(String user) {
+    public boolean isReadOnly(String user) {
         ServerConfig conf = DbleServer.getInstance().getConfig();
         UserConfig uc = conf.getUsers().get(user);
-        Boolean result = null;
+        boolean result = false;
         if (uc != null) {
             result = uc.isReadOnly();
         }
@@ -107,13 +107,12 @@ public class ServerPrivileges implements FrontendPrivileges {
         boolean isPassed = false;
         ServerConfig config = DbleServer.getInstance().getConfig();
         FirewallConfig firewallConfig = config.getFirewall();
-        Map<String, List<UserConfig>> whitehost = firewallConfig.getWhitehost();
-        if (whitehost == null || whitehost.size() == 0) {
+        Map<String, List<UserConfig>> whiteHost = firewallConfig.getWhitehost();
+        if (whiteHost == null || whiteHost.size() == 0) {
             Map<String, UserConfig> users = config.getUsers();
             isPassed = users.containsKey(user);
-
         } else {
-            List<UserConfig> list = whitehost.get(host);
+            List<UserConfig> list = whiteHost.get(host);
             if (list != null) {
                 for (UserConfig userConfig : list) {
                     if (userConfig.getName().equals(user)) {
@@ -133,7 +132,6 @@ public class ServerPrivileges implements FrontendPrivileges {
 
 
     /**
-     *
      * @see <a href="https://github.com/alibaba/druid/wiki/%E9%85%8D%E7%BD%AE-wallfilter">wallfilter config guide</a>
      */
     @Override
@@ -155,7 +153,8 @@ public class ServerPrivileges implements FrontendPrivileges {
         return isPassed;
     }
 
-    protected boolean isManagerUser(String user) {
+    @Override
+    public boolean isManagerUser(String user) {
         ServerConfig conf = DbleServer.getInstance().getConfig();
         UserConfig uc = conf.getUsers().get(user);
         return uc != null && uc.isManager();

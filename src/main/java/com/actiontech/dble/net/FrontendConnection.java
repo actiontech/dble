@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2019 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.net;
 
 import com.actiontech.dble.DbleServer;
@@ -172,10 +172,7 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     public void setUser(String user) {
         this.user = user;
-        Boolean result = privileges.isReadOnly(user);
-        if (result != null) {
-            this.userReadOnly = result;
-        }
+        this.userReadOnly = privileges.isReadOnly(user);
     }
 
     public String getSchema() {
@@ -450,9 +447,12 @@ public abstract class FrontendConnection extends AbstractConnection {
         AuthSwitchResponsePackage authSwitchResponse = new AuthSwitchResponsePackage();
         authSwitchResponse.read(data);
         changeUserPacket.setPassword(authSwitchResponse.getAuthPluginData());
-        if (AuthUtil.authority(this, changeUserPacket.getUser(), changeUserPacket.getPassword(), changeUserPacket.getDatabase(), false)) {
-            byte packetId = (byte) (authSwitchResponse.getPacketId() + 1);
+        String errMsg = AuthUtil.authority(this, changeUserPacket.getUser(), changeUserPacket.getPassword(), changeUserPacket.getDatabase(), false);
+        byte packetId = (byte) (authSwitchResponse.getPacketId() + 1);
+        if (errMsg == null) {
             changeUserSuccess(changeUserPacket, packetId);
+        } else {
+            writeErrMessage(packetId, ErrorCode.ER_ACCESS_DENIED_ERROR, errMsg);
         }
     }
 

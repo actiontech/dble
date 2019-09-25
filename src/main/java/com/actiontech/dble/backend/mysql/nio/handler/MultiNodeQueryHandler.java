@@ -333,6 +333,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         if (errorResponse.get()) {
             return;
         }
+        RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
         final ServerConnection source = session.getSource();
         if (!rrs.isCallStatement()) {
             if (clearIfSessionClosed(session)) {
@@ -341,8 +342,15 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 session.releaseConnectionIfSafe(conn, false);
             }
         }
-
-        if (decrementToZero(conn)) {
+        boolean zeroReached;
+        lock.lock();
+        try {
+            unResponseRrns.remove(rNode);
+            zeroReached = canResponse();
+        } finally {
+            lock.unlock();
+        }
+        if (zeroReached) {
             this.resultSize += eof.length;
             if (!rrs.isCallStatement()) {
                 if (this.sessionAutocommit && !session.getSource().isTxStart() && !session.getSource().isLocked()) { // clear all connections

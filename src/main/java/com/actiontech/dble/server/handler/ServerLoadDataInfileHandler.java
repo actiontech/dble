@@ -359,7 +359,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                         }
                     }
                 } else {
-                    RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, ctx, null, rrs, false, tableId2DataNodeCache, null);
+                    RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, ctx, new RouteCalculateUnit(), rrs, false, tableId2DataNodeCache, null);
                     if (rrsTmp != null) {
                         Collections.addAll(nodeSet, rrsTmp.getNodes());
                     }

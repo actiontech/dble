@@ -119,9 +119,9 @@ public class NonBlockingSession implements Session {
     public NonBlockingSession(ServerConnection source) {
         this.source = source;
         this.target = new ConcurrentHashMap<>(2, 1f);
-        this.joinBufferMC = new MemSizeController(DbleServer.getInstance().getConfig().getSystem().getJoinMemSize() * 1024 * 1024L);
-        this.orderBufferMC = new MemSizeController(DbleServer.getInstance().getConfig().getSystem().getOrderMemSize() * 1024 * 1024L);
-        this.otherBufferMC = new MemSizeController(DbleServer.getInstance().getConfig().getSystem().getOtherMemSize() * 1024 * 1024L);
+        this.joinBufferMC = new MemSizeController(1024L * 1024L * DbleServer.getInstance().getConfig().getSystem().getJoinMemSize());
+        this.orderBufferMC = new MemSizeController(1024L * 1024L * DbleServer.getInstance().getConfig().getSystem().getOrderMemSize());
+        this.otherBufferMC = new MemSizeController(1024L * 1024L * DbleServer.getInstance().getConfig().getSystem().getOtherMemSize());
     }
 
     public void setOutputHandler(OutputHandler outputHandler) {

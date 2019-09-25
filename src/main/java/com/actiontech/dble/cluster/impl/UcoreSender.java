@@ -210,8 +210,7 @@ public final class UcoreSender extends AbstractClusterSender {
             }
         }
 
-        KvBean bean = new KvBean(path, output.getValue(), 0);
-        return bean;
+        return new KvBean(path, output.getValue(), 0);
     }
 
     @Override
@@ -241,11 +240,10 @@ public final class UcoreSender extends AbstractClusterSender {
                     }
                 }
             }
-            if (output == null) {
-                throw new RuntimeException("ALL the ucore connect failure");
-            }
         }
-
+        if (output == null) {
+            throw new RuntimeException("ALL the ucore connect failure");
+        }
         for (int i = 0; i < output.getKeysCount(); i++) {
             KvBean bean = new KvBean(output.getKeys(i), output.getValues(i), output.getIndex());
             result.add(bean);
@@ -399,7 +397,7 @@ public final class UcoreSender extends AbstractClusterSender {
         UcoreInterface.AlertInput.Builder builder = UcoreInterface.AlertInput.newBuilder().
                 setCode(alert.getCode()).
                 setDesc(alert.getDesc()).
-                setLevel(alert.getLevel().toString()).
+                setLevel(alert.getLevel()).
                 setSourceComponentType(SOURCE_COMPONENT_TYPE).
                 setSourceComponentId(sourceComponentId).
                 setAlertComponentId(alert.getAlertComponentId()).

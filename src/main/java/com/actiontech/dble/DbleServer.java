@@ -233,8 +233,10 @@ public final class DbleServer {
             LOGGER.info("===================Init online status in cluster==================");
             try {
                 OnlineStatus.getInstance().metaUcoreInit(true);
+            } catch (IOException e) {
+                throw e;
             } catch (Exception e) {
-                LOGGER.warn("cluster can not connection ");
+                LOGGER.warn("cluster can not connection ", e);
             }
         }
 

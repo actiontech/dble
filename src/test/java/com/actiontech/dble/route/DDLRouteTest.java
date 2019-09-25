@@ -6,13 +6,14 @@
 package com.actiontech.dble.route;
 
 import com.actiontech.dble.SimpleCachePool;
-import com.actiontech.dble.cache.CacheService;
+import com.actiontech.dble.singleton.CacheService;
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.route.parser.druid.impl.ddl.DruidCreateTableParser;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.singleton.RouteService;
 import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
@@ -45,8 +46,8 @@ public class DDLRouteTest {
     @Test
     public void testSpecialCharDDL() throws Exception {
         SchemaConfig schema = schemaMap.get("TESTDB");
-        CacheService cacheService = new CacheService(false);
-        RouteService routerService = new RouteService(cacheService);
+        CacheService.getInstance().init(false);
+        RouteService routerService = RouteService.getInstance();
 
         // alter table test
         String sql = " ALTER TABLE COMPANY\r\nADD COLUMN TEST  VARCHAR(255) NULL AFTER CREATE_DATE,\r\n CHARACTER SET = UTF8";
@@ -76,8 +77,8 @@ public class DDLRouteTest {
     @Test
     public void testDDL() throws Exception {
         SchemaConfig schema = schemaMap.get("TESTDB");
-        CacheService cacheService = new CacheService(false);
-        RouteService routerService = new RouteService(cacheService);
+        CacheService.getInstance().init(false);
+        RouteService routerService = RouteService.getInstance();
 
         // create table/view/function/..
         String sql = " create table company(idd int)";
@@ -248,8 +249,8 @@ public class DDLRouteTest {
     @Test
     public void testDDLDefaultNode() throws Exception {
         SchemaConfig schema = schemaMap.get("solo1");
-        CacheService cacheService = new CacheService(false);
-        RouteService routerService = new RouteService(cacheService);
+        CacheService.getInstance().init(false);
+        RouteService routerService = RouteService.getInstance();
 
         // create table/view/function/..
         String sql = " create table company(idd int)";

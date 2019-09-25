@@ -3,11 +3,9 @@
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
-package com.actiontech.dble.route;
+package com.actiontech.dble.singleton;
 
-import com.actiontech.dble.cache.CachePool;
-import com.actiontech.dble.cache.CacheService;
-import com.actiontech.dble.cache.LayerCachePool;
+import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
@@ -24,23 +22,12 @@ import java.sql.SQLSyntaxErrorException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class RouteService {
+public final class RouteService {
     private static final Logger LOGGER = LoggerFactory.getLogger(RouteService.class);
     private static final String HINT_TYPE = "_serverHintType";
-    private final CachePool sqlRouteCache;
-    private LayerCachePool tableId2DataNodeCache;
+    private static final RouteService INSTANCE = new RouteService();
 
-    public RouteService(CacheService cacheService) {
-        sqlRouteCache = cacheService.getCachePool("SQLRouteCache");
-        loadTableId2DataNodeCache(cacheService);
-    }
-
-    public void loadTableId2DataNodeCache(CacheService cacheService) {
-        tableId2DataNodeCache = (LayerCachePool) cacheService.getCachePool("TableID2DataNodeCache");
-    }
-
-    public LayerCachePool getTableId2DataNodeCache() {
-        return tableId2DataNodeCache;
+    private RouteService() {
     }
 
     public RouteResultset route(SchemaConfig schema,
@@ -57,9 +44,9 @@ public class RouteService {
         /*
          *  SELECT  SQL,  not cached in debug mode
          */
-        if (sqlType == ServerParse.SELECT && !LOGGER.isDebugEnabled() && sqlRouteCache != null) {
+        if (sqlType == ServerParse.SELECT && !LOGGER.isDebugEnabled() && CacheService.getSqlRouteCache() != null) {
             cacheKey = (schema == null ? "NULL" : schema.getName()) + "_" + sc.getUser() + "_" + stmt;
-            rrs = (RouteResultset) sqlRouteCache.get(cacheKey);
+            rrs = (RouteResultset) CacheService.getSqlRouteCache().get(cacheKey);
             if (rrs != null) {
                 sc.getSession2().endParse();
                 return rrs;
@@ -92,11 +79,11 @@ public class RouteService {
                     if (hintHandler != null) {
                         if (hintHandler instanceof HintSQLHandler) {
                             int hintSqlType = ServerParse.parse(hintSql) & 0xff;
-                            rrs = hintHandler.route(schema, sqlType, realSQL, sc, tableId2DataNodeCache, hintSql, hintSqlType, hintMap);
+                            rrs = hintHandler.route(schema, sqlType, realSQL, sc, CacheService.getTableId2DataNodeCache(), hintSql, hintSqlType, hintMap);
                             // HintSQLHandler will always send to master
                             rrs.setRunOnSlave(false);
                         } else {
-                            rrs = hintHandler.route(schema, sqlType, realSQL, sc, tableId2DataNodeCache, hintSql, sqlType, hintMap);
+                            rrs = hintHandler.route(schema, sqlType, realSQL, sc, CacheService.getTableId2DataNodeCache(), hintSql, sqlType, hintMap);
                         }
                     } else {
                         String msg = "Not supported hint sql type : " + hintType;
@@ -110,16 +97,16 @@ public class RouteService {
                 }
             } else {
                 stmt = stmt.trim();
-                rrs = RouteStrategyFactory.getRouteStrategy().route(schema, sqlType, stmt, sc, tableId2DataNodeCache, isExplain);
+                rrs = RouteStrategyFactory.getRouteStrategy().route(schema, sqlType, stmt, sc, CacheService.getTableId2DataNodeCache(), isExplain);
             }
         } else {
             stmt = stmt.trim();
-            rrs = RouteStrategyFactory.getRouteStrategy().route(schema, sqlType, stmt, sc, tableId2DataNodeCache, isExplain);
+            rrs = RouteStrategyFactory.getRouteStrategy().route(schema, sqlType, stmt, sc, CacheService.getTableId2DataNodeCache(), isExplain);
         }
 
-        if (rrs != null && sqlType == ServerParse.SELECT && rrs.isCacheAble() && !LOGGER.isDebugEnabled() && sqlRouteCache != null &&
+        if (rrs != null && sqlType == ServerParse.SELECT && rrs.isCacheAble() && !LOGGER.isDebugEnabled() && CacheService.getSqlRouteCache() != null &&
                 sc.getSession2().getRemingSql() == null) {
-            sqlRouteCache.putIfAbsent(cacheKey, rrs);
+            CacheService.getSqlRouteCache().putIfAbsent(cacheKey, rrs);
         }
         return rrs;
     }
@@ -174,4 +161,9 @@ public class RouteService {
         }
         return map;
     }
+
+    public static RouteService getInstance() {
+        return INSTANCE;
+    }
+
 }

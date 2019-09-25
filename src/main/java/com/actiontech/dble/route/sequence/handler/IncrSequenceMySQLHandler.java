@@ -26,12 +26,7 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
     protected static final String ERR_SEQ_RESULT = "-999999999,null";
     protected static final Map<String, String> LATEST_ERRORS = new ConcurrentHashMap<>();
     private final FetchMySQLSequenceHandler mysqlSeqFetcher = new FetchMySQLSequenceHandler();
-    private static final IncrSequenceMySQLHandler INSTANCE = new IncrSequenceMySQLHandler();
     private static Set<String> dataNodes = new HashSet<>();
-
-    public static IncrSequenceMySQLHandler getInstance() {
-        return IncrSequenceMySQLHandler.INSTANCE;
-    }
 
     public void load(boolean isLowerCaseTableNames) {
         // load sequence properties

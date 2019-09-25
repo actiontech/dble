@@ -10,6 +10,7 @@ import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.manager.handler.PackageBufINf;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.meta.SchemaMeta;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.net.mysql.EOFPacket;
@@ -60,7 +61,7 @@ public final class ShowTableStatus {
             c.writeErrMessage("3D000", "No database selected", ErrorCode.ER_NO_DB_ERROR);
             return;
         }
-        SchemaMeta schemata = DbleServer.getInstance().getTmManager().getCatalogs().get(cSchema);
+        SchemaMeta schemata = ProxyMeta.getInstance().getTmManager().getCatalogs().get(cSchema);
         if (schemata == null) {
             c.writeErrMessage("42000", "Unknown database " + cSchema, ErrorCode.ER_BAD_DB_ERROR);
             return;

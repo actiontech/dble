@@ -5,8 +5,7 @@
 */
 package com.actiontech.dble.manager.response;
 
-import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.mysql.xa.XASessionCheck;
+import com.actiontech.dble.singleton.XASessionCheck;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -40,7 +39,7 @@ public final class KillXASession {
 
     private static List<NonBlockingSession> getList(String stmt, int offset) {
         String ids = stmt.substring(offset).trim();
-        final XASessionCheck checker = DbleServer.getInstance().getXaSessionCheck();
+        final XASessionCheck checker = XASessionCheck.getInstance();
         if (ids.length() > 0) {
             String[] idList = SplitUtil.split(ids, ',', true);
             List<NonBlockingSession> sessionList = new ArrayList<>(idList.length);

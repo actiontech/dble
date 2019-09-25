@@ -13,6 +13,8 @@ import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.ServerPrivileges.CheckType;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.singleton.CacheService;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.ItemCreate;
@@ -91,7 +93,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                     }
                     super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
                     //check to route for complex
-                    if (DbleServer.getInstance().getTmManager().getSyncView(schemaInfo.getSchemaConfig().getName(), schemaInfo.getTable()) != null ||
+                    if (ProxyMeta.getInstance().getTmManager().getSyncView(schemaInfo.getSchemaConfig().getName(), schemaInfo.getTable()) != null ||
                             hasInnerFuncSelect(visitor.getFunctions())) {
                         rrs.setNeedOptimizer(true);
                         rrs.setSqlStatement(selectStmt);
@@ -148,7 +150,7 @@ public class DruidSelectParser extends DefaultDruidParser {
             SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
             for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
                 RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, unit, tc.getName(), rrs, true,
-                        DbleServer.getInstance().getRouterService().getTableId2DataNodeCache(), null);
+                        CacheService.getTableId2DataNodeCache(), null);
                 if (rrsTmp != null && rrsTmp.getNodes() != null) {
                     Collections.addAll(nodeSet, rrsTmp.getNodes());
                     if (rrsTmp.isGlobalTable()) {
@@ -273,7 +275,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                     addToAliaColumn(aliaColumns, selectItem);
                 }
             } else if (itemExpr instanceof SQLAllColumnExpr) {
-                StructureMeta.TableMeta tbMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schema.getName(), tc.getName());
+                StructureMeta.TableMeta tbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schema.getName(), tc.getName());
                 if (tbMeta == null) {
                     String msg = "Meta data of table '" + schema.getName() + "." + tc.getName() + "' doesn't exist";
                     LOGGER.info(msg);
@@ -344,7 +346,7 @@ public class DruidSelectParser extends DefaultDruidParser {
     }
 
     private boolean isSumFuncOrSubQuery(String schema, SQLExpr itemExpr) {
-        MySQLItemVisitor ev = new MySQLItemVisitor(schema, CharsetUtil.getCharsetDefaultIndex("utf8mb4"), DbleServer.getInstance().getTmManager());
+        MySQLItemVisitor ev = new MySQLItemVisitor(schema, CharsetUtil.getCharsetDefaultIndex("utf8mb4"), ProxyMeta.getInstance().getTmManager());
         itemExpr.accept(ev);
         Item selItem = ev.getItem();
         return contaisSumFuncOrSubquery(selItem);

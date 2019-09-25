@@ -29,6 +29,8 @@ import com.actiontech.dble.btrace.provider.CostTimeProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
+import com.actiontech.dble.singleton.PauseDatanodeManager;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.net.handler.BackEndDataCleaner;
 import com.actiontech.dble.net.handler.FrontendCommandHandler;
 import com.actiontech.dble.net.mysql.EOFPacket;
@@ -415,10 +417,10 @@ public class NonBlockingSession implements Session {
             LOGGER.debug(s.append(source).append(rrs).toString() + " rrs ");
         }
 
-        if (DbleServer.getInstance().getMiManager().getIsPausing().get() &&
-                !DbleServer.getInstance().getMiManager().checkTarget(target) &&
-                DbleServer.getInstance().getMiManager().checkRRS(rrs)) {
-            if (DbleServer.getInstance().getMiManager().waitForResume(rrs, this.getSource(), CONTINUE_TYPE_SINGLE)) {
+        if (PauseDatanodeManager.getInstance().getIsPausing().get() &&
+                !PauseDatanodeManager.getInstance().checkTarget(target) &&
+                PauseDatanodeManager.getInstance().checkRRS(rrs)) {
+            if (PauseDatanodeManager.getInstance().waitForResume(rrs, this.getSource(), CONTINUE_TYPE_SINGLE)) {
                 return;
             }
         }
@@ -487,11 +489,11 @@ public class NonBlockingSession implements Session {
                 }
                 LOGGER.info(String.valueOf(source) + rrs, e);
                 try {
-                    DbleServer.getInstance().getTmManager().notifyResponseClusterDDL(rrs.getSchema(), rrs.getTable(), rrs.getSrcStatement(), DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.UNKNOWN, true);
+                    ProxyMeta.getInstance().getTmManager().notifyResponseClusterDDL(rrs.getSchema(), rrs.getTable(), rrs.getSrcStatement(), DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.UNKNOWN, true);
                 } catch (Exception ex) {
                     LOGGER.warn("notifyResponseZKDdl error", e);
                 }
-                DbleServer.getInstance().getTmManager().removeMetaLock(rrs.getSchema(), rrs.getTable());
+                ProxyMeta.getInstance().getTmManager().removeMetaLock(rrs.getSchema(), rrs.getTable());
                 source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
             }
         } else if (ServerParse.SELECT == rrs.getSqlType() && rrs.getGroupByCols() != null) {
@@ -561,7 +563,7 @@ public class NonBlockingSession implements Session {
 
     public void executeMultiSelect(RouteResultset rrs) {
         SQLSelectStatement ast = (SQLSelectStatement) rrs.getSqlStatement();
-        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(this.getSource().getSchema(), this.getSource().getCharset().getResultsIndex(), DbleServer.getInstance().getTmManager(), false);
+        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(this.getSource().getSchema(), this.getSource().getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false);
         visitor.visit(ast);
         PlanNode node = visitor.getTableNode();
         if (node.isCorrelatedSubQuery()) {
@@ -572,10 +574,10 @@ public class NonBlockingSession implements Session {
         PlanUtil.checkTablesPrivilege(source, node, ast);
         node = MyOptimizer.optimize(node);
 
-        if (DbleServer.getInstance().getMiManager().getIsPausing().get() &&
-                !DbleServer.getInstance().getMiManager().checkTarget(target) &&
-                DbleServer.getInstance().getMiManager().checkReferedTableNodes(node.getReferedTableNodes())) {
-            if (DbleServer.getInstance().getMiManager().waitForResume(rrs, this.source, CONTINUE_TYPE_MULTIPLE)) {
+        if (PauseDatanodeManager.getInstance().getIsPausing().get() &&
+                !PauseDatanodeManager.getInstance().checkTarget(target) &&
+                PauseDatanodeManager.getInstance().checkReferedTableNodes(node.getReferedTableNodes())) {
+            if (PauseDatanodeManager.getInstance().waitForResume(rrs, this.source, CONTINUE_TYPE_MULTIPLE)) {
                 return;
             }
         }
@@ -1029,7 +1031,7 @@ public class NonBlockingSession implements Session {
                 LOGGER.warn("DDL execute failed or Session closed, " +
                         "Schema[" + rrs.getSchema() + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
             }
-            return DbleServer.getInstance().getTmManager().updateMetaData(rrs.getSchema(), rrs.getTable(), sql, isSuccess, true, rrs.getDdlType());
+            return ProxyMeta.getInstance().getTmManager().updateMetaData(rrs.getSchema(), rrs.getTable(), sql, isSuccess, true, rrs.getDdlType());
         }
         return true;
     }

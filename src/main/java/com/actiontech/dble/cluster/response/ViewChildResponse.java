@@ -5,14 +5,14 @@
 
 package com.actiontech.dble.cluster.response;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.view.Repository;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.ClusterGeneralConfig;
+import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.bean.KvBean;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.meta.ViewMeta;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import org.slf4j.Logger;
@@ -54,10 +54,10 @@ public class ViewChildResponse implements ClusterXmlLoader {
             try {
                 if (Repository.DELETE.equals(optionType)) {
                     LOGGER.info("delete view " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
-                    if (!DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().containsKey(viewName)) {
+                    if (!ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().containsKey(viewName)) {
                         return;
                     }
-                    DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().remove(viewName);
+                    ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().remove(viewName);
 
                     ClusterDelayProvider.delayBeforeReponseView();
                     ClusterHelper.setKV(configValue.getKey() + SEPARATOR + myId, ClusterPathUtil.SUCCESS);
@@ -65,16 +65,16 @@ public class ViewChildResponse implements ClusterXmlLoader {
                     LOGGER.info("update view " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
                     ClusterDelayProvider.delayBeforeReponseGetView();
                     String stmt = ClusterHelper.getKV(ClusterPathUtil.getViewPath() + SEPARATOR + schema + Repository.SCHEMA_VIEW_SPLIT + viewName).getValue();
-                    if (DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().get(viewName) != null &&
-                            stmt.equals(DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().get(viewName).getCreateSql())) {
+                    if (ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().get(viewName) != null &&
+                            stmt.equals(ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().get(viewName).getCreateSql())) {
                         ClusterDelayProvider.delayBeforeReponseView();
                         ClusterHelper.setKV(configValue.getKey() + SEPARATOR + myId, ClusterPathUtil.SUCCESS);
                         return;
                     }
-                    ViewMeta vm = new ViewMeta(stmt, schema, DbleServer.getInstance().getTmManager());
+                    ViewMeta vm = new ViewMeta(stmt, schema, ProxyMeta.getInstance().getTmManager());
                     ErrorPacket error = vm.initAndSet(true, false);
 
-                    Map<String, Map<String, String>> viewCreateSqlMap = DbleServer.getInstance().getTmManager().getRepository().getViewCreateSqlMap();
+                    Map<String, Map<String, String>> viewCreateSqlMap = ProxyMeta.getInstance().getTmManager().getRepository().getViewCreateSqlMap();
                     Map<String, String> schemaMap = viewCreateSqlMap.get(schema);
                     schemaMap.put(viewName, stmt);
 

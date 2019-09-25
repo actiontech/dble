@@ -10,6 +10,7 @@ import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.BinlogPause;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
@@ -72,7 +73,7 @@ public class OfflineStatusListener implements PathChildrenCacheListener {
                     String[] tableInfo = ddlNode.split("\\.");
                     String schema = StringUtil.removeBackQuote(tableInfo[0]);
                     String table = StringUtil.removeBackQuote(tableInfo[1]);
-                    DbleServer.getInstance().getTmManager().removeMetaLock(schema, table);
+                    ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
                     LOGGER.info(" service instance[" + crashNode + "] has crashed. Remove MetaLock for " + ddlNode);
                 }
                 //other status should be unlocked

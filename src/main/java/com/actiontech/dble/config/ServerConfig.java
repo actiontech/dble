@@ -15,13 +15,13 @@ import com.actiontech.dble.backend.datasource.PhysicalDBPoolDiff;
 import com.actiontech.dble.config.model.*;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
+import com.actiontech.dble.singleton.CacheService;
+import com.actiontech.dble.singleton.ClusterGeneralConfig;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.route.parser.ManagerParseConfig;
 import com.actiontech.dble.route.parser.util.Pair;
-import com.actiontech.dble.route.sequence.handler.DistributedSequenceHandler;
-import com.actiontech.dble.route.sequence.handler.IncrSequenceMySQLHandler;
-import com.actiontech.dble.route.sequence.handler.IncrSequenceTimeHandler;
-import com.actiontech.dble.route.sequence.handler.IncrSequenceZKHandler;
 import com.actiontech.dble.server.variables.SystemVariables;
+import com.actiontech.dble.singleton.SequenceManager;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
@@ -357,11 +357,11 @@ public class ServerConfig {
         List<String> delSchema = new ArrayList<>();
         List<String> reloadSchema = new ArrayList<>();
         calcDiffForMetaData(newSchemas, newDataNodes, isLoadAll, loadAllMode, delTables, reloadTables, delSchema, reloadSchema);
-        final ReentrantLock metaLock = DbleServer.getInstance().getTmManager().getMetaLock();
+        final ReentrantLock metaLock = ProxyMeta.getInstance().getTmManager().getMetaLock();
         metaLock.lock();
         this.changing = true;
         try {
-            String checkResult = DbleServer.getInstance().getTmManager().metaCountCheck();
+            String checkResult = ProxyMeta.getInstance().getTmManager().metaCountCheck();
             if (checkResult != null) {
                 LOGGER.warn(checkResult);
                 throw new SQLNonTransientException(checkResult, "HY000", ErrorCode.ER_DOING_DDL);
@@ -397,7 +397,7 @@ public class ServerConfig {
                     for (PhysicalDBPool newDbPool : changeOrAddDataHosts.values()) {
                         if (newDbPool != null && !newDataHostWithoutWR) {
                             DbleServer.getInstance().saveDataHostIndex(newDbPool.getHostName(), newDbPool.getActiveIndex(),
-                                    this.system.isUseZKSwitch() && DbleServer.getInstance().isUseZK());
+                                    this.system.isUseZKSwitch() && ClusterGeneralConfig.isUseZK());
                             newDbPool.startHeartbeat();
                         }
                     }
@@ -406,14 +406,13 @@ public class ServerConfig {
                 this.dataHosts = newDataHosts;
                 this.dataHostWithoutWR = newDataHostWithoutWR;
                 DbleServer.getInstance().reloadSystemVariables(newSystemVariables);
-                DbleServer.getInstance().getCacheService().reloadCache(newSystemVariables.isLowerCaseTableNames());
-                DbleServer.getInstance().getRouterService().loadTableId2DataNodeCache(DbleServer.getInstance().getCacheService());
+                CacheService.getInstance().reloadCache(newSystemVariables.isLowerCaseTableNames());
             }
             this.users = newUsers;
             this.schemas = newSchemas;
             this.firewall = newFirewall;
             this.erRelations = newErRelations;
-            DbleServer.getInstance().getCacheService().clearCache();
+            CacheService.getInstance().clearCache();
             this.changing = false;
             if (!newDataHostWithoutWR) {
                 return reloadMetaData(delTables, reloadTables, delSchema, reloadSchema);
@@ -441,7 +440,7 @@ public class ServerConfig {
                 LOGGER.debug("metadata will delete schema:" + StringUtil.join(delSchema, ","));
             }
             for (String schema : delSchema) {
-                DbleServer.getInstance().getTmManager().getCatalogs().remove(schema);
+                ProxyMeta.getInstance().getTmManager().getCatalogs().remove(schema);
             }
             LOGGER.info("metadata finished for deleted schemas");
         }
@@ -451,7 +450,7 @@ public class ServerConfig {
                 LOGGER.debug("metadata will delete Tables:" + tables);
             }
             for (Pair<String, String> table : delTables) {
-                DbleServer.getInstance().getTmManager().getCatalogs().get(table.getKey()).dropTable(table.getValue());
+                ProxyMeta.getInstance().getTmManager().getCatalogs().get(table.getKey()).dropTable(table.getValue());
             }
             LOGGER.info("metadata finished for deleted tables");
         }
@@ -479,7 +478,7 @@ public class ServerConfig {
                     tables.add(table.getValue());
                 }
             }
-            reloadResult = DbleServer.getInstance().reloadMetaData(this, specifiedSchemas);
+            reloadResult = ProxyMeta.getInstance().reloadMetaData(this, specifiedSchemas);
             LOGGER.info("metadata finished for changes of schemas and tables");
         }
         return reloadResult;
@@ -563,22 +562,7 @@ public class ServerConfig {
     }
 
     public void loadSequence() {
-        //load global sequence
-        if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_MYSQL) {
-            IncrSequenceMySQLHandler.getInstance().load(DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
-        }
-
-        if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_LOCAL_TIME) {
-            IncrSequenceTimeHandler.getInstance().load();
-        }
-
-        if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_ZK_DISTRIBUTED) {
-            DistributedSequenceHandler.getInstance().load();
-        }
-
-        if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT) {
-            IncrSequenceZKHandler.getInstance().load(DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
-        }
+        SequenceManager.load(DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
     }
 
     public void selfChecking0() throws ConfigException {

@@ -3,8 +3,12 @@
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
-package com.actiontech.dble.cache;
+package com.actiontech.dble.singleton;
 
+import com.actiontech.dble.cache.CachePool;
+import com.actiontech.dble.cache.CachePoolFactory;
+import com.actiontech.dble.cache.DefaultLayedCachePool;
+import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.cache.impl.EnchachePooFactory;
 import com.actiontech.dble.cache.impl.LevelDBCachePooFactory;
 import com.actiontech.dble.cache.impl.MapDBCachePooFactory;
@@ -26,44 +30,45 @@ import java.util.concurrent.ConcurrentMap;
  *
  * @author wuzhih
  */
-public class CacheService {
+public final class CacheService {
     private static final Logger LOGGER = LoggerFactory.getLogger(CacheService.class);
-
+    private static final CacheService INSTANCE = new CacheService();
+    private static final String SQL_ROUTE_CACHE = "SQLRouteCache";
+    private static final String TABLE_ID_TO_DATANODE_CACHE = "TableID2DataNodeCache";
     private final Map<String, CachePoolFactory> poolFactories = new HashMap<>();
     private final ConcurrentMap<String, CachePool> allPools = new ConcurrentHashMap<>();
 
-    public CacheService(boolean isLowerCaseTableNames) {
-        // load cache pool defined
-        try {
-            init(isLowerCaseTableNames);
-        } catch (Exception e) {
-            if (e instanceof RuntimeException) {
-                throw (RuntimeException) e;
-            } else {
-                throw new RuntimeException(e);
-            }
-        }
+    private CacheService() {
+
+    }
+
+    public static CacheService getInstance() {
+        return INSTANCE;
     }
 
     public Map<String, CachePool> getAllCachePools() {
         return this.allPools;
     }
 
-    private void init(boolean isLowerCaseTableNames) throws Exception {
+    public void init(boolean isLowerCaseTableNames) {
         Properties props = new Properties();
-        try (InputStream stream = ResourceUtil.getResourceAsStream("/cacheservice.properties")) {
-            if (stream == null) {
-                LOGGER.info("cache don't be used currently! if use, please configure cacheservice.properties");
-                return;
+        try {
+            try (InputStream stream = ResourceUtil.getResourceAsStream("/cacheservice.properties")) {
+                if (stream == null) {
+                    LOGGER.info("cache don't be used currently! if use, please configure cacheservice.properties");
+                    return;
+                }
+                props.load(stream);
             }
-            props.load(stream);
-        }
-        boolean on = isSwitchOn(props);
-        if (on) {
-            createRootLayedCachePool(props);
-            createSpecificPool(props, isLowerCaseTableNames);
-        } else {
-            LOGGER.info("cache don't be used currently! if use, please switch on options in cheservice.properties");
+            boolean on = isSwitchOn(props);
+            if (on) {
+                createRootLayedCachePool(props);
+                createSpecificPool(props, isLowerCaseTableNames);
+            } else {
+                LOGGER.info("cache don't be used currently! if use, please switch on options in cheservice.properties");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -235,11 +240,19 @@ public class CacheService {
         try {
             init(isLowerCaseTableNames);
         } catch (Exception e) {
-            if (e instanceof RuntimeException) {
-                throw (RuntimeException) e;
-            } else {
-                throw new RuntimeException(e);
-            }
+            throw e;
         }
+    }
+
+    public static CachePool getSqlRouteCache() {
+        return INSTANCE.getCachePool(SQL_ROUTE_CACHE);
+    }
+
+    public static LayerCachePool getTableId2DataNodeCache() {
+        return (LayerCachePool) INSTANCE.getCachePool(TABLE_ID_TO_DATANODE_CACHE);
+    }
+
+    public static CachePool getCachePoolByName(String poolName) {
+        return INSTANCE.getCachePool(poolName);
     }
 }

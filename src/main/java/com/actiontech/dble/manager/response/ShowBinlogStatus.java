@@ -25,6 +25,7 @@ import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
@@ -80,11 +81,11 @@ public final class ShowBinlogStatus {
     private static volatile String errMsg = null;
 
     public static void execute(ManagerConnection c) {
-        boolean isUseZK = DbleServer.getInstance().isUseZK();
+        boolean isUseZK = ClusterGeneralConfig.isUseZK();
         long timeout = DbleServer.getInstance().getConfig().getSystem().getShowBinlogStatusTimeout();
         if (isUseZK) {
             showBinlogWithZK(c, timeout);
-        } else if (DbleServer.getInstance().isUseGeneralCluster()) {
+        } else if (ClusterGeneralConfig.isUseGeneralCluster()) {
             showBinlogWithUcore(c, timeout);
         } else {
             if (!DbleServer.getInstance().getBackupLocked().compareAndSet(false, true)) {

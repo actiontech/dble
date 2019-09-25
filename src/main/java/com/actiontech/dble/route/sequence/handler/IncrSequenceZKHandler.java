@@ -34,18 +34,13 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Hash Zhang
  * @version 1.0
- * 23:35 2016/5/6
+ *          23:35 2016/5/6
  */
 public class IncrSequenceZKHandler extends IncrSequenceHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(IncrSequenceZKHandler.class);
     private static final String PATH = KVPathUtil.getSequencesIncrPath() + "/";
     private static final String LOCK = "/lock";
     private static final String SEQ = "/seq";
-    private static final IncrSequenceZKHandler INSTANCE = new IncrSequenceZKHandler();
-
-    public static IncrSequenceZKHandler getInstance() {
-        return INSTANCE;
-    }
 
     private ThreadLocal<Map<String, Map<String, String>>> tableParaValMapThreadLocal = new ThreadLocal<>();
 

@@ -22,6 +22,7 @@ import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.singleton.XASessionCheck;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -425,12 +426,12 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                         LOGGER.warn(warnStr);
                         session.forceClose(warnStr);
                     } else if (count == 0 || ++backgroundRollbackTimes <= count) {
-                        String warnStr = "fail to ROLLBACK xa transaction " + xaId + " at the " + backgroundRollbackTimes + "th time in background!" ;
+                        String warnStr = "fail to ROLLBACK xa transaction " + xaId + " at the " + backgroundRollbackTimes + "th time in background!";
                         LOGGER.warn(warnStr);
                         AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, warnStr, AlertUtil.genSingleLabel("XA_ID", xaId));
 
                         XaDelayProvider.beforeAddXaToQueue(count, xaId);
-                        DbleServer.getInstance().getXaSessionCheck().addRollbackSession(session);
+                        XASessionCheck.getInstance().addRollbackSession(session);
                         XaDelayProvider.afterAddXaToQueue(count, xaId);
                     }
                 }
@@ -441,7 +442,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                 session.clearSavepoint();
                 AlertUtil.alertSelfResolve(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("XA_ID", session.getSessionXaID()));
                 // remove session in background
-                DbleServer.getInstance().getXaSessionCheck().getRollbackingSession().remove(session.getSource().getId());
+                XASessionCheck.getInstance().getRollbackingSession().remove(session.getSource().getId());
                 if (!session.closed()) {
                     setResponseTime(false);
                     session.getSource().write(sendData);

@@ -17,6 +17,7 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.model.UserConfig;
 import com.actiontech.dble.manager.handler.PackageBufINf;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.meta.SchemaMeta;
 import com.actiontech.dble.meta.ViewMeta;
 import com.actiontech.dble.net.mysql.EOFPacket;
@@ -119,7 +120,7 @@ public final class ShowTables {
             List<FieldPacket> fieldPackets = new ArrayList<>(2);
             bufInf = writeFullTablesHeader(buffer, c, cSchema, fieldPackets);
             if (info.getWhere() != null) {
-                MySQLItemVisitor mev = new MySQLItemVisitor(c.getSchema(), c.getCharset().getResultsIndex(), DbleServer.getInstance().getTmManager());
+                MySQLItemVisitor mev = new MySQLItemVisitor(c.getSchema(), c.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager());
                 info.getWhereExpr().accept(mev);
                 List<Field> sourceFields = HandlerTool.createFields(fieldPackets);
                 Item whereItem = HandlerTool.createItem(mev.getItem(), sourceFields, 0, false, DMLResponseHandler.HandlerType.WHERE);
@@ -237,7 +238,7 @@ public final class ShowTables {
 
     public static Map<String, String> getTableSet(String cSchema, ShowTablesStmtInfo info) {
         //remove the table which is not created but configured
-        SchemaMeta schemata = DbleServer.getInstance().getTmManager().getCatalogs().get(cSchema);
+        SchemaMeta schemata = ProxyMeta.getInstance().getTmManager().getCatalogs().get(cSchema);
         if (schemata == null) {
             return new HashMap<>();
         }

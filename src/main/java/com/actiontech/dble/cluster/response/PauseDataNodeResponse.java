@@ -6,7 +6,7 @@ package com.actiontech.dble.cluster.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.cluster.ClusterGeneralConfig;
+import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.ClusterPathUtil;
@@ -17,6 +17,7 @@ import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.singleton.PauseDatanodeManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +64,7 @@ public class PauseDataNodeResponse implements ClusterXmlLoader {
                                 try {
                                     LOGGER.info("Strat pause dataNode " + dataNodes);
                                     Set<String> dataNodeSet = new HashSet<>(Arrays.asList(dataNodes.split(",")));
-                                    DbleServer.getInstance().getMiManager().startPausing(pauseInfo.getConnectionTimeOut(), dataNodeSet, pauseInfo.getQueueLimit());
+                                    PauseDatanodeManager.getInstance().startPausing(pauseInfo.getConnectionTimeOut(), dataNodeSet, pauseInfo.getQueueLimit());
 
                                     while (!Thread.interrupted()) {
                                         lock.lock();
@@ -116,7 +117,7 @@ public class PauseDataNodeResponse implements ClusterXmlLoader {
                             lock.unlock();
                         }
                         LOGGER.info("resume dataNodes for get notice");
-                        DbleServer.getInstance().getMiManager().resume();
+                        PauseDatanodeManager.getInstance().resume();
                         ClusterHelper.setKV(ClusterPathUtil.getPauseResumePath(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID)),
                                 ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
 
@@ -139,6 +140,6 @@ public class PauseDataNodeResponse implements ClusterXmlLoader {
         } finally {
             lock.unlock();
         }
-        DbleServer.getInstance().getMiManager().resume();
+        PauseDatanodeManager.getInstance().resume();
     }
 }

@@ -6,6 +6,7 @@
 package com.actiontech.dble.cluster;
 
 import com.actiontech.dble.config.Versions;
+import com.actiontech.dble.singleton.ClusterGeneralConfig;
 
 /**
  * Created by szf on 2018/1/26.

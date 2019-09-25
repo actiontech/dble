@@ -3,13 +3,15 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.net.handler;
+package com.actiontech.dble.config.util;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.SecurityUtil;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.FrontendConnection;
+import com.actiontech.dble.net.handler.FrontendPrivileges;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +55,7 @@ public final class AuthUtil {
         }
 
         //check maxconnection
-        switch (DbleServer.getInstance().getUserManager().maxConnectionCheck(user, source.getPrivileges().getMaxCon(user), (source instanceof ManagerConnection))) {
+        switch (FrontendUserManager.getInstance().maxConnectionCheck(user, source.getPrivileges().getMaxCon(user), (source instanceof ManagerConnection))) {
             case SERVER_MAX:
                 return "Access denied for user '" + user + "',too many connections for dble server";
             case USER_MAX:

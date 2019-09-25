@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
 import com.actiontech.dble.manager.ManagerConnection;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.meta.ReloadManager;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.util.CollectionUtil;
@@ -55,10 +56,10 @@ public final class ReloadMetaData {
         String msg = "data host has no write_host";
         boolean isOK = true;
         boolean interrupt = false;
-        final ReentrantLock lock = DbleServer.getInstance().getTmManager().getMetaLock();
+        final ReentrantLock lock = ProxyMeta.getInstance().getTmManager().getMetaLock();
         lock.lock();
         try {
-            String checkResult = DbleServer.getInstance().getTmManager().metaCountCheck();
+            String checkResult = ProxyMeta.getInstance().getTmManager().metaCountCheck();
             if (checkResult != null) {
                 LOGGER.warn(checkResult);
                 c.writeErrMessage("HY000", checkResult, ErrorCode.ER_DOING_DDL);
@@ -73,7 +74,7 @@ public final class ReloadMetaData {
                             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Reload status error ,other client or cluster may in reload");
                             return;
                         }
-                        if (DbleServer.getInstance().reloadMetaData(DbleServer.getInstance().getConfig(), filter)) {
+                        if (ProxyMeta.getInstance().reloadMetaData(DbleServer.getInstance().getConfig(), filter)) {
                             msg = "reload metadata success";
                         } else {
                             interrupt = true;

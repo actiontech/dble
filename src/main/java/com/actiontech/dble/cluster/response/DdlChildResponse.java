@@ -7,12 +7,13 @@ package com.actiontech.dble.cluster.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.ClusterGeneralConfig;
+import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.bean.KvBean;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,9 +59,9 @@ public class DdlChildResponse implements ClusterXmlLoader {
                 LOGGER.info("init of ddl " + schema + " " + table);
                 try {
                     lockMap.put(fullName, ddlInfo.getFrom());
-                    DbleServer.getInstance().getTmManager().addMetaLock(schema, table, ddlInfo.getSql());
+                    ProxyMeta.getInstance().getTmManager().addMetaLock(schema, table, ddlInfo.getSql());
                 } catch (Exception t) {
-                    DbleServer.getInstance().getTmManager().removeMetaLock(schema, table);
+                    ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
                     throw t;
                 }
 
@@ -73,10 +74,10 @@ public class DdlChildResponse implements ClusterXmlLoader {
                 ClusterDelayProvider.delayBeforeUpdateMeta();
                 //to judge the table is be drop
                 if (ddlInfo.getType() == DDLInfo.DDLType.DROP_TABLE) {
-                    DbleServer.getInstance().getTmManager().updateMetaData(schema, table, ddlInfo.getSql(), DDLInfo.DDLStatus.SUCCESS.equals(ddlInfo.getStatus()), false, DDLInfo.DDLType.DROP_TABLE);
+                    ProxyMeta.getInstance().getTmManager().updateMetaData(schema, table, ddlInfo.getSql(), DDLInfo.DDLStatus.SUCCESS.equals(ddlInfo.getStatus()), false, DDLInfo.DDLType.DROP_TABLE);
                 } else {
                     //else get the lastest table meta from db
-                    DbleServer.getInstance().getTmManager().updateOnetableWithBackData(DbleServer.getInstance().getConfig(), schema, table);
+                    ProxyMeta.getInstance().getTmManager().updateOnetableWithBackData(DbleServer.getInstance().getConfig(), schema, table);
                 }
 
                 ClusterDelayProvider.delayBeforeDdlResponse();
@@ -85,7 +86,7 @@ public class DdlChildResponse implements ClusterXmlLoader {
                 LOGGER.info("ddl execute failed notice");
                 //if the start node executing ddl with error,just release the lock
                 lockMap.remove(fullName);
-                DbleServer.getInstance().getTmManager().removeMetaLock(schema, table);
+                ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
                 ClusterDelayProvider.delayBeforeDdlResponse();
                 ClusterHelper.setKV(ClusterPathUtil.getDDLInstancePath(fullName), ClusterPathUtil.SUCCESS);
             }

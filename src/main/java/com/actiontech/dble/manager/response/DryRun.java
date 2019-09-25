@@ -5,10 +5,9 @@
 
 package com.actiontech.dble.manager.response;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.PacketUtil;
-import com.actiontech.dble.cluster.ClusterGeneralConfig;
+import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.*;
@@ -115,7 +114,7 @@ public final class DryRun {
 
         userCheck(list, serverConfig);
 
-        if (DbleServer.getInstance().isUseGeneralCluster()) {
+        if (ClusterGeneralConfig.isUseGeneralCluster()) {
             ucoreConnectionTest(list);
         } else {
             list.add(new ErrorInfo("Cluster", "NOTICE", "Dble is in single mod"));

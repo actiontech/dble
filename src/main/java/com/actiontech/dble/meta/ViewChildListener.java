@@ -5,10 +5,10 @@
 
 package com.actiontech.dble.meta;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
@@ -56,11 +56,11 @@ public class ViewChildListener implements PathChildrenCacheListener {
         String schema = paths[paths.length - 1].split(":")[0];
         String viewName = paths[paths.length - 1].split(":")[1];
 
-        DbleServer.getInstance().getTmManager().addMetaLock(schema, viewName, "DROP VIEW " + viewName);
+        ProxyMeta.getInstance().getTmManager().addMetaLock(schema, viewName, "DROP VIEW " + viewName);
         try {
-            DbleServer.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().remove(viewName);
+            ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().remove(viewName);
         } finally {
-            DbleServer.getInstance().getTmManager().removeMetaLock(schema, viewName);
+            ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, viewName);
         }
 
     }
@@ -83,7 +83,7 @@ public class ViewChildListener implements PathChildrenCacheListener {
         String createSql = obj.getString(CREATE_SQL);
         String schema = paths[paths.length - 1].split(SCHEMA_VIEW_SPLIT)[0];
 
-        ViewMeta vm = new ViewMeta(createSql, schema, DbleServer.getInstance().getTmManager());
+        ViewMeta vm = new ViewMeta(createSql, schema, ProxyMeta.getInstance().getTmManager());
         vm.initAndSet(isReplace, false);
 
     }

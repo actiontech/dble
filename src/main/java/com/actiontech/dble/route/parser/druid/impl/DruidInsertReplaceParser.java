@@ -5,8 +5,8 @@
 
 package com.actiontech.dble.route.parser.druid.impl;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.util.RouterUtil;
@@ -57,7 +57,7 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
     public static void checkDefaultValues(String columnValue, TableConfig tableConfig, String schema, String partitionColumn) throws SQLNonTransientException {
 
         if (columnValue == null || "null".equalsIgnoreCase(columnValue)) {
-            StructureMeta.TableMeta meta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schema, tableConfig.getName());
+            StructureMeta.TableMeta meta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schema, tableConfig.getName());
             for (StructureMeta.ColumnMeta columnMeta : meta.getColumnsList()) {
                 if (!columnMeta.getCanNull()) {
                     if (columnMeta.getName().equalsIgnoreCase(partitionColumn)) {
@@ -108,7 +108,7 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
             throw new SQLNonTransientException("please make sure the primaryKey's config is not null in schemal.xml");
         }
         int primaryKeyIndex = -1;
-        StructureMeta.TableMeta tbMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
+        StructureMeta.TableMeta tbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
                 schemaInfo.getTable());
         if (tbMeta != null) {
             boolean hasIncrementColumn = false;
@@ -139,7 +139,7 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
     protected int getTableColumns(SchemaInfo schemaInfo, List<SQLExpr> columnExprList)
             throws SQLNonTransientException {
         if (columnExprList == null || columnExprList.size() == 0) {
-            StructureMeta.TableMeta tbMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
+            StructureMeta.TableMeta tbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
             if (tbMeta == null) {
                 String msg = "Meta data of table '" + schemaInfo.getSchema() + "." + schemaInfo.getTable() + "' doesn't exist";
                 LOGGER.info(msg);
@@ -154,7 +154,7 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
     protected int getShardingColIndex(SchemaInfo schemaInfo, List<SQLExpr> columnExprList, String partitionColumn) throws SQLNonTransientException {
         int shardingColIndex = -1;
         if (columnExprList == null || columnExprList.size() == 0) {
-            StructureMeta.TableMeta tbMeta = DbleServer.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
+            StructureMeta.TableMeta tbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
             if (tbMeta != null) {
                 for (int i = 0; i < tbMeta.getColumnsCount(); i++) {
                     if (partitionColumn.equalsIgnoreCase(tbMeta.getColumns(i).getName())) {

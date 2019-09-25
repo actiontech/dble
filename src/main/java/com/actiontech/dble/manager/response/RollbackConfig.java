@@ -24,6 +24,7 @@ import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.ReloadManager;
 import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -54,7 +55,7 @@ public final class RollbackConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(RollbackConfig.class);
 
     public static void execute(ManagerConnection c) {
-        if (DbleServer.getInstance().isUseZK()) {
+        if (ClusterGeneralConfig.isUseZK()) {
             CuratorFramework zkConn = ZKUtils.getConnection();
             InterProcessMutex distributeLock = new InterProcessMutex(zkConn, KVPathUtil.getConfChangeLockPath());
             try {
@@ -72,7 +73,7 @@ public final class RollbackConfig {
                 LOGGER.info("reload config failure", e);
                 writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
             }
-        } else if (DbleServer.getInstance().isUseGeneralCluster()) {
+        } else if (ClusterGeneralConfig.isUseGeneralCluster()) {
             DistributeLock distributeLock = new DistributeLock(ClusterPathUtil.getConfChangeLockPath(),
                     ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
             try {

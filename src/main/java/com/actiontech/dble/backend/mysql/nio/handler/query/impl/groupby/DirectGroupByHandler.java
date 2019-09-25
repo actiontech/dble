@@ -25,6 +25,7 @@ import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.sumfunc.Aggregator;
 import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.singleton.BufferPoolManager;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,7 +92,7 @@ public class DirectGroupByHandler extends OwnThreadDMLHandler {
         if (terminate.get())
             return;
         if (this.pool == null)
-            this.pool = DbleServer.getInstance().getBufferPool();
+            this.pool = BufferPoolManager.getBufferPool();
 
         this.fieldPackets = fieldPackets;
         List<Field> sourceFields = HandlerTool.createFields(this.fieldPackets);

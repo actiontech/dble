@@ -11,6 +11,7 @@ import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo.DDLStatus;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
@@ -67,9 +68,9 @@ public class DDLChildListener implements PathChildrenCacheListener {
         final String table = StringUtil.removeBackQuote(tableInfo[1]);
         ClusterDelayProvider.delayBeforeUpdateMeta();
         try {
-            DbleServer.getInstance().getTmManager().addMetaLock(schema, table, ddlInfo.getSql());
+            ProxyMeta.getInstance().getTmManager().addMetaLock(schema, table, ddlInfo.getSql());
         } catch (Exception t) {
-            DbleServer.getInstance().getTmManager().removeMetaLock(schema, table);
+            ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
             throw t;
         }
     }
@@ -91,9 +92,9 @@ public class DDLChildListener implements PathChildrenCacheListener {
         ClusterDelayProvider.delayBeforeUpdateMeta();
         // just release local lock
         if (ddlInfo.getStatus() == DDLStatus.FAILED) {
-            DbleServer.getInstance().getTmManager().removeMetaLock(ddlInfo.getSchema(), table);
+            ProxyMeta.getInstance().getTmManager().removeMetaLock(ddlInfo.getSchema(), table);
             try {
-                DbleServer.getInstance().getTmManager().notifyResponseClusterDDL(ddlInfo.getSchema(), table, ddlInfo.getSql(), DDLInfo.DDLStatus.FAILED, ddlInfo.getType(), false);
+                ProxyMeta.getInstance().getTmManager().notifyResponseClusterDDL(ddlInfo.getSchema(), table, ddlInfo.getSql(), DDLInfo.DDLStatus.FAILED, ddlInfo.getType(), false);
             } catch (Exception e) {
                 LOGGER.info("Error when update the meta data of the DDL " + ddlInfo.toString());
             }
@@ -101,13 +102,13 @@ public class DDLChildListener implements PathChildrenCacheListener {
         }
         //to judge the table is be drop
         if (ddlInfo.getType() == DDLInfo.DDLType.DROP_TABLE) {
-            DbleServer.getInstance().getTmManager().updateMetaData(ddlInfo.getSchema(), table, ddlInfo.getSql(), DDLInfo.DDLStatus.SUCCESS.equals(ddlInfo.getStatus()), false, ddlInfo.getType());
+            ProxyMeta.getInstance().getTmManager().updateMetaData(ddlInfo.getSchema(), table, ddlInfo.getSql(), DDLInfo.DDLStatus.SUCCESS.equals(ddlInfo.getStatus()), false, ddlInfo.getType());
         } else {
             //else get the latest table meta from db
-            DbleServer.getInstance().getTmManager().updateOnetableWithBackData(DbleServer.getInstance().getConfig(), ddlInfo.getSchema(), table);
+            ProxyMeta.getInstance().getTmManager().updateOnetableWithBackData(DbleServer.getInstance().getConfig(), ddlInfo.getSchema(), table);
             ClusterDelayProvider.delayBeforeDdlResponse();
             try {
-                DbleServer.getInstance().getTmManager().notifyResponseClusterDDL(ddlInfo.getSchema(), table, ddlInfo.getSql(), DDLInfo.DDLStatus.SUCCESS, ddlInfo.getType(), false);
+                ProxyMeta.getInstance().getTmManager().notifyResponseClusterDDL(ddlInfo.getSchema(), table, ddlInfo.getSql(), DDLInfo.DDLStatus.SUCCESS, ddlInfo.getType(), false);
             } catch (Exception e) {
                 LOGGER.info("Error when update the meta data of the DDL " + ddlInfo.toString());
             }

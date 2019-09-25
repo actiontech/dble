@@ -13,6 +13,8 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.model.rule.RuleConfig;
+import com.actiontech.dble.singleton.CacheService;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -563,7 +565,7 @@ public final class RouterUtil {
         Map<String, Set<ColumnRoutePair>> columnsMap = entry.getValue();
 
         Map<String, Set<String>> tablesRouteMap = new HashMap<>();
-        if (tryRouteWithPrimaryCache(rrs, tablesRouteMap, DbleServer.getInstance().getRouterService().getTableId2DataNodeCache(), columnsMap, schema, tableName, tableConfig.getPrimaryKey(), isSelect)) {
+        if (tryRouteWithPrimaryCache(rrs, tablesRouteMap, CacheService.getTableId2DataNodeCache(), columnsMap, schema, tableName, tableConfig.getPrimaryKey(), isSelect)) {
             Set<String> nodes = tablesRouteMap.get(tableName);
             if (nodes == null || nodes.size() != 1) {
                 return false;
@@ -1145,7 +1147,7 @@ public final class RouterUtil {
      * @return dataNode DataNode of no-sharding table
      */
     public static String isNoSharding(SchemaConfig schemaConfig, String tableName) throws SQLNonTransientException {
-        if (schemaConfig == null || DbleServer.getInstance().getTmManager().getSyncView(schemaConfig.getName(), tableName) != null) {
+        if (schemaConfig == null || ProxyMeta.getInstance().getTmManager().getSyncView(schemaConfig.getName(), tableName) != null) {
             return null;
         }
         if (schemaConfig.isNoSharding()) { //schema without table

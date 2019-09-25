@@ -5,10 +5,10 @@
 
 package com.actiontech.dble.server.response;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.meta.SchemaMeta;
 import com.actiontech.dble.meta.ViewMeta;
 import com.actiontech.dble.net.mysql.EOFPacket;
@@ -82,7 +82,7 @@ public final class ShowCreateView {
         }
 
         schema = StringUtil.removeBackQuote(schema);
-        SchemaMeta schemaMeta = DbleServer.getInstance().getTmManager().getCatalogs().get(schema);
+        SchemaMeta schemaMeta = ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema);
         if (schemaMeta == null) {
             throw new Exception("Table '" + schema + "." + viewName + "' doesn't exist");
         }

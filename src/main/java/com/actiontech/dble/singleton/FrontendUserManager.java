@@ -3,7 +3,7 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.net;
+package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.config.model.UserConfig;
 import org.slf4j.Logger;
@@ -13,16 +13,18 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.actiontech.dble.net.FrontendUserManager.CheckStatus.OK;
-import static com.actiontech.dble.net.FrontendUserManager.CheckStatus.SERVER_MAX;
-import static com.actiontech.dble.net.FrontendUserManager.CheckStatus.USER_MAX;
+import static com.actiontech.dble.singleton.FrontendUserManager.CheckStatus.OK;
+import static com.actiontech.dble.singleton.FrontendUserManager.CheckStatus.SERVER_MAX;
+import static com.actiontech.dble.singleton.FrontendUserManager.CheckStatus.USER_MAX;
 
 /**
  * Created by szf on 2018/6/27.
  */
-public class FrontendUserManager {
+public final class FrontendUserManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FrontendUserManager.class);
+
+    private static final FrontendUserManager INSTANCE = new FrontendUserManager();
 
     private ReentrantLock maxConLock = new ReentrantLock();
 
@@ -31,6 +33,10 @@ public class FrontendUserManager {
     private int serverMaxConnection;
 
     private int serverConnection = 0;
+
+    private FrontendUserManager() {
+
+    }
 
     public void countDown(String user, boolean isManager) {
         maxConLock.lock();
@@ -89,5 +95,9 @@ public class FrontendUserManager {
 
     public enum CheckStatus {
         OK, SERVER_MAX, USER_MAX
+    }
+
+    public static FrontendUserManager getInstance() {
+        return INSTANCE;
     }
 }

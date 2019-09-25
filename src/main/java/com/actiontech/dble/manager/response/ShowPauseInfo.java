@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.manager.response;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.manager.ManagerConnection;
@@ -13,6 +12,7 @@ import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.singleton.PauseDatanodeManager;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
@@ -55,8 +55,8 @@ public final class ShowPauseInfo {
         buffer = EOF.write(buffer, c, true);
         // write rows
         byte packetId = EOF.getPacketId();
-        if (DbleServer.getInstance().getMiManager().getDataNodes() != null) {
-            for (String dataNode : DbleServer.getInstance().getMiManager().getDataNodes()) {
+        if (PauseDatanodeManager.getInstance().getDataNodes() != null) {
+            for (String dataNode : PauseDatanodeManager.getInstance().getDataNodes()) {
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                 row.setPacketId(++packetId);
                 row.add(StringUtil.encode(dataNode, c.getCharset().getResults()));

@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.meta;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.plan.common.item.Item;
@@ -13,6 +12,7 @@ import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 
 import java.nio.charset.StandardCharsets;
@@ -99,7 +99,7 @@ public class ViewMeta {
             viewQuery = new QueryNode(selNode);
 
             if (isNewCreate) {
-                DbleServer.getInstance().getTmManager().getRepository().put(schema, viewName, this.createSql);
+                ProxyMeta.getInstance().getTmManager().getRepository().put(schema, viewName, this.createSql);
             }
 
             tmManager.getCatalogs().get(schema).getViewMetas().put(viewName, this);

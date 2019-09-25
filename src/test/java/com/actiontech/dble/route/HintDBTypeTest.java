@@ -6,13 +6,14 @@
 package com.actiontech.dble.route;
 
 import com.actiontech.dble.SimpleCachePool;
-import com.actiontech.dble.cache.CacheService;
+import com.actiontech.dble.singleton.CacheService;
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.loader.SchemaLoader;
 import com.actiontech.dble.config.loader.xml.XMLSchemaLoader;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.singleton.RouteService;
 import junit.framework.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -43,8 +44,8 @@ public class HintDBTypeTest {
         SchemaConfig schema = schemaMap.get("TESTDB");
         //(new hint,/*!dble*/),runOnSlave=false force master
         String sql = "/*!dble:db_type=master*/select * from employee where sharding_id=1";
-        CacheService cacheService = new CacheService(false);
-        RouteService routerService = new RouteService(cacheService);
+        CacheService.getInstance().init(false);
+        RouteService routerService = RouteService.getInstance();
         RouteResultset rrs = routerService.route(schema, ServerParse.SELECT, sql, null);
         Assert.assertTrue(!rrs.getRunOnSlave());
 

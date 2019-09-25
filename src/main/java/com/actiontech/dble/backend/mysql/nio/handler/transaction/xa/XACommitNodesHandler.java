@@ -22,6 +22,7 @@ import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.singleton.XASessionCheck;
 import com.actiontech.dble.util.StringUtil;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -424,7 +425,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                         AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, warnStr, AlertUtil.genSingleLabel("XA_ID", xaId));
 
                         XaDelayProvider.beforeAddXaToQueue(count, xaId);
-                        DbleServer.getInstance().getXaSessionCheck().addCommitSession(session);
+                        XASessionCheck.getInstance().addCommitSession(session);
                         XaDelayProvider.afterAddXaToQueue(count, xaId);
                     }
                 }
@@ -436,7 +437,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 session.clearResources(false);
                 AlertUtil.alertSelfResolve(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("XA_ID", session.getSessionXaID()));
                 // remove session in background
-                DbleServer.getInstance().getXaSessionCheck().getCommittingSession().remove(session.getSource().getId());
+                XASessionCheck.getInstance().getCommittingSession().remove(session.getSource().getId());
                 if (!session.closed()) {
                     setResponseTime(isSuccess);
                     session.clearSavepoint();

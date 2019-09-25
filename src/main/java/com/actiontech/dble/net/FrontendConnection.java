@@ -10,7 +10,9 @@ import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.config.Versions;
+import com.actiontech.dble.config.util.AuthUtil;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.handler.*;
 import com.actiontech.dble.net.mysql.*;
@@ -625,7 +627,7 @@ public abstract class FrontendConnection extends AbstractConnection {
     @Override
     public void connectionCount() {
         if (this.isAuthenticated) {
-            DbleServer.getInstance().getUserManager().countDown(user, (this instanceof ManagerConnection));
+            FrontendUserManager.getInstance().countDown(user, (this instanceof ManagerConnection));
         }
     }
 }

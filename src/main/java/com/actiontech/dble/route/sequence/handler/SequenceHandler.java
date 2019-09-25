@@ -16,4 +16,6 @@ public interface SequenceHandler {
 
     long nextId(String prefixName) throws SQLNonTransientException;
 
+    void load(boolean isLowerCaseTableNames);
+
 }

@@ -41,6 +41,12 @@ public abstract class AbstractClusterSender implements ClusterSender {
         checkOnline(expectedMap, currentMap);
         List<KvBean> responseList = ClusterHelper.getKVPath(path);
         boolean flag = false;
+        if (expectedMap.size() == 0) {
+            if (errorMsg != null) {
+                errorMsg.append("All online key droped, other instance config may out of sync, try again");
+            }
+            return true;
+        }
         for (Map.Entry<String, String> entry : expectedMap.entrySet()) {
             flag = false;
             for (KvBean kvBean : responseList) {

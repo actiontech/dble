@@ -63,8 +63,10 @@ public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implem
     }
 
     @Override
-    public void reset(int initCount) {
-        nodeCount = initCount;
+    public void reset() {
+        errorConnsCnt = 0;
+        firstResponsed = false;
+        unResponseRrns.clear();
         packetId = 0;
     }
 

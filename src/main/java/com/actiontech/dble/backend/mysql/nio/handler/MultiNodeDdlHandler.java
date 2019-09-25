@@ -63,8 +63,9 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 
     }
 
-    protected void reset(int initCount) {
-        super.reset(initCount);
+    @Override
+    protected void reset() {
+        super.reset();
     }
 
     public NonBlockingSession getSession() {
@@ -74,7 +75,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     public void execute() throws Exception {
         lock.lock();
         try {
-            this.reset(rrs.getNodes().length);
+            this.reset();
         } finally {
             lock.unlock();
         }
@@ -82,6 +83,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         LOGGER.debug("rrs.getRunOnSlave()-" + rrs.getRunOnSlave());
         StringBuilder sb = new StringBuilder();
         for (final RouteResultsetNode node : rrs.getNodes()) {
+            unResponseRrns.add(node);
             if (node.isModifySQL()) {
                 sb.append("[").append(node.getName()).append("]").append(node.getStatement()).append(";\n");
             }
@@ -127,7 +129,14 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         errPacket.setMessage(StringUtil.encode(reason, session.getSource().getCharset().getResults()));
         err = errPacket;
 
-        executeConnError(conn);
+        lock.lock();
+        try {
+            RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+            unResponseRrns.remove(rNode);
+            executeConnError();
+        } finally {
+            lock.unlock();
+        }
     }
 
     private boolean checkClosedConn(BackendConnection conn) {
@@ -151,21 +160,15 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         }
     }
 
-    private void executeConnError(BackendConnection conn) {
-        lock.lock();
-        try {
-            if (!isFail()) {
-                setFail(new String(err.getMessage()));
+    private void executeConnError() {
+        if (!isFail()) {
+            setFail(new String(err.getMessage()));
+        }
+        if (canResponse() && errorResponse.compareAndSet(false, true)) {
+            if (relieaseDDLLock.compareAndSet(false, true)) {
+                session.handleSpecial(oriRrs, false);
             }
-            if (--nodeCount <= 0 && errorResponse.compareAndSet(false, true)) {
-                if (relieaseDDLLock.compareAndSet(false, true)) {
-                    session.handleSpecial(oriRrs, false);
-                }
-
-                handleRollbackPacket(err.toBytes());
-            }
-        } finally {
-            lock.unlock();
+            handleRollbackPacket(err.toBytes());
         }
     }
 
@@ -178,7 +181,13 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         errPacket.setMessage(StringUtil.encode(e.toString(), session.getSource().getCharset().getResults()));
         err = errPacket;
 
-        executeConnError(conn);
+        lock.lock();
+        try {
+            errorConnsCnt++;
+            executeConnError();
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override
@@ -203,10 +212,10 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
             if (!conn.syncAndExecute()) {
                 return;
             }
-            if (--nodeCount > 0)
-                return;
-            session.handleSpecial(oriRrs, false);
-            handleRollbackPacket(err.toBytes());
+            if (canResponse()) {
+                session.handleSpecial(oriRrs, false);
+                handleRollbackPacket(err.toBytes());
+            }
         } finally {
             lock.unlock();
         }
@@ -235,7 +244,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         lock.lock();
         try {
             ((MySQLConnection) conn).setTesting(false);
-            if (--nodeCount > 0)
+            if (!canResponse())
                 return;
 
             if (this.isFail()) {

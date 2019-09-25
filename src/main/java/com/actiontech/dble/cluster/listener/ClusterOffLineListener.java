@@ -22,8 +22,8 @@ import com.actiontech.dble.server.status.OnlineLockStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.actiontech.dble.cluster.ClusterPathUtil.SEPARATOR;
 
@@ -33,12 +33,12 @@ import static com.actiontech.dble.cluster.ClusterPathUtil.SEPARATOR;
 public class ClusterOffLineListener implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClusterOffLineListener.class);
-    private volatile Map<String, String> onlineMap = new HashMap<>();
+    private volatile Map<String, String> onlineMap = new ConcurrentHashMap<>();
     private long index = 0;
 
 
     public Map<String, String> copyOnlineMap() {
-        return new HashMap<>(onlineMap);
+        return new ConcurrentHashMap<>(onlineMap);
     }
 
     private void checkDDLAndRelease(String serverId) {
@@ -114,7 +114,7 @@ public class ClusterOffLineListener implements Runnable {
                     continue;
                 }
                 //LOGGER.debug("the index of the single key "+path+" is "+index);
-                Map<String, String> newMap = new HashMap<>();
+                Map<String, String> newMap = new ConcurrentHashMap<>();
                 for (int i = 0; i < output.getKeysCount(); i++) {
                     newMap.put(output.getKeys(i), output.getValues(i));
                 }

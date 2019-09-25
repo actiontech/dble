@@ -139,6 +139,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         //        }
         return false;
     }
+
     @Override
     public boolean visit(SQLJoinTableSource x) {
         switch (x.getJoinType()) {
@@ -155,6 +156,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         inOuterJoin = false;
         return result;
     }
+
     @Override
     public boolean visit(SQLSelectStatement x) {
         aliasMap.clear();
@@ -299,10 +301,10 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             String ident = identName.toString();
             currentTable = ident;
 
-            aliasMap.put(ident, ident);
+            aliasMap.put(ident, ident.replace("`", ""));
             String alias = x.getTableSource().getAlias();
             if (alias != null) {
-                aliasMap.put(alias, ident);
+                aliasMap.put(alias, ident.replace("`", ""));
             }
         } else {
             x.getTableSource().accept(this);
@@ -322,11 +324,11 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             selectTableList.add(ident);
             String alias = x.getAlias();
             if (alias != null && !aliasMap.containsKey(alias)) {
-                putAliasToMap(alias, ident);
+                putAliasToMap(alias, ident.replace("`", ""));
             }
 
             if (!aliasMap.containsKey(ident)) {
-                putAliasToMap(ident, ident);
+                putAliasToMap(ident, ident.replace("`", ""));
             }
         } else {
             this.accept(x.getExpr());
@@ -434,21 +436,15 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             if (betweenExpr.getTestExpr() instanceof SQLPropertyExpr) { //field has alias
                 tableName = ((SQLIdentifierExpr) ((SQLPropertyExpr) betweenExpr.getTestExpr()).getOwner()).getName();
                 column = ((SQLPropertyExpr) betweenExpr.getTestExpr()).getName();
-                if (aliasMap.containsKey(tableName)) {
-                    tableName = aliasMap.get(tableName);
-                }
-                return new Column(tableName, column);
             } else if (betweenExpr.getTestExpr() instanceof SQLIdentifierExpr) {
                 column = ((SQLIdentifierExpr) betweenExpr.getTestExpr()).getName();
                 tableName = getOwnerTableName(betweenExpr, column);
             }
-            String table = tableName;
-            if (aliasMap.containsKey(table)) {
-                table = aliasMap.get(table);
-            }
-
-            if (table != null && !"".equals(table)) {
-                return new Column(table, column);
+            if (tableName != null && !"".equals(tableName)) {
+                if (aliasMap.containsKey(tableName)) {
+                    aliasMap.put(tableName, tableName.replace("`", ""));
+                }
+                return new Column(tableName, column);
             }
         }
         return null;
@@ -457,13 +453,6 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     private Column getColumnByExpr(SQLIdentifierExpr expr) {
         String column = expr.getName();
         String table = currentTable;
-        if (table != null && aliasMap.containsKey(table)) {
-            table = aliasMap.get(table);
-            if (table == null) {
-                return null;
-            }
-        }
-
         if (table != null) {
             return new Column(table, column);
         }
@@ -485,11 +474,10 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             } else {
                 tableName = ((SQLIdentifierExpr) owner).getName();
             }
-            String table = tableName;
-            if (aliasMap.containsKey(table)) {
-                table = aliasMap.get(table);
+            if (!aliasMap.containsKey(tableName)) {
+                aliasMap.put(tableName, tableName.replace("`", ""));
             }
-            return new Column(table, column);
+            return new Column(tableName, column);
         }
 
         return null;

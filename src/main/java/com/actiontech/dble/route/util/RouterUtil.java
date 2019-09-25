@@ -802,7 +802,6 @@ public final class RouterUtil {
             throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
         }
 
-
         if (tc.isGlobalTable()) {
             if (isSelect) {
                 // global select ,not cache route result

@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2019 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.server;
 
 import com.actiontech.dble.DbleServer;
@@ -113,6 +113,8 @@ public class NonBlockingSession implements Session {
     private volatile boolean traceEnable = false;
     private volatile TraceResult traceResult = new TraceResult();
     private volatile RouteResultset complexRrs = null;
+
+    private AtomicInteger test = new AtomicInteger(0);
 
     public NonBlockingSession(ServerConnection source) {
         this.source = source;
@@ -243,7 +245,7 @@ public class NonBlockingSession implements Session {
         long responseTime = 0;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
-            if (traceResult.addToConnFlagMap(conn.getId() + node.toString()) == null) {
+            if (traceResult.addToConnFlagMap(conn.getId() + ":" + node.getStatementHash()) == null) {
                 ResponseHandler responseHandler = conn.getRespHandler();
                 responseTime = System.nanoTime();
                 TraceRecord record = new TraceRecord(responseTime, node.getName(), node.getStatement());

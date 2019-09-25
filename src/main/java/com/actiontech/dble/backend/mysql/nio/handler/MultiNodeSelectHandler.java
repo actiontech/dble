@@ -63,7 +63,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
         lock.lock();
         try {
             if (isFail()) {
-                if (canResponse()) {
+                if (decrementToZero(conn)) {
                     session.resetMultiStatementStatus();
                     handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
                 }
@@ -72,7 +72,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
                     fieldsReturned = true;
                     mergeFieldEof(fields, conn);
                 }
-                if (canResponse()) {
+                if (decrementToZero(conn)) {
                     startOwnThread();
                 }
             }

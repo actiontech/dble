@@ -244,7 +244,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         lock.lock();
         try {
             ((MySQLConnection) conn).setTesting(false);
-            if (!canResponse())
+            if (!decrementToZero(conn))
                 return;
 
             if (this.isFail()) {

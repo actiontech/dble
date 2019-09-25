@@ -202,9 +202,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             if (!conn.syncAndExecute()) {
                 return;
             }
-            RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
-            unResponseRrns.remove(rNode);
-            if (canResponse()) {
+            if (decrementToZero(conn)) {
                 session.handleSpecial(rrs, false, getDDLErrorInfo());
 
                 if (byteBuffer == null) {
@@ -246,9 +244,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     insertId = (insertId == 0) ? ok.getInsertId() : Math.min(
                             insertId, ok.getInsertId());
                 }
-                RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
-                unResponseRrns.remove(rNode);
-                if (!canResponse())
+                if (!decrementToZero(conn))
                     return;
                 if (isFail()) {
                     session.handleSpecial(rrs, false);

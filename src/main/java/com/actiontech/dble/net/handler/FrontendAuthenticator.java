@@ -84,12 +84,13 @@ public class FrontendAuthenticator implements NIOHandler {
         }
 
         // check mysql client user
-        if (AuthUtil.authority(source, authPacket.getUser(), authPacket.getPassword(), authPacket.getDatabase(), this instanceof ManagerAuthenticator)) {
+        String errMsg = AuthUtil.authority(source, authPacket.getUser(), authPacket.getPassword(), authPacket.getDatabase(), this instanceof ManagerAuthenticator);
+        if (errMsg == null) {
             success(authPacket);
+        } else {
+            failure(ErrorCode.ER_ACCESS_DENIED_ERROR, errMsg);
         }
     }
-
-
 
     protected NIOHandler successCommendHandler() {
         return new FrontendCommandHandler(source);
@@ -126,4 +127,12 @@ public class FrontendAuthenticator implements NIOHandler {
         }
     }
 
+    protected void failure(int errNo, String info) {
+        LOGGER.info(source.toString() + info);
+        if (isAuthSwitch) {
+            source.writeErrMessage((byte) 4, errNo, info);
+        } else {
+            source.writeErrMessage((byte) 2, errNo, info);
+        }
+    }
 }

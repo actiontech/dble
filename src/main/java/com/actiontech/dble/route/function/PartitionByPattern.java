@@ -26,7 +26,8 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
     private static final Logger LOGGER = LoggerFactory.getLogger(PartitionByPattern.class);
     private static final int PARTITION_LENGTH = 1024;
     private int patternValue = PARTITION_LENGTH; // mod value
-    private String mapFile;
+    private String mapFile = null;
+    private String ruleFile = null;
     private LongRange[] longRanges;
     private Integer[] allNode;
     private int defaultNode = -1; // default node for unexpected value
@@ -45,6 +46,11 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
 
     public void setMapFile(String mapFile) {
         this.mapFile = mapFile;
+    }
+
+
+    public void setRuleFile(String ruleFile) {
+        this.ruleFile = ruleFile;
     }
 
     public void setPatternValue(int patternValue) {
@@ -181,7 +187,15 @@ public class PartitionByPattern extends AbstractPartitionAlgorithm implements Ru
         StringBuilder sb = new StringBuilder("{");
         BufferedReader in = null;
         try {
-            InputStream fin = ResourceUtil.getResourceAsStreamFromRoot(mapFile);
+            // FileInputStream fin = new FileInputStream(new File(fileMapPath));
+            String fileName = mapFile != null ? mapFile : ruleFile;
+            if (mapFile != null && ruleFile != null) {
+                throw new RuntimeException("Configuration duplication in " + this.getClass().getName() + " ruleFile & mapFile both exist");
+            } else if (mapFile == null && ruleFile == null) {
+                throw new RuntimeException("One of the ruleFile and mapFile need config in " + this.getClass().getName());
+            }
+
+            InputStream fin = ResourceUtil.getResourceAsStreamFromRoot(fileName);
             if (fin == null) {
                 throw new RuntimeException("can't find class resource file " + mapFile);
             }

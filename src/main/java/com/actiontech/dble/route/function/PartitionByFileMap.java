@@ -25,7 +25,9 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
     private static final Logger LOGGER = LoggerFactory.getLogger(PartitionByFileMap.class);
     private static final long serialVersionUID = 1884866019947627284L;
     private String mapFile;
+    private String ruleFile;
     private Map<Object, Integer> app2Partition;
+    private int partitionNum = 0;
     /**
      * Map<Object, Integer> app2Partition key's type:default 0 means Integer,other means String
      */
@@ -106,15 +108,25 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
 
     @Override
     public int getPartitionNum() {
-        Set<Integer> set = new HashSet<>(app2Partition.values());
-        return set.size();
+        return partitionNum;
+    }
+
+
+    public void setRuleFile(String ruleFile) {
+        this.ruleFile = ruleFile;
     }
 
     private void initialize() {
         StringBuilder sb = new StringBuilder("{");
         BufferedReader in = null;
         try {
-            InputStream fin = ResourceUtil.getResourceAsStreamFromRoot(mapFile);
+            String fileName = mapFile != null ? mapFile : ruleFile;
+            if (mapFile != null && ruleFile != null) {
+                throw new RuntimeException("Configuration duplication in " + this.getClass().getName() + " ruleFile & mapFile both exist");
+            } else if (mapFile == null && ruleFile == null) {
+                throw new RuntimeException("One of the ruleFile and mapFile need config in " + this.getClass().getName());
+            }
+            InputStream fin = ResourceUtil.getResourceAsStreamFromRoot(fileName);
             if (fin == null) {
                 throw new RuntimeException("can't find class resource file " + mapFile);
             }
@@ -161,6 +173,8 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
             if (defaultNode >= 0) {
                 app2Partition.put(DEFAULT_NODE, defaultNode);
             }
+            Set<Integer> set = new HashSet<>(app2Partition.values());
+            partitionNum = set.size();
         } catch (Exception e) {
             if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;

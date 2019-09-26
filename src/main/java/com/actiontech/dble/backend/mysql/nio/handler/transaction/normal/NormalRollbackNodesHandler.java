@@ -105,6 +105,9 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
     public void connectionClose(BackendConnection conn, String reason) {
         // quitted
         this.setFail(reason);
+        RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+        session.getTargetMap().remove(rNode);
+        conn.setResponseHandler(null);
         if (decrementToZero(conn)) {
             cleanAndFeedback();
         }

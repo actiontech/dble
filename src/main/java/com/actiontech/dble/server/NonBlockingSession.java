@@ -508,10 +508,10 @@ public class NonBlockingSession implements Session {
                 multiNodeHandler.execute();
             } catch (Exception e) {
                 LOGGER.info(String.valueOf(source) + rrs, e);
-                multiNodeHandler.setException(true);
                 if (!source.isAutocommit() || source.isTxStart()) {
                     source.setTxInterrupt("ROLLBACK");
                 }
+                multiNodeHandler.waitAllConnConnectorError();
                 closeConnections();
                 setResponseTime(false);
                 source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
@@ -806,7 +806,6 @@ public class NonBlockingSession implements Session {
         }
 
     }
-
 
     private void closeConnections() {
         Iterator<Entry<RouteResultsetNode, BackendConnection>> iter = target.entrySet().iterator();

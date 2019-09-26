@@ -34,6 +34,9 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * @author mycat
@@ -58,7 +61,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     private volatile ByteBuffer byteBuffer;
     private Set<BackendConnection> closedConnSet;
     private final boolean modifiedSQL;
-    private volatile boolean isException = false;
+    protected Set<RouteResultsetNode> connRrns = new ConcurrentSkipListSet<>();
     private Map<String, Integer> dataNodePauseInfo; // only for debug
 
     public MultiNodeQueryHandler(RouteResultset rrs, NonBlockingSession session) {
@@ -81,12 +84,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     @Override
     protected void reset() {
         super.reset();
+        connRrns.clear();
         this.netOutBytes = 0;
         this.resultSize = 0;
-    }
-
-    public void setException(boolean exception) {
-        isException = exception;
     }
 
     public NonBlockingSession getSession() {
@@ -120,6 +120,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 node.setRunOnSlave(rrs.getRunOnSlave());
                 innerExecute(conn, node);
             } else {
+                connRrns.add(node);
                 // create new connection
                 node.setRunOnSlave(rrs.getRunOnSlave());
                 PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
@@ -186,12 +187,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     public void connectionAcquired(final BackendConnection conn) {
         final RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
         session.bindConnection(node, conn);
-        if (isException) {
-            conn.setResponseHandler(null);
-            conn.close("other node prepare conns failed");
-        } else {
-            innerExecute(conn, node);
-        }
+        connRrns.remove(node);
+        innerExecute(conn, node);
     }
 
     @Override
@@ -254,8 +251,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     affectedRows = ok.getAffectedRows();
                 }
                 if (ok.getInsertId() > 0) {
-                    insertId = (insertId == 0) ? ok.getInsertId() : Math.min(
-                            insertId, ok.getInsertId());
+                    insertId = (insertId == 0) ? ok.getInsertId() : Math.min(insertId, ok.getInsertId());
                 }
                 if (!decrementToZero(conn))
                     return;
@@ -643,7 +639,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
     }
 
-
+    public void waitAllConnConnectorError() {
+        while (connRrns.size() - 1 != errorConnsCnt) {
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
+        }
+    }
 
     private void initDebugInfo() {
         if (LOGGER.isDebugEnabled()) {

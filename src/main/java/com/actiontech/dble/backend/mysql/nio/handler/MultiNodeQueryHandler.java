@@ -148,7 +148,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         if (checkClosedConn(conn)) {
             return;
         }
-        LOGGER.warn("backend connect" + reason + ", conn info:" + conn);
+        LOGGER.warn("backend connect " + reason + ", conn info:" + conn);
         ErrorPacket errPacket = new ErrorPacket();
         byte lastPacketId = packetId;
         errPacket.setPacketId(++lastPacketId);
@@ -162,6 +162,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         try {
             RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
             unResponseRrns.remove(rNode);
+            session.getTargetMap().remove(rNode);
+            conn.setResponseHandler(null);
             executeError(conn);
         } finally {
             lock.unlock();

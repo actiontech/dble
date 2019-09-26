@@ -107,7 +107,9 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
             return;
         }
         this.setFail(reason);
-        conn.close("commit connection closed");
+        RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+        session.getTargetMap().remove(rNode);
+        conn.setResponseHandler(null);
         if (decrementToZero(conn)) {
             cleanAndFeedback();
         }

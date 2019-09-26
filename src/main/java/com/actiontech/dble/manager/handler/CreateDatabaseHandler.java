@@ -87,7 +87,7 @@ public final class CreateDatabaseHandler {
                 }
 
             });
-            SQLJob sqlJob = new SQLJob("create database if not exists " + dn.getDatabase(), null, resultHandler, ds);
+            SQLJob sqlJob = new SQLJob("create database if not exists `" + dn.getDatabase() + "`", null, resultHandler, ds);
             sqlJob.run();
         }
 

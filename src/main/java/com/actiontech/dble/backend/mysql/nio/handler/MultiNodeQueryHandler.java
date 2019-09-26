@@ -58,6 +58,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     private volatile ByteBuffer byteBuffer;
     private Set<BackendConnection> closedConnSet;
     private final boolean modifiedSQL;
+    private volatile boolean isException = false;
     private Map<String, Integer> dataNodePauseInfo; // only for debug
 
     public MultiNodeQueryHandler(RouteResultset rrs, NonBlockingSession session) {
@@ -82,6 +83,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         super.reset();
         this.netOutBytes = 0;
         this.resultSize = 0;
+    }
+
+    public void setException(boolean exception) {
+        isException = exception;
     }
 
     public NonBlockingSession getSession() {
@@ -181,7 +186,12 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     public void connectionAcquired(final BackendConnection conn) {
         final RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
         session.bindConnection(node, conn);
-        innerExecute(conn, node);
+        if (isException) {
+            conn.setResponseHandler(null);
+            conn.close("other node prepare conns failed");
+        } else {
+            innerExecute(conn, node);
+        }
     }
 
     @Override

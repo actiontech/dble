@@ -33,7 +33,7 @@ public class ItemFuncRegex extends ItemBoolFunc {
         String arg1 = args.get(1).valStr();
         if (nullValue = (args.get(0).isNullValue() || args.get(1).isNullValue()))
             return BigInteger.ZERO;
-        return arg0.matches(arg1) ? BigInteger.ONE : BigInteger.ZERO;
+        return arg0.matches(".*" + arg1 + ".*") ? BigInteger.ONE : BigInteger.ZERO;
     }
 
     @Override

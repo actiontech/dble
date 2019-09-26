@@ -605,9 +605,9 @@ public class MySQLConnection extends AbstractConnection implements
     }
 
     private static void getChangeSchemaCommand(StringBuilder sb, String schema) {
-        sb.append("use ");
+        sb.append("use `");
         sb.append(schema);
-        sb.append(";");
+        sb.append("`;");
     }
 
     /**

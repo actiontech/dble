@@ -23,7 +23,8 @@ import java.util.LinkedList;
 public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements RuleAlgorithm {
     private static final long serialVersionUID = 5752372920655270639L;
     private static final Logger LOGGER = LoggerFactory.getLogger(AutoPartitionByLong.class);
-    private String mapFile;
+    private String mapFile = null;
+    private String ruleFile = null;
     private LongRange[] longRanges;
     private int defaultNode = -1;
     private int hashCode = 1;
@@ -41,6 +42,11 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
 
     public void setMapFile(String mapFile) {
         this.mapFile = mapFile;
+    }
+
+
+    public void setRuleFile(String ruleFile) {
+        this.ruleFile = ruleFile;
     }
 
     @Override
@@ -131,7 +137,14 @@ public class AutoPartitionByLong extends AbstractPartitionAlgorithm implements R
         BufferedReader in = null;
         try {
             // FileInputStream fin = new FileInputStream(new File(fileMapPath));
-            InputStream fin = ResourceUtil.getResourceAsStreamFromRoot(mapFile);
+            String fileName = mapFile != null ? mapFile : ruleFile;
+            if (mapFile != null && ruleFile != null) {
+                throw new RuntimeException("Configuration duplication in " + this.getClass().getName() + " ruleFile & mapFile both exist");
+            } else if (mapFile == null && ruleFile == null) {
+                throw new RuntimeException("One of the ruleFile and mapFile need config in " + this.getClass().getName());
+            }
+            // FileInputStream fin = new FileInputStream(new File(fileMapPath));
+            InputStream fin = ResourceUtil.getResourceAsStreamFromRoot(fileName);
             if (fin == null) {
                 throw new RuntimeException("can't find class resource file " + mapFile);
             }

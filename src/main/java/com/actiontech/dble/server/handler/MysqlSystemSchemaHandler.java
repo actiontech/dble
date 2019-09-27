@@ -10,6 +10,7 @@ import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.util.SchemaUtil;
+import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 import com.alibaba.druid.sql.ast.statement.SQLUnionQuery;
@@ -38,14 +39,13 @@ public final class MysqlSystemSchemaHandler {
             sc.write(sc.writeToBuffer(OkPacket.OK, sc.allocate()));
             return;
         }
-
+        FieldPacket[] fields = generateFieldPacket(mySqlSelectQueryBlock.getSelectList());
         if (schemaInfo != null && INFORMATION_SCHEMA.equals(schemaInfo.getSchema().toUpperCase()) &&
                 SCHEMATA_TABLE.equals(schemaInfo.getTable().toUpperCase())) {
-            MysqlInformationSchemaHandler.handle(schemaInfo, sc);
+            MysqlInformationSchemaHandler.handle(sc, fields);
             return;
         }
 
-        FieldPacket[] fields = generateFieldPacket(mySqlSelectQueryBlock.getSelectList());
         doWrite(fields.length, fields, null, sc);
     }
 
@@ -55,9 +55,9 @@ public final class MysqlSystemSchemaHandler {
             String columnName;
             SQLSelectItem selectItem = selectList.get(i);
             if (selectItem.getAlias() != null) {
-                columnName = selectList.get(i).getAlias();
+                columnName = StringUtil.removeBackQuote(selectList.get(i).getAlias());
             } else {
-                columnName = selectItem.toString();
+                columnName = StringUtil.removeBackQuote(selectItem.toString());
             }
             fields[i] = PacketUtil.getField(columnName, Fields.FIELD_TYPE_VAR_STRING);
         }

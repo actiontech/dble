@@ -215,7 +215,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             session.multiStatementPacket(ok, packetId);
             boolean multiStatementFlag = session.getIsMultiStatement().get();
             doSqlStat();
-            if (rrs.getSqlType() == ServerParse.CALL || writeToClient.compareAndSet(false, true)) {
+            if (rrs.isCallStatement() || writeToClient.compareAndSet(false, true)) {
                 ok.write(source);
             }
             session.multiStatementNextSql(multiStatementFlag);

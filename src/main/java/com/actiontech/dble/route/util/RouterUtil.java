@@ -806,7 +806,7 @@ public final class RouterUtil {
                 // global select ,not cache route result
                 rrs.setCacheAble(false);
                 rrs.setGlobalTable(true);
-                String randomDataNode = tc.getRandomDataNode();
+                String randomDataNode = tc.getDataNodes().get(0); //tc.getRandomDataNode();
                 rrs = routeToSingleNode(rrs, randomDataNode);
                 List<String> globalBackupNodes = new ArrayList<>(tc.getDataNodes().size() - 1);
                 for (String dataNode : tc.getDataNodes()) {

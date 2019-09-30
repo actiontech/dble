@@ -493,6 +493,14 @@ public final class StringUtil {
         return str;
     }
 
+    public static boolean isAlias(String aliasName) {
+        if (aliasName.contains("`.") || aliasName.contains(".`") || aliasName.contains(".")) {
+            return false;
+        }
+        char firstValue = aliasName.charAt(0);
+        return (firstValue == '`') && (firstValue == aliasName.charAt(aliasName.length() - 1));
+    }
+
     public static String removeAllApostrophe(String str) {
         if (str.length() > 1) {
             char firstValue = str.charAt(0);

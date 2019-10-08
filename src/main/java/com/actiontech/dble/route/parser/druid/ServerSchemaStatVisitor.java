@@ -7,6 +7,7 @@ package com.actiontech.dble.route.parser.druid;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.route.util.RouterUtil;
+import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLObject;
@@ -441,9 +442,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                 tableName = getOwnerTableName(betweenExpr, column);
             }
             if (tableName != null && !"".equals(tableName)) {
-                if (aliasMap.containsKey(tableName)) {
-                    aliasMap.put(tableName, tableName.replace("`", ""));
-                }
+                checkAliasInColumn(tableName);
                 return new Column(tableName, column);
             }
         }
@@ -474,13 +473,28 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             } else {
                 tableName = ((SQLIdentifierExpr) owner).getName();
             }
-            if (!aliasMap.containsKey(tableName)) {
-                aliasMap.put(tableName, tableName.replace("`", ""));
-            }
+            checkAliasInColumn(tableName);
             return new Column(tableName, column);
         }
 
         return null;
+    }
+
+    private void checkAliasInColumn(String tableName) {
+        if (aliasMap.containsKey(tableName)) {
+            return;
+        }
+        String tempStr;
+        if (StringUtil.isAlias(tableName)) {
+            tempStr = tableName.replace("`", "");
+        } else {
+            tempStr = "`" + tableName + "`";
+        }
+        if (aliasMap.containsKey(tempStr)) {
+            putAliasToMap(tableName, aliasMap.get(tempStr));
+        } else {
+            putAliasToMap(tableName, tableName.replace("`", ""));
+        }
     }
 
     /**

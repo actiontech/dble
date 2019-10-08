@@ -37,8 +37,7 @@ public final class InstanceOnline {
         }
         try {
             JSONObject jsonObj = JSONObject.parseObject(value);
-            return serverPort == Long.parseLong(jsonObj.getString(SERVER_PORT)) &&
-                    hostAddr.equals(jsonObj.getString(HOST_ADDR));
+            return hostAddr.equals(jsonObj.getString(HOST_ADDR));
         } catch (Exception e) {
             //remove the old online timestamp when upgrade from old version
             return true;

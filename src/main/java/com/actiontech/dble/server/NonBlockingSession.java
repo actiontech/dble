@@ -844,8 +844,7 @@ public class NonBlockingSession implements Session {
             BackendConnection c = entry.getValue();
             iter.remove();
             if (c != null) {
-                c.setResponseHandler(null);
-                c.close("other node prepare conns failed");
+                c.closeWithoutRsp("other node prepare conns failed");
             }
         }
     }

@@ -79,6 +79,14 @@ public final class OnlineStatus {
         return true;
     }
 
+    public void shutdownClear() {
+        if (onlineLock != null) {
+            onlineLock.release();
+            ClusterHelper.cleanKV(ClusterPathUtil.getOnlinePath(ClusterGeneralConfig.getInstance().
+                    getValue(ClusterParamCfg.CLUSTER_CFG_MYID)));
+            LOGGER.info("shut down online status clear");
+        }
+    }
 
     public boolean canRemovePath(String value) {
         if (hostAddr == null) {

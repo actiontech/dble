@@ -10,6 +10,7 @@ import com.actiontech.dble.cluster.ClusterController;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.manager.handler.ShowServerLog;
+import com.actiontech.dble.singleton.OnlineStatus;
 
 /**
  * @author mycat
@@ -26,6 +27,12 @@ public final class DbleStartup {
                 System.out.println(SystemConfig.SYS_HOME + "  is not set.");
                 System.exit(-1);
             }
+            Runtime.getRuntime().addShutdownHook(new Thread() {
+                @Override
+                public void run() {
+                    OnlineStatus.getInstance().shutdownClear();
+                }
+            });
             // startup
             DbleServer.getInstance().startup();
             System.out.println("Server startup successfully. dble version is [" + new String(Versions.getServerVersion()) + "]. Please see logs in logs/" + ShowServerLog.DEFAULT_LOGFILE);

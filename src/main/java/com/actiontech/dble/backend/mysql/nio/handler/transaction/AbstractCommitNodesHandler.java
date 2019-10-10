@@ -61,6 +61,14 @@ public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implem
     public void writeQueueAvailable() {
     }
 
+    @Override
+    public void reset() {
+        errorConnsCnt = 0;
+        firstResponsed = false;
+        unResponseRrns.clear();
+        packetId = 0;
+    }
+
     public void debugCommitDelay() {
     }
 

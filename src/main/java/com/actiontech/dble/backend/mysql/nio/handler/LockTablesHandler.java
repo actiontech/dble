@@ -19,6 +19,7 @@ import com.actiontech.dble.server.parser.ServerParse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -36,11 +37,12 @@ public class LockTablesHandler extends MultiNodeHandler {
     public LockTablesHandler(NonBlockingSession session, RouteResultset rrs) {
         super(session);
         this.rrs = rrs;
+        unResponseRrns.addAll(Arrays.asList(rrs.getNodes()));
         this.autocommit = session.getSource().isAutocommit();
     }
 
     public void execute() throws Exception {
-        super.reset(this.rrs.getNodes().length);
+        super.reset();
         for (final RouteResultsetNode node : rrs.getNodes()) {
             BackendConnection conn = session.getTarget(node);
             if (session.tryExistsCon(conn, node)) {
@@ -76,7 +78,8 @@ public class LockTablesHandler extends MultiNodeHandler {
             session.releaseConnectionIfSafe(conn, false);
         } else {
             conn.closeWithoutRsp("unfinished sync");
-            session.getTargetMap().remove(conn.getAttachment());
+            RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+            session.getTargetMap().remove(rNode);
         }
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);
@@ -85,7 +88,7 @@ public class LockTablesHandler extends MultiNodeHandler {
             setFail(errMsg);
         }
         LOGGER.info("error response from " + conn + " err " + errMsg + " code:" + errPacket.getErrNo());
-        this.tryErrorFinished(this.decrementCountBy(1));
+        this.tryErrorFinished(this.decrementToZero(conn));
     }
 
     @Override
@@ -95,7 +98,7 @@ public class LockTablesHandler extends MultiNodeHandler {
             if (clearIfSessionClosed(session)) {
                 return;
             }
-            boolean isEndPack = decrementCountBy(1);
+            boolean isEndPack = decrementToZero(conn);
             final RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
             if (node.getSqlType() == ServerParse.UNLOCK) {
                 session.releaseConnection(conn);

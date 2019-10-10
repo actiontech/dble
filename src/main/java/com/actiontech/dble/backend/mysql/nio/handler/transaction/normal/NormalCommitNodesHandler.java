@@ -18,23 +18,21 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
 
     @Override
     public void commit() {
-        final int initCount = session.getTargetCount();
-        if (initCount <= 0) {
+        if (session.getTargetCount() <= 0) {
             if (implictCommitHandler == null && sendData == null) {
                 sendData = session.getOkByteArray();
             }
             cleanAndFeedback();
             return;
         }
-
         lock.lock();
         try {
-            reset(initCount);
+            reset();
         } finally {
             lock.unlock();
         }
-
         int position = 0;
+        unResponseRrns.addAll(session.getTargetKeys());
         for (RouteResultsetNode rrn : session.getTargetKeys()) {
             final BackendConnection conn = session.getTarget(rrn);
             conn.setResponseHandler(this);
@@ -65,7 +63,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
 
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
-        if (decrementCountBy(1)) {
+        if (decrementToZero(conn)) {
             if (implictCommitHandler == null && sendData == null) {
                 sendData = session.getOkByteArray();
             }
@@ -80,17 +78,25 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
         String errMsg = new String(errPacket.getMessage());
         this.setFail(errMsg);
         conn.close("commit response error");
-        if (decrementCountBy(1)) {
+        if (decrementToZero(conn)) {
             cleanAndFeedback();
         }
     }
 
+    // should be not happen
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
         LOGGER.info("backend connect", e);
         this.setFail(e.getMessage());
-        conn.close("Commit connection Error");
-        if (decrementCountBy(1)) {
+        boolean finished;
+        lock.lock();
+        try {
+            errorConnsCnt++;
+            finished = canResponse();
+        } finally {
+            lock.unlock();
+        }
+        if (finished) {
             cleanAndFeedback();
         }
     }
@@ -101,8 +107,10 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
             return;
         }
         this.setFail(reason);
-        conn.close("commit connection closed");
-        if (decrementCountBy(1)) {
+        RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+        session.getTargetMap().remove(rNode);
+        conn.setResponseHandler(null);
+        if (decrementToZero(conn)) {
             cleanAndFeedback();
         }
     }

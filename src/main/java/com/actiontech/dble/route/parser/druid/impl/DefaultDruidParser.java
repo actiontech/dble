@@ -11,8 +11,6 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.singleton.CacheService;
-import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -22,6 +20,8 @@ import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.singleton.CacheService;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.sqlengine.mpp.IsValue;
 import com.actiontech.dble.sqlengine.mpp.RangeValue;
 import com.actiontech.dble.util.StringUtil;
@@ -95,16 +95,14 @@ public class DefaultDruidParser implements DruidParser {
             return null;
         }
         Map<String, String> tableAliasMap = new HashMap<>(originTableAliasMap);
-        for (Map.Entry<String, String> entry : originTableAliasMap.entrySet()) {
-            String key = entry.getKey();
-            String value = entry.getValue();
-            if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
-                if (key != null) {
-                    key = key.toLowerCase();
-                }
-                if (value != null) {
-                    value = value.toLowerCase();
-                }
+        Iterator<Map.Entry<String, String>> iterator = tableAliasMap.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, String> next = iterator.next();
+            String key = next.getKey();
+            String value = next.getValue();
+            if ("subquery".equalsIgnoreCase(value)) {
+                iterator.remove();
+                continue;
             }
             if (key != null) {
                 int pos = key.indexOf(".");

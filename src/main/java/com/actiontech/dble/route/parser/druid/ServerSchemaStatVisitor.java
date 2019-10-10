@@ -159,6 +159,12 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     }
 
     @Override
+    public boolean visit(SQLSubqueryTableSource x) {
+        putAliasToMap(x.getAlias(), "subquery");
+        return super.visit(x);
+    }
+
+    @Override
     public boolean visit(SQLSelectStatement x) {
         aliasMap.clear();
         selectTableList.clear();
@@ -302,10 +308,10 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             String ident = identName.toString();
             currentTable = ident;
 
-            aliasMap.put(ident, ident.replace("`", ""));
+            putAliasToMap(ident, ident.replace("`", ""));
             String alias = x.getTableSource().getAlias();
             if (alias != null) {
-                aliasMap.put(alias, ident.replace("`", ""));
+                putAliasToMap(alias, ident.replace("`", ""));
             }
         } else {
             x.getTableSource().accept(this);

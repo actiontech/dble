@@ -114,31 +114,6 @@ public class ConfigStatusResponse implements ClusterXmlLoader {
                     } finally {
                         lock.unlock();
                     }
-                } else {
-                    LOGGER.info("reload " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
-                    final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
-                    lock.lock();
-                    try {
-                        if (!ReloadManager.startReload(TRIGGER_TYPE_CLUSTER, ConfStatus.Status.RELOAD)) {
-                            LOGGER.info("reload config failed because self is in reloading");
-                            ClusterHelper.setKV(ClusterPathUtil.getSelfConfStatusPath(),
-                                    "Reload status error ,other client or cluster may in reload");
-                            return;
-                        }
-                        try {
-                            boolean result = ReloadConfig.reload();
-                            if (!checkLocalResult(result)) {
-                                return;
-                            }
-                        } catch (Exception e) {
-                            throw e;
-                        } finally {
-                            ReloadManager.reloadFinish();
-                        }
-
-                    } finally {
-                        lock.unlock();
-                    }
                 }
                 ClusterDelayProvider.delayAfterSlaveReload();
                 LOGGER.info("reload config: sent config status success to ucore start");
@@ -154,7 +129,7 @@ public class ConfigStatusResponse implements ClusterXmlLoader {
     }
 
 
-    public boolean checkLocalResult(boolean result) throws Exception {
+    private boolean checkLocalResult(boolean result) throws Exception {
         if (!result) {
             LOGGER.info("reload config: sent config status success to ucore start");
             ClusterDelayProvider.delayAfterSlaveReload();

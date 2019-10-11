@@ -153,12 +153,6 @@ public final class RollbackConfig {
     }
 
 
-    /**
-     * start the rollback when the zk is in using
-     *
-     * @param zkConn
-     * @param c
-     */
     private static void rollbackWithZk(CuratorFramework zkConn, ManagerConnection c) {
         final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.lock();
@@ -238,7 +232,7 @@ public final class RollbackConfig {
     private static void writeErrorResultForCluster(ManagerConnection c, String errorMsg) {
         String sb = "Reload config failed partially. The node(s) failed because of:[" + errorMsg + "]";
         LOGGER.warn(sb);
-        if (errorMsg.indexOf("interrupt by command") != -1) {
+        if (errorMsg.contains("interrupt by command")) {
             c.writeErrMessage(ErrorCode.ER_RELOAD_INTERRUPUTED, sb);
         } else {
             c.writeErrMessage(ErrorCode.ER_CLUSTER_RELOAD, sb);
@@ -257,9 +251,7 @@ public final class RollbackConfig {
         FirewallConfig firewall = conf.getBackupFirewall();
         Map<ERTable, Set<ERTable>> erRelations = conf.getBackupErRelations();
         boolean backDataHostWithoutWR = conf.backDataHostWithoutWR();
-        if (conf.canRollback()) {
-            conf.rollback(users, schemas, dataNodes, dataHosts, erRelations, firewall, backDataHostWithoutWR);
-        } else if (conf.canRollbackAll()) {
+        if (conf.canRollbackAll()) {
             boolean rollbackStatus = true;
             String errorMsg = null;
             for (PhysicalDBPool dn : dataHosts.values()) {
@@ -290,6 +282,5 @@ public final class RollbackConfig {
         } else {
             throw new Exception("there is no old version");
         }
-        return true;
     }
 }

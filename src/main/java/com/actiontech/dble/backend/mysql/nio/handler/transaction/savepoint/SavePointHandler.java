@@ -57,16 +57,15 @@ public class SavePointHandler extends MultiNodeHandler {
             return;
         }
 
-        final int initCount = session.getTargetCount();
         lock.lock();
         try {
-            reset(initCount);
+            reset();
         } finally {
             lock.unlock();
         }
 
         SavePoint latestSp = savepoints.getPrev();
-        if (latestSp == null || initCount > latestSp.getRouteNodes().size()) {
+        if (latestSp == null || session.getTargetCount() > latestSp.getRouteNodes().size()) {
             newSp.setRouteNodes(new HashSet<>(session.getTargetKeys()));
         } else {
             newSp.setRouteNodes(latestSp.getRouteNodes());
@@ -93,10 +92,9 @@ public class SavePointHandler extends MultiNodeHandler {
             return;
         }
 
-        final int initCount = session.getTargetCount();
         lock.lock();
         try {
-            reset(initCount);
+            reset();
         } finally {
             lock.unlock();
         }
@@ -166,7 +164,7 @@ public class SavePointHandler extends MultiNodeHandler {
 
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
-        if (decrementCountBy(1)) {
+        if (decrementToZero(conn)) {
             cleanAndFeedback();
         }
     }
@@ -178,7 +176,7 @@ public class SavePointHandler extends MultiNodeHandler {
         String errMsg = new String(errPacket.getMessage());
         LOGGER.warn("get error package, content is:" + errMsg);
         this.setFail(errMsg);
-        if (decrementCountBy(1)) {
+        if (decrementToZero(conn)) {
             cleanAndFeedback();
         }
     }
@@ -189,7 +187,7 @@ public class SavePointHandler extends MultiNodeHandler {
         String errMsg = "Connection {DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
                 ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
         this.setFail(errMsg);
-        if (decrementCountBy(1)) {
+        if (decrementToZero(conn)) {
             cleanAndFeedback();
         }
     }
@@ -199,7 +197,7 @@ public class SavePointHandler extends MultiNodeHandler {
         LOGGER.warn("backend connect err:", e);
         this.setFail(e.getMessage());
         conn.close("savepoint connection Error");
-        if (decrementCountBy(1)) {
+        if (decrementToZero(conn)) {
             cleanAndFeedback();
         }
     }

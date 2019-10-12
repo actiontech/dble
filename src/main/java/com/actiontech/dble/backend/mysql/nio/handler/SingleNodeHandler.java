@@ -80,10 +80,13 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         if (session.getTargetCount() > 0) {
             BackendConnection conn = session.getTarget(node);
             if (conn == null && rrs.isGlobalTable() && rrs.getGlobalBackupNodes() != null) {
+                // read only trx for global table
                 for (String dataNode : rrs.getGlobalBackupNodes()) {
                     RouteResultsetNode tmpNode = new RouteResultsetNode(dataNode, rrs.getSqlType(), rrs.getStatement());
                     conn = session.getTarget(tmpNode);
                     if (conn != null) {
+                        session.getTargetMap().remove(tmpNode);
+                        session.bindConnection(node, conn);
                         break;
                     }
                 }

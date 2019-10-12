@@ -492,6 +492,13 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 session.getSource().write(byteBuffer);
                 handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
             }
+        } else if (errConnection.size() == rrs.getNodes().length && (!session.getSource().isAutocommit() || session.getSource().isTxStart())) {
+            for (BackendConnection errConn : errConnection) {
+                if (!errConn.isClosed()) {
+                    return;
+                }
+            }
+            session.getSource().setTxInterrupt(error);
         }
     }
 

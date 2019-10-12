@@ -204,15 +204,13 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         errPacket.read(data);
         errPacket.setPacketId(1);
         err = errPacket;
+        LOGGER.info("ddl do select 1 errorResponse:", err.getMessage());
         lock.lock();
         try {
             if (!isFail()) {
                 setFail(new String(errPacket.getMessage()));
             }
-            if (!conn.syncAndExecute()) {
-                return;
-            }
-            if (canResponse()) {
+            if (decrementToZero(conn) && errorResponse.compareAndSet(false, true)) {
                 session.handleSpecial(oriRrs, false);
                 handleRollbackPacket(err.toBytes());
             }

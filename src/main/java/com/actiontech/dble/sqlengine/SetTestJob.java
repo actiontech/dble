@@ -42,11 +42,15 @@ public class SetTestJob implements ResponseHandler, Runnable {
     }
 
     public void run() {
+        boolean sendTest = false;
         try {
             Map<String, PhysicalDBPool> dataHosts = DbleServer.getInstance().getConfig().getDataHosts();
             for (PhysicalDBPool dn : dataHosts.values()) {
-                dn.getSource().getConnection(databaseName, true, this, null);
-                break;
+                if (dn.getSource().isAlive()) {
+                    dn.getSource().getConnection(databaseName, true, this, null);
+                    sendTest = true;
+                    break;
+                }
             }
         } catch (Exception e) {
             if (hasReturn.compareAndSet(false, true)) {
@@ -55,6 +59,12 @@ public class SetTestJob implements ResponseHandler, Runnable {
                 doFinished(true);
                 sc.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, reason);
             }
+        }
+        if (!sendTest && hasReturn.compareAndSet(false, true)) {
+            String reason = "can't get backend connection for sql :" + sql + " all datasrouce dead";
+            LOGGER.info(reason);
+            doFinished(true);
+            sc.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, reason);
         }
     }
 

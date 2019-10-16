@@ -39,6 +39,9 @@ public class ChildTable implements Named {
     @XmlAttribute
     protected String incrementColumn;
 
+    @XmlAttribute
+    protected Boolean needAddLimit;
+
     protected List<ChildTable> childTable;
 
     public String getName() {
@@ -99,6 +102,15 @@ public class ChildTable implements Named {
     public void setIncrementColumn(String incrementColumn) {
         this.incrementColumn = incrementColumn;
     }
+
+    public Boolean getNeedAddLimit() {
+        return needAddLimit;
+    }
+
+    public void setNeedAddLimit(Boolean needAddLimit) {
+        this.needAddLimit = needAddLimit;
+    }
+
 
     @Override
     public String toString() {

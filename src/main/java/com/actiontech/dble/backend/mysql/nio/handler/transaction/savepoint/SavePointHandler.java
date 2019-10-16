@@ -71,6 +71,7 @@ public class SavePointHandler extends MultiNodeHandler {
             newSp.setRouteNodes(latestSp.getRouteNodes());
         }
 
+        unResponseRrns.addAll(session.getTargetKeys());
         for (RouteResultsetNode rrn : session.getTargetKeys()) {
             final BackendConnection conn = session.getTarget(rrn);
             conn.setResponseHandler(this);
@@ -100,6 +101,7 @@ public class SavePointHandler extends MultiNodeHandler {
         }
 
         Set lastNodes = sp.getPrev().getRouteNodes();
+        unResponseRrns.addAll(session.getTargetKeys());
         for (RouteResultsetNode rrn : session.getTargetKeys()) {
             final BackendConnection conn = session.getTarget(rrn);
             conn.setResponseHandler(this);
@@ -187,6 +189,9 @@ public class SavePointHandler extends MultiNodeHandler {
         String errMsg = "Connection {DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
                 ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
         this.setFail(errMsg);
+        RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+        session.getTargetMap().remove(rNode);
+        conn.setResponseHandler(null);
         if (decrementToZero(conn)) {
             cleanAndFeedback();
         }
@@ -194,10 +199,17 @@ public class SavePointHandler extends MultiNodeHandler {
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        LOGGER.warn("backend connect err:", e);
-        this.setFail(e.getMessage());
-        conn.close("savepoint connection Error");
-        if (decrementToZero(conn)) {
+        LOGGER.warn("connection Error in savePointHandler, err:", e);
+        boolean finished;
+        lock.lock();
+        try {
+            errorConnsCnt++;
+            finished = canResponse();
+        } finally {
+            lock.unlock();
+        }
+        conn.close("connection Error in savePointHandler");
+        if (finished) {
             cleanAndFeedback();
         }
     }

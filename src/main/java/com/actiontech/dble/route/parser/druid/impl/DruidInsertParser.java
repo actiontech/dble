@@ -359,8 +359,9 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         if (insert.isIgnore()) {
             sb.append("ignore ");
         }
-        sb.append("into ");
+        sb.append("into `");
         sb.append(schemaInfo.getTable());
+        sb.append("`");
 
         List<SQLExpr> columns = insert.getColumns();
 

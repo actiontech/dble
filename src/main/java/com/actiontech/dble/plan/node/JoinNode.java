@@ -86,7 +86,7 @@ public class JoinNode extends PlanNode {
         this();
         addChild(left);
         addChild(right);
-        setKeepFieldSchema(left.isKeepFieldSchema() && right.isKeepFieldSchema());
+        setKeepFieldSchema(left.isKeepFieldSchema() || right.isKeepFieldSchema());
     }
 
     @Override

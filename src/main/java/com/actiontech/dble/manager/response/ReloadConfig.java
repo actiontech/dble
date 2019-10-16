@@ -13,12 +13,13 @@ import com.actiontech.dble.backend.datasource.PhysicalDBPoolDiff;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.*;
+import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.ClusterParamCfg;
+import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.xmltoKv.XmltoCluster;
 import com.actiontech.dble.config.ConfigInitializer;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
-import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.xmltozk.XmltoZkMain;
@@ -40,6 +41,8 @@ import com.actiontech.dble.route.parser.ManagerParseConfig;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.variables.VarsExtractorHandler;
+import com.actiontech.dble.singleton.ClusterGeneralConfig;
+import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -72,17 +75,15 @@ public final class ReloadConfig {
         int rs = parser.parse(stmt, offset);
         switch (rs) {
             case ManagerParseConfig.CONFIG:
-                ReloadConfig.execute(c, false, 0);
-                break;
             case ManagerParseConfig.CONFIG_ALL:
-                ReloadConfig.execute(c, true, parser.getMode());
+                ReloadConfig.execute(c, parser.getMode());
                 break;
             default:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
         }
     }
 
-    private static void execute(ManagerConnection c, final boolean loadAll, final int loadAllMode) {
+    private static void execute(ManagerConnection c, final int loadAllMode) {
 
         if (ClusterGeneralConfig.isUseZK()) {
             CuratorFramework zkConn = ZKUtils.getConnection();
@@ -95,11 +96,11 @@ public final class ReloadConfig {
                 LOGGER.info("reload config: added distributeLock " + KVPathUtil.getConfChangeLockPath() + " to zk");
                 ClusterDelayProvider.delayAfterReloadLock();
                 try {
-                    if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, loadAll ? ConfStatus.Status.RELOAD_ALL : ConfStatus.Status.RELOAD)) {
+                    if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, ConfStatus.Status.RELOAD_ALL)) {
                         writeErrorResult(c, "Reload status error ,other client or cluster may in reload");
                         return;
                     }
-                    reloadWithZookeeper(loadAll, loadAllMode, zkConn, c);
+                    reloadWithZookeeper(loadAllMode, zkConn, c);
                 } finally {
                     distributeLock.release();
                     LOGGER.info("reload config: release distributeLock " + KVPathUtil.getConfChangeLockPath() + " from zk");
@@ -119,11 +120,11 @@ public final class ReloadConfig {
                 LOGGER.info("reload config: added distributeLock " + ClusterPathUtil.getConfChangeLockPath() + " to ucore");
                 ClusterDelayProvider.delayAfterReloadLock();
                 try {
-                    if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, loadAll ? ConfStatus.Status.RELOAD_ALL : ConfStatus.Status.RELOAD)) {
+                    if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, ConfStatus.Status.RELOAD_ALL)) {
                         writeErrorResult(c, "Reload status error ,other client or cluster may in reload");
                         return;
                     }
-                    reloadWithUcore(loadAll, loadAllMode, c);
+                    reloadWithUcore(loadAllMode, c);
                 } finally {
                     distributeLock.release();
                     LOGGER.info("reload config: release distributeLock " + ClusterPathUtil.getConfChangeLockPath() + " from ucore");
@@ -138,11 +139,11 @@ public final class ReloadConfig {
             lock.lock();
             try {
                 try {
-                    if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, loadAll ? ConfStatus.Status.RELOAD_ALL : ConfStatus.Status.RELOAD)) {
+                    if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, ConfStatus.Status.RELOAD_ALL)) {
                         writeErrorResult(c, "Reload status error ,other client or cluster may in reload");
                         return;
                     }
-                    if (load(loadAll, loadAllMode)) {
+                    if (reloadAll(loadAllMode)) {
                         writeOKResult(c);
                     } else {
                         writeSpecialError(c, "Reload interruputed by others,metadata should be reload");
@@ -159,20 +160,13 @@ public final class ReloadConfig {
         ReloadManager.reloadFinish();
     }
 
-    /**
-     * reload the config with ucore notify
-     *
-     * @param loadAll
-     * @param loadAllMode
-     * @param c
-     */
-    private static void reloadWithUcore(final boolean loadAll, final int loadAllMode, ManagerConnection c) {
+    private static void reloadWithUcore(final int loadAllMode, ManagerConnection c) {
         //step 1 lock the local meta ,than all the query depends on meta will be hanging
         final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.lock();
         try {
             //step 2 reload the local config file
-            if (!load(loadAll, loadAllMode)) {
+            if (!reloadAll(loadAllMode)) {
                 writeSpecialError(c, "Reload interruputed by others,config should be reload");
                 return;
             }
@@ -185,8 +179,7 @@ public final class ReloadConfig {
             ReloadLogHelper.info("reload config: sent config file to ucore", LOGGER);
             //step 4 write the reload flag and self reload result into ucore,notify the other dble to reload
             ConfStatus status = new ConfStatus(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
-                    loadAll ? ConfStatus.Status.RELOAD_ALL : ConfStatus.Status.RELOAD,
-                    loadAll ? String.valueOf(loadAllMode) : null);
+                    ConfStatus.Status.RELOAD_ALL, String.valueOf(loadAllMode));
             ClusterHelper.setKV(ClusterPathUtil.getConfStatusPath(), status.toString());
             ReloadLogHelper.info("reload config: sent config status to ucore", LOGGER);
             ClusterHelper.setKV(ClusterPathUtil.getSelfConfStatusPath(), ClusterPathUtil.SUCCESS);
@@ -213,11 +206,11 @@ public final class ReloadConfig {
     }
 
 
-    private static void reloadWithZookeeper(final boolean loadAll, final int loadAllMode, CuratorFramework zkConn, ManagerConnection c) {
+    private static void reloadWithZookeeper(final int loadAllMode, CuratorFramework zkConn, ManagerConnection c) {
         final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.lock();
         try {
-            if (!load(loadAll, loadAllMode)) {
+            if (!reloadAll(loadAllMode)) {
                 writeSpecialError(c, "Reload interruputed by others,config should be reload");
                 return;
             }
@@ -225,7 +218,7 @@ public final class ReloadConfig {
             ClusterDelayProvider.delayAfterMasterLoad();
 
             ReloadManager.waitingOthers();
-            XmltoZkMain.writeConfFileToZK(loadAll, loadAllMode);
+            XmltoZkMain.writeConfFileToZK(loadAllMode);
             ReloadLogHelper.info("reload config: sent config status to zk", LOGGER);
             //tell zk this instance has prepared
             ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
@@ -264,15 +257,6 @@ public final class ReloadConfig {
             writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
         } finally {
             lock.unlock();
-        }
-    }
-
-
-    private static boolean load(final boolean loadAll, final int loadAllMode) throws Exception {
-        if (loadAll) {
-            return reloadAll(loadAllMode);
-        } else {
-            return reload();
         }
     }
 
@@ -320,7 +304,7 @@ public final class ReloadConfig {
         ReloadLogHelper.info("reload config: load all xml info start", LOGGER);
         ConfigInitializer loader;
         try {
-            loader = new ConfigInitializer(true, false);
+            loader = new ConfigInitializer(false);
         } catch (Exception e) {
             throw new Exception(e);
         }
@@ -392,10 +376,9 @@ public final class ReloadConfig {
          */
 
 
-        String reasonMsg = null;
         /* 2.2 init the dataSource with diff*/
         ReloadLogHelper.info("reload config: init new data host  start", LOGGER);
-        reasonMsg = initDataHostByMap(mergedDataHosts, newDataNodes);
+        String reasonMsg = initDataHostByMap(mergedDataHosts, newDataNodes);
         ReloadLogHelper.info("reload config: init new data host end", LOGGER);
         if (reasonMsg == null) {
             /* 2.3 apply new conf */
@@ -403,7 +386,7 @@ public final class ReloadConfig {
             boolean result;
             try {
                 result = config.reload(newUsers, newSchemas, newDataNodes, mergedDataHosts, addOrChangeHosts, recycleHosts, newErRelations, newFirewall,
-                        newSystemVariables, loader.isDataHostWithoutWH(), true, loadAllMode);
+                        newSystemVariables, loader.isDataHostWithoutWH(), loadAllMode);
                 if (!result) {
                     initFailed(newDataHosts);
                 }
@@ -460,7 +443,7 @@ public final class ReloadConfig {
             boolean result;
             try {
                 result = config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newDataHosts, config.getDataHosts(), newErRelations, newFirewall,
-                        newSystemVariables, loader.isDataHostWithoutWH(), true, loadAllMode);
+                        newSystemVariables, loader.isDataHostWithoutWH(), loadAllMode);
                 if (!result) {
                     initFailed(newDataHosts);
                 }
@@ -572,38 +555,6 @@ public final class ReloadConfig {
         }
 
     }
-
-
-    public static boolean reload() throws Exception {
-        /* 1 load new conf, ConfigInitializer will check itself */
-        ConfigInitializer loader;
-        try {
-            loader = new ConfigInitializer(false, DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
-        } catch (Exception e) {
-            throw new Exception(e);
-        }
-
-        ServerConfig serverConfig = new ServerConfig(loader);
-        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
-            serverConfig.reviseLowerCase();
-        }
-
-        Map<String, UserConfig> users = serverConfig.getUsers();
-        Map<String, SchemaConfig> schemas = serverConfig.getSchemas();
-        Map<String, PhysicalDBNode> dataNodes = serverConfig.getDataNodes();
-        Map<String, PhysicalDBPool> dataHosts = serverConfig.getDataHosts();
-        Map<ERTable, Set<ERTable>> erRelations = serverConfig.getErRelations();
-        FirewallConfig firewall = serverConfig.getFirewall();
-
-
-
-        /* 2 apply the new conf */
-        boolean result = DbleServer.getInstance().getConfig().reload(users, schemas, dataNodes, dataHosts, null, null, erRelations, firewall,
-                DbleServer.getInstance().getSystemVariables(), loader.isDataHostWithoutWH(), false, 0);
-        FrontendUserManager.getInstance().initForLatest(users, loader.getSystem().getMaxCon());
-        return result;
-    }
-
 
     private static void distinguishDataHost(Map<String, PhysicalDBPool> newDataHosts, Map<String, PhysicalDBPool> oldDataHosts,
                                             Map<String, PhysicalDBPool> addOrChangeHosts, Map<String, PhysicalDBPool> noChangeHosts,

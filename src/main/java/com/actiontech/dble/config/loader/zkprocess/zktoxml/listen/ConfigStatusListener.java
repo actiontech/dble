@@ -98,8 +98,7 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
             try {
                 ClusterDelayProvider.delayBeforeSlaveReload();
                 LOGGER.info("reload config: ready to reload config");
-                if (!ReloadManager.startReload(TRIGGER_TYPE_CLUSTER, status.getStatus() == ConfStatus.Status.RELOAD_ALL ?
-                        ConfStatus.Status.RELOAD_ALL : ConfStatus.Status.RELOAD)) {
+                if (!ReloadManager.startReload(TRIGGER_TYPE_CLUSTER, ConfStatus.Status.RELOAD_ALL)) {
                     LOGGER.info("reload config failed because self is in reloading");
                     ClusterHelper.setKV(ClusterPathUtil.getSelfConfStatusPath(),
                             "Reload status error ,other client or cluster may in reload");
@@ -107,11 +106,7 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
                 }
                 boolean result;
                 try {
-                    if (status.getStatus() == ConfStatus.Status.RELOAD_ALL) {
-                        result = ReloadConfig.reloadAll(Integer.parseInt(status.getParams()));
-                    } else {
-                        result = ReloadConfig.reload();
-                    }
+                    result = ReloadConfig.reloadAll(Integer.parseInt(status.getParams()));
                     if (!checkLocalResult(result)) {
                         return true;
                     }
@@ -135,7 +130,7 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
     }
 
 
-    public boolean checkLocalResult(boolean result) throws Exception {
+    private boolean checkLocalResult(boolean result) throws Exception {
         if (!result) {
             LOGGER.info("reload config: sent config status success to ucore start");
             ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),

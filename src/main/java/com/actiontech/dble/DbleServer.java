@@ -232,7 +232,7 @@ public final class DbleServer {
         if (ClusterGeneralConfig.isUseGeneralCluster()) {
             LOGGER.info("===================Init online status in cluster==================");
             try {
-                OnlineStatus.getInstance().metaUcoreInit(true);
+                OnlineStatus.getInstance().mainThreadInitClusterOnline();
             } catch (IOException e) {
                 throw e;
             } catch (Exception e) {

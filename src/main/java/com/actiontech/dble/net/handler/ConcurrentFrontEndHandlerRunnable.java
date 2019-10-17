@@ -21,30 +21,26 @@ public class ConcurrentFrontEndHandlerRunnable implements Runnable {
     @Override
     public void run() {
         FrontendCommandHandler handler;
+        ThreadWorkUsage workUsage = null;
+        if (DbleServer.getInstance().getConfig().getSystem().getUseThreadUsageStat() == 1) {
+            String threadName = Thread.currentThread().getName();
+            workUsage = new ThreadWorkUsage();
+            DbleServer.getInstance().getThreadUsedMap().put(threadName, workUsage);
+        }
         while (true) {
             while ((handler = frontHandlerQueue.poll()) != null) {
 
                 //threadUsageStat start
-                boolean useThreadUsageStat = false;
-                String threadName = null;
-                ThreadWorkUsage workUsage = null;
                 long workStart = 0;
-                if (DbleServer.getInstance().getConfig().getSystem().getUseThreadUsageStat() == 1) {
-                    useThreadUsageStat = true;
-                    threadName = Thread.currentThread().getName();
-                    workUsage = DbleServer.getInstance().getThreadUsedMap().get(threadName);
-
-                    if (workUsage == null) {
-                        workUsage = new ThreadWorkUsage();
-                        DbleServer.getInstance().getThreadUsedMap().put(threadName, workUsage);
-                    }
+                if (workUsage != null) {
                     workStart = System.nanoTime();
                 }
+
                 //handler data
                 handler.handle();
 
                 //threadUsageStat end
-                if (useThreadUsageStat) {
+                if (workUsage != null) {
                     workUsage.setCurrentSecondUsed(workUsage.getCurrentSecondUsed() + System.nanoTime() - workStart);
                 }
             }

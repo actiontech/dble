@@ -36,6 +36,11 @@ public class ChildTable implements Named {
     protected String primaryKey;
     @XmlAttribute
     protected Boolean autoIncrement;
+    @XmlAttribute
+    protected String incrementColumn;
+
+    @XmlAttribute
+    protected Boolean needAddLimit;
 
     protected List<ChildTable> childTable;
 
@@ -89,6 +94,23 @@ public class ChildTable implements Named {
     public void setChildTable(List<ChildTable> childTable) {
         this.childTable = childTable;
     }
+
+    public String getIncrementColumn() {
+        return incrementColumn;
+    }
+
+    public void setIncrementColumn(String incrementColumn) {
+        this.incrementColumn = incrementColumn;
+    }
+
+    public Boolean getNeedAddLimit() {
+        return needAddLimit;
+    }
+
+    public void setNeedAddLimit(Boolean needAddLimit) {
+        this.needAddLimit = needAddLimit;
+    }
+
 
     @Override
     public String toString() {

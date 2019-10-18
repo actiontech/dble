@@ -5,7 +5,7 @@
 */
 package com.actiontech.dble.config.loader.xml;
 
-import com.actiontech.dble.backend.datasource.PhysicalDBPool;
+import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.loader.SchemaLoader;
@@ -548,7 +548,7 @@ public class XMLSchemaLoader implements SchemaLoader {
         String passwordEncryty = DecryptUtil.dbHostDecrypt(usingDecrypt, nodeHost, user, password);
         String disabledStr = ConfigUtil.checkAndGetAttribute(node, "disabled", "false", problemReporter);
         boolean disabled = Boolean.parseBoolean(disabledStr);
-        String weightStr = ConfigUtil.checkAndGetAttribute(node, "weight", String.valueOf(PhysicalDBPool.WEIGHT), problemReporter);
+        String weightStr = ConfigUtil.checkAndGetAttribute(node, "weight", String.valueOf(AbstractPhysicalDBPool.WEIGHT), problemReporter);
         int weight = Integer.parseInt(weightStr);
 
         DBHostConfig conf = new DBHostConfig(nodeHost, ip, port, nodeUrl, user, passwordEncryty, disabled);

@@ -160,6 +160,7 @@ public final class SystemConfig {
     private int maxCharsPerColumn = 65535; // 128k,65535 chars
     //errors
     private ProblemReporter problemReporter;
+    private boolean useOutterHa = false;
 
     public SystemConfig(ProblemReporter problemReporter) {
         this.problemReporter = problemReporter;
@@ -1167,6 +1168,15 @@ public final class SystemConfig {
         } else if (this.problemReporter != null) {
             problemReporter.warn(String.format(WARNING_FORMATE, "maxRowSizeToFile", maxRowSizeToFile, this.maxRowSizeToFile));
         }
+    }
+
+
+    public boolean isUseOutterHa() {
+        return useOutterHa;
+    }
+
+    public void setUseOutterHa(boolean useOutterHa) {
+        this.useOutterHa = useOutterHa;
     }
 
     public int getXaRetryCount() {

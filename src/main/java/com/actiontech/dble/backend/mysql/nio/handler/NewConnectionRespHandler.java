@@ -6,6 +6,7 @@
 package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.backend.BackendConnection;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import org.slf4j.Logger;
@@ -22,6 +23,7 @@ public class NewConnectionRespHandler implements ResponseHandler {
     private ReentrantLock lock = new ReentrantLock();
     private Condition initiated = lock.newCondition();
     private String errMsg;
+
     public BackendConnection getBackConn() throws IOException {
         lock.lock();
         try {
@@ -30,6 +32,9 @@ public class NewConnectionRespHandler implements ResponseHandler {
             }
             if (backConn == null) {
                 throw new IOException(errMsg);
+            } else if (((MySQLConnection) backConn).getPool().isDisabled()) {
+                backConn.close("DataSource turned into disabled");
+                throw new IOException("DataSource " + ((MySQLConnection) backConn).getPool().toString() + " is disabled");
             }
             return backConn;
         } catch (InterruptedException e) {

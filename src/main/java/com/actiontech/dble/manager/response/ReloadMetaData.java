@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -67,8 +68,8 @@ public final class ReloadMetaData {
             }
             try {
                 if (!DbleServer.getInstance().getConfig().isDataHostWithoutWR()) {
-                    final ReentrantLock clock = DbleServer.getInstance().getConfig().getLock();
-                    clock.lock();
+                    final ReentrantReadWriteLock clock = DbleServer.getInstance().getConfig().getLock();
+                    clock.readLock().lock();
                     try {
                         if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, ConfStatus.Status.RELOAD_META)) {
                             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Reload status error ,other client or cluster may in reload");
@@ -82,7 +83,7 @@ public final class ReloadMetaData {
                             msg = "reload metadata interrupted by manager command";
                         }
                     } finally {
-                        clock.unlock();
+                        clock.readLock().unlock();
                     }
                 }
             } catch (Exception e) {

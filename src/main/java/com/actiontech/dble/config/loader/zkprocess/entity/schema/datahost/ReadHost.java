@@ -18,6 +18,22 @@ import java.util.List;
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "readHost")
 public class ReadHost extends WriteHost {
+
+    public ReadHost() {
+
+    }
+
+    public ReadHost(WriteHost writeHost) {
+        this.user = writeHost.user;
+        this.password = writeHost.password;
+        this.host = writeHost.host;
+        this.disabled = writeHost.disabled;
+        this.id = writeHost.id;
+        this.weight = writeHost.weight;
+        this.url = writeHost.url;
+        this.usingDecrypt = writeHost.usingDecrypt;
+    }
+
     @XmlTransient
     @Override
     public List<ReadHost> getReadHost() {

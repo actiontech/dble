@@ -6,7 +6,7 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDBPool;
+import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.parser.ManagerParseStop;
@@ -34,9 +34,9 @@ public final class StopHeartbeat {
         Pair<String[], Integer> keys = ManagerParseStop.getPair(stmt);
         if (keys.getKey() != null && keys.getValue() != null) {
             long time = keys.getValue() * 1000L;
-            Map<String, PhysicalDBPool> dns = DbleServer.getInstance().getConfig().getDataHosts();
+            Map<String, AbstractPhysicalDBPool> dns = DbleServer.getInstance().getConfig().getDataHosts();
             for (String key : keys.getKey()) {
-                PhysicalDBPool dn = dns.get(key);
+                AbstractPhysicalDBPool dn = dns.get(key);
                 if (dn != null) {
                     dn.getSource().setHeartbeatRecoveryTime(TimeUtil.currentTimeMillis() + time);
                     ++count;

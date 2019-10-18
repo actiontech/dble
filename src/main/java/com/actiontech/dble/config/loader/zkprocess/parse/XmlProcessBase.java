@@ -172,16 +172,15 @@ public class XmlProcessBase {
      */
     public Object baseParseXmlToBean(String fileName) throws JAXBException, XMLStreamException {
         InputStream inputStream = ResourceUtil.getResourceAsStreamFromRoot(fileName);
-
         if (inputStream != null) {
             XMLInputFactory xif = XMLInputFactory.newFactory();
             xif.setProperty(XMLInputFactory.SUPPORT_DTD, false);
             XMLStreamReader xmlRead = xif.createXMLStreamReader(new StreamSource(inputStream));
             return unmarshaller.unmarshal(xmlRead);
-
         }
 
         return null;
     }
+
 
 }

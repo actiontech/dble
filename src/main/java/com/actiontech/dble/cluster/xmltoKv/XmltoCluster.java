@@ -46,6 +46,7 @@ public final class XmltoCluster {
 
         xmlProcess.initJaxbClass();
         ucoreListen.initAllNode();
+        new DataHostHaResponse().notifyCluster();
     }
 
 }

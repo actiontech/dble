@@ -6,8 +6,8 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
@@ -138,7 +138,7 @@ public final class ShowDataNode {
     }
 
     private static RowDataPacket getRow(PhysicalDBNode node, String charset) {
-        PhysicalDBPool pool = node.getDbPool();
+        AbstractPhysicalDBPool pool = node.getDbPool();
         PhysicalDatasource ds = pool.getSource();
         if (ds != null) {
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);

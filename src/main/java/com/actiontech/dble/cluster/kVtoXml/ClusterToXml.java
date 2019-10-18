@@ -27,6 +27,8 @@ public final class ClusterToXml {
 
     private static ClusterSingleKeyListener viewListener = null;
 
+    private static ClusterSingleKeyListener dataHostHaListener = null;
+
     private static ClusterOffLineListener onlineListener = null;
 
 
@@ -53,13 +55,13 @@ public final class ClusterToXml {
             new BinlogPauseStatusResponse(listener);
             new PauseDataNodeResponse(listener);
 
+            dataHostHaListener = new ClusterSingleKeyListener(ClusterPathUtil.getHaBasePath(), new DataHostHaResponse());
 
             ddlListener = new ClusterSingleKeyListener(ClusterPathUtil.getDDLPath() + SEPARATOR, new DdlChildResponse());
 
             viewListener = new ClusterSingleKeyListener(ClusterPathUtil.getViewChangePath() + SEPARATOR, new ViewChildResponse());
 
             onlineListener = new ClusterOffLineListener();
-
 
             listener.initForXml();
             Thread thread = new Thread(listener);
@@ -77,6 +79,10 @@ public final class ClusterToXml {
             Thread thread4 = new Thread(onlineListener);
             thread4.setName("ONLINE_UCORE_LISTENER");
             thread4.start();
+
+            Thread thread5 = new Thread(dataHostHaListener);
+            thread5.setName("DATA_HOST_HA_LISTENER");
+            thread5.start();
 
         } catch (Exception e) {
             e.printStackTrace();

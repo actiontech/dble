@@ -10,8 +10,8 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
+import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.heartbeat.MySQLConsistencyChecker;
 import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
@@ -120,7 +120,7 @@ public final class GlobalTableUtil {
                 for (PhysicalDBNode dbNode : map.values()) {
                     // <dataNode name="dn1" dataHost="localhost1" database="db1" />
                     if (nodeName.equals(dbNode.getName())) {    // dn1,dn2,dn3
-                        PhysicalDBPool pool = dbNode.getDbPool();
+                        AbstractPhysicalDBPool pool = dbNode.getDbPool();
                         Collection<PhysicalDatasource> allDS = pool.getAllDataSources();
                         for (PhysicalDatasource pds : allDS) {
                             if (pds instanceof MySQLDataSource) {

@@ -109,6 +109,9 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
             case ManagerParse.RELEASE_RELOAD_METADATA:
                 ReleaseReloadMetadata.execute(c);
                 break;
+            case ManagerParse.DATAHOST:
+                DataHostHandler.handle(sql, c);
+                break;
             default:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
         }

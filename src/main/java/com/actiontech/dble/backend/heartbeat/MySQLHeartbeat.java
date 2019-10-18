@@ -8,7 +8,7 @@ package com.actiontech.dble.backend.heartbeat;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.backend.datasource.PhysicalDBPool;
+import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
 import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
 import com.actiontech.dble.config.model.DataHostConfig;
 import com.actiontech.dble.statistic.DataSourceSyncRecorder;
@@ -298,7 +298,7 @@ public class MySQLHeartbeat {
             return;
         }
 
-        PhysicalDBPool pool = this.source.getDbPool();
+        AbstractPhysicalDBPool pool = this.source.getDbPool();
         pool.switchSourceIfNeed(this.source, reason);
         /*
         int curDatasourceHB = pool.getSource().getHeartbeat().getStatus();

@@ -20,15 +20,15 @@ public class PhysicalDBPoolDiff {
 
     private String changeType = null;
 
-    private PhysicalDBPool orgPool = null;
+    private AbstractPhysicalDBPool orgPool = null;
 
-    private PhysicalDBPool newPool = null;
+    private AbstractPhysicalDBPool newPool = null;
 
 
     //private Set<BaseInfoDiff> baseDiff = null;
 
 
-    public PhysicalDBPoolDiff(PhysicalDBPool newPool, PhysicalDBPool orgPool) {
+    public PhysicalDBPoolDiff(AbstractPhysicalDBPool newPool, AbstractPhysicalDBPool orgPool) {
         this.orgPool = orgPool;
         this.newPool = newPool;
         if (!newPool.equalsBaseInfo(orgPool)) {
@@ -50,7 +50,7 @@ public class PhysicalDBPoolDiff {
     }
 
 
-    private Set<PhysicalDatasourceDiff> createHostChangeSet(PhysicalDBPool newDbPool, PhysicalDBPool orgDbPool) {
+    private Set<PhysicalDatasourceDiff> createHostChangeSet(AbstractPhysicalDBPool newDbPool, AbstractPhysicalDBPool orgDbPool) {
         Set<PhysicalDatasourceDiff> hostDiff = new HashSet<>();
 
         //add or not change
@@ -155,11 +155,11 @@ public class PhysicalDBPoolDiff {
         return changeType;
     }
 
-    public PhysicalDBPool getOrgPool() {
+    public AbstractPhysicalDBPool getOrgPool() {
         return orgPool;
     }
 
-    public PhysicalDBPool getNewPool() {
+    public AbstractPhysicalDBPool getNewPool() {
         return newPool;
     }
 

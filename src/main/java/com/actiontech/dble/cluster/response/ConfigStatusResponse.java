@@ -20,7 +20,7 @@ import com.actiontech.dble.meta.ReloadManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static com.actiontech.dble.meta.ReloadStatus.TRIGGER_TYPE_CLUSTER;
 
@@ -91,8 +91,8 @@ public class ConfigStatusResponse implements ClusterXmlLoader {
                 ClusterDelayProvider.delayBeforeSlaveReload();
                 if (status.getStatus() == ConfStatus.Status.RELOAD_ALL) {
                     LOGGER.info("reload_all " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
-                    final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
-                    lock.lock();
+                    final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
+                    lock.writeLock().lock();
                     try {
                         if (!ReloadManager.startReload(TRIGGER_TYPE_CLUSTER, ConfStatus.Status.RELOAD_ALL)) {
                             LOGGER.info("reload config failed because self is in reloading");
@@ -112,12 +112,12 @@ public class ConfigStatusResponse implements ClusterXmlLoader {
                         }
 
                     } finally {
-                        lock.unlock();
+                        lock.writeLock().unlock();
                     }
                 } else {
                     LOGGER.info("reload " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
-                    final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
-                    lock.lock();
+                    final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
+                    lock.writeLock().lock();
                     try {
                         if (!ReloadManager.startReload(TRIGGER_TYPE_CLUSTER, ConfStatus.Status.RELOAD)) {
                             LOGGER.info("reload config failed because self is in reloading");
@@ -137,7 +137,7 @@ public class ConfigStatusResponse implements ClusterXmlLoader {
                         }
 
                     } finally {
-                        lock.unlock();
+                        lock.writeLock().unlock();
                     }
                 }
                 ClusterDelayProvider.delayAfterSlaveReload();

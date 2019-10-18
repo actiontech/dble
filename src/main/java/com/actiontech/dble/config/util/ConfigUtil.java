@@ -5,8 +5,8 @@
 */
 package com.actiontech.dble.config.util;
 
+import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.util.StringUtil;
 import org.apache.commons.lang.StringUtils;
@@ -142,8 +142,8 @@ public final class ConfigUtil {
         return map;
     }
 
-    public static void setSchemasForPool(Map<String, PhysicalDBPool> dataHostMap, Map<String, PhysicalDBNode> dataNodeMap) {
-        for (PhysicalDBPool dbPool : dataHostMap.values()) {
+    public static void setSchemasForPool(Map<String, AbstractPhysicalDBPool> dataHostMap, Map<String, PhysicalDBNode> dataNodeMap) {
+        for (AbstractPhysicalDBPool dbPool : dataHostMap.values()) {
             dbPool.setSchemas(getDataNodeSchemasOfDataHost(dbPool.getHostName(), dataNodeMap));
         }
     }

@@ -5,7 +5,6 @@
 */
 package com.actiontech.dble.backend.datasource;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
@@ -23,9 +22,9 @@ public class PhysicalDBNode {
 
     protected final String name;
     protected String database;
-    protected volatile PhysicalDBPool dbPool;
+    protected volatile AbstractPhysicalDBPool dbPool;
 
-    public PhysicalDBNode(String hostName, String database, PhysicalDBPool dbPool) {
+    public PhysicalDBNode(String hostName, String database, AbstractPhysicalDBPool dbPool) {
         this.name = hostName;
         this.database = database;
         this.dbPool = dbPool;
@@ -35,7 +34,7 @@ public class PhysicalDBNode {
         return name;
     }
 
-    public PhysicalDBPool getDbPool() {
+    public AbstractPhysicalDBPool getDbPool() {
         return dbPool;
     }
 
@@ -61,7 +60,7 @@ public class PhysicalDBNode {
         if (ds == null) {
             throw new RuntimeException("can't find exits connection, maybe finished " + exitsCon);
         } else {
-            ds.getConnection(schema, autocommit, handler, attachment);
+            ds.getConnection(schema, autocommit, handler, attachment, false);
         }
     }
 
@@ -69,15 +68,6 @@ public class PhysicalDBNode {
         if (schema != null && !schema.equals(this.database)) {
             throw new RuntimeException("invalid param ,connection request db is :" + schema +
                     " and datanode db is " + this.database);
-        }
-        if (!dbPool.isInitSuccess()) {
-            int activeIndex = dbPool.init(dbPool.activeIndex);
-            if (activeIndex >= 0) {
-                DbleServer.getInstance().saveDataHostIndex(dbPool.getHostName(), activeIndex, false);
-            } else {
-                throw new RuntimeException("DataNode[" + dbPool.getHostName() + "]'s init error, please check it can be connected. " +
-                        "The current Node is {DataHost[" + dbPool.getSource().getConfig().getUrl() + ",Schema[" + schema + "]}");
-            }
         }
     }
 
@@ -141,15 +131,16 @@ public class PhysicalDBNode {
             if (writeSource.getConfig().isDisabled()) {
                 throw new IllegalArgumentException("[" + writeSource.getHostConfig().getName() + "." + writeSource.getConfig().getHostName() + "] is disabled");
             }
+
             writeSource.setWriteCount();
-            writeSource.getConnection(schema, autoCommit, handler, attachment);
+            writeSource.getConnection(schema, autoCommit, handler, attachment, true);
         } else {
             throw new IllegalArgumentException("Invalid DataSource:" + dbPool.getActiveIndex());
         }
     }
 
 
-    public void setDbPool(PhysicalDBPool dbPool) {
+    public void setDbPool(AbstractPhysicalDBPool dbPool) {
         this.dbPool = dbPool;
     }
 }

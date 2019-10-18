@@ -50,14 +50,16 @@ public final class XmltoZkMain {
         // xmltozk for rule
         new RulesxmlTozkLoader(zkListen, zkConn, xmlProcess);
 
+        new DataHostStatusTozkLoader(zkListen, zkConn);
+
         xmlProcess.initJaxbClass();
 
         zkListen.initAllNode();
         zkListen.clearInited();
         //write flag
         ConfStatus status = new ConfStatus(ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
-                                           isAll ? ConfStatus.Status.RELOAD_ALL : ConfStatus.Status.RELOAD,
-                                           isAll ? String.valueOf(allMode) : null);
+                isAll ? ConfStatus.Status.RELOAD_ALL : ConfStatus.Status.RELOAD,
+                isAll ? String.valueOf(allMode) : null);
         zkConn.setData().forPath(KVPathUtil.getConfStatusPath(), status.toString().getBytes(StandardCharsets.UTF_8));
     }
 
@@ -79,6 +81,8 @@ public final class XmltoZkMain {
         new EcachesxmlTozkLoader(zkListen, zkConn, xmlProcess);
 
         new OthermsgTozkLoader(zkListen, zkConn);
+
+        new DataHostStatusTozkLoader(zkListen, zkConn);
 
         xmlProcess.initJaxbClass();
 

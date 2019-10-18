@@ -23,6 +23,21 @@ import java.util.List;
 @XmlType(name = "writeHost")
 public class WriteHost {
 
+    public WriteHost() {
+
+    }
+
+    public WriteHost(ReadHost readHost) {
+        this.user = readHost.user;
+        this.password = readHost.password;
+        this.host = readHost.host;
+        this.disabled = readHost.disabled;
+        this.id = readHost.id;
+        this.weight = readHost.weight;
+        this.url = readHost.url;
+        this.usingDecrypt = readHost.usingDecrypt;
+    }
+
     @XmlAttribute(required = true)
     protected String host;
     @XmlAttribute(required = true)

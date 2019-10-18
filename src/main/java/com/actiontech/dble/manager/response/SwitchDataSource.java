@@ -6,7 +6,7 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDBPool;
+import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.parser.ManagerParseSwitch;
@@ -26,10 +26,10 @@ public final class SwitchDataSource {
     public static void response(String stmt, ManagerConnection c) {
         int count = 0;
         Pair<String[], Integer> pair = ManagerParseSwitch.getPair(stmt);
-        Map<String, PhysicalDBPool> dns = DbleServer.getInstance().getConfig().getDataHosts();
+        Map<String, AbstractPhysicalDBPool> dns = DbleServer.getInstance().getConfig().getDataHosts();
         Integer idx = pair.getValue();
         for (String key : pair.getKey()) {
-            PhysicalDBPool dn = dns.get(key);
+            AbstractPhysicalDBPool dn = dns.get(key);
             if (dn != null) {
                 int m = dn.getActiveIndex();
                 int n = (idx == null) ? dn.next(m) : idx;

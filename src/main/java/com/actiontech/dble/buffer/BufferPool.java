@@ -6,7 +6,6 @@
 package com.actiontech.dble.buffer;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * BufferPool
@@ -29,6 +28,4 @@ public interface BufferPool {
     int getSharedOptsCount();
 
     int getChunkSize();
-
-    ConcurrentMap<Long, Long> getNetDirectMemoryUsage();
 }

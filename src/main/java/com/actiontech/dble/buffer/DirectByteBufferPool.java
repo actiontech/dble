@@ -10,8 +10,6 @@ import org.slf4j.LoggerFactory;
 import sun.nio.ch.DirectBuffer;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -30,10 +28,6 @@ public class DirectByteBufferPool implements BufferPool {
     private AtomicInteger prevAllocatedPage;
     private final int pageSize;
     private final short pageCount;
-    /**
-     * thread ID->the size of Direct Buffer
-     */
-    private final ConcurrentMap<Long, Long> memoryUsage;
 
     public DirectByteBufferPool(int pageSize, short chunkSize, short pageCount) {
         allPages = new ByteBufferPage[pageCount];
@@ -44,14 +38,13 @@ public class DirectByteBufferPool implements BufferPool {
         for (int i = 0; i < pageCount; i++) {
             allPages[i] = new ByteBufferPage(ByteBuffer.allocateDirect(pageSize), chunkSize);
         }
-        memoryUsage = new ConcurrentHashMap<>();
     }
 
     /**
      * TODO expandBuffer...
      *
-     * @param buffer
-     * @return
+     * @param  buffer ByteBuffer
+     * @return ByteBuffer
      */
     public ByteBuffer expandBuffer(ByteBuffer buffer) {
         int oldCapacity = buffer.capacity();
@@ -76,15 +69,6 @@ public class DirectByteBufferPool implements BufferPool {
         if (byteBuf == null) {
             byteBuf = allocateBuffer(theChunkCount, 0, selectedPage);
         }
-        final long threadId = Thread.currentThread().getId();
-
-        if (byteBuf != null) {
-            if (memoryUsage.containsKey(threadId)) {
-                memoryUsage.put(threadId, memoryUsage.get(threadId) + byteBuf.capacity());
-            } else {
-                memoryUsage.put(threadId, (long) byteBuf.capacity());
-            }
-        }
 
         if (byteBuf == null) {
             return ByteBuffer.allocate(size);
@@ -98,8 +82,6 @@ public class DirectByteBufferPool implements BufferPool {
             return;
         }
 
-        final long size = theBuf.capacity();
-
         boolean recycled = false;
         DirectBuffer thisNavBuf = (DirectBuffer) theBuf;
         int chunkCount = theBuf.capacity() / chunkSize;
@@ -109,11 +91,6 @@ public class DirectByteBufferPool implements BufferPool {
             if ((recycled = allPage.recycleBuffer((ByteBuffer) parentBuf, startChunk, chunkCount))) {
                 break;
             }
-        }
-        final long threadId = Thread.currentThread().getId();
-
-        if (memoryUsage.containsKey(threadId)) {
-            memoryUsage.put(threadId, memoryUsage.get(threadId) - size);
         }
         if (!recycled) {
             LOGGER.info("warning ,not recycled buffer " + theBuf);
@@ -135,15 +112,10 @@ public class DirectByteBufferPool implements BufferPool {
         return chunkSize;
     }
 
-    @Override
-    public ConcurrentMap<Long, Long> getNetDirectMemoryUsage() {
-        return memoryUsage;
-    }
-
     /**
      * return the total size of the buffer memory
      *
-     * @return
+     * @return long
      */
     public long capacity() {
         return (long) pageSize * pageCount;
@@ -152,7 +124,7 @@ public class DirectByteBufferPool implements BufferPool {
     /**
      * return the remain free part of memory
      *
-     * @return
+     * @return long
      */
     public long size() {
         long usage = 0L;

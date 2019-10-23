@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.NIOProcessor;
@@ -16,6 +17,7 @@ import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.sqlengine.HeartbeatSQLJob;
 import com.actiontech.dble.util.*;
 
 import java.nio.ByteBuffer;
@@ -29,7 +31,7 @@ public final class ShowBackend {
     private ShowBackend() {
     }
 
-    private static final int FIELD_COUNT = 22;
+    private static final int FIELD_COUNT = 23;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
@@ -83,6 +85,8 @@ public final class ShowBackend {
         FIELDS[i] = PacketUtil.getField("XA_STATUS", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("DEAD_TIME", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i] = PacketUtil.getField("USED_FOR_HEARTBEAT", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
@@ -141,6 +145,12 @@ public final class ShowBackend {
         row.add(StringUtil.encode(conn.getStringOfUsrVariables(), charset));
         row.add(StringUtil.encode(conn.getXaStatus().toString(), charset));
         row.add(StringUtil.encode(FormatUtil.formatDate(conn.getOldTimestamp()), charset));
+        if (c.isBorrowed()) {
+            ResponseHandler handler = ((MySQLConnection) c).getRespHandler();
+            row.add(handler != null && handler instanceof HeartbeatSQLJob ? "true".getBytes() : "false".getBytes());
+        } else {
+            row.add("false".getBytes());
+        }
         return row;
     }
 }

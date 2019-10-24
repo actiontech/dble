@@ -42,6 +42,7 @@ import com.actiontech.dble.plan.common.item.subquery.ItemAllAnySubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemExistsSubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemInSubQuery;
 import com.actiontech.dble.plan.common.item.subquery.ItemScalarSubQuery;
+import com.actiontech.dble.server.parser.DbleOutputVisitor;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.*;
 import com.alibaba.druid.sql.ast.expr.*;
@@ -892,7 +893,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 
     private void initName(SQLExpr expr) {
         StringBuilder sb = new StringBuilder();
-        MySqlOutputVisitor ov = new MySqlOutputVisitor(sb);
+        MySqlOutputVisitor ov = new DbleOutputVisitor(sb);
         ov.setShardingSupport(false);
         expr.accept(ov);
         item.setItemName(sb.toString());

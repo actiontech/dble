@@ -12,12 +12,12 @@ public abstract class Versions {
 
     public static final byte PROTOCOL_VERSION = 10;
 
-    private static byte[] serverVersion = "5.6.29-dble-9.9.9.9-884fc6b612d64cc22101226536f8fd1d24580857-20190221182143".getBytes();
+    private static byte[] serverVersion = "5.6.29-dble-2.19.03.1-161ba1d05a0ecca0633ca0f463704149b16fdef7-20191024160111".getBytes();
     public static final byte[] VERSION_COMMENT = "dble Server (ActionTech)".getBytes();
     public static final String ANNOTATION_NAME = "dble:";
     public static final String ROOT_PREFIX = "dble";
     public static final String DOMAIN = "http://dble.cloud/";
-    public static final String CONFIG_VERSION = "9.9.9.9";
+    public static final String CONFIG_VERSION = "2.19.03.1";
 
     public static void setServerVersion(String version) {
         byte[] mysqlVersionPart = version.getBytes();

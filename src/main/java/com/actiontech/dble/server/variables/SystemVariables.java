@@ -14,6 +14,7 @@ public final class SystemVariables {
 
     private Map<String, SystemGlobalVariable> globalVariables;
     private Map<String, String> sessionVariables;
+    private volatile boolean lowerCase = false;
 
     public SystemVariables() {
         globalVariables = new HashMap<>();
@@ -28,6 +29,7 @@ public final class SystemVariables {
 
             public void setVariable(String value, SystemVariables sys) throws RuntimeException {
                 this.value = value;
+                lowerCase = !value.equals("0");
             }
 
             public String getVariable() {
@@ -37,8 +39,7 @@ public final class SystemVariables {
     }
 
     public boolean isLowerCaseTableNames() {
-        Integer value = Integer.valueOf(globalVariables.get("lower_case_table_names").getVariable());
-        return value != 0;
+        return lowerCase;
     }
 
     private void pickSessionVariables() {

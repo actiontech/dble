@@ -1,6 +1,6 @@
-GitVersion 884fc6b612d64cc22101226536f8fd1d24580857
-BuildTime  20190221182143
-MavenVersion 9.9.9.9
+GitVersion 161ba1d05a0ecca0633ca0f463704149b16fdef7
+BuildTime  20191024160111
+MavenVersion 2.19.03.1
 GitUrl https://github.com/actiontech/dble
 WebSite https://opensource.actionsky.com/
 QQGroup 669663113

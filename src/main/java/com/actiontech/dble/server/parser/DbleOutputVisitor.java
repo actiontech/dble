@@ -5,8 +5,11 @@
 
 package com.actiontech.dble.server.parser;
 
+import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlLoadDataInFileStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
+
+import java.io.IOException;
 
 /**
  * Created by szf on 2018/9/17.
@@ -69,6 +72,27 @@ public class DbleOutputVisitor extends MySqlOutputVisitor {
         return false;
     }
 
+    @Override
+    public boolean visit(SQLCharExpr x) {
+        if (this.appender == null) {
+            return false;
+        }
+        try {
+            this.appender.append('\'');
+            String text = x.getText();
+            appender.append(text);
+            appender.append('\'');
+            return false;
+        } catch (IOException e) {
+            throw new RuntimeException("println error", e);
+        }
+    }
+
+    @Override
+    public boolean isPrettyFormat() {
+        return false;
+    }
+
     private void columnsParameter(MySqlLoadDataInFileStatement x) {
         if (x.getColumnsTerminatedBy() != null || x.getColumnsEnclosedBy() != null || x.getColumnsEscaped() != null) {
             print0(ucase ? " COLUMNS" : " columns");
@@ -106,5 +130,6 @@ public class DbleOutputVisitor extends MySqlOutputVisitor {
             }
         }
     }
+
 
 }

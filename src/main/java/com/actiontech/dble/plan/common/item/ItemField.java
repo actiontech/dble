@@ -245,12 +245,14 @@ public class ItemField extends ItemIdent {
         // find from inner fields
         Item columnFromMeta = null;
         if (StringUtils.isEmpty(getDbName()) || StringUtils.isEmpty(getTableName())) {
+            String tmpDbName = null;
+            String tmpTableName = null;
             for (NamedField namedField : planNode.getInnerFields().keySet()) {
                 if (StringUtils.equalsIgnoreCase(tmpFieldName, namedField.getName()) &&
                         (StringUtils.isEmpty(getTableName()) || (StringUtils.isEmpty(getDbName()) && StringUtils.equals(getTableName(), namedField.getTable())))) {
                     if (columnFromMeta == null) {
-                        this.dbName = namedField.getSchema();
-                        this.tableName = namedField.getTable();
+                        tmpDbName = namedField.getSchema();
+                        tmpTableName = namedField.getTable();
                         getReferTables().clear();
                         NamedField coutField = planNode.getInnerFields().get(new NamedField(namedField.getSchema(), namedField.getTable(), tmpFieldName, null));
                         this.getReferTables().add(coutField.planNode);
@@ -261,11 +263,14 @@ public class ItemField extends ItemIdent {
                             if (jn.getUsingFields() != null && jn.getUsingFields().contains(columnFromMeta.getItemName().toLowerCase())) {
                                 continue;
                             }
+                            throw new MySQLOutPutException(ErrorCode.ER_NON_UNIQ_ERROR, "23000", "Column '" + tmpFieldName + "' in field list is ambiguous");
                         }
                         throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "42S22", "duplicate column:" + this);
                     }
                 }
             }
+            this.dbName = tmpDbName;
+            this.tableName = tmpTableName;
         } else {
             NamedField tmpField = new NamedField(getDbName(), getTableName(), tmpFieldName, null);
             if (planNode.getInnerFields().containsKey(tmpField)) {

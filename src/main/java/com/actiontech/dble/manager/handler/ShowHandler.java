@@ -179,11 +179,8 @@ public final class ShowHandler {
             case ManagerParseShow.DATASOURCE_CLUSTER://by songwie
                 ShowDatasourceCluster.response(c);
                 break;
-            case ManagerParseShow.DIRECTMEMORY_DETAIL:
-                ShowDirectMemory.execute(c, 2);
-                break;
-            case ManagerParseShow.DIRECTMEMORY_TOTAL:
-                ShowDirectMemory.execute(c, 1);
+            case ManagerParseShow.DIRECTMEMORY:
+                ShowDirectMemory.execute(c);
                 break;
             case ManagerParseShow.CONNECTION_COUNT:
                 ShowConnectionCount.execute(c);

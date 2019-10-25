@@ -129,7 +129,7 @@ public final class ShowHelp {
         HELPS.put("show @@sysparam", "Report system param");
         HELPS.put("show @@syslog limit=?", "Report system log");
         HELPS.put("show @@white", "Report server white host ");
-        HELPS.put("show @@directmemory=1 or 2", "Report server direct memory usage");
+        HELPS.put("show @@directmemory", "Report server direct memory pool usage");
         HELPS.put("show @@command.count", "Report the current number of querys");
         HELPS.put("show @@connection.count", "Report the current number of connections");
         HELPS.put("show @@backend.statistics", "Report backend node info");

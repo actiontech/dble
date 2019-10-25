@@ -30,6 +30,7 @@ import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.meta.table.*;
 import com.actiontech.dble.meta.table.old.AbstractTableMetaHandler;
 import com.actiontech.dble.meta.table.old.TableMetaCheckHandler;
+import com.actiontech.dble.plan.NamedFieldDetail;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
@@ -62,6 +63,7 @@ public class ProxyMetaManager {
     private volatile Repository repository = null;
     private AtomicInteger version = new AtomicInteger(0);
     private long timestamp;
+
 
     public ProxyMetaManager() {
         this.catalogs = new ConcurrentHashMap<>();
@@ -146,7 +148,7 @@ public class ProxyMetaManager {
     public boolean createDatabase(String schema) {
         SchemaMeta schemaMeta = catalogs.get(schema);
         if (schemaMeta == null) {
-            schemaMeta = new SchemaMeta();
+            schemaMeta = new SchemaMeta(schema);
             catalogs.put(schema, schemaMeta);
             return true;
         } else {
@@ -285,6 +287,10 @@ public class ProxyMetaManager {
         removeMetaLock(schema, tableName);
     }
 
+
+    public List<NamedFieldDetail> getNamedFieldByMeta(String schema, StructureMeta.TableMeta meta) {
+        return catalogs.get(schema).getFieldDetailMap(meta);
+    }
 
     public void init(ServerConfig config) throws Exception {
         LOGGER.info("init metaData start");

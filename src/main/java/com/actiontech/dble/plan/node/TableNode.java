@@ -6,6 +6,7 @@
 package com.actiontech.dble.plan.node;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
@@ -13,8 +14,11 @@ import com.actiontech.dble.config.model.TableConfig.TableTypeEnum;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.plan.NamedField;
+import com.actiontech.dble.plan.NamedFieldDetail;
+import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
+import com.actiontech.dble.plan.common.item.function.sumfunc.ItemFuncGroupConcat;
 import com.actiontech.dble.plan.util.ToStringUtil;
 import com.alibaba.druid.sql.ast.SQLHint;
 
@@ -38,6 +42,7 @@ public class TableNode extends PlanNode {
 
     private TableNode() {
     }
+
     public TableNode(String catalog, String tableName, ProxyMetaManager metaManager) throws SQLNonTransientException {
         if (catalog == null || tableName == null)
             throw new RuntimeException("Table db or name is null error!");
@@ -91,9 +96,19 @@ public class TableNode extends PlanNode {
     @Override
     protected void setUpInnerFields() {
         innerFields.clear();
-        String tmpTable = alias == null ? tableName : alias;
-        for (StructureMeta.ColumnMeta cm : tableMeta.getColumnsList()) {
-            NamedField tmpField = new NamedField(schema, tmpTable, cm.getName(), this);
+
+        String tmpTable;
+        int hash = 0;
+        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+            tmpTable = alias == null ? tableName.toLowerCase() : alias.toLowerCase();
+            hash = (tmpTable == null ? 0 : tmpTable.toLowerCase().hashCode());
+        } else {
+            tmpTable = alias == null ? tableName : alias;
+            hash = (tmpTable == null ? 0 : tmpTable.hashCode());
+        }
+        List<NamedFieldDetail> clist = DbleServer.getInstance().getTmManager().getNamedFieldByMeta(schema, tableMeta);
+        for (NamedFieldDetail field : clist) {
+            NamedField tmpField = new NamedField(tmpTable, hash, field, this);
             innerFields.put(tmpField, tmpField);
         }
     }
@@ -108,6 +123,7 @@ public class TableNode extends PlanNode {
                 for (NamedField innerField : innerFields.keySet()) {
                     ItemField col = new ItemField(null, sel.getTableName(), innerField.getName());
                     newSelects.add(col);
+                    col.getReferTables().add(this);
                 }
             }
         }
@@ -178,6 +194,86 @@ public class TableNode extends PlanNode {
 
     public void setHintList(List<SQLHint> hintList) {
         this.hintList = hintList;
+    }
+
+    protected void setUpSelects() {
+        boolean onlyWild = false;
+        if (columnsSelected.isEmpty()) {
+            columnsSelected.add(new ItemField(null, null, "*"));
+            onlyWild = true;
+        }
+        boolean withWild = false;
+        for (Item sel : columnsSelected) {
+            if (sel.isWild())
+                withWild = true;
+        }
+        outerFields.clear();
+        if (onlyWild) {
+            simpleMakeOutFields();
+        } else if (withWild) {
+            dealStarColumn();
+        }
+        nameContext.setFindInSelect(false);
+        nameContext.setSelectFirst(false);
+        if (getParent() instanceof MergeNode) {
+            if (getParent().getChildren().get(1) != null && getParent().getChildren().get(1) == this) {
+                List<Item> aliasList = getParent().getChildren().get(0).getColumnsSelected();
+                if (aliasList.size() != columnsSelected.size()) {
+                    throw new MySQLOutPutException(ErrorCode.ER_WRONG_NUMBER_OF_COLUMNS_IN_SELECT, "21000",
+                            "The used SELECT statements have a different number of columns");
+                }
+                for (int i = 0; i < columnsSelected.size(); i++) {
+                    Item sel = columnsSelected.get(i);
+                    Item beforeUnion = aliasList.get(i);
+                    sel.setAlias(beforeUnion.getAlias() == null ? beforeUnion.getItemName() : beforeUnion.getAlias());
+                }
+            }
+        }
+
+        if (!onlyWild) {
+            for (Item sel : columnsSelected) {
+                setUpItem(sel);
+                if (sel instanceof ItemFuncGroupConcat) {
+                    ((ItemFuncGroupConcat) sel).fixOrders(nameContext);
+                }
+                NamedField field = makeOutNamedField(sel);
+                if (outerFields.containsKey(field) && isDuplicateField(this))
+                    throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "", "duplicate field");
+                outerFields.put(field, sel);
+            }
+        }
+    }
+
+
+    private void simpleMakeOutFields() {
+        List<Item> newSelects = new ArrayList<>();
+        for (NamedField innerField : innerFields.keySet()) {
+            ItemField col = new ItemField(null, innerField.getTable(), innerField.getName());
+            newSelects.add(col);
+            col.getReferTables().add(this);
+            NamedField outField = new NamedField(innerField);
+            outerFields.put(outField, col);
+        }
+        columnsSelected = newSelects;
+    }
+
+    private NamedField makeOutNamedField(Item sel) {
+        String tmpSchema = null;
+        if (keepFieldSchema) {
+            tmpSchema = sel.getDbName();
+            if (sel.basicConstItem()) {
+                tmpSchema = getPureSchema();
+            }
+        }
+        String tmpFieldTable = sel.getTableName();
+        String tmpFieldName = sel.getItemName();
+        if (alias != null)
+            tmpFieldTable = alias;
+        if (tmpFieldTable == null)// maybe function
+            tmpFieldTable = getPureName();
+        if (sel.getAlias() != null)
+            tmpFieldName = sel.getAlias();
+        return new NamedField(tmpSchema, tmpFieldTable, tmpFieldName, this);
     }
 
 }

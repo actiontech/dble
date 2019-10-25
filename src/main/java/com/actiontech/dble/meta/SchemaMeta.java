@@ -7,9 +7,13 @@ package com.actiontech.dble.meta;
 
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.net.mysql.ErrorPacket;
+import com.actiontech.dble.plan.NamedFieldDetail;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.util.StringUtil;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -20,10 +24,12 @@ public class SchemaMeta {
      * <table,tableMeta>
      */
     private final ConcurrentMap<String, StructureMeta.TableMeta> tableMetas;
-
+    private Map<StructureMeta.TableMeta, List<NamedFieldDetail>> fieldDetailMap = new HashMap<>();
     private volatile ConcurrentMap<String, ViewMeta> viewMetas;
+    private final String schema;
 
-    public SchemaMeta() {
+    public SchemaMeta(String schema) {
+        this.schema = schema;
         this.tableMetas = new ConcurrentHashMap<>();
         this.viewMetas = new ConcurrentHashMap<>();
     }
@@ -35,6 +41,11 @@ public class SchemaMeta {
 
     public void addTableMeta(String tbName, StructureMeta.TableMeta tblMeta) {
         this.tableMetas.put(tbName, tblMeta);
+        List<NamedFieldDetail> clist = new ArrayList<>();
+        for (StructureMeta.ColumnMeta col : tblMeta.getColumnsList()) {
+            clist.add(new NamedFieldDetail(schema, col.getName()));
+        }
+        fieldDetailMap.put(tblMeta, clist);
     }
 
     public StructureMeta.TableMeta dropTable(String tbName) {
@@ -43,6 +54,10 @@ public class SchemaMeta {
 
     public StructureMeta.TableMeta getTableMeta(String tbName) {
         return this.tableMetas.get(tbName);
+    }
+
+    public List<NamedFieldDetail> getFieldDetailMap(StructureMeta.TableMeta meta) {
+        return fieldDetailMap.get(meta);
     }
 
     /**

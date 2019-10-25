@@ -10,33 +10,38 @@ import com.actiontech.dble.plan.node.PlanNode;
 import org.apache.commons.lang.StringUtils;
 
 public class NamedField {
-    private final String schema;
     private final String table;
-    private final String name;
     private final int hashCode;
     // which node of the field belong
     public final PlanNode planNode;
 
+    private final NamedFieldDetail namedFieldDetail;
+
     public NamedField(String inputSchema, String inputTable, String name, PlanNode planNode) {
         String tempTableSchmea;
-        String tempTableName;
         if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
-            tempTableSchmea = inputSchema == null ? null : inputSchema.toLowerCase();
-            tempTableName = inputTable == null ? null : inputTable.toLowerCase();
+            tempTableSchmea = inputTable == null ? null : inputTable.toLowerCase();
         } else {
-            tempTableSchmea = inputSchema;
-            tempTableName = inputTable;
+            tempTableSchmea = inputTable;
         }
-        this.schema = tempTableSchmea;
-        this.table = tempTableName;
-        this.name = name;
+        this.namedFieldDetail = new NamedFieldDetail(inputSchema, name);
+        this.table = tempTableSchmea;
         this.planNode = planNode;
+        this.hashCode = namedFieldDetail.hashCode() * 2 + (tempTableSchmea == null ? 0 : tempTableSchmea.hashCode());
+    }
 
-        //init hashCode
-        int prime = 2;
-        int hash = tempTableSchmea == null ? 0 : tempTableSchmea.hashCode();
-        hash = hash * prime + (tempTableName == null ? 0 : tempTableName.hashCode());
-        this.hashCode = hash * prime + (name == null ? 0 : name.toLowerCase().hashCode());
+    public NamedField(String inputTable, int hash, NamedFieldDetail namedFieldDetail, PlanNode planNode) {
+        this.namedFieldDetail = namedFieldDetail;
+        this.planNode = planNode;
+        this.table = inputTable.toLowerCase();
+        hashCode = namedFieldDetail.hashCode() * 2 + hash;
+    }
+
+    public NamedField(NamedField oldField) {
+        this.namedFieldDetail = oldField.namedFieldDetail;
+        this.planNode = oldField.planNode;
+        this.table = oldField.table;
+        hashCode = oldField.hashCode();
     }
 
     @Override
@@ -46,7 +51,7 @@ public class NamedField {
     }
 
     public String getSchema() {
-        return schema;
+        return namedFieldDetail.getSchema();
     }
 
     public String getTable() {
@@ -54,7 +59,7 @@ public class NamedField {
     }
 
     public String getName() {
-        return name;
+        return namedFieldDetail.getName();
     }
 
     @Override
@@ -66,11 +71,15 @@ public class NamedField {
         if (!(obj instanceof NamedField))
             return false;
         NamedField other = (NamedField) obj;
-        return StringUtils.equals(schema, other.schema) && StringUtils.equals(table, other.table) && StringUtils.equalsIgnoreCase(name, other.name);
+        if (other.hashCode() != this.hashCode()) {
+            return false;
+        }
+        return StringUtils.equals(namedFieldDetail.getSchema(), other.namedFieldDetail.getSchema()) &&
+                StringUtils.equals(table, other.table) && StringUtils.equalsIgnoreCase(namedFieldDetail.getName(), other.namedFieldDetail.getName());
     }
 
     @Override
     public String toString() {
-        return "schema:" + schema + "table:" + table + ",name:" + name;
+        return "schema:" + namedFieldDetail.getSchema() + "table:" + table + ",name:" + namedFieldDetail.getName();
     }
 }

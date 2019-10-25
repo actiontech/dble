@@ -109,7 +109,7 @@ public class TableNode extends PlanNode {
         List<NamedFieldDetail> clist = DbleServer.getInstance().getTmManager().getNamedFieldByMeta(schema, tableMeta);
         for (NamedFieldDetail field : clist) {
             NamedField tmpField = new NamedField(tmpTable, hash, field, this);
-            innerFields.put(tmpField, tmpField);
+            putDataIntoInnerFields(tmpField, tmpField);
         }
     }
 

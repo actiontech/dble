@@ -119,6 +119,7 @@ public abstract class PlanNode {
 
     // inner field -> child field
     Map<NamedField, NamedField> innerFields = new LinkedHashMap<>();
+    Map<String, List<NamedField>> quickCloumnMap = new HashMap<>();
 
     Map<NamedField, Item> outerFields = new LinkedHashMap<>();
 
@@ -307,9 +308,22 @@ public abstract class PlanNode {
                 NamedField tmpField = new NamedField(tmpFieldSchema, tmpFieldTable, tmpFieldName, coutField.planNode);
                 if (innerFields.containsKey(tmpField) && getParent() != null)
                     throw new MySQLOutPutException(ErrorCode.ER_DUP_FIELDNAME, "42S21", "Duplicate column name '" + tmpFieldName + "'");
-                innerFields.put(tmpField, coutField);
+                putDataIntoInnerFields(tmpField, coutField);
             }
         }
+    }
+
+    protected void putDataIntoInnerFields(NamedField tmpField, NamedField coutField) {
+        String key = tmpField.getName().toLowerCase();
+        List cache = quickCloumnMap.get(key);
+        if (cache == null) {
+            ArrayList<NamedField> list = new ArrayList<>();
+            list.add(tmpField);
+            quickCloumnMap.put(key, list);
+        } else {
+            cache.add(tmpField);
+        }
+        innerFields.put(tmpField, coutField);
     }
 
     protected void setUpSelects() {
@@ -777,6 +791,10 @@ public abstract class PlanNode {
 
     public boolean isKeepFieldSchema() {
         return keepFieldSchema;
+    }
+
+    public List<NamedField> quickIndex(String key) {
+        return quickCloumnMap.get(key);
     }
 
 }

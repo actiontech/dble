@@ -245,14 +245,14 @@ public class ItemField extends ItemIdent {
         // find from inner fields
         Item columnFromMeta = null;
         if (StringUtils.isEmpty(getDbName()) || StringUtils.isEmpty(getTableName())) {
-            for (NamedField namedField : planNode.getInnerFields().keySet()) {
+            for (NamedField namedField : planNode.quickIndex(tmpFieldName.toLowerCase())) {
                 if (StringUtils.equalsIgnoreCase(tmpFieldName, namedField.getName()) &&
                         (StringUtils.isEmpty(getTableName()) || (StringUtils.isEmpty(getDbName()) && StringUtils.equals(getTableName(), namedField.getTable())))) {
                     if (columnFromMeta == null) {
                         this.dbName = namedField.getSchema();
                         this.tableName = namedField.getTable();
                         getReferTables().clear();
-                        NamedField coutField = planNode.getInnerFields().get(new NamedField(namedField.getSchema(), namedField.getTable(), tmpFieldName, null));
+                        NamedField coutField = planNode.getInnerFields().get(namedField);
                         this.getReferTables().add(coutField.planNode);
                         columnFromMeta = this;
                     } else {

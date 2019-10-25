@@ -40,6 +40,7 @@ public class QueryNode extends PlanNode {
         children.clear();
         addChild(child);
     }
+
     @Override
     protected void setUpInnerFields() {
         innerFields.clear();
@@ -49,10 +50,11 @@ public class QueryNode extends PlanNode {
                 NamedField tmpField = new NamedField(null, this.getAlias(), childOutField.getName(), childOutField.planNode);
                 if (innerFields.containsKey(tmpField) && getParent() != null)
                     throw new MySQLOutPutException(ErrorCode.ER_DUP_FIELDNAME, "42S21", "Duplicate column name '" + childOutField.getName() + "'");
-                innerFields.put(tmpField, childOutField);
+                putDataIntoInnerFields(tmpField, childOutField);
             }
         }
     }
+
     @Override
     public String getPureName() {
         return this.getChild().getAlias();
@@ -102,5 +104,6 @@ public class QueryNode extends PlanNode {
         }
         return sb.toString();
     }
+
 
 }

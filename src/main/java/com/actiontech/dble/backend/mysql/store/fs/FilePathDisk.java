@@ -389,9 +389,8 @@ public class FilePathDisk extends FilePath {
         @Override
         public int write(ByteBuffer src) throws IOException {
             int len = src.remaining();
-            file.write(src.array(), src.arrayOffset() + src.position(), len);
-            src.position(src.position() + len);
-            return len;
+            file.write(src.array(), 0, src.position());
+            return src.capacity() - len;
         }
 
         @Override

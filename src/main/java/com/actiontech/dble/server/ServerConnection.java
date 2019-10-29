@@ -29,6 +29,7 @@ import com.actiontech.dble.server.response.Heartbeat;
 import com.actiontech.dble.server.response.InformationSchemaProfiling;
 import com.actiontech.dble.server.response.Ping;
 import com.actiontech.dble.server.util.SchemaUtil;
+import com.actiontech.dble.singleton.SerializableLock;
 import com.actiontech.dble.util.*;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
@@ -36,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.NetworkChannel;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
@@ -571,5 +573,15 @@ public class ServerConnection extends FrontendConnection {
     public void writeErrMessage(int vendorCode, String msg) {
         byte packetId = (byte) this.getSession2().getPacketId().get();
         super.writeErrMessage(++packetId, vendorCode, msg);
+    }
+    @Override
+    public void write(byte[] data) {
+        SerializableLock.getInstance().unLock();
+        super.write(data);
+    }
+    @Override
+    public final void write(ByteBuffer buffer) {
+        SerializableLock.getInstance().unLock();
+        super.write(buffer);
     }
 }

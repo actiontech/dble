@@ -17,6 +17,7 @@ import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.handler.*;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.singleton.SerializableLock;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.RandomUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -352,6 +353,7 @@ public abstract class FrontendConnection extends AbstractConnection {
             writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + charsetName.getClient() + "'");
             return;
         }
+        SerializableLock.getInstance().lock();
         this.query(sql);
     }
 

@@ -56,6 +56,7 @@ public final class SystemConfig {
     private boolean useZKSwitch = true;
     private int useThreadUsageStat = 0;
     private int usePerformanceMode = 0;
+    private int useSerializableMode = 0;
 
     //query time cost statistics
     private int useCostTimeStat = 0;
@@ -1039,6 +1040,19 @@ public final class SystemConfig {
         }
     }
 
+    public int getUseSerializableMode() {
+        return useSerializableMode;
+    }
+    @SuppressWarnings("unused")
+    public void setUseSerializableMode(int useSerializableMode) {
+        if (useSerializableMode >= 0 && useSerializableMode <= 1) {
+            this.useSerializableMode = useSerializableMode;
+        } else if (this.problemReporter != null) {
+            problemReporter.warn(String.format(WARNING_FORMATE, "useSerializableMode", useSerializableMode, this.useSerializableMode));
+        }
+    }
+
+
     public int getWriteToBackendExecutor() {
         return writeToBackendExecutor;
     }
@@ -1205,6 +1219,7 @@ public final class SystemConfig {
                 ", useZKSwitch=" + useZKSwitch +
                 ", useThreadUsageStat=" + useThreadUsageStat +
                 ", usePerformanceMode=" + usePerformanceMode +
+                ", useSerializableMode=" + useSerializableMode +
                 ", useCostTimeStat=" + useCostTimeStat +
                 ", maxCostStatSize=" + maxCostStatSize +
                 ", costSamplePercent=" + costSamplePercent +

@@ -65,7 +65,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
             if (isFail()) {
                 if (decrementToZero(conn)) {
                     session.resetMultiStatementStatus();
-                    handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
+                    handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn, false, false);
                 }
             } else {
                 if (!fieldsReturned) {

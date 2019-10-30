@@ -223,7 +223,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (byteBuffer != null) {
                     session.getSource().write(byteBuffer);
                 }
-                handleEndPacket(errPacket.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
+                handleEndPacket(errPacket.toBytes(), AutoTxOperation.ROLLBACK, conn, false, rrs.getSqlType() == ServerParse.DDL);
             }
         } finally {
             lock.unlock();
@@ -260,7 +260,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (isFail()) {
                     session.handleSpecial(rrs, false);
                     session.resetMultiStatementStatus();
-                    handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
+                    handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn, false, rrs.getSqlType() == ServerParse.DDL);
                     return;
                 }
                 boolean metaInited = session.handleSpecial(rrs, true);
@@ -284,7 +284,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
                 session.multiStatementPacket(ok, packetId);
                 doSqlStat();
-                handleEndPacket(ok.toBytes(), AutoTxOperation.COMMIT, conn, true);
+                handleEndPacket(ok.toBytes(), AutoTxOperation.COMMIT, conn, true, rrs.getSqlType() == ServerParse.DDL);
             } finally {
                 lock.unlock();
             }
@@ -299,7 +299,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
         session.multiStatementPacket(errPacket, packetId);
         doSqlStat();
-        handleEndPacket(errPacket.toBytes(), AutoTxOperation.COMMIT, conn, false);
+        handleEndPacket(errPacket.toBytes(), AutoTxOperation.COMMIT, conn, false, rrs.getSqlType() == ServerParse.DDL);
     }
 
     @Override
@@ -371,7 +371,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     session.resetMultiStatementStatus();
                     source.write(byteBuffer);
                     ErrorPacket errorPacket = createErrPkg(this.error);
-                    handleEndPacket(errorPacket.toBytes(), AutoTxOperation.ROLLBACK, conn, false); //todo :optimized
+                    handleEndPacket(errorPacket.toBytes(), AutoTxOperation.ROLLBACK, conn, false, rrs.getSqlType() == ServerParse.DDL); //todo :optimized
                     return;
                 }
             }
@@ -490,10 +490,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             session.handleSpecial(rrs, false);
             packetId++;
             if (byteBuffer == null) {
-                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
+                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn, false, rrs.getSqlType() == ServerParse.DDL);
             } else {
                 session.getSource().write(byteBuffer);
-                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
+                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn, false, rrs.getSqlType() == ServerParse.DDL);
             }
         }
     }
@@ -603,9 +603,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
 
-    void handleEndPacket(byte[] data, AutoTxOperation txOperation, BackendConnection conn, boolean isSuccess) {
+    void handleEndPacket(byte[] data, AutoTxOperation txOperation, BackendConnection conn, boolean isSuccess, boolean isDDL) {
         ServerConnection source = session.getSource();
-        if (source.isAutocommit() && !source.isTxStart() && this.modifiedSQL) {
+        if (source.isAutocommit() && !source.isTxStart() && this.modifiedSQL && !isDDL) {
             //Implicit Distributed Transaction,send commit or rollback automatically
             if (txOperation == AutoTxOperation.COMMIT) {
                 if (!conn.isDDL()) {
@@ -631,8 +631,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         } else {
             boolean inTransaction = !source.isAutocommit() || source.isTxStart();
             if (!inTransaction) {
-                for (BackendConnection errConn : errConnection) {
-                    session.releaseConnection(errConn);
+                if (errConnection != null) {
+                    for (BackendConnection errConn : errConnection) {
+                        session.releaseConnection(errConn);
+                    }
                 }
             }
 

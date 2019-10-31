@@ -92,7 +92,7 @@ public class OkPacket extends MySQLPacket {
     }
 
     public void write(FrontendConnection c) {
-        SerializableLock.getInstance().unLock();
+        SerializableLock.getInstance().unLock(c.getId());
         ByteBuffer buffer = write(c.allocate(), c);
         c.write(buffer);
     }

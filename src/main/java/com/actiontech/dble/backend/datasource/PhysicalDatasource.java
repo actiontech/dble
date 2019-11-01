@@ -448,6 +448,8 @@ public abstract class PhysicalDatasource {
                     LOGGER.info("no ilde connection in pool,create new connection for heartbeat ");
                     con = createNewBackendConnection(schema);
                 }
+            } else {
+                return null;
             }
         }
         con = takeCon(con, schema);

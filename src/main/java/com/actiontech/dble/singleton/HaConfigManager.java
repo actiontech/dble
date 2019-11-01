@@ -14,10 +14,13 @@ import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DataSourceS
 import com.actiontech.dble.config.util.SchemaWriteJob;
 import com.actiontech.dble.util.ResourceUtil;
 import com.alibaba.fastjson.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH.JSON_LIST;
@@ -28,11 +31,13 @@ import static com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH.JSON
  * Created by szf on 2019/10/23.
  */
 public final class HaConfigManager {
-
+    private static final String HA_LOG = "ha_log";
+    private static final Logger HA_LOGGER = LoggerFactory.getLogger(HA_LOG);
     private static final HaConfigManager INSTANCE = new HaConfigManager();
     private ParseXmlServiceInf<Schemas> parseSchemaXmlService;
     private static final String WRITEPATH = "schema.xml";
-    private static Schemas schema;
+    private Schemas schema;
+    private AtomicInteger index = new AtomicInteger();
     private final AtomicBoolean isWriting = new AtomicBoolean(false);
     private final ReentrantReadWriteLock adjustLock = new ReentrantReadWriteLock();
     private volatile SchemaWriteJob schemaWriteJob;
@@ -50,7 +55,7 @@ public final class HaConfigManager {
     }
 
     public void init() {
-        schema = this.parseSchemaXmlService.parseXmlToBean(WRITEPATH);
+        INSTANCE.schema = this.parseSchemaXmlService.parseXmlToBean(WRITEPATH);
         return;
     }
 
@@ -132,4 +137,20 @@ public final class HaConfigManager {
     public static HaConfigManager getInstance() {
         return INSTANCE;
     }
+
+
+    public static int getIdForHa() {
+        return INSTANCE.index.getAndAdd(1);
+    }
+
+    public static void haLog(String message, String datahostName, int index, Exception e) {
+        HA_LOGGER.info(new StringBuilder().append("[HA]").append("dataHost=")
+                .append(datahostName).append(" message=").append(message).toString(), e);
+    }
+
+    public static void haLong(String message, String datahostName) {
+        HA_LOGGER.info(new StringBuilder().append("[HA]").append("dataHost=")
+                .append(datahostName).append(" message=").append(message).toString());
+    }
+
 }

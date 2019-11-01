@@ -85,15 +85,10 @@ public final class DataHostStatus {
             for (String dhName : nameList) {
                 AbstractPhysicalDBPool dataHost = DbleServer.getInstance().getConfig().getDataHosts().get(dhName);
                 if (dataHost instanceof PhysicalDNPoolSingleWH) {
-                    if (dataHost instanceof PhysicalDNPoolSingleWH) {
-                        for (PhysicalDatasource pd : dataHost.getAllDataSources()) {
-                            RowDataPacket row = getRow(pd, (PhysicalDNPoolSingleWH) dataHost, mc.getCharset().getResults());
-                            row.setPacketId(++packetId);
-                            buffer = row.write(buffer, mc, true);
-                        }
-                    } else {
-                        mc.writeErrMessage(ErrorCode.ER_YES, "dataHost " + dataHost + " do not exists");
-                        return;
+                    for (PhysicalDatasource pd : dataHost.getAllDataSources()) {
+                        RowDataPacket row = getRow(pd, (PhysicalDNPoolSingleWH) dataHost, mc.getCharset().getResults());
+                        row.setPacketId(++packetId);
+                        buffer = row.write(buffer, mc, true);
                     }
                 } else {
                     mc.writeErrMessage(ErrorCode.ER_YES, "dataHost " + dhName + " do not exists");

@@ -44,8 +44,8 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         super(name, balance, conf);
         this.writeSource = writeSources[0];
         allSourceMap.put(writeSource.getName(), writeSource);
-        PhysicalDatasource[] read = readSources.get(new Integer(0));
-        PhysicalDatasource[] disabled = standbyReadSourcesMap.get(new Integer(0));
+        PhysicalDatasource[] read = readSources.get(Integer.valueOf(0));
+        PhysicalDatasource[] disabled = standbyReadSourcesMap.get(Integer.valueOf(0));
         putAllIntoMap(read);
         putAllIntoMap(disabled);
         setDataSourceProps();

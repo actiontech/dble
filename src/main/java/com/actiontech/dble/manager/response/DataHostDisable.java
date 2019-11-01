@@ -13,6 +13,7 @@ import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.HaInfo;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.singleton.ClusterGeneralConfig;
+import com.actiontech.dble.singleton.HaConfigManager;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -59,6 +60,7 @@ public final class DataHostDisable {
                 return;
             }
 
+            int haIndex = HaConfigManager.getIdForHa();
             if (ClusterGeneralConfig.isUseGeneralCluster() && useCluster) {
                 if (!disableWithCluster(dh, subHostName, mc)) {
                     return;

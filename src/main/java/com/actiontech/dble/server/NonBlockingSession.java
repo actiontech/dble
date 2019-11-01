@@ -122,6 +122,9 @@ public class NonBlockingSession implements Session {
         this.joinBufferMC = new MemSizeController(1024L * 1024L * DbleServer.getInstance().getConfig().getSystem().getJoinMemSize());
         this.orderBufferMC = new MemSizeController(1024L * 1024L * DbleServer.getInstance().getConfig().getSystem().getOrderMemSize());
         this.otherBufferMC = new MemSizeController(1024L * 1024L * DbleServer.getInstance().getConfig().getSystem().getOtherMemSize());
+        if (DbleServer.getInstance().getConfig().getSystem().getUseSerializableMode() == 1) {
+            this.setXaTxEnabled(true);
+        }
     }
 
     public void setOutputHandler(OutputHandler outputHandler) {

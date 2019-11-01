@@ -34,7 +34,7 @@ public final class XmltoZkMain {
         zkConn.setData().forPath(KVPathUtil.getConfStatusPath(), status.toString().getBytes(StandardCharsets.UTF_8));
     }
 
-    public static void writeConfFileToZK(boolean isAll, final int allMode) throws Exception {
+    public static void writeConfFileToZK(final int allMode) throws Exception {
         ZookeeperProcessListen zkListen = new ZookeeperProcessListen();
 
         CuratorFramework zkConn = ZKUtils.getConnection();
@@ -58,8 +58,7 @@ public final class XmltoZkMain {
         zkListen.clearInited();
         //write flag
         ConfStatus status = new ConfStatus(ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
-                isAll ? ConfStatus.Status.RELOAD_ALL : ConfStatus.Status.RELOAD,
-                isAll ? String.valueOf(allMode) : null);
+                ConfStatus.Status.RELOAD_ALL, String.valueOf(allMode));
         zkConn.setData().forPath(KVPathUtil.getConfStatusPath(), status.toString().getBytes(StandardCharsets.UTF_8));
     }
 

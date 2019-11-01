@@ -685,7 +685,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
             Integer millis = dataNodePauseInfo.get(rNode.getName());
             if (millis == null) {
-                millis = 0;
+                return;
             }
             LOGGER.debug("datanode[" + rNode.getName() + "], which conn threadid[" + ((MySQLConnection) conn).getThreadId() + "] will sleep for " + millis + " milliseconds");
             try {

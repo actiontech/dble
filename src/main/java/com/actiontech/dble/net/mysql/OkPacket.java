@@ -9,6 +9,7 @@ import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.singleton.BufferPoolManager;
+import com.actiontech.dble.singleton.SerializableLock;
 
 import java.nio.ByteBuffer;
 
@@ -91,6 +92,7 @@ public class OkPacket extends MySQLPacket {
     }
 
     public void write(FrontendConnection c) {
+        SerializableLock.getInstance().unLock();
         ByteBuffer buffer = write(c.allocate(), c);
         c.write(buffer);
     }

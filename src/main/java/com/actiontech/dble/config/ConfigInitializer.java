@@ -5,7 +5,6 @@
 */
 package com.actiontech.dble.config;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
@@ -44,7 +43,7 @@ public class ConfigInitializer implements ProblemReporter {
 
     private List<ErrorInfo> errorInfos = new ArrayList<>();
 
-    public ConfigInitializer(boolean loadDataHost, boolean lowerCaseNames) {
+    public ConfigInitializer(boolean lowerCaseNames) {
         //load server.xml
         XMLServerLoader serverLoader = new XMLServerLoader(this);
 
@@ -54,17 +53,8 @@ public class ConfigInitializer implements ProblemReporter {
         this.system = serverLoader.getSystem();
         this.users = serverLoader.getUsers();
         this.erRelations = schemaLoader.getErRelations();
-        // need reload DataHost and DataNode?
-        if (loadDataHost) {
-            this.dataHosts = initDataHosts(schemaLoader);
-            this.dataNodes = initDataNodes(schemaLoader);
-        } else {
-            this.dataHosts = DbleServer.getInstance().getConfig().getDataHosts();
-            this.dataNodes = DbleServer.getInstance().getConfig().getDataNodes();
-            //add the flag into the reload
-            this.dataHostWithoutWH = DbleServer.getInstance().getConfig().isDataHostWithoutWR();
-        }
-
+        this.dataHosts = initDataHosts(schemaLoader);
+        this.dataNodes = initDataNodes(schemaLoader);
         this.firewall = serverLoader.getFirewall();
 
         deleteRedundancyConf();
@@ -296,11 +286,7 @@ public class ConfigInitializer implements ProblemReporter {
                 AbstractPhysicalDBPool pool = entry.getValue();
                 for (PhysicalDBNode dataNode : dataNodes.values()) {
                     if (pool.equals(dataNode.getDbPool())) {
-                        List<Pair<String, String>> nodes = hostSchemaMap.get(hostName);
-                        if (nodes == null) {
-                            nodes = new ArrayList<>();
-                            hostSchemaMap.put(hostName, nodes);
-                        }
+                        List<Pair<String, String>> nodes = hostSchemaMap.computeIfAbsent(hostName, k -> new ArrayList<>());
                         nodes.add(new Pair<>(dataNode.getName(), dataNode.getDatabase()));
                     }
                 }

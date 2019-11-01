@@ -7,7 +7,7 @@ package com.actiontech.dble.sqlengine;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
+import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResetConnHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
@@ -42,11 +42,15 @@ public class SetTestJob implements ResponseHandler, Runnable {
     }
 
     public void run() {
+        boolean sendTest = false;
         try {
             Map<String, AbstractPhysicalDBPool> dataHosts = DbleServer.getInstance().getConfig().getDataHosts();
             for (AbstractPhysicalDBPool dn : dataHosts.values()) {
-                dn.getSource().getConnection(databaseName, true, this, null, false);
-                break;
+                if (dn.getSource().isAlive()) {
+                    dn.getSource().getConnection(databaseName, true, this, null);
+                    sendTest = true;
+                    break;
+                }
             }
         } catch (Exception e) {
             if (hasReturn.compareAndSet(false, true)) {
@@ -55,6 +59,12 @@ public class SetTestJob implements ResponseHandler, Runnable {
                 doFinished(true);
                 sc.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, reason);
             }
+        }
+        if (!sendTest && hasReturn.compareAndSet(false, true)) {
+            String reason = "can't get backend connection for sql :" + sql + " all datasrouce dead";
+            LOGGER.info(reason);
+            doFinished(true);
+            sc.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, reason);
         }
     }
 

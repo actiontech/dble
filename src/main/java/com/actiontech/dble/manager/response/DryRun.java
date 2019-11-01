@@ -53,7 +53,7 @@ public final class DryRun {
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("DETAIL", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
     }
@@ -62,11 +62,11 @@ public final class DryRun {
     private DryRun() {
     }
 
-    public static void execute(ManagerConnection c, String stmt) {
+    public static void execute(ManagerConnection c) {
         LOGGER.info("reload config(dry-run): load all xml info start");
         ConfigInitializer loader;
         try {
-            loader = new ConfigInitializer(true, false);
+            loader = new ConfigInitializer(false);
         } catch (Exception e) {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage());
             return;
@@ -142,10 +142,10 @@ public final class DryRun {
 
         for (SchemaConfig schema : serverConfig.getSchemas().values()) {
             for (TableConfig table : schema.getTables().values()) {
-                StringBuffer sb = new StringBuffer("");
+                StringBuilder sb = new StringBuilder("");
                 for (String exDn : table.getDataNodes()) {
                     if (tableMap.get(exDn) != null && !tableMap.get(exDn).contains(table.getName())) {
-                        sb.append(exDn + ",");
+                        sb.append(exDn).append(",");
                     }
                 }
 
@@ -225,7 +225,7 @@ public final class DryRun {
     private static void userCheck(List<ErrorInfo> list, ServerConfig serverConfig) {
         Map<String, UserConfig> userMap = serverConfig.getUsers();
         if (userMap != null && userMap.size() > 0) {
-            Set<String> schema = new HashSet<String>();
+            Set<String> schema = new HashSet<>();
             boolean hasManagerUser = false;
             boolean hasServerUser = false;
             for (UserConfig user : userMap.values()) {

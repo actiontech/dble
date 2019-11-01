@@ -57,8 +57,7 @@ public final class ManagerParseShow {
 
     public static final int WHITE_HOST = 43;
     public static final int WHITE_HOST_SET = 44;
-    public static final int DIRECTMEMORY_TOTAL = 45;
-    public static final int DIRECTMEMORY_DETAIL = 46;
+    public static final int DIRECTMEMORY = 45;
     public static final int BINLOG_STATUS = 47;
 
     public static final int CONNECTION_COUNT = 48;
@@ -486,7 +485,6 @@ public final class ManagerParseShow {
 
     // SHOW @@DIRECT_MEMORY=1 or 0
     private static int show2DirectMemoryCheck(String stmt, int offset) {
-        int returnValue = OTHER;
         if (stmt.length() > offset + "TMEMORY".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -502,36 +500,14 @@ public final class ManagerParseShow {
                     (c4 == 'M' || c4 == 'm') &&
                     (c5 == 'O' || c5 == 'o') &&
                     (c6 == 'R' || c6 == 'r') &&
-                    (c7 == 'Y' || c7 == 'y') &&
-                    stmt.length() > ++offset) {
-
-                offset = trim(offset, stmt);
-
-                if (stmt.charAt(offset) != '=') {
-                    return OTHER;
-                } else {
-                    offset++;
-                }
-                offset = trim(offset, stmt);
-                switch (stmt.charAt(offset)) {
-                    case '1':
-                        returnValue = DIRECTMEMORY_TOTAL;
-                        break;
-                    case '2':
-                        returnValue = DIRECTMEMORY_DETAIL;
-                        break;
-                    default:
-                        return OTHER;
-                }
-
+                    (c7 == 'Y' || c7 == 'y')) {
                 if (ParseUtil.isErrorTail(++offset, stmt)) {
                     return OTHER;
                 }
-
+                return DIRECTMEMORY;
             }
         }
-
-        return returnValue;
+        return OTHER;
     }
 
     // SHOW @@DataSyn

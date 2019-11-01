@@ -7,6 +7,7 @@ import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.HaInfo;
 import com.actiontech.dble.singleton.ClusterGeneralConfig;
+import com.actiontech.dble.singleton.HaConfigManager;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -49,11 +50,13 @@ public class DataHostResponseListener implements PathChildrenCacheListener {
         CuratorFramework zkConn = ZKUtils.getConnection();
         if (!info.getStartId().equals(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID)) &&
                 info.getStatus() == HaInfo.HaStatus.SUCCESS) {
+            int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.RESPONSE_NOTIFY, HaInfo.HaStartType.CLUSTER_NOTIFY, HaInfo.HaStage.RESPONSE_NOTIFY.toString());
             PhysicalDNPoolSingleWH dataHost = (PhysicalDNPoolSingleWH) DbleServer.getInstance().getConfig().getDataHosts().get(info.getDhName());
             String jsonString = new String(zkConn.getData().forPath(KVPathUtil.getHaStatusPath(info.getDhName())), "UTF-8");
             dataHost.changeIntoLastestStatus(jsonString);
             //response to kv
             ZKUtils.createTempNode(childData.getPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ClusterPathUtil.SUCCESS.getBytes());
+            HaConfigManager.getInstance().haFinish(id, null, data);
         }
     }
 

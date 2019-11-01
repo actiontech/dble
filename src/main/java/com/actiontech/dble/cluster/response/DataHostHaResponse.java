@@ -35,26 +35,34 @@ public class DataHostHaResponse implements ClusterXmlLoader {
         LOGGER.info("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
         if (configValue.getKey().contains(DATA_HOST_STATUS)) {
             KvBean reloadStatus = ClusterHelper.getKV(ClusterPathUtil.getConfStatusPath());
+            int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.RESPONSE_NOTIFY, HaInfo.HaStartType.CLUSTER_NOTIFY, "");
             while (reloadStatus != null) {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
                 reloadStatus = ClusterHelper.getKV(ClusterPathUtil.getConfStatusPath());
                 continue;
             }
-            //try to change dataHost status just like the
             String[] path = configValue.getKey().split("/");
             String dhName = path[path.length - 1];
             PhysicalDNPoolSingleWH dataHost = (PhysicalDNPoolSingleWH) DbleServer.getInstance().getConfig().getDataHosts().get(dhName);
             dataHost.changeIntoLastestStatus(configValue.getValue());
+            HaConfigManager.getInstance().haFinish(id, null, configValue.getValue());
         } else {
             //data_host_locks events,we only try to response to the DISABLE,ignore others
             HaInfo info = new HaInfo(configValue.getValue());
             if (info.getLockType() == HaInfo.HaType.DATAHOST_DISABLE &&
                     !info.getStartId().equals(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID)) &&
                     info.getStatus() == HaInfo.HaStatus.SUCCESS) {
+                //start the log
+                int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.RESPONSE_NOTIFY, HaInfo.HaStartType.CLUSTER_NOTIFY, HaInfo.HaStage.RESPONSE_NOTIFY.toString());
+                //try to get the lastest status of the dataHost
                 KvBean lastestStatus = ClusterHelper.getKV(ClusterPathUtil.getHaStatusPath(info.getDhName()));
+                //find out the target dataHost and change it into latest status
                 PhysicalDNPoolSingleWH dataHost = (PhysicalDNPoolSingleWH) DbleServer.getInstance().getConfig().getDataHosts().get(info.getDhName());
                 dataHost.changeIntoLastestStatus(lastestStatus.getValue());
+                //response the event ,only disable event has response
                 ClusterHelper.setKV(ClusterPathUtil.getSelfResponsePath(configValue.getKey()), ClusterPathUtil.SUCCESS);
+                //ha manager writeOut finish log
+                HaConfigManager.getInstance().haFinish(id, null, lastestStatus.getValue());
             }
         }
     }

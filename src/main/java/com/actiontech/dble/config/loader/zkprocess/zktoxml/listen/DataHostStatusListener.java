@@ -2,6 +2,8 @@ package com.actiontech.dble.config.loader.zkprocess.zktoxml.listen;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.HaInfo;
+import com.actiontech.dble.singleton.HaConfigManager;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
@@ -37,8 +39,10 @@ public class DataHostStatusListener implements PathChildrenCacheListener {
     private void updateStatus(ChildData childData) {
         String nodeName = childData.getPath().substring(childData.getPath().lastIndexOf("/") + 1);
         String data = new String(childData.getData(), StandardCharsets.UTF_8);
+        int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.RESPONSE_NOTIFY, HaInfo.HaStartType.CLUSTER_NOTIFY, "");
         PhysicalDNPoolSingleWH dataHost = (PhysicalDNPoolSingleWH) DbleServer.getInstance().getConfig().getDataHosts().get(nodeName);
         dataHost.changeIntoLastestStatus(data);
+        HaConfigManager.getInstance().haFinish(id, null, data);
     }
 
 }

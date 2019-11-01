@@ -11,7 +11,6 @@ import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDBPoolDiff;
 import com.actiontech.dble.config.model.*;
 import com.actiontech.dble.config.util.ConfigException;
@@ -194,7 +193,7 @@ public class ServerConfig {
         return firewall2;
     }
 
-    public ReentrantLock getLock() {
+    public ReentrantReadWriteLock getLock() {
         return lock;
     }
 

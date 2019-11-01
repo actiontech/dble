@@ -1,9 +1,7 @@
 package com.actiontech.dble.config.loader.zkprocess.xmltozk.listen;
 
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.NotifyService;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
 import com.actiontech.dble.singleton.HaConfigManager;

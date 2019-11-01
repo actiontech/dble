@@ -201,8 +201,8 @@ public final class ReloadConfig {
 
 
     private static void reloadWithZookeeper(final int loadAllMode, CuratorFramework zkConn, ManagerConnection c) {
-        final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
-        lock.lock();
+        final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
+        lock.writeLock().lock();
         try {
             if (!reloadAll(loadAllMode)) {
                 writeSpecialError(c, "Reload interruputed by others,config should be reload");
@@ -550,9 +550,9 @@ public final class ReloadConfig {
 
     }
 
-    private static void distinguishDataHost(Map<String, PhysicalDBPool> newDataHosts, Map<String, PhysicalDBPool> oldDataHosts,
-                                            Map<String, PhysicalDBPool> addOrChangeHosts, Map<String, PhysicalDBPool> noChangeHosts,
-                                            Map<String, PhysicalDBPool> recycleHosts) {
+    private static void distinguishDataHost(Map<String, AbstractPhysicalDBPool> newDataHosts, Map<String, AbstractPhysicalDBPool> oldDataHosts,
+                                            Map<String, AbstractPhysicalDBPool> addOrChangeHosts, Map<String, AbstractPhysicalDBPool> noChangeHosts,
+                                            Map<String, AbstractPhysicalDBPool> recycleHosts) {
 
         for (Map.Entry<String, AbstractPhysicalDBPool> entry : newDataHosts.entrySet()) {
             AbstractPhysicalDBPool oldPool = oldDataHosts.get(entry.getKey());

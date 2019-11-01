@@ -2,10 +2,7 @@ package com.actiontech.dble.manager.handler;
 
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
-import com.actiontech.dble.manager.response.DataHostDisable;
-import com.actiontech.dble.manager.response.DataHostEnable;
-import com.actiontech.dble.manager.response.DataHostStatus;
-import com.actiontech.dble.manager.response.DataHostSwitch;
+import com.actiontech.dble.manager.response.*;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,6 +20,7 @@ public final class DataHostHandler {
     private static final Pattern PATTERN_DH_SWITCH = Pattern.compile("^dataHost\\s*@@switch\\s*name\\s*=\\s*'([a-zA-Z_0-9\\-\\,]+)'" +
             "\\s*master\\s*=\\s*'([a-zA-Z_0-9\\-\\,]+)'\\s*$", Pattern.CASE_INSENSITIVE);
     private static final Pattern PATTERN_DH_STATUS = Pattern.compile("^dataHost\\s*@@(status_all\\s*|(status\\s*name\\s*=\\s*'([a-zA-Z_0-9\\-\\,]+)'\\s*))$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN_DH_EVENTS = Pattern.compile("^dataHost\\s*@@events\\s*$", Pattern.CASE_INSENSITIVE);
 
     private DataHostHandler() {
     }
@@ -32,6 +30,7 @@ public final class DataHostHandler {
         Matcher enable = PATTERN_DH_ENABLE.matcher(stmt);
         Matcher switcher = PATTERN_DH_SWITCH.matcher(stmt);
         Matcher status = PATTERN_DH_STATUS.matcher(stmt);
+        Matcher event = PATTERN_DH_EVENTS.matcher(stmt);
         if (disable.matches()) {
             DataHostDisable.execute(disable, c);
         } else if (enable.matches()) {
@@ -40,6 +39,8 @@ public final class DataHostHandler {
             DataHostSwitch.execute(switcher, c);
         } else if (status.matches()) {
             DataHostStatus.execute(status, c);
+        } else if (event.matches()) {
+            DataHostEvents.execute(c);
         } else {
             c.writeErrMessage(ErrorCode.ER_YES, "Syntax Error,Please check the help to use the dataHost command");
         }

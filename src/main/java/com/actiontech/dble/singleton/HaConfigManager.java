@@ -1,6 +1,7 @@
 package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.datasource.HaChangeStatus;
 import com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH;
 import com.actiontech.dble.config.loader.console.ZookeeperPath;
 import com.actiontech.dble.config.loader.zkprocess.entity.Schemas;
@@ -17,14 +18,12 @@ import com.actiontech.dble.util.ResourceUtil;
 import com.alibaba.fastjson.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import static com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH.JSON_LIST;
 import static com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH.JSON_NAME;
 import static com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH.JSON_WRITE_SOURCE;
@@ -159,9 +158,9 @@ public final class HaConfigManager {
         unfinised.remove(Integer.valueOf(id));
         StringBuilder resultString = new StringBuilder().
                 append("[HA] id = ").append(id).
-                append(" end of Ha event type =").append(status.type.toString()).
-                append(" command = ").append(status.command).
-                append(" stage = ").append(status.stage.toString()).
+                append(" end of Ha event type =").append(status.getType().toString()).
+                append(" command = ").append(status.getCommand()).
+                append(" stage = ").append(status.getStage().toString()).
                 append(" finish type = \"").append(errorMsg == null ? "success" : errorMsg).append("\"");
         if (result != null) {
             resultString.append("\n result status of dataHost :").append(result);
@@ -180,56 +179,14 @@ public final class HaConfigManager {
                 append("[HA] id = ").append(id).
                 append(" ha waiting for others type =").append(status.getType().toString()).
                 append(" command = ").append(status.getCommand()).
-                append(" stage = ").append(status.stage.toString()).
+                append(" stage = ").append(status.getStage().toString()).
                 toString());
     }
 
-    private class HaChangeStatus {
-        private final int index;
-        private final String command;
-        private final HaInfo.HaStartType type;
-        private final long startTimeStamp;
-        private volatile long endTimeStamp;
-        private HaInfo.HaStage stage;
-
-        private HaChangeStatus(int index, String command, HaInfo.HaStartType type, long startTimeStamp, HaInfo.HaStage stage) {
-            this.index = index;
-            this.command = command;
-            this.type = type;
-            this.startTimeStamp = startTimeStamp;
-            this.stage = stage;
-        }
-
-        public int getIndex() {
-            return index;
-        }
-
-        public String getCommand() {
-            return command;
-        }
-
-        public HaInfo.HaStartType getType() {
-            return type;
-        }
-
-        public long getStartTimeStamp() {
-            return startTimeStamp;
-        }
-
-        public long getEndTimeStamp() {
-            return endTimeStamp;
-        }
-
-        public HaInfo.HaStage getStage() {
-            return stage;
-        }
-
-        public void setEndTimeStamp(long endTimeStamp) {
-            this.endTimeStamp = endTimeStamp;
-        }
-
-        public void setStage(HaInfo.HaStage stage) {
-            this.stage = stage;
-        }
+    public Map<Integer, HaChangeStatus> getUnfinised() {
+        return unfinised;
     }
+
+
+
 }

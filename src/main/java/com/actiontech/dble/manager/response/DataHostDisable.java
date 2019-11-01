@@ -60,18 +60,19 @@ public final class DataHostDisable {
                 return;
             }
 
-            int haIndex = HaConfigManager.getIdForHa();
+            int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.LOCAL_CHANGE, HaInfo.HaStartType.LOCAL_COMMAND, disable.group(0));
             if (ClusterGeneralConfig.isUseGeneralCluster() && useCluster) {
-                if (!disableWithCluster(dh, subHostName, mc)) {
+                if (!disableWithCluster(id, dh, subHostName, mc)) {
                     return;
                 }
             } else if (ClusterGeneralConfig.isUseZK() && useCluster) {
-                if (!disableWithZK(dh, subHostName, mc)) {
+                if (!disableWithZK(id, dh, subHostName, mc)) {
                     return;
                 }
             } else {
                 //dble start in single mode
-                dh.disableHosts(subHostName, true);
+                String result = dh.disableHosts(subHostName, true);
+                HaConfigManager.getInstance().haFinish(id, null, result);
             }
 
             OkPacket packet = new OkPacket();
@@ -84,25 +85,37 @@ public final class DataHostDisable {
         }
     }
 
-    public static boolean disableWithZK(PhysicalDNPoolSingleWH dh, String subHostName, ManagerConnection mc) {
+    public static boolean disableWithZK(int id, PhysicalDNPoolSingleWH dh, String subHostName, ManagerConnection mc) {
         CuratorFramework zkConn = ZKUtils.getConnection();
         InterProcessMutex distributeLock = new InterProcessMutex(zkConn, KVPathUtil.getHaLockPath(dh.getHostName()));
         try {
             try {
                 if (!distributeLock.acquire(100, TimeUnit.MILLISECONDS)) {
                     mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is change the dataHost status");
+                    HaConfigManager.getInstance().haFinish(id, "Other instance is changing the dataHost, please try again later.", null);
                     return false;
                 }
-                dh.disableHosts(subHostName, false);
+                //local set disable
+                String result = dh.disableHosts(subHostName, false);
+
+                // update total dataHost status
                 setStatusToZK(KVPathUtil.getHaStatusPath(dh.getHostName()), zkConn, dh.getClusterHaJson());
+                // write out notify message ,let other dble to response
                 setStatusToZK(KVPathUtil.getHaResponsePath(dh.getHostName()), zkConn, new HaInfo(dh.getHostName(),
                         ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
                         HaInfo.HaType.DATAHOST_DISABLE,
                         HaInfo.HaStatus.SUCCESS
                 ).toString());
+                //write out self change success result
                 ZKUtils.createTempNode(KVPathUtil.getHaResponsePath(dh.getHostName()), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
                         ClusterPathUtil.SUCCESS.getBytes(StandardCharsets.UTF_8));
+                //change stage into waiting others
+                HaConfigManager.getInstance().haWaitingOthers(id);
+                //use zk to waiting other dble to response
                 String errorMessage = isZKfinished(zkConn, KVPathUtil.getHaResponsePath(dh.getHostName()));
+
+                //change stage into finished
+                HaConfigManager.getInstance().haFinish(id, errorMessage, result);
                 if (errorMessage != null && !"".equals(errorMessage)) {
                     mc.writeErrMessage(ErrorCode.ER_YES, errorMessage);
                     return false;
@@ -114,10 +127,63 @@ public final class DataHostDisable {
         } catch (Exception e) {
             LOGGER.info("reload config using ZK failure", e);
             mc.writeErrMessage(ErrorCode.ER_YES, e.getMessage());
+            HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
             return false;
         }
         return true;
     }
+
+
+    public static boolean disableWithCluster(int id, PhysicalDNPoolSingleWH dh, String subHostName, ManagerConnection mc) {
+        //get the lock from ucore
+        DistributeLock distributeLock = new DistributeLock(ClusterPathUtil.getHaLockPath(dh.getHostName()),
+                new HaInfo(dh.getHostName(),
+                        ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
+                        HaInfo.HaType.DATAHOST_DISABLE,
+                        HaInfo.HaStatus.INIT
+                ).toString()
+        );
+        try {
+            if (!distributeLock.acquire()) {
+                mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is changing the dataHost, please try again later.");
+                HaConfigManager.getInstance().haFinish(id, "Other instance is changing the dataHost, please try again later.", null);
+                return false;
+            }
+            //local set disable
+            String result = dh.disableHosts(subHostName, false);
+
+            //update total dataSources status
+            ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dh.getHostName()), dh.getClusterHaJson());
+            // update the notify value let other dble to notify
+            ClusterHelper.setKV(ClusterPathUtil.getHaLockPath(dh.getHostName()),
+                    new HaInfo(dh.getHostName(),
+                            ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
+                            HaInfo.HaType.DATAHOST_DISABLE,
+                            HaInfo.HaStatus.SUCCESS
+                    ).toString());
+            //write out self success message
+            ClusterHelper.setKV(ClusterPathUtil.getSelfResponsePath(ClusterPathUtil.getHaLockPath(dh.getHostName())), ClusterPathUtil.SUCCESS);
+            //change log stage into wait others
+            HaConfigManager.getInstance().haWaitingOthers(id);
+            //waiting for other dble to response
+            String errorMsg = ClusterHelper.waitingForAllTheNode(ClusterPathUtil.SUCCESS, ClusterPathUtil.getHaLockPath(dh.getHostName()) + SEPARATOR);
+            //set  log stage to finish
+            HaConfigManager.getInstance().haFinish(id, errorMsg, result);
+            if (errorMsg != null) {
+                mc.writeErrMessage(ErrorCode.ER_YES, errorMsg);
+                return false;
+            }
+        } catch (Exception e) {
+            mc.writeErrMessage(ErrorCode.ER_YES, e.getMessage());
+            HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
+            return false;
+        } finally {
+            ClusterHelper.cleanPath(ClusterPathUtil.getHaLockPath(dh.getHostName()) + SEPARATOR);
+            distributeLock.release();
+        }
+        return true;
+    }
+
 
     public static void setStatusToZK(String nodePath, CuratorFramework curator, String value) throws Exception {
         Stat stat = curator.checkExists().forPath(nodePath);
@@ -155,42 +221,5 @@ public final class DataHostDisable {
             LOGGER.warn("get error when waiting for others ", e);
             return e.getMessage();
         }
-    }
-
-    public static boolean disableWithCluster(PhysicalDNPoolSingleWH dh, String subHostName, ManagerConnection mc) {
-        //get the lock from ucore
-        DistributeLock distributeLock = new DistributeLock(ClusterPathUtil.getHaLockPath(dh.getHostName()),
-                new HaInfo(dh.getHostName(),
-                        ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
-                        HaInfo.HaType.DATAHOST_DISABLE,
-                        HaInfo.HaStatus.INIT
-                ).toString()
-        );
-        try {
-            if (!distributeLock.acquire()) {
-                mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is changing the dataHost, please try again later.");
-                return false;
-            }
-            dh.disableHosts(subHostName, false);
-            ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dh.getHostName()), dh.getClusterHaJson());
-            ClusterHelper.setKV(ClusterPathUtil.getHaLockPath(dh.getHostName()),
-                    new HaInfo(dh.getHostName(),
-                            ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
-                            HaInfo.HaType.DATAHOST_DISABLE,
-                            HaInfo.HaStatus.SUCCESS
-                    ).toString());
-            ClusterHelper.setKV(ClusterPathUtil.getSelfResponsePath(ClusterPathUtil.getHaLockPath(dh.getHostName())), ClusterPathUtil.SUCCESS);
-            String errorMsg = ClusterHelper.waitingForAllTheNode(ClusterPathUtil.SUCCESS, ClusterPathUtil.getHaLockPath(dh.getHostName()) + SEPARATOR);
-            if (errorMsg != null) {
-                throw new RuntimeException(errorMsg);
-            }
-        } catch (Exception e) {
-            mc.writeErrMessage(ErrorCode.ER_YES, e.getMessage());
-            return false;
-        } finally {
-            ClusterHelper.cleanPath(ClusterPathUtil.getHaLockPath(dh.getHostName()) + SEPARATOR);
-            distributeLock.release();
-        }
-        return true;
     }
 }

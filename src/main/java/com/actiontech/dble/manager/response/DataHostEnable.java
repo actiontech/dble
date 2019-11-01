@@ -12,6 +12,7 @@ import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.HaInfo;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.singleton.ClusterGeneralConfig;
+import com.actiontech.dble.singleton.HaConfigManager;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -52,16 +53,19 @@ public final class DataHostEnable {
                 mc.writeErrMessage(ErrorCode.ER_YES, "Some of the dataSource in command in " + dh.getHostName() + " do not exists");
                 return;
             }
+
+            int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.LOCAL_CHANGE, HaInfo.HaStartType.LOCAL_COMMAND, enable.group(0));
             if (ClusterGeneralConfig.isUseGeneralCluster() && useCluster) {
-                if (!enableWithCluster(dh, subHostName, mc)) {
+                if (!enableWithCluster(id, dh, subHostName, mc)) {
                     return;
                 }
             } else if (ClusterGeneralConfig.isUseZK() && useCluster) {
-                if (!enableWithZK(dh, subHostName, mc)) {
+                if (!enableWithZK(id, dh, subHostName, mc)) {
                     return;
                 }
             } else {
-                dh.enableHosts(subHostName, true);
+                String result = dh.enableHosts(subHostName, true);
+                HaConfigManager.getInstance().haFinish(id, null, result);
             }
 
 
@@ -76,7 +80,7 @@ public final class DataHostEnable {
     }
 
 
-    public static boolean enableWithZK(PhysicalDNPoolSingleWH dh, String subHostName, ManagerConnection mc) {
+    public static boolean enableWithZK(int id, PhysicalDNPoolSingleWH dh, String subHostName, ManagerConnection mc) {
         CuratorFramework zkConn = ZKUtils.getConnection();
         InterProcessMutex distributeLock = new InterProcessMutex(zkConn, KVPathUtil.getHaLockPath(dh.getHostName()));
         try {
@@ -85,8 +89,9 @@ public final class DataHostEnable {
                     mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is change the dataHost status");
                     return false;
                 }
-                dh.enableHosts(subHostName, false);
-                DataHostDisable.setStatusToZK(KVPathUtil.getHaStatusPath(dh.getHostName()), zkConn, dh.getClusterHaJson());
+                String result = dh.enableHosts(subHostName, false);
+                DataHostDisable.setStatusToZK(KVPathUtil.getHaStatusPath(dh.getHostName()), zkConn, result);
+                HaConfigManager.getInstance().haFinish(id, null, result);
             } finally {
                 distributeLock.release();
                 LOGGER.info("reload config: release distributeLock " + KVPathUtil.getConfChangeLockPath() + " from zk");
@@ -94,13 +99,14 @@ public final class DataHostEnable {
         } catch (Exception e) {
             LOGGER.info("reload config using ZK failure", e);
             mc.writeErrMessage(ErrorCode.ER_YES, e.getMessage());
+            HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
             return false;
         }
         return true;
     }
 
 
-    public static boolean enableWithCluster(PhysicalDNPoolSingleWH dh, String subHostName, ManagerConnection mc) {
+    public static boolean enableWithCluster(int id, PhysicalDNPoolSingleWH dh, String subHostName, ManagerConnection mc) {
         //get the lock from ucore
         DistributeLock distributeLock = new DistributeLock(ClusterPathUtil.getHaLockPath(dh.getHostName()),
                 new HaInfo(dh.getHostName(),
@@ -114,8 +120,10 @@ public final class DataHostEnable {
                 mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is changing the dataHost, please try again later.");
                 return false;
             }
-            dh.enableHosts(subHostName, false);
-            ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dh.getHostName()), dh.getClusterHaJson());
+            String result = dh.enableHosts(subHostName, false);
+            //only update for the status
+            ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dh.getHostName()), result);
+            HaConfigManager.getInstance().haFinish(id, null, result);
         } catch (Exception e) {
             mc.writeErrMessage(ErrorCode.ER_YES, e.getMessage());
             return false;

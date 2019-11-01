@@ -394,7 +394,7 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
     }
 
 
-    public void disableHosts(String hostNames, boolean syncWriteConf) {
+    public String disableHosts(String hostNames, boolean syncWriteConf) {
         String[] nameList = hostNames == null ? Arrays.copyOf(allSourceMap.keySet().toArray(), allSourceMap.keySet().toArray().length, String[].class) : hostNames.split(",");
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
@@ -410,7 +410,7 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
             }
 
             HaConfigManager.getInstance().updateConfDataHost(this, syncWriteConf);
-
+            return this.getClusterHaJson();
         } finally {
             lock.readLock().unlock();
             adjustLock.writeLock().unlock();
@@ -418,7 +418,7 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
     }
 
 
-    public void enableHosts(String hostNames, boolean syncWriteConf) {
+    public String enableHosts(String hostNames, boolean syncWriteConf) {
         String[] nameList = hostNames == null ? Arrays.copyOf(allSourceMap.keySet().toArray(), allSourceMap.keySet().toArray().length, String[].class) : hostNames.split(",");
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
@@ -430,13 +430,14 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
             }
 
             HaConfigManager.getInstance().updateConfDataHost(this, syncWriteConf);
+            return this.getClusterHaJson();
         } finally {
             lock.readLock().lock();
             adjustLock.writeLock().unlock();
         }
     }
 
-    public void switchMaster(String writeHost, boolean syncWriteConf) {
+    public String switchMaster(String writeHost, boolean syncWriteConf) {
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
         adjustLock.writeLock().lock();
@@ -448,6 +449,7 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
             newWriteHost.setReadNode(false);
             writeSource = newWriteHost;
             HaConfigManager.getInstance().updateConfDataHost(this, syncWriteConf);
+            return this.getClusterHaJson();
         } finally {
             lock.readLock().unlock();
             adjustLock.writeLock().unlock();

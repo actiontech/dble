@@ -11,6 +11,7 @@ import com.actiontech.dble.config.loader.zkprocess.parse.ParseXmlServiceInf;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.schema.xml.SchemasParseXmlImpl;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DataSourceStatus;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.HaInfo;
 import com.actiontech.dble.config.util.SchemaWriteJob;
 import com.actiontech.dble.util.ResourceUtil;
 import com.alibaba.fastjson.JSONObject;
@@ -19,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -37,11 +39,12 @@ public final class HaConfigManager {
     private ParseXmlServiceInf<Schemas> parseSchemaXmlService;
     private static final String WRITEPATH = "schema.xml";
     private Schemas schema;
-    private AtomicInteger index = new AtomicInteger();
+    private AtomicInteger indexCreater = new AtomicInteger();
     private final AtomicBoolean isWriting = new AtomicBoolean(false);
     private final ReentrantReadWriteLock adjustLock = new ReentrantReadWriteLock();
     private volatile SchemaWriteJob schemaWriteJob;
     private volatile Set<PhysicalDNPoolSingleWH> waitingSet = new HashSet<>();
+    private final Map<Integer, HaChangeStatus> unfinised = new ConcurrentHashMap<>();
 
     private HaConfigManager() {
         try {
@@ -138,19 +141,95 @@ public final class HaConfigManager {
         return INSTANCE;
     }
 
-
-    public static int getIdForHa() {
-        return INSTANCE.index.getAndAdd(1);
+    public int haStart(HaInfo.HaStage stage, HaInfo.HaStartType type, String command) {
+        int id = indexCreater.getAndAdd(1);
+        HaChangeStatus newStatus = new HaChangeStatus(id, command, type, System.currentTimeMillis(), stage);
+        INSTANCE.unfinised.put(Integer.valueOf(id), newStatus);
+        HA_LOGGER.info(new StringBuilder().
+                append("[HA] id = ").append(id).
+                append(" start of Ha event type =").append(type.toString()).
+                append(" command = ").append(command).
+                append(" stage = ").append(stage.toString()).
+                toString());
+        return id;
     }
 
-    public static void haLog(String message, String datahostName, int index, Exception e) {
-        HA_LOGGER.info(new StringBuilder().append("[HA]").append("dataHost=")
-                .append(datahostName).append(" message=").append(message).toString(), e);
+    public void haFinish(int id, String errorMsg, String result) {
+        HaChangeStatus status = unfinised.get(Integer.valueOf(id));
+        unfinised.remove(Integer.valueOf(id));
+        StringBuilder resultString = new StringBuilder().
+                append("[HA] id = ").append(id).
+                append(" end of Ha event type =").append(status.type.toString()).
+                append(" command = ").append(status.command).
+                append(" stage = ").append(status.stage.toString()).
+                append(" finish type = \"").append(errorMsg == null ? "success" : errorMsg).append("\"");
+        if (result != null) {
+            resultString.append("\n result status of dataHost :").append(result);
+        }
+        if (errorMsg == null) {
+            HA_LOGGER.info(resultString.toString());
+        } else {
+            HA_LOGGER.warn(resultString.toString());
+        }
     }
 
-    public static void haLong(String message, String datahostName) {
-        HA_LOGGER.info(new StringBuilder().append("[HA]").append("dataHost=")
-                .append(datahostName).append(" message=").append(message).toString());
+    public void haWaitingOthers(int id) {
+        HaChangeStatus status = unfinised.get(Integer.valueOf(id));
+        status.setStage(HaInfo.HaStage.WAITING_FOR_OTHERS);
+        HA_LOGGER.info(new StringBuilder().
+                append("[HA] id = ").append(id).
+                append(" ha waiting for others type =").append(status.getType().toString()).
+                append(" command = ").append(status.getCommand()).
+                append(" stage = ").append(status.stage.toString()).
+                toString());
     }
 
+    private class HaChangeStatus {
+        private final int index;
+        private final String command;
+        private final HaInfo.HaStartType type;
+        private final long startTimeStamp;
+        private volatile long endTimeStamp;
+        private HaInfo.HaStage stage;
+
+        private HaChangeStatus(int index, String command, HaInfo.HaStartType type, long startTimeStamp, HaInfo.HaStage stage) {
+            this.index = index;
+            this.command = command;
+            this.type = type;
+            this.startTimeStamp = startTimeStamp;
+            this.stage = stage;
+        }
+
+        public int getIndex() {
+            return index;
+        }
+
+        public String getCommand() {
+            return command;
+        }
+
+        public HaInfo.HaStartType getType() {
+            return type;
+        }
+
+        public long getStartTimeStamp() {
+            return startTimeStamp;
+        }
+
+        public long getEndTimeStamp() {
+            return endTimeStamp;
+        }
+
+        public HaInfo.HaStage getStage() {
+            return stage;
+        }
+
+        public void setEndTimeStamp(long endTimeStamp) {
+            this.endTimeStamp = endTimeStamp;
+        }
+
+        public void setStage(HaInfo.HaStage stage) {
+            this.stage = stage;
+        }
+    }
 }

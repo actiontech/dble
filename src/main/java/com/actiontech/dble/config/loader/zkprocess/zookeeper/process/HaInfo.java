@@ -8,6 +8,14 @@ public class HaInfo {
         INIT, SUCCESS, FAILED
     }
 
+    public enum HaStartType {
+        LOCAL_COMMAND, CLUSTER_NOTIFY
+    }
+
+    public enum HaStage {
+        LOCAL_CHANGE, WAITING_FOR_OTHERS, RESPONSE_NOTIFY
+    }
+
     public enum HaType {
         DATAHOST_DISABLE, DATAHOST_ENABLE, DATAHOST_SWITCH
     }
@@ -46,6 +54,7 @@ public class HaInfo {
     public String getDhName() {
         return dhName;
     }
+
     public HaStatus getStatus() {
         return status;
     }

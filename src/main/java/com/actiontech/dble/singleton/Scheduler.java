@@ -2,7 +2,7 @@ package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDBPool;
+import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
 import com.actiontech.dble.backend.mysql.xa.XAStateLog;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -77,8 +77,8 @@ public final class Scheduler {
                     @Override
                     public void run() {
 
-                        Map<String, PhysicalDBPool> nodes = DbleServer.getInstance().getConfig().getDataHosts();
-                        for (PhysicalDBPool node : nodes.values()) {
+                        Map<String, AbstractPhysicalDBPool> nodes = DbleServer.getInstance().getConfig().getDataHosts();
+                        for (AbstractPhysicalDBPool node : nodes.values()) {
                             node.heartbeatCheck(heartPeriod);
                         }
                     }
@@ -96,8 +96,8 @@ public final class Scheduler {
                     @Override
                     public void run() {
                         if (!DbleServer.getInstance().getConfig().isDataHostWithoutWR()) {
-                            Map<String, PhysicalDBPool> hosts = DbleServer.getInstance().getConfig().getDataHosts();
-                            for (PhysicalDBPool host : hosts.values()) {
+                            Map<String, AbstractPhysicalDBPool> hosts = DbleServer.getInstance().getConfig().getDataHosts();
+                            for (AbstractPhysicalDBPool host : hosts.values()) {
                                 host.doHeartbeat();
                             }
                         }

@@ -102,7 +102,7 @@
 
         <!-- off Heap unit:bytes-->
         <property name="bufferPoolChunkSize">4096</property>
-        <property name="bufferPoolPageNumber">512</property>
+        <property name="bufferPoolPageNumber">256</property>
         <property name="bufferPoolPageSize">2097152</property>
         <!--<property name="mappedFileSize">2097152</property>-->
 

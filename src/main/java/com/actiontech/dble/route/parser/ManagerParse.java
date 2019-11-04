@@ -38,6 +38,7 @@ public final class ManagerParse {
     public static final int KILL_DDL_LOCK = 20;
     public static final int KILL_XA_SESSION = 21;
     public static final int RELEASE_RELOAD_METADATA = 22;
+    public static final int DATAHOST = 23;
 
     public static int parse(String stmt) {
         for (int i = 0; i < stmt.length(); i++) {
@@ -98,6 +99,9 @@ public final class ManagerParse {
     private static int dCheck(String stmt, int offset) {
         if (stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
+                case 'A':
+                case 'a':
+                    return dataHostCheck(stmt, --offset);
                 case 'R':
                 case 'r':
                     return dryRunCheck(stmt, --offset);
@@ -106,6 +110,28 @@ public final class ManagerParse {
                     return disCheck(stmt, --offset);
                 default:
                     return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int dataHostCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "ataHost".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            if ((c1 == 'a' || c1 == 'A') &&
+                    (c2 == 't' || c2 == 'T') &&
+                    (c3 == 'a' || c3 == 'A') &&
+                    (c4 == 'h' || c4 == 'H') &&
+                    (c5 == 'o' || c5 == 'O') &&
+                    (c6 == 's' || c6 == 'S') &&
+                    (c7 == 't' || c7 == 'T')) {
+                return DATAHOST;
             }
         }
         return OTHER;

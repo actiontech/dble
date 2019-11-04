@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.server.variables;
 
-import com.actiontech.dble.backend.datasource.PhysicalDBPool;
+import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
@@ -26,11 +26,11 @@ public class VarsExtractorHandler {
     private boolean extracting;
     private Lock lock;
     private Condition done;
-    private Map<String, PhysicalDBPool> dataHosts;
+    private Map<String, AbstractPhysicalDBPool> dataHosts;
     private volatile SystemVariables systemVariables = null;
     private PhysicalDatasource usedDataource = null;
 
-    public VarsExtractorHandler(Map<String, PhysicalDBPool> dataHosts) {
+    public VarsExtractorHandler(Map<String, AbstractPhysicalDBPool> dataHosts) {
         this.dataHosts = dataHosts;
         this.extracting = false;
         this.lock = new ReentrantLock();
@@ -53,7 +53,7 @@ public class VarsExtractorHandler {
 
     private PhysicalDatasource getPhysicalDatasource() {
         PhysicalDatasource ds = null;
-        for (PhysicalDBPool dbPool : dataHosts.values()) {
+        for (AbstractPhysicalDBPool dbPool : dataHosts.values()) {
             for (PhysicalDatasource dsTest : dbPool.getSources()) {
                 if (dsTest.isTestConnSuccess()) {
                     ds = dsTest;
@@ -65,8 +65,8 @@ public class VarsExtractorHandler {
             }
         }
         if (ds == null) {
-            for (PhysicalDBPool dbPool : dataHosts.values()) {
-                for (PhysicalDatasource[] dsTests : dbPool.getrReadSources().values()) {
+            for (AbstractPhysicalDBPool dbPool : dataHosts.values()) {
+                for (PhysicalDatasource[] dsTests : dbPool.getReadSources().values()) {
                     for (PhysicalDatasource dsTest : dsTests) {
                         if (dsTest.isTestConnSuccess()) {
                             ds = dsTest;

@@ -50,6 +50,8 @@ public final class XmltoZkMain {
         // xmltozk for rule
         new RulesxmlTozkLoader(zkListen, zkConn, xmlProcess);
 
+        new DataHostStatusTozkLoader(zkListen, zkConn);
+
         xmlProcess.initJaxbClass();
 
         zkListen.initAllNode();
@@ -78,6 +80,8 @@ public final class XmltoZkMain {
         new EcachesxmlTozkLoader(zkListen, zkConn, xmlProcess);
 
         new OthermsgTozkLoader(zkListen, zkConn);
+
+        new DataHostStatusTozkLoader(zkListen, zkConn);
 
         xmlProcess.initJaxbClass();
 

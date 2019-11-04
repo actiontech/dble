@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.config.loader.zkprocess.zktoxml.listen;
 
+import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.config.loader.console.ZookeeperPath;
 import com.actiontech.dble.config.loader.zkprocess.comm.NotifyService;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
@@ -12,6 +13,7 @@ import com.actiontech.dble.config.loader.zkprocess.entity.Schemas;
 import com.actiontech.dble.config.loader.zkprocess.entity.schema.datahost.DataHost;
 import com.actiontech.dble.config.loader.zkprocess.entity.schema.datanode.DataNode;
 import com.actiontech.dble.config.loader.zkprocess.entity.schema.schema.Schema;
+import com.actiontech.dble.config.loader.zkprocess.parse.JsonProcessBase;
 import com.actiontech.dble.config.loader.zkprocess.parse.ParseJsonServiceInf;
 import com.actiontech.dble.config.loader.zkprocess.parse.ParseXmlServiceInf;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
@@ -21,16 +23,24 @@ import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.schema.json.
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.schema.xml.SchemasParseXmlImpl;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.DataInf;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.DirectoryInf;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DataSourceStatus;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkDirectoryImpl;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ResourceUtil;
+import com.alibaba.fastjson.JSONObject;
+import com.google.gson.reflect.TypeToken;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.utils.ZKPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.lang.reflect.Type;
 import java.util.List;
+
+import static com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH.JSON_LIST;
+import static com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH.JSON_NAME;
 
 /**
  * SchemaszkToxmlLoader
@@ -103,13 +113,34 @@ public class SchemaszkToxmlLoader extends ZkMultiLoader implements NotifyService
         DataInf dataHostZkDirectory = this.getZkData(zkDirectory, KVPathUtil.DATA_HOST);
         List<DataHost> dataHostList = parseJsonDataHost.parseJsonToBean(dataHostZkDirectory.getDataValue());
         schema.setDataHost(dataHostList);
+        try {
+            if (ClusterHelper.useCluster()) {
+                List<String> chindrenList = getCurator().getChildren().forPath(KVPathUtil.getHaStatusPath());
+                if (chindrenList != null && chindrenList.size() > 0) {
+                    for (String child : chindrenList) {
+                        String data = new String(getCurator().getData().forPath(ZKPaths.makePath(KVPathUtil.getHaStatusPath() + ZKPaths.PATH_SEPARATOR, child)), "UTF-8");
+                        JSONObject jsonObj = JSONObject.parseObject(data);
+                        JsonProcessBase base = new JsonProcessBase();
+                        Type parseType = new TypeToken<List<DataSourceStatus>>() {
+                        }.getType();
+                        String dataHostName = jsonObj.getString(JSON_NAME);
+                        List<DataSourceStatus> list = base.toBeanformJson(jsonObj.getJSONArray(JSON_LIST).toJSONString(), parseType);
+                        for (DataHost dataHost : dataHostList) {
+                            if (dataHost.getName().equals(dataHostName)) {
+                                ClusterHelper.changeDataHostByStatus(dataHost, list);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.warn("get error try to write schema.xml");
+        }
 
         DataInf version = this.getZkData(zkDirectory, KVPathUtil.VERSION);
         schema.setVersion(version == null ? null : version.getDataValue());
-
-
         return schema;
-
     }
+
 
 }

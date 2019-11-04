@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.config;
 
+import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
@@ -28,7 +29,7 @@ public class ConfigTest {
 
     private SystemConfig system;
     private final Map<String, UserConfig> users;
-    private Map<String, PhysicalDBPool> dataHosts;
+    private Map<String, AbstractPhysicalDBPool> dataHosts;
     private Map<ERTable, Set<ERTable>> erRealtions;
 
     public ConfigTest() {
@@ -136,7 +137,7 @@ public class ConfigTest {
      */
     @Test
     public void testTempReadHostAvailable() {
-        PhysicalDBPool pool = this.dataHosts.get("localhost2");
+        AbstractPhysicalDBPool pool = this.dataHosts.get("localhost2");
         DataHostConfig hostConfig = pool.getSource().getHostConfig();
         Assert.assertTrue(hostConfig.isTempReadHostAvailable() == true);
     }
@@ -154,16 +155,16 @@ public class ConfigTest {
 
         ArrayList<PhysicalDatasource> okSources = new ArrayList<PhysicalDatasource>();
 
-        PhysicalDBPool pool = this.dataHosts.get("localhost2");
+        AbstractPhysicalDBPool pool = this.dataHosts.get("localhost2");
         okSources.addAll(pool.getAllDataSources());
         PhysicalDatasource source = pool.randomSelect(okSources);
 
         Assert.assertTrue(source != null);
     }
 
-    private Map<String, PhysicalDBPool> initDataHosts(SchemaLoader schemaLoader) {
+    private Map<String, AbstractPhysicalDBPool> initDataHosts(SchemaLoader schemaLoader) {
         Map<String, DataHostConfig> nodeConfs = schemaLoader.getDataHosts();
-        Map<String, PhysicalDBPool> nodes = new HashMap<String, PhysicalDBPool>(
+        Map<String, AbstractPhysicalDBPool> nodes = new HashMap<String, AbstractPhysicalDBPool>(
                 nodeConfs.size());
         for (DataHostConfig conf : nodeConfs.values()) {
             PhysicalDBPool pool = getPhysicalDBPool(conf);

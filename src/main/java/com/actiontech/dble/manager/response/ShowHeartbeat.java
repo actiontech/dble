@@ -6,7 +6,7 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDBPool;
+import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
 import com.actiontech.dble.backend.mysql.PacketUtil;
@@ -109,8 +109,8 @@ public final class ShowHeartbeat {
         List<RowDataPacket> list = new LinkedList<>();
         ServerConfig conf = DbleServer.getInstance().getConfig();
         // host nodes
-        Map<String, PhysicalDBPool> dataHosts = conf.getDataHosts();
-        for (PhysicalDBPool pool : dataHosts.values()) {
+        Map<String, AbstractPhysicalDBPool> dataHosts = conf.getDataHosts();
+        for (AbstractPhysicalDBPool pool : dataHosts.values()) {
             for (PhysicalDatasource ds : pool.getAllDataSources()) {
                 MySQLHeartbeat hb = ds.getHeartbeat();
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);

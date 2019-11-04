@@ -5,7 +5,7 @@
 */
 package com.actiontech.dble.config.model;
 
-import com.actiontech.dble.backend.datasource.PhysicalDBPool;
+import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
 import com.actiontech.dble.config.util.ConfigException;
 
 import java.util.Map;
@@ -27,7 +27,7 @@ public class DataHostConfig {
     private String name;
     private int maxCon = 128;
     private int minCon = 10;
-    private int balance = PhysicalDBPool.BALANCE_NONE;
+    private int balance = AbstractPhysicalDBPool.BALANCE_NONE;
     private final DBHostConfig[] writeHosts;
     private final Map<Integer, DBHostConfig[]> readHosts;
     private final Map<Integer, DBHostConfig[]> standbyReadHosts;

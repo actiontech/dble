@@ -7,19 +7,15 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.datasource.PhysicalDBPool;
-import com.actiontech.dble.backend.datasource.PhysicalDBPoolDiff;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.*;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterParamCfg;
-import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.cluster.*;
 import com.actiontech.dble.cluster.xmltoKv.XmltoCluster;
 import com.actiontech.dble.config.ConfigInitializer;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.singleton.ClusterGeneralConfig;
+import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.xmltozk.XmltoZkMain;
@@ -41,8 +37,6 @@ import com.actiontech.dble.route.parser.ManagerParseConfig;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.variables.VarsExtractorHandler;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
-import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -55,7 +49,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static com.actiontech.dble.cluster.ClusterPathUtil.SEPARATOR;
 import static com.actiontech.dble.meta.ReloadStatus.TRIGGER_TYPE_COMMAND;
@@ -135,8 +129,8 @@ public final class ReloadConfig {
             }
 
         } else {
-            final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
-            lock.lock();
+            final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
+            lock.writeLock().lock();
             try {
                 try {
                     if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, ConfStatus.Status.RELOAD_ALL)) {
@@ -153,7 +147,7 @@ public final class ReloadConfig {
                     writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
                 }
             } finally {
-                lock.unlock();
+                lock.writeLock().unlock();
             }
         }
 
@@ -162,8 +156,8 @@ public final class ReloadConfig {
 
     private static void reloadWithUcore(final int loadAllMode, ManagerConnection c) {
         //step 1 lock the local meta ,than all the query depends on meta will be hanging
-        final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
-        lock.lock();
+        final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
+        lock.writeLock().lock();
         try {
             //step 2 reload the local config file
             if (!reloadAll(loadAllMode)) {
@@ -201,14 +195,14 @@ public final class ReloadConfig {
             LOGGER.warn("reload config failure", e);
             writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
         } finally {
-            lock.unlock();
+            lock.writeLock().unlock();
         }
     }
 
 
     private static void reloadWithZookeeper(final int loadAllMode, CuratorFramework zkConn, ManagerConnection c) {
-        final ReentrantLock lock = DbleServer.getInstance().getConfig().getLock();
-        lock.lock();
+        final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
+        lock.writeLock().lock();
         try {
             if (!reloadAll(loadAllMode)) {
                 writeSpecialError(c, "Reload interruputed by others,config should be reload");
@@ -256,7 +250,7 @@ public final class ReloadConfig {
             ReloadLogHelper.warn("reload config failure", e, LOGGER);
             writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
         } finally {
-            lock.unlock();
+            lock.writeLock().unlock();
         }
     }
 
@@ -337,12 +331,12 @@ public final class ReloadConfig {
     private static boolean intelligentReloadAll(int loadAllMode, ConfigInitializer loader) throws Exception {
         /* 2.1.1 get diff of dataHosts */
         ServerConfig config = DbleServer.getInstance().getConfig();
-        Map<String, PhysicalDBPool> addOrChangeHosts = new HashMap<>();
-        Map<String, PhysicalDBPool> noChangeHosts = new HashMap<>();
-        Map<String, PhysicalDBPool> recycleHosts = new HashMap<>();
+        Map<String, AbstractPhysicalDBPool> addOrChangeHosts = new HashMap<>();
+        Map<String, AbstractPhysicalDBPool> noChangeHosts = new HashMap<>();
+        Map<String, AbstractPhysicalDBPool> recycleHosts = new HashMap<>();
         distinguishDataHost(loader.getDataHosts(), config.getDataHosts(), addOrChangeHosts, noChangeHosts, recycleHosts);
 
-        Map<String, PhysicalDBPool> mergedDataHosts = new HashMap<>();
+        Map<String, AbstractPhysicalDBPool> mergedDataHosts = new HashMap<>();
         mergedDataHosts.putAll(addOrChangeHosts);
         mergedDataHosts.putAll(noChangeHosts);
 
@@ -361,7 +355,7 @@ public final class ReloadConfig {
         Map<String, PhysicalDBNode> newDataNodes = serverConfig.getDataNodes();
         Map<ERTable, Set<ERTable>> newErRelations = serverConfig.getErRelations();
         FirewallConfig newFirewall = serverConfig.getFirewall();
-        Map<String, PhysicalDBPool> newDataHosts = serverConfig.getDataHosts();
+        Map<String, AbstractPhysicalDBPool> newDataHosts = serverConfig.getDataHosts();
 
         checkTestConnifNeed(loadAllMode, loader);
 
@@ -404,10 +398,10 @@ public final class ReloadConfig {
         }
     }
 
-    private static void initFailed(Map<String, PhysicalDBPool> newDataHosts) throws Exception {
+    private static void initFailed(Map<String, AbstractPhysicalDBPool> newDataHosts) throws Exception {
         // INIT FAILED
         ReloadLogHelper.info("reload failed, clear previously created data sources ", LOGGER);
-        for (PhysicalDBPool dbPool : newDataHosts.values()) {
+        for (AbstractPhysicalDBPool dbPool : newDataHosts.values()) {
             dbPool.clearDataSources("reload config");
             dbPool.stopHeartbeat();
         }
@@ -416,7 +410,7 @@ public final class ReloadConfig {
     private static boolean forceReloadAll(final int loadAllMode, ConfigInitializer loader) throws Exception {
         ServerConfig config = DbleServer.getInstance().getConfig();
         ServerConfig serverConfig = new ServerConfig(loader);
-        Map<String, PhysicalDBPool> newDataHosts = serverConfig.getDataHosts();
+        Map<String, AbstractPhysicalDBPool> newDataHosts = serverConfig.getDataHosts();
 
         SystemVariables newSystemVariables = getSystemVariablesFromDataHost(loader, newDataHosts);
         ReloadLogHelper.info("reload config: get variables from random node end", LOGGER);
@@ -473,7 +467,7 @@ public final class ReloadConfig {
         }
     }
 
-    private static SystemVariables getSystemVariablesFromDataHost(ConfigInitializer loader, Map<String, PhysicalDBPool> newDataHosts) throws Exception {
+    private static SystemVariables getSystemVariablesFromDataHost(ConfigInitializer loader, Map<String, AbstractPhysicalDBPool> newDataHosts) throws Exception {
         VarsExtractorHandler handler = new VarsExtractorHandler(newDataHosts);
         SystemVariables newSystemVariables;
         newSystemVariables = handler.execute();
@@ -512,8 +506,8 @@ public final class ReloadConfig {
         }
     }
 
-    private static void recycleOldBackendConnections(Map<String, PhysicalDBPool> recycleMap, boolean closeFrontCon) {
-        for (PhysicalDBPool dbPool : recycleMap.values()) {
+    private static void recycleOldBackendConnections(Map<String, AbstractPhysicalDBPool> recycleMap, boolean closeFrontCon) {
+        for (AbstractPhysicalDBPool dbPool : recycleMap.values()) {
             dbPool.stopHeartbeat();
             long oldTimestamp = System.currentTimeMillis();
             for (PhysicalDatasource ds : dbPool.getAllDataSources()) {
@@ -556,13 +550,13 @@ public final class ReloadConfig {
 
     }
 
-    private static void distinguishDataHost(Map<String, PhysicalDBPool> newDataHosts, Map<String, PhysicalDBPool> oldDataHosts,
-                                            Map<String, PhysicalDBPool> addOrChangeHosts, Map<String, PhysicalDBPool> noChangeHosts,
-                                            Map<String, PhysicalDBPool> recycleHosts) {
+    private static void distinguishDataHost(Map<String, AbstractPhysicalDBPool> newDataHosts, Map<String, AbstractPhysicalDBPool> oldDataHosts,
+                                            Map<String, AbstractPhysicalDBPool> addOrChangeHosts, Map<String, AbstractPhysicalDBPool> noChangeHosts,
+                                            Map<String, AbstractPhysicalDBPool> recycleHosts) {
 
-        for (Map.Entry<String, PhysicalDBPool> entry : newDataHosts.entrySet()) {
-            PhysicalDBPool oldPool = oldDataHosts.get(entry.getKey());
-            PhysicalDBPool newPool = entry.getValue();
+        for (Map.Entry<String, AbstractPhysicalDBPool> entry : newDataHosts.entrySet()) {
+            AbstractPhysicalDBPool oldPool = oldDataHosts.get(entry.getKey());
+            AbstractPhysicalDBPool newPool = entry.getValue();
             if (oldPool == null) {
                 addOrChangeHosts.put(newPool.getHostName(), newPool);
             } else {
@@ -570,17 +564,17 @@ public final class ReloadConfig {
             }
         }
 
-        for (Map.Entry<String, PhysicalDBPool> entry : oldDataHosts.entrySet()) {
-            PhysicalDBPool newPool = newDataHosts.get(entry.getKey());
+        for (Map.Entry<String, AbstractPhysicalDBPool> entry : oldDataHosts.entrySet()) {
+            AbstractPhysicalDBPool newPool = newDataHosts.get(entry.getKey());
 
             if (newPool == null) {
-                PhysicalDBPool oldPool = entry.getValue();
+                AbstractPhysicalDBPool oldPool = entry.getValue();
                 recycleHosts.put(oldPool.getHostName(), oldPool);
             }
         }
     }
 
-    private static void calcChangedDatahosts(Map<String, PhysicalDBPool> addOrChangeHosts, Map<String, PhysicalDBPool> noChangeHosts, Map<String, PhysicalDBPool> recycleHosts, Map.Entry<String, PhysicalDBPool> entry, PhysicalDBPool oldPool) {
+    private static void calcChangedDatahosts(Map<String, AbstractPhysicalDBPool> addOrChangeHosts, Map<String, AbstractPhysicalDBPool> noChangeHosts, Map<String, AbstractPhysicalDBPool> recycleHosts, Map.Entry<String, AbstractPhysicalDBPool> entry, AbstractPhysicalDBPool oldPool) {
         PhysicalDBPoolDiff toCheck = new PhysicalDBPoolDiff(entry.getValue(), oldPool);
         switch (toCheck.getChangeType()) {
             case PhysicalDBPoolDiff.CHANGE_TYPE_CHANGE:
@@ -605,9 +599,9 @@ public final class ReloadConfig {
     }
 
 
-    private static String initDataHostByMap(Map<String, PhysicalDBPool> newDataHosts, Map<String, PhysicalDBNode> newDataNodes) {
+    private static String initDataHostByMap(Map<String, AbstractPhysicalDBPool> newDataHosts, Map<String, PhysicalDBNode> newDataNodes) {
         String reasonMsg = null;
-        for (PhysicalDBPool dbPool : newDataHosts.values()) {
+        for (AbstractPhysicalDBPool dbPool : newDataHosts.values()) {
             ReloadLogHelper.info("try to init dataSouce : " + dbPool.toString(), LOGGER);
             String hostName = dbPool.getHostName();
             // set schemas

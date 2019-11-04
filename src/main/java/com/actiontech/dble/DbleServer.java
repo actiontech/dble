@@ -6,6 +6,7 @@
 package com.actiontech.dble;
 
 import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.mysql.xa.*;
@@ -107,9 +108,11 @@ public final class DbleServer {
         this.config = new ServerConfig();
         this.startupTime = TimeUtil.currentTimeMillis();
         LOGGER.info("=========================================Config file read finish==================================");
-
-
         SystemConfig system = config.getSystem();
+        if (system.isUseOutterHa()) {
+            LOGGER.info("=========================================Init Outter Ha Config==================================");
+            HaConfigManager.getInstance().init();
+        }
         if (system.getEnableAlert() == 1) {
             AlertUtil.switchAlert(true);
         }
@@ -309,9 +312,9 @@ public final class DbleServer {
 
     private void initDataHost() {
         // init datahost
-        Map<String, PhysicalDBPool> dataHosts = this.getConfig().getDataHosts();
+        Map<String, AbstractPhysicalDBPool> dataHosts = this.getConfig().getDataHosts();
         LOGGER.info("Initialize dataHost ...");
-        for (PhysicalDBPool node : dataHosts.values()) {
+        for (AbstractPhysicalDBPool node : dataHosts.values()) {
             String index = dnIndexProperties.getProperty(node.getHostName(), "0");
             if (!"0".equals(index)) {
                 LOGGER.info("init datahost: " + node.getHostName() + "  to use datasource index:" + index);
@@ -356,15 +359,14 @@ public final class DbleServer {
         // load datanode active index from properties
         dnIndexProperties = DnPropertyUtil.loadDnIndexProps();
         // init datahost
-        Map<String, PhysicalDBPool> dataHosts = this.getConfig().getDataHosts();
+        Map<String, AbstractPhysicalDBPool> dataHosts = this.getConfig().getDataHosts();
         LOGGER.info("reInitialize dataHost ...");
-        for (PhysicalDBPool node : dataHosts.values()) {
+        for (AbstractPhysicalDBPool node : dataHosts.values()) {
             String index = dnIndexProperties.getProperty(node.getHostName(), "0");
             if (!"0".equals(index)) {
                 LOGGER.info("reinit datahost: " + node.getHostName() + "  to use datasource index:" + index);
             }
-            node.switchSource(Integer.parseInt(index), "reload dnindex");
-
+            ((PhysicalDBPool) node).switchSource(Integer.parseInt(index), "reload dnindex");
         }
     }
 

@@ -134,6 +134,11 @@ public final class KVPathUtil {
     //depth:2,sequences path:base_path/sequences
     public static final String SEQUENCES = "sequences";
 
+    public static final String DATA_HOSTS = "data_hosts";
+    public static final String DATA_HOST_RESPONSE = "data_host_response";
+    public static final String DATA_HOST_STATUS = "data_host_status";
+    public static final String DATA_HOST_LOCKS = "data_host_locks";
+
     public static String getSequencesPath() {
         return BASE_PATH + SEQUENCES;
     }
@@ -191,5 +196,33 @@ public final class KVPathUtil {
 
     //depth:2,child node of base_path
     public static final String XALOG = BASE_PATH + "xalog" + SEPARATOR;
+
+    public static String getHaBasePath() {
+        return BASE_PATH + DATA_HOSTS + SEPARATOR;
+    }
+
+    public static String getHaStatusPath() {
+        return BASE_PATH + DATA_HOSTS + SEPARATOR + DATA_HOST_STATUS;
+    }
+
+    public static String getHaStatusPath(String dhName) {
+        return getHaStatusPath() + SEPARATOR + dhName;
+    }
+
+    public static String getHaResponsePath() {
+        return BASE_PATH + DATA_HOSTS + SEPARATOR + DATA_HOST_RESPONSE;
+    }
+
+    public static String getHaResponsePath(String dhName) {
+        return BASE_PATH + DATA_HOSTS + SEPARATOR + DATA_HOST_RESPONSE + SEPARATOR + dhName;
+    }
+
+    public static String getHaLockPath() {
+        return BASE_PATH + DATA_HOSTS + SEPARATOR + DATA_HOST_LOCKS + SEPARATOR;
+    }
+
+    public static String getHaLockPath(String dhName) {
+        return getHaLockPath() + dhName;
+    }
 
 }

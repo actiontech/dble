@@ -10,8 +10,8 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
+import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.mysql.view.CKVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.view.KVStoreRepository;
@@ -21,6 +21,8 @@ import com.actiontech.dble.cluster.*;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
+import com.actiontech.dble.config.loader.zkprocess.zktoxml.listen.DataHostResponseListener;
+import com.actiontech.dble.config.loader.zkprocess.zktoxml.listen.DataHostStatusListener;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.config.model.DBHostConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
@@ -269,8 +271,8 @@ public class ProxyMetaManager {
 
     private Set<String> getSelfNodes(ServerConfig config) {
         Set<String> selfNode = null;
-        for (Map.Entry<String, PhysicalDBPool> entry : config.getDataHosts().entrySet()) {
-            PhysicalDBPool host = entry.getValue();
+        for (Map.Entry<String, AbstractPhysicalDBPool> entry : config.getDataHosts().entrySet()) {
+            AbstractPhysicalDBPool host = entry.getValue();
             DBHostConfig wHost = host.getSource().getConfig();
             if (("localhost".equalsIgnoreCase(wHost.getIp()) || "127.0.0.1".equalsIgnoreCase(wHost.getIp())) && wHost.getPort() == config.getSystem().getServerPort()) {
                 for (Map.Entry<String, PhysicalDBNode> nodeEntry : config.getDataNodes().entrySet()) {
@@ -349,6 +351,11 @@ public class ProxyMetaManager {
         ZKUtils.createOnline(KVPathUtil.getOnlinePath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), OnlineStatus.getInstance());
         //add watcher
         ZKUtils.addChildPathCache(ddlPath, new DDLChildListener());
+        //add tow ha status && ha lock watcher
+        if (ClusterHelper.useCluster()) {
+            ZKUtils.addChildPathCache(KVPathUtil.getHaStatusPath(), new DataHostStatusListener());
+            ZKUtils.addChildPathCache(KVPathUtil.getHaResponsePath(), new DataHostResponseListener());
+        }
         //add watcher
         ZKUtils.addViewPathCache(KVPathUtil.getViewPath(), new ViewChildListener());
         // syncMeta UNLOCK

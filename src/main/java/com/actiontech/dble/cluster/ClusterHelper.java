@@ -4,6 +4,11 @@ import com.actiontech.dble.cluster.bean.ClusterAlertBean;
 import com.actiontech.dble.cluster.bean.KvBean;
 import com.actiontech.dble.cluster.bean.SubscribeRequest;
 import com.actiontech.dble.cluster.bean.SubscribeReturnBean;
+import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
+import com.actiontech.dble.config.loader.zkprocess.entity.schema.datahost.DataHost;
+import com.actiontech.dble.config.loader.zkprocess.entity.schema.datahost.ReadHost;
+import com.actiontech.dble.config.loader.zkprocess.entity.schema.datahost.WriteHost;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DataSourceStatus;
 import com.actiontech.dble.singleton.ClusterGeneralConfig;
 
 import java.util.List;
@@ -66,5 +71,47 @@ public final class ClusterHelper {
         return ClusterGeneralConfig.getInstance().getClusterSender().subscribeKvPrefix(request);
     }
 
+    public static void changeDataHostByStatus(DataHost dataHost, List<DataSourceStatus> list) {
+        if (dataHost.getWriteHost().size() > 1) {
+            throw new RuntimeException("Multi-WriteHost is not allowed when use OutterHa ");
+        }
+        WriteHost writeHost = dataHost.getWriteHost().get(0);
+        WriteHost newWriteHost = null;
+        for (DataSourceStatus status : list) {
+            if (status.getName().equals(writeHost.getHost())) {
+                if (!status.isWriteHost()) {
+                    ReadHost change = new ReadHost(writeHost);
+                    change.setDisabled(status.isDisable() ? "true" : "false");
+                    writeHost.getReadHost().add(change);
+                } else {
+                    newWriteHost = writeHost;
+                    writeHost.setDisabled(status.isDisable() ? "true" : "false");
+                }
+            } else {
+                for (ReadHost read : writeHost.getReadHost()) {
+                    if (read.getHost().equals(status.getName())) {
+                        if (status.isWriteHost()) {
+                            newWriteHost = new WriteHost(read);
+                            writeHost.getReadHost().remove(read);
+                            newWriteHost.setDisabled(status.isDisable() ? "true" : "false");
+                            newWriteHost.setReadHost(writeHost.getReadHost());
+                        } else {
+                            read.setDisabled(status.isDisable() ? "true" : "false");
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        if (newWriteHost != null) {
+            dataHost.getWriteHost().remove(writeHost);
+            dataHost.getWriteHost().add(newWriteHost);
+        }
+    }
+
+    public static boolean useCluster() {
+        return "true".equals(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_CLUSTER_HA)) ||
+                "true".equals(ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_CLUSTER_HA));
+    }
 
 }

@@ -5,6 +5,8 @@
 
 package com.actiontech.dble.cluster.response;
 
+import com.actiontech.dble.config.loader.zkprocess.parse.JsonProcessBase;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DataSourceStatus;
 import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterParamCfg;
@@ -24,11 +26,15 @@ import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.schema.json.
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.schema.xml.SchemasParseXmlImpl;
 import com.actiontech.dble.util.ResourceUtil;
 import com.alibaba.fastjson.JSONObject;
+import com.google.gson.reflect.TypeToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.lang.reflect.Type;
 import java.util.List;
+
+import static com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH.JSON_LIST;
 
 /**
  * Created by szf on 2018/1/26.
@@ -73,6 +79,25 @@ public class XmlSchemaLoader implements ClusterXmlLoader {
 
         List<DataHost> dataHostList = parseJsonDataHost.parseJsonToBean(jsonObj.getJSONArray(ClusterPathUtil.DATA_HOST).toJSONString());
         schema.setDataHost(dataHostList);
+        if (ClusterHelper.useCluster()) {
+            List<KvBean> statusKVList = ClusterHelper.getKVPath(ClusterPathUtil.getHaStatusPath());
+            if (statusKVList != null && statusKVList.size() > 0) {
+                for (KvBean kv : statusKVList) {
+                    String[] path = kv.getKey().split("/");
+                    String dataHostName = path[path.length - 1];
+                    for (DataHost dataHost : dataHostList) {
+                        if (dataHost.getName().equals(dataHostName)) {
+                            JSONObject obj = JSONObject.parseObject(kv.getValue());
+                            JsonProcessBase base = new JsonProcessBase();
+                            Type parseType = new TypeToken<List<DataSourceStatus>>() {
+                            }.getType();
+                            List<DataSourceStatus> list = base.toBeanformJson(obj.getJSONArray(JSON_LIST).toJSONString(), parseType);
+                            ClusterHelper.changeDataHostByStatus(dataHost, list);
+                        }
+                    }
+                }
+            }
+        }
 
         schema.setVersion(jsonObj.getString(ClusterPathUtil.VERSION));
 

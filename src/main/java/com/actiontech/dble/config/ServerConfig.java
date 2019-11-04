@@ -9,8 +9,8 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDBPoolDiff;
 import com.actiontech.dble.config.model.*;
 import com.actiontech.dble.config.util.ConfigException;
@@ -32,6 +32,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * @author mycat
@@ -50,8 +51,8 @@ public class ServerConfig {
     private volatile Map<String, SchemaConfig> schemas2;
     private volatile Map<String, PhysicalDBNode> dataNodes;
     private volatile Map<String, PhysicalDBNode> dataNodes2;
-    private volatile Map<String, PhysicalDBPool> dataHosts;
-    private volatile Map<String, PhysicalDBPool> dataHosts2;
+    private volatile Map<String, AbstractPhysicalDBPool> dataHosts;
+    private volatile Map<String, AbstractPhysicalDBPool> dataHosts2;
     private volatile Map<ERTable, Set<ERTable>> erRelations;
     private volatile Map<ERTable, Set<ERTable>> erRelations2;
     private volatile boolean dataHostWithoutWR;
@@ -60,7 +61,7 @@ public class ServerConfig {
     private volatile long rollbackTime;
     private volatile int status;
     private volatile boolean changing = false;
-    private final ReentrantLock lock;
+    private final ReentrantReadWriteLock lock;
     private ConfigInitializer confInitNew;
 
     public ServerConfig() {
@@ -81,7 +82,7 @@ public class ServerConfig {
         this.rollbackTime = -1L;
         this.status = RELOAD_ALL;
 
-        this.lock = new ReentrantLock();
+        this.lock = new ReentrantReadWriteLock();
 
     }
 
@@ -103,7 +104,7 @@ public class ServerConfig {
         this.rollbackTime = -1L;
         this.status = RELOAD_ALL;
 
-        this.lock = new ReentrantLock();
+        this.lock = new ReentrantReadWriteLock();
     }
 
     private void waitIfChanging() {
@@ -162,12 +163,12 @@ public class ServerConfig {
         return dataNodes2;
     }
 
-    public Map<String, PhysicalDBPool> getDataHosts() {
+    public Map<String, AbstractPhysicalDBPool> getDataHosts() {
         waitIfChanging();
         return dataHosts;
     }
 
-    public Map<String, PhysicalDBPool> getBackupDataHosts() {
+    public Map<String, AbstractPhysicalDBPool> getBackupDataHosts() {
         waitIfChanging();
         return dataHosts2;
     }
@@ -192,7 +193,7 @@ public class ServerConfig {
         return firewall2;
     }
 
-    public ReentrantLock getLock() {
+    public ReentrantReadWriteLock getLock() {
         return lock;
     }
 
@@ -212,9 +213,9 @@ public class ServerConfig {
     }
 
     public boolean reload(Map<String, UserConfig> newUsers, Map<String, SchemaConfig> newSchemas,
-                          Map<String, PhysicalDBNode> newDataNodes, Map<String, PhysicalDBPool> newDataHosts,
-                          Map<String, PhysicalDBPool> changeOrAddDataHosts,
-                          Map<String, PhysicalDBPool> recycleDataHosts,
+                          Map<String, PhysicalDBNode> newDataNodes, Map<String, AbstractPhysicalDBPool> newDataHosts,
+                          Map<String, AbstractPhysicalDBPool> changeOrAddDataHosts,
+                          Map<String, AbstractPhysicalDBPool> recycleDataHosts,
                           Map<ERTable, Set<ERTable>> newErRelations, FirewallConfig newFirewall,
                           SystemVariables newSystemVariables, boolean newDataHostWithoutWR,
                           final int loadAllMode) throws SQLNonTransientException {
@@ -313,8 +314,8 @@ public class ServerConfig {
 
     private boolean isDataHostChanged(List<String> strDataNodes, Map<String, PhysicalDBNode> newDataNodes) {
         for (String strDataNode : strDataNodes) {
-            PhysicalDBPool newDBPool = newDataNodes.get(strDataNode).getDbPool();
-            PhysicalDBPool oldDBPool = dataNodes.get(strDataNode).getDbPool();
+            AbstractPhysicalDBPool newDBPool = newDataNodes.get(strDataNode).getDbPool();
+            AbstractPhysicalDBPool oldDBPool = dataNodes.get(strDataNode).getDbPool();
             PhysicalDBPoolDiff diff = new PhysicalDBPoolDiff(oldDBPool, newDBPool);
             if (!PhysicalDBPoolDiff.CHANGE_TYPE_NO.equals(diff.getChangeType())) {
                 return true;
@@ -328,7 +329,7 @@ public class ServerConfig {
     }
 
     public boolean rollback(Map<String, UserConfig> backupUsers, Map<String, SchemaConfig> backupSchemas,
-                            Map<String, PhysicalDBNode> backupDataNodes, Map<String, PhysicalDBPool> backupDataHosts,
+                            Map<String, PhysicalDBNode> backupDataNodes, Map<String, AbstractPhysicalDBPool> backupDataHosts,
                             Map<ERTable, Set<ERTable>> backupErRelations, FirewallConfig backFirewall, boolean backDataHostWithoutWR) throws SQLNonTransientException {
 
         boolean result = apply(backupUsers, backupSchemas, backupDataNodes, backupDataHosts, backupDataHosts, this.dataHosts, backupErRelations, backFirewall,
@@ -341,9 +342,9 @@ public class ServerConfig {
     private boolean apply(Map<String, UserConfig> newUsers,
                           Map<String, SchemaConfig> newSchemas,
                           Map<String, PhysicalDBNode> newDataNodes,
-                          Map<String, PhysicalDBPool> newDataHosts,
-                          Map<String, PhysicalDBPool> changeOrAddDataHosts,
-                          Map<String, PhysicalDBPool> recycleDataHosts,
+                          Map<String, AbstractPhysicalDBPool> newDataHosts,
+                          Map<String, AbstractPhysicalDBPool> changeOrAddDataHosts,
+                          Map<String, AbstractPhysicalDBPool> recycleDataHosts,
                           Map<ERTable, Set<ERTable>> newErRelations,
                           FirewallConfig newFirewall, SystemVariables newSystemVariables,
                           boolean newDataHostWithoutWR, final int loadAllMode) throws SQLNonTransientException {
@@ -366,7 +367,7 @@ public class ServerConfig {
             // 2 backup
             //--------------------------------------------
             if (recycleDataHosts != null) {
-                for (PhysicalDBPool oldDbPool : recycleDataHosts.values()) {
+                for (AbstractPhysicalDBPool oldDbPool : recycleDataHosts.values()) {
                     if (oldDbPool != null) {
                         oldDbPool.stopHeartbeat();
                     }
@@ -385,7 +386,7 @@ public class ServerConfig {
             // 2 apply the configure
             //---------------------------------------------------
             if (changeOrAddDataHosts != null) {
-                for (PhysicalDBPool newDbPool : changeOrAddDataHosts.values()) {
+                for (AbstractPhysicalDBPool newDbPool : changeOrAddDataHosts.values()) {
                     if (newDbPool != null && !newDataHostWithoutWR) {
                         DbleServer.getInstance().saveDataHostIndex(newDbPool.getHostName(), newDbPool.getActiveIndex(),
                                 this.system.isUseZKSwitch() && ClusterGeneralConfig.isUseZK());

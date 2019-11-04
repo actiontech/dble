@@ -34,7 +34,6 @@ public class MySQLDataSource extends PhysicalDatasource {
                            boolean isReadNode) {
         super(config, hostConfig, isReadNode);
         this.factory = new MySQLConnectionFactory();
-
     }
 
     @Override
@@ -67,7 +66,6 @@ public class MySQLDataSource extends PhysicalDatasource {
         // flag |= Capabilities.CLIENT_MULTI_RESULTS;
         return flag;
     }
-
 
 
     private long getClientFlagSha(boolean isConnectWithDB) {

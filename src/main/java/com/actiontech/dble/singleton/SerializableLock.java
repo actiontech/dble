@@ -11,11 +11,13 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
 public final class SerializableLock {
     private static final Logger LOGGER = LoggerFactory.getLogger(SerializableLock.class);
     private AtomicBoolean working = new AtomicBoolean(false);
+    private AtomicLong id = new AtomicLong(0);
 
     private static final SerializableLock INSTANCE = new SerializableLock();
 
@@ -26,29 +28,36 @@ public final class SerializableLock {
     private SerializableLock() {
     }
 
-    public void lock() {
+    public void lock(long frontId) {
         if (DbleServer.getInstance().getConfig().getSystem().getUseSerializableMode() == 1) {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("try to get lock " + printTrack());
-                LOGGER.debug("==============================================");
+                LOGGER.debug("try to get lock id " + frontId + ", trace" + printTrace());
             }
             while (!working.compareAndSet(false, true)) {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1));
             }
+            this.id.set(frontId);
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("locked " + printTrack());
-                LOGGER.debug("==============================================");
+                LOGGER.debug("locked id " + frontId + ", trace" + printTrace());
             }
         }
     }
 
-    public void unLock() {
+    public void unLock(long frontId) {
         if (DbleServer.getInstance().getConfig().getSystem().getUseSerializableMode() == 1) {
-            working.set(false);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("unlock id " + frontId + ", trace" + printTrace());
+            }
+            if (this.id.get() == frontId) {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("unlock id " + frontId + ", success");
+                }
+                working.set(false);
+            }
         }
     }
 
-    private String printTrack() {
+    private String printTrace() {
         StackTraceElement[] st = Thread.currentThread().getStackTrace();
         if (st == null) {
             return "";
@@ -61,6 +70,7 @@ public final class SerializableLock {
             }
             sbf.append(java.text.MessageFormat.format("{0}.{1}() {2}", e.getClassName(), e.getMethodName(), e.getLineNumber()));
         }
+        sbf.append("==============================================");
         return sbf.toString();
     }
 }

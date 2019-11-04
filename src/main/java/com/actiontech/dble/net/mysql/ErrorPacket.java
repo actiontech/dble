@@ -106,7 +106,7 @@ public class ErrorPacket extends MySQLPacket {
 
 
     public void write(FrontendConnection c) {
-        SerializableLock.getInstance().unLock();
+        SerializableLock.getInstance().unLock(c.getId());
         ByteBuffer buffer = c.allocate();
         buffer = this.write(buffer, c, true);
         c.write(buffer);

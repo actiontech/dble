@@ -24,6 +24,8 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.singleton.XASessionCheck;
 import com.actiontech.dble.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -32,6 +34,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class XACommitNodesHandler extends AbstractCommitNodesHandler {
+    private static Logger logger = LoggerFactory.getLogger(XACommitNodesHandler.class);
     private static final int COMMIT_TIMES = 5;
     private int tryCommitTimes = 0;
     private int backgroundCommitTimes = 0;
@@ -176,6 +179,9 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         RouteResultsetNode rrn = (RouteResultsetNode) mysqlCon.getAttachment();
         String xaTxId = mysqlCon.getConnXID(session, rrn.getMultiplexNum().longValue());
         XaDelayProvider.delayBeforeXaEnd(rrn.getName(), xaTxId);
+        if (logger.isDebugEnabled()) {
+            logger.debug("XA END " + xaTxId + " from " + mysqlCon);
+        }
         mysqlCon.execCmd("XA END " + xaTxId);
     }
 
@@ -186,7 +192,11 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         // update state of mysql conn to TX_PREPARING_STATE
         mysqlCon.setXaStatus(TxState.TX_PREPARING_STATE);
         XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
+        if (logger.isDebugEnabled()) {
+            logger.debug("XA PREPARE " + xaTxId + " from " + mysqlCon);
+        }
         mysqlCon.execCmd("XA PREPARE " + xaTxId);
+
     }
 
     private void commitPhase(MySQLConnection mysqlCon) {
@@ -203,6 +213,9 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         RouteResultsetNode rrn = (RouteResultsetNode) mysqlCon.getAttachment();
         String xaTxId = mysqlCon.getConnXID(session, rrn.getMultiplexNum().longValue());
         XaDelayProvider.delayBeforeXaCommit(rrn.getName(), xaTxId);
+        if (logger.isDebugEnabled()) {
+            logger.debug("XA COMMIT " + xaTxId + " from " + mysqlCon);
+        }
         mysqlCon.execCmd("XA COMMIT " + xaTxId);
     }
 

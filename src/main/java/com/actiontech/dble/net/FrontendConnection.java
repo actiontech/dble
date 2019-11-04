@@ -353,7 +353,7 @@ public abstract class FrontendConnection extends AbstractConnection {
             writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + charsetName.getClient() + "'");
             return;
         }
-        SerializableLock.getInstance().lock();
+        SerializableLock.getInstance().lock(this.id);
         this.query(sql);
     }
 

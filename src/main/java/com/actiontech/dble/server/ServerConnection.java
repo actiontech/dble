@@ -576,12 +576,12 @@ public class ServerConnection extends FrontendConnection {
     }
     @Override
     public void write(byte[] data) {
-        SerializableLock.getInstance().unLock();
+        SerializableLock.getInstance().unLock(this.id);
         super.write(data);
     }
     @Override
     public final void write(ByteBuffer buffer) {
-        SerializableLock.getInstance().unLock();
+        SerializableLock.getInstance().unLock(this.id);
         super.write(buffer);
     }
 }

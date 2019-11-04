@@ -330,7 +330,7 @@ public class ConfigInitializer implements ProblemReporter {
         Map<String, AbstractPhysicalDBPool> nodes = new HashMap<>(nodeConf.size());
         for (DataHostConfig conf : nodeConf.values()) {
             AbstractPhysicalDBPool pool = null;
-            if (system.isUseOutterHa()) {
+            if (system.isUseOuterHa()) {
                 pool = getPhysicalDBPoolSingleWH(conf);
             } else {
                 pool = getPhysicalDBPool(conf);

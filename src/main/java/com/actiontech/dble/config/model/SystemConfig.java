@@ -161,7 +161,7 @@ public final class SystemConfig {
     private int maxCharsPerColumn = 65535; // 128k,65535 chars
     //errors
     private ProblemReporter problemReporter;
-    private boolean useOutterHa = false;
+    private boolean useOuterHa = false;
 
     public SystemConfig(ProblemReporter problemReporter) {
         this.problemReporter = problemReporter;
@@ -1185,12 +1185,12 @@ public final class SystemConfig {
     }
 
 
-    public boolean isUseOutterHa() {
-        return useOutterHa;
+    public boolean isUseOuterHa() {
+        return useOuterHa;
     }
 
-    public void setUseOutterHa(boolean useOutterHa) {
-        this.useOutterHa = useOutterHa;
+    public void setUseOuterHa(boolean useOuterHa) {
+        this.useOuterHa = useOuterHa;
     }
 
     public int getXaRetryCount() {

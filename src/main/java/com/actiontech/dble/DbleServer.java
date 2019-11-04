@@ -109,7 +109,7 @@ public final class DbleServer {
         this.startupTime = TimeUtil.currentTimeMillis();
         LOGGER.info("=========================================Config file read finish==================================");
         SystemConfig system = config.getSystem();
-        if (system.isUseOutterHa()) {
+        if (system.isUseOuterHa()) {
             LOGGER.info("=========================================Init Outter Ha Config==================================");
             HaConfigManager.getInstance().init();
         }

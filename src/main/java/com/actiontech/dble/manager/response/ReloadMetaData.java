@@ -68,8 +68,8 @@ public final class ReloadMetaData {
             }
             try {
                 if (!DbleServer.getInstance().getConfig().isDataHostWithoutWR()) {
-                    final ReentrantReadWriteLock clock = DbleServer.getInstance().getConfig().getLock();
-                    clock.readLock().lock();
+                    final ReentrantReadWriteLock confLock = DbleServer.getInstance().getConfig().getLock();
+                    confLock.readLock().lock();
                     try {
                         if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, ConfStatus.Status.RELOAD_META)) {
                             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Reload status error ,other client or cluster may in reload");
@@ -83,7 +83,7 @@ public final class ReloadMetaData {
                             msg = "reload metadata interrupted by manager command";
                         }
                     } finally {
-                        clock.readLock().unlock();
+                        confLock.readLock().unlock();
                     }
                 }
             } catch (Exception e) {

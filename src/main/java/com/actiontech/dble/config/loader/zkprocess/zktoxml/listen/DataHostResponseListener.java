@@ -53,7 +53,7 @@ public class DataHostResponseListener implements PathChildrenCacheListener {
             int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.RESPONSE_NOTIFY, HaInfo.HaStartType.CLUSTER_NOTIFY, HaInfo.HaStage.RESPONSE_NOTIFY.toString());
             PhysicalDNPoolSingleWH dataHost = (PhysicalDNPoolSingleWH) DbleServer.getInstance().getConfig().getDataHosts().get(info.getDhName());
             String jsonString = new String(zkConn.getData().forPath(KVPathUtil.getHaStatusPath(info.getDhName())), "UTF-8");
-            dataHost.changeIntoLastestStatus(jsonString);
+            dataHost.changeIntoLatestStatus(jsonString);
             //response to kv
             ZKUtils.createTempNode(childData.getPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ClusterPathUtil.SUCCESS.getBytes());
             HaConfigManager.getInstance().haFinish(id, null, data);

@@ -38,7 +38,7 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
     private BackendConnection connection;
     private final SQLJobHandler jobHandler;
     private final PhysicalDatasource ds;
-    private boolean isMustWriteNode;
+    private boolean isMustWriteNode = false;
     private AtomicBoolean finished = new AtomicBoolean(false);
     private volatile boolean testXid;
 
@@ -69,7 +69,7 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
                 PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), isMustWriteNode, true, node, this, node);
             } else {
-                ds.getConnection(schema, true, this, null, false);
+                ds.getConnection(schema, true, this, null, isMustWriteNode);
             }
         } catch (Exception e) {
             LOGGER.warn("can't get connection", e);

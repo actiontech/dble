@@ -37,8 +37,6 @@ public final class DataHostHandler {
             DataHostEnable.execute(enable, c);
         } else if (switcher.matches()) {
             DataHostSwitch.execute(switcher, c);
-        } else if (status.matches()) {
-            DataHostStatus.execute(status, c);
         } else if (event.matches()) {
             DataHostEvents.execute(c);
         } else {

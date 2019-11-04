@@ -34,7 +34,7 @@ public final class ShowDataSource {
     private ShowDataSource() {
     }
 
-    private static final int FIELD_COUNT = 11;
+    private static final int FIELD_COUNT = 12;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
@@ -75,6 +75,9 @@ public final class ShowDataSource {
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("WRITE_LOAD", Fields.FIELD_TYPE_LONG);
+        FIELDS[i++].setPacketId(++packetId);
+
+        FIELDS[i] = PacketUtil.getField("STATUS", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
@@ -112,10 +115,8 @@ public final class ShowDataSource {
         } else {
             // add all
             for (Map.Entry<String, AbstractPhysicalDBPool> entry : conf.getDataHosts().entrySet()) {
-
                 AbstractPhysicalDBPool dataHost = entry.getValue();
                 String datahost = entry.getKey();
-
                 for (int i = 0; i < dataHost.getSources().length; i++) {
                     if (!dataHost.getSources()[i].getConfig().isDisabled()) {
                         RowDataPacket row = getRow(datahost, dataHost.getSources()[i], c.getCharset().getResults());
@@ -160,6 +161,7 @@ public final class ShowDataSource {
         row.add(LongUtil.toBytes(ds.getExecuteCount()));
         row.add(LongUtil.toBytes(ds.getReadCount()));
         row.add(LongUtil.toBytes(ds.getWriteCount()));
+        row.add(StringUtil.encode(ds.isDisabled() ? "Disabled" : "Enable", charset));
         return row;
     }
 

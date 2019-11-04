@@ -214,8 +214,8 @@ public class PhysicalDBPool extends AbstractPhysicalDBPool {
         return i < writeSources.length ? i : (i - writeSources.length);
     }
 
-    public void init(int index) {
-        innerInit(index);
+    public int init(int index) {
+        return innerInit(index);
     }
 
     private int innerInit(int index) {

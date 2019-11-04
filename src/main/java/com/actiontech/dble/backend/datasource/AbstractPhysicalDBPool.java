@@ -58,7 +58,7 @@ public abstract class AbstractPhysicalDBPool {
 
     public abstract boolean switchSource(int newIndex, String reason);
 
-    public abstract void init(int index);
+    public abstract int init(int index);
 
     public abstract void reloadInit(int index);
 

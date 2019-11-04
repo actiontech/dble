@@ -11,6 +11,7 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.singleton.HaConfigManager;
 import com.actiontech.dble.util.FormatUtil;
 import com.actiontech.dble.util.StringUtil;
+
 import java.nio.ByteBuffer;
 import java.util.Map;
 
@@ -71,7 +72,7 @@ public final class DataHostEvents {
 
     private static RowDataPacket getRow(HaChangeStatus event, String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        row.add(StringUtil.encode(Integer.valueOf(event.getIndex()).toString(), charset));
+        row.add(StringUtil.encode("" + event.getIndex(), charset));
         row.add(StringUtil.encode(event.getCommand(), charset));
         row.add(StringUtil.encode(event.getType().toString(), charset));
         row.add(StringUtil.encode(FormatUtil.formatDate(event.getStartTimeStamp()), charset));

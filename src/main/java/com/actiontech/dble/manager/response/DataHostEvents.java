@@ -1,12 +1,7 @@
 package com.actiontech.dble.manager.response;
 
-import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
 import com.actiontech.dble.backend.datasource.HaChangeStatus;
-import com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.PacketUtil;
-import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
@@ -16,11 +11,8 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.singleton.HaConfigManager;
 import com.actiontech.dble.util.FormatUtil;
 import com.actiontech.dble.util.StringUtil;
-
-import javax.xml.crypto.Data;
 import java.nio.ByteBuffer;
 import java.util.Map;
-import java.util.regex.Matcher;
 
 /**
  * Created by szf on 2019/10/28.

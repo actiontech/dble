@@ -212,6 +212,11 @@ public final class ShowHelp {
         HELPS.put("show @@alert", "Show if the alert is enabled");
         HELPS.put("enable @@alert", "Turn on the alert");
         HELPS.put("disable @@alert", "Turn off the alert");
+        HELPS.put("dataHost @@disable name='?' (node = '?')", "disable some dataSources/dataHost");
+        HELPS.put("dataHost @@enable name='?' (node = '?')", "enable some dataSources/dataHost");
+        HELPS.put("dataHost @@switch name='?' master='?'", "switch writeHost and readHost in one dataHost");
+        HELPS.put("dataHost @@(status_all|status name = 'dh1,dh2...')", "show the write/read status in dataHosts");
+        HELPS.put("dataHost @@events ", "show all the dataHost ha event which not finished yet ");
 
         // list sort
         KEYS.addAll(HELPS.keySet());

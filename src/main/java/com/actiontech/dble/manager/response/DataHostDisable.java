@@ -96,8 +96,7 @@ public final class DataHostDisable {
                     return false;
                 }
                 //local set disable
-                String result = dh.disableHosts(subHostName, false);
-
+                final String result = dh.disableHosts(subHostName, false);
                 // update total dataHost status
                 setStatusToZK(KVPathUtil.getHaStatusPath(dh.getHostName()), zkConn, dh.getClusterHaJson());
                 // write out notify message ,let other dble to response
@@ -150,7 +149,7 @@ public final class DataHostDisable {
                 return false;
             }
             //local set disable
-            String result = dh.disableHosts(subHostName, false);
+            final String result = dh.disableHosts(subHostName, false);
 
             //update total dataSources status
             ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dh.getHostName()), dh.getClusterHaJson());

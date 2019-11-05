@@ -5,6 +5,7 @@
 */
 package com.actiontech.dble.manager.response;
 
+import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.singleton.DistrbtLockManager;
@@ -39,7 +40,9 @@ public final class KillDdlLock {
         String table = StringUtil.removeAllApostrophe(matcher.group(5));
         // release distributed lock
         if (ClusterGeneralConfig.isUseGeneralCluster()) {
-            DistrbtLockManager.releaseLock(ClusterPathUtil.getDDLPath(StringUtil.getUFullName(schema, table)));
+            String fullName = StringUtil.getUFullName(schema, table);
+            ClusterHelper.cleanPath(ClusterPathUtil.getDDLPath(fullName));
+            DistrbtLockManager.releaseLock(ClusterPathUtil.getDDLLockPath(fullName));
         }
         boolean isRemoved = ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
         OkPacket packet = new OkPacket();

@@ -169,6 +169,11 @@ public final class ClusterPathUtil {
         return BASE_PATH + "ddl" + SEPARATOR + fullName;
     }
 
+    //depth:2,child node of base_path
+    public static String getDDLLockPath(String fullName) {
+        return BASE_PATH + "ddl_lock" + SEPARATOR + fullName;
+    }
+
     public static String getPauseDataNodePath() {
         return CONF_BASE_PATH + "migration";
     }

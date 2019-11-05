@@ -490,6 +490,7 @@ public abstract class PhysicalDatasource {
         if (c.isClosed()) {
             return;
         }
+
         c.setAttachment(null);
         c.setBorrowed(false);
         c.setLastTime(TimeUtil.currentTimeMillis());

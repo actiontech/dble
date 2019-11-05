@@ -36,13 +36,12 @@ public final class DumpFileExecutor implements Runnable {
                 stmt = queue.take();
                 context.setStmt(stmt);
                 int type = ServerParse.parse(stmt);
-                if ((type == ServerParse.MYSQL_COMMENT || type == ServerParse.MYSQL_CMD_COMMENT) &&
-                        context.getSchema() == null) {
+                if (ServerParse.CREATE_DATABASE != type && context.getSchema() == null) {
                     writer.writeAll(stmt);
                     continue;
                 }
                 // footer
-                if (stmt.contains("OLD_")) {
+                if (stmt.contains("=@OLD_")) {
                     writer.writeAll(stmt);
                     continue;
                 }
@@ -50,15 +49,18 @@ public final class DumpFileExecutor implements Runnable {
                     writer.writeAll(stmt);
                     return;
                 }
-                // parse
+
                 SQLStatement statement = null;
-                if (ServerParse.DDL == type || ServerParse.CREATE_DATABASE == type) {
+                // parse ddl or create database
+                if (ServerParse.DDL == type || ServerParse.CREATE_DATABASE == type || ServerParse.USE == (0xff & type)) {
                     stmt = stmt.replace("/*!", "/*#");
                     statement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
                 }
+                // if ddl is wrong，the following statement is skip.
                 if (context.isSkip()) {
                     continue;
-                } else if (ServerParse.INSERT == type && !context.isPushDown()) {
+                }
+                if (ServerParse.INSERT == type && !context.isPushDown()) {
                     statement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
                 }
                 StatementHandler handler = StatementHandlerManager.getHandler(statement);

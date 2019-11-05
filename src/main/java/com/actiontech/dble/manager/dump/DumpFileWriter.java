@@ -53,6 +53,7 @@ public class DumpFileWriter {
     public void writeAll(String stmt) throws InterruptedException {
         for (DataNodeWriter writer : dataNodeWriters.values()) {
             writer.write(stmt);
+            writer.write(";");
         }
     }
 
@@ -87,8 +88,8 @@ public class DumpFileWriter {
                 while (true) {
                     stmt = this.queue.take();
                     if (stmt.equals(DumpFileReader.EOF)) {
-                        finished.decrementAndGet();
                         close();
+                        finished.decrementAndGet();
                         return;
                     }
                     if (this.fileChannel != null) {

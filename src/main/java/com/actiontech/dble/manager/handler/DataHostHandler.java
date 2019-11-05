@@ -19,7 +19,6 @@ public final class DataHostHandler {
             "\\s*(node\\s*=\\s*'([a-zA-Z_0-9\\-\\,]+)')?$", Pattern.CASE_INSENSITIVE);
     private static final Pattern PATTERN_DH_SWITCH = Pattern.compile("^dataHost\\s*@@switch\\s*name\\s*=\\s*'([a-zA-Z_0-9\\-\\,]+)'" +
             "\\s*master\\s*=\\s*'([a-zA-Z_0-9\\-\\,]+)'\\s*$", Pattern.CASE_INSENSITIVE);
-    private static final Pattern PATTERN_DH_STATUS = Pattern.compile("^dataHost\\s*@@(status_all\\s*|(status\\s*name\\s*=\\s*'([a-zA-Z_0-9\\-\\,]+)'\\s*))$", Pattern.CASE_INSENSITIVE);
     private static final Pattern PATTERN_DH_EVENTS = Pattern.compile("^dataHost\\s*@@events\\s*$", Pattern.CASE_INSENSITIVE);
 
     private DataHostHandler() {
@@ -29,7 +28,6 @@ public final class DataHostHandler {
         Matcher disable = PATTERN_DH_DISABLE.matcher(stmt);
         Matcher enable = PATTERN_DH_ENABLE.matcher(stmt);
         Matcher switcher = PATTERN_DH_SWITCH.matcher(stmt);
-        Matcher status = PATTERN_DH_STATUS.matcher(stmt);
         Matcher event = PATTERN_DH_EVENTS.matcher(stmt);
         if (disable.matches()) {
             DataHostDisable.execute(disable, c);
@@ -37,8 +35,6 @@ public final class DataHostHandler {
             DataHostEnable.execute(enable, c);
         } else if (switcher.matches()) {
             DataHostSwitch.execute(switcher, c);
-        } else if (status.matches()) {
-            DataHostStatus.execute(status, c);
         } else if (event.matches()) {
             DataHostEvents.execute(c);
         } else {

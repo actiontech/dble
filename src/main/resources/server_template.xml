@@ -146,6 +146,8 @@
         <!-- used for load data, because dble need save to disk if loading file contains large size -->
         <!--<property name="maxRowSizeToFile">10000</property>-->
 
+        <!-- used for outerHa ,when the value is true ,one dataHost can only has one writeHost,and dataHost commands would be available-->
+        <!--<property name="useOuterHa">true</property>-->
 
     </system>
 

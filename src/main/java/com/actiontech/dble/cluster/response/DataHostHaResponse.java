@@ -44,7 +44,7 @@ public class DataHostHaResponse implements ClusterXmlLoader {
             String[] path = configValue.getKey().split("/");
             String dhName = path[path.length - 1];
             PhysicalDNPoolSingleWH dataHost = (PhysicalDNPoolSingleWH) DbleServer.getInstance().getConfig().getDataHosts().get(dhName);
-            dataHost.changeIntoLastestStatus(configValue.getValue());
+            dataHost.changeIntoLatestStatus(configValue.getValue());
             HaConfigManager.getInstance().haFinish(id, null, configValue.getValue());
         } else {
             //data_host_locks events,we only try to response to the DISABLE,ignore others
@@ -58,7 +58,7 @@ public class DataHostHaResponse implements ClusterXmlLoader {
                 KvBean lastestStatus = ClusterHelper.getKV(ClusterPathUtil.getHaStatusPath(info.getDhName()));
                 //find out the target dataHost and change it into latest status
                 PhysicalDNPoolSingleWH dataHost = (PhysicalDNPoolSingleWH) DbleServer.getInstance().getConfig().getDataHosts().get(info.getDhName());
-                dataHost.changeIntoLastestStatus(lastestStatus.getValue());
+                dataHost.changeIntoLatestStatus(lastestStatus.getValue());
                 //response the event ,only disable event has response
                 ClusterHelper.setKV(ClusterPathUtil.getSelfResponsePath(configValue.getKey()), ClusterPathUtil.SUCCESS);
                 //ha manager writeOut finish log

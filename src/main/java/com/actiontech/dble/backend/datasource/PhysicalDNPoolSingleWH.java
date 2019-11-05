@@ -433,7 +433,7 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
             HaConfigManager.getInstance().updateConfDataHost(this, syncWriteConf);
             return this.getClusterHaJson();
         } finally {
-            lock.readLock().lock();
+            lock.readLock().unlock();
             adjustLock.writeLock().unlock();
         }
     }

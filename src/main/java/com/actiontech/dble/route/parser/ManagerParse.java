@@ -39,6 +39,7 @@ public final class ManagerParse {
     public static final int KILL_XA_SESSION = 21;
     public static final int RELEASE_RELOAD_METADATA = 22;
     public static final int DATAHOST = 23;
+    public static final int SPLIT = 24;
 
     public static int parse(String stmt) {
         for (int i = 0; i < stmt.length(); i++) {
@@ -267,6 +268,9 @@ public final class ManagerParse {
                 case 'W':
                 case 'w':
                     return swh(stmt, offset);
+                case 'P':
+                case 'p':
+                    return split(stmt, offset);
                 case 'T':
                 case 't':
                     return stop(stmt, offset);
@@ -519,6 +523,21 @@ public final class ManagerParse {
             if ((c1 == 'O' || c1 == 'o') && (c2 == 'W' || c2 == 'w') &&
                     (c3 == ' ' || c3 == '\t' || c3 == '\r' || c3 == '\n')) {
                 return (offset << 8) | SHOW;
+            }
+        }
+        return OTHER;
+    }
+
+    // SPLIT ' '
+    private static int split(String stmt, int offset) {
+        if (stmt.length() > offset + 5) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            if ((c1 == 'L' || c1 == 'l') && (c2 == 'I' || c2 == 'i') &&
+                    (c3 == 'T' || c3 == 't') && ParseUtil.isSpace(c4)) {
+                return (offset << 8) | SPLIT;
             }
         }
         return OTHER;

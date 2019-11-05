@@ -112,6 +112,9 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
             case ManagerParse.DATAHOST:
                 DataHostHandler.handle(sql, c);
                 break;
+            case ManagerParse.SPLIT:
+                new SplitDumpHandler().handle(sql, c, rs >>> SHIFT);
+                break;
             default:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
         }

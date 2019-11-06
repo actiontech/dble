@@ -55,7 +55,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
             LOGGER.debug("execute multiNode query " + rrs.getStatement());
         }
 
-        this.rrs = RouteResultCopy.rrCopy(rrs, ServerParse.SELECT, STMT);
+        this.rrs = RouteResultCopy.rrCopy(rrs, ServerParse.DDL, STMT);
         this.sessionAutocommit = session.getSource().isAutocommit();
 
         this.oriRrs = rrs;

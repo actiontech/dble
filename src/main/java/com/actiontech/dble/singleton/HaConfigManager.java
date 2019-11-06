@@ -80,8 +80,8 @@ public final class HaConfigManager {
                 path += WRITEPATH;
                 this.parseSchemaXmlService.parseToXmlWrite(schemas, path, "schema");
             }
-        } finally {
             finishAndNext();
+        } finally {
             lock.readLock().unlock();
         }
     }

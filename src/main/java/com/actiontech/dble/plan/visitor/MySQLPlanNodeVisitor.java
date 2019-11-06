@@ -185,6 +185,10 @@ public class MySQLPlanNodeVisitor {
             }
             schema = currentDb;
             tableName = StringUtil.removeBackQuote(identifierExpr.getName());
+            if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+                schema = schema.toLowerCase();
+                tableName = tableName.toLowerCase();
+            }
         } else {
             throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "42000", "table is " + tableSource.toString());
         }

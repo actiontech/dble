@@ -18,12 +18,14 @@ import com.actiontech.dble.util.ResourceUtil;
 import com.alibaba.fastjson.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import static com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH.JSON_LIST;
 import static com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH.JSON_NAME;
 import static com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH.JSON_WRITE_SOURCE;
@@ -44,6 +46,7 @@ public final class HaConfigManager {
     private volatile SchemaWriteJob schemaWriteJob;
     private volatile Set<PhysicalDNPoolSingleWH> waitingSet = new HashSet<>();
     private final Map<Integer, HaChangeStatus> unfinised = new ConcurrentHashMap<>();
+    private final AtomicInteger reloadIndex = new AtomicInteger();
 
     private HaConfigManager() {
         try {
@@ -58,14 +61,29 @@ public final class HaConfigManager {
 
     public void init() {
         INSTANCE.schema = this.parseSchemaXmlService.parseXmlToBean(WRITEPATH);
+        reloadIndex.incrementAndGet();
+        //try to clear the waiting list and
+        if (schemaWriteJob != null) {
+            schemaWriteJob.signalAll();
+        }
+        waitingSet = new HashSet<>();
         return;
     }
 
-    public void write(Schemas schemas) {
-        String path = ResourceUtil.getResourcePathFromRoot(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey());
-        path = new File(path).getPath() + File.separator;
-        path += WRITEPATH;
-        this.parseSchemaXmlService.parseToXmlWrite(schemas, path, "schema");
+    public void write(Schemas schemas, int reloadId) {
+        final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
+        lock.readLock().lock();
+        try {
+            if (reloadIndex.get() == reloadId) {
+                String path = ResourceUtil.getResourcePathFromRoot(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey());
+                path = new File(path).getPath() + File.separator;
+                path += WRITEPATH;
+                this.parseSchemaXmlService.parseToXmlWrite(schemas, path, "schema");
+            }
+        } finally {
+            finishAndNext();
+            lock.readLock().unlock();
+        }
     }
 
     public void finishAndNext() {
@@ -80,7 +98,7 @@ public final class HaConfigManager {
             adjustLock.writeLock().lock();
             try {
                 waitingSet.add(physicalDNPoolSingleWH);
-                schemaWriteJob = new SchemaWriteJob(waitingSet, schema);
+                schemaWriteJob = new SchemaWriteJob(waitingSet, schema, reloadIndex.get());
                 thisTimeJob = schemaWriteJob;
                 waitingSet = new HashSet<>();
                 DbleServer.getInstance().getComplexQueryExecutor().execute(schemaWriteJob);
@@ -108,7 +126,7 @@ public final class HaConfigManager {
         if (waitingSet.size() != 0 && isWriting.compareAndSet(false, true)) {
             adjustLock.writeLock().lock();
             try {
-                schemaWriteJob = new SchemaWriteJob(waitingSet, schema);
+                schemaWriteJob = new SchemaWriteJob(waitingSet, schema, reloadIndex.get());
                 waitingSet = new HashSet<>();
                 DbleServer.getInstance().getComplexQueryExecutor().execute(schemaWriteJob);
             } finally {
@@ -124,10 +142,10 @@ public final class HaConfigManager {
             jsonObject.put(JSON_NAME, dh.getName());
             List<DataSourceStatus> list = new ArrayList<>();
             for (WriteHost wh : dh.getWriteHost()) {
-                list.add(new DataSourceStatus(wh.getHost(), "true".equals(wh.getDisabled()), false));
-                jsonObject.put(JSON_WRITE_SOURCE, new DataSourceStatus(wh.getHost(), "true".equals(wh.getDisabled()), false));
+                list.add(new DataSourceStatus(wh.getHost(), "true".equals(wh.getDisabled()), true));
+                jsonObject.put(JSON_WRITE_SOURCE, new DataSourceStatus(wh.getHost(), "true".equals(wh.getDisabled()), true));
                 for (ReadHost rh : wh.getReadHost()) {
-                    list.add(new DataSourceStatus(rh.getHost(), "true".equals(rh.getDisabled()), true));
+                    list.add(new DataSourceStatus(rh.getHost(), "true".equals(rh.getDisabled()), false));
                 }
             }
             jsonObject.put(JSON_LIST, list);
@@ -186,7 +204,6 @@ public final class HaConfigManager {
     public Map<Integer, HaChangeStatus> getUnfinised() {
         return unfinised;
     }
-
 
 
 }

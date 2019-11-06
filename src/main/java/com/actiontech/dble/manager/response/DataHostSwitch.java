@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 
 /**
@@ -40,41 +41,47 @@ public final class DataHostSwitch {
         boolean useCluster = ClusterHelper.useCluster();
         //check the dataHost is exists
 
-        AbstractPhysicalDBPool dataHost = DbleServer.getInstance().getConfig().getDataHosts().get(dhName);
-        if (dataHost == null) {
-            mc.writeErrMessage(ErrorCode.ER_YES, "dataHost " + dhName + " do not exists");
-            return;
-        }
-
-        int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.LOCAL_CHANGE, HaInfo.HaStartType.LOCAL_COMMAND, switcher.group(0));
-        if (dataHost instanceof PhysicalDNPoolSingleWH) {
-            PhysicalDNPoolSingleWH dh = (PhysicalDNPoolSingleWH) dataHost;
-            if (!dh.checkDataSourceExist(masterName)) {
-                mc.writeErrMessage(ErrorCode.ER_YES, "Some of the dataSource in command in " + dh.getHostName() + " do not exists");
+        final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
+        lock.readLock().lock();
+        try {
+            AbstractPhysicalDBPool dataHost = DbleServer.getInstance().getConfig().getDataHosts().get(dhName);
+            if (dataHost == null) {
+                mc.writeErrMessage(ErrorCode.ER_YES, "dataHost " + dhName + " do not exists");
                 return;
             }
 
-            if (ClusterGeneralConfig.isUseGeneralCluster() && useCluster) {
-                if (!switchWithCluster(id, dh, masterName, mc)) {
+            int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.LOCAL_CHANGE, HaInfo.HaStartType.LOCAL_COMMAND, switcher.group(0));
+            if (dataHost instanceof PhysicalDNPoolSingleWH) {
+                PhysicalDNPoolSingleWH dh = (PhysicalDNPoolSingleWH) dataHost;
+                if (!dh.checkDataSourceExist(masterName)) {
+                    mc.writeErrMessage(ErrorCode.ER_YES, "Some of the dataSource in command in " + dh.getHostName() + " do not exists");
                     return;
                 }
-            } else if (ClusterGeneralConfig.isUseZK() && useCluster) {
-                if (!switchWithZK(id, dh, masterName, mc)) {
-                    return;
-                }
-            } else {
-                //dble start in single mode
-                String result = dh.switchMaster(masterName, true);
-                HaConfigManager.getInstance().haFinish(id, null, result);
-            }
 
-            OkPacket packet = new OkPacket();
-            packet.setPacketId(1);
-            packet.setAffectedRows(0);
-            packet.setServerStatus(2);
-            packet.write(mc);
-        } else {
-            mc.writeErrMessage(ErrorCode.ER_YES, "dataHost " + dhName + " do not exists");
+                if (ClusterGeneralConfig.isUseGeneralCluster() && useCluster) {
+                    if (!switchWithCluster(id, dh, masterName, mc)) {
+                        return;
+                    }
+                } else if (ClusterGeneralConfig.isUseZK() && useCluster) {
+                    if (!switchWithZK(id, dh, masterName, mc)) {
+                        return;
+                    }
+                } else {
+                    //dble start in single mode
+                    String result = dh.switchMaster(masterName, true);
+                    HaConfigManager.getInstance().haFinish(id, null, result);
+                }
+
+                OkPacket packet = new OkPacket();
+                packet.setPacketId(1);
+                packet.setAffectedRows(0);
+                packet.setServerStatus(2);
+                packet.write(mc);
+            } else {
+                mc.writeErrMessage(ErrorCode.ER_YES, "dataHost " + dhName + " do not exists");
+            }
+        } finally {
+            lock.readLock().unlock();
         }
     }
 

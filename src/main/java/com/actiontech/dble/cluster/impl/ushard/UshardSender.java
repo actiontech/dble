@@ -73,19 +73,29 @@ public class UshardSender extends AbstractClusterSender {
                             try {
                                 LOGGER.debug("renew lock of session  start:" + sessionId + " " + path);
                                 if ("".equals(ClusterHelper.getKV(path).getValue())) {
-                                    LOGGER.warn("renew lock of session  failure:" + sessionId + " " + path + ", the key is missing ");
+                                    log("renew lock of session  failure:" + sessionId + " " + path + ", the key is missing ", null);
                                     // alert
                                     Thread.currentThread().interrupt();
                                 } else if (!renewLock(sessionId)) {
-                                    LOGGER.warn("renew lock of session  failure:" + sessionId + " " + path);
+                                    log("renew lock of session  failure:" + sessionId + " " + path, null);
                                     // alert
                                 } else {
                                     LOGGER.debug("renew lock of session  success:" + sessionId + " " + path);
                                 }
                                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10000));
                             } catch (Exception e) {
-                                LOGGER.warn("renew lock of session  failure:" + sessionId + " " + path, e);
+                                log("renew lock of session  failure:" + sessionId + " " + path, e);
                                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(5000));
+                            }
+                        }
+                    }
+
+                    private void log(String message, Exception e) {
+                        if (!Thread.currentThread().isInterrupted()) {
+                            if (e == null) {
+                                LOGGER.warn(message);
+                            } else {
+                                LOGGER.warn(message, e);
                             }
                         }
                     }
@@ -104,11 +114,11 @@ public class UshardSender extends AbstractClusterSender {
     public void unlockKey(String path, String sessionId) {
         UshardInterface.UnlockOnSessionInput put = UshardInterface.UnlockOnSessionInput.newBuilder().setKey(path).setSessionId(sessionId).build();
         try {
-            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).unlockOnSession(put);
             Thread renewThread = lockMap.get(path);
             if (renewThread != null) {
                 renewThread.interrupt();
             }
+            stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).unlockOnSession(put);
         } catch (Exception e) {
             LOGGER.info(sessionId + " unlockKey " + path + " error ," + stub, e);
         }

@@ -94,7 +94,7 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
             if (i > 0) {
                 sb.append(",");
             }
-            sb.append(column);
+            sb.append("`").append(column).append("`");
             if (isGlobalCheck && column.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
                 idxGlobal = i; // find the index of inner column
             }

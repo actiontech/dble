@@ -36,7 +36,6 @@ public class InsertHandler implements StatementHandler {
         boolean isAutoIncrement = tableConfig.isAutoIncrement();
         long time = new Date().getTime();
         for (SQLInsertStatement.ValuesClause valueClause : insert.getValuesList()) {
-            // 全局序列
             boolean isChanged = false;
             if (isAutoIncrement) {
                 if (!handleIncrementColumn(context, valueClause.getValues())) continue;

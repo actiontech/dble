@@ -1,7 +1,6 @@
 package com.actiontech.dble.manager.dump;
 
 import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
-import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +31,7 @@ public final class DumpFileReader {
             ByteBuffer buffer = ByteBuffer.allocate(0x20000);
             int byteRead = fileChannel.read(buffer);
             while (byteRead != -1) {
-                readSQLByEOF(buffer.array());
+                readSQLByEOF(buffer.array(), byteRead);
                 buffer.clear();
                 byteRead = fileChannel.read(buffer);
             }
@@ -59,17 +58,27 @@ public final class DumpFileReader {
     }
 
     // read one statement by ;
-    private void readSQLByEOF(byte[] linesByte) throws InterruptedException {
-        String[] lines = new String(linesByte, StandardCharsets.UTF_8).split(";");
-        int length = lines.length;
-        for (int i = 0; i < length; i++) {
-            if (i == 0 && this.tempStr != null) {
+    private void readSQLByEOF(byte[] linesByte, int byteRead) throws InterruptedException {
+        String stmts = new String(linesByte, 0, byteRead, StandardCharsets.UTF_8);
+        boolean endWithEOF = stmts.endsWith(";");
+        String[] lines = stmts.split(";");
+        int len = lines.length;
+
+        int i = 0;
+        if (tempStr != null) {
+            if (len > 1) {
                 this.readQueue.put(tempStr + lines[0]);
                 this.tempStr = null;
-            } else if (i == length - 1 && !StringUtil.isEmpty(lines[i])) {
-                this.tempStr = lines[i];
-                continue;
+            } else {
+                tempStr += lines[0];
             }
+            i = 1;
+        }
+        if (!endWithEOF) {
+            this.tempStr = lines[len - 1];
+            len = len - 1;
+        }
+        for (; i < len; i++) {
             this.readQueue.put(lines[i]);
         }
     }

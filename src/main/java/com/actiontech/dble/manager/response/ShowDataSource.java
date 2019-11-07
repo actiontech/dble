@@ -104,9 +104,6 @@ public final class ShowDataSource {
         if (null != name) {
             PhysicalDBNode dn = conf.getDataNodes().get(name);
             for (PhysicalDatasource w : dn.getDbPool().getAllDataSources()) {
-                if (w.getConfig().isDisabled()) {
-                    continue;
-                }
                 RowDataPacket row = getRow(w.getHostConfig().getName(), w, c.getCharset().getResults());
                 row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
@@ -118,18 +115,14 @@ public final class ShowDataSource {
                 AbstractPhysicalDBPool dataHost = entry.getValue();
                 String datahost = entry.getKey();
                 for (int i = 0; i < dataHost.getSources().length; i++) {
-                    if (!dataHost.getSources()[i].getConfig().isDisabled()) {
-                        RowDataPacket row = getRow(datahost, dataHost.getSources()[i], c.getCharset().getResults());
-                        row.setPacketId(++packetId);
-                        buffer = row.write(buffer, c, true);
-                    }
+                    RowDataPacket row = getRow(datahost, dataHost.getSources()[i], c.getCharset().getResults());
+                    row.setPacketId(++packetId);
+                    buffer = row.write(buffer, c, true);
                     if (dataHost.getReadSources().get(i) != null) {
                         for (PhysicalDatasource r : dataHost.getReadSources().get(i)) {
-                            if (!r.getConfig().isDisabled()) {
-                                RowDataPacket sRow = getRow(datahost, r, c.getCharset().getResults());
-                                sRow.setPacketId(++packetId);
-                                buffer = sRow.write(buffer, c, true);
-                            }
+                            RowDataPacket sRow = getRow(datahost, r, c.getCharset().getResults());
+                            sRow.setPacketId(++packetId);
+                            buffer = sRow.write(buffer, c, true);
                         }
                     }
                 }

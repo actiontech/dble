@@ -17,7 +17,10 @@ import com.actiontech.dble.backend.mysql.view.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.view.KVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.Repository;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.*;
+import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.ClusterParamCfg;
+import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
@@ -29,7 +32,10 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.protocol.StructureMeta;
-import com.actiontech.dble.meta.table.*;
+import com.actiontech.dble.meta.table.AbstractSchemaMetaHandler;
+import com.actiontech.dble.meta.table.DDLNotifyTableMetaHandler;
+import com.actiontech.dble.meta.table.SchemaCheckMetaHandler;
+import com.actiontech.dble.meta.table.ServerMetaHandler;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
@@ -574,15 +580,16 @@ public class ProxyMetaManager {
         } else if (ClusterGeneralConfig.isUseGeneralCluster()) {
             DDLInfo ddlInfo = new DDLInfo(schema, sql, ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), DDLInfo.DDLStatus.INIT, DDLInfo.DDLType.UNKNOWN);
             String nodeName = StringUtil.getUFullName(schema, table);
-            String ddlPath = ClusterPathUtil.getDDLPath(nodeName);
-            DistributeLock lock = new DistributeLock(ddlPath, ddlInfo.toString());
+            String ddlLockPath = ClusterPathUtil.getDDLLockPath(nodeName);
+            DistributeLock lock = new DistributeLock(ddlLockPath, ddlInfo.toString());
             if (!lock.acquire()) {
                 String msg = "The metaLock about `" + nodeName + "` is exists. It means other instance is doing DDL.";
-                LOGGER.info(msg + " The path of DDL is " + ddlPath);
+                LOGGER.info(msg + " The path of DDL is " + ddlLockPath);
                 throw new Exception(msg);
             }
             ClusterDelayProvider.delayAfterDdlLockMeta();
             DistrbtLockManager.addLock(lock);
+            ClusterHelper.setKV(ClusterPathUtil.getDDLPath(nodeName), ddlInfo.toString());
         }
     }
 
@@ -592,7 +599,7 @@ public class ProxyMetaManager {
         if (ClusterGeneralConfig.isUseZK()) {
             notifyResponseZKDdl(schema, table, sql, ddlStatus, ddlType, needNotifyOther);
         } else if (ClusterGeneralConfig.isUseGeneralCluster()) {
-            notifyReponseUcoreDDL(schema, table, sql, ddlStatus, ddlType, needNotifyOther);
+            notifyResponseUcoreDDL(schema, table, sql, ddlStatus, ddlType, needNotifyOther);
         }
     }
 
@@ -632,7 +639,7 @@ public class ProxyMetaManager {
      * @param needNotifyOther
      * @throws Exception
      */
-    public void notifyReponseUcoreDDL(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, DDLInfo.DDLType ddlType, boolean needNotifyOther) throws Exception {
+    public void notifyResponseUcoreDDL(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, DDLInfo.DDLType ddlType, boolean needNotifyOther) throws Exception {
         String nodeName = StringUtil.getUFullName(schema, table);
         DDLInfo ddlInfo = new DDLInfo(schema, sql, ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ddlStatus, ddlType);
         ClusterHelper.setKV(ClusterPathUtil.getDDLInstancePath(nodeName), ClusterPathUtil.SUCCESS);
@@ -651,10 +658,10 @@ public class ProxyMetaManager {
                 throw e;
             } finally {
                 ClusterDelayProvider.delayBeforeDdlNoticeDeleted();
-                ClusterHelper.cleanPath(ClusterPathUtil.getDDLPath(nodeName) + "/");
+                ClusterHelper.cleanPath(ClusterPathUtil.getDDLPath(nodeName));
                 //release the lock
                 ClusterDelayProvider.delayBeforeDdlLockRelease();
-                DistrbtLockManager.releaseLock(ClusterPathUtil.getDDLPath(nodeName));
+                DistrbtLockManager.releaseLock(ClusterPathUtil.getDDLLockPath(nodeName));
             }
         }
 

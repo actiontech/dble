@@ -646,9 +646,7 @@ public class XMLSchemaLoader implements SchemaLoader {
                         } else {
                             hostNames.add(readHostName);
                         }
-                        if (!tmpDBHostConfig.isDisabled()) {
-                            readDbConfList.add(tmpDBHostConfig);
-                        }
+                        readDbConfList.add(tmpDBHostConfig);
                     }
                     if (readDbConfList.size() > 0) {
                         DBHostConfig[] readDbConfs = readDbConfList.toArray(new DBHostConfig[readDbConfList.size()]);

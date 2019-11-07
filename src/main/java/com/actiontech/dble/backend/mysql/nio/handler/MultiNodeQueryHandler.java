@@ -628,6 +628,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     autoHandler.rollback();
                 }
             }
+        } else if (isDDL) {
+            session.clearResources(false);
+            session.setResponseTime(isSuccess);
+            session.getSource().write(data);
+            session.multiStatementNextSql(session.getIsMultiStatement().get());
         } else {
             boolean inTransaction = !source.isAutocommit() || source.isTxStart();
             if (!inTransaction) {

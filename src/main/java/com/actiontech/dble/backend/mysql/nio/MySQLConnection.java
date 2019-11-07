@@ -466,7 +466,7 @@ public class MySQLConnection extends AbstractConnection implements
         boolean conAutoCommit = this.autocommit;
         String conSchema = this.schema;
         int xaSyn = 0;
-        if (!expectAutocommit && xaTxID != null && xaStatus == TxState.TX_INITIALIZE_STATE) {
+        if (!expectAutocommit && xaTxID != null && xaStatus == TxState.TX_INITIALIZE_STATE && !isDDL) {
             // clientTxIsolation = Isolation.SERIALIZABLE;TODO:NEEDED?
             xaCmd = "XA START " + xaTxID + ';';
             this.xaStatus = TxState.TX_STARTED_STATE;

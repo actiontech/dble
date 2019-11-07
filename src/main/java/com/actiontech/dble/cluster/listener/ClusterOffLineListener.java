@@ -50,7 +50,7 @@ public class ClusterOffLineListener implements Runnable {
             if (serverId.equals(en.getValue())) {
                 ProxyMeta.getInstance().getTmManager().removeMetaLock(en.getKey().split("\\.")[0], en.getKey().split("\\.")[1]);
                 DdlChildResponse.getLockMap().remove(en.getKey());
-                ClusterHelper.cleanPath(ClusterPathUtil.getDDLPath(en.getKey()) + "/");
+                ClusterHelper.cleanPath(ClusterPathUtil.getDDLPath(en.getKey()));
             }
         }
     }

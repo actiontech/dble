@@ -18,10 +18,7 @@ import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.route.parser.ManagerParseConfig;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.variables.SystemVariables;
-import com.actiontech.dble.singleton.CacheService;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
-import com.actiontech.dble.singleton.ProxyMeta;
-import com.actiontech.dble.singleton.SequenceManager;
+import com.actiontech.dble.singleton.*;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
@@ -404,6 +401,7 @@ public class ServerConfig {
             this.firewall = newFirewall;
             this.erRelations = newErRelations;
             CacheService.getInstance().clearCache();
+            HaConfigManager.getInstance().init();
             this.changing = false;
             if (!newDataHostWithoutWR) {
                 return reloadMetaData(delTables, reloadTables, delSchema, reloadSchema);

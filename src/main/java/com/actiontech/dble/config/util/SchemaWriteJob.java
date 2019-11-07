@@ -25,10 +25,12 @@ public class SchemaWriteJob implements Runnable {
     private volatile boolean finish = false;
     private final ReentrantLock lock = new ReentrantLock();
     private Condition condition = lock.newCondition();
+    private final int reloadIndex;
 
-    public SchemaWriteJob(Set<PhysicalDNPoolSingleWH> changeSet, Schemas schemas) {
+    public SchemaWriteJob(Set<PhysicalDNPoolSingleWH> changeSet, Schemas schemas, int reloadIndex) {
         this.changeSet = changeSet;
         this.schemas = schemas;
+        this.reloadIndex = reloadIndex;
     }
 
     @Override
@@ -41,15 +43,8 @@ public class SchemaWriteJob implements Runnable {
                 }
             }
         }
-        HaConfigManager.getInstance().write(schemas);
-        HaConfigManager.getInstance().finishAndNext();
-        lock.lock();
-        try {
-            finish = true;
-            condition.signalAll();
-        } finally {
-            lock.unlock();
-        }
+        HaConfigManager.getInstance().write(schemas, reloadIndex);
+        this.signalAll();
     }
 
 
@@ -68,7 +63,7 @@ public class SchemaWriteJob implements Runnable {
             w.setUsingDecrypt(ow.getUsingDecrypt());
         } else {
             for (ReadHost rh : ow.getReadHost()) {
-                if (rh.getId().equals(w.getId())) {
+                if (rh.getHost().equals(w.getHost())) {
                     w.setPassword(rh.getPassword());
                     w.setUsingDecrypt(rh.getUsingDecrypt());
                 }
@@ -85,9 +80,9 @@ public class SchemaWriteJob implements Runnable {
             r.setWeight("" + rs.getConfig().getWeight());
             r.setUser(rs.getConfig().getUser());
             WriteHost ow1 = dh.getWriteHost().get(0);
-            if (ow1.getId().equals(rs.getConfig().getId())) {
-                r.setPassword(ow.getPassword());
-                r.setUsingDecrypt(ow.getUsingDecrypt());
+            if (ow1.getHost().equals(rs.getConfig().getHostName())) {
+                r.setPassword(ow1.getPassword());
+                r.setUsingDecrypt(ow1.getUsingDecrypt());
             } else {
                 for (ReadHost rh : ow1.getReadHost()) {
                     if (rh.getHost().equals(r.getHost())) {
@@ -113,6 +108,16 @@ public class SchemaWriteJob implements Runnable {
             }
         } catch (InterruptedException e) {
             LOGGER.info("unexpected error:", e);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public void signalAll() {
+        lock.lock();
+        try {
+            finish = true;
+            condition.signalAll();
         } finally {
             lock.unlock();
         }

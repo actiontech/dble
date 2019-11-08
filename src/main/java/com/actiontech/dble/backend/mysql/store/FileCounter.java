@@ -24,7 +24,7 @@ public final class FileCounter {
     private FileCounter() {
         this.lock = new ReentrantLock();
         long totalMem = Hardware.getSizeOfPhysicalMemory();
-        long freeMem = Hardware.getFreeSizeOfPhysicalMemoryForLinux();
+        long freeMem = Hardware.getFreeSizeOfPhysicalMemory();
         long currentMem = Math.min(totalMem / 2, freeMem);
         this.maxFileSize = (int) (currentMem / (DbleServer.getInstance().getConfig().getSystem().getMappedFileSize() / 1024));
         LOGGER.info("current mem is " + currentMem + "kb. max file size is " + maxFileSize);

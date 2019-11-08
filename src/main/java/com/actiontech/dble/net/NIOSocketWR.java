@@ -146,7 +146,6 @@ public class NIOSocketWR extends SocketWR {
                 while (buffer.hasRemaining()) {
                     written = channel.write(buffer);
                     if (written > 0) {
-                        con.lastWriteTime = TimeUtil.currentTimeMillis();
                         con.netOutBytes += written;
                         con.processor.addNetOutBytes(written);
                         con.lastWriteTime = TimeUtil.currentTimeMillis();

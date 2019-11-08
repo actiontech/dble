@@ -421,9 +421,9 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         for (int i = 0; i < columns.size(); i++) {
             String columnName = columns.get(i).toString();
             if (i < columns.size() - 1) {
-                sb.append("`").append(columnName).append("`").append(",");
+                sb.append("`").append(StringUtil.removeBackQuote(columnName)).append("`").append(",");
             } else {
-                sb.append("`").append(columnName).append("`");
+                sb.append("`").append(StringUtil.removeBackQuote(columnName)).append("`");
             }
             String simpleColumnName = StringUtil.removeBackQuote(columnName);
             if (isGlobalCheck && simpleColumnName.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {

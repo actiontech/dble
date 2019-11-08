@@ -28,7 +28,7 @@ public final class LoadDataUtil {
         RouteResultsetNode rrn = (RouteResultsetNode) conn.getAttachment();
         LoadData loadData = rrn.getLoadData();
         List<String> loadDataData = loadData.getData();
-
+        conn.setExecuting(false);
         BufferedInputStream in = null;
         try {
             if (loadDataData != null && loadDataData.size() > 0) {

@@ -65,4 +65,8 @@ public interface BackendConnection extends ClosableConnection {
     String compactInfo();
 
     void setOldTimestamp(long oldTimestamp);
+
+    void setExecuting(boolean executing);
+
+    boolean isExecuting();
 }

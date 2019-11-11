@@ -74,9 +74,12 @@ public final class PauseDatanodeManager {
     }
 
     public void lockWithDataNodes(Set<String> dataNodeSet) {
+        LOGGER.info("Lock dataNodes with set size of" + dataNodeSet.size());
         this.dataNodes = dataNodeSet;
         for (Entry<String, SchemaConfig> entry : DbleServer.getInstance().getConfig().getSchemas().entrySet()) {
             if (dataNodes.contains(entry.getValue().getDataNode())) {
+                LOGGER.info(new StringBuilder("lock for schema ").append(entry.getValue().getName()).
+                        append(" dataNode ").append(entry.getValue().getDataNode()).toString());
                 SchemaConfig schemaConfig = entry.getValue();
                 SchemaMeta schemaMeta = ProxyMeta.getInstance().getTmManager().getCatalogs().get(entry.getKey());
                 for (Entry<String, StructureMeta.TableMeta> tabEntry : schemaMeta.getTableMetas().entrySet()) {
@@ -94,6 +97,7 @@ public final class PauseDatanodeManager {
             } else {
                 SchemaConfig schemaConfig = entry.getValue();
                 for (Entry<String, TableConfig> tableEntry : schemaConfig.getTables().entrySet()) {
+                    LOGGER.info(new StringBuilder("lock for schema ").append(entry.getValue().getName()).append(" table config ").toString());
                     TableConfig tableConfig = tableEntry.getValue();
                     for (String dataNode : tableConfig.getDataNodes()) {
                         if (dataNodes.contains(dataNode)) {
@@ -214,10 +218,18 @@ public final class PauseDatanodeManager {
 
         if (ClusterGeneralConfig.isUseGeneralCluster()) {
             Map<String, String> expectedMap = ClusterToXml.getOnlineMap();
+            StringBuffer sb = new StringBuffer();
             for (; ; ) {
-                if (ClusterHelper.checkResponseForOneTime(null, ClusterPathUtil.getPauseResultNodePath(), expectedMap, null)) {
-                    return true;
+                if (ClusterHelper.checkResponseForOneTime(null, ClusterPathUtil.getPauseResultNodePath(), expectedMap, sb)) {
+                    if (sb.length() == 0) {
+                        return true;
+                    } else {
+                        LOGGER.info("wait for cluster error " + sb.toString());
+                        c.writeErrMessage(1003, sb.toString());
+                        return false;
+                    }
                 } else if (System.currentTimeMillis() - beginTime > timeOut) {
+                    LOGGER.info("wait for cluster timeout, try to resume the self & others");
                     PauseDatanodeManager.getInstance().resume();
                     PauseDatanodeManager.getInstance().resumeCluster();
                     c.writeErrMessage(1003, "There are some node in cluster can't recycle backend");
@@ -238,6 +250,7 @@ public final class PauseDatanodeManager {
             ClusterHelper.setKV(ClusterPathUtil.getPauseResumePath(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID)),
                     ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
 
+            LOGGER.info("try to resume cluster and waiting for others to response");
             ClusterHelper.waitingForAllTheNode(null, ClusterPathUtil.getPauseResumePath());
 
 

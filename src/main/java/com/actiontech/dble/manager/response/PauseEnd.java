@@ -44,7 +44,7 @@ public final class PauseEnd {
 
 
     public static void resume(ManagerConnection c) {
-
+        LOGGER.info("resume start from command");
         if (ClusterGeneralConfig.isUseGeneralCluster()) {
             try {
                 KvBean value = ClusterHelper.getKV(ClusterPathUtil.getPauseDataNodePath());
@@ -62,6 +62,8 @@ public final class PauseEnd {
                 PauseDatanodeManager.getInstance().resumeCluster();
             } catch (Exception e) {
                 LOGGER.warn(e.getMessage());
+                c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage());
+                return;
             }
         } else {
             if (!PauseDatanodeManager.getInstance().tryResume()) {

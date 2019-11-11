@@ -74,6 +74,17 @@ public final class Hardware {
         }
     }
 
+    public static long getFreeSizeOfPhysicalMemory() {
+        if (OperatingSystem.getCurrentOperatingSystem() == OperatingSystem.LINUX) {
+            return getFreeSizeOfPhysicalMemoryForLinux();
+        } else if (OperatingSystem.getCurrentOperatingSystem() == OperatingSystem.WINDOWS) {
+            return getFreeSizeOfPhysicalMemoryForWindows();
+        } else {
+            LOG.error("Unrecognized OS: " + OperatingSystem.getCurrentOperatingSystem());
+            return -1;
+        }
+    }
+
     /**
      * Returns the size of the physical memory in bytes on a Linux-based
      * operating system.
@@ -261,6 +272,51 @@ public final class Hardware {
         }
     }
 
+    /**
+     * Returns the free size of the physical memory in bytes on Windows.
+     *
+     * @return the free size of the physical memory in bytes or <code>-1</code> if
+     * the size could not be determined
+     */
+    private static long getFreeSizeOfPhysicalMemoryForWindows() {
+        BufferedReader bi = null;
+        try {
+            Process proc = Runtime.getRuntime().exec("wmic OS get FreePhysicalMemory");
+
+            bi = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+
+            String line = bi.readLine();
+            if (line == null) {
+                return -1L;
+            }
+
+            if (!line.startsWith("FreePhysicalMemory")) {
+                return -1L;
+            }
+
+            long sizeOfPhysicalMemory = 0L;
+            while ((line = bi.readLine()) != null) {
+                if (line.isEmpty()) {
+                    continue;
+                }
+
+                line = line.replaceAll(" ", "");
+                sizeOfPhysicalMemory += Long.parseLong(line) * 1204L;
+            }
+            return sizeOfPhysicalMemory;
+        } catch (Throwable t) {
+            LOG.error("Cannot determine the size of the physical memory for Windows host (using 'wmic OS get FreePhysicalMemory'): " + t.getMessage(), t);
+            return -1L;
+        } finally {
+            if (bi != null) {
+                try {
+                    bi.close();
+                } catch (Throwable ignored) {
+                    //ignore error
+                }
+            }
+        }
+    }
     // --------------------------------------------------------------------------------------------
 
     private Hardware() {

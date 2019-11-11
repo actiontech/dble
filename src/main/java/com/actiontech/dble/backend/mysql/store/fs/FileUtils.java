@@ -5,6 +5,9 @@
 
 package com.actiontech.dble.backend.mysql.store.fs;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,6 +22,8 @@ import java.util.List;
  * @createTime 2013-11-11
  */
 public final class FileUtils {
+    private static Logger logger = LoggerFactory.getLogger(FileUtils.class);
+
     private FileUtils() {
     }
 
@@ -298,9 +303,12 @@ public final class FileUtils {
      */
     public static boolean tryDelete(String fileName) {
         try {
+            logger.debug("try to delete " + fileName);
             FilePath.get(fileName).delete();
+            logger.debug("delete " + fileName + " success");
             return true;
         } catch (Exception e) {
+            logger.debug("delete " + fileName + " failed");
             return false;
         }
     }

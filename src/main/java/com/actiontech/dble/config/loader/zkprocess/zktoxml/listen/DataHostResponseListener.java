@@ -48,7 +48,7 @@ public class DataHostResponseListener implements PathChildrenCacheListener {
         String data = new String(childData.getData(), StandardCharsets.UTF_8);
         LOGGER.info("Ha disable node " + childData.getPath() + " updated , and data is " + data);
         try {
-            if (data != null && !"".equals(data)) {
+            if (!"".equals(data)) {
                 response(data, childData.getPath());
             } else {
                 CuratorFramework zkConn = ZKUtils.getConnection();

@@ -279,7 +279,9 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
             }
         }
         Map<Integer, PhysicalDatasource[]> result = new HashMap<Integer, PhysicalDatasource[]>();
-        result.put(0, list);
+        if (list.length > 0) {
+            result.put(0, list);
+        }
         return result;
     }
 

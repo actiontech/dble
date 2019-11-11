@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 
+
 /**
  * Created by szf on 2019/10/30.
  */
@@ -46,6 +47,22 @@ public class DataHostResponseListener implements PathChildrenCacheListener {
     private void updateStatus(ChildData childData) throws Exception {
         String data = new String(childData.getData(), StandardCharsets.UTF_8);
         LOGGER.info("Ha disable node " + childData.getPath() + " updated , and data is " + data);
+        try {
+            if (!"".equals(data)) {
+                response(data, childData.getPath());
+            } else {
+                CuratorFramework zkConn = ZKUtils.getConnection();
+                String newData = new String(zkConn.getData().forPath(childData.getPath()), "UTF-8");
+                response(newData, childData.getPath());
+            }
+        } catch (Exception e) {
+            LOGGER.warn("get error when try to response to the disable");
+            ZKUtils.createTempNode(childData.getPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), e.getMessage().getBytes());
+        }
+    }
+
+
+    private void response(String data, String path) throws Exception {
         HaInfo info = new HaInfo(data);
         CuratorFramework zkConn = ZKUtils.getConnection();
         if (!info.getStartId().equals(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID)) &&
@@ -55,7 +72,7 @@ public class DataHostResponseListener implements PathChildrenCacheListener {
             String jsonString = new String(zkConn.getData().forPath(KVPathUtil.getHaStatusPath(info.getDhName())), "UTF-8");
             dataHost.changeIntoLatestStatus(jsonString);
             //response to kv
-            ZKUtils.createTempNode(childData.getPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ClusterPathUtil.SUCCESS.getBytes());
+            ZKUtils.createTempNode(path, ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ClusterPathUtil.SUCCESS.getBytes());
             HaConfigManager.getInstance().haFinish(id, null, data);
         }
     }

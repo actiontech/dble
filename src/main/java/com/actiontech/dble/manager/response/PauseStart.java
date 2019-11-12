@@ -111,6 +111,7 @@ public final class PauseStart {
                 }
             } catch (Exception e) {
                 LOGGER.warn(e.getMessage());
+                c.writeErrMessage(1003, e.getMessage());
             }
         }
     }

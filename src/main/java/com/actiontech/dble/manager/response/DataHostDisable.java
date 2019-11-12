@@ -96,12 +96,14 @@ public final class DataHostDisable {
         CuratorFramework zkConn = ZKUtils.getConnection();
         InterProcessMutex distributeLock = new InterProcessMutex(zkConn, KVPathUtil.getHaLockPath(dh.getHostName()));
         try {
+            boolean locked = false;
             try {
                 if (!distributeLock.acquire(100, TimeUnit.MILLISECONDS)) {
                     mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is change the dataHost status");
                     HaConfigManager.getInstance().haFinish(id, "Other instance is changing the dataHost, please try again later.", null);
                     return false;
                 }
+                locked = true;
                 //local set disable
                 final String result = dh.disableHosts(subHostName, false);
                 // update total dataHost status
@@ -127,7 +129,9 @@ public final class DataHostDisable {
                     return false;
                 }
             } finally {
-                distributeLock.release();
+                if (locked) {
+                    distributeLock.release();
+                }
                 LOGGER.info("reload config: release distributeLock " + KVPathUtil.getConfChangeLockPath() + " from zk");
             }
         } catch (Exception e) {

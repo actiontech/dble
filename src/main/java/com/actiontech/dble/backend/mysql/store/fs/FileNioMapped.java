@@ -46,6 +46,7 @@ class FileNioMapped extends FileBase {
             this.mode = MapMode.READ_WRITE;
         }
         this.name = fileName;
+        logger.debug("create FileNioMapped :" + fileName);
         file = new RandomAccessFile(fileName, mode);
         try {
             reMap();

@@ -52,7 +52,8 @@ public class MySQLConnection extends AbstractConnection implements
     private volatile String oldSchema;
     private volatile boolean borrowed = false;
     private volatile boolean isDDL = false;
-    private volatile boolean isRunning = false;
+    private volatile boolean isRowDataFlowing = false;
+    private volatile boolean isExecuting = false;
     private volatile StatusSync statusSync;
     private volatile boolean metaDataSynced = true;
     private volatile TxState xaStatus = TxState.TX_INITIALIZE_STATE;
@@ -150,12 +151,12 @@ public class MySQLConnection extends AbstractConnection implements
         this.port = port;
     }
 
-    public void setRunning(boolean running) {
-        isRunning = running;
+    public void setRowDataFlowing(boolean rowDataFlowing) {
+        isRowDataFlowing = rowDataFlowing;
     }
 
-    public boolean isRunning() {
-        return isRunning;
+    public boolean isRowDataFlowing() {
+        return isRowDataFlowing;
     }
 
     public TxState getXaStatus() {
@@ -298,6 +299,7 @@ public class MySQLConnection extends AbstractConnection implements
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
+        isExecuting = true;
         lastTime = TimeUtil.currentTimeMillis();
         packet.write(this);
     }
@@ -311,6 +313,7 @@ public class MySQLConnection extends AbstractConnection implements
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
+        isExecuting = true;
         lastTime = TimeUtil.currentTimeMillis();
         return new WriteToBackendTask(this, packet);
     }
@@ -645,7 +648,8 @@ public class MySQLConnection extends AbstractConnection implements
             } else {
                 closeInner(reason);
             }
-            this.setRunning(false);
+            this.setExecuting(false);
+            this.setRowDataFlowing(false);
             this.signal();
         } else {
             this.cleanup();
@@ -680,7 +684,8 @@ public class MySQLConnection extends AbstractConnection implements
             @Override
             public void run() {
                 try {
-                    conn.setRunning(false);
+                    conn.setExecuting(false);
+                    conn.setRowDataFlowing(false);
                     conn.signal();
                     handler.connectionClose(conn, reason);
                     respHandler = null;
@@ -749,7 +754,7 @@ public class MySQLConnection extends AbstractConnection implements
             this.close("close for clear usrVariables");
             return;
         }
-        if (this.isRunning()) {
+        if (this.isRowDataFlowing()) {
             if (logResponse.compareAndSet(false, true)) {
                 session.setBackendResponseEndTime(this);
             }
@@ -766,6 +771,15 @@ public class MySQLConnection extends AbstractConnection implements
         setSession(null);
         logResponse.set(false);
         pool.releaseChannel(this);
+    }
+
+
+    public boolean isExecuting() {
+        return isExecuting;
+    }
+
+    public void setExecuting(boolean executing) {
+        isExecuting = executing;
     }
 
     public boolean setResponseHandler(ResponseHandler queryHandler) {
@@ -897,10 +911,12 @@ public class MySQLConnection extends AbstractConnection implements
     public boolean syncAndExecute() {
         StatusSync sync = this.statusSync;
         if (sync == null) {
+            isExecuting = false;
             return true;
         } else {
             boolean executed = sync.synAndExecuted(this);
             if (executed) {
+                isExecuting = false;
                 statusSync = null;
             }
             return executed;

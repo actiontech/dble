@@ -94,11 +94,13 @@ public final class DataHostSwitch {
                         HaInfo.HaStatus.INIT
                 ).toString()
         );
+        boolean locked = false;
         try {
             if (!distributeLock.acquire()) {
                 mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is changing the dataHost, please try again later.");
                 return false;
             }
+            locked = true;
             String result = dh.switchMaster(subHostName, false);
             ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dh.getHostName()), result);
             HaConfigManager.getInstance().haFinish(id, null, result);
@@ -107,7 +109,9 @@ public final class DataHostSwitch {
             HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
             return false;
         } finally {
-            distributeLock.release();
+            if (locked) {
+                distributeLock.release();
+            }
         }
         return true;
     }

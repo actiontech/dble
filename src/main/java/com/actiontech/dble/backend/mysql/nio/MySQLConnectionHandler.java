@@ -163,8 +163,9 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
      * execute ERROR packet
      */
     private void handleErrorPacket(byte[] data) {
-        ResponseHandler respHand = responseHandler;
-        this.source.setRunning(false);
+        final ResponseHandler respHand = responseHandler;
+        this.source.setExecuting(false);
+        this.source.setRowDataFlowing(false);
         this.source.signal();
         if (respHand != null) {
             respHand.errorResponse(data, source);
@@ -190,7 +191,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
      */
     private void handleFieldEofPacket(byte[] data) {
         ResponseHandler respHand = responseHandler;
-        this.source.setRunning(true);
+        this.source.setRowDataFlowing(true);
         if (respHand != null) {
             respHand.fieldEofResponse(header, fields, null, data, false, source);
         } else {
@@ -225,7 +226,8 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
         if (session != null && !source.isTesting() && this.source.getLogResponse().compareAndSet(false, true)) {
             session.setBackendResponseEndTime(this.source);
         }
-        this.source.setRunning(false);
+        this.source.setExecuting(false);
+        this.source.setRowDataFlowing(false);
         this.source.signal();
         if (responseHandler != null) {
             responseHandler.rowEofResponse(data, false, source);
@@ -243,7 +245,8 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
         }
         resultStatus = RESULT_STATUS_INIT;
-        this.source.setRunning(false);
+        this.source.setExecuting(false);
+        this.source.setRowDataFlowing(false);
         this.source.signal();
         ResponseHandler handler = this.responseHandler;
         if (handler != null)

@@ -8,6 +8,8 @@ package com.actiontech.dble.backend.mysql.store.fs;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.exception.TmpFileException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URL;
@@ -25,7 +27,6 @@ import java.util.concurrent.locks.LockSupport;
  * @CreateTime 2014-9-8
  */
 public class FilePathDisk extends FilePath {
-
     private static final String CLASSPATH_PREFIX = "classpath:";
 
     @Override
@@ -324,11 +325,14 @@ public class FilePathDisk extends FilePath {
      */
     static class FileDisk extends FileBase {
 
+        private static Logger logger = LoggerFactory.getLogger(FileDisk.class);
         private final RandomAccessFile file;
         private final String name;
         private final boolean readOnly;
 
         FileDisk(String fileName, String mode) throws FileNotFoundException {
+            logger.debug("create FileDisk :" + fileName);
+
             this.file = new RandomAccessFile(fileName, mode);
             this.name = fileName;
             this.readOnly = mode.equals("r");

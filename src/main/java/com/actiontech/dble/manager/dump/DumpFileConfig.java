@@ -8,6 +8,7 @@ public class DumpFileConfig {
     private int readQueueSize = 500;
     private String writePath;
     private int writeQueueSize = 500;
+    private int maxValues = 10000;
 
     public String getReadFile() {
         return readFile;
@@ -44,4 +45,11 @@ public class DumpFileConfig {
         this.writeQueueSize = writeQueueSize;
     }
 
+    public int getMaxValues() {
+        return maxValues;
+    }
+
+    public void setMaxValues(int maxValues) {
+        this.maxValues = maxValues;
+    }
 }

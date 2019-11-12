@@ -19,54 +19,69 @@ import java.util.List;
 public class CreateTableHandler extends DefaultHandler {
 
     @Override
-    public void handle(DumpFileContext context, SQLStatement sqlStatement) throws DumpException, InterruptedException {
+    public boolean preHandle(DumpFileContext context, SQLStatement sqlStatement) throws DumpException, InterruptedException {
         MySqlCreateTableStatement create = (MySqlCreateTableStatement) sqlStatement;
         String tableName = StringUtil.removeBackQuote(create.getTableSource().getName().getSimpleName());
         context.setTable(tableName);
-
-        boolean isFinished = preHandle(context);
-        if (isFinished) {
-            return;
+        if (super.preHandle(context, sqlStatement)) {
+            return true;
         }
 
-        boolean isChanged = false;
         TableConfig tableConfig = context.getTableConfig();
-        // check column
         List<SQLTableElement> columns = create.getTableElementList();
         if (tableConfig.isAutoIncrement() || tableConfig.getPartitionColumn() != null) {
+            // check columns for sharing column index or increment column index
             checkColumns(context, columns);
-            // add increment column if not exists
-            if (tableConfig.isAutoIncrement() && context.getIncrementColumnIndex() == -1) {
-                SQLColumnDefinition column = new SQLColumnDefinition();
-                column.setDataType(new SQLCharacterDataType("bigint"));
-                column.setDefaultExpr(new SQLNullExpr());
-                column.setName(new SQLIdentifierExpr(tableConfig.getTrueIncrementColumn()));
-                columns.add(column);
-                isChanged = true;
-            }
-
             // partition column check
             if (tableConfig.getPartitionColumn() != null && context.getPartitionColumnIndex() == -1) {
                 throw new DumpException("table[" + context.getTable() + "] can't find partition column in create.");
             }
         }
+        return false;
+    }
 
+    @Override
+    public void handle(DumpFileContext context, SQLStatement sqlStatement) throws InterruptedException {
+        boolean isChanged = false;
+        List<SQLTableElement> columns = ((MySqlCreateTableStatement) sqlStatement).getTableElementList();
+        TableConfig tableConfig = context.getTableConfig();
+        if (tableConfig.isAutoIncrement()) {
+            // add increment column if not exists
+            if (context.getIncrementColumnIndex() == -1) {
+                SQLColumnDefinition column = new SQLColumnDefinition();
+                column.setDataType(new SQLCharacterDataType("bigint"));
+                column.setDefaultExpr(new SQLNullExpr());
+                column.setName(new SQLIdentifierExpr(tableConfig.getTrueIncrementColumn()));
+                columns.add(column);
+                context.setPartitionColumnIndex(columns.size());
+                isChanged = true;
+            } else {
+                SQLColumnDefinition column = (SQLColumnDefinition) columns.get(context.getIncrementColumnIndex());
+                if (!column.getDataType().getName().equals("bigint")) {
+                    context.addError("data type of increment column isn't bigint, dble replaced it by itself.");
+                    column.setDataType(new SQLCharacterDataType("bigint"));
+                    isChanged = true;
+                }
+            }
+        }
+
+        // if table is global, add column
         if (tableConfig.isGlobalTable() && context.isGlobalCheck()) {
-            // if table is global, add column
             columns.add(GlobalTableUtil.createCheckColumn());
             isChanged = true;
         }
 
-        String stmt = isChanged ? SQLUtils.toMySqlString(create) : context.getStmt();
+        String stmt = isChanged ? SQLUtils.toMySqlString(sqlStatement) : context.getStmt();
         for (String dataNode : tableConfig.getDataNodes()) {
-            context.getWriter().write(dataNode, stmt, isChanged);
+            context.getWriter().write(dataNode, stmt);
         }
     }
 
     private void checkColumns(DumpFileContext context, List<SQLTableElement> columns) {
+        SQLTableElement column;
         TableConfig tableConfig = context.getTableConfig();
         for (int j = 0; j < columns.size(); j++) {
-            SQLTableElement column = columns.get(j);
+            column = columns.get(j);
             if (!(columns.get(j) instanceof SQLColumnDefinition)) {
                 continue;
             }

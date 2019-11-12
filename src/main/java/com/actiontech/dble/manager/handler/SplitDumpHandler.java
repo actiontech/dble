@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 
 public final class SplitDumpHandler {
 
-    private static final Pattern SPLIT_STMT = Pattern.compile("([^\\s]+)\\s+([^\\s]+)\\s*(-r(\\d+))?\\s*(-w(\\d+))?", Pattern.CASE_INSENSITIVE);
+    private static final Pattern SPLIT_STMT = Pattern.compile("([^\\s]+)\\s+([^\\s]+)\\s*(-r(\\d+))?\\s*(-w(\\d+))?\\s*(-l(\\d+))?", Pattern.CASE_INSENSITIVE);
 
     public void handle(String stmt, ManagerConnection c, int offset) {
         DumpFileConfig config = parseOption(stmt.substring(offset).trim());
@@ -37,7 +37,7 @@ public final class SplitDumpHandler {
             // queue
             BlockingQueue<String> queue = new ArrayBlockingQueue<>(config.getReadQueueSize());
             // thread for process table
-            dumpFileExecutor = new DumpFileExecutor(queue, writer);
+            dumpFileExecutor = new DumpFileExecutor(queue, writer, config);
             new Thread(dumpFileExecutor).start();
             // start read
             writer.start();
@@ -75,6 +75,9 @@ public final class SplitDumpHandler {
             }
             if (m.group(6) != null) {
                 config.setWriteQueueSize(Integer.parseInt(m.group(6)));
+            }
+            if (m.group(8) != null) {
+                config.setMaxValues(Integer.parseInt(m.group(8)));
             }
         }
         return config;

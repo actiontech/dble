@@ -46,7 +46,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class MySQLConnection extends AbstractConnection implements
         BackendConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLConnection.class);
-    private static final long CLIENT_FLAGS = initClientFlags();
     private volatile long lastTime;
     private volatile String schema = null;
     private volatile String oldSchema;
@@ -65,7 +64,6 @@ public class MySQLConnection extends AbstractConnection implements
     private final AtomicBoolean logResponse = new AtomicBoolean(false);
     private volatile boolean testing = false;
     private volatile String closeReason = null;
-    private String authPluginErrorMessage = null;
     private volatile BackEndCleaner recycler = null;
 
     private static long initClientFlags() {
@@ -252,7 +250,7 @@ public class MySQLConnection extends AbstractConnection implements
             } else if (authPluginName.equals(new String(HandshakeV10Packet.CACHING_SHA2_PASSWORD_PLUGIN))) {
                 sendAuthPacket(packet, PasswordAuthPlugin.passwdSha256(password, handshake), authPluginName);
             } else {
-                authPluginErrorMessage = "Client don't support the password plugin " + authPluginName + ",please check the default auth Plugin";
+                String authPluginErrorMessage = "Client don't support the password plugin " + authPluginName + ",please check the default auth Plugin";
                 LOGGER.warn(authPluginErrorMessage);
                 throw new RuntimeException(authPluginErrorMessage);
             }

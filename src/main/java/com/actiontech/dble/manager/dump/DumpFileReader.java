@@ -9,6 +9,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.BlockingQueue;
+import java.util.regex.Pattern;
 
 /**
  * @author Baofengqi
@@ -17,7 +18,8 @@ public final class DumpFileReader {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(DumpFileReader.class);
     public static final String EOF = "dump file eof";
-    private String tempStr;
+    public static final Pattern HINT = Pattern.compile("/\\*!\\d+\\s+(.*)\\*/", Pattern.CASE_INSENSITIVE);
+    private StringBuilder tempStr = new StringBuilder(200);
     private BlockingQueue<String> readQueue;
     private FileChannel fileChannel;
 
@@ -36,7 +38,7 @@ public final class DumpFileReader {
                 byteRead = fileChannel.read(buffer);
             }
             if (tempStr != null) {
-                this.readQueue.put(tempStr);
+                this.readQueue.put(tempStr.toString());
                 this.tempStr = null;
             }
         } catch (IOException e) {
@@ -66,17 +68,15 @@ public final class DumpFileReader {
 
         int i = 0;
         if (tempStr != null) {
-            if (len > 1) {
-                this.readQueue.put(tempStr + lines[0]);
-                this.tempStr = null;
-            } else {
-                tempStr += lines[0];
-            }
+            tempStr.append(lines[0]);
             i = 1;
         }
-        if (!endWithEOF) {
-            this.tempStr = lines[len - 1];
+        if (len > 1 && !endWithEOF) {
             len = len - 1;
+            if (tempStr != null) {
+                this.readQueue.put(tempStr.toString());
+            }
+            tempStr = new StringBuilder(lines[len]);
         }
         for (; i < len; i++) {
             this.readQueue.put(lines[i]);

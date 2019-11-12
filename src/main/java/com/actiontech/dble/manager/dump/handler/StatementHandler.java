@@ -6,6 +6,8 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 
 public interface StatementHandler {
 
+    boolean preHandle(DumpFileContext context, SQLStatement statement) throws DumpException, InterruptedException;
+
     void handle(DumpFileContext context, SQLStatement statement) throws DumpException, InterruptedException;
 
 }

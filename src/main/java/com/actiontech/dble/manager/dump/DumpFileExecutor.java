@@ -8,8 +8,9 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.SQLNonTransientException;
+import java.sql.SQLSyntaxErrorException;
 import java.util.concurrent.BlockingQueue;
+import java.util.regex.Matcher;
 
 /**
  * @author Baofengqi
@@ -22,9 +23,9 @@ public final class DumpFileExecutor implements Runnable {
     private BlockingQueue<String> queue;
     private DumpFileContext context;
 
-    public DumpFileExecutor(BlockingQueue<String> queue, DumpFileWriter writer) {
+    public DumpFileExecutor(BlockingQueue<String> queue, DumpFileWriter writer, DumpFileConfig config) {
         this.queue = queue;
-        this.context = new DumpFileContext(writer);
+        this.context = new DumpFileContext(writer, config);
     }
 
     @Override
@@ -36,18 +37,9 @@ public final class DumpFileExecutor implements Runnable {
                 stmt = queue.take();
                 context.setStmt(stmt);
                 int type = ServerParse.parse(stmt);
-                if (ServerParse.CREATE_DATABASE != type && context.getSchema() == null) {
-                    writer.writeAll(stmt);
+                // pre handle
+                if (preHandle(writer, type, stmt)) {
                     continue;
-                }
-                // footer
-                if (stmt.contains("=@OLD_")) {
-                    writer.writeAll(stmt);
-                    continue;
-                }
-                if (stmt.equals(DumpFileReader.EOF)) {
-                    writer.writeAll(stmt);
-                    return;
                 }
 
                 SQLStatement statement = null;
@@ -63,25 +55,62 @@ public final class DumpFileExecutor implements Runnable {
                 if (ServerParse.INSERT == type && !context.isPushDown()) {
                     statement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
                 }
-                StatementHandler handler = StatementHandlerManager.getHandler(statement);
+                StatementHandler handler = StatementHandlerManager.getHandler(context, statement);
+                if (handler.preHandle(context, statement)) {
+                    continue;
+                }
                 handler.handle(context, statement);
-
-            } catch (SQLNonTransientException e) {
+            } catch (DumpException | SQLSyntaxErrorException e) {
+                String currentStmt = context.getStmt().length() <= 1024 ? context.getStmt() : context.getStmt().substring(0, 1024);
                 context.skipCurrentContext();
-                context.addError(e.getMessage());
-            } catch (InterruptedException e) {
+                context.addError("current stmt[" + currentStmt + "] error,because:" + e.getMessage());
+            } catch (Exception e) {
+                LOGGER.warn("dump file executor exit, due to :" + e.getMessage());
+                context.addError("dump file executor exit, due to :" + e.getMessage());
                 try {
                     writer.writeAll(DumpFileReader.EOF);
                 } catch (InterruptedException ex) {
                     // ignore
                     LOGGER.warn("dump file executor exit.");
                 }
+                return;
             }
         }
     }
 
     public DumpFileContext getContext() {
         return context;
+    }
+
+    private boolean preHandle(DumpFileWriter writer, int type, String stmt) throws InterruptedException {
+        // push down statement util containing schema
+        if (!(ServerParse.CREATE_DATABASE == type || ServerParse.USE == (0xff & type)) && context.getSchema() == null) {
+            writer.writeAll(stmt);
+            return true;
+        }
+        // skip view
+        if ((ServerParse.MYSQL_CMD_COMMENT == type || ServerParse.MYSQL_COMMENT == type) && skipView(stmt)) {
+            return true;
+        }
+        // footer
+        if (stmt.contains("=@OLD_")) {
+            writer.writeAll(stmt);
+            return true;
+        }
+        if (stmt.equals(DumpFileReader.EOF)) {
+            writer.writeAll(stmt);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean skipView(String stmt) {
+        Matcher matcher = DumpFileReader.HINT.matcher(stmt);
+        if (matcher.find()) {
+            int type = ServerParse.parse(matcher.group(1));
+            return type >= ServerParse.CREATE_VIEW && type <= ServerParse.ALTER_VIEW;
+        }
+        return false;
     }
 
 }

@@ -19,15 +19,18 @@ public final class DumpFileContext {
     private TableConfig tableConfig;
     private int partitionColumnIndex = -1;
     private int incrementColumnIndex = -1;
+
     private boolean isSkip = false;
     private boolean globalCheck = DbleServer.getInstance().getConfig().getSystem().getUseGlobleTableCheck() == 1;
     private DumpFileWriter writer;
     private List<ErrorMsg> errors;
     private boolean needSkipError;
+    private DumpFileConfig config;
 
-    public DumpFileContext(DumpFileWriter writer) {
+    public DumpFileContext(DumpFileWriter writer, DumpFileConfig config) {
         this.writer = writer;
         this.errors = new ArrayList<>(10);
+        this.config = config;
     }
 
     public void setStmt(String stmt) {
@@ -80,6 +83,8 @@ public final class DumpFileContext {
         }
         this.table = table;
         this.isSkip = false;
+        this.partitionColumnIndex = -1;
+        this.incrementColumnIndex = -1;
         this.needSkipError = false;
         if (this.schema == null) {
             throw new DumpException("Can't tell which schema the table[" + table + "] belongs to.");
@@ -138,4 +143,9 @@ public final class DumpFileContext {
     public void setNeedSkipError(boolean needSkipError) {
         this.needSkipError = needSkipError;
     }
+
+    public DumpFileConfig getConfig() {
+        return config;
+    }
+
 }

@@ -1,11 +1,14 @@
 package com.actiontech.dble.manager.handler;
 
+import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.manager.dump.*;
 import com.actiontech.dble.manager.response.DumpFileError;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.util.CollectionUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
@@ -18,31 +21,34 @@ import java.util.regex.Pattern;
 public final class SplitDumpHandler {
 
     private static final Pattern SPLIT_STMT = Pattern.compile("([^\\s]+)\\s+([^\\s]+)\\s*(-r(\\d+))?\\s*(-w(\\d+))?\\s*(-l(\\d+))?", Pattern.CASE_INSENSITIVE);
+    public static final Logger LOGGER = LoggerFactory.getLogger("dumpFileLog");
 
     public void handle(String stmt, ManagerConnection c, int offset) {
+        LOGGER.info("begin to split dump file.");
         DumpFileConfig config = parseOption(stmt.substring(offset).trim());
         if (config == null) {
+            LOGGER.info("split syntax is error.");
             c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "You have an error in your SQL syntax");
             return;
         }
 
         DumpFileWriter writer = new DumpFileWriter();
-        DumpFileReader reader = new DumpFileReader();
-        DumpFileExecutor dumpFileExecutor;
+        BlockingQueue<String> queue = new ArrayBlockingQueue<>(config.getReadQueueSize());
+        DumpFileReader reader = new DumpFileReader(queue);
+        DumpFileExecutor dumpFileExecutor = new DumpFileExecutor(queue, writer, config);
         try {
             // firstly check file
             reader.open(config.getReadFile());
-            writer.open(config.getWritePath(), config.getWriteQueueSize());
+            String fileName = FileUtils.getName(config.getReadFile());
+            writer.open(config.getWritePath() + fileName, config.getWriteQueueSize());
 
-            // queue
-            BlockingQueue<String> queue = new ArrayBlockingQueue<>(config.getReadQueueSize());
-            // thread for process table
-            dumpFileExecutor = new DumpFileExecutor(queue, writer, config);
-            new Thread(dumpFileExecutor).start();
+            // thread for process statement
+            dumpFileExecutor.start();
             // start read
             writer.start();
-            reader.start(queue);
+            reader.start();
         } catch (IOException e) {
+            LOGGER.info("finish to split dump file.");
             c.writeErrMessage(ErrorCode.ER_IO_EXCEPTION, e.getMessage());
             return;
         }
@@ -61,6 +67,7 @@ public final class SplitDumpHandler {
         } else {
             DumpFileError.execute(c, errors);
         }
+        LOGGER.info("finish to split dump file.");
     }
 
     private DumpFileConfig parseOption(String options) {

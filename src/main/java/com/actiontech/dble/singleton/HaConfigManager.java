@@ -71,6 +71,7 @@ public final class HaConfigManager {
     }
 
     public void write(Schemas schemas, int reloadId) {
+        HA_LOGGER.info("try to write schemas into local file " + reloadId);
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
         try {
@@ -79,6 +80,8 @@ public final class HaConfigManager {
                 path = new File(path).getPath() + File.separator;
                 path += WRITEPATH;
                 this.parseSchemaXmlService.parseToXmlWrite(schemas, path, "schema");
+            } else {
+                HA_LOGGER.info("reloadId changes when try to write the local file,just skip " + reloadIndex.get());
             }
             finishAndNext();
         } finally {
@@ -93,10 +96,12 @@ public final class HaConfigManager {
 
     public void updateConfDataHost(PhysicalDNPoolSingleWH physicalDNPoolSingleWH, boolean syncWriteConf) {
         SchemaWriteJob thisTimeJob = null;
+        HA_LOGGER.info("start to update the local file with sync flag " + syncWriteConf);
         //check if there is one thread is writing
         if (isWriting.compareAndSet(false, true)) {
             adjustLock.writeLock().lock();
             try {
+                HA_LOGGER.info("get into write process");
                 waitingSet.add(physicalDNPoolSingleWH);
                 schemaWriteJob = new SchemaWriteJob(waitingSet, schema, reloadIndex.get());
                 thisTimeJob = schemaWriteJob;
@@ -108,6 +113,7 @@ public final class HaConfigManager {
         } else {
             adjustLock.readLock().lock();
             try {
+                HA_LOGGER.info("get into merge process");
                 thisTimeJob = schemaWriteJob;
                 waitingSet.add(physicalDNPoolSingleWH);
             } finally {
@@ -199,6 +205,10 @@ public final class HaConfigManager {
                 append(" command = ").append(status.getCommand()).
                 append(" stage = ").append(status.getStage().toString()).
                 toString());
+    }
+
+    public void log(String log, Exception e) {
+        HA_LOGGER.info("[HA] " + log, e);
     }
 
     public Map<Integer, HaChangeStatus> getUnfinised() {

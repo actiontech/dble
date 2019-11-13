@@ -17,7 +17,7 @@ import java.util.regex.Matcher;
  */
 public final class DumpFileExecutor implements Runnable {
 
-    public static final Logger LOGGER = LoggerFactory.getLogger(DumpFileExecutor.class);
+    public static final Logger LOGGER = LoggerFactory.getLogger("dumpFileLog");
 
     // receive statement in dump file
     private BlockingQueue<String> queue;
@@ -28,18 +28,33 @@ public final class DumpFileExecutor implements Runnable {
         this.context = new DumpFileContext(writer, config);
     }
 
+    public void start() {
+        new Thread(this, "dump-file-executor").start();
+    }
+
     @Override
     public void run() {
         String stmt;
         DumpFileWriter writer = context.getWriter();
+        LOGGER.info("begin to parse statement in dump file.");
         while (true) {
             try {
+                if (queue.isEmpty()) {
+                    LOGGER.info("dump file reader is too slow, please increase read queue size.");
+                }
+
                 stmt = queue.take();
                 context.setStmt(stmt);
                 int type = ServerParse.parse(stmt);
                 // pre handle
                 if (preHandle(writer, type, stmt)) {
                     continue;
+                }
+                // finish
+                if (stmt.equals(DumpFileReader.EOF)) {
+                    writer.writeAll(stmt);
+                    LOGGER.info("finish to parse statement in dump file.");
+                    return;
                 }
 
                 SQLStatement statement = null;
@@ -63,15 +78,15 @@ public final class DumpFileExecutor implements Runnable {
             } catch (DumpException | SQLSyntaxErrorException e) {
                 String currentStmt = context.getStmt().length() <= 1024 ? context.getStmt() : context.getStmt().substring(0, 1024);
                 context.skipCurrentContext();
+                LOGGER.warn("current stmt[" + currentStmt + "] error,because:" + e.getMessage());
                 context.addError("current stmt[" + currentStmt + "] error,because:" + e.getMessage());
             } catch (Exception e) {
                 LOGGER.warn("dump file executor exit, due to :" + e.getMessage());
-                context.addError("dump file executor exit, due to :" + e.getMessage());
                 try {
                     writer.writeAll(DumpFileReader.EOF);
                 } catch (InterruptedException ex) {
                     // ignore
-                    LOGGER.warn("dump file executor exit.");
+                    LOGGER.warn("dump file executor is interrupted.");
                 }
                 return;
             }
@@ -94,10 +109,6 @@ public final class DumpFileExecutor implements Runnable {
         }
         // footer
         if (stmt.contains("=@OLD_")) {
-            writer.writeAll(stmt);
-            return true;
-        }
-        if (stmt.equals(DumpFileReader.EOF)) {
             writer.writeAll(stmt);
             return true;
         }

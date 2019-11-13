@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Date;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -17,22 +18,24 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class DumpFileWriter {
 
-    public static final Logger LOGGER = LoggerFactory.getLogger(DumpFileWriter.class);
+    public static final Logger LOGGER = LoggerFactory.getLogger("dumpFileLog");
+    private static final String FILE_NAME_FORMAT = "%s-%s-%d.dump";
     private Map<String, DataNodeWriter> dataNodeWriters = new ConcurrentHashMap<>();
     private AtomicInteger finished = new AtomicInteger(0);
 
     public void open(String writePath, int writeQueueSize) throws IOException {
         Set<String> dataNodes = DbleServer.getInstance().getConfig().getDataNodes().keySet();
+        Date date = new Date();
         for (String dataNode : dataNodes) {
             DataNodeWriter writer = new DataNodeWriter(dataNode, writeQueueSize);
-            writer.open(writePath + dataNode + ".dump");
+            writer.open(String.format(FILE_NAME_FORMAT, writePath, dataNode, date.getTime()));
             dataNodeWriters.put(dataNode, writer);
         }
     }
 
     public void start() {
-        for (DataNodeWriter writer : dataNodeWriters.values()) {
-            new Thread(writer, "dataNode-writer-" + finished.incrementAndGet()).start();
+        for (Map.Entry<String, DataNodeWriter> entry : dataNodeWriters.entrySet()) {
+            new Thread(entry.getValue(), entry.getKey() + "-writer-" + finished.incrementAndGet()).start();
         }
     }
 
@@ -63,10 +66,12 @@ public class DumpFileWriter {
     class DataNodeWriter implements Runnable {
         private FileChannel fileChannel;
         private BlockingQueue<String> queue;
+        private int queueSize;
         private String dataNode;
 
         DataNodeWriter(String dataNode, int queueSize) {
             this.dataNode = dataNode;
+            this.queueSize = queueSize;
             this.queue = new ArrayBlockingQueue<>(queueSize);
         }
 
@@ -78,6 +83,9 @@ public class DumpFileWriter {
         }
 
         void write(String stmt) throws InterruptedException {
+            if (this.queue.size() == queueSize) {
+                LOGGER.info("dump file write is too slow, please increase write queue size.");
+            }
             this.queue.put(stmt);
         }
 
@@ -91,8 +99,12 @@ public class DumpFileWriter {
             try {
                 String stmt;
                 while (true) {
+                    if (queue.isEmpty()) {
+                        LOGGER.info("dump file executor is too slow, no good way.");
+                    }
                     stmt = this.queue.take();
                     if (stmt.equals(DumpFileReader.EOF)) {
+                        LOGGER.info("finish to write dump file.");
                         close();
                         finished.decrementAndGet();
                         return;
@@ -103,13 +115,13 @@ public class DumpFileWriter {
                 }
             } catch (IOException | InterruptedException e) {
                 finished.decrementAndGet();
-                LOGGER.warn(e.getMessage());
+                LOGGER.warn("write " + dataNode + " dump file error, because:" + e.getMessage());
             } finally {
                 try {
                     close();
                 } catch (IOException e) {
                     // ignore
-                    LOGGER.warn(e.getMessage());
+                    LOGGER.warn("close dump file error, because:" + e.getMessage());
                 }
             }
         }

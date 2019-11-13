@@ -16,20 +16,24 @@ import java.util.regex.Pattern;
  */
 public final class DumpFileReader {
 
-    public static final Logger LOGGER = LoggerFactory.getLogger(DumpFileReader.class);
+    public static final Logger LOGGER = LoggerFactory.getLogger("dumpFileLog");
     public static final String EOF = "dump file eof";
     public static final Pattern HINT = Pattern.compile("/\\*!\\d+\\s+(.*)\\*/", Pattern.CASE_INSENSITIVE);
     private StringBuilder tempStr = new StringBuilder(200);
     private BlockingQueue<String> readQueue;
     private FileChannel fileChannel;
 
+    public DumpFileReader(BlockingQueue<String> queue) {
+        this.readQueue = queue;
+    }
+
     public void open(String fileName) throws IOException {
         this.fileChannel = FileUtils.open(fileName, "r");
     }
 
-    public void start(BlockingQueue<String> queue) throws IOException {
+    public void start() throws IOException {
+        LOGGER.info("begin to read dump file.");
         try {
-            this.readQueue = queue;
             ByteBuffer buffer = ByteBuffer.allocate(0x20000);
             int byteRead = fileChannel.read(buffer);
             while (byteRead != -1) {
@@ -45,8 +49,9 @@ public final class DumpFileReader {
             throw e;
         } catch (InterruptedException e) {
             // ignore
-            LOGGER.warn(e.getMessage());
+            LOGGER.warn("thread for read dump file is interrupted.");
         } finally {
+            LOGGER.info("finish to read dump file.");
             try {
                 this.readQueue.put(EOF);
                 if (fileChannel != null) {
@@ -64,23 +69,36 @@ public final class DumpFileReader {
         String stmts = new String(linesByte, 0, byteRead, StandardCharsets.UTF_8);
         boolean endWithEOF = stmts.endsWith(";");
         String[] lines = stmts.split(";");
-        int len = lines.length;
+        int len = lines.length - 1;
 
         int i = 0;
-        if (tempStr != null) {
+        if (len > 0 && tempStr != null) {
             tempStr.append(lines[0]);
+            this.readQueue.put(tempStr.toString());
+            tempStr = null;
             i = 1;
         }
-        if (len > 1 && !endWithEOF) {
-            len = len - 1;
-            if (tempStr != null) {
-                this.readQueue.put(tempStr.toString());
-            }
-            tempStr = new StringBuilder(lines[len]);
-        }
+
         for (; i < len; i++) {
             this.readQueue.put(lines[i]);
         }
+
+        if (!endWithEOF) {
+            if (tempStr == null) {
+                tempStr = new StringBuilder(lines[len]);
+            } else {
+                tempStr.append(lines[len]);
+            }
+        } else {
+            if (tempStr != null) {
+                tempStr.append(lines[len]);
+                this.readQueue.put(tempStr.toString());
+                tempStr = null;
+            } else {
+                this.readQueue.put(lines[len]);
+            }
+        }
+
     }
 
 }

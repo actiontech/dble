@@ -34,7 +34,6 @@
             </DefaultRolloverStrategy>
         </RollingRandomAccessFile>
 
-
         <RollingFile name="ha_log" fileName="logs/ha.log"
                      filePattern="logs/$${date:yyyy-MM}/ha-%d{MM-dd}-%i.log.gz">
             <PatternLayout>
@@ -47,11 +46,29 @@
             </Policies>
             <DefaultRolloverStrategy max="10"/>
         </RollingFile>
+
+        <RollingFile name="DumpFileLog" fileName="logs/dump.log"
+                     filePattern="logs/$${date:yyyy-MM}/dump-%d{MM-dd}-%i.log.gz">
+            <PatternLayout>
+                <Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %5p [%t] (%l) - %m%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <OnStartupTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="250 MB"/>
+                <TimeBasedTriggeringPolicy/>
+            </Policies>
+            <DefaultRolloverStrategy max="10"/>
+        </RollingFile>
+
     </Appenders>
     <Loggers>
         <Logger name="ha_log" additivity="false" includeLocation="false" >
             <AppenderRef ref="ha_log" />
             <AppenderRef ref="Console"/>
+            <AppenderRef ref="RollingFile"/>
+        </Logger>
+        <Logger name="dumpFileLog" additivity="false" includeLocation="false" >
+            <AppenderRef ref="DumpFileLog" />
             <AppenderRef ref="RollingFile"/>
         </Logger>
         <asyncRoot level="debug" includeLocation="true">

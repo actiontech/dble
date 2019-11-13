@@ -98,7 +98,6 @@ public class DumpFileWriter {
         public void run() {
             try {
                 String stmt;
-                long timestamp = System.currentTimeMillis();
                 while (true) {
                     if (queue.isEmpty()) {
                         LOGGER.info("dump file executor is too slow, no good way.");

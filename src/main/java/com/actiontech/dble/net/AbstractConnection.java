@@ -335,7 +335,6 @@ public abstract class AbstractConnection implements NIOConnection {
                     if (readBuffer != null) {
                         readBuffer.position(position);
                     }
-                    continue;
                 }
             } else {
                 // not read whole message package ,so check if buffer enough and
@@ -371,11 +370,7 @@ public abstract class AbstractConnection implements NIOConnection {
 
     private ByteBuffer ensureFreeSpaceOfReadBuffer(ByteBuffer buffer,
                                                    int offset, final int pkgLength) {
-        // need a large buffer to hold the package
-        if (pkgLength > maxPacketSize) {
-            throw new IllegalArgumentException("Packet size over the limit.");
-        } else if (buffer.capacity() < pkgLength) {
-
+        if (buffer.capacity() < pkgLength) {
             ByteBuffer newBuffer = processor.getBufferPool().allocate(pkgLength);
             lastLargeMessageTime = TimeUtil.currentTimeMillis();
             buffer.position(offset);

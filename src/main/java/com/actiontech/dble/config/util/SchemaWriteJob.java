@@ -35,16 +35,20 @@ public class SchemaWriteJob implements Runnable {
 
     @Override
     public void run() {
-        List<DataHost> dhlist = schemas.getDataHost();
-        for (DataHost dh : dhlist) {
-            for (PhysicalDNPoolSingleWH physicalDNPoolSingleWH : changeSet) {
-                if (dh.getName().equals(physicalDNPoolSingleWH.getHostName())) {
-                    changeHostInfo(dh, physicalDNPoolSingleWH);
+        try {
+            List<DataHost> dhlist = schemas.getDataHost();
+            for (DataHost dh : dhlist) {
+                for (PhysicalDNPoolSingleWH physicalDNPoolSingleWH : changeSet) {
+                    if (dh.getName().equals(physicalDNPoolSingleWH.getHostName())) {
+                        changeHostInfo(dh, physicalDNPoolSingleWH);
+                    }
                 }
             }
+            HaConfigManager.getInstance().write(schemas, reloadIndex);
+            this.signalAll();
+        } catch (Exception e) {
+            HaConfigManager.getInstance().log("get error from SchemaWriteJob", e);
         }
-        HaConfigManager.getInstance().write(schemas, reloadIndex);
-        this.signalAll();
     }
 
 
@@ -71,27 +75,29 @@ public class SchemaWriteJob implements Runnable {
         }
 
         List<ReadHost> newReadList = new ArrayList<ReadHost>();
-        for (PhysicalDatasource rs : physicalDNPoolSingleWH.getReadSources().get(0)) {
-            ReadHost r = new ReadHost();
-            r.setDisabled("" + rs.isDisabled());
-            r.setHost(rs.getConfig().getHostName());
-            r.setId(rs.getConfig().getId());
-            r.setUrl(rs.getConfig().getUrl());
-            r.setWeight("" + rs.getConfig().getWeight());
-            r.setUser(rs.getConfig().getUser());
-            WriteHost ow1 = dh.getWriteHost().get(0);
-            if (ow1.getHost().equals(rs.getConfig().getHostName())) {
-                r.setPassword(ow1.getPassword());
-                r.setUsingDecrypt(ow1.getUsingDecrypt());
-            } else {
-                for (ReadHost rh : ow1.getReadHost()) {
-                    if (rh.getHost().equals(r.getHost())) {
-                        r.setPassword(rh.getPassword());
-                        r.setUsingDecrypt(rh.getUsingDecrypt());
+        if (physicalDNPoolSingleWH.getReadSources() != null) {
+            for (PhysicalDatasource rs : physicalDNPoolSingleWH.getReadSources().get(0)) {
+                ReadHost r = new ReadHost();
+                r.setDisabled("" + rs.isDisabled());
+                r.setHost(rs.getConfig().getHostName());
+                r.setId(rs.getConfig().getId());
+                r.setUrl(rs.getConfig().getUrl());
+                r.setWeight("" + rs.getConfig().getWeight());
+                r.setUser(rs.getConfig().getUser());
+                WriteHost ow1 = dh.getWriteHost().get(0);
+                if (ow1.getHost().equals(rs.getConfig().getHostName())) {
+                    r.setPassword(ow1.getPassword());
+                    r.setUsingDecrypt(ow1.getUsingDecrypt());
+                } else {
+                    for (ReadHost rh : ow1.getReadHost()) {
+                        if (rh.getHost().equals(r.getHost())) {
+                            r.setPassword(rh.getPassword());
+                            r.setUsingDecrypt(rh.getUsingDecrypt());
+                        }
                     }
                 }
+                newReadList.add(r);
             }
-            newReadList.add(r);
         }
         w.setReadHost(newReadList);
         ArrayList<WriteHost> wl = new ArrayList<WriteHost>();

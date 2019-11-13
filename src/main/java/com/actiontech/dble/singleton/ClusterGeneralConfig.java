@@ -64,10 +64,11 @@ public final class ClusterGeneralConfig {
 
 
     public static void initData(Properties properties) {
+        if (CONFIG_MODE_SINGLE.equalsIgnoreCase(properties.getProperty(ClusterParamCfg.CLUSTER_FLAG.getKey()))) {
+            return;
+        }
         if (CONFIG_MODE_ZK.equalsIgnoreCase(properties.getProperty(ClusterParamCfg.CLUSTER_FLAG.getKey()))) {
             ZkConfig.initZk(properties);
-        } else if (CONFIG_MODE_SINGLE.equalsIgnoreCase(properties.getProperty(ClusterParamCfg.CLUSTER_FLAG.getKey()))) {
-            LOGGER.info("No Cluster Config .......start in single mode");
         } else {
             try {
                 INSTANCE.clusterSender.checkClusterConfig(properties);

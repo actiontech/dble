@@ -64,7 +64,7 @@ public final class SystemConfig {
     private int costSamplePercent = 1;
     //connection
     private String charset = "utf8mb4";
-    private int maxPacketSize = 16 * 1024 * 1024;
+    private int maxPacketSize = 4 * 1024 * 1024;
     private int txIsolation = Isolations.REPEATABLE_READ;
 
     //consistency
@@ -279,7 +279,7 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setMaxPacketSize(int maxPacketSize) {
-        if (maxPacketSize > 0) {
+        if (maxPacketSize >= 1024 && maxPacketSize <= 1073741824) {
             this.maxPacketSize = maxPacketSize;
         } else if (this.problemReporter != null) {
             problemReporter.warn(String.format(WARNING_FORMATE, "maxPacketSize", maxPacketSize, this.maxPacketSize));

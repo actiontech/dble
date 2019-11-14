@@ -422,17 +422,19 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     }
                 }
             }
-            if (prepared) {
-                if (rowDataPkg == null) {
-                    rowDataPkg = new RowDataPacket(fieldCount);
-                    rowDataPkg.read(row);
+            if (!errorResponse.get()) {
+                if (prepared) {
+                    if (rowDataPkg == null) {
+                        rowDataPkg = new RowDataPacket(fieldCount);
+                        rowDataPkg.read(row);
+                    }
+                    BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
+                    binRowDataPk.read(fieldPackets, rowDataPkg);
+                    binRowDataPk.setPacketId(rowDataPkg.getPacketId());
+                    byteBuffer = binRowDataPk.write(byteBuffer, session.getSource(), true);
+                } else {
+                    byteBuffer = session.getSource().writeToBuffer(row, byteBuffer);
                 }
-                BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
-                binRowDataPk.read(fieldPackets, rowDataPkg);
-                binRowDataPk.setPacketId(rowDataPkg.getPacketId());
-                byteBuffer = binRowDataPk.write(byteBuffer, session.getSource(), true);
-            } else {
-                byteBuffer = session.getSource().writeToBuffer(row, byteBuffer);
             }
         } catch (Exception e) {
             handleDataProcessException(e);
@@ -538,33 +540,35 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             primaryKey = items[1];
         }
 
-        for (int i = 0, len = fieldCount; i < len; ++i) {
-            byte[] field = fields.get(i);
-            FieldPacket fieldPkg = new FieldPacket();
-            fieldPkg.read(field);
-            if (rrs.getSchema() != null) {
-                fieldPkg.setDb(rrs.getSchema().getBytes());
-            }
-            if (rrs.getTableAlias() != null) {
-                fieldPkg.setTable(rrs.getTableAlias().getBytes());
-            }
-            if (rrs.getTable() != null) {
-                fieldPkg.setOrgTable(rrs.getTable().getBytes());
-            }
-            fieldPackets.add(fieldPkg);
-            fieldCount = fields.size();
-            if (primaryKey != null && primaryKeyIndex == -1) {
-                // find primary key index
-                String fieldName = new String(fieldPkg.getName());
-                if (primaryKey.equalsIgnoreCase(fieldName)) {
-                    primaryKeyIndex = i;
+        if (!errorResponse.get()) {
+            for (int i = 0, len = fieldCount; i < len; ++i) {
+                byte[] field = fields.get(i);
+                FieldPacket fieldPkg = new FieldPacket();
+                fieldPkg.read(field);
+                if (rrs.getSchema() != null) {
+                    fieldPkg.setDb(rrs.getSchema().getBytes());
                 }
+                if (rrs.getTableAlias() != null) {
+                    fieldPkg.setTable(rrs.getTableAlias().getBytes());
+                }
+                if (rrs.getTable() != null) {
+                    fieldPkg.setOrgTable(rrs.getTable().getBytes());
+                }
+                fieldPackets.add(fieldPkg);
+                fieldCount = fields.size();
+                if (primaryKey != null && primaryKeyIndex == -1) {
+                    // find primary key index
+                    String fieldName = new String(fieldPkg.getName());
+                    if (primaryKey.equalsIgnoreCase(fieldName)) {
+                        primaryKeyIndex = i;
+                    }
+                }
+                fieldPkg.setPacketId(++packetId);
+                byteBuffer = fieldPkg.write(byteBuffer, source, false);
             }
-            fieldPkg.setPacketId(++packetId);
-            byteBuffer = fieldPkg.write(byteBuffer, source, false);
+            eof[3] = ++packetId;
+            byteBuffer = source.writeToBuffer(eof, byteBuffer);
         }
-        eof[3] = ++packetId;
-        byteBuffer = source.writeToBuffer(eof, byteBuffer);
     }
 
 

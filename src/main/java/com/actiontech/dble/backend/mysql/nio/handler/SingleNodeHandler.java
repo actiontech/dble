@@ -264,11 +264,11 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         eof[3] = ++packetId;
         session.multiStatementPacket(eof, packetId);
         ServerConnection source = session.getSource();
-        buffer = source.writeToBuffer(eof, allocBuffer());
         session.setResponseTime(true);
         boolean multiStatementFlag = session.getIsMultiStatement().get();
         doSqlStat();
         if (writeToClient.compareAndSet(false, true)) {
+            buffer = source.writeToBuffer(eof, allocBuffer());
             source.write(buffer);
         }
         session.multiStatementNextSql(multiStatementFlag);
@@ -322,40 +322,42 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         header[3] = ++packetId;
 
         ServerConnection source = session.getSource();
-        buffer = source.writeToBuffer(header, allocBuffer());
-        for (int i = 0, len = fields.size(); i < len; ++i) {
-            byte[] field = fields.get(i);
-            field[3] = ++packetId;
+        if (!writeToClient.get()) {
+            buffer = source.writeToBuffer(header, allocBuffer());
+            for (int i = 0, len = fields.size(); i < len; ++i) {
+                byte[] field = fields.get(i);
+                field[3] = ++packetId;
 
-            // save field
-            FieldPacket fieldPk = new FieldPacket();
-            fieldPk.read(field);
-            if (rrs.getSchema() != null) {
-                fieldPk.setDb(rrs.getSchema().getBytes());
-            }
-            if (rrs.getTableAlias() != null) {
-                fieldPk.setTable(rrs.getTableAlias().getBytes());
-            }
-            if (rrs.getTable() != null) {
-                fieldPk.setOrgTable(rrs.getTable().getBytes());
-            }
-            fieldPackets.add(fieldPk);
-
-            // find primary key index
-            if (primaryKey != null && primaryKeyIndex == -1) {
-                String fieldName = new String(fieldPk.getName());
-                if (primaryKey.equalsIgnoreCase(fieldName)) {
-                    primaryKeyIndex = i;
+                // save field
+                FieldPacket fieldPk = new FieldPacket();
+                fieldPk.read(field);
+                if (rrs.getSchema() != null) {
+                    fieldPk.setDb(rrs.getSchema().getBytes());
                 }
+                if (rrs.getTableAlias() != null) {
+                    fieldPk.setTable(rrs.getTableAlias().getBytes());
+                }
+                if (rrs.getTable() != null) {
+                    fieldPk.setOrgTable(rrs.getTable().getBytes());
+                }
+                fieldPackets.add(fieldPk);
+
+                // find primary key index
+                if (primaryKey != null && primaryKeyIndex == -1) {
+                    String fieldName = new String(fieldPk.getName());
+                    if (primaryKey.equalsIgnoreCase(fieldName)) {
+                        primaryKeyIndex = i;
+                    }
+                }
+
+                buffer = fieldPk.write(buffer, source, false);
             }
 
-            buffer = fieldPk.write(buffer, source, false);
+            fieldCount = fieldPackets.size();
+
+            eof[3] = ++packetId;
+            buffer = source.writeToBuffer(eof, buffer);
         }
-
-        fieldCount = fieldPackets.size();
-
-        eof[3] = ++packetId;
-        buffer = source.writeToBuffer(eof, buffer);
     }
 
     @Override
@@ -382,18 +384,20 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             }
         }
 
-        if (prepared) {
-            if (rowDataPk == null) {
-                rowDataPk = new RowDataPacket(fieldCount);
-                rowDataPk.read(row);
+        if (!writeToClient.get()) {
+            if (prepared) {
+                if (rowDataPk == null) {
+                    rowDataPk = new RowDataPacket(fieldCount);
+                    rowDataPk.read(row);
+                }
+                BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
+                binRowDataPk.read(fieldPackets, rowDataPk);
+                binRowDataPk.setPacketId(rowDataPk.getPacketId());
+                buffer = binRowDataPk.write(buffer, session.getSource(), true);
+            } else {
+                buffer = session.getSource().writeToBuffer(row, allocBuffer());
+                //session.getSource().write(row);
             }
-            BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
-            binRowDataPk.read(fieldPackets, rowDataPk);
-            binRowDataPk.setPacketId(rowDataPk.getPacketId());
-            buffer = binRowDataPk.write(buffer, session.getSource(), true);
-        } else {
-            buffer = session.getSource().writeToBuffer(row, allocBuffer());
-            //session.getSource().write(row);
         }
         return false;
     }

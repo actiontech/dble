@@ -77,7 +77,7 @@ public final class ShowDataSource {
         FIELDS[i] = PacketUtil.getField("WRITE_LOAD", Fields.FIELD_TYPE_LONG);
         FIELDS[i++].setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("STATUS", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("DISABLED", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
@@ -125,6 +125,15 @@ public final class ShowDataSource {
                             buffer = sRow.write(buffer, c, true);
                         }
                     }
+                    if (dataHost.getStandbyReadSourcesMap() != null) {
+                        for (PhysicalDatasource[] rs : dataHost.getStandbyReadSourcesMap().values()) {
+                            for (PhysicalDatasource r : rs) {
+                                RowDataPacket sRow = getRow(datahost, r, c.getCharset().getResults());
+                                sRow.setPacketId(++packetId);
+                                buffer = sRow.write(buffer, c, true);
+                            }
+                        }
+                    }
                 }
             }
 
@@ -154,7 +163,7 @@ public final class ShowDataSource {
         row.add(LongUtil.toBytes(ds.getExecuteCount()));
         row.add(LongUtil.toBytes(ds.getReadCount()));
         row.add(LongUtil.toBytes(ds.getWriteCount()));
-        row.add(StringUtil.encode(ds.isDisabled() ? "Disabled" : "Enable", charset));
+        row.add(StringUtil.encode(ds.isDisabled() ? "true" : "false", charset));
         return row;
     }
 

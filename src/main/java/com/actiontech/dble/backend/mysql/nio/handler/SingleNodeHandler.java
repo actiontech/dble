@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2019 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
@@ -231,7 +231,8 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
         errPacket.setErrNo(ErrorCode.ER_META_DATA);
-        String errMsg = "Create TABLE OK, but generate metedata failed for the current druid parser can not recognize part of the sql";
+        String errMsg = "Create TABLE OK, but generate metedata failed. The reason may be that the current druid parser can not recognize part of the sql" +
+                " or the user for backend mysql does not have permission to execute the heartbeat sql.";
         errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
 
         session.setBackendResponseEndTime((MySQLConnection) conn);

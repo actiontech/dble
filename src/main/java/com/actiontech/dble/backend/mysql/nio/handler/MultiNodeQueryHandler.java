@@ -295,7 +295,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
         errPacket.setErrNo(ErrorCode.ER_META_DATA);
-        String errMsg = "Create TABLE OK, but generate metedata failed for the current druid parser can not recognize part of the sql";
+        String errMsg = "Create TABLE OK, but generate metedata failed. The reason may be that the current druid parser can not recognize part of the sql" +
+                " or the user for backend mysql does not have permission to execute the heartbeat sql.";
         errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
         session.multiStatementPacket(errPacket, packetId);
         doSqlStat();

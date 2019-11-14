@@ -82,8 +82,24 @@ public class ConfigInitializer implements ProblemReporter {
         for (Map.Entry<String, AbstractPhysicalDBPool> pool : this.dataHosts.entrySet()) {
             PhysicalDatasource[] writeSource = pool.getValue().getSources();
             if (writeSource != null && writeSource.length != 0) {
-                if (writeSource[0].getConfig().isDisabled() && pool.getValue().getReadSources().isEmpty()) {
-                    continue;
+                if (writeSource[0].getConfig().isDisabled()) {
+                    boolean hasEnableNode = false;
+                    if (!pool.getValue().getReadSources().isEmpty()) {
+                        for (PhysicalDatasource[] readList : pool.getValue().getReadSources().values()) {
+                            for (PhysicalDatasource readSource : readList) {
+                                if (!readSource.isDisabled()) {
+                                    hasEnableNode = true;
+                                    break;
+                                }
+                            }
+                            if (hasEnableNode) {
+                                break;
+                            }
+                        }
+                    }
+                    if (!hasEnableNode) {
+                        continue;
+                    }
                 }
                 this.dataHostWithoutWH = false;
                 break;

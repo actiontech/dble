@@ -85,7 +85,7 @@ public final class DataHostDisable {
                 packet.setServerStatus(2);
                 packet.write(mc);
             } else {
-                mc.writeErrMessage(ErrorCode.ER_YES, "dataHost mod not allowed to disable");
+                mc.writeErrMessage(ErrorCode.ER_YES, "dble server not in useOuterHa mode");
             }
         } finally {
             lock.readLock().unlock();

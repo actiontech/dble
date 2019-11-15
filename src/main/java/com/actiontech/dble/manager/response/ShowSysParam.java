@@ -337,7 +337,7 @@ public final class ShowSysParam {
             "The threshold of Slow Query, the default is 100ms",
             "The maximum number of characters allowed for per column when load data.The default value is 65535",
             "The maximum row size,if over this value,row data will be saved to file when load data.The default value is 10000",
-            "Whether use outer ha component "
+            "Whether use outer ha component ",
     };
 
     private static final String[] ISOLATION_LEVELS = {"", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ", "SERIALIZABLE"};

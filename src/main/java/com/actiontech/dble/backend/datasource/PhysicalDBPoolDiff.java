@@ -73,27 +73,10 @@ public class PhysicalDBPoolDiff {
                     boolean sameFlag = true;
 
                     //compare the readHost is the same
-                    if (oldRHost != null) {
-                        for (int k = 0; k < oldRHost.length; k++) {
-                            if (!oldRHost[k].equals(readHost[k])) {
-                                sameFlag = false;
-                                break;
-                            } else {
-                                oldRHost[k].setTestConnSuccess(readHost[k].isTestConnSuccess());
-                            }
-                        }
-                    }
-
+                    sameFlag = calculateForDataSources(oldRHost, readHost);
                     //compare the sandByHost is the same
-                    if (sameFlag && oldStandByHost != null) {
-                        for (int k = 0; k < oldStandByHost.length; k++) {
-                            if (!oldStandByHost[k].equals(standByHost[k])) {
-                                sameFlag = false;
-                                break;
-                            } else {
-                                oldStandByHost[k].setTestConnSuccess(standByHost[k].isTestConnSuccess());
-                            }
-                        }
+                    if (sameFlag) {
+                        sameFlag = calculateForDataSources(oldStandByHost, standByHost);
                     }
 
                     //only when the writeHost is the same && readHost list is the same && standByHost is the same
@@ -134,6 +117,20 @@ public class PhysicalDBPoolDiff {
         }
 
         return hostDiff;
+    }
+
+
+    private boolean calculateForDataSources(PhysicalDatasource[] olds, PhysicalDatasource[] news) {
+        if (olds != null) {
+            for (int k = 0; k < olds.length; k++) {
+                if (!olds[k].equals(news[k])) {
+                    return false;
+                } else {
+                    olds[k].setTestConnSuccess(news[k].isTestConnSuccess());
+                }
+            }
+        }
+        return true;
     }
 
     //    private Set<BaseInfoDiff> createBaseDiff(PhysicalDBPool newDbPool, PhysicalDBPool orgDbPool) {

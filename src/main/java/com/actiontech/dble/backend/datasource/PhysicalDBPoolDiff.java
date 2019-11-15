@@ -57,17 +57,22 @@ public class PhysicalDBPoolDiff {
         for (int i = 0; i < newDbPool.getWriteSources().length; i++) {
             PhysicalDatasource writeHost = newDbPool.getWriteSources()[i];
             PhysicalDatasource[] readHost = newDbPool.getReadSources().get(i);
+            PhysicalDatasource[] standByHost = newDbPool.getStandbyReadSourcesMap().get(i);
 
             PhysicalDatasource orgHost = null;
             PhysicalDatasource[] relatedHost = null;
             for (int j = 0; j < orgDbPool.getWriteSources().length; j++) {
                 PhysicalDatasource oldHost = orgDbPool.getWriteSources()[j];
                 PhysicalDatasource[] oldRHost = orgDbPool.getReadSources().get(j);
+                PhysicalDatasource[] oldStandByHost = orgDbPool.getStandbyReadSourcesMap().get(j);
+
 
                 if (oldHost.equals(writeHost) &&
-                        ((oldRHost == null && readHost == null) ||
-                                ((oldRHost != null && readHost != null) && oldRHost.length == readHost.length))) {
+                        ((oldRHost == null && readHost == null) || ((oldRHost != null && readHost != null) && oldRHost.length == readHost.length)) &&
+                        ((oldStandByHost == null && standByHost == null) || ((oldStandByHost != null && standByHost != null) && oldStandByHost.length == standByHost.length))) {
                     boolean sameFlag = true;
+
+                    //compare the readHost is the same
                     if (oldRHost != null) {
                         for (int k = 0; k < oldRHost.length; k++) {
                             if (!oldRHost[k].equals(readHost[k])) {
@@ -78,6 +83,21 @@ public class PhysicalDBPoolDiff {
                             }
                         }
                     }
+
+                    //compare the sandByHost is the same
+                    if (sameFlag && oldStandByHost != null) {
+                        for (int k = 0; k < oldStandByHost.length; k++) {
+                            if (!oldStandByHost[k].equals(standByHost[k])) {
+                                sameFlag = false;
+                                break;
+                            } else {
+                                oldStandByHost[k].setTestConnSuccess(standByHost[k].isTestConnSuccess());
+                            }
+                        }
+                    }
+
+                    //only when the writeHost is the same && readHost list is the same && standByHost is the same
+                    // that means the two dataHost is the same
                     if (sameFlag) {
                         //update connection test result
                         oldHost.setTestConnSuccess(writeHost.isTestConnSuccess());
@@ -86,6 +106,7 @@ public class PhysicalDBPoolDiff {
                         break;
                     }
                 }
+
             }
 
             if (orgHost != null) {

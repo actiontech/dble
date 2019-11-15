@@ -163,7 +163,7 @@ public class FieldUtil {
      * fields and index of field in thia array.
      */
     private static final int FIELDTYPE_TEAR_FROM = (FieldTypes.MYSQL_TYPE_BIT.numberValue() + 1);
-    private static final int FIELDTYPE_TEAR_TO = (FieldTypes.MYSQL_TYPE_NEWDECIMAL.numberValue() - 1);
+    private static final int FIELDTYPE_TEAR_TO = (FieldTypes.MYSQL_TYPE_JSON.numberValue() - 1);
 
     // private static int FIELDTYPE_NUM = (FIELDTYPE_TEAR_FROM + (255 -
     // FIELDTYPE_TEAR_TO));
@@ -208,6 +208,8 @@ public class FieldUtil {
                     FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
                     FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //MYSQL_TYPE_JSON
+                    FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
                     FieldTypes.MYSQL_TYPE_NEWDECIMAL, FieldTypes.MYSQL_TYPE_VARCHAR,
@@ -250,6 +252,8 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_VARCHAR
                     FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
+                    FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //MYSQL_TYPE_JSON
                     FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
@@ -294,6 +298,8 @@ public class FieldUtil {
                     FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
                     FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //MYSQL_TYPE_JSON
+                    FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
                     FieldTypes.MYSQL_TYPE_NEWDECIMAL, FieldTypes.MYSQL_TYPE_VARCHAR,
@@ -336,6 +342,8 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_VARCHAR
                     FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
+                    FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //MYSQL_TYPE_JSON
                     FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
@@ -380,6 +388,8 @@ public class FieldUtil {
                     FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
                     FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //MYSQL_TYPE_JSON
+                    FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
                     FieldTypes.MYSQL_TYPE_DOUBLE, FieldTypes.MYSQL_TYPE_VARCHAR,
@@ -422,6 +432,8 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_VARCHAR
                     FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
+                    FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //MYSQL_TYPE_JSON
                     FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
@@ -466,6 +478,8 @@ public class FieldUtil {
                     FieldTypes.MYSQL_TYPE_NEWDATE, FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
                     FieldTypes.MYSQL_TYPE_BIT,
+                    //MYSQL_TYPE_JSON
+                    FieldTypes.MYSQL_TYPE_JSON,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
                     FieldTypes.MYSQL_TYPE_NEWDECIMAL, FieldTypes.MYSQL_TYPE_ENUM,
@@ -508,6 +522,8 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_VARCHAR
                     FieldTypes.MYSQL_TYPE_DATETIME, FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
+                    FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //MYSQL_TYPE_JSON
                     FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
@@ -552,6 +568,8 @@ public class FieldUtil {
                     FieldTypes.MYSQL_TYPE_NEWDATE, FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
                     FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //MYSQL_TYPE_JSON
+                    FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
                     FieldTypes.MYSQL_TYPE_NEWDECIMAL, FieldTypes.MYSQL_TYPE_VARCHAR,
@@ -594,6 +612,8 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_VARCHAR
                     FieldTypes.MYSQL_TYPE_NEWDATE, FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
+                    FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //MYSQL_TYPE_JSON
                     FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
@@ -638,6 +658,8 @@ public class FieldUtil {
                     FieldTypes.MYSQL_TYPE_NEWDATE, FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
                     FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //MYSQL_TYPE_JSON
+                    FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
                     FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
@@ -680,6 +702,8 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_VARCHAR
                     FieldTypes.MYSQL_TYPE_NEWDATE, FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
+                    FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //MYSQL_TYPE_JSON
                     FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
@@ -724,6 +748,8 @@ public class FieldUtil {
                     FieldTypes.MYSQL_TYPE_DATETIME, FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
                     FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //MYSQL_TYPE_JSON
+                    FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
                     FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
@@ -766,6 +792,8 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_VARCHAR
                     FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
+                    FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //MYSQL_TYPE_JSON
                     FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
@@ -810,6 +838,8 @@ public class FieldUtil {
                     FieldTypes.MYSQL_TYPE_NEWDATE, FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
                     FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //MYSQL_TYPE_JSON
+                    FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
                     FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
@@ -852,6 +882,8 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_VARCHAR
                     FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
+                    FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //MYSQL_TYPE_JSON
                     FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
@@ -896,6 +928,8 @@ public class FieldUtil {
                     FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
                     FieldTypes.MYSQL_TYPE_BIT,
+                    //MYSQL_TYPE_JSON
+                    FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
                     FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
@@ -910,6 +944,38 @@ public class FieldUtil {
                     FieldTypes.MYSQL_TYPE_BLOB, FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_STRING
                     // enum_field_types.MYSQL_TYPE_GEOMETRY
+                    FieldTypes.MYSQL_TYPE_STRING, FieldTypes.MYSQL_TYPE_VARCHAR},
+            /* MYSQL_TYPE_JSON -> */
+            {
+                    //MYSQL_TYPE_DECIMAL      MYSQL_TYPE_TINY
+                    FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //MYSQL_TYPE_SHORT        MYSQL_TYPE_LONG
+                    FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //FieldTypes.MYSQL_TYPE_FLOAT        FieldTypes.MYSQL_TYPE_DOUBLE
+                    FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //FieldTypes.MYSQL_TYPE_NULL         FieldTypes.MYSQL_TYPE_TIMESTAMP
+                    FieldTypes.MYSQL_TYPE_JSON, FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //FieldTypes.MYSQL_TYPE_LONGLONG     FieldTypes.MYSQL_TYPE_INT24
+                    FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //FieldTypes.MYSQL_TYPE_DATE         FieldTypes.MYSQL_TYPE_TIME
+                    FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //FieldTypes.MYSQL_TYPE_DATETIME     FieldTypes.MYSQL_TYPE_YEAR
+                    FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //FieldTypes.MYSQL_TYPE_NEWDATE      FieldTypes.MYSQL_TYPE_VARCHAR
+                    FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //FieldTypes.MYSQL_TYPE_BIT          <16>-<244>
+                    FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //FieldTypes.MYSQL_TYPE_JSON
+                    FieldTypes.MYSQL_TYPE_JSON,
+                    //FieldTypes.MYSQL_TYPE_NEWDECIMAL   FieldTypes.MYSQL_TYPE_ENUM
+                    FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //FieldTypes.MYSQL_TYPE_SET          FieldTypes.MYSQL_TYPE_TINY_BLOB
+                    FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_LONG_BLOB,
+                    //FieldTypes.MYSQL_TYPE_MEDIUM_BLOB  FieldTypes.MYSQL_TYPE_LONG_BLOB
+                    FieldTypes.MYSQL_TYPE_LONG_BLOB, FieldTypes.MYSQL_TYPE_LONG_BLOB,
+                    //FieldTypes.MYSQL_TYPE_BLOB         FieldTypes.MYSQL_TYPE_VAR_STRING
+                    FieldTypes.MYSQL_TYPE_LONG_BLOB, FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //FieldTypes.MYSQL_TYPE_STRING       FieldTypes.MYSQL_TYPE_GEOMETRY
                     FieldTypes.MYSQL_TYPE_STRING, FieldTypes.MYSQL_TYPE_VARCHAR},
             /* enum_field_types.MYSQL_TYPE_NEWDECIMAL -> */
             {
@@ -938,6 +1004,8 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_VARCHAR
                     FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
+                    FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //MYSQL_TYPE_JSON
                     FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
@@ -982,6 +1050,8 @@ public class FieldUtil {
                     FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
                     FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //MYSQL_TYPE_JSON
+                    FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
                     FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
@@ -1024,6 +1094,8 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_VARCHAR
                     FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
+                    FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //MYSQL_TYPE_JSON
                     FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
@@ -1068,6 +1140,8 @@ public class FieldUtil {
                     FieldTypes.MYSQL_TYPE_TINY_BLOB, FieldTypes.MYSQL_TYPE_TINY_BLOB,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
                     FieldTypes.MYSQL_TYPE_TINY_BLOB,
+                    //MYSQL_TYPE_JSON
+                    FieldTypes.MYSQL_TYPE_LONG_BLOB,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
                     FieldTypes.MYSQL_TYPE_TINY_BLOB, FieldTypes.MYSQL_TYPE_TINY_BLOB,
@@ -1111,6 +1185,8 @@ public class FieldUtil {
                     FieldTypes.MYSQL_TYPE_MEDIUM_BLOB, FieldTypes.MYSQL_TYPE_MEDIUM_BLOB,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
                     FieldTypes.MYSQL_TYPE_MEDIUM_BLOB,
+                    //MYSQL_TYPE_JSON
+                    FieldTypes.MYSQL_TYPE_LONG_BLOB,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
                     FieldTypes.MYSQL_TYPE_MEDIUM_BLOB, FieldTypes.MYSQL_TYPE_MEDIUM_BLOB,
@@ -1153,6 +1229,8 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_VARCHAR
                     FieldTypes.MYSQL_TYPE_LONG_BLOB, FieldTypes.MYSQL_TYPE_LONG_BLOB,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
+                    FieldTypes.MYSQL_TYPE_LONG_BLOB,
+                    //MYSQL_TYPE_JSON
                     FieldTypes.MYSQL_TYPE_LONG_BLOB,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
@@ -1197,6 +1275,8 @@ public class FieldUtil {
                     FieldTypes.MYSQL_TYPE_BLOB, FieldTypes.MYSQL_TYPE_BLOB,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
                     FieldTypes.MYSQL_TYPE_BLOB,
+                    //MYSQL_TYPE_JSON
+                    FieldTypes.MYSQL_TYPE_LONG_BLOB,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
                     FieldTypes.MYSQL_TYPE_BLOB, FieldTypes.MYSQL_TYPE_BLOB,
@@ -1239,6 +1319,8 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_VARCHAR
                     FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
+                    FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //MYSQL_TYPE_JSON
                     FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
@@ -1283,6 +1365,8 @@ public class FieldUtil {
                     FieldTypes.MYSQL_TYPE_STRING, FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
                     FieldTypes.MYSQL_TYPE_STRING,
+                    //MYSQL_TYPE_JSON
+                    FieldTypes.MYSQL_TYPE_STRING,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM
                     FieldTypes.MYSQL_TYPE_STRING, FieldTypes.MYSQL_TYPE_STRING,
@@ -1325,6 +1409,8 @@ public class FieldUtil {
                     // enum_field_types.MYSQL_TYPE_VARCHAR
                     FieldTypes.MYSQL_TYPE_VARCHAR, FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_BIT <16>-<245>
+                    FieldTypes.MYSQL_TYPE_VARCHAR,
+                    //MYSQL_TYPE_JSON
                     FieldTypes.MYSQL_TYPE_VARCHAR,
                     // enum_field_types.MYSQL_TYPE_NEWDECIMAL
                     // enum_field_types.MYSQL_TYPE_ENUM

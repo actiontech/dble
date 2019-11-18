@@ -52,17 +52,22 @@ public class DataHostHaResponse implements ClusterXmlLoader {
             if (info.getLockType() == HaInfo.HaType.DATAHOST_DISABLE &&
                     !info.getStartId().equals(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID)) &&
                     info.getStatus() == HaInfo.HaStatus.SUCCESS) {
-                //start the log
-                int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.RESPONSE_NOTIFY, HaInfo.HaStartType.CLUSTER_NOTIFY, HaInfo.HaStage.RESPONSE_NOTIFY.toString());
-                //try to get the lastest status of the dataHost
-                KvBean lastestStatus = ClusterHelper.getKV(ClusterPathUtil.getHaStatusPath(info.getDhName()));
-                //find out the target dataHost and change it into latest status
-                PhysicalDNPoolSingleWH dataHost = (PhysicalDNPoolSingleWH) DbleServer.getInstance().getConfig().getDataHosts().get(info.getDhName());
-                dataHost.changeIntoLatestStatus(lastestStatus.getValue());
-                //response the event ,only disable event has response
-                ClusterHelper.setKV(ClusterPathUtil.getSelfResponsePath(configValue.getKey()), ClusterPathUtil.SUCCESS);
-                //ha manager writeOut finish log
-                HaConfigManager.getInstance().haFinish(id, null, lastestStatus.getValue());
+                try {
+                    //start the log
+                    int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.RESPONSE_NOTIFY, HaInfo.HaStartType.CLUSTER_NOTIFY, HaInfo.HaStage.RESPONSE_NOTIFY.toString());
+                    //try to get the lastest status of the dataHost
+                    KvBean lastestStatus = ClusterHelper.getKV(ClusterPathUtil.getHaStatusPath(info.getDhName()));
+                    //find out the target dataHost and change it into latest status
+                    PhysicalDNPoolSingleWH dataHost = (PhysicalDNPoolSingleWH) DbleServer.getInstance().getConfig().getDataHosts().get(info.getDhName());
+                    dataHost.changeIntoLatestStatus(lastestStatus.getValue());
+                    //response the event ,only disable event has response
+                    ClusterHelper.setKV(ClusterPathUtil.getSelfResponsePath(configValue.getKey()), ClusterPathUtil.SUCCESS);
+                    //ha manager writeOut finish log
+                    HaConfigManager.getInstance().haFinish(id, null, lastestStatus.getValue());
+                } catch (Exception e) {
+                    //response the event ,only disable event has response
+                    ClusterHelper.setKV(ClusterPathUtil.getSelfResponsePath(configValue.getKey()), e.getMessage());
+                }
             }
         }
     }

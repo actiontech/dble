@@ -67,9 +67,15 @@ public final class DataHostSwitch {
                         return;
                     }
                 } else {
-                    //dble start in single mode
-                    String result = dh.switchMaster(masterName, true);
-                    HaConfigManager.getInstance().haFinish(id, null, result);
+                    try {
+                        //dble start in single mode
+                        String result = dh.switchMaster(masterName, true);
+                        HaConfigManager.getInstance().haFinish(id, null, result);
+                    } catch (Exception e) {
+                        HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
+                        mc.writeErrMessage(ErrorCode.ER_YES, "swtich dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
+                        return;
+                    }
                 }
 
                 OkPacket packet = new OkPacket();

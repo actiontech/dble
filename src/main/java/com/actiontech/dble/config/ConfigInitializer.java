@@ -5,6 +5,7 @@
 */
 package com.actiontech.dble.config;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
@@ -344,9 +345,10 @@ public class ConfigInitializer implements ProblemReporter {
         Map<String, DataHostConfig> nodeConf = schemaLoader.getDataHosts();
         //create PhysicalDBPool according to DataHost
         Map<String, AbstractPhysicalDBPool> nodes = new HashMap<>(nodeConf.size());
+        boolean outerHa = DbleServer.getInstance().getConfig() == null ? system.isUseOuterHa() : DbleServer.getInstance().getConfig().getSystem().isUseOuterHa();
         for (DataHostConfig conf : nodeConf.values()) {
             AbstractPhysicalDBPool pool = null;
-            if (system.isUseOuterHa()) {
+            if (outerHa) {
                 pool = getPhysicalDBPoolSingleWH(conf);
             } else {
                 pool = getPhysicalDBPool(conf);

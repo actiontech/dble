@@ -23,6 +23,7 @@ public class SchemaWriteJob implements Runnable {
     private final Set<PhysicalDNPoolSingleWH> changeSet;
     private final Schemas schemas;
     private volatile boolean finish = false;
+    private volatile String errorMessage;
     private final ReentrantLock lock = new ReentrantLock();
     private Condition condition = lock.newCondition();
     private final int reloadIndex;
@@ -47,6 +48,7 @@ public class SchemaWriteJob implements Runnable {
             HaConfigManager.getInstance().write(schemas, reloadIndex);
             this.signalAll();
         } catch (Exception e) {
+            errorMessage = e.getMessage();
             HaConfigManager.getInstance().log("get error from SchemaWriteJob", e);
         }
     }
@@ -75,8 +77,8 @@ public class SchemaWriteJob implements Runnable {
         }
 
         List<ReadHost> newReadList = new ArrayList<ReadHost>();
-        if (physicalDNPoolSingleWH.getReadSources() != null) {
-            for (PhysicalDatasource rs : physicalDNPoolSingleWH.getReadSources().get(0)) {
+        if (physicalDNPoolSingleWH.getReadSourceAll() != null) {
+            for (PhysicalDatasource rs : physicalDNPoolSingleWH.getReadSourceAll().get(0)) {
                 ReadHost r = new ReadHost();
                 r.setDisabled("" + rs.isDisabled());
                 r.setHost(rs.getConfig().getHostName());
@@ -116,6 +118,10 @@ public class SchemaWriteJob implements Runnable {
             LOGGER.info("unexpected error:", e);
         } finally {
             lock.unlock();
+        }
+
+        if (errorMessage != null) {
+            throw new RuntimeException(errorMessage);
         }
     }
 

@@ -8,7 +8,6 @@ import com.actiontech.dble.config.loader.zkprocess.entity.Schemas;
 import com.actiontech.dble.config.loader.zkprocess.entity.schema.datahost.DataHost;
 import com.actiontech.dble.config.loader.zkprocess.entity.schema.datahost.ReadHost;
 import com.actiontech.dble.config.loader.zkprocess.entity.schema.datahost.WriteHost;
-import com.actiontech.dble.config.loader.zkprocess.parse.ParseXmlServiceInf;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.schema.xml.SchemasParseXmlImpl;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DataSourceStatus;
@@ -20,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -37,7 +37,7 @@ public final class HaConfigManager {
     private static final String HA_LOG = "ha_log";
     private static final Logger HA_LOGGER = LoggerFactory.getLogger(HA_LOG);
     private static final HaConfigManager INSTANCE = new HaConfigManager();
-    private ParseXmlServiceInf<Schemas> parseSchemaXmlService;
+    private SchemasParseXmlImpl parseSchemaXmlService;
     private static final String WRITEPATH = "schema.xml";
     private Schemas schema;
     private AtomicInteger indexCreater = new AtomicInteger();
@@ -70,7 +70,7 @@ public final class HaConfigManager {
         return;
     }
 
-    public void write(Schemas schemas, int reloadId) {
+    public void write(Schemas schemas, int reloadId) throws IOException {
         HA_LOGGER.info("try to write schemas into local file " + reloadId);
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
@@ -79,7 +79,7 @@ public final class HaConfigManager {
                 String path = ResourceUtil.getResourcePathFromRoot(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey());
                 path = new File(path).getPath() + File.separator;
                 path += WRITEPATH;
-                this.parseSchemaXmlService.parseToXmlWrite(schemas, path, "schema");
+                this.parseSchemaXmlService.parseToXmlWriteWithException(schemas, path, "schema");
             } else {
                 HA_LOGGER.info("reloadId changes when try to write the local file,just skip " + reloadIndex.get());
             }

@@ -58,4 +58,10 @@ public class SchemasParseXmlImpl implements ParseXmlServiceInf<Schemas> {
         }
     }
 
+
+    public void parseToXmlWriteWithException(Schemas data, String outputFile, String dataName) throws IOException {
+        this.parseBean.baseParseWriteToXml(data, outputFile, dataName);
+    }
+
+
 }

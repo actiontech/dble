@@ -92,10 +92,17 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
     }
 
     public void init() {
-        for (Map.Entry<String, PhysicalDatasource> entry : allSourceMap.entrySet()) {
-            if (initSource(entry.getValue())) {
+        if (balance != 0) {
+            for (Map.Entry<String, PhysicalDatasource> entry : allSourceMap.entrySet()) {
+                if (initSource(entry.getValue())) {
+                    initSuccess = true;
+                    LOGGER.info(hostName + " " + entry.getKey() + " init success");
+                }
+            }
+        } else {
+            if (initSource(writeSource)) {
                 initSuccess = true;
-                LOGGER.info(hostName + " " + entry.getKey() + " init success");
+                LOGGER.info(hostName + " " + writeSource.getName() + " init success");
             }
         }
         if (initSuccess) {
@@ -166,7 +173,7 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
     @Override
     public Map<Integer, PhysicalDatasource[]> getStandbyReadSourcesMap() {
         if (this.getDataHostConfig().getBalance() == BALANCE_NONE) {
-            return getReadSources();
+            return getReadSourceAll();
         } else {
             return new HashMap<Integer, PhysicalDatasource[]>();
         }
@@ -269,8 +276,8 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         return 0;
     }
 
-    @Override
-    public Map<Integer, PhysicalDatasource[]> getReadSources() {
+
+    public Map<Integer, PhysicalDatasource[]> getReadSourceAll() {
         PhysicalDatasource[] list = new PhysicalDatasource[allSourceMap.size() - 1];
         int i = 0;
         for (PhysicalDatasource ds : allSourceMap.values()) {
@@ -283,6 +290,15 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
             result.put(0, list);
         }
         return result;
+    }
+
+    @Override
+    public Map<Integer, PhysicalDatasource[]> getReadSources() {
+        if (this.getDataHostConfig().getBalance() == BALANCE_NONE) {
+            return new HashMap<Integer, PhysicalDatasource[]>();
+        } else {
+            return getReadSourceAll();
+        }
     }
 
 
@@ -414,6 +430,8 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
 
             HaConfigManager.getInstance().updateConfDataHost(this, syncWriteConf);
             return this.getClusterHaJson();
+        } catch (Exception e) {
+            throw e;
         } finally {
             lock.readLock().unlock();
             adjustLock.writeLock().unlock();
@@ -434,6 +452,8 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
 
             HaConfigManager.getInstance().updateConfDataHost(this, syncWriteConf);
             return this.getClusterHaJson();
+        } catch (Exception e) {
+            throw e;
         } finally {
             lock.readLock().unlock();
             adjustLock.writeLock().unlock();
@@ -453,6 +473,8 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
             writeSource = newWriteHost;
             HaConfigManager.getInstance().updateConfDataHost(this, syncWriteConf);
             return this.getClusterHaJson();
+        } catch (Exception e) {
+            throw e;
         } finally {
             lock.readLock().unlock();
             adjustLock.writeLock().unlock();
@@ -490,6 +512,8 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
                 }
             }
             HaConfigManager.getInstance().updateConfDataHost(this, false);
+        } catch (Exception e) {
+            throw e;
         } finally {
             lock.readLock().unlock();
             adjustLock.writeLock().unlock();

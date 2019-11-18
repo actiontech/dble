@@ -2,6 +2,7 @@ package com.actiontech.dble.manager.dump;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
+import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,8 +35,19 @@ public class DumpFileWriter {
     }
 
     public void start() {
+        Thread writer;
         for (Map.Entry<String, DataNodeWriter> entry : dataNodeWriters.entrySet()) {
-            new Thread(entry.getValue(), entry.getKey() + "-writer-" + finished.incrementAndGet()).start();
+            writer = new Thread(entry.getValue(), entry.getKey() + "-writer-" + finished.incrementAndGet());
+            writer.start();
+            entry.getValue().self = writer;
+        }
+    }
+
+    public void stop() {
+        for (Map.Entry<String, DataNodeWriter> entry : dataNodeWriters.entrySet()) {
+            if (entry.getValue().self != null) {
+                entry.getValue().self.interrupt();
+            }
         }
     }
 
@@ -68,6 +80,7 @@ public class DumpFileWriter {
         private BlockingQueue<String> queue;
         private int queueSize;
         private String dataNode;
+        private Thread self;
 
         DataNodeWriter(String dataNode, int queueSize) {
             this.dataNode = dataNode;
@@ -83,9 +96,6 @@ public class DumpFileWriter {
         }
 
         void write(String stmt) throws InterruptedException {
-            if (this.queue.size() == queueSize) {
-                LOGGER.info("dump file write is too slow, please increase write queue size.");
-            }
             this.queue.put(stmt);
         }
 
@@ -98,25 +108,36 @@ public class DumpFileWriter {
         public void run() {
             try {
                 String stmt;
-                while (true) {
-                    if (queue.isEmpty()) {
-                        LOGGER.info("dump file executor is too slow, no good way.");
-                    }
+                long startTime = TimeUtil.currentTimeMillis();
+                while (!Thread.currentThread().isInterrupted()) {
                     stmt = this.queue.take();
+                    if (LOGGER.isDebugEnabled()) {
+                        long endTime = TimeUtil.currentTimeMillis();
+                        if (endTime - startTime > 1000) {
+                            startTime = endTime;
+                            if (queue.isEmpty()) {
+                                LOGGER.debug("dump file executor parse statement slowly.");
+                            } else if (this.queue.size() == queueSize) {
+                                LOGGER.debug("dump file writer is slow, you can try increasing write queue size.");
+                            }
+                        }
+                    }
+
                     if (stmt.equals(DumpFileReader.EOF)) {
                         LOGGER.info("finish to write dump file.");
                         close();
-                        finished.decrementAndGet();
                         return;
                     }
                     if (this.fileChannel != null) {
                         this.fileChannel.write(ByteBuffer.wrap(stmt.getBytes()));
                     }
                 }
-            } catch (IOException | InterruptedException e) {
-                finished.decrementAndGet();
-                LOGGER.warn("write " + dataNode + " dump file error, because:" + e.getMessage());
+            } catch (IOException e) {
+                LOGGER.warn("dump file writer[" + dataNode + "] occur error:" + e.getMessage());
+            } catch (InterruptedException ie) {
+                LOGGER.warn("dump file writer[" + dataNode + "] is interrupted.");
             } finally {
+                finished.decrementAndGet();
                 try {
                     close();
                 } catch (IOException e) {

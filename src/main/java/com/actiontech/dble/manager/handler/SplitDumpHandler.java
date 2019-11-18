@@ -7,6 +7,7 @@ import com.actiontech.dble.manager.dump.*;
 import com.actiontech.dble.manager.response.DumpFileError;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.util.CollectionUtil;
+import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +24,10 @@ public final class SplitDumpHandler {
     private static final Pattern SPLIT_STMT = Pattern.compile("([^\\s]+)\\s+([^\\s]+)\\s*(-r(\\d+))?\\s*(-w(\\d+))?\\s*(-l(\\d+))?", Pattern.CASE_INSENSITIVE);
     public static final Logger LOGGER = LoggerFactory.getLogger("dumpFileLog");
 
-    public void handle(String stmt, ManagerConnection c, int offset) {
+    private SplitDumpHandler() {
+    }
+
+    public static void handle(String stmt, ManagerConnection c, int offset) {
         LOGGER.info("begin to split dump file.");
         DumpFileConfig config = parseOption(stmt.substring(offset).trim());
         if (config == null) {
@@ -44,17 +48,30 @@ public final class SplitDumpHandler {
 
             // thread for process statement
             dumpFileExecutor.start();
-            // start read
+            // start write
             writer.start();
-            reader.start();
+            // start read
+            reader.start(c);
         } catch (IOException e) {
             LOGGER.info("finish to split dump file.");
             c.writeErrMessage(ErrorCode.ER_IO_EXCEPTION, e.getMessage());
             return;
+        } catch (InterruptedException ie) {
+            LOGGER.info("finish to split dump file, because the task is interrupted.");
+            // manager connection is closed or waiting blocking queue
+            dumpFileExecutor.stop();
+            writer.stop();
+            return;
         }
 
-        while (!writer.isFinished()) {
+        while (!c.isClosed() && !writer.isFinished()) {
             LockSupport.parkNanos(1000);
+        }
+
+        if (c.isClosed()) {
+            dumpFileExecutor.stop();
+            writer.stop();
+            return;
         }
 
         List<ErrorMsg> errors = dumpFileExecutor.getContext().getErrors();
@@ -63,6 +80,7 @@ public final class SplitDumpHandler {
             packet.setPacketId(1);
             packet.setAffectedRows(0);
             packet.setServerStatus(2);
+            packet.setMessage(StringUtil.encode("please see detail in dump.log.", c.getCharset().getResults()));
             packet.write(c);
         } else {
             DumpFileError.execute(c, errors);
@@ -70,7 +88,7 @@ public final class SplitDumpHandler {
         LOGGER.info("finish to split dump file.");
     }
 
-    private DumpFileConfig parseOption(String options) {
+    private static DumpFileConfig parseOption(String options) {
         Matcher m = SPLIT_STMT.matcher(options);
         DumpFileConfig config = null;
         if (m.matches()) {

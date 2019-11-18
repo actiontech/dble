@@ -16,6 +16,7 @@ import java.nio.channels.NetworkChannel;
  */
 public class ManagerConnection extends FrontendConnection {
     private static final long AUTH_TIMEOUT = 15 * 1000L;
+    private volatile boolean skipIdleCheck = false;
 
     public ManagerConnection(NetworkChannel channel) throws IOException {
         super(channel);
@@ -23,7 +24,9 @@ public class ManagerConnection extends FrontendConnection {
 
     @Override
     public boolean isIdleTimeout() {
-        if (isAuthenticated) {
+        if (skipIdleCheck) {
+            return false;
+        } else if (isAuthenticated) {
             return super.isIdleTimeout();
         } else {
             return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime,
@@ -50,4 +53,9 @@ public class ManagerConnection extends FrontendConnection {
     public void killAndClose(String reason) {
         this.close(reason);
     }
+
+    public void skipIdleCheck(boolean skip) {
+        this.skipIdleCheck = skip;
+    }
+
 }

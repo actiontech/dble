@@ -183,4 +183,42 @@ public class XmlProcessBase {
     }
 
 
+    /**
+     * baseParseAndWriteToXml
+     *
+     * @param user
+     * @param inputPath
+     * @param name
+     * @Created 2016/9/15
+     */
+    public void baseParseWriteToXml(Object user, String inputPath, String name) throws IOException {
+        OutputStream out = null;
+        try {
+            Marshaller marshaller = this.jaxContext.createMarshaller();
+            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+            marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.TRUE);
+
+            if (null != name) {
+                marshaller.setProperty("com.sun.xml.internal.bind.xmlHeaders",
+                        String.format("<!DOCTYPE " + Versions.ROOT_PREFIX + ":%1$s SYSTEM \"%1$s.dtd\">", name));
+            }
+
+            Path path = Paths.get(inputPath);
+
+            out = Files.newOutputStream(path, StandardOpenOption.CREATE,
+                    StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+
+            marshaller.marshal(user, out);
+
+        } catch (JAXBException | IOException e) {
+            LOGGER.error("ZookeeperProcessListen parseToXml  error:Exception info:", e);
+            throw new IOException(e);
+        } finally {
+            if (out != null) {
+                out.close();
+            }
+        }
+    }
+
+
 }

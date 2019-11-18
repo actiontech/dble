@@ -68,8 +68,14 @@ public final class DataHostEnable {
                         return;
                     }
                 } else {
-                    String result = dh.enableHosts(subHostName, true);
-                    HaConfigManager.getInstance().haFinish(id, null, result);
+                    try {
+                        String result = dh.enableHosts(subHostName, true);
+                        HaConfigManager.getInstance().haFinish(id, null, result);
+                    } catch (Exception e) {
+                        HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
+                        mc.writeErrMessage(ErrorCode.ER_YES, "enable dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
+                        return;
+                    }
                 }
 
 

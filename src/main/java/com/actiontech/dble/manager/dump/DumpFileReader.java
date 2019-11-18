@@ -1,6 +1,7 @@
 package com.actiontech.dble.manager.dump;
 
 import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
+import com.actiontech.dble.manager.ManagerConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,10 +19,13 @@ public final class DumpFileReader {
 
     public static final Logger LOGGER = LoggerFactory.getLogger("dumpFileLog");
     public static final String EOF = "dump file eof";
-    public static final Pattern HINT = Pattern.compile("/\\*!\\d+\\s+(.*)\\*/", Pattern.CASE_INSENSITIVE);
+    public static final Pattern CREATE_VIEW = Pattern.compile("CREATE\\s+VIEW\\s+`?([a-zA-Z_0-9\\-_]+)`?\\s+", Pattern.CASE_INSENSITIVE);
     private StringBuilder tempStr = new StringBuilder(200);
     private BlockingQueue<String> readQueue;
     private FileChannel fileChannel;
+    private long fileLength;
+    private long readLength;
+    private int readPercent;
 
     public DumpFileReader(BlockingQueue<String> queue) {
         this.readQueue = queue;
@@ -29,14 +33,25 @@ public final class DumpFileReader {
 
     public void open(String fileName) throws IOException {
         this.fileChannel = FileUtils.open(fileName, "r");
+        this.fileLength = this.fileChannel.size();
     }
 
-    public void start() throws IOException {
+    public void start(ManagerConnection c) throws IOException, InterruptedException {
         LOGGER.info("begin to read dump file.");
         try {
             ByteBuffer buffer = ByteBuffer.allocate(0x20000);
             int byteRead = fileChannel.read(buffer);
             while (byteRead != -1) {
+                if (c.isClosed()) {
+                    LOGGER.info("finish to read dump file, tha task is interrupted.");
+                    throw new InterruptedException();
+                }
+                readLength += byteRead;
+                float percent = ((float) readLength / (float) fileLength) * 100;
+                if (((int) percent) - readPercent > 5 || (int) percent == 100) {
+                    readPercent = (int) percent;
+                    LOGGER.info("dump file has bean read " + readPercent + "%");
+                }
                 readSQLByEOF(buffer.array(), byteRead);
                 buffer.clear();
                 byteRead = fileChannel.read(buffer);
@@ -45,19 +60,13 @@ public final class DumpFileReader {
                 this.readQueue.put(tempStr.toString());
                 this.tempStr = null;
             }
-        } catch (IOException e) {
-            throw e;
-        } catch (InterruptedException e) {
-            // ignore
-            LOGGER.warn("thread for read dump file is interrupted.");
+            this.readQueue.put(EOF);
         } finally {
-            LOGGER.info("finish to read dump file.");
             try {
-                this.readQueue.put(EOF);
                 if (fileChannel != null) {
                     fileChannel.close();
                 }
-            } catch (IOException | InterruptedException e) {
+            } catch (IOException e) {
                 // ignore
                 LOGGER.warn("close dump file error:" + e.getMessage());
             }
@@ -98,7 +107,6 @@ public final class DumpFileReader {
                 this.readQueue.put(lines[len]);
             }
         }
-
     }
 
 }

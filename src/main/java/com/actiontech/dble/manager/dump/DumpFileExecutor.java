@@ -46,11 +46,13 @@ public final class DumpFileExecutor implements Runnable {
         while (!Thread.currentThread().isInterrupted()) {
             try {
                 stmt = queue.take();
-                long endTime = TimeUtil.currentTimeMillis();
-                if (endTime - startTime > 1000) {
-                    startTime = endTime;
-                    if (queue.isEmpty()) {
-                        LOGGER.info("dump file reader is slow, you can try increasing read queue size.");
+                if (LOGGER.isDebugEnabled()) {
+                    long endTime = TimeUtil.currentTimeMillis();
+                    if (endTime - startTime > 1000) {
+                        startTime = endTime;
+                        if (queue.isEmpty()) {
+                            LOGGER.debug("dump file reader is slow, you can try increasing read queue size.");
+                        }
                     }
                 }
 

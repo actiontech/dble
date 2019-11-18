@@ -111,13 +111,15 @@ public class DumpFileWriter {
                 long startTime = TimeUtil.currentTimeMillis();
                 while (!Thread.currentThread().isInterrupted()) {
                     stmt = this.queue.take();
-                    long endTime = TimeUtil.currentTimeMillis();
-                    if (endTime - startTime > 1000) {
-                        startTime = endTime;
-                        if (queue.isEmpty()) {
-                            LOGGER.info("dump file executor parse statement slowly.");
-                        } else if (this.queue.size() == queueSize) {
-                            LOGGER.info("dump file writer is slow, you can try increasing write queue size.");
+                    if (LOGGER.isDebugEnabled()) {
+                        long endTime = TimeUtil.currentTimeMillis();
+                        if (endTime - startTime > 1000) {
+                            startTime = endTime;
+                            if (queue.isEmpty()) {
+                                LOGGER.debug("dump file executor parse statement slowly.");
+                            } else if (this.queue.size() == queueSize) {
+                                LOGGER.debug("dump file writer is slow, you can try increasing write queue size.");
+                            }
                         }
                     }
 

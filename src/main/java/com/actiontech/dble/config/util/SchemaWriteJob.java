@@ -23,7 +23,7 @@ public class SchemaWriteJob implements Runnable {
     private final Set<PhysicalDNPoolSingleWH> changeSet;
     private final Schemas schemas;
     private volatile boolean finish = false;
-    private volatile String errorMessage;
+    private volatile String errorMessage = null;
     private final ReentrantLock lock = new ReentrantLock();
     private Condition condition = lock.newCondition();
     private final int reloadIndex;
@@ -46,10 +46,11 @@ public class SchemaWriteJob implements Runnable {
                 }
             }
             HaConfigManager.getInstance().write(schemas, reloadIndex);
-            this.signalAll();
         } catch (Exception e) {
             errorMessage = e.getMessage();
             HaConfigManager.getInstance().log("get error from SchemaWriteJob", e);
+        } finally {
+            this.signalAll();
         }
     }
 
@@ -121,6 +122,7 @@ public class SchemaWriteJob implements Runnable {
         }
 
         if (errorMessage != null) {
+            LOGGER.info("get result errorMessage = " + errorMessage);
             throw new RuntimeException(errorMessage);
         }
     }

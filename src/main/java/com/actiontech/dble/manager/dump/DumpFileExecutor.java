@@ -4,6 +4,7 @@ import com.actiontech.dble.manager.dump.handler.StatementHandler;
 import com.actiontech.dble.manager.dump.handler.StatementHandlerManager;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.util.TimeUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,11 +18,10 @@ import java.util.regex.Matcher;
  */
 public final class DumpFileExecutor implements Runnable {
 
-    public static final Logger LOGGER = LoggerFactory.getLogger("dumpFileLog");
-
-    // receive statement in dump file
+    private static final Logger LOGGER = LoggerFactory.getLogger("dumpFileLog");
     private BlockingQueue<String> queue;
     private DumpFileContext context;
+    private Thread self;
 
     public DumpFileExecutor(BlockingQueue<String> queue, DumpFileWriter writer, DumpFileConfig config) {
         this.queue = queue;
@@ -29,21 +29,33 @@ public final class DumpFileExecutor implements Runnable {
     }
 
     public void start() {
-        new Thread(this, "dump-file-executor").start();
+        this.self = new Thread(this, "dump-file-executor");
+        this.self.start();
+    }
+
+    public void stop() {
+        this.self.interrupt();
     }
 
     @Override
     public void run() {
         String stmt;
         DumpFileWriter writer = context.getWriter();
+        long startTime = TimeUtil.currentTimeMillis();
         LOGGER.info("begin to parse statement in dump file.");
-        while (true) {
+        while (!Thread.currentThread().isInterrupted()) {
             try {
-                if (queue.isEmpty()) {
-                    LOGGER.info("dump file reader is too slow, please increase read queue size.");
+                stmt = queue.take();
+                if (LOGGER.isDebugEnabled()) {
+                    long endTime = TimeUtil.currentTimeMillis();
+                    if (endTime - startTime > 1000) {
+                        startTime = endTime;
+                        if (queue.isEmpty()) {
+                            LOGGER.debug("dump file reader is slow, you can try increasing read queue size.");
+                        }
+                    }
                 }
 
-                stmt = queue.take();
                 context.setStmt(stmt);
                 int type = ServerParse.parse(stmt);
                 // pre handle
@@ -80,6 +92,8 @@ public final class DumpFileExecutor implements Runnable {
                 context.skipCurrentContext();
                 LOGGER.warn("current stmt[" + currentStmt + "] error,because:" + e.getMessage());
                 context.addError("current stmt[" + currentStmt + "] error,because:" + e.getMessage());
+            } catch (InterruptedException ie) {
+                LOGGER.warn("dump file executor is interrupted.");
             } catch (Exception e) {
                 LOGGER.warn("dump file executor exit, due to :" + e.getMessage());
                 try {
@@ -105,6 +119,7 @@ public final class DumpFileExecutor implements Runnable {
         }
         // skip view
         if ((ServerParse.MYSQL_CMD_COMMENT == type || ServerParse.MYSQL_COMMENT == type) && skipView(stmt)) {
+            context.skipCurrentContext();
             return true;
         }
         // footer
@@ -116,10 +131,9 @@ public final class DumpFileExecutor implements Runnable {
     }
 
     private boolean skipView(String stmt) {
-        Matcher matcher = DumpFileReader.HINT.matcher(stmt);
+        Matcher matcher = DumpFileReader.CREATE_VIEW.matcher(stmt);
         if (matcher.find()) {
-            int type = ServerParse.parse(matcher.group(1));
-            return type >= ServerParse.CREATE_VIEW && type <= ServerParse.ALTER_VIEW;
+            context.addError("skip view " + matcher.group(1));
         }
         return false;
     }

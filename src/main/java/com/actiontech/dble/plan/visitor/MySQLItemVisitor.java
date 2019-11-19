@@ -448,7 +448,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         if (number instanceof BigDecimal) {
             item = new ItemDecimal((BigDecimal) number);
         } else if (number instanceof Float) {
-            item = new ItemFloat(new BigDecimal((double) number));
+            item = new ItemFloat(new BigDecimal(Float.toString((Float) number)));
         } else {
             item = new ItemInt(number.longValue());
         }

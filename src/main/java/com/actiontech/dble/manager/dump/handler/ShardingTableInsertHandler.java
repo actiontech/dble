@@ -18,6 +18,7 @@ public class ShardingTableInsertHandler extends InsertHandler {
 
     private Map<String, LongPtr> dataNodes = new HashMap<>(64);
 
+    @Override
     public void preProcess(DumpFileContext context) {
         if (!dataNodes.isEmpty()) {
             dataNodes.clear();
@@ -29,7 +30,7 @@ public class ShardingTableInsertHandler extends InsertHandler {
         for (String dataNode : dataNodes.keySet()) {
             context.getWriter().write(dataNode, ";", false, false);
         }
-        super.postProcess(context);
+        insertHeader = null;
     }
 
     @Override

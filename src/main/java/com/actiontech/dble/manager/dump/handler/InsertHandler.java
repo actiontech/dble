@@ -9,7 +9,6 @@ import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
@@ -22,7 +21,7 @@ public class InsertHandler extends DefaultHandler {
     protected StringBuilder insertHeader;
 
     @Override
-    public boolean preHandle(DumpFileContext context, SQLStatement sqlStatement) throws DumpException, InterruptedException {
+    public boolean preHandle(DumpFileContext context, SQLStatement sqlStatement) throws DumpException {
         MySqlInsertStatement insert = (MySqlInsertStatement) sqlStatement;
         // check columns from insert columns
         checkColumns(context, insert.getColumns());
@@ -64,11 +63,6 @@ public class InsertHandler extends DefaultHandler {
 
         String tableKey = StringUtil.getFullName(context.getSchema(), context.getTable());
         long val = SequenceManager.getHandler().nextId(tableKey);
-        if (incrementIndex == values.size()) {
-            values.add(new SQLIntegerExpr(val));
-            return;
-        }
-
         SQLExpr value = values.get(incrementIndex);
         if (!StringUtil.isEmpty(SQLUtils.toMySqlString(value)) && !context.isNeedSkipError()) {
             context.addError("For table using global sequence, dble has set increment column values for you.");
@@ -96,22 +90,17 @@ public class InsertHandler extends DefaultHandler {
                     partitionColumnIndex = i;
                 }
             }
-            if (tableConfig.isAutoIncrement() && incrementColumnIndex == -1) {
-                // add increment column
-                columns.add(new SQLCharExpr(tableConfig.getTrueIncrementColumn()));
-                incrementColumnIndex = columns.size();
-                // if increment column is same with partition column
-                if (tableConfig.getTrueIncrementColumn().equalsIgnoreCase(tableConfig.getPartitionColumn())) {
-                    partitionColumnIndex = incrementColumnIndex;
-                }
-            }
-
+            // partition column check
             if (tableConfig.getPartitionColumn() != null && partitionColumnIndex == -1) {
                 throw new DumpException("can't find partition column in insert.");
             }
+            // increment column check
+            if (tableConfig.isAutoIncrement() && incrementColumnIndex == -1) {
+                throw new DumpException("can't find increment column in insert.");
+            }
+            context.setIncrementColumnIndex(incrementColumnIndex);
+            context.setPartitionColumnIndex(partitionColumnIndex);
         }
-        context.setIncrementColumnIndex(incrementColumnIndex);
-        context.setPartitionColumnIndex(partitionColumnIndex);
     }
 
     protected String toString(List<SQLExpr> values, boolean isFirst) {
@@ -131,9 +120,18 @@ public class InsertHandler extends DefaultHandler {
     }
 
     public void preProcess(DumpFileContext context) throws InterruptedException {
+        if (insertHeader == null) {
+            return;
+        }
+        for (String dataNode : context.getTableConfig().getDataNodes()) {
+            context.getWriter().write(dataNode, insertHeader.toString(), true, false);
+        }
     }
 
     public void postProcess(DumpFileContext context) throws InterruptedException {
+        for (String dataNode : context.getTableConfig().getDataNodes()) {
+            context.getWriter().write(dataNode, ";", false, false);
+        }
         insertHeader = null;
     }
 

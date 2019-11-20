@@ -74,9 +74,10 @@ public final class DumpFileExecutor implements Runnable {
                 if (ServerParse.DDL == type || ServerParse.CREATE_DATABASE == type || ServerParse.USE == (0xff & type)) {
                     stmt = stmt.replace("/*!", "/*#");
                     statement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
+                    context.setSkipContext(false);
                 }
                 // if ddl is wrong，the following statement is skip.
-                if (context.isSkip()) {
+                if (context.isSkipContext()) {
                     continue;
                 }
                 if (ServerParse.INSERT == type && !context.isPushDown()) {
@@ -89,7 +90,7 @@ public final class DumpFileExecutor implements Runnable {
                 handler.handle(context, statement);
             } catch (DumpException | SQLSyntaxErrorException e) {
                 String currentStmt = context.getStmt().length() <= 1024 ? context.getStmt() : context.getStmt().substring(0, 1024);
-                context.skipCurrentContext();
+                context.setSkipContext(true);
                 LOGGER.warn("current stmt[" + currentStmt + "] error,because:" + e.getMessage());
                 context.addError("current stmt[" + currentStmt + "] error,because:" + e.getMessage());
             } catch (InterruptedException ie) {
@@ -119,7 +120,7 @@ public final class DumpFileExecutor implements Runnable {
         }
         // skip view
         if ((ServerParse.MYSQL_CMD_COMMENT == type || ServerParse.MYSQL_COMMENT == type) && skipView(stmt)) {
-            context.skipCurrentContext();
+            context.setSkipContext(true);
             return true;
         }
         // footer

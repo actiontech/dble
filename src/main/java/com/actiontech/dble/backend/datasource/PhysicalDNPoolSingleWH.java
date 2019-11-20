@@ -182,7 +182,7 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
     @Override
     void getRWBalanceCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
         PhysicalDatasource theNode = getRWBalanceNode();
-        if (theNode.getConfig().isDisabled()) {
+        if (theNode.isDisabled()) {
             if (this.getReadSources().values().size() > 0) {
                 theNode = this.getReadSources().values().iterator().next()[0];
             } else {

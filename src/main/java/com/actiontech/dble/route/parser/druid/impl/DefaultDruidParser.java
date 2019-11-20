@@ -85,8 +85,9 @@ public class DefaultDruidParser implements DruidParser {
         if (visitor.getNotSupportMsg() != null) {
             throw new SQLNonTransientException(visitor.getNotSupportMsg());
         }
+        List<List<Condition>> conditions = visitor.getConditionList();
         Map<String, String> tableAliasMap = getTableAliasMap(visitor.getAliasMap());
-        ctx.setRouteCalculateUnits(this.buildRouteCalculateUnits(tableAliasMap, visitor.getConditionList()));
+        ctx.setRouteCalculateUnits(this.buildRouteCalculateUnits(tableAliasMap, conditions));
         return schema;
     }
 

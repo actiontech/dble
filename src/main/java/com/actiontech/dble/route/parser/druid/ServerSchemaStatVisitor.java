@@ -153,9 +153,49 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
                 inOuterJoin = false;
                 break;
         }
-        boolean result = super.visit(x);
+
+        SQLTableSource left = x.getLeft(), right = x.getRight();
+
+        left.accept(this);
+        right.accept(this);
+
+        SQLExpr condition = x.getCondition();
+        if (condition != null) {
+            condition.accept(this);
+        }
+
+        if (x.getUsing().size() > 0 &&
+                left instanceof SQLExprTableSource && right instanceof SQLExprTableSource) {
+            SQLExpr leftExpr = ((SQLExprTableSource) left).getExpr();
+            SQLExpr rightExpr = ((SQLExprTableSource) right).getExpr();
+
+            for (SQLExpr expr : x.getUsing()) {
+                if (expr instanceof SQLIdentifierExpr) {
+                    String name = ((SQLIdentifierExpr) expr).getName();
+                    /*
+                    when the shard1 a join shard2 b using(id)
+                    the intermediate condition should be a.id = b.id instead of shard1.id = shard2.id
+                     */
+                    SQLPropertyExpr leftPropExpr = new SQLPropertyExpr(leftExpr, name);
+                    if (left.getAlias() != null) {
+                        leftPropExpr.setOwner(left.getAlias());
+                    }
+                    SQLPropertyExpr rightPropExpr = new SQLPropertyExpr(rightExpr, name);
+                    if (right.getAlias() != null) {
+                        rightPropExpr.setOwner(right.getAlias());
+                    }
+
+                    leftPropExpr.setResolvedTableSource(left);
+                    rightPropExpr.setResolvedTableSource(right);
+
+                    SQLBinaryOpExpr usingCondition = new SQLBinaryOpExpr(leftPropExpr, SQLBinaryOperator.Equality, rightPropExpr);
+                    usingCondition.accept(this);
+                }
+            }
+        }
+
         inOuterJoin = false;
-        return result;
+        return false;
     }
 
     @Override
@@ -228,6 +268,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
         return true;
     }
+
 
     @Override
     public boolean visit(SQLBinaryOpExpr x) {

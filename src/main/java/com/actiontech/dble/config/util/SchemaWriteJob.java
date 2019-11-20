@@ -78,7 +78,7 @@ public class SchemaWriteJob implements Runnable {
         }
 
         List<ReadHost> newReadList = new ArrayList<ReadHost>();
-        if (physicalDNPoolSingleWH.getReadSourceAll() != null) {
+        if (physicalDNPoolSingleWH.getReadSourceAll().size() > 0) {
             for (PhysicalDatasource rs : physicalDNPoolSingleWH.getReadSourceAll().get(0)) {
                 ReadHost r = new ReadHost();
                 r.setDisabled("" + rs.isDisabled());

@@ -49,11 +49,11 @@ public final class DumpFileContext {
         this.schema = schema;
     }
 
-    public void skipCurrentContext() {
-        this.isSkip = true;
+    public void setSkipContext(boolean skip) {
+        this.isSkip = skip;
     }
 
-    public boolean isSkip() {
+    public boolean isSkipContext() {
         return this.isSkip;
     }
 
@@ -92,6 +92,9 @@ public final class DumpFileContext {
         this.tableConfig = DbleServer.getInstance().getConfig().getSchemas().get(schema).getTables().get(table);
         if (this.tableConfig == null && this.defaultDataNode == null) {
             throw new DumpException("schema " + schema + " has no default node.");
+        }
+        if (this.tableConfig != null && this.tableConfig.getParentTC() != null) {
+            throw new DumpException("can't process child table, skip.");
         }
     }
 

@@ -7,8 +7,6 @@ import com.actiontech.dble.server.util.GlobalTableUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
 import com.alibaba.druid.sql.ast.statement.SQLCharacterDataType;
 import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
 import com.alibaba.druid.sql.ast.statement.SQLTableElement;
@@ -34,34 +32,28 @@ public class CreateTableHandler extends DefaultHandler {
             checkColumns(context, columns);
             // partition column check
             if (tableConfig.getPartitionColumn() != null && context.getPartitionColumnIndex() == -1) {
-                throw new DumpException("table[" + context.getTable() + "] can't find partition column in create.");
+                throw new DumpException("can't find partition column in create.");
+            }
+            // increment column check
+            if (tableConfig.isAutoIncrement() && context.getIncrementColumnIndex() == -1) {
+                throw new DumpException("can't find increment column in create.");
             }
         }
         return false;
     }
 
     @Override
-    public void handle(DumpFileContext context, SQLStatement sqlStatement) throws InterruptedException {
+    public void handle(DumpFileContext context, SQLStatement sqlStatement) throws DumpException, InterruptedException {
         boolean isChanged = false;
         List<SQLTableElement> columns = ((MySqlCreateTableStatement) sqlStatement).getTableElementList();
         TableConfig tableConfig = context.getTableConfig();
-        if (tableConfig.isAutoIncrement()) {
-            // add increment column if not exists
-            if (context.getIncrementColumnIndex() == -1) {
-                SQLColumnDefinition column = new SQLColumnDefinition();
+        if (context.getIncrementColumnIndex() != -1) {
+            // check data type of increment column
+            SQLColumnDefinition column = (SQLColumnDefinition) columns.get(context.getIncrementColumnIndex());
+            if (!column.getDataType().getName().equals("bigint")) {
+                context.addError("data type of increment column isn't bigint, dble replaced it by itself.");
                 column.setDataType(new SQLCharacterDataType("bigint"));
-                column.setDefaultExpr(new SQLNullExpr());
-                column.setName(new SQLIdentifierExpr(tableConfig.getTrueIncrementColumn()));
-                columns.add(column);
-                context.setPartitionColumnIndex(columns.size());
                 isChanged = true;
-            } else {
-                SQLColumnDefinition column = (SQLColumnDefinition) columns.get(context.getIncrementColumnIndex());
-                if (!column.getDataType().getName().equals("bigint")) {
-                    context.addError("data type of increment column isn't bigint, dble replaced it by itself.");
-                    column.setDataType(new SQLCharacterDataType("bigint"));
-                    isChanged = true;
-                }
             }
         }
 

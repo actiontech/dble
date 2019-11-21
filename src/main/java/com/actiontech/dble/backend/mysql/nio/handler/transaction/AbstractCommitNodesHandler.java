@@ -67,6 +67,7 @@ public abstract class AbstractCommitNodesHandler extends MultiNodeHandler implem
         firstResponsed = false;
         unResponseRrns.clear();
         packetId = 0;
+        isFailed.set(false);
     }
 
     public void debugCommitDelay() {

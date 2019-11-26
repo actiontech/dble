@@ -40,12 +40,12 @@ insert into tb_hash_sharding_er1 values(1,1,'1'),(2,2,'2'),(513,513,'513');
 
 drop table if exists tb_hash_sharding_er2;
 create table if not exists tb_hash_sharding_er2 (
-  id bigint not null,
-  id2 int not null,
+  id int not null,
+  id2 bigint not null,
   content varchar(250) not null,
   primary key(id)
 )engine=innodb charset=utf8;
-insert into tb_hash_sharding_er2 values(1,1,'1'),(2,2,'2'),(513,513,'513');
+insert into tb_hash_sharding_er2 values(1,'1'),(2,'2'),(513,'513');
 
 drop table if exists tb_hash_sharding_er3;
 create table if not exists tb_hash_sharding_er3 (
@@ -62,7 +62,7 @@ create table if not exists tb_uneven_hash (
   content varchar(250) not null,
   primary key(id)
 )engine=innodb charset=utf8;
-insert into tb_uneven_hash values(1,'1'),(257,2,'257'),(513,513,'513');
+insert into tb_uneven_hash values(1,'1'),(257,'257'),(513,'513');
 
 drop table if exists tb_mod;
 create table if not exists tb_mod (

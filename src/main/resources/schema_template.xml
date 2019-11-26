@@ -15,7 +15,7 @@
         <!--er tables-->
         <table name="tb_hash_sharding" dataNode="dn1,dn2" rule="rule_common_hash"/>
         <table name="tb_hash_sharding_er1" dataNode="dn1,dn2" rule="rule_common_hash"/>
-        <table name="tb_hash_sharding_er2" primaryKey="ID" autoIncrement="true" dataNode="dn1,dn2" rule="rule_common_hash2"/>
+        <table name="tb_hash_sharding_er2" primaryKey="ID" dataNode="dn1,dn2" rule="rule_common_hash2"/>
         <table name="tb_hash_sharding_er3" autoIncrement="true" incrementColumn="id2" dataNode="dn1,dn2" rule="rule_common_hash"/>
 
         <table name="tb_uneven_hash" dataNode="dn1,dn2,dn3" rule="rule_uneven_hash"/>

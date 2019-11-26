@@ -166,7 +166,7 @@
 
     <user name="root">
         <property name="password">123456</property>
-        <property name="schemas">testdb</property>
+        <property name="schemas">testdb,testdb2</property>
 
         <!-- table's DML privileges  INSERT/UPDATE/SELECT/DELETE -->
         <!--

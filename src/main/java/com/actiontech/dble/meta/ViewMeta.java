@@ -8,6 +8,7 @@ package com.actiontech.dble.meta;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.node.MergeNode;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
@@ -50,10 +51,13 @@ public class ViewMeta {
             MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(this.schema, 63, tmManager, false);
             msv.visit(selectStatement.getSelect().getQuery());
             PlanNode selNode = msv.getTableNode();
-            selNode.setUpFields();
-
-            //set the view column name into
-            this.setFieldsAlias(selNode);
+            if (selNode instanceof MergeNode) {
+                this.setFieldsAlias(selNode, true);
+                selNode.setUpFields();
+            } else {
+                selNode.setUpFields();
+                this.setFieldsAlias(selNode, false);
+            }
 
             viewQuery = new QueryNode(selNode);
         } catch (Exception e) {
@@ -91,10 +95,14 @@ public class ViewMeta {
 
             msv.visit(selectStatement.getSelect().getQuery());
             PlanNode selNode = msv.getTableNode();
-            selNode.setUpFields();
 
-            //set the view column name into
-            this.setFieldsAlias(selNode);
+            if (selNode instanceof MergeNode) {
+                this.setFieldsAlias(selNode, true);
+                selNode.setUpFields();
+            } else {
+                selNode.setUpFields();
+                this.setFieldsAlias(selNode, false);
+            }
 
             viewQuery = new QueryNode(selNode);
 
@@ -153,20 +161,10 @@ public class ViewMeta {
         }
     }
 
-
-    private void setFieldsAlias(PlanNode selNode) throws Exception {
-        if (viewColumnMeta != null) {
-            //check if the column number of view is same as the selectList in selectStatement
-            if (viewColumnMeta.size() != selNode.getColumnsSelected().size()) {
-                //return error
-                throw new Exception("The Column_list Size and Select_statement Size Not Match");
-            }
-            for (int i = 0; i < viewColumnMeta.size(); i++) {
-                selNode.getColumnsSelected().get(i).setAlias(viewColumnMeta.get(i).trim());
-            }
-        } else {
+    private void setFieldsAlias(PlanNode selNode, boolean isMergeNode) throws Exception {
+        if (viewColumnMeta == null) {
             List<Item> selectList = selNode.getColumnsSelected();
-            Set<String> tempMap = new HashSet<String>();
+            Set<String> tempMap = new HashSet<>();
             for (Item t : selectList) {
                 if (t.getAlias() != null) {
                     if (tempMap.contains(t.getAlias())) {
@@ -180,9 +178,39 @@ public class ViewMeta {
                     tempMap.add(t.getItemName());
                 }
             }
+            return;
+        }
+
+        List<Item> columnsSelected;
+        if (isMergeNode) {
+            PlanNode node = getFirstNoMergeNode(selNode);
+            columnsSelected = node.getColumnsSelected();
+        } else {
+            columnsSelected = selNode.getColumnsSelected();
+        }
+
+        int size = columnsSelected.size();
+        //check if the column number of view is same as the selectList in selectStatement
+        if (viewColumnMeta.size() != size) {
+            //return error
+            throw new Exception("The Column_list Size and Select_statement Size Not Match");
+        }
+        Item column;
+        for (int i = 0; i < size; i++) {
+            column = columnsSelected.get(i);
+            if (!column.getItemName().equalsIgnoreCase(viewColumnMeta.get(i).trim())) {
+                column.setAlias(viewColumnMeta.get(i).trim());
+            }
         }
     }
 
+    private PlanNode getFirstNoMergeNode(PlanNode selNode) {
+        PlanNode node = selNode.getChildren().get(0);
+        if (!(node instanceof MergeNode)) {
+            return node;
+        }
+        return getFirstNoMergeNode(node);
+    }
 
     /**
      * get the select part of view create sql

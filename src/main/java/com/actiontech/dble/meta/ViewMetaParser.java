@@ -118,7 +118,6 @@ public class ViewMetaParser {
 
 
     public String parseSelectSQL() {
-
         while (true) {
             char next = originalSql.charAt(offset++);
             if ((next == 'a' || next == 'A') &&
@@ -131,7 +130,7 @@ public class ViewMetaParser {
             }
 
         }
-        return originalSql.substring(offset, originalSql.length());
+        return originalSql.substring(offset);
     }
 
 

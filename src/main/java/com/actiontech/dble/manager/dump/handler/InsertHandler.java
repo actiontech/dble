@@ -79,11 +79,12 @@ public class InsertHandler extends DefaultHandler {
         TableConfig tableConfig = context.getTableConfig();
         int partitionColumnIndex = -1;
         int incrementColumnIndex = -1;
-        if (tableConfig.isAutoIncrement() || tableConfig.getPartitionColumn() != null) {
+        boolean isAutoIncrement = tableConfig.isAutoIncrement();
+        if (isAutoIncrement || tableConfig.getPartitionColumn() != null) {
             for (int i = 0; i < columns.size(); i++) {
                 SQLExpr column = columns.get(i);
                 String columnName = StringUtil.removeBackQuote(column.toString());
-                if (columnName.equalsIgnoreCase(tableConfig.getTrueIncrementColumn())) {
+                if (isAutoIncrement && columnName.equalsIgnoreCase(tableConfig.getTrueIncrementColumn())) {
                     incrementColumnIndex = i;
                 }
                 if (columnName.equalsIgnoreCase(tableConfig.getPartitionColumn())) {

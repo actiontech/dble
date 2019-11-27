@@ -18,6 +18,7 @@ import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.TreeMap;
 
 public final class ShowThreadUsed {
     private ShowThreadUsed() {
@@ -56,7 +57,8 @@ public final class ShowThreadUsed {
 
 
         byte packetId = EOF.getPacketId();
-        for (Map.Entry<String, ThreadWorkUsage> entry : DbleServer.getInstance().getThreadUsedMap().entrySet()) {
+        Map<String, ThreadWorkUsage> threadUsedMap = new TreeMap<>(DbleServer.getInstance().getThreadUsedMap());
+        for (Map.Entry<String, ThreadWorkUsage> entry : threadUsedMap.entrySet()) {
             RowDataPacket row = getRow(entry.getKey(), entry.getValue(), c.getCharset().getResults());
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);

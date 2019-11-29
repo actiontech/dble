@@ -113,7 +113,7 @@ public abstract class AbstractClusterSender implements ClusterSender {
                 //init online status
                 LOGGER.warn("Dble first reconnect to ucore ,online status rebuild");
             }
-            OnlineLockStatus.getInstance().metaUcoreInit(true);
+            OnlineLockStatus.getInstance().nodeListenerInitClusterOnline();
         }
     }
 

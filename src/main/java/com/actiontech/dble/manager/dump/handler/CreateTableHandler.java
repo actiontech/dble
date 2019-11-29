@@ -72,13 +72,14 @@ public class CreateTableHandler extends DefaultHandler {
     private void checkColumns(DumpFileContext context, List<SQLTableElement> columns) {
         SQLTableElement column;
         TableConfig tableConfig = context.getTableConfig();
+        boolean isAutoIncrement = tableConfig.isAutoIncrement();
         for (int j = 0; j < columns.size(); j++) {
             column = columns.get(j);
             if (!(columns.get(j) instanceof SQLColumnDefinition)) {
                 continue;
             }
             String columnName = StringUtil.removeBackQuote(((SQLColumnDefinition) column).getNameAsString());
-            if (columnName.equalsIgnoreCase(tableConfig.getTrueIncrementColumn())) {
+            if (isAutoIncrement && columnName.equalsIgnoreCase(tableConfig.getTrueIncrementColumn())) {
                 context.setIncrementColumnIndex(j);
             }
             if (columnName.equalsIgnoreCase(tableConfig.getPartitionColumn())) {

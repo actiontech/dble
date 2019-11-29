@@ -434,7 +434,7 @@ public final class DbleServer {
 
         if (isUseGeneralCluster()) {
             try {
-                OnlineLockStatus.getInstance().metaUcoreInit(true);
+                OnlineLockStatus.getInstance().mainThreadInitClusterOnline();
             } catch (Exception e) {
                 LOGGER.warn("ucore can not connection ");
             }

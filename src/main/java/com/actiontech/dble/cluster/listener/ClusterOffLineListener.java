@@ -109,13 +109,18 @@ public class ClusterOffLineListener implements Runnable {
                 SubscribeReturnBean output = ClusterHelper.subscribeKvPrefix(request);
                 if (output.getIndex() == index) {
                     if (lackSelf) {
+                        LOGGER.info("lackSelf,so reInitOnlineStatus");
                         lackSelf = !reInitOnlineStatus();
                     }
                     continue;
                 }
                 //LOGGER.debug("the index of the single key "+path+" is "+index);
                 Map<String, String> newMap = new ConcurrentHashMap<>();
+                if (output.getKeysCount() == 0) {
+                    LOGGER.info("online dir is empty");
+                }
                 for (int i = 0; i < output.getKeysCount(); i++) {
+                    LOGGER.info("online key is " + output.getKeys(i) + ",value is " + output.getValues(i));
                     newMap.put(output.getKeys(i), output.getValues(i));
                 }
 
@@ -131,6 +136,7 @@ public class ClusterOffLineListener implements Runnable {
                 String serverId = ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
                 String selfPath = ClusterPathUtil.getOnlinePath(serverId);
                 if (!newMap.containsKey(selfPath)) {
+                    LOGGER.info("newMap lack " + selfPath + ",so reInitOnlineStatus");
                     lackSelf = !reInitOnlineStatus();
                     newMap.put(selfPath, serverId);
                 }
@@ -145,7 +151,7 @@ public class ClusterOffLineListener implements Runnable {
     private boolean reInitOnlineStatus() {
         try {
             //release and renew lock
-            boolean init = OnlineLockStatus.getInstance().metaUcoreInit(false);
+            boolean init = OnlineLockStatus.getInstance().rebuildOnline();
             if (init) {
                 LOGGER.info("rewrite server online status success");
             } else {

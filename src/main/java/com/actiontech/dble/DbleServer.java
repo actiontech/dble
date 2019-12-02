@@ -93,7 +93,7 @@ public final class DbleServer {
     private ExecutorService complexQueryExecutor;
     private ExecutorService timerExecutor;
     private InterProcessMutex dnIndexLock;
-    private Map<String, ThreadWorkUsage> threadUsedMap = new TreeMap<>();
+    private Map<String, ThreadWorkUsage> threadUsedMap = new ConcurrentHashMap<>();
     private BlockingQueue<FrontendCommandHandler> frontHandlerQueue;
     private BlockingQueue<List<WriteToBackendTask>> writeToBackendQueue;
     private Queue<FrontendCommandHandler> concurrentFrontHandlerQueue;

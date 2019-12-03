@@ -357,7 +357,7 @@ public final class ReloadConfig {
         FirewallConfig newFirewall = serverConfig.getFirewall();
         Map<String, AbstractPhysicalDBPool> newDataHosts = serverConfig.getDataHosts();
 
-        checkTestConnifNeed(loadAllMode, loader);
+        checkTestConnIfNeed(loadAllMode, loader);
 
         /*
          *  2 transform
@@ -426,7 +426,7 @@ public final class ReloadConfig {
         Map<ERTable, Set<ERTable>> newErRelations = serverConfig.getErRelations();
         FirewallConfig newFirewall = serverConfig.getFirewall();
 
-        checkTestConnifNeed(loadAllMode, loader);
+        checkTestConnIfNeed(loadAllMode, loader);
 
         ReloadLogHelper.info("reload config: init new data host  start", LOGGER);
         String reasonMsg = initDataHostByMap(newDataHosts, newDataNodes);
@@ -455,7 +455,7 @@ public final class ReloadConfig {
         }
     }
 
-    private static void checkTestConnifNeed(int loadAllMode, ConfigInitializer loader) throws Exception {
+    private static void checkTestConnIfNeed(int loadAllMode, ConfigInitializer loader) throws Exception {
         if ((loadAllMode & ManagerParseConfig.OPTS_MODE) == 0) {
             try {
                 ReloadLogHelper.info("reload config: test all data Nodes start", LOGGER);

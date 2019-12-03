@@ -6,10 +6,6 @@
 package com.actiontech.dble.config;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.alarm.AlarmCode;
-import com.actiontech.dble.alarm.Alert;
-import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.datasource.*;
 import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
 import com.actiontech.dble.config.loader.SchemaLoader;
@@ -17,13 +13,14 @@ import com.actiontech.dble.config.loader.xml.XMLSchemaLoader;
 import com.actiontech.dble.config.loader.xml.XMLServerLoader;
 import com.actiontech.dble.config.model.*;
 import com.actiontech.dble.config.util.ConfigException;
+import com.actiontech.dble.config.helper.TestSchemasTask;
+import com.actiontech.dble.config.helper.TestTask;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceMySQLHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.*;
 
 /**
@@ -238,7 +235,7 @@ public class ConfigInitializer implements ProblemReporter {
         String dataSourceName = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getName() + "]";
         try {
             BoolPtr isDSConnectedPtr = new BoolPtr(false);
-            TestTask testDsTask = new TestTask(ds, errNodeKeys, isDSConnectedPtr);
+            TestTask testDsTask = new TestTask(ds, isDSConnectedPtr);
             testDsTask.start();
             testDsTask.join(3000);
             boolean isDataSourceConnected = isDSConnectedPtr.get();
@@ -250,28 +247,13 @@ public class ConfigInitializer implements ProblemReporter {
                 errorInfos.add(new ErrorInfo("Backend", "WARNING", "Can't connect to [" + ds.getHostConfig().getName() + "," + ds.getName() + "]"));
                 markDataSourceSchemaFail(errNodeKeys, nodeList, dataSourceName);
             } else {
-                for (Pair<String, String> node : nodeList) {
-                    String key = dataSourceName + ",data_node[" + node.getKey() + "],schema[" + node.getValue() + "]";
-                    try {
-                        BoolPtr isSchemaConnectedPtr = new BoolPtr(false);
-                        TestTask testSchemaTask = new TestTask(ds, node, errNodeKeys, isSchemaConnectedPtr, isMaster);
-                        testSchemaTask.start();
-                        testSchemaTask.join(3000);
-                        boolean isConnected = isSchemaConnectedPtr.get();
-                        if (isConnected) {
-                            LOGGER.info("SelfCheck### test " + key + " database connection success ");
-                        } else {
-                            isConnectivity.set(false);
-                            errNodeKeys.add(key);
-                            LOGGER.warn("SelfCheck### test " + key + " database connection failed ");
-                            errorInfos.add(new ErrorInfo("Backend", "WARNING", "Database [" + ds.getHostConfig().getName() +
-                                    "," + ds.getName() + "," + node.getValue() + "] not exists"));
-                        }
-                    } catch (InterruptedException e) {
-                        isConnectivity.set(false);
-                        errNodeKeys.add(key);
-                        LOGGER.warn("test conn " + key + " error:", e);
-                    }
+                BoolPtr isSchemaConnectedPtr = new BoolPtr(false);
+                TestSchemasTask testSchemaTask = new TestSchemasTask(ds, nodeList, errNodeKeys, isSchemaConnectedPtr, isMaster);
+                testSchemaTask.start();
+                testSchemaTask.join(3000);
+                boolean isConnected = isSchemaConnectedPtr.get();
+                if (!isConnected) {
+                    isConnectivity.set(false);
                 }
             }
         } catch (InterruptedException e) {
@@ -432,51 +414,6 @@ public class ConfigInitializer implements ProblemReporter {
 
     public List<ErrorInfo> getErrorInfos() {
         return errorInfos;
-    }
-
-    private static class TestTask extends Thread {
-        private PhysicalDatasource ds;
-        private BoolPtr boolPtr;
-        private Set<String> errKeys;
-        private String schema = null;
-        private String nodeName = null;
-        private boolean needAlert = false;
-
-        TestTask(PhysicalDatasource ds, Set<String> errKeys, BoolPtr boolPtr) {
-            this.ds = ds;
-            this.errKeys = errKeys;
-            this.boolPtr = boolPtr;
-        }
-
-        TestTask(PhysicalDatasource ds, Pair<String, String> node, Set<String> errKeys, BoolPtr boolPtr, boolean needAlert) {
-            this.ds = ds;
-            this.errKeys = errKeys;
-            this.boolPtr = boolPtr;
-            this.needAlert = needAlert;
-            if (node != null) {
-                this.nodeName = node.getKey();
-                this.schema = node.getValue();
-            }
-        }
-
-        @Override
-        public void run() {
-            try {
-                boolean isConnected = ds.testConnection(schema);
-                boolPtr.set(isConnected);
-            } catch (IOException e) {
-                boolPtr.set(false);
-                if (schema != null && needAlert) {
-                    String key = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getConfig().getHostName() + "],data_node[" + nodeName + "],schema[" + schema + "]";
-                    errKeys.add(key);
-                    LOGGER.warn("test conn " + key + " error:", e);
-                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName());
-                    labels.put("data_node", nodeName);
-                    AlertUtil.alert(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "{" + key + "} is lack", "mysql", ds.getConfig().getId(), labels);
-                    ToResolveContainer.DATA_NODE_LACK.add(key);
-                }
-            }
-        }
     }
 
 }

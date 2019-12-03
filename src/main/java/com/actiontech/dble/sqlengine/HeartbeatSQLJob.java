@@ -101,10 +101,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
 
     @Override
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
-        boolean finish = jobHandler.onRowData(row);
-        if (finish) {
-            doFinished(false);
-        }
+        jobHandler.onRowData(row);
         return false;
     }
 

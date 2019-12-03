@@ -93,7 +93,7 @@ public class NIOSocketWR extends SocketWR {
             if (AbstractConnection.LOGGER.isDebugEnabled()) {
                 AbstractConnection.LOGGER.debug("caught err:", e);
             }
-            AbstractConnection.LOGGER.info("GET IOException when registerWrite,may be just a heartbeat from SLB :" + e.getMessage());
+            AbstractConnection.LOGGER.info("GET IOException when registerWrite,may be just a heartbeat from SLB/LVS :" + e.getMessage());
             con.close("err:" + e);
             return false;
         }

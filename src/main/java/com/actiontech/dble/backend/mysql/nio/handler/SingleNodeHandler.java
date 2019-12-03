@@ -39,7 +39,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     private static final Logger LOGGER = LoggerFactory.getLogger(SingleNodeHandler.class);
 
     private final RouteResultsetNode node;
-    private final RouteResultset rrs;
+    protected final RouteResultset rrs;
     protected final NonBlockingSession session;
 
     // only one thread access at one time no need lock
@@ -56,7 +56,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     private int fieldCount;
     private List<FieldPacket> fieldPackets = new ArrayList<>();
     private volatile boolean connClosed = false;
-    private AtomicBoolean writeToClient = new AtomicBoolean(false);
+    protected AtomicBoolean writeToClient = new AtomicBoolean(false);
 
     public SingleNodeHandler(RouteResultset rrs, NonBlockingSession session) {
         this.rrs = rrs;
@@ -106,7 +106,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), session.getSource().isAutocommit(), node, this, node);
     }
 
-    private void execute(BackendConnection conn) {
+    protected void execute(BackendConnection conn) {
         if (session.closed()) {
             session.clearResources(rrs);
             return;
@@ -126,7 +126,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     public void connectionAcquired(final BackendConnection conn) {
         session.bindConnection(node, conn);
         execute(conn);
-
     }
 
     @Override
@@ -227,7 +226,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         }
     }
 
-    private void executeMetaDataFailed(BackendConnection conn) {
+    protected void executeMetaDataFailed(BackendConnection conn) {
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
         errPacket.setErrNo(ErrorCode.ER_META_DATA);

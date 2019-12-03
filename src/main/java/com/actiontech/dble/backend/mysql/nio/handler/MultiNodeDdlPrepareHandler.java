@@ -10,6 +10,7 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLTraceInfo;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -20,6 +21,7 @@ import com.actiontech.dble.route.util.RouteResultCopy;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
+import com.actiontech.dble.singleton.DDLTraceManager;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,20 +34,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * @author guoji.ma@gmail.com
  */
-public class MultiNodeDdlHandler extends MultiNodeHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeDdlHandler.class);
+public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeDdlPrepareHandler.class);
 
     private static final String STMT = "select 1";
     private final RouteResultset rrs;
     private final RouteResultset oriRrs;
     private final boolean sessionAutocommit;
-    private final MultiNodeQueryHandler handler;
+    private final MultiNodeDDLExecuteHandler handler;
     private ErrorPacket err;
     private Set<BackendConnection> closedConnSet;
     private volatile boolean finishedTest = false;
     private AtomicBoolean releaseDDLLock = new AtomicBoolean(false);
 
-    public MultiNodeDdlHandler(RouteResultset rrs, NonBlockingSession session) {
+    public MultiNodeDdlPrepareHandler(RouteResultset rrs, NonBlockingSession session) {
         super(session);
         if (rrs.getNodes() == null) {
             throw new IllegalArgumentException("routeNode is null!");
@@ -59,8 +61,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
         this.sessionAutocommit = session.getSource().isAutocommit();
 
         this.oriRrs = rrs;
-        this.handler = new MultiNodeQueryHandler(rrs, session);
-
+        this.handler = new MultiNodeDDLExecuteHandler(rrs, session);
     }
 
     @Override
@@ -92,6 +93,8 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
             TxnLogHelper.putTxnLog(session.getSource(), sb.toString());
         }
 
+        DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.LINK_TEST_START, session.getSource());
+
         for (final RouteResultsetNode node : rrs.getNodes()) {
             BackendConnection conn = session.getTarget(node);
             if (session.tryExistsCon(conn, node)) {
@@ -119,6 +122,8 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
+        DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(),
+                (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.TEST_CONN_CLOSE);
         if (checkClosedConn(conn)) {
             return;
         }
@@ -175,6 +180,8 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
         LOGGER.info("backend connect", e);
+        DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(),
+                (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.TEST_CONN_ERROR);
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(1);
         errPacket.setErrNo(ErrorCode.ER_ABORTING_CONNECTION);
@@ -194,12 +201,16 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     public void connectionAcquired(final BackendConnection conn) {
         final RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
         session.bindConnection(node, conn);
+        DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(),
+                (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.TEST_START);
         innerExecute(conn, node);
     }
 
 
     @Override
     public void errorResponse(byte[] data, BackendConnection conn) {
+        DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(),
+                (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.TEST_ERROR);
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(data);
         errPacket.setPacketId(1);
@@ -222,18 +233,16 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
     @Override
     public void okResponse(byte[] data, BackendConnection conn) {
         if (!conn.syncAndExecute()) {
-            LOGGER.debug("MultiNodeDdlHandler syncAndExecute!");
+            LOGGER.debug("MultiNodeDdlPrepareHandler syncAndExecute!");
         } else {
-            LOGGER.debug("MultiNodeDdlHandler syncAndExecute finished!");
+            LOGGER.debug("MultiNodeDdlPrepareHandler syncAndExecute finished!");
         }
     }
 
     @Override
     public void rowEofResponse(final byte[] eof, boolean isLeft, BackendConnection conn) {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("on row end response " + conn);
-        }
-
+        DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(),
+                (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.TEST_SUCCESS);
         final ServerConnection source = session.getSource();
         if (clearIfSessionClosed()) {
             return;
@@ -252,6 +261,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                 }
             } else {
                 try {
+                    DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.LINK_TEST_END, source);
                     if (session.isPrepared()) {
                         handler.setPrepared(true);
                     }
@@ -260,6 +270,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                     session.setPreExecuteEnd();
                     handler.execute();
                 } catch (Exception e) {
+                    DDLTraceManager.getInstance().endDDL(source, "take Connection error:" + e.getMessage());
                     LOGGER.warn(String.valueOf(source) + oriRrs, e);
                     session.handleSpecial(oriRrs, false);
                     source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());

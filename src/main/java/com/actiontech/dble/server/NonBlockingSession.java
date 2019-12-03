@@ -455,26 +455,33 @@ public class NonBlockingSession implements Session {
             this.xaState = TxState.TX_STARTED_STATE;
         }
         if (nodes.length == 1) {
-            SingleNodeHandler singleNodeHandler = new SingleNodeHandler(rrs, this);
-            setTraceSimpleHandler(singleNodeHandler);
-            if (this.isPrepared()) {
-                singleNodeHandler.setPrepared(true);
-            }
-            try {
-                singleNodeHandler.execute();
-            } catch (Exception e) {
-                handleSpecial(rrs, false);
-                LOGGER.info(String.valueOf(source) + rrs, e);
-                if (this.getSessionXaID() != null) {
-                    this.xaState = TxState.TX_INITIALIZE_STATE;
-                }
-                source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.getMessage() == null ? e.toString() : e.getMessage());
-            }
-            if (this.isPrepared()) {
-                this.setPrepared(false);
-            }
+            executeForSingleNode(rrs);
         } else {
             executeMultiResultSet(rrs);
+        }
+    }
+
+
+    private void executeForSingleNode(RouteResultset rrs) {
+        SingleNodeHandler singleNodeHandler = rrs.getSqlType() == DDL ?
+                new SingleNodeDDLHandler(rrs, this) :
+                new SingleNodeHandler(rrs, this);
+        setTraceSimpleHandler(singleNodeHandler);
+        if (this.isPrepared()) {
+            singleNodeHandler.setPrepared(true);
+        }
+        try {
+            singleNodeHandler.execute();
+        } catch (Exception e) {
+            handleSpecial(rrs, false);
+            LOGGER.info(String.valueOf(source) + rrs, e);
+            if (this.getSessionXaID() != null) {
+                this.xaState = TxState.TX_INITIALIZE_STATE;
+            }
+            source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.getMessage() == null ? e.toString() : e.getMessage());
+        }
+        if (this.isPrepared()) {
+            this.setPrepared(false);
         }
     }
 
@@ -485,7 +492,7 @@ public class NonBlockingSession implements Session {
              * We don't do 2pc or 3pc. Because mysql(that is, resource manager) don't support that for ddl statements.
              */
             checkBackupStatus();
-            MultiNodeDdlHandler multiNodeDdlHandler = new MultiNodeDdlHandler(rrs, this);
+            MultiNodeDdlPrepareHandler multiNodeDdlHandler = new MultiNodeDdlPrepareHandler(rrs, this);
             try {
                 multiNodeDdlHandler.execute();
             } catch (Exception e) {

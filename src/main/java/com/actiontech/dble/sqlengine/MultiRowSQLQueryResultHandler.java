@@ -26,11 +26,9 @@ public class MultiRowSQLQueryResultHandler extends OneRawSQLQueryResultHandler {
     }
 
     @Override
-    public boolean onRowData(byte[] rowData) {
+    public void onRowData(byte[] rowData) {
         super.onRowData(rowData);
         resultRows.add(getResult());
-
-        return false;
     }
 
     @Override

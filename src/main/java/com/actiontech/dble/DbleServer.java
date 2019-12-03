@@ -119,9 +119,6 @@ public final class DbleServer {
         AlertManager.getInstance().startAlert();
         LOGGER.info("========================================Alert Manager start finish================================");
 
-        this.config.testConnection();
-        LOGGER.info("==========================================Test connection finish==================================");
-
         // load data node active index from properties
         this.dnIndexProperties = DnPropertyUtil.loadDnIndexProps();
         if (isUseZkSwitch()) {
@@ -213,6 +210,8 @@ public final class DbleServer {
         }
         LOGGER.info("==========================Connection Connector&Acceptor init finish===============================");
 
+        this.config.testConnection();
+        LOGGER.info("==========================================Test connection finish==================================");
 
         // start transaction SQL log
         if (config.getSystem().getRecordTxn() == 1) {

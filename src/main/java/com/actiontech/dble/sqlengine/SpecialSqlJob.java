@@ -67,8 +67,8 @@ public class SpecialSqlJob extends SQLJob {
         }
     }
 
-
-    private boolean doFinished(boolean failed) {
+    @Override
+    protected boolean doFinished(boolean failed) {
         if (finished.compareAndSet(false, true)) {
             jobHandler.finished(schema, failed);
             return true;

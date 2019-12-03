@@ -11,7 +11,7 @@ public interface SQLJobHandler {
 
     void onHeader(List<byte[]> fields);
 
-    boolean onRowData(byte[] rowData);
+    void onRowData(byte[] rowData);
 
     void finished(String dataNode, boolean failed);
 }

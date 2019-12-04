@@ -390,10 +390,6 @@ public abstract class PhysicalDatasource {
                 AlertUtil.alert(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, maxConError, "dble", this.getConfig().getId(), labels);
                 ToResolveContainer.REACH_MAX_CON.add(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
                 throw new IOException(maxConError);
-            } else if (this.disabled.get()) {
-                String disableError = "the Datasource is turned into disabled " + this.getHostConfig().getName() + "-" + this.getConfig().getHostName();
-                LOGGER.warn(disableError);
-                throw new IOException(disableError);
             } else { // create connection
                 if (ToResolveContainer.REACH_MAX_CON.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {
                     Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
@@ -418,10 +414,6 @@ public abstract class PhysicalDatasource {
                 AlertUtil.alert(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, maxConError, "dble", this.getConfig().getId(), labels);
                 ToResolveContainer.REACH_MAX_CON.add(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
                 throw new IOException(maxConError);
-            } else if (this.disabled.get()) {
-                String disableError = "the Datasource is turned into disabled " + this.getHostConfig().getName() + "-" + this.getConfig().getHostName();
-                LOGGER.warn(disableError);
-                throw new IOException(disableError);
             } else { // create connection
                 if (ToResolveContainer.REACH_MAX_CON.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {
                     Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());

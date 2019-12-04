@@ -102,7 +102,7 @@ public final class OnlineLockStatus {
             }
             onlineLock = new DistributeLock(ClusterPathUtil.getOnlinePath(ClusterGeneralConfig.getInstance().
                     getValue(ClusterParamCfg.CLUSTER_CFG_MYID)),
-                    toString(), 6);
+                    "" + System.currentTimeMillis(), 6);
             int time = 0;
             while (!onlineLock.acquire()) {
                 time++;

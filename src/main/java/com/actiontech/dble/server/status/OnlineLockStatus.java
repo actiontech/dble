@@ -63,10 +63,10 @@ public final class OnlineLockStatus {
      * @throws IOException
      */
     private synchronized boolean clusterOnlinInit() throws IOException {
-        if (!onlineInited) {
+        if (onlineInited) {
             return false;
         }
-        LOGGER.info("rebuild metaUcoreInit");
+        LOGGER.info("clusterOnlinInit Ucoremeta");
         //check if the online mark is on than delete the mark and renew it
         ClusterHelper.cleanKV(ClusterPathUtil.getOnlinePath(ClusterGeneralConfig.getInstance().
                 getValue(ClusterParamCfg.CLUSTER_CFG_MYID)));

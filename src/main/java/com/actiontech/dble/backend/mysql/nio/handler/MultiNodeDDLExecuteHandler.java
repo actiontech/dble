@@ -31,10 +31,6 @@ import java.util.HashSet;
  */
 public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements LoadDataResponseHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeQueryHandler.class);
-    protected final RouteResultset rrs;
-    protected boolean prepared;
-    protected ErrorPacket err;
-    protected int fieldCount = 0;
 
     public MultiNodeDDLExecuteHandler(RouteResultset rrs, NonBlockingSession session) {
         super(rrs, session);
@@ -44,7 +40,6 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("execute multi node query " + rrs.getStatement());
         }
-        this.rrs = rrs;
     }
 
 

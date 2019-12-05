@@ -390,7 +390,7 @@ public final class RouterUtil {
         x.addAll(dataNodes);
         Map<String, PhysicalDBNode> dataNodeMap = DbleServer.getInstance().getConfig().getDataNodes();
         while (x.size() > 1) {
-            for (PhysicalDatasource ds : dataNodeMap.get(x.get(index)).getDbPool().getAllDataSources()) {
+            for (PhysicalDatasource ds : dataNodeMap.get(x.get(index)).getDbPool().getAllActiveDataSources()) {
                 if (ds.isAlive()) {
                     return x.get(index);
                 } else {

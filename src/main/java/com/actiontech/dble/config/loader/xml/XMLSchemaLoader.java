@@ -650,7 +650,7 @@ public class XMLSchemaLoader implements SchemaLoader {
                     }
                     if (readDbConfList.size() > 0) {
                         DBHostConfig[] readDbConfs = readDbConfList.toArray(new DBHostConfig[readDbConfList.size()]);
-                        if (balance != 0) {
+                        if (balance != AbstractPhysicalDBPool.BALANCE_NONE) {
                             readHostsMap.put(w, readDbConfs);
                         } else {
                             standbyReadHostsMap.put(w, readDbConfs);

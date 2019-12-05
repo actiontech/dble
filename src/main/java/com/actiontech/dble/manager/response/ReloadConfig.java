@@ -510,7 +510,7 @@ public final class ReloadConfig {
         for (AbstractPhysicalDBPool dbPool : recycleMap.values()) {
             dbPool.stopHeartbeat();
             long oldTimestamp = System.currentTimeMillis();
-            for (PhysicalDatasource ds : dbPool.getAllDataSources()) {
+            for (PhysicalDatasource ds : dbPool.getAllActiveDataSources()) {
                 for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
                     for (BackendConnection con : processor.getBackends().values()) {
                         if (con instanceof MySQLConnection) {

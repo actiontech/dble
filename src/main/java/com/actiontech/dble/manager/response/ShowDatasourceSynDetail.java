@@ -119,7 +119,7 @@ public final class ShowDatasourceSynDetail {
         for (Map.Entry<String, AbstractPhysicalDBPool> entry : dataHosts.entrySet()) {
             String datahost = entry.getKey();
             AbstractPhysicalDBPool pool = entry.getValue();
-            for (PhysicalDatasource ds : pool.getAllDataSources()) {
+            for (PhysicalDatasource ds : pool.getAllActiveDataSources()) {
                 if (ds.getConfig().isDisabled()) {
                     continue;
                 }

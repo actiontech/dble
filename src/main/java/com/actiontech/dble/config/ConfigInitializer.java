@@ -192,11 +192,6 @@ public class ConfigInitializer implements ProblemReporter {
                 }
                 testDataSource(errNodeKeys, errSourceKeys, isConnectivity, isAllDataSourceConnected, nodeList, pool, ds);
             }
-            for (PhysicalDatasource[] dataSources : pool.getStandbyReadSourcesMap().values()) {
-                for (PhysicalDatasource ds : dataSources) {
-                    testDataSource(errNodeKeys, errSourceKeys, isConnectivity, isAllDataSourceConnected, nodeList, pool, ds);
-                }
-            }
         }
         if (!isConnectivity.get()) {
             StringBuilder sb = new StringBuilder("SelfCheck### there are some data node connection failed, pls check these datasource:");

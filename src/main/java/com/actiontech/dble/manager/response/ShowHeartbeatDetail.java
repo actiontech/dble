@@ -114,7 +114,7 @@ public final class ShowHeartbeatDetail {
 
         Map<String, AbstractPhysicalDBPool> dataHosts = conf.getDataHosts();
         for (AbstractPhysicalDBPool pool : dataHosts.values()) {
-            for (PhysicalDatasource ds : pool.getAllDataSources()) {
+            for (PhysicalDatasource ds : pool.getAllActiveDataSources()) {
                 if (name.equals(ds.getName())) {
                     hb = ds.getHeartbeat();
                     ip = ds.getConfig().getIp();

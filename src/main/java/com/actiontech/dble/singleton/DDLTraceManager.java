@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class DDLTraceManager {
 
-    private static final long DDL_EXECUTE_LIMIT = 30;
+    private static final long DDL_EXECUTE_LIMIT = 30 * 60 * 60;
     private static final String DDL_TRACE_LOG = "DDL_TRACE";
     private static final Logger LOGGER = LoggerFactory.getLogger(DDL_TRACE_LOG);
     private static final DDLTraceManager INSTANCE = new DDLTraceManager();
@@ -54,7 +54,7 @@ public final class DDLTraceManager {
         DDLTraceInfo info = traceMap.get(c);
         if (info != null) {
             info.setStage(DDLTraceInfo.DDLStage.EXECUTE_END);
-            LOGGER.info(reason == null ? "DDL END:" : "DDL END WITH REASON:" + reason, info.toString());
+            LOGGER.info((reason == null ? "DDL END:" : "DDL END WITH REASON:" + reason) + info.toString());
             traceMap.remove(c);
         }
     }
@@ -66,7 +66,7 @@ public final class DDLTraceManager {
     public void printDDLOutOfLimit() {
         for (Map.Entry<ServerConnection, DDLTraceInfo> entry : traceMap.entrySet()) {
             if ((TimeUtil.currentTimeMillis() - entry.getValue().getStartTimestamp()) > DDL_EXECUTE_LIMIT) {
-                LOGGER.warn("THIS DDL EXECUTE FOR TOO LONG \n", entry.getValue().toString());
+                LOGGER.warn("THIS DDL EXECUTE FOR TOO LONG \n" + entry.getValue().toString());
             }
         }
     }

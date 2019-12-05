@@ -26,9 +26,8 @@ public class PhysicalDBPool extends AbstractPhysicalDBPool {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PhysicalDBPool.class);
     private PhysicalDatasource[] writeSources;
-    private Map<Integer, PhysicalDatasource[]> readSources;
-    private Map<Integer, PhysicalDatasource[]> standbyReadSourcesMap;
-    private Collection<PhysicalDatasource> allDs;
+    private Collection<PhysicalDatasource> allActiveDs;
+    private Collection<PhysicalDatasource> allSources;
 
     volatile int activeIndex;
     private final ReentrantLock switchLock = new ReentrantLock();
@@ -40,42 +39,51 @@ public class PhysicalDBPool extends AbstractPhysicalDBPool {
         this.writeSources = writeSources;
         this.readSources = readSources;
         this.standbyReadSourcesMap = standbyReadSourcesMap;
-        this.allDs = this.genAllDataSources();
-
-        LOGGER.info("total resources of dataHost " + this.hostName + " is :" + allDs.size());
+        this.allActiveDs = this.genAllActiveDataSources();
+        this.allSources = this.genAllDataSources();
+        LOGGER.info("total resources of dataHost " + this.hostName + " is :" + allActiveDs.size());
 
         setDataSourceProps();
     }
 
     private void setDataSourceProps() {
-        for (PhysicalDatasource ds : this.allDs) {
+        for (PhysicalDatasource ds : this.allActiveDs) {
             ds.setDbPool(this);
         }
     }
 
-    private Collection<PhysicalDatasource> genAllDataSources() {
-        LinkedList<PhysicalDatasource> allSources = new LinkedList<>();
+    private Collection<PhysicalDatasource> genAllActiveDataSources() {
+        LinkedList<PhysicalDatasource> allActiveSources = new LinkedList<>();
         for (PhysicalDatasource ds : writeSources) {
             if (ds != null) {
-                allSources.add(ds);
+                allActiveSources.add(ds);
             }
         }
 
         for (PhysicalDatasource[] dataSources : this.readSources.values()) {
             for (PhysicalDatasource ds : dataSources) {
                 if (ds != null) {
-                    allSources.add(ds);
+                    allActiveSources.add(ds);
                 }
             }
         }
-        return allSources;
+        return allActiveSources;
+    }
+
+    private Collection<PhysicalDatasource> genAllDataSources() {
+        LinkedList<PhysicalDatasource> allDataSources = new LinkedList<>();
+        allDataSources.addAll(this.allActiveDs);
+        for (PhysicalDatasource[] standbyReadSources : standbyReadSourcesMap.values()) {
+            allDataSources.addAll(Arrays.asList(standbyReadSources));
+        }
+        return allDataSources;
     }
 
     PhysicalDatasource findDatasource(BackendConnection exitsCon) {
         Collection<PhysicalDatasource> all;
         adjustLock.readLock().lock();
         try {
-            all = this.allDs;
+            all = this.allActiveDs;
         } finally {
             adjustLock.readLock().unlock();
         }
@@ -327,7 +335,7 @@ public class PhysicalDBPool extends AbstractPhysicalDBPool {
         Collection<PhysicalDatasource> all;
         adjustLock.readLock().lock();
         try {
-            all = this.allDs;
+            all = this.allActiveDs;
         } finally {
             adjustLock.readLock().unlock();
         }
@@ -348,7 +356,7 @@ public class PhysicalDBPool extends AbstractPhysicalDBPool {
         Collection<PhysicalDatasource> all;
         adjustLock.readLock().lock();
         try {
-            all = this.allDs;
+            all = this.allActiveDs;
         } finally {
             adjustLock.readLock().unlock();
         }
@@ -367,7 +375,7 @@ public class PhysicalDBPool extends AbstractPhysicalDBPool {
         Collection<PhysicalDatasource> all;
         adjustLock.readLock().lock();
         try {
-            all = this.allDs;
+            all = this.allActiveDs;
         } finally {
             adjustLock.readLock().unlock();
         }
@@ -381,7 +389,7 @@ public class PhysicalDBPool extends AbstractPhysicalDBPool {
         Collection<PhysicalDatasource> all;
         adjustLock.readLock().lock();
         try {
-            all = this.allDs;
+            all = this.allActiveDs;
         } finally {
             adjustLock.readLock().unlock();
         }
@@ -400,7 +408,7 @@ public class PhysicalDBPool extends AbstractPhysicalDBPool {
         Collection<PhysicalDatasource> all;
         adjustLock.readLock().lock();
         try {
-            all = this.allDs;
+            all = this.allActiveDs;
         } finally {
             adjustLock.readLock().unlock();
         }
@@ -412,17 +420,12 @@ public class PhysicalDBPool extends AbstractPhysicalDBPool {
         }
     }
 
-    public Map<Integer, PhysicalDatasource[]> getReadSources() {
-        return this.readSources;
+    public Collection<PhysicalDatasource> getAllActiveDataSources() {
+        return this.allActiveDs;
     }
 
     public Collection<PhysicalDatasource> getAllDataSources() {
-        return this.allDs;
-    }
-
-
-    public Map<Integer, PhysicalDatasource[]> getStandbyReadSourcesMap() {
-        return standbyReadSourcesMap;
+        return this.allSources;
     }
 
     /**
@@ -581,7 +584,7 @@ public class PhysicalDBPool extends AbstractPhysicalDBPool {
         Map<Integer, PhysicalDatasource[]> rs;
         adjustLock.readLock().lock();
         try {
-            all = this.allDs;
+            all = this.allActiveDs;
             rs = this.readSources;
         } finally {
             adjustLock.readLock().unlock();

@@ -156,7 +156,7 @@ public class ConfigTest {
         ArrayList<PhysicalDatasource> okSources = new ArrayList<PhysicalDatasource>();
 
         AbstractPhysicalDBPool pool = this.dataHosts.get("localhost2");
-        okSources.addAll(pool.getAllDataSources());
+        okSources.addAll(pool.getAllActiveDataSources());
         PhysicalDatasource source = pool.randomSelect(okSources);
 
         Assert.assertTrue(source != null);

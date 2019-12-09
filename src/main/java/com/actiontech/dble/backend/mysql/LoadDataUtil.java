@@ -35,7 +35,7 @@ public final class LoadDataUtil {
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
                 for (String loadDataDataLine : loadDataData) {
                     String s = loadDataDataLine + loadData.getLineTerminatedBy();
-                    byte[] bytes = s.getBytes(CharsetUtil.getJavaCharset(loadData.getCharset().toLowerCase()));
+                    byte[] bytes = s.getBytes(CharsetUtil.getJavaCharset(loadData.getCharset()));
                     bos.write(bytes);
                 }
                 packId = writeToBackConnection(packId, new ByteArrayInputStream(bos.toByteArray()), c);

@@ -1,6 +1,7 @@
 package com.actiontech.dble.config.loader.zkprocess.zktoxml.listen;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.HaInfo;
 import com.actiontech.dble.singleton.HaConfigManager;
@@ -41,7 +42,12 @@ public class DataHostStatusListener implements PathChildrenCacheListener {
             String nodeName = childData.getPath().substring(childData.getPath().lastIndexOf("/") + 1);
             String data = new String(childData.getData(), StandardCharsets.UTF_8);
             int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.RESPONSE_NOTIFY, HaInfo.HaStartType.CLUSTER_NOTIFY, "");
-            PhysicalDNPoolSingleWH dataHost = (PhysicalDNPoolSingleWH) DbleServer.getInstance().getConfig().getDataHosts().get(nodeName);
+            AbstractPhysicalDBPool physicalDBPool = DbleServer.getInstance().getConfig().getDataHosts().get(nodeName);
+            if (!(physicalDBPool instanceof PhysicalDNPoolSingleWH)) {
+                LOGGER.warn("The property 'useOuterHa' in server.xml may be changed, you have to restart dble to make it effective.");
+                return;
+            }
+            PhysicalDNPoolSingleWH dataHost = (PhysicalDNPoolSingleWH) physicalDBPool;
             dataHost.changeIntoLatestStatus(data);
             HaConfigManager.getInstance().haFinish(id, null, data);
         } catch (Exception e) {

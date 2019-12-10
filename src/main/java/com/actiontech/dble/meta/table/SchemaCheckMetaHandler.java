@@ -11,6 +11,7 @@ import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.meta.ProxyMetaManager;
+import com.actiontech.dble.meta.ViewMeta;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,19 +26,20 @@ import java.util.Set;
  */
 public class SchemaCheckMetaHandler extends AbstractSchemaMetaHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(SchemaCheckMetaHandler.class);
-    private final ProxyMetaManager tmManager;
     private final String schema;
 
     public SchemaCheckMetaHandler(ProxyMetaManager tmManager, SchemaConfig schemaConfig, Set<String> selfNode) {
-        super(schemaConfig, selfNode, false);
-        this.tmManager = tmManager;
+        super(tmManager, schemaConfig, selfNode, false);
         this.schema = schemaConfig.getName();
     }
-
 
     @Override
     void handleSingleMetaData(StructureMeta.TableMeta tableMeta) {
         this.checkTableModify(tableMeta);
+    }
+
+    @Override
+    void handleViewMeta(ViewMeta viewMeta) {
     }
 
     @Override
@@ -81,7 +83,7 @@ public class SchemaCheckMetaHandler extends AbstractSchemaMetaHandler {
         String tbName = tm.getTableName();
         StructureMeta.TableMeta oldTm;
         try {
-            oldTm = tmManager.getSyncTableMeta(schema, tbName);
+            oldTm = getTmManager().getSyncTableMeta(schema, tbName);
         } catch (SQLNonTransientException e) {
             //someone ddl, skip.
             return false;
@@ -97,7 +99,7 @@ public class SchemaCheckMetaHandler extends AbstractSchemaMetaHandler {
         StructureMeta.TableMeta tblMetaTmp = tm.toBuilder().setVersion(oldTm.getVersion()).build();
         if (!oldTm.equals(tblMetaTmp)) { // oldTm!=tblMetaTmp means memory  meta is not equal show create table result
             try {
-                StructureMeta.TableMeta test = tmManager.getSyncTableMeta(schema, tbName);
+                StructureMeta.TableMeta test = getTmManager().getSyncTableMeta(schema, tbName);
                 /* oldTm==test means memory meta is not changed, so memory is really different with show create table result
                   if(oldTm!=test) means memory meta changed ,left to next check
                 */

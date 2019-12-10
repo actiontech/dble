@@ -6,8 +6,7 @@
 package com.actiontech.dble.meta;
 
 import com.actiontech.dble.meta.protocol.StructureMeta;
-import com.actiontech.dble.net.mysql.ErrorPacket;
-import com.actiontech.dble.plan.node.QueryNode;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.util.StringUtil;
 
 import java.util.Map;
@@ -45,32 +44,35 @@ public class SchemaMeta {
         return this.tableMetas.get(tbName);
     }
 
+    public void addViewMeta(String viewName, ViewMeta viewMeta) {
+        this.viewMetas.put(viewName, viewMeta);
+    }
+
     /**
      * try to get a view meta of querynode
      *
      * @param name
      * @return
      */
-    public QueryNode getView(String name) {
+    public PlanNode getView(String name) {
         if (name.contains("`")) {
             name = StringUtil.removeBackQuote(name);
         }
         ViewMeta view = viewMetas.get(name);
-        QueryNode queryNode = null;
+        PlanNode queryNode = null;
         if (view != null) {
             if (view.getViewQuery() != null) {
                 queryNode = view.getViewQuery().copy();
-            } else {
-                ErrorPacket error = view.initAndSet(true, false);
-                if (error != null) {
-                    throw new RuntimeException(" View '" + view.getViewName() +
-                            "' references invalid table(s) or column(s) or function(s) or definer/invoker of view lack rights to use them");
-                } else {
-                    queryNode = view.getViewQuery().copy();
-                }
             }
         }
         return queryNode;
+    }
+
+    public ViewMeta getViewMeta(String name) {
+        if (name.contains("`")) {
+            name = StringUtil.removeBackQuote(name);
+        }
+        return viewMetas.get(name);
     }
 
     public ConcurrentMap<String, ViewMeta> getViewMetas() {
@@ -80,11 +82,6 @@ public class SchemaMeta {
     public void setViewMetas(ConcurrentMap<String, ViewMeta> viewMetas) {
         this.viewMetas = viewMetas;
     }
-
-    public String getViewMetaJson() {
-        return null;
-    }
-
 
     public SchemaMeta metaCopy() {
         SchemaMeta newMeta = new SchemaMeta();

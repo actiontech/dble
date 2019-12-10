@@ -146,16 +146,10 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                     c.unLockTable(sql);
                     break;
                 case ServerParse.CREATE_VIEW:
-                    CreateViewHandler.handle(sql, c, false);
-                    break;
                 case ServerParse.REPLACE_VIEW:
-                    CreateViewHandler.handle(sql, c, true);
-                    break;
                 case ServerParse.ALTER_VIEW:
-                    CreateViewHandler.handle(sql, c, false);
-                    break;
                 case ServerParse.DROP_VIEW:
-                    DropViewHandler.handle(sql, c);
+                    ViewHandler.handle(sqlType, sql, c);
                     break;
                 case ServerParse.CREATE_DATABASE:
                     CreateDatabaseHandler.handle(sql, c);

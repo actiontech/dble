@@ -36,7 +36,7 @@ import com.actiontech.dble.meta.table.AbstractSchemaMetaHandler;
 import com.actiontech.dble.meta.table.DDLNotifyTableMetaHandler;
 import com.actiontech.dble.meta.table.SchemaCheckMetaHandler;
 import com.actiontech.dble.meta.table.ServerMetaHandler;
-import com.actiontech.dble.plan.node.QueryNode;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 import com.actiontech.dble.singleton.ClusterGeneralConfig;
@@ -78,18 +78,23 @@ public class ProxyMetaManager {
         this.timestamp = System.currentTimeMillis();
     }
 
-    public ProxyMetaManager(ProxyMetaManager orgin) {
+    public ProxyMetaManager(ProxyMetaManager origin) {
         this.catalogs = new ConcurrentHashMap<>();
-        this.lockTables = orgin.lockTables;
-        this.timestamp = orgin.timestamp;
-        this.metaLock = orgin.metaLock;
-        this.scheduler = orgin.scheduler;
-        this.metaCount = orgin.metaCount;
-        this.repository = orgin.repository;
-        this.version = orgin.version;
-        for (Map.Entry<String, SchemaMeta> entry : orgin.catalogs.entrySet()) {
+        this.lockTables = origin.lockTables;
+        this.timestamp = origin.timestamp;
+        this.metaLock = origin.metaLock;
+        this.scheduler = origin.scheduler;
+        this.metaCount = origin.metaCount;
+        this.repository = origin.repository;
+        this.version = origin.version;
+        for (Map.Entry<String, SchemaMeta> entry : origin.catalogs.entrySet()) {
             catalogs.put(entry.getKey(), entry.getValue().metaCopy());
         }
+    }
+
+    //no need to check user
+    private static SchemaInfo getSchemaInfo(String schema, String table) {
+        return SchemaUtil.getSchemaInfoWithoutCheck(schema, table);
     }
 
     public long getTimestamp() {
@@ -109,7 +114,7 @@ public class ProxyMetaManager {
     }
 
     public String metaCountCheck() {
-        StringBuffer result = new StringBuffer("");
+        StringBuffer result = new StringBuffer();
         metaLock.lock();
         try {
             if (metaCount.get() != 0) {
@@ -165,7 +170,6 @@ public class ProxyMetaManager {
         return catalogs;
     }
 
-
     public boolean createDatabase(String schema) {
         SchemaMeta schemaMeta = catalogs.get(schema);
         if (schemaMeta == null) {
@@ -196,6 +200,13 @@ public class ProxyMetaManager {
         }
     }
 
+    public void addView(String schema, ViewMeta vm) {
+        String viewName = vm.getViewName();
+        SchemaMeta schemaMeta = catalogs.get(schema);
+        if (schemaMeta != null) {
+            schemaMeta.addViewMeta(viewName, vm);
+        }
+    }
 
     private void dropTable(String schema, String tbName) {
         SchemaMeta schemaMeta = catalogs.get(schema);
@@ -244,12 +255,11 @@ public class ProxyMetaManager {
         }
     }
 
-
-    public QueryNode getSyncView(String schema, String vName) throws SQLNonTransientException {
+    public PlanNode getSyncView(String schema, String vName) throws SQLNonTransientException {
         while (true) {
             int oldVersion = version.get();
             if (metaCount.get() == 0) {
-                QueryNode viewNode = catalogs.get(schema).getView(vName);
+                PlanNode viewNode = catalogs.get(schema).getView(vName);
                 if (version.get() == oldVersion) {
                     return viewNode;
                 }
@@ -273,7 +283,6 @@ public class ProxyMetaManager {
     private StructureMeta.TableMeta getTableMeta(String schema, String tbName) {
         return catalogs.get(schema).getTableMeta(tbName);
     }
-
 
     private Set<String> getSelfNodes(ServerConfig config) {
         Set<String> selfNode = null;
@@ -307,7 +316,6 @@ public class ProxyMetaManager {
         handler.execute();
         removeMetaLock(schema, tableName);
     }
-
 
     public void init(ServerConfig config) throws Exception {
         LOGGER.info("init metaData start");
@@ -368,7 +376,6 @@ public class ProxyMetaManager {
         zkConn.delete().forPath(KVPathUtil.getSyncMetaLockPath());
     }
 
-
     private void tryDeleteOldOnline() throws Exception {
         //try to delete online
         if (ZKUtils.getConnection().checkExists().forPath(KVPathUtil.getOnlinePath() +
@@ -391,7 +398,6 @@ public class ProxyMetaManager {
             }
         }
     }
-
 
     private void initViewMeta() {
         if (ClusterGeneralConfig.isUseZK()) {
@@ -443,13 +449,17 @@ public class ProxyMetaManager {
     public void loadViewMeta(Map<String, Map<String, String>> viewCreateSqlMap) {
         for (Map.Entry<String, Map<String, String>> schemaName : viewCreateSqlMap.entrySet()) {
             for (Map.Entry<String, String> view : schemaName.getValue().entrySet()) {
-                ViewMeta vm = new ViewMeta(view.getValue(), schemaName.getKey(), this);
-                vm.init(true);
-                SchemaMeta schemaMeta = this.getCatalogs().get(schemaName.getKey());
-                if (schemaMeta == null) {
-                    LOGGER.warn("View " + view.getKey() + " can not find it's schema,view " + view.getKey() + " not initialized");
-                } else {
-                    schemaMeta.getViewMetas().put(vm.getViewName(), vm);
+                try {
+                    ViewMeta vm = new ViewMeta(schemaName.getKey(), view.getValue(), this);
+                    vm.init(true, false);
+                    SchemaMeta schemaMeta = this.getCatalogs().get(schemaName.getKey());
+                    if (schemaMeta == null) {
+                        LOGGER.warn("View " + view.getKey() + " can not find it's schema,view " + view.getKey() + " not initialized");
+                    } else {
+                        schemaMeta.getViewMetas().put(vm.getViewName(), vm);
+                    }
+                } catch (Exception e) {
+                    LOGGER.warn("load view meta error", e);
                 }
             }
         }
@@ -459,9 +469,13 @@ public class ProxyMetaManager {
         for (Map.Entry<String, Map<String, String>> schemaName : viewCreateSqlMap.entrySet()) {
             ConcurrentMap<String, ViewMeta> schemaViewMeta = new ConcurrentHashMap<String, ViewMeta>();
             for (Map.Entry<String, String> view : schemaName.getValue().entrySet()) {
-                ViewMeta vm = new ViewMeta(view.getValue(), schemaName.getKey(), this);
-                vm.init(true);
-                schemaViewMeta.put(vm.getViewName(), vm);
+                try {
+                    ViewMeta vm = new ViewMeta(schemaName.getKey(), view.getValue(), this);
+                    schemaViewMeta.put(vm.getViewName(), vm);
+                    vm.init(true, false);
+                } catch (Exception e) {
+                    LOGGER.warn("reload view meta error", e);
+                }
             }
             this.getCatalogs().get(schemaName.getKey()).setViewMetas(schemaViewMeta);
         }
@@ -486,7 +500,6 @@ public class ProxyMetaManager {
         }
     }
 
-
     /**
      * init new Meta from reload config/metadata
      * can be interrupted and abandon the new config
@@ -499,7 +512,7 @@ public class ProxyMetaManager {
         ServerMetaHandler handler = new ServerMetaHandler(this, config, selfNode);
         handler.setFilter(specifiedSchemas);
         handler.register();
-        //if the meta reload interrupted by reload release
+        // if the meta reload interrupted by reload release
         // do not reload the view meta or start a new scheduler
         if (handler.execute()) {
             initViewMeta();
@@ -543,11 +556,7 @@ public class ProxyMetaManager {
                 String tableName = entry.getKey();
                 TableConfig tbConfig = entry.getValue();
                 for (String dataNode : tbConfig.getDataNodes()) {
-                    Set<String> tables = dataNodeMap.get(dataNode);
-                    if (tables == null) {
-                        tables = new HashSet<>();
-                        dataNodeMap.put(dataNode, tables);
-                    }
+                    Set<String> tables = dataNodeMap.computeIfAbsent(dataNode, k -> new HashSet<>());
                     tables.add(tableName);
                 }
             }
@@ -592,7 +601,6 @@ public class ProxyMetaManager {
             ClusterHelper.setKV(ClusterPathUtil.getDDLPath(nodeName), ddlInfo.toString());
         }
     }
-
 
     public void notifyResponseClusterDDL(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, DDLInfo.DDLType ddlType, boolean needNotifyOther) throws Exception {
         ClusterDelayProvider.delayAfterDdlExecuted();
@@ -666,13 +674,6 @@ public class ProxyMetaManager {
         }
 
     }
-
-
-    //no need to check user
-    private static SchemaInfo getSchemaInfo(String schema, String table) {
-        return SchemaUtil.getSchemaInfoWithoutCheck(schema, table);
-    }
-
 
     private boolean createTable(String schema, String table, String sql, boolean isSuccess, boolean needNotifyOther) {
         SchemaInfo schemaInfo = getSchemaInfo(schema, table);

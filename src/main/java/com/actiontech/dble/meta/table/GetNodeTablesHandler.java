@@ -21,20 +21,30 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class GetNodeTablesHandler {
-
     protected static final Logger LOGGER = LoggerFactory.getLogger(GetNodeTablesHandler.class);
     protected static final String SQL = "show full tables where Table_type ='BASE TABLE' ";
+    private static final String SQL_WITH_VIEW = "show full tables ";
     protected String dataNode;
+    protected boolean isFinished = false;
+    protected Lock lock = new ReentrantLock();
+    protected Condition notify = lock.newCondition();
+    private String sql = SQL;
 
-    GetNodeTablesHandler(String dataNode) {
+    GetNodeTablesHandler(String dataNode, boolean skipView) {
         this.dataNode = dataNode;
+        if (!skipView) {
+            sql = SQL_WITH_VIEW;
+        }
     }
 
-    protected abstract void handleTables(String table);
-
-    protected abstract void handleFinished();
+    GetNodeTablesHandler(String dataNode) {
+        this(dataNode, true);
+    }
 
     public void execute() {
         PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
@@ -43,12 +53,24 @@ public abstract class GetNodeTablesHandler {
         PhysicalDatasource ds = dn.getDbPool().getSource();
         if (ds.isAlive()) {
             MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(mysqlShowTableCols, new MySQLShowTablesListener(mysqlShowTableCol, dn.getDatabase(), ds));
-            SQLJob sqlJob = new SQLJob(SQL, dn.getDatabase(), resultHandler, ds);
+            SQLJob sqlJob = new SQLJob(sql, dn.getDatabase(), resultHandler, ds);
             sqlJob.run();
         } else {
             MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(mysqlShowTableCols, new MySQLShowTablesListener(mysqlShowTableCol, dn.getDatabase(), null));
-            SQLJob sqlJob = new SQLJob(SQL, dataNode, resultHandler, false);
+            SQLJob sqlJob = new SQLJob(sql, dataNode, resultHandler, false);
             sqlJob.run();
+        }
+    }
+
+    protected abstract void handleTable(String table);
+
+    protected void handleFinished() {
+        lock.lock();
+        try {
+            isFinished = true;
+            notify.signalAll();
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -71,7 +93,6 @@ public abstract class GetNodeTablesHandler {
             }
             if (!result.isSuccess()) {
                 //not thread safe
-
                 String warnMsg = "Can't show tables from DataNode:" + dataNode + "! Maybe the data node is not initialized!";
                 LOGGER.warn(warnMsg);
                 if (ds != null) {
@@ -95,9 +116,10 @@ public abstract class GetNodeTablesHandler {
                 if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
                     table = table.toLowerCase();
                 }
-                handleTables(table);
+                handleTable(table);
             }
             handleFinished();
         }
     }
+
 }

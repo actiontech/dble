@@ -6,48 +6,63 @@
 package com.actiontech.dble.meta;
 
 import com.actiontech.dble.meta.protocol.StructureMeta;
-import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.node.MergeNode;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.QueryNode;
+import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.singleton.ProxyMeta;
+import com.actiontech.dble.util.StringUtil;
+import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
+import com.alibaba.druid.sql.ast.statement.SQLSelectQueryBlock;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 
-import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import static com.actiontech.dble.config.ErrorCode.CREATE_VIEW_ERROR;
 
 /**
  * Created by szf on 2017/9/29.
  */
 public class ViewMeta {
+    private String viewName;
     private String createSql;
     private String selectSql;
-    private String viewName;
-    private QueryNode viewQuery;
-
+    private PlanNode viewQuery;
 
     private List<String> viewColumnMeta;
     private String schema;
     private ProxyMetaManager tmManager;
+    private long timestamp;
 
+    public ViewMeta(String schema, String createSql, ProxyMetaManager tmManager) {
+        this.createSql = createSql;
+        this.schema = schema;
+        this.tmManager = tmManager;
+    }
 
-    public ErrorPacket init(boolean isReplace) {
-
+    public void init(boolean isReplace, boolean isMysqlView) throws Exception {
         ViewMetaParser viewParser = new ViewMetaParser(createSql);
-        try {
-            viewParser.parseCreateView(this);
-            //check if the select part has
-            this.checkDuplicate(viewParser, isReplace);
+        viewParser.parseCreateView(this);
+        //check if the select part has
+        this.checkDuplicate(viewParser, isReplace);
+        this.parseSelectInView(isMysqlView);
+    }
 
-            SQLSelectStatement selectStatement = (SQLSelectStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(selectSql);
-
+    private void parseSelectInView(boolean isMysqlView) throws Exception {
+        SQLSelectStatement selectStatement = (SQLSelectStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(selectSql);
+        if (isMysqlView) {
+            List<SQLSelectItem> selectItems = ((SQLSelectQueryBlock) selectStatement.getSelect().getQuery()).getSelectList();
+            viewColumnMeta = new ArrayList<>(selectItems.size());
+            for (SQLSelectItem item : selectItems) {
+                String alias = item.getAlias() == null ? item.getExpr().toString() : item.getAlias();
+                viewColumnMeta.add(StringUtil.removeBackQuote(alias));
+            }
+            viewQuery = new TableNode(schema, viewName, viewColumnMeta);
+        } else {
             MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(this.schema, 63, tmManager, false);
             msv.visit(selectStatement.getSelect().getQuery());
             PlanNode selNode = msv.getTableNode();
@@ -58,72 +73,32 @@ public class ViewMeta {
                 selNode.setUpFields();
                 this.setFieldsAlias(selNode, false);
             }
-
             viewQuery = new QueryNode(selNode);
-        } catch (Exception e) {
-            //the select part sql is wrong & report the error
-            ErrorPacket error = new ErrorPacket();
-            error.setMessage(e.getMessage() == null ? "unknow error".getBytes(StandardCharsets.UTF_8) :
-                    e.getMessage().getBytes(StandardCharsets.UTF_8));
-            error.setErrNo(CREATE_VIEW_ERROR);
-            return error;
         }
-        return null;
     }
 
-
-    public ErrorPacket initAndSet(boolean isReplace, boolean isNewCreate) {
-
+    public void initAndSet(boolean isReplace, boolean isNewCreate, boolean isMysqlView) throws Exception {
         //check the create sql is legal
         //parse sql into three parts
         ViewMetaParser viewParser = new ViewMetaParser(createSql);
         viewParser.parseCreateView(this);
+        if ("".equals(viewName)) {
+            throw new Exception("sql not supported ");
+        }
 
         try {
-            if ("".equals(viewName)) {
-                throw new Exception("sql not supported ");
-            }
-
             tmManager.addMetaLock(schema, viewName, createSql);
-
             //check if the select part has
-            this.checkDuplicate(viewParser, isReplace);
-
-            SQLSelectStatement selectStatement = (SQLSelectStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(selectSql);
-
-            MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(this.schema, 63, tmManager, false);
-
-            msv.visit(selectStatement.getSelect().getQuery());
-            PlanNode selNode = msv.getTableNode();
-
-            if (selNode instanceof MergeNode) {
-                this.setFieldsAlias(selNode, true);
-                selNode.setUpFields();
-            } else {
-                selNode.setUpFields();
-                this.setFieldsAlias(selNode, false);
-            }
-
-            viewQuery = new QueryNode(selNode);
-
+            checkDuplicate(viewParser, isReplace);
+            parseSelectInView(isMysqlView);
             if (isNewCreate) {
                 ProxyMeta.getInstance().getTmManager().getRepository().put(schema, viewName, this.createSql);
             }
-
             tmManager.getCatalogs().get(schema).getViewMetas().put(viewName, this);
-        } catch (Exception e) {
-            //the select part sql is wrong & report the error
-            ErrorPacket error = new ErrorPacket();
-            error.setMessage(e.getMessage() == null ? "unknown error".getBytes(StandardCharsets.UTF_8) :
-                    e.getMessage().getBytes(StandardCharsets.UTF_8));
-            error.setErrNo(CREATE_VIEW_ERROR);
-            return error;
         } finally {
             tmManager.removeMetaLock(schema, viewName);
         }
-        return null;
     }
-
 
     private void checkDuplicate(ViewMetaParser viewParser, Boolean isReplace) throws Exception {
 
@@ -221,12 +196,6 @@ public class ViewMeta {
         return null;
     }
 
-    public ViewMeta(String createSql, String schema, ProxyMetaManager tmManager) {
-        this.createSql = createSql;
-        this.schema = schema;
-        this.tmManager = tmManager;
-    }
-
     public String getCreateSql() {
         return createSql;
     }
@@ -243,14 +212,13 @@ public class ViewMeta {
         this.viewName = viewName;
     }
 
-    public QueryNode getViewQuery() {
+    public PlanNode getViewQuery() {
         return viewQuery;
     }
 
     public void setViewQuery(QueryNode viewQuery) {
         this.viewQuery = viewQuery;
     }
-
 
     public String getSelectSql() {
         return selectSql;
@@ -262,6 +230,10 @@ public class ViewMeta {
 
     public List<String> getViewColumnMeta() {
         return viewColumnMeta;
+    }
+
+    public void setViewColumnMeta(List<String> viewColumnMeta) {
+        this.viewColumnMeta = viewColumnMeta;
     }
 
     public String getViewColumnMetaString() {
@@ -277,8 +249,11 @@ public class ViewMeta {
         return null;
     }
 
-    public void setViewColumnMeta(List<String> viewColumnMeta) {
-        this.viewColumnMeta = viewColumnMeta;
+    public long getTimestamp() {
+        return timestamp;
     }
 
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+    }
 }

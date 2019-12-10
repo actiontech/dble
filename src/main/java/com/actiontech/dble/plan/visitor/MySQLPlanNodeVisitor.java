@@ -38,10 +38,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MySQLPlanNodeVisitor {
-    private PlanNode tableNode;
     private final String currentDb;
     private final int charsetIndex;
     private final ProxyMetaManager metaManager;
+    private PlanNode tableNode;
     private boolean containSchema = false;
     private boolean isSubQuery = false;
 
@@ -194,7 +194,7 @@ public class MySQLPlanNodeVisitor {
         }
 
         //here to check if the table name is a view in metaManager
-        QueryNode viewNode;
+        PlanNode viewNode;
         try {
             viewNode = metaManager.getSyncView(schema, tableName);
         } catch (SQLNonTransientException e) {
@@ -204,9 +204,11 @@ public class MySQLPlanNodeVisitor {
             //consider if the table with other name
             viewNode.setAlias(tableSource.getAlias() == null ? tableName : tableSource.getAlias());
             this.tableNode = viewNode;
-            tableNode.setWithSubQuery(true);
-            this.tableNode.setExistView(true);
-            tableNode.setKeepFieldSchema(false);
+            if (viewNode instanceof QueryNode) {
+                tableNode.setWithSubQuery(true);
+                tableNode.setExistView(true);
+                tableNode.setKeepFieldSchema(false);
+            }
             return true;
         } else {
             try {

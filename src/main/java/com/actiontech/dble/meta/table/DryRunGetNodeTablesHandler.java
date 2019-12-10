@@ -8,7 +8,10 @@ package com.actiontech.dble.meta.table;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.config.ErrorInfo;
-import com.actiontech.dble.sqlengine.*;
+import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
+import com.actiontech.dble.sqlengine.SQLQueryResult;
+import com.actiontech.dble.sqlengine.SQLQueryResultListener;
+import com.actiontech.dble.sqlengine.SpecialSqlJob;
 
 import java.util.HashSet;
 import java.util.List;
@@ -61,7 +64,7 @@ public class DryRunGetNodeTablesHandler extends GetNodeTablesHandler {
     }
 
     @Override
-    protected void handleTables(String table) {
+    protected void handleTable(String table) {
         returnMap.get(phyDataNode.getName()).add(table);
     }
 
@@ -93,7 +96,7 @@ public class DryRunGetNodeTablesHandler extends GetNodeTablesHandler {
                 if (isLowerCase) {
                     table = table.toLowerCase();
                 }
-                handleTables(table);
+                handleTable(table);
             }
             handleFinished();
         }

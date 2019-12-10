@@ -26,24 +26,40 @@ import java.util.List;
 
 public class TableNode extends PlanNode {
 
-    public PlanNodeType type() {
-        return PlanNodeType.TABLE;
-    }
-
     private String schema;
     private String tableName;
     private StructureMeta.TableMeta tableMeta;
+    private List<String> columns;
     private List<SQLHint> hintList;
-    private ProxyMetaManager metaManager;
-
     private TableNode() {
     }
+
+    public TableNode(String schema, String viewName, List<String> columns) {
+        if (schema == null || viewName == null)
+            throw new RuntimeException("Table db or name is null error!");
+        this.schema = schema;
+        this.tableName = viewName;
+        ServerConfig config = DbleServer.getInstance().getConfig();
+        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+            this.schema = this.schema.toLowerCase();
+            this.tableName = this.tableName.toLowerCase();
+        }
+        SchemaConfig schemaConfig = config.getSchemas().get(this.schema);
+        if (schemaConfig == null) {
+            throw new RuntimeException("schema " + this.schema + " doesn't exist!");
+        }
+
+        this.columns = columns;
+        this.setNoshardNode(new HashSet<>(Collections.singletonList(schemaConfig.getDataNode())));
+        this.referedTableNodes.add(this);
+        this.keepFieldSchema = true;
+    }
+
     public TableNode(String catalog, String tableName, ProxyMetaManager metaManager) throws SQLNonTransientException {
         if (catalog == null || tableName == null)
             throw new RuntimeException("Table db or name is null error!");
         this.schema = catalog;
         this.tableName = tableName;
-        this.metaManager = metaManager;
         ServerConfig config = DbleServer.getInstance().getConfig();
         if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             this.schema = this.schema.toLowerCase();
@@ -74,6 +90,10 @@ public class TableNode extends PlanNode {
         this.keepFieldSchema = true;
     }
 
+    public PlanNodeType type() {
+        return PlanNodeType.TABLE;
+    }
+
     /**
      * @return the tableName
      */
@@ -92,10 +112,18 @@ public class TableNode extends PlanNode {
     protected void setUpInnerFields() {
         innerFields.clear();
         String tmpTable = alias == null ? tableName : alias;
-        for (StructureMeta.ColumnMeta cm : tableMeta.getColumnsList()) {
-            NamedField tmpField = new NamedField(schema, tmpTable, cm.getName(), this);
-            innerFields.put(tmpField, tmpField);
+        if (tableMeta != null) {
+            for (StructureMeta.ColumnMeta cm : tableMeta.getColumnsList()) {
+                NamedField tmpField = new NamedField(schema, tmpTable, cm.getName(), this);
+                innerFields.put(tmpField, tmpField);
+            }
+        } else {
+            for (String col : columns) {
+                NamedField tmpField = new NamedField(schema, tmpTable, col, this);
+                innerFields.put(tmpField, tmpField);
+            }
         }
+
     }
 
     @Override
@@ -118,8 +146,8 @@ public class TableNode extends PlanNode {
         TableNode newTableNode = new TableNode();
         newTableNode.schema = this.schema;
         newTableNode.tableName = this.tableName;
-        newTableNode.metaManager = this.metaManager;
-        newTableNode.tableMeta = this.tableMeta.toBuilder().build();
+        newTableNode.tableMeta = this.tableMeta == null ? null : this.tableMeta.toBuilder().build();
+        newTableNode.columns = this.columns;
         newTableNode.referedTableNodes.add(newTableNode);
         newTableNode.setNoshardNode(this.getNoshardNode());
 
@@ -146,7 +174,6 @@ public class TableNode extends PlanNode {
     public int getHeight() {
         return 1;
     }
-
 
     @Override
     public String toString(int level) {

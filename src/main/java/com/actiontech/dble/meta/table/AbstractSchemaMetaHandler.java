@@ -10,15 +10,14 @@ import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.ReloadLogHelper;
+import com.actiontech.dble.meta.ViewMeta;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.util.CollectionUtil;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * abstract impl of the single-schema-MetaHandler
@@ -27,7 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public abstract class AbstractSchemaMetaHandler {
     protected final ReloadLogHelper logger;
     //shard-DataNode-Set when the set to be count down into the empty,means that all the dataNode have finished
-    private volatile Set<String> shardDNSet = new HashSet<String>();
+    private volatile Set<String> shardDNSet = new HashSet<>();
     //defaultDNflag  has no default Node/default Node has no table/ default Node table return finish ---- false
     // schema has default Node & default Node has not return yet  ---- true
     private AtomicBoolean defaultDNflag;
@@ -35,20 +34,22 @@ public abstract class AbstractSchemaMetaHandler {
     private String schema;
     private SchemaConfig schemaConfig;
     private Set<String> selfNode;
-    private Lock singleTableLock = new ReentrantLock();
-    private Condition collectTables = singleTableLock.newCondition();
     private Map<String, Map<String, List<String>>> tablesStructMap = new HashMap<>();
     private Set<String> filterTables;
+    private final ProxyMetaManager tmManager;
 
-
-    AbstractSchemaMetaHandler(SchemaConfig schemaConfig, Set<String> selfNode, boolean isReload) {
+    AbstractSchemaMetaHandler(ProxyMetaManager tmManager, SchemaConfig schemaConfig, Set<String> selfNode, boolean isReload) {
+        this.tmManager = tmManager;
         this.schemaConfig = schemaConfig;
         this.schema = schemaConfig.getName();
         this.selfNode = selfNode;
-        logger = new ReloadLogHelper(isReload);
+        this.logger = new ReloadLogHelper(isReload);
         this.defaultDNflag = new AtomicBoolean(false);
     }
 
+    public ProxyMetaManager getTmManager() {
+        return tmManager;
+    }
 
     void countDownSingleTable() {
         if (defaultDNflag.compareAndSet(true, false)) {
@@ -66,11 +67,12 @@ public abstract class AbstractSchemaMetaHandler {
         }
     }
 
-
     public void execute() {
         boolean existTable = false;
-        if (schemaConfig.getDataNode() != null && (selfNode == null || !selfNode.contains(schemaConfig.getDataNode()))) {
-            List<String> tables = getSingleTables();
+        // default node
+        String defaultNode = schemaConfig.getDataNode();
+        if (defaultNode != null && (selfNode == null || !selfNode.contains(defaultNode))) {
+            Set<String> tables = getTablesFromDefaultDataNode();
             if (!CollectionUtil.isEmpty(filterTables)) {
                 tables.retainAll(filterTables);
                 filterTables.removeAll(tables);
@@ -78,10 +80,12 @@ public abstract class AbstractSchemaMetaHandler {
             if (tables.size() > 0) {
                 existTable = true;
                 defaultDNflag.set(true);
-                DefaultNodeTablesMetaHandler tableHandler = new DefaultNodeTablesMetaHandler(this, tables, schemaConfig.getDataNode(), logger.isReload());
-                tableHandler.execute();
+                DefaultNodeTablesMetaHandler tableHandler = new DefaultNodeTablesMetaHandler(this, schema, logger.isReload());
+                tableHandler.execute(defaultNode, tables);
             }
         }
+
+        // tables in config
         Map<String, Set<String>> dataNodeMap = new HashMap<>();
         for (Map.Entry<String, TableConfig> entry : filterConfigTables().entrySet()) {
             existTable = true;
@@ -99,41 +103,19 @@ public abstract class AbstractSchemaMetaHandler {
         }
 
         logger.infoList("try to execute show create table in [" + schema + "] dataNodes:", shardDNSet);
-        SingleDataNodeTablesMetaHandler tableHandler = new SingleDataNodeTablesMetaHandler(this, schema, dataNodeMap, selfNode, logger.isReload());
-        tableHandler.execute();
+        ConfigTableMetaHandler tableHandler = new ConfigTableMetaHandler(this, schema, selfNode, logger.isReload());
+        tableHandler.execute(dataNodeMap);
         if (!existTable) {
             logger.info("no table exist in schema " + schema + ",count down");
             countDown();
         }
     }
 
-    private List<String> getSingleTables() {
-        GetSchemaDefaultNodeTablesHandler showTablesHandler = new GetSchemaDefaultNodeTablesHandler(this, schemaConfig);
+    private Set<String> getTablesFromDefaultDataNode() {
+        GetDefaultNodeTablesHandler showTablesHandler = new GetDefaultNodeTablesHandler(schemaConfig);
         showTablesHandler.execute();
-        singleTableLock.lock();
-        try {
-            while (!showTablesHandler.isFinished()) {
-                collectTables.await();
-            }
-        } catch (InterruptedException e) {
-            logger.info("getSingleTables " + e);
-            return new ArrayList<>();
-        } finally {
-            singleTableLock.unlock();
-        }
         return showTablesHandler.getTables();
     }
-
-
-    void showTablesFinished() {
-        singleTableLock.lock();
-        try {
-            collectTables.signalAll();
-        } finally {
-            singleTableLock.unlock();
-        }
-    }
-
 
     private Map<String, TableConfig> filterConfigTables() {
         Map<String, TableConfig> newReload = new HashMap<>();
@@ -241,8 +223,9 @@ public abstract class AbstractSchemaMetaHandler {
         this.filterTables = filterTables;
     }
 
-
     abstract void handleSingleMetaData(StructureMeta.TableMeta tableMeta);
+
+    abstract void handleViewMeta(ViewMeta viewMeta);
 
     abstract void handleMultiMetaData(Set<StructureMeta.TableMeta> tableMetas);
 

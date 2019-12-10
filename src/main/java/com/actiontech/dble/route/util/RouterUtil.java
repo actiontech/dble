@@ -13,8 +13,6 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.model.rule.RuleConfig;
-import com.actiontech.dble.singleton.CacheService;
-import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -27,6 +25,8 @@ import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
+import com.actiontech.dble.singleton.CacheService;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.sqlengine.mpp.ColumnRoutePair;
 import com.actiontech.dble.sqlengine.mpp.LoadData;
 import com.actiontech.dble.util.StringUtil;
@@ -1146,9 +1146,10 @@ public final class RouterUtil {
      * @return dataNode DataNode of no-sharding table
      */
     public static String isNoSharding(SchemaConfig schemaConfig, String tableName) throws SQLNonTransientException {
-        if (schemaConfig == null || ProxyMeta.getInstance().getTmManager().getSyncView(schemaConfig.getName(), tableName) != null) {
+        if (schemaConfig == null) {
             return null;
         }
+
         if (schemaConfig.isNoSharding()) { //schema without table
             return schemaConfig.getDataNode();
         }
@@ -1158,6 +1159,21 @@ public final class RouterUtil {
         }
         if (tbConfig != null && tbConfig.isNoSharding()) {
             return tbConfig.getDataNodes().get(0);
+        }
+
+        PlanNode viewNode = ProxyMeta.getInstance().getTmManager().getSyncView(schemaConfig.getName(), tableName);
+        if (viewNode != null) {
+            Set<String> dataNodes = null;
+            for (PlanNode childNode : viewNode.getReferedTableNodes()) {
+                if (dataNodes == null) {
+                    dataNodes = childNode.getNoshardNode();
+                } else {
+                    dataNodes.retainAll(childNode.getNoshardNode());
+                }
+            }
+            if (dataNodes != null && dataNodes.size() > 0) {
+                return dataNodes.iterator().next();
+            }
         }
         return null;
     }
@@ -1170,7 +1186,7 @@ public final class RouterUtil {
      * @param tableName    the TableName
      * @return dataNode DataNode of no-sharding table
      */
-    public static String isNoShardingDDL(SchemaConfig schemaConfig, String tableName) throws SQLNonTransientException {
+    public static String isNoShardingDDL(SchemaConfig schemaConfig, String tableName) {
         if (schemaConfig == null) {
             return null;
         }

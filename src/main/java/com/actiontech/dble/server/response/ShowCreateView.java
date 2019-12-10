@@ -8,7 +8,6 @@ package com.actiontech.dble.server.response;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.meta.SchemaMeta;
 import com.actiontech.dble.meta.ViewMeta;
 import com.actiontech.dble.net.mysql.EOFPacket;
@@ -17,6 +16,7 @@ import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
@@ -39,8 +39,7 @@ public final class ShowCreateView {
         int i = 0;
         byte packetId = 0;
         HEADER.setPacketId(++packetId);
-        FIELDS[i] = PacketUtil.getField("View",
-                Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("View", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("Create View", Fields.FIELD_TYPE_VAR_STRING);
@@ -56,20 +55,32 @@ public final class ShowCreateView {
     }
 
     private ShowCreateView() {
-
     }
 
     public static void response(ServerConnection c, String stmt) {
         try {
             MySqlShowCreateViewStatement statement = (MySqlShowCreateViewStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
+            String schema = null;
+            String view = null;
             if (statement.getName() instanceof SQLPropertyExpr) {
                 //show create view with schema
                 SQLPropertyExpr sqlPropertyExpr = (SQLPropertyExpr) statement.getName();
                 //protocol not equals the nomul things
-                sendOutTheViewInfo(c, sqlPropertyExpr.getOwner().toString(), sqlPropertyExpr.getName());
+                schema = sqlPropertyExpr.getOwner().toString();
+                view = sqlPropertyExpr.getName();
             } else if (statement.getName() instanceof SQLIdentifierExpr) {
-                sendOutTheViewInfo(c, c.getSchema(), statement.getName().toString());
+                schema = c.getSchema();
+                view = statement.getName().toString();
             }
+            sendOutTheViewInfo(c, schema, view);
+        } catch (Exception e) {
+            c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.getMessage());
+        }
+    }
+
+    public static void response(ServerConnection c, String schema, String viewName) {
+        try {
+            sendOutTheViewInfo(c, schema, viewName);
         } catch (Exception e) {
             c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.getMessage());
         }

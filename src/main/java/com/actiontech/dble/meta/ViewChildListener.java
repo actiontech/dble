@@ -14,8 +14,6 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 
@@ -23,7 +21,6 @@ import static com.actiontech.dble.backend.mysql.view.Repository.*;
 
 
 public class ViewChildListener implements PathChildrenCacheListener {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ViewChildListener.class);
 
     @Override
     public void childEvent(CuratorFramework client, PathChildrenCacheEvent event) throws Exception {
@@ -43,7 +40,6 @@ public class ViewChildListener implements PathChildrenCacheListener {
                 break;
         }
     }
-
 
     /**
      * delete the view data from view meta
@@ -65,7 +61,6 @@ public class ViewChildListener implements PathChildrenCacheListener {
 
     }
 
-
     /**
      * update the meta if the view updated
      */
@@ -83,10 +78,9 @@ public class ViewChildListener implements PathChildrenCacheListener {
         String createSql = obj.getString(CREATE_SQL);
         String schema = paths[paths.length - 1].split(SCHEMA_VIEW_SPLIT)[0];
 
-        ViewMeta vm = new ViewMeta(createSql, schema, ProxyMeta.getInstance().getTmManager());
-        vm.initAndSet(isReplace, false);
+        ViewMeta vm = new ViewMeta(schema, createSql, ProxyMeta.getInstance().getTmManager());
+        vm.initAndSet(isReplace, false, false);
 
     }
-
 
 }

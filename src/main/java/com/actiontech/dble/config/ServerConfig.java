@@ -117,11 +117,14 @@ public class ServerConfig {
     public void testConnection() {
         try {
             confInitNew.testConnection(true);
-            confInitNew = null;
         } catch (ConfigException e) {
             LOGGER.warn("TestConnection fail", e);
             AlertUtil.alertSelf(AlarmCode.TEST_CONN_FAIL, Alert.AlertLevel.WARN, "TestConnection fail:" + e.getMessage(), null);
         }
+    }
+
+    public void getAndSyncKeyVariables() throws Exception {
+        ConfigUtil.getAndSyncKeyVariables(true, confInitNew.getDataHosts());
     }
 
     public boolean isDataHostWithoutWR() {

@@ -114,16 +114,25 @@ public class MySQLConnection extends AbstractConnection implements
     private String user;
     private String password;
     private Object attachment;
+    private boolean autocommitSynced = false;
+    private boolean isolationSynced = false;
     private volatile ResponseHandler respHandler;
 
-    public MySQLConnection(NetworkChannel channel, boolean fromSlaveDB, boolean isNoSchema) {
+    public MySQLConnection(NetworkChannel channel, boolean fromSlaveDB, boolean autocommitSynced, boolean isolationSynced) {
         super(channel);
         this.lastTime = TimeUtil.currentTimeMillis();
-        this.autocommit = true;
+        this.autocommitSynced = autocommitSynced;
+        boolean sysAutocommit = DbleServer.getInstance().getConfig().getSystem().getAutocommit() == 1;
+        this.autocommit = sysAutocommit == autocommitSynced; // T + T-> T, T + F-> F, F +T ->F, F + F->T
         this.fromSlaveDB = fromSlaveDB;
-        /* if the txIsolation in server.xml is different from the isolation level in MySQL node,
-        *  it need to sync the status firstly for new idle connection*/
-        this.txIsolation = -1;
+        this.isolationSynced = isolationSynced;
+        if (isolationSynced) {
+            this.txIsolation = DbleServer.getInstance().getConfig().getSystem().getTxIsolation();
+        } else {
+            /* if the txIsolation in server.xml is different from the isolation level in MySQL node,
+            *  it need to sync the status firstly for new idle connection*/
+            this.txIsolation = -1;
+        }
         this.complexQuery = false;
         this.usrVariables = new LinkedHashMap<>();
         this.sysVariables = new LinkedHashMap<>();
@@ -134,8 +143,13 @@ public class MySQLConnection extends AbstractConnection implements
     }
 
     public void resetContextStatus() {
-        this.txIsolation = -1;
-        this.autocommit = true;
+        if (isolationSynced) {
+            this.txIsolation = DbleServer.getInstance().getConfig().getSystem().getTxIsolation();
+        } else {
+            this.txIsolation = -1;
+        }
+        boolean sysAutocommit = DbleServer.getInstance().getConfig().getSystem().getAutocommit() == 1;
+        this.autocommit = sysAutocommit == autocommitSynced; // T + T-> T, T + F-> F, F +T ->F, F + F->T
         this.initCharacterSet(DbleServer.getInstance().getConfig().getSystem().getCharset());
         this.usrVariables.clear();
         this.sysVariables.clear();

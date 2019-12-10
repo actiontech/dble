@@ -28,7 +28,7 @@ public class MySQLConnectionFactory extends BackendConnectionFactory {
         DBHostConfig dsc = pool.getConfig();
         NetworkChannel channel = openSocketChannel(DbleServer.getInstance().isAIO());
 
-        MySQLConnection c = new MySQLConnection(channel, pool.isReadNode(), schema == null);
+        MySQLConnection c = new MySQLConnection(channel, pool.isReadNode(), pool.isAutocommitSynced(), pool.isIsolationSynced());
         c.setSocketParams(false);
         c.setHost(dsc.getIp());
         c.setPort(dsc.getPort());

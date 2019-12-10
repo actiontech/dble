@@ -5,11 +5,19 @@
 */
 package com.actiontech.dble.config.util;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.config.ProblemReporter;
+import com.actiontech.dble.config.helper.GetAndSyncDataSourceKeyVariables;
+import com.actiontech.dble.config.helper.KeyVariables;
+import com.actiontech.dble.config.model.DBHostConfig;
 import com.actiontech.dble.util.StringUtil;
 import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.util.Strings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.*;
 import org.xml.sax.*;
 
@@ -19,15 +27,14 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
-/**
- * @author mycat
- */
 public final class ConfigUtil {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConfigUtil.class);
     private ConfigUtil() {
     }
 
@@ -196,5 +203,107 @@ public final class ConfigUtil {
             }
         }
         return defaultValue;
+    }
+
+
+    public static void getAndSyncKeyVariables(boolean isStart, Map<String, AbstractPhysicalDBPool> dataHosts) throws Exception {
+        Map<String, Future<KeyVariables>> keyVariablesTaskMap = new HashMap<>(dataHosts.size());
+        getAndSyncKeyVariablesForDataSources(isStart, dataHosts, keyVariablesTaskMap);
+
+        boolean lowerCase = false;
+        boolean isFirst = true;
+        Set<String> firstGroup = new HashSet<>();
+        Set<String> secondGroup = new HashSet<>();
+        for (Map.Entry<String, Future<KeyVariables>> entry : keyVariablesTaskMap.entrySet()) {
+            String dataSourceName = entry.getKey();
+            Future<KeyVariables> future = entry.getValue();
+            KeyVariables keyVariables = future.get();
+            if (keyVariables != null) {
+                if (isFirst) {
+                    lowerCase = keyVariables.isLowerCase();
+                    isFirst = false;
+                    firstGroup.add(dataSourceName);
+                } else if (keyVariables.isLowerCase() != lowerCase) {
+                    secondGroup.add(dataSourceName);
+                }
+            }
+        }
+        if (secondGroup.size() != 0) {
+            // if all datasoure's lower case are not equal, throw exception
+            StringBuilder sb = new StringBuilder("The values of lower_case_table_names for backend MySQLs are different.");
+            String firstGroupValue;
+            String secondGroupValue;
+            if (lowerCase) {
+                firstGroupValue = " not 0 :";
+                secondGroupValue = " 0 :";
+            } else {
+                firstGroupValue = " 0 :";
+                secondGroupValue = " not 0 :";
+            }
+            sb.append("These MySQL's value is");
+            sb.append(firstGroupValue);
+            sb.append(Strings.join(firstGroup, ','));
+            sb.append(".And these MySQL's value is");
+            sb.append(secondGroupValue);
+            sb.append(Strings.join(secondGroup, ','));
+            sb.append(".");
+            throw new IOException(sb.toString());
+        }
+    }
+
+
+
+    private static void getAndSyncKeyVariablesForDataSources(boolean isStart, Map<String, AbstractPhysicalDBPool> dataHosts, Map<String, Future<KeyVariables>> keyVariablesTaskMap) throws InterruptedException {
+        if (dataHosts.size() == 0) {
+            return;
+        }
+        ExecutorService service = Executors.newFixedThreadPool(dataHosts.size());
+        for (Map.Entry<String, AbstractPhysicalDBPool> entry : dataHosts.entrySet()) {
+            String hostName = entry.getKey();
+            AbstractPhysicalDBPool pool = entry.getValue();
+
+            if (isStart) {
+                // start for first time, 1.you can set write host as empty
+                if (pool.getSources() == null || pool.getSources().length == 0) {
+                    continue;
+                }
+                DBHostConfig wHost = pool.getSource().getConfig();
+                // start for first time, 2.you can set write host as yourself
+                if (("localhost".equalsIgnoreCase(wHost.getIp()) || "127.0.0.1".equalsIgnoreCase(wHost.getIp())) &&
+                        wHost.getPort() == DbleServer.getInstance().getConfig().getSystem().getServerPort()) {
+                    continue;
+                }
+            }
+            for (PhysicalDatasource ds : pool.getAllDataSources()) {
+                if (ds.getConfig().isDisabled() || !ds.isTestConnSuccess()) {
+                    continue;
+                }
+                getKeyVariablesForDataSource(service, ds, hostName, keyVariablesTaskMap);
+            }
+        }
+        service.shutdown();
+        int i = 0;
+        while (!service.awaitTermination(100, TimeUnit.MILLISECONDS)) {
+            if (LOGGER.isDebugEnabled()) {
+                if (i == 0) {
+                    LOGGER.debug("wait get all datasouce's get key variable");
+                }
+                i++;
+                if (i == 100) { //log every 10 seconds
+                    i = 0;
+                }
+            }
+        }
+    }
+
+    private static void getKeyVariablesForDataSource(ExecutorService service, PhysicalDatasource ds, String hostName, Map<String, Future<KeyVariables>> keyVariablesTaskMap) {
+        String dataSourceName = genDataSourceKey(hostName, ds.getName());
+        GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(ds);
+        Future<KeyVariables> future = service.submit(task);
+        keyVariablesTaskMap.put(dataSourceName, future);
+    }
+
+    private static String genDataSourceKey(String hostName, String dsName) {
+        return hostName + ":" + dsName;
     }
 }

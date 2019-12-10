@@ -50,7 +50,9 @@ public abstract class PhysicalDatasource {
     private AbstractPhysicalDBPool dbPool;
     private final AtomicInteger connectionCount;
     private volatile AtomicBoolean disabled;
-
+    private volatile boolean autocommitSynced = false;
+    private volatile boolean isolationSynced = false;
+    private volatile boolean testConnSuccess = false;
     private AtomicLong readCount = new AtomicLong(0);
 
     private AtomicLong writeCount = new AtomicLong(0);
@@ -62,8 +64,6 @@ public abstract class PhysicalDatasource {
     public boolean isTestConnSuccess() {
         return testConnSuccess;
     }
-
-    private volatile boolean testConnSuccess = false;
 
     public PhysicalDatasource(DBHostConfig config, DataHostConfig hostConfig, boolean isReadNode) {
         this.size = config.getMaxCon();
@@ -128,6 +128,21 @@ public abstract class PhysicalDatasource {
 
     public abstract MySQLHeartbeat createHeartBeat();
 
+    public boolean isAutocommitSynced() {
+        return autocommitSynced;
+    }
+
+    public void setAutocommitSynced(boolean autocommitSynced) {
+        this.autocommitSynced = autocommitSynced;
+    }
+
+    public boolean isIsolationSynced() {
+        return isolationSynced;
+    }
+
+    public void setIsolationSynced(boolean isolationSynced) {
+        this.isolationSynced = isolationSynced;
+    }
 
     public void setSize(int size) {
         this.size = size;

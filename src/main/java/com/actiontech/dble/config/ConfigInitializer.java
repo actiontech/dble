@@ -8,13 +8,13 @@ package com.actiontech.dble.config;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.*;
 import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
+import com.actiontech.dble.config.helper.TestSchemasTask;
+import com.actiontech.dble.config.helper.TestTask;
 import com.actiontech.dble.config.loader.SchemaLoader;
 import com.actiontech.dble.config.loader.xml.XMLSchemaLoader;
 import com.actiontech.dble.config.loader.xml.XMLServerLoader;
 import com.actiontech.dble.config.model.*;
 import com.actiontech.dble.config.util.ConfigException;
-import com.actiontech.dble.config.helper.TestSchemasTask;
-import com.actiontech.dble.config.helper.TestTask;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.sequence.handler.IncrSequenceMySQLHandler;
@@ -415,5 +415,6 @@ public class ConfigInitializer implements ProblemReporter {
     public List<ErrorInfo> getErrorInfos() {
         return errorInfos;
     }
+
 
 }

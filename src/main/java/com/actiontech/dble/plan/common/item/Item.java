@@ -215,15 +215,15 @@ public abstract class Item {
     public FieldTypes fieldType() {
         ItemResult i = resultType();
         if (i == ItemResult.STRING_RESULT) {
-            return FieldTypes.MYSQL_TYPE_STRING;
+            return stringFieldType();
         } else if (i == ItemResult.INT_RESULT) {
             return FieldTypes.MYSQL_TYPE_LONG;
         } else if (i == ItemResult.DECIMAL_RESULT) {
-            return FieldTypes.MYSQL_TYPE_DECIMAL;
+            return FieldTypes.MYSQL_TYPE_NEWDECIMAL;
         } else if (i == ItemResult.REAL_RESULT) {
             return FieldTypes.MYSQL_TYPE_DOUBLE;
         } else {
-            return FieldTypes.MYSQL_TYPE_STRING;
+            return FieldTypes.MYSQL_TYPE_VARCHAR;
         }
     }
 

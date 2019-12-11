@@ -448,7 +448,10 @@ public class PhysicalDBPool extends AbstractPhysicalDBPool {
             }
         }
         if (!theNode.isAlive()) {
-            String heartbeatError = "the data source[" + theNode.getConfig().getUrl() + "] can't reached, please check the dataHost";
+            String heartbeatError = "the data source[" + theNode.getConfig().getUrl() + "] can't reached. Please check the dataHost status";
+            if (dataHostConfig.isShowSlaveSql()) {
+                heartbeatError += ",Tip:heartbeat[show slave status] need the SUPER or REPLICATION CLIENT privilege(s)";
+            }
             LOGGER.warn(heartbeatError);
             Map<String, String> labels = AlertUtil.genSingleLabel("data_host", theNode.getHostConfig().getName() + "-" + theNode.getConfig().getHostName());
             AlertUtil.alert(AlarmCode.DATA_HOST_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", theNode.getConfig().getId(), labels);

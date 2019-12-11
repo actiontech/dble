@@ -35,7 +35,7 @@ public class MySQLHeartbeat {
     public static final int INIT_STATUS = 0;
     public static final int OK_STATUS = 1;
     static final int ERROR_STATUS = -1;
-    private static final int TIMEOUT_STATUS = -2;
+    static final int TIMEOUT_STATUS = -2;
 
     private String heartbeatSQL;
     private final int errorRetryCount;
@@ -167,10 +167,6 @@ public class MySQLHeartbeat {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("heartbeat setOK");
         }
-        if (this.status != OK_STATUS) {
-            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getHostConfig().getName() + "-" + this.source.getConfig().getHostName());
-            AlertUtil.alertResolve(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "mysql", this.source.getConfig().getId(), labels);
-        }
         switch (status) {
             case TIMEOUT_STATUS:
                 this.status = INIT_STATUS;
@@ -188,6 +184,8 @@ public class MySQLHeartbeat {
                 this.status = OK_STATUS;
                 this.errorCount = 0;
                 this.startErrorTime.set(-1);
+                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getHostConfig().getName() + "-" + this.source.getConfig().getHostName());
+                AlertUtil.alertResolve(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "mysql", this.source.getConfig().getId(), labels);
         }
         if (isStop.get()) {
             detector.quit();

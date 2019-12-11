@@ -53,18 +53,9 @@ public abstract class PhysicalDatasource {
     private volatile boolean autocommitSynced = false;
     private volatile boolean isolationSynced = false;
     private volatile boolean testConnSuccess = false;
+    private volatile boolean readOnly = false;
     private AtomicLong readCount = new AtomicLong(0);
-
     private AtomicLong writeCount = new AtomicLong(0);
-
-    public void setTestConnSuccess(boolean testConnSuccess) {
-        this.testConnSuccess = testConnSuccess;
-    }
-
-    public boolean isTestConnSuccess() {
-        return testConnSuccess;
-    }
-
     public PhysicalDatasource(DBHostConfig config, DataHostConfig hostConfig, boolean isReadNode) {
         this.size = config.getMaxCon();
         this.config = config;
@@ -85,6 +76,21 @@ public abstract class PhysicalDatasource {
         }
     }
 
+    public void setTestConnSuccess(boolean testConnSuccess) {
+        this.testConnSuccess = testConnSuccess;
+    }
+
+    public boolean isTestConnSuccess() {
+        return testConnSuccess;
+    }
+
+    public boolean isReadOnly() {
+        return readOnly;
+    }
+
+    public void setReadOnly(boolean readOnly) {
+        this.readOnly = readOnly;
+    }
 
     public long getReadCount() {
         return readCount.get();
@@ -445,19 +451,17 @@ public abstract class PhysicalDatasource {
     }
 
     public BackendConnection getConnectionForHeartbeat(String schema, boolean autocommit) throws IOException {
-        BackendConnection con = this.conMap.tryTakeCon(schema, autocommit);
-        if (con == null) {
-            if (!disabled.get()) {
-                if (!this.createNewCount()) {
-                    LOGGER.warn("no ilde connection in pool and reached maxCon,create new connection for heartbeat ");
-                    con = createNewBackendConnection(schema);
-                } else { // create connection
-                    LOGGER.info("no ilde connection in pool,create new connection for heartbeat ");
-                    con = createNewBackendConnection(schema);
-                }
-            } else {
-                return null;
+        BackendConnection con;
+        if (!disabled.get()) {
+            if (!this.createNewCount()) {
+                LOGGER.warn("no ilde connection in pool and reached maxCon, but still try to create new connection for heartbeat ");
+                con = createNewBackendConnection(schema);
+            } else { // create connection
+                LOGGER.info("no ilde connection in pool,create new connection for heartbeat ");
+                con = createNewBackendConnection(schema);
             }
+        } else {
+            return null;
         }
         con = takeCon(con, schema);
         con.setAttachment(null);

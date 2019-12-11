@@ -8,6 +8,8 @@ package com.actiontech.dble.backend.heartbeat;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
+import com.actiontech.dble.config.helper.GetAndSyncDataSourceKeyVariables;
+import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.sqlengine.HeartbeatSQLJob;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
@@ -42,6 +44,9 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             "Master_Port",
             "Connect_Retry",
             "Last_IO_Error"};
+
+    private static final String[] MYSQL_READ_ONLY_COLS = new String[]{
+            "@@read_only"};
 
     private static final String[] MYSQL_CLUSTER_STATUS_COLS = new String[]{
             "Variable_name",
@@ -80,10 +85,12 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         String[] fetchCols = {};
         if (heartbeat.getSource().getHostConfig().isShowSlaveSql()) {
             fetchCols = MYSQL_SLAVE_STATUS_COLS;
-        }
-        if (heartbeat.getSource().getHostConfig().isShowClusterSql()) {
+        } else if (heartbeat.getSource().getHostConfig().isShowClusterSql()) {
             fetchCols = MYSQL_CLUSTER_STATUS_COLS;
+        } else if (heartbeat.getSource().getHostConfig().isSelectReadOnlySql()) {
+            fetchCols = MYSQL_READ_ONLY_COLS;
         }
+
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("do heartbeat,conn is " + con);
         }
@@ -105,6 +112,8 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
 
     @Override
     public void onResult(SQLQueryResult<Map<String, String>> result) {
+        lastReceivedQryTime = System.currentTimeMillis();
+        heartbeat.getRecorder().set((lastReceivedQryTime - lastSendQryTime));
         if (result.isSuccess()) {
             PhysicalDatasource source = heartbeat.getSource();
             Map<String, String> resultResult = result.getResult();
@@ -112,14 +121,45 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                 setStatusBySlave(source, resultResult);
             } else if (source.getHostConfig().isShowClusterSql()) {
                 setStatusByCluster(resultResult);
+            } else if (source.getHostConfig().isSelectReadOnlySql()) {
+                setStatusByReadOnly(source, resultResult);
             } else {
-                heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
+                setStatusForNormalHeartbeat(source);
             }
         } else {
             heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS);
         }
-        lastReceivedQryTime = System.currentTimeMillis();
-        heartbeat.getRecorder().set((lastReceivedQryTime - lastSendQryTime));
+    }
+
+    private void setStatusForNormalHeartbeat(PhysicalDatasource source) {
+        if (!heartbeat.isStop()) {
+            if (heartbeat.getStatus() == MySQLHeartbeat.OK_STATUS) { // ok->ok
+                if (!heartbeat.getSource().isSalveOrRead() && source.isReadOnly()) { // writehost check read only status is back?
+                    GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(source);
+                    KeyVariables variables = task.call();
+                    if (variables != null) {
+                        source.setReadOnly(variables.isReadOnly());
+                    } else {
+                        LOGGER.warn("GetAndSyncDataSourceKeyVariables failed, set heartbeat Error");
+                        heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS);
+                        return;
+                    }
+                }
+            } else if (heartbeat.getStatus() != MySQLHeartbeat.TIMEOUT_STATUS) { //error/init ->ok
+                if (!source.isSalveOrRead()) { // writehost check read only
+                    GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(source);
+                    KeyVariables variables = task.call();
+                    if (variables != null) {
+                        source.setReadOnly(variables.isReadOnly());
+                    } else {
+                        LOGGER.warn("GetAndSyncDataSourceKeyVariables failed, set heartbeat Error");
+                        heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS);
+                        return;
+                    }
+                }
+            }
+        }
+        heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
     }
 
     private void setStatusByCluster(Map<String, String> resultResult) {
@@ -166,6 +206,20 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         heartbeat.getAsyncRecorder().setBySlaveStatus(resultResult);
         heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
     }
+
+    private void setStatusByReadOnly(PhysicalDatasource source, Map<String, String> resultResult) {
+        String readonly = resultResult != null ? resultResult.get("@@read_only") : null;
+        if (readonly == null) {
+            heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS);
+            return;
+        } else if (readonly.equals("0")) {
+            source.setReadOnly(false);
+        } else {
+            source.setReadOnly(true);
+        }
+        heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
+    }
+
 
     public void close(String msg) {
         HeartbeatSQLJob curJob = sqlJob;

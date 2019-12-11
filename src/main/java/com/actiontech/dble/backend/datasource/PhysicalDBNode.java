@@ -84,14 +84,14 @@ public class PhysicalDBNode {
     public void getConnection(String schema, boolean isMustWrite, boolean autoCommit, RouteResultsetNode rrs,
                               ResponseHandler handler, Object attachment) throws Exception {
         if (isMustWrite) {
-            getWriteNodeConnection(schema, autoCommit, handler, attachment);
+            getWriteNodeConnection(schema, autoCommit, handler, attachment, false);
             return;
         }
         if (rrs.getRunOnSlave() == null) {
             if (rrs.canRunINReadDB(autoCommit)) {
                 dbPool.getRWBalanceCon(schema, autoCommit, handler, attachment);
             } else {
-                getWriteNodeConnection(schema, autoCommit, handler, attachment);
+                getWriteNodeConnection(schema, autoCommit, handler, attachment, false);
             }
         } else {
             if (rrs.getRunOnSlave()) {
@@ -99,11 +99,11 @@ public class PhysicalDBNode {
                     LOGGER.info("Do not have slave connection to use, use master connection instead.");
                     rrs.setRunOnSlave(false);
                     rrs.setCanRunInReadDB(false);
-                    getWriteNodeConnection(schema, autoCommit, handler, attachment);
+                    getWriteNodeConnection(schema, autoCommit, handler, attachment, true);
                 }
             } else {
                 rrs.setCanRunInReadDB(false);
-                getWriteNodeConnection(schema, autoCommit, handler, attachment);
+                getWriteNodeConnection(schema, autoCommit, handler, attachment, false);
             }
         }
     }
@@ -112,7 +112,10 @@ public class PhysicalDBNode {
         if (runOnSlave == null) {
             PhysicalDatasource readSource = dbPool.getRWBalanceNode();
             if (!readSource.isAlive()) {
-                String heartbeatError = "the data source[" + readSource.getConfig().getUrl() + "] can't reached, please check the dataHost";
+                String heartbeatError = "the data source[" + readSource.getConfig().getUrl() + "] can't reached. Please check the dataHost status";
+                if (dbPool.getDataHostConfig().isShowSlaveSql()) {
+                    heartbeatError += ",Tip:heartbeat[show slave status] need the SUPER or REPLICATION CLIENT privilege(s)";
+                }
                 LOGGER.warn(heartbeatError);
                 Map<String, String> labels = AlertUtil.genSingleLabel("data_host", readSource.getHostConfig().getName() + "-" + readSource.getConfig().getHostName());
                 AlertUtil.alert(AlarmCode.DATA_HOST_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", readSource.getConfig().getId(), labels);
@@ -126,6 +129,9 @@ public class PhysicalDBNode {
             checkRequest(schema);
             if (dbPool.isInitSuccess()) {
                 PhysicalDatasource writeSource = dbPool.getSource();
+                if (writeSource.isReadOnly()) {
+                    throw new IllegalArgumentException("The Data Source[" + writeSource.getConfig().getUrl() + "] is running with the --read-only option so it cannot execute this statement");
+                }
                 writeSource.setWriteCount();
                 return writeSource.getConnection(schema, autoCommit, attachment);
             } else {
@@ -134,14 +140,16 @@ public class PhysicalDBNode {
         }
     }
 
-    private void getWriteNodeConnection(String schema, boolean autoCommit, ResponseHandler handler, Object attachment) throws IOException {
+    private void getWriteNodeConnection(String schema, boolean autoCommit, ResponseHandler handler, Object attachment, boolean fakeRead) throws IOException {
         checkRequest(schema);
         if (dbPool.isInitSuccess()) {
             PhysicalDatasource writeSource = dbPool.getSource();
             if (writeSource.getConfig().isDisabled()) {
                 throw new IllegalArgumentException("[" + writeSource.getHostConfig().getName() + "." + writeSource.getConfig().getHostName() + "] is disabled");
             }
-
+            if (!fakeRead && writeSource.isReadOnly()) {
+                throw new IllegalArgumentException("The Data Source[" + writeSource.getConfig().getUrl() + "] is running with the --read-only option so it cannot execute this statement");
+            }
             writeSource.setWriteCount();
             writeSource.getConnection(schema, autoCommit, handler, attachment, true);
         } else {

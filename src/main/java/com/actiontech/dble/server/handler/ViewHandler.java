@@ -23,6 +23,8 @@ import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 
+import java.sql.SQLException;
+
 /**
  * Created by collapsar on 2019/12/10.
  */
@@ -52,6 +54,9 @@ public final class ViewHandler {
 
             // view in dble
             handleView(type, schema, sql, false);
+        } catch (SQLException e) {
+            c.writeErrMessage(e.getErrorCode(), e.getMessage());
+            return;
         } catch (Exception e) {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage());
             return;
@@ -105,11 +110,11 @@ public final class ViewHandler {
      * @param sql
      * @throws Exception
      */
-    private static void deleteView(String currentSchema, String sql, boolean isMysqlView) throws Exception {
+    private static void deleteView(String currentSchema, String sql, boolean isMysqlView) throws SQLException {
         SQLStatementParser parser = new MySqlStatementParser(sql);
         SQLDropViewStatement viewStatement = (SQLDropViewStatement) parser.parseStatement(true);
         if (viewStatement.getTableSources() == null || viewStatement.getTableSources().size() == 0) {
-            throw new Exception("no view in sql when try to drop view.");
+            throw new SQLException("no view in sql when try to drop view.", "HY000", ErrorCode.ER_VIEW_CHECK_FAILED);
         }
 
         boolean ifExistsFlag = viewStatement.isIfExists();
@@ -118,8 +123,8 @@ public final class ViewHandler {
             String schema = table.getSchema() == null ? currentSchema : StringUtil.removeBackQuote(table.getSchema());
             String viewName = StringUtil.removeBackQuote(table.getName().getSimpleName()).trim();
 
-            if (!(proxyManger.getCatalogs().get(schema).getViewMetas().containsKey(viewName) && !ifExistsFlag)) {
-                throw new Exception("Unknown view '" + table.getName().toString() + "'");
+            if (!proxyManger.getCatalogs().get(schema).getViewMetas().containsKey(viewName) && !ifExistsFlag) {
+                throw new SQLException("Unknown view '" + viewName + "'", "HY000", ErrorCode.ER_NO_TABLES_USED);
             }
 
             proxyManger.addMetaLock(table.getSchema(), viewName, sql);

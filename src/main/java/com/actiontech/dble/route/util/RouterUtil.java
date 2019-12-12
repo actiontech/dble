@@ -51,11 +51,10 @@ import static com.actiontech.dble.plan.optimizer.JoinStrategyProcessor.NEED_REPL
  * @author wang.dw
  */
 public final class RouterUtil {
-    private RouterUtil() {
-    }
-
     private static final Logger LOGGER = LoggerFactory.getLogger(RouterUtil.class);
     private static ThreadLocalRandom rand = ThreadLocalRandom.current();
+    private RouterUtil() {
+    }
 
     public static String removeSchema(String stmt, String schema) {
         return removeSchema(stmt, schema, DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
@@ -73,8 +72,8 @@ public final class RouterUtil {
         final String forCmpStmt = isLowerCase ? stmt.toLowerCase() : stmt;
         final String maySchema1 = schema + ".";
         final String maySchema2 = "`" + schema + "`.";
-        int index1 = forCmpStmt.indexOf(maySchema1, 0);
-        int index2 = forCmpStmt.indexOf(maySchema2, 0);
+        int index1 = forCmpStmt.indexOf(maySchema1);
+        int index2 = forCmpStmt.indexOf(maySchema2);
         if (index1 < 0 && index2 < 0) {
             return stmt;
         }
@@ -91,17 +90,17 @@ public final class RouterUtil {
                 flag = false;
             } else flag = index2 < index1;
             if (flag) {
-                result.append(stmt.substring(startPos, index2));
+                result.append(stmt, startPos, index2);
                 startPos = index2 + maySchema2.length();
                 if (index2 > firstE && index2 < endE && countChar(stmt, index2) % 2 != 0) {
-                    result.append(stmt.substring(index2, startPos));
+                    result.append(stmt, index2, startPos);
                 }
                 index2 = forCmpStmt.indexOf(maySchema2, startPos);
             } else {
-                result.append(stmt.substring(startPos, index1));
+                result.append(stmt, startPos, index1);
                 startPos = index1 + maySchema1.length();
                 if (index1 > firstE && index1 < endE && countChar(stmt, index1) % 2 != 0) {
-                    result.append(stmt.substring(index1, startPos));
+                    result.append(stmt, index1, startPos);
                 }
                 index1 = forCmpStmt.indexOf(maySchema1, startPos);
             }
@@ -470,7 +469,7 @@ public final class RouterUtil {
                         routeNodeSet.addAll(tc.getDataNodes());
                     } else {
                         ArrayList<String> dataNodes = tc.getDataNodes();
-                        String dataNode = null;
+                        String dataNode;
                         for (Integer nodeId : nodeRange) {
                             dataNode = dataNodes.get(nodeId);
                             routeNodeSet.add(dataNode);
@@ -630,9 +629,7 @@ public final class RouterUtil {
             }
             resultNodes.addAll(dataNodeSet);
             tablesSet.remove(tableName);
-            if (resultNodes.size() != 1) {
-                return false;
-            }
+            return resultNodes.size() == 1;
         } else {
             return false;
         }
@@ -1146,10 +1143,9 @@ public final class RouterUtil {
      * @return dataNode DataNode of no-sharding table
      */
     public static String isNoSharding(SchemaConfig schemaConfig, String tableName) throws SQLNonTransientException {
-        if (schemaConfig == null) {
+        if (schemaConfig == null || (ProxyMeta.getInstance().getTmManager().getSyncView(schemaConfig.getName(), tableName) != null && !schemaConfig.isNoSharding())) {
             return null;
         }
-
         if (schemaConfig.isNoSharding()) { //schema without table
             return schemaConfig.getDataNode();
         }
@@ -1160,24 +1156,8 @@ public final class RouterUtil {
         if (tbConfig != null && tbConfig.isNoSharding()) {
             return tbConfig.getDataNodes().get(0);
         }
-
-        PlanNode viewNode = ProxyMeta.getInstance().getTmManager().getSyncView(schemaConfig.getName(), tableName);
-        if (viewNode != null) {
-            Set<String> dataNodes = null;
-            for (PlanNode childNode : viewNode.getReferedTableNodes()) {
-                if (dataNodes == null) {
-                    dataNodes = childNode.getNoshardNode();
-                } else {
-                    dataNodes.retainAll(childNode.getNoshardNode());
-                }
-            }
-            if (dataNodes != null && dataNodes.size() > 0) {
-                return dataNodes.iterator().next();
-            }
-        }
         return null;
     }
-
 
     /**
      * no shard-ing table dataNode

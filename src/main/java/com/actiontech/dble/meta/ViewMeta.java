@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.meta;
 
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.node.MergeNode;
@@ -19,6 +20,7 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQueryBlock;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -52,7 +54,7 @@ public class ViewMeta {
         this.parseSelectInView(isMysqlView);
     }
 
-    private void parseSelectInView(boolean isMysqlView) throws Exception {
+    private void parseSelectInView(boolean isMysqlView) throws SQLException {
         SQLSelectStatement selectStatement = (SQLSelectStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(selectSql);
         if (isMysqlView) {
             List<SQLSelectItem> selectItems = ((SQLSelectQueryBlock) selectStatement.getSelect().getQuery()).getSelectList();
@@ -77,13 +79,13 @@ public class ViewMeta {
         }
     }
 
-    public void initAndSet(boolean isReplace, boolean isNewCreate, boolean isMysqlView) throws Exception {
+    public void initAndSet(boolean isReplace, boolean isNewCreate, boolean isMysqlView) throws SQLException {
         //check the create sql is legal
         //parse sql into three parts
         ViewMetaParser viewParser = new ViewMetaParser(createSql);
         viewParser.parseCreateView(this);
         if ("".equals(viewName)) {
-            throw new Exception("sql not supported ");
+            throw new SQLException("sql not supported", "HY000", ErrorCode.CREATE_VIEW_ERROR);
         }
 
         try {
@@ -100,7 +102,7 @@ public class ViewMeta {
         }
     }
 
-    private void checkDuplicate(ViewMetaParser viewParser, Boolean isReplace) throws Exception {
+    private void checkDuplicate(ViewMetaParser viewParser, Boolean isReplace) throws SQLException {
 
         ViewMeta viewNode = tmManager.getCatalogs().get(schema).getViewMetas().get(viewName);
         //.getSyncView(schema,viewName);
@@ -108,7 +110,7 @@ public class ViewMeta {
         //if the alter table
         if (viewParser.getType() == ViewMetaParser.TYPE_ALTER_VIEW && !isReplace) {
             if (viewNode == null) {
-                throw new Exception("Table '" + viewName + "' doesn't exist");
+                throw new SQLException("Table '" + viewName + "' doesn't exist", "42S02", ErrorCode.ER_NO_SUCH_TABLE);
             }
         }
 
@@ -116,7 +118,7 @@ public class ViewMeta {
             Set<String> tempMap = new HashSet<String>();
             for (String t : viewColumnMeta) {
                 if (tempMap.contains(t.trim())) {
-                    throw new Exception("Duplicate column name '" + t + "'");
+                    throw new SQLException("Duplicate column name '" + t + "'", "HY000", ErrorCode.ER_WRONG_COLUMN_NAME);
                 }
                 tempMap.add(t.trim());
             }
@@ -124,31 +126,31 @@ public class ViewMeta {
 
         // if the table with same name exists
         if (tableMeta != null) {
-            throw new Exception("Table '" + viewName + "' already exists");
+            throw new SQLException("Table '" + viewName + "' already exists", "42S01", ErrorCode.ER_TABLE_EXISTS_ERROR);
         }
 
         if (viewParser.getType() == ViewMetaParser.TYPE_CREATE_VIEW && !isReplace) {
             // if the sql without replace & the view exists
             if (viewNode != null) {
                 // return error because the view is exists
-                throw new Exception("Table '" + viewName + "' already exists");
+                throw new SQLException("Table '" + viewName + "' already exists", "42S01", ErrorCode.ER_TABLE_EXISTS_ERROR);
             }
         }
     }
 
-    private void setFieldsAlias(PlanNode selNode, boolean isMergeNode) throws Exception {
+    private void setFieldsAlias(PlanNode selNode, boolean isMergeNode) throws SQLException {
         if (viewColumnMeta == null) {
             List<Item> selectList = selNode.getColumnsSelected();
             Set<String> tempMap = new HashSet<>();
             for (Item t : selectList) {
                 if (t.getAlias() != null) {
                     if (tempMap.contains(t.getAlias())) {
-                        throw new Exception("Duplicate column name '" + t.getItemName() + "'");
+                        throw new SQLException("Duplicate column name '" + t + "'", "HY000", ErrorCode.ER_WRONG_COLUMN_NAME);
                     }
                     tempMap.add(t.getAlias());
                 } else {
                     if (tempMap.contains(t.getItemName())) {
-                        throw new Exception("Duplicate column name '" + t.getItemName() + "'");
+                        throw new SQLException("Duplicate column name '" + t + "'", "HY000", ErrorCode.ER_WRONG_COLUMN_NAME);
                     }
                     tempMap.add(t.getItemName());
                 }
@@ -168,7 +170,7 @@ public class ViewMeta {
         //check if the column number of view is same as the selectList in selectStatement
         if (viewColumnMeta.size() != size) {
             //return error
-            throw new Exception("The Column_list Size and Select_statement Size Not Match");
+            throw new SQLException("The Column_list Size and Select_statement Size Not Match", "HY000", ErrorCode.ER_WRONG_NUMBER_OF_COLUMNS_IN_SELECT);
         }
         Item column;
         for (int i = 0; i < size; i++) {

@@ -294,7 +294,7 @@ public class ServerConnection extends FrontendConnection {
                 TableConfig tc = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
                 if (tc == null) {
                     // check view
-                    ShowCreateView.response(this, schema, schemaInfo.getTable());
+                    ShowCreateView.response(this, schemaInfo.getSchema(), schemaInfo.getTable());
                     return;
                 }
                 RouterUtil.routeToRandomNode(rrs, schemaInfo.getSchemaConfig(), schemaInfo.getTable());

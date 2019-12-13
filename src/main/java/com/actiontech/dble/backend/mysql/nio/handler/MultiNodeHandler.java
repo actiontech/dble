@@ -42,8 +42,12 @@ public abstract class MultiNodeHandler implements ResponseHandler {
     }
 
     public void setFail(String errMsg) {
-        isFailed.set(true);
-        error = errMsg;
+        if (isFailed.compareAndSet(false, true)) {
+            error = errMsg;
+        } else {
+            error = error + "\n" + errMsg;
+        }
+
     }
 
     public boolean isFail() {
@@ -72,22 +76,6 @@ public abstract class MultiNodeHandler implements ResponseHandler {
             }
 
             nonBlockingSession.clearResources(true);
-            this.clearResources();
-            return true;
-        } else {
-            return false;
-        }
-
-    }
-
-    public boolean clearIfSessionClosed(NonBlockingSession nonBlockingSession, boolean needRelease) {
-        if (nonBlockingSession.closed()) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("session closed ,clear resources " + nonBlockingSession);
-            }
-            if (needRelease) {
-                nonBlockingSession.clearResources(true);
-            }
             this.clearResources();
             return true;
         } else {

@@ -25,8 +25,8 @@
                     <IfFileName glob="*/dble-*.log.gz">
                         <IfLastModified age="30d">
                             <IfAny>
-                                <IfAccumulatedFileSize exceeds="1 GB" />
-                                <IfAccumulatedFileCount exceeds="10" />
+                                <IfAccumulatedFileSize exceeds="1 GB"/>
+                                <IfAccumulatedFileCount exceeds="10"/>
                             </IfAny>
                         </IfLastModified>
                     </IfFileName>
@@ -48,32 +48,52 @@
                </RollingFile>
                -->
 
-<!--        <RollingFile name="DumpFileLog" fileName="logs/dump.log"-->
-<!--                     filePattern="logs/$${date:yyyy-MM}/dump-%d{MM-dd}-%i.log.gz">-->
-<!--            <PatternLayout>-->
-<!--                <Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %5p [%t] (%l) - %m%n</Pattern>-->
-<!--            </PatternLayout>-->
-<!--            <Policies>-->
-<!--                <OnStartupTriggeringPolicy/>-->
-<!--                <SizeBasedTriggeringPolicy size="250 MB"/>-->
-<!--                <TimeBasedTriggeringPolicy/>-->
-<!--            </Policies>-->
-<!--            <DefaultRolloverStrategy max="10"/>-->
-<!--        </RollingFile>-->
+        <!--        <RollingFile name="DumpFileLog" fileName="logs/dump.log"-->
+        <!--                     filePattern="logs/$${date:yyyy-MM}/dump-%d{MM-dd}-%i.log.gz">-->
+        <!--            <PatternLayout>-->
+        <!--                <Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %5p [%t] (%l) - %m%n</Pattern>-->
+        <!--            </PatternLayout>-->
+        <!--            <Policies>-->
+        <!--                <OnStartupTriggeringPolicy/>-->
+        <!--                <SizeBasedTriggeringPolicy size="250 MB"/>-->
+        <!--                <TimeBasedTriggeringPolicy/>-->
+        <!--            </Policies>-->
+        <!--            <DefaultRolloverStrategy max="10"/>-->
+        <!--        </RollingFile>-->
+        <!--independent log file for ddl trace
+          <RollingFile name="DDL_TRACE" fileName="logs/ddl.log"
+                       filePattern="logs/$${date:yyyy-MM}/ddl-%d{MM-dd}-%i.log.gz">
+              <PatternLayout>
+                  <Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %5p [%t] (%l) - %m%n</Pattern>
+              </PatternLayout>
+              <Policies>
+                  <OnStartupTriggeringPolicy/>
+                  <SizeBasedTriggeringPolicy size="250 MB"/>
+                  <TimeBasedTriggeringPolicy/>
+              </Policies>
+              <DefaultRolloverStrategy max="10"/>
+          </RollingFile>
+          -->
     </Appenders>
     <Loggers>
-               <!--  independent log file for new ha interface, for use useOuterHa only
-              <Logger name="ha_log" additivity="false" includeLocation="false" >
-                  <AppenderRef ref="ha_log" />
-                  <AppenderRef ref="RollingFile"/>
-              </Logger>-->
+        <!--  independent log file for new ha interface, for use useOuterHa only
+       <Logger name="ha_log" additivity="false" includeLocation="false" >
+           <AppenderRef ref="ha_log" />
+           <AppenderRef ref="RollingFile"/>
+       </Logger>-->
+        <!--independent log file for ddl trace
+       <Logger name="DDL_TRACE" additivity="false" includeLocation="false">
+         <AppenderRef ref="DDL_TRACE"/>
+         <AppenderRef ref="Console"/>
+         <AppenderRef ref="RollingFile"/>
+        </Logger> -->
         <!--        <Logger name="dumpFileLog" additivity="false" includeLocation="false" >-->
         <!--            <AppenderRef ref="DumpFileLog" />-->
         <!--            <AppenderRef ref="RollingFile"/>-->
         <!--        </Logger>-->
 
-       <asyncRoot level="info" includeLocation="true">
-           <!--<AppenderRef ref="Console" />-->
+        <asyncRoot level="info" includeLocation="true">
+            <!--<AppenderRef ref="Console" />-->
             <AppenderRef ref="RollingFile"/>
         </asyncRoot>
     </Loggers>

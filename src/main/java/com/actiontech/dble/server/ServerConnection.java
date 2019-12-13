@@ -12,13 +12,12 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SaveP
 import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLTraceInfo;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.model.UserConfig;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
-import com.actiontech.dble.singleton.RouteService;
-import com.actiontech.dble.singleton.ProxyMeta;
+import com.actiontech.dble.singleton.*;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.util.Pair;
@@ -29,7 +28,6 @@ import com.actiontech.dble.server.response.Heartbeat;
 import com.actiontech.dble.server.response.InformationSchemaProfiling;
 import com.actiontech.dble.server.response.Ping;
 import com.actiontech.dble.server.util.SchemaUtil;
-import com.actiontech.dble.singleton.SerializableLock;
 import com.actiontech.dble.util.*;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
@@ -305,13 +303,14 @@ public class ServerConnection extends FrontendConnection {
     }
 
     private void routeEndExecuteSQL(String sql, int type, SchemaConfig schema) {
-        RouteResultset rrs;
+        RouteResultset rrs = null;
         try {
             rrs = RouteService.getInstance().route(schema, type, sql, this);
             if (rrs == null) {
                 return;
             }
             if (rrs.getSqlType() == ServerParse.DDL && rrs.getSchema() != null) {
+                DDLTraceManager.getInstance().startDDL(this);
                 addTableMetaLock(rrs);
                 if (ProxyMeta.getInstance().getTmManager().getCatalogs().get(rrs.getSchema()).getView(rrs.getTable()) != null) {
                     ProxyMeta.getInstance().getTmManager().removeMetaLock(rrs.getSchema(), rrs.getTable());
@@ -319,8 +318,12 @@ public class ServerConnection extends FrontendConnection {
                     LOGGER.info(msg);
                     throw new SQLNonTransientException(msg);
                 }
+                DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.LOCK_END, this);
             }
         } catch (Exception e) {
+            if (rrs != null && rrs.getSqlType() == ServerParse.DDL && rrs.getSchema() != null) {
+                DDLTraceManager.getInstance().endDDL(this, e.getMessage());
+            }
             executeException(e, sql);
             return;
         }
@@ -574,11 +577,13 @@ public class ServerConnection extends FrontendConnection {
         byte packetId = (byte) this.getSession2().getPacketId().get();
         super.writeErrMessage(++packetId, vendorCode, msg);
     }
+
     @Override
     public void write(byte[] data) {
         SerializableLock.getInstance().unLock(this.id);
         super.write(data);
     }
+
     @Override
     public final void write(ByteBuffer buffer) {
         SerializableLock.getInstance().unLock(this.id);

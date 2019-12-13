@@ -32,6 +32,7 @@ import static com.actiontech.dble.server.NonBlockingSession.LOGGER;
 public final class Scheduler {
     private static final Scheduler INSTANCE = new Scheduler();
     private static final long TIME_UPDATE_PERIOD = 20L;
+    private static final long DDL_EXECUTE_CHECK_PERIOD = 60L;
     private static final long DEFAULT_OLD_CONNECTION_CLEAR_PERIOD = 5 * 1000L;
     private static final long DEFAULT_SQL_STAT_RECYCLE_PERIOD = 5 * 1000L;
     private ExecutorService timerExecutor;
@@ -58,6 +59,16 @@ public final class Scheduler {
             scheduler.scheduleWithFixedDelay(globalTableConsistencyCheck(), 0L, system.getGlableTableCheckPeriod(), TimeUnit.MILLISECONDS);
         }
         scheduler.scheduleAtFixedRate(threadStatRenew(), 0L, 1, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(printLongTimeDDL(), 0L, DDL_EXECUTE_CHECK_PERIOD, TimeUnit.SECONDS);
+    }
+
+    private Runnable printLongTimeDDL() {
+        return new Runnable() {
+            @Override
+            public void run() {
+                DDLTraceManager.getInstance().printDDLOutOfLimit();
+            }
+        };
     }
 
     private Runnable updateTime() {

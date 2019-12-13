@@ -8,13 +8,11 @@ package com.actiontech.dble;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.datasource.PhysicalDBPool;
 import com.actiontech.dble.backend.mysql.xa.*;
 import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.KVStoreRepository;
 import com.actiontech.dble.buffer.DirectByteBufferPool;
-import com.actiontech.dble.singleton.*;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
@@ -33,8 +31,12 @@ import com.actiontech.dble.server.ServerConnectionFactory;
 import com.actiontech.dble.server.status.SlowQueryLog;
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.variables.VarsExtractorHandler;
+import com.actiontech.dble.singleton.*;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
-import com.actiontech.dble.util.*;
+import com.actiontech.dble.util.ExecutorUtil;
+import com.actiontech.dble.util.KVPathUtil;
+import com.actiontech.dble.util.TimeUtil;
+import com.actiontech.dble.util.ZKUtils;
 import com.google.common.io.Files;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
@@ -103,7 +105,7 @@ public final class DbleServer {
     }
 
 
-    public void startup() throws IOException {
+    public void startup() throws Exception {
         LOGGER.info("===========================================DBLE SERVER STARTING===================================");
         this.config = new ServerConfig();
         this.startupTime = TimeUtil.currentTimeMillis();
@@ -118,9 +120,6 @@ public final class DbleServer {
         }
         AlertManager.getInstance().startAlert();
         LOGGER.info("========================================Alert Manager start finish================================");
-
-        this.config.testConnection();
-        LOGGER.info("==========================================Test connection finish==================================");
 
         // load data node active index from properties
         this.dnIndexProperties = DnPropertyUtil.loadDnIndexProps();
@@ -213,6 +212,12 @@ public final class DbleServer {
         }
         LOGGER.info("==========================Connection Connector&Acceptor init finish===============================");
 
+        this.config.testConnection();
+        LOGGER.info("==========================================Test connection finish==================================");
+
+        // sync global status
+        this.config.getAndSyncKeyVariables();
+        LOGGER.info("=====================================Get And Sync KeyVariables finish=============================");
 
         // start transaction SQL log
         if (config.getSystem().getRecordTxn() == 1) {
@@ -366,7 +371,7 @@ public final class DbleServer {
             if (!"0".equals(index)) {
                 LOGGER.info("reinit datahost: " + node.getHostName() + "  to use datasource index:" + index);
             }
-            ((PhysicalDBPool) node).switchSource(Integer.parseInt(index), "reload dnindex");
+            node.switchSource(Integer.parseInt(index), "reload dnindex");
         }
     }
 

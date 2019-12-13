@@ -111,7 +111,7 @@ public final class ShowHeartbeat {
         // host nodes
         Map<String, AbstractPhysicalDBPool> dataHosts = conf.getDataHosts();
         for (AbstractPhysicalDBPool pool : dataHosts.values()) {
-            for (PhysicalDatasource ds : pool.getAllDataSources()) {
+            for (PhysicalDatasource ds : pool.getAllActiveDataSources()) {
                 MySQLHeartbeat hb = ds.getHeartbeat();
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                 row.add(ds.getName().getBytes());

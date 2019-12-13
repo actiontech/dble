@@ -50,7 +50,7 @@ public class OneRawSQLQueryResultHandler implements SQLJobHandler {
     }
 
     @Override
-    public boolean onRowData(byte[] rowData) {
+    public void onRowData(byte[] rowData) {
         RowDataPacket rowDataPkg = new RowDataPacket(fieldCount);
         rowDataPkg.read(rowData);
         String variableName = "";
@@ -78,7 +78,6 @@ public class OneRawSQLQueryResultHandler implements SQLJobHandler {
                 }
             }
         }
-        return false;
     }
 
     @Override

@@ -104,10 +104,12 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
         return finished.get();
     }
 
-    private void doFinished(boolean failed) {
+    protected boolean doFinished(boolean failed) {
         if (finished.compareAndSet(false, true)) {
             jobHandler.finished(dataNode == null ? schema : dataNode, failed);
+            return true;
         }
+        return false;
     }
 
     @Override
@@ -167,11 +169,7 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
 
     @Override
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
-        boolean finish = jobHandler.onRowData(row);
-        if (finish) {
-            conn.release();
-            doFinished(false);
-        }
+        jobHandler.onRowData(row);
         return false;
     }
 

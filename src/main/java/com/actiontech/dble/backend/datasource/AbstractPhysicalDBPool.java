@@ -29,6 +29,9 @@ public abstract class AbstractPhysicalDBPool {
     protected volatile boolean initSuccess = false;
     protected String[] schemas;
 
+    protected Map<Integer, PhysicalDatasource[]> readSources;
+    protected Map<Integer, PhysicalDatasource[]> standbyReadSourcesMap;
+
     protected final ReentrantReadWriteLock adjustLock = new ReentrantReadWriteLock();
 
 
@@ -72,9 +75,9 @@ public abstract class AbstractPhysicalDBPool {
 
     public abstract void clearDataSources(String reason);
 
-    public abstract Collection<PhysicalDatasource> getAllDataSources();
+    public abstract Collection<PhysicalDatasource> getAllActiveDataSources(); // not contains StandbyReadSources
 
-    public abstract Map<Integer, PhysicalDatasource[]> getStandbyReadSourcesMap();
+    public abstract Collection<PhysicalDatasource> getAllDataSources();
 
     abstract void getRWBalanceCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception;
 
@@ -116,8 +119,6 @@ public abstract class AbstractPhysicalDBPool {
     }
 
     public abstract int getActiveIndex();
-
-    public abstract Map<Integer, PhysicalDatasource[]> getReadSources();
 
     public abstract void switchSourceIfNeed(PhysicalDatasource ds, String reason);
 
@@ -166,6 +167,15 @@ public abstract class AbstractPhysicalDBPool {
         boolean isSync = dbSynStatus == MySQLHeartbeat.DB_SYN_NORMAL;
         boolean isNotDelay = slaveBehindMaster < this.dataHostConfig.getSlaveThreshold();
         return isSync && isNotDelay;
+    }
+
+    public Map<Integer, PhysicalDatasource[]> getReadSources() {
+        return this.readSources;
+    }
+
+
+    public Map<Integer, PhysicalDatasource[]> getStandbyReadSourcesMap() {
+        return standbyReadSourcesMap;
     }
 
 }

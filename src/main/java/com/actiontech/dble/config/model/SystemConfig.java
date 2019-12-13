@@ -66,6 +66,7 @@ public final class SystemConfig {
     private String charset = "utf8mb4";
     private int maxPacketSize = 4 * 1024 * 1024;
     private int txIsolation = Isolations.REPEATABLE_READ;
+    private int autocommit = 1;
 
     //consistency
     private int checkTableConsistency = 0;
@@ -604,6 +605,20 @@ public final class SystemConfig {
             problemReporter.warn(String.format(WARNING_FORMATE, "txIsolation", txIsolation, this.txIsolation));
         }
     }
+
+    public int getAutocommit() {
+        return autocommit;
+    }
+
+    @SuppressWarnings("unused")
+    public void setAutocommit(int autocommit) {
+        if (autocommit >= 0 && autocommit <= 1) {
+            this.autocommit = autocommit;
+        } else if (this.problemReporter != null) {
+            problemReporter.warn(String.format(WARNING_FORMATE, "autocommit", autocommit, this.autocommit));
+        }
+    }
+
 
     public int getSqlRecordCount() {
         return sqlRecordCount;
@@ -1235,6 +1250,7 @@ public final class SystemConfig {
                 ", costSamplePercent=" + costSamplePercent +
                 ", charset=" + charset +
                 ", maxPacketSize=" + maxPacketSize +
+                ", autocommit=" + autocommit +
                 ", txIsolation=" + txIsolation +
                 ", checkTableConsistency=" + checkTableConsistency +
                 ", checkTableConsistencyPeriod=" + checkTableConsistencyPeriod +

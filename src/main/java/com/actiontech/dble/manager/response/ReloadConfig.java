@@ -14,6 +14,7 @@ import com.actiontech.dble.cluster.*;
 import com.actiontech.dble.cluster.xmltoKv.XmltoCluster;
 import com.actiontech.dble.config.ConfigInitializer;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.config.ServerConfig;
@@ -350,14 +351,15 @@ public final class ReloadConfig {
             serverConfig.reviseLowerCase();
             ReloadLogHelper.info("reload config: data host's lowerCaseTableNames=1, lower the config properties end", LOGGER);
         }
+        checkTestConnIfNeed(loadAllMode, loader);
+        ConfigUtil.getAndSyncKeyVariables(false, addOrChangeHosts);
+
         Map<String, UserConfig> newUsers = serverConfig.getUsers();
         Map<String, SchemaConfig> newSchemas = serverConfig.getSchemas();
         Map<String, PhysicalDBNode> newDataNodes = serverConfig.getDataNodes();
         Map<ERTable, Set<ERTable>> newErRelations = serverConfig.getErRelations();
         FirewallConfig newFirewall = serverConfig.getFirewall();
         Map<String, AbstractPhysicalDBPool> newDataHosts = serverConfig.getDataHosts();
-
-        checkTestConnifNeed(loadAllMode, loader);
 
         /*
          *  2 transform
@@ -420,13 +422,15 @@ public final class ReloadConfig {
             serverConfig.reviseLowerCase();
             ReloadLogHelper.info("reload config: data host's lowerCaseTableNames=1, lower the config properties end", LOGGER);
         }
+        checkTestConnIfNeed(loadAllMode, loader);
+        ConfigUtil.getAndSyncKeyVariables(false, loader.getDataHosts());
+
         Map<String, UserConfig> newUsers = serverConfig.getUsers();
         Map<String, SchemaConfig> newSchemas = serverConfig.getSchemas();
         Map<String, PhysicalDBNode> newDataNodes = serverConfig.getDataNodes();
         Map<ERTable, Set<ERTable>> newErRelations = serverConfig.getErRelations();
         FirewallConfig newFirewall = serverConfig.getFirewall();
 
-        checkTestConnifNeed(loadAllMode, loader);
 
         ReloadLogHelper.info("reload config: init new data host  start", LOGGER);
         String reasonMsg = initDataHostByMap(newDataHosts, newDataNodes);
@@ -455,7 +459,7 @@ public final class ReloadConfig {
         }
     }
 
-    private static void checkTestConnifNeed(int loadAllMode, ConfigInitializer loader) throws Exception {
+    private static void checkTestConnIfNeed(int loadAllMode, ConfigInitializer loader) throws Exception {
         if ((loadAllMode & ManagerParseConfig.OPTS_MODE) == 0) {
             try {
                 ReloadLogHelper.info("reload config: test all data Nodes start", LOGGER);
@@ -510,7 +514,7 @@ public final class ReloadConfig {
         for (AbstractPhysicalDBPool dbPool : recycleMap.values()) {
             dbPool.stopHeartbeat();
             long oldTimestamp = System.currentTimeMillis();
-            for (PhysicalDatasource ds : dbPool.getAllDataSources()) {
+            for (PhysicalDatasource ds : dbPool.getAllActiveDataSources()) {
                 for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
                     for (BackendConnection con : processor.getBackends().values()) {
                         if (con instanceof MySQLConnection) {

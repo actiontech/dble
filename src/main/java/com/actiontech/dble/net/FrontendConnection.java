@@ -10,13 +10,13 @@ import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.util.AuthUtil;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.handler.*;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.singleton.SerializableLock;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.RandomUtil;
@@ -221,6 +221,7 @@ public abstract class FrontendConnection extends AbstractConnection {
     }
 
     protected void writeErrMessage(byte id, int vendorCode, String sqlState, String msg) {
+        markFinished();
         ErrorPacket err = new ErrorPacket();
         err.setPacketId(id);
         err.setErrNo(vendorCode);
@@ -233,8 +234,9 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     public abstract void startProcess();
 
-    public void initDB(byte[] data) {
+    protected abstract void markFinished();
 
+    public void initDB(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data);
         mm.position(5);
         String db = null;

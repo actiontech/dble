@@ -45,6 +45,11 @@ public class ManagerConnection extends FrontendConnection {
     }
 
     @Override
+    public void markFinished() {
+        //do nothing
+    }
+
+    @Override
     public void handle(final byte[] data) {
         handler.handle(data);
     }

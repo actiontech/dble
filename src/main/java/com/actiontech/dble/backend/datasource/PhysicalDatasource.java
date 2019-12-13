@@ -381,6 +381,7 @@ public abstract class PhysicalDatasource {
                         public void connectionAcquired(BackendConnection conn) {
                             if (disabled.get()) {
                                 handler.connectionError(new IOException("dataSource disabled"), conn);
+                                conn.close("disabled dataHost");
                             } else if (mustWrite && isReadNode()) {
                                 handler.connectionError(new IOException("writeSrouce switched"), conn);
                             } else {
@@ -404,7 +405,9 @@ public abstract class PhysicalDatasource {
         if (con != null) {
             takeCon(con, handler, attachment, schema);
         } else {
-            if (!this.createNewCount()) {
+            if (disabled.get()) {
+                throw new IOException("the dataSource is disabled [" + this.name + "]");
+            } else if (!this.createNewCount()) {
                 String maxConError = "the max active Connections size can not be max than maxCon for data host[" + this.getHostConfig().getName() + "." + this.getName() + "]";
                 LOGGER.warn(maxConError);
                 Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
@@ -428,7 +431,9 @@ public abstract class PhysicalDatasource {
     public BackendConnection getConnection(String schema, boolean autocommit, final Object attachment) throws IOException {
         BackendConnection con = this.conMap.tryTakeCon(schema, autocommit);
         if (con == null) {
-            if (!this.createNewCount()) {
+            if (disabled.get()) {
+                throw new IOException("the dataSource is disabled [" + this.name + "]");
+            } else if (!this.createNewCount()) {
                 String maxConError = "the max active Connections size can not be max than maxCon data host[" + this.getHostConfig().getName() + "." + this.getName() + "]";
                 LOGGER.warn(maxConError);
                 Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());

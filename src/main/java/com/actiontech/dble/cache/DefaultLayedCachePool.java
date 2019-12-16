@@ -69,8 +69,8 @@ public class DefaultLayedCachePool implements LayerCachePool {
     }
 
     @Override
-    public void putIfAbsent(String primaryKey, Object secondKey, Object value) {
-        CachePool pool = getCache(primaryKey);
+    public void putIfAbsent(String cacheKey, Object secondKey, Object value) {
+        CachePool pool = getCache(cacheKey);
         if (pool != null) {
             pool.putIfAbsent(secondKey, value);
         }
@@ -83,8 +83,8 @@ public class DefaultLayedCachePool implements LayerCachePool {
     }
 
     @Override
-    public Object get(String primaryKey, Object secondKey) {
-        CachePool pool = getCache(primaryKey);
+    public Object get(String cacheKey, Object secondKey) {
+        CachePool pool = getCache(cacheKey);
         if (pool != null) {
             return pool.get(secondKey);
         } else {

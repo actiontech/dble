@@ -181,7 +181,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         // replace with no column name ：replace into t values(xxx,xxx)
         if (columns == null || columns.size() <= 0) {
             if (isAutoIncrement) {
-                autoIncrement = getIncrementKeyIndex(schemaInfo, tc.getTrueIncrementColumn());
+                autoIncrement = getIncrementKeyIndex(schemaInfo, tc.getIncrementColumn());
             }
             colSize = orgTbMeta.getColumnsList().size();
             idxGlobal = getIdxGlobalByMeta(isGlobalCheck, orgTbMeta, sb, colSize);
@@ -189,9 +189,9 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             boolean hasIncrementInSql = concatColumns(replace, tc, isGlobalCheck, isAutoIncrement, sb, columns);
             colSize = columns.size();
             if (isAutoIncrement && !hasIncrementInSql) {
-                getIncrementKeyIndex(schemaInfo, tc.getTrueIncrementColumn());
+                getIncrementKeyIndex(schemaInfo, tc.getIncrementColumn());
                 autoIncrement = columns.size();
-                sb.append(",").append(tc.getTrueIncrementColumn());
+                sb.append(",").append(tc.getIncrementColumn());
                 colSize++;
             }
             if (isGlobalCheck) {
@@ -224,7 +224,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         sb.append("(");
         boolean hasIncrementInSql = false;
         for (int i = 0; i < columns.size(); i++) {
-            if (isAutoIncrement && columns.get(i).toString().equalsIgnoreCase(tc.getTrueIncrementColumn())) {
+            if (isAutoIncrement && columns.get(i).toString().equalsIgnoreCase(tc.getIncrementColumn())) {
                 hasIncrementInSql = true;
             }
             if (i < columns.size() - 1)

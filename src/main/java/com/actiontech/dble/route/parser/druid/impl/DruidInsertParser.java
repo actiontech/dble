@@ -371,7 +371,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         // insert without columns :insert into t values(xxx,xxx)
         if (columns == null || columns.size() <= 0) {
             if (isAutoIncrement) {
-                autoIncrement = getIncrementKeyIndex(schemaInfo, tc.getTrueIncrementColumn());
+                autoIncrement = getIncrementKeyIndex(schemaInfo, tc.getIncrementColumn());
             }
             colSize = orgTbMeta.getColumnsList().size();
             idxGlobal = getIdxGlobalByMeta(isGlobalCheck, orgTbMeta, sb, colSize);
@@ -379,9 +379,9 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             genColumnNames(tc, isGlobalCheck, isAutoIncrement, sb, columns);
             colSize = columns.size();
             if (isAutoIncrement) {
-                getIncrementKeyIndex(schemaInfo, tc.getTrueIncrementColumn());
+                getIncrementKeyIndex(schemaInfo, tc.getIncrementColumn());
                 autoIncrement = columns.size();
-                sb.append(",").append("`").append(tc.getTrueIncrementColumn()).append("`");
+                sb.append(",").append("`").append(tc.getIncrementColumn()).append("`");
                 colSize++;
             }
             if (isGlobalCheck) {
@@ -431,7 +431,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
                 LOGGER.info(msg);
                 throw new SQLNonTransientException(msg);
             }
-            if (isAutoIncrement && simpleColumnName.equalsIgnoreCase(tc.getTrueIncrementColumn())) {
+            if (isAutoIncrement && simpleColumnName.equalsIgnoreCase(tc.getIncrementColumn())) {
                 String msg = "In insert Syntax, you can't set value for Autoincrement column!";
                 LOGGER.info(msg);
                 throw new SQLNonTransientException(msg);

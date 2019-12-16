@@ -55,8 +55,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     protected int fieldCount = 0;
     volatile boolean fieldsReturned;
     private long insertId;
-    private String primaryKeyTable = null;
-    private int primaryKeyIndex = -1;
+    private String cacheKeyTable = null;
+    private int cacheKeyIndex = -1;
     private List<FieldPacket> fieldPackets = new ArrayList<>();
     protected volatile ByteBuffer byteBuffer;
     protected Set<BackendConnection> closedConnSet;
@@ -391,16 +391,16 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             this.resultSize += row.length;
             row[3] = ++packetId;
             RowDataPacket rowDataPkg = null;
-            // cache primaryKey-> dataNode
-            if (primaryKeyIndex != -1) {
+            // cache cacheKey-> dataNode
+            if (cacheKeyIndex != -1) {
                 rowDataPkg = new RowDataPacket(fieldCount);
                 rowDataPkg.read(row);
-                byte[] key = rowDataPkg.fieldValues.get(primaryKeyIndex);
+                byte[] key = rowDataPkg.fieldValues.get(cacheKeyIndex);
                 if (key != null) {
-                    String primaryKey = new String(rowDataPkg.fieldValues.get(primaryKeyIndex));
+                    String cacheKey = new String(rowDataPkg.fieldValues.get(cacheKeyIndex));
                     LayerCachePool pool = CacheService.getTableId2DataNodeCache();
                     if (pool != null) {
-                        pool.putIfAbsent(primaryKeyTable, primaryKey, dataNode);
+                        pool.putIfAbsent(cacheKeyTable, cacheKey, dataNode);
                     }
                 }
             }
@@ -498,11 +498,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         fieldCount = fields.size();
         header[3] = ++packetId;
         byteBuffer = source.writeToBuffer(header, byteBuffer);
-        String primaryKey = null;
-        if (rrs.hasPrimaryKeyToCache()) {
-            String[] items = rrs.getPrimaryKeyItems();
-            primaryKeyTable = items[0];
-            primaryKey = items[1];
+        String cacheKey = null;
+        if (rrs.hasCacheKeyToCache()) {
+            String[] items = rrs.getCacheKeyItems();
+            cacheKeyTable = items[0];
+            cacheKey = items[1];
         }
 
         if (!errorResponse.get()) {
@@ -521,11 +521,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
                 fieldPackets.add(fieldPkg);
                 fieldCount = fields.size();
-                if (primaryKey != null && primaryKeyIndex == -1) {
+                if (cacheKey != null && cacheKeyIndex == -1) {
                     // find primary key index
                     String fieldName = new String(fieldPkg.getName());
-                    if (primaryKey.equalsIgnoreCase(fieldName)) {
-                        primaryKeyIndex = i;
+                    if (cacheKey.equalsIgnoreCase(fieldName)) {
+                        cacheKeyIndex = i;
                     }
                 }
                 fieldPkg.setPacketId(++packetId);

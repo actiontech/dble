@@ -35,7 +35,7 @@ public class Table implements Named {
     @XmlAttribute
     protected Boolean ruleRequired;
     @XmlAttribute
-    protected String primaryKey;
+    protected String cacheKey;
     @XmlAttribute
     protected Boolean autoIncrement;
     @XmlAttribute
@@ -98,12 +98,12 @@ public class Table implements Named {
         this.ruleRequired = ruleRequired;
     }
 
-    public String getPrimaryKey() {
-        return primaryKey;
+    public String getCacheKey() {
+        return cacheKey;
     }
 
-    public void setPrimaryKey(String primaryKey) {
-        this.primaryKey = primaryKey;
+    public void setCacheKey(String cacheKey) {
+        this.cacheKey = cacheKey;
     }
 
     public Boolean isAutoIncrement() {
@@ -151,8 +151,8 @@ public class Table implements Named {
                 rule +
                 ", ruleRequired=" +
                 ruleRequired +
-                ", primaryKey=" +
-                primaryKey +
+                ", cacheKey=" +
+                cacheKey +
                 ", autoIncrement=" +
                 autoIncrement +
                 ", needAddLimit=" +

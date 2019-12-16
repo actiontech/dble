@@ -145,7 +145,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                 String msg = "Table '" + schema.getName() + "." + schemaInfo.getTable() + "' doesn't exist";
                 throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
             }
-            rrs.setPrimaryKey(tc.getPrimaryKey());
+            rrs.setCacheKey(tc.getCacheKey());
             //loop conditions to determine the scope
             SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
             for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
@@ -654,10 +654,10 @@ public class DruidSelectParser extends DefaultDruidParser {
             //single table
             if (ctx.getTables().size() == 1) {
                 String tableName = ctx.getTables().get(0);
-                String primaryKey = schema.getTables().get(tableName).getPrimaryKey();
+                String cacheKey = schema.getTables().get(tableName).getCacheKey();
                 if (ctx.getRouteCalculateUnit().getTablesAndConditions().get(tableName) != null &&
-                        ctx.getRouteCalculateUnit().getTablesAndConditions().get(tableName).get(primaryKey) != null &&
-                        tc.getDataNodes().size() > 1) { //primaryKey condition
+                        ctx.getRouteCalculateUnit().getTablesAndConditions().get(tableName).get(cacheKey) != null &&
+                        tc.getDataNodes().size() > 1) { //cacheKey condition
                     return false;
                 }
             }
@@ -719,9 +719,9 @@ public class DruidSelectParser extends DefaultDruidParser {
                 return true;
             }
 
-            String primaryKey = schema.getTables().get(tableName).getPrimaryKey();
+            String cacheKey = schema.getTables().get(tableName).getCacheKey();
             // no condition
-            return allConditions.get(tableName) == null || allConditions.get(tableName).get(primaryKey) == null;
+            return allConditions.get(tableName) == null || allConditions.get(tableName).get(cacheKey) == null;
         } else { // no table or multi-table
             return false;
         }

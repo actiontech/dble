@@ -105,35 +105,21 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
 
     protected int getIncrementKeyIndex(SchemaInfo schemaInfo, String incrementColumn) throws SQLNonTransientException {
         if (incrementColumn == null) {
-            throw new SQLNonTransientException("please make sure the primaryKey's config is not null in schemal.xml");
+            throw new SQLNonTransientException("please make sure the incrementColumn's config is not null in schemal.xml");
         }
-        int primaryKeyIndex = -1;
         StructureMeta.TableMeta tbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
                 schemaInfo.getTable());
         if (tbMeta != null) {
-            boolean hasIncrementColumn = false;
-            StructureMeta.IndexMeta primaryKey = tbMeta.getPrimary();
-            if (primaryKey != null) {
-                for (int i = 0; i < tbMeta.getColumnsList().size(); i++) {
-                    if (incrementColumn.equalsIgnoreCase(tbMeta.getColumns(i).getName())) {
-                        hasIncrementColumn = true;
-                        break;
-                    }
-                }
-            }
-            if (!hasIncrementColumn) {
-                String msg = "please make sure your table structure has primaryKey or incrementColumn";
-                LOGGER.info(msg);
-                throw new SQLNonTransientException(msg);
-            }
-
-            for (int i = 0; i < tbMeta.getColumnsCount(); i++) {
+            for (int i = 0; i < tbMeta.getColumnsList().size(); i++) {
                 if (incrementColumn.equalsIgnoreCase(tbMeta.getColumns(i).getName())) {
                     return i;
                 }
             }
+            String msg = "please make sure your table structure has incrementColumn";
+            LOGGER.info(msg);
+            throw new SQLNonTransientException(msg);
         }
-        return primaryKeyIndex;
+        return -1;
     }
 
     protected int getTableColumns(SchemaInfo schemaInfo, List<SQLExpr> columnExprList)

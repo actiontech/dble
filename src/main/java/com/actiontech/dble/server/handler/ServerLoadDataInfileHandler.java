@@ -444,9 +444,12 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
     private String joinField(String[] src, LoadData loaddata) {
         StringBuilder sb = new StringBuilder();
+        String enclose = loaddata.getEnclose() == null ? "" : loaddata.getEnclose();
         for (int i = 0, srcLength = src.length; i < srcLength; i++) {
             String s = src[i] != null ? src[i] : "";
+            sb.append(enclose);
             sb.append(s);
+            sb.append(enclose);
             if (i != srcLength - 1) {
                 sb.append(loaddata.getFieldTerminatedBy());
             }

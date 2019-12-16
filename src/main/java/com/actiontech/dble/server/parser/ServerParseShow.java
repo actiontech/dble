@@ -307,6 +307,7 @@ public final class ServerParseShow {
                     (c2 == 'S' || c2 == 's') &&
                     (c3 == 'E' || c3 == 'e') &&
                     (c4 == 'S' || c4 == 's')) {
+                //because phpMyAdmin use show database xxx ,loosen the check to let the phpMyAdmin work properly
                 return DATABASES;
             }
         }

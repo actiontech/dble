@@ -306,8 +306,7 @@ public final class ServerParseShow {
             if ((c1 == 'A' || c1 == 'a') &&
                     (c2 == 'S' || c2 == 's') &&
                     (c3 == 'E' || c3 == 'e') &&
-                    (c4 == 'S' || c4 == 's') &&
-                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
+                    (c4 == 'S' || c4 == 's')) {
                 return DATABASES;
             }
         }

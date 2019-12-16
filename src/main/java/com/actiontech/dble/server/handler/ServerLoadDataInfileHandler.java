@@ -194,7 +194,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 clear();
                 serverConnection.writeErrMessage(ErrorCode.ER_FILE_NOT_FOUND, msg);
             } else {
-                if (parseFileByLine(fileName, loadData.getCharset(), loadData.getLineTerminatedBy())) {
+                if (parseFileByLine((byte) 0, fileName, loadData.getCharset(), loadData.getLineTerminatedBy())) {
                     RouteResultset rrs = buildResultSet(routeResultMap);
                     if (rrs != null) {
                         flushDataToFile();
@@ -563,7 +563,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         saveByteOrToFile(null, true);
 
         if (isHasStoreToFile) {
-            parseFileByLine(tempFile, loadData.getCharset(), loadData.getLineTerminatedBy());
+            parseFileByLine(packId, tempFile, loadData.getCharset(), loadData.getLineTerminatedBy());
         } else {
             String content = new String(tempByteBuffer.toByteArray(), Charset.forName(loadData.getCharset()));
             if ("".equals(content)) {
@@ -631,7 +631,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     }
 
 
-    private boolean parseFileByLine(String file, String encode, String split) {
+    private boolean parseFileByLine(byte packetID, String file, String encode, String split) {
         CsvParserSettings settings = new CsvParserSettings();
         settings.setMaxColumns(DEFAULT_MAX_COLUMNS);
         settings.setMaxCharsPerColumn(systemConfig.getMaxCharsPerColumn());
@@ -670,7 +670,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                         parseOneLine(row, true);
                     } catch (Exception e) {
                         clear();
-                        serverConnection.writeErrMessage(ErrorCode.ER_WRONG_VALUE_COUNT_ON_ROW, "row data can't not calculate a sharding value," + e.getMessage());
+                        serverConnection.writeErrMessage(++packetID, ErrorCode.ER_WRONG_VALUE_COUNT_ON_ROW, "row data can't not calculate a sharding value," + e.getMessage());
                         return false;
                     }
                     empty = false;

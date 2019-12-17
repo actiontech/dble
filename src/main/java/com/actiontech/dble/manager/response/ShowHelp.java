@@ -146,6 +146,7 @@ public final class ShowHelp {
         HELPS.put("show @@reload_status", "Report latest reload status in this dble");
         HELPS.put("show @@user", "Report all user in this dble");
         HELPS.put("show @@user.privilege", "Report privilege of all business user in this dble");
+        HELPS.put("show @@questions", "Report the questions & transactions have been executed in server port");
         // switch
         HELPS.put("switch @@datasource name:index", "Switch dataSource");
 

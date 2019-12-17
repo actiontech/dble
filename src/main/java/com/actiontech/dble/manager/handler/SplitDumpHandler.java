@@ -1,7 +1,9 @@
 package com.actiontech.dble.manager.handler;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.manager.dump.*;
 import com.actiontech.dble.manager.response.DumpFileError;
@@ -21,7 +23,7 @@ import java.util.regex.Pattern;
 
 public final class SplitDumpHandler {
 
-    private static final Pattern SPLIT_STMT = Pattern.compile("([^\\s]+)\\s+([^\\s]+)\\s*(-r(\\d+))?\\s*(-w(\\d+))?\\s*(-l(\\d+))?", Pattern.CASE_INSENSITIVE);
+    private static final Pattern SPLIT_STMT = Pattern.compile("([^\\s]+)\\s+([^\\s]+)\\s*(-s([^\\s]+))?\\s*(-r(\\d+))?\\s*(-w(\\d+))?\\s*(-l(\\d+))?", Pattern.CASE_INSENSITIVE);
     public static final Logger LOGGER = LoggerFactory.getLogger("dumpFileLog");
 
     private SplitDumpHandler() {
@@ -36,10 +38,18 @@ public final class SplitDumpHandler {
             return;
         }
 
+        SchemaConfig defaultSchemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(config.getDefaultSchema());
+        if (defaultSchemaConfig == null) {
+            String errMsg = "Default schema[" + config.getDefaultSchema() + "] doesn't exist in config.";
+            LOGGER.info(errMsg);
+            c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, errMsg);
+            return;
+        }
+
         DumpFileWriter writer = new DumpFileWriter();
         BlockingQueue<String> queue = new ArrayBlockingQueue<>(config.getReadQueueSize());
         DumpFileReader reader = new DumpFileReader(queue);
-        DumpFileExecutor dumpFileExecutor = new DumpFileExecutor(queue, writer, config);
+        DumpFileExecutor dumpFileExecutor = new DumpFileExecutor(queue, writer, config, defaultSchemaConfig);
         try {
             // firstly check file
             reader.open(config.getReadFile());
@@ -96,13 +106,16 @@ public final class SplitDumpHandler {
             config.setReadFile(m.group(1));
             config.setWritePath(m.group(2));
             if (m.group(4) != null) {
-                config.setReadQueueSize(Integer.parseInt(m.group(4)));
+                config.setDefaultSchema(m.group(4));
             }
             if (m.group(6) != null) {
-                config.setWriteQueueSize(Integer.parseInt(m.group(6)));
+                config.setReadQueueSize(Integer.parseInt(m.group(6)));
             }
             if (m.group(8) != null) {
-                config.setMaxValues(Integer.parseInt(m.group(8)));
+                config.setWriteQueueSize(Integer.parseInt(m.group(8)));
+            }
+            if (m.group(10) != null) {
+                config.setMaxValues(Integer.parseInt(m.group(10)));
             }
         }
         return config;

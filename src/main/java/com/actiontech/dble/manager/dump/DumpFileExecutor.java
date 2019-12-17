@@ -1,8 +1,8 @@
 package com.actiontech.dble.manager.dump;
 
+import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.manager.dump.handler.StatementHandler;
 import com.actiontech.dble.manager.dump.handler.StatementHandlerManager;
-import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.util.TimeUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -23,9 +23,12 @@ public final class DumpFileExecutor implements Runnable {
     private DumpFileContext context;
     private Thread self;
 
-    public DumpFileExecutor(BlockingQueue<String> queue, DumpFileWriter writer, DumpFileConfig config) {
+    public DumpFileExecutor(BlockingQueue<String> queue, DumpFileWriter writer, DumpFileConfig config, SchemaConfig schemaConfig) {
         this.queue = queue;
         this.context = new DumpFileContext(writer, config);
+        if (schemaConfig != null) {
+            this.context.setDefaultSchema(schemaConfig);
+        }
     }
 
     public void start() {
@@ -39,7 +42,7 @@ public final class DumpFileExecutor implements Runnable {
 
     @Override
     public void run() {
-        String stmt;
+        String stmt = null;
         DumpFileWriter writer = context.getWriter();
         long startTime = TimeUtil.currentTimeMillis();
         LOGGER.info("begin to parse statement in dump file.");
@@ -56,7 +59,6 @@ public final class DumpFileExecutor implements Runnable {
                     }
                 }
 
-                context.setStmt(stmt);
                 int type = ServerParse.parse(stmt);
                 // pre handle
                 if (preHandle(writer, type, stmt)) {
@@ -69,32 +71,22 @@ public final class DumpFileExecutor implements Runnable {
                     return;
                 }
 
-                SQLStatement statement = null;
-                // parse ddl or create database
-                if (ServerParse.DDL == type || ServerParse.CREATE_DATABASE == type || ServerParse.USE == (0xff & type)) {
-                    stmt = stmt.replace("/*!", "/*#");
-                    statement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
-                    context.setSkipContext(false);
+                StatementHandler handler = StatementHandlerManager.getHandler(type);
+                SQLStatement statement = handler.preHandle(context, stmt);
+                if (statement == null) {
+                    handler.handle(context, stmt);
+                } else {
+                    handler.handle(context, statement);
                 }
-                // if ddl is wrong，the following statement is skip.
-                if (context.isSkipContext()) {
-                    continue;
-                }
-                if (ServerParse.INSERT == type && !context.isPushDown()) {
-                    statement = RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
-                }
-                StatementHandler handler = StatementHandlerManager.getHandler(context, statement);
-                if (handler.preHandle(context, statement)) {
-                    continue;
-                }
-                handler.handle(context, statement);
+
             } catch (DumpException | SQLSyntaxErrorException e) {
-                String currentStmt = context.getStmt().length() <= 1024 ? context.getStmt() : context.getStmt().substring(0, 1024);
+                String currentStmt = stmt.length() <= 1024 ? stmt : stmt.substring(0, 1024);
                 context.setSkipContext(true);
                 LOGGER.warn("current stmt[" + currentStmt + "] error,because:" + e.getMessage());
                 context.addError("current stmt[" + currentStmt + "] error,because:" + e.getMessage());
             } catch (InterruptedException ie) {
                 LOGGER.warn("dump file executor is interrupted.");
+                return;
             } catch (Exception e) {
                 LOGGER.warn("dump file executor exit, due to :" + e.getMessage());
                 try {

@@ -61,7 +61,7 @@ public class DumpFileWriter {
     }
 
     public void write(String dataNode, String stmt) throws InterruptedException {
-        write(dataNode, stmt, true, true);
+        write(dataNode, stmt, false, true);
     }
 
     public void writeAll(String stmt) throws InterruptedException {

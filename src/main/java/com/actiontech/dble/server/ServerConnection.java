@@ -319,8 +319,8 @@ public class ServerConnection extends FrontendConnection {
                     LOGGER.info(msg);
                     throw new SQLNonTransientException(msg);
                 }
+                DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.LOCK_END, this);
             }
-            DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.LOCK_END, this);
         } catch (Exception e) {
             if (rrs != null && rrs.getSqlType() == ServerParse.DDL && rrs.getSchema() != null) {
                 DDLTraceManager.getInstance().endDDL(this, e.getMessage());

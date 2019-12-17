@@ -279,25 +279,41 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
     }
 
 
+    public Map<Integer, PhysicalDatasource[]> getReadSources() {
+        if (this.dataHostConfig.getBalance() != BALANCE_NONE) {
+            return getReadSourceAll();
+        } else {
+            PhysicalDatasource[] list = new PhysicalDatasource[allSourceMap.size() - 1];
+            Map<Integer, PhysicalDatasource[]> result = new HashMap<Integer, PhysicalDatasource[]>();
+            result.put(0, list);
+            return result;
+        }
+    }
+
+
+    public Map<Integer, PhysicalDatasource[]> getStandbyReadSourcesMap() {
+        if (this.dataHostConfig.getBalance() == BALANCE_NONE) {
+            return getReadSourceAll();
+        } else {
+            PhysicalDatasource[] list = new PhysicalDatasource[allSourceMap.size() - 1];
+            Map<Integer, PhysicalDatasource[]> result = new HashMap<Integer, PhysicalDatasource[]>();
+            result.put(0, list);
+            return result;
+        }
+    }
+
+
     public Map<Integer, PhysicalDatasource[]> getReadSourceAll() {
-        Map<Integer, PhysicalDatasource[]> result = new HashMap<>();
-        PhysicalDatasource[] read = readSources.get(0);
-        PhysicalDatasource[] standbyRead = standbyReadSourcesMap.get(0);
-        if ((read != null && read.length > 0) || (standbyRead != null && standbyRead.length > 0)) {
-            int size = 0;
-            if (read != null) {
-                size += read.length;
+        PhysicalDatasource[] list = new PhysicalDatasource[allSourceMap.size() - 1];
+        int i = 0;
+        for (PhysicalDatasource ds : allSourceMap.values()) {
+            if (ds != writeSource) {
+                list[i++] = ds;
             }
-            if (standbyRead != null) {
-                size += standbyRead.length;
-            }
-            PhysicalDatasource[] list = new PhysicalDatasource[size];
-            if (read != null) {
-                System.arraycopy(read, 0, list, 0, read.length);
-            }
-            if (standbyRead != null) {
-                System.arraycopy(standbyRead, 0, list, read == null ? 0 : read.length, standbyRead.length);
-            }
+        }
+
+        Map<Integer, PhysicalDatasource[]> result = new HashMap<Integer, PhysicalDatasource[]>();
+        if (list.length > 0) {
             result.put(0, list);
         }
         return result;

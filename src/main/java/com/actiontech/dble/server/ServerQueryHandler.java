@@ -44,6 +44,8 @@ public class ServerQueryHandler implements FrontendQueryHandler {
             LOGGER.debug(String.valueOf(c) + sql);
         }
 
+        source.getSession2().queryCount();
+
         if (source.getSession2().getRemingSql() != null) {
             sql = source.getSession2().getRemingSql();
         }
@@ -67,6 +69,9 @@ public class ServerQueryHandler implements FrontendQueryHandler {
             }
             c.execute(sql, rs & 0xff);
         } else {
+            if (sqlType != ServerParse.START && sqlType != ServerParse.BEGIN) {
+                source.getSession2().singleTransactionsCount();
+            }
             switch (sqlType) {
                 //explain sql
                 case ServerParse.EXPLAIN:

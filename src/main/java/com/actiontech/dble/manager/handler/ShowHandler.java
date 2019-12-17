@@ -229,6 +229,9 @@ public final class ShowHandler {
             case ManagerParseShow.SHOW_USER_PRIVILEGE:
                 ShowUserPrivilege.execute(c);
                 break;
+            case ManagerParseShow.SHOW_QUESTIONS:
+                ShowQuestions.execute(c);
+                break;
             default:
                 if (isSupportShow(stmt)) {
                     Iterator<AbstractPhysicalDBPool> iterator = DbleServer.getInstance().getConfig().getDataHosts().values().iterator();

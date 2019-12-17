@@ -83,6 +83,8 @@ public class NonBlockingSession implements Session {
     private long queryStartTime = 0;
     private final ServerConnection source;
     private final ConcurrentMap<RouteResultsetNode, BackendConnection> target;
+    private volatile long queriesCounter = 0;
+    private volatile long transactionsCounter = 0;
     private RollbackNodesHandler rollbackHandler;
     private CommitNodesHandler commitHandler;
     private SavePointHandler savePointHandler;
@@ -1111,6 +1113,19 @@ public class NonBlockingSession implements Session {
         return ok.toBytes();
     }
 
+    public void queryCount() {
+        queriesCounter++;
+    }
+
+    public void transactionsCount() {
+        transactionsCounter++;
+    }
+
+    public void singleTransactionsCount() {
+        if (!source.isTxStart()) {
+            transactionsCounter++;
+        }
+    }
 
     /**
      * reset the session multiStatementStatus
@@ -1196,5 +1211,20 @@ public class NonBlockingSession implements Session {
     public boolean isRetryXa() {
         return retryXa;
     }
+
+
+    public long getQueriesCounter() {
+        return queriesCounter;
+    }
+
+    public long getTransactionsCounter() {
+        return transactionsCounter;
+    }
+
+    public void resetCounter() {
+        queriesCounter = Long.MIN_VALUE;
+        transactionsCounter = Long.MIN_VALUE;
+    }
+
 
 }

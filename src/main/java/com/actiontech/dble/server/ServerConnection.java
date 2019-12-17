@@ -503,6 +503,7 @@ public class ServerConnection extends FrontendConnection {
     @Override
     public synchronized void close(String reason) {
 
+        TsQueriesCounter.getInstance().addToHistory(session);
         //XA transaction in this phase,close it
         if (session.getSource().isTxStart() && session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_CANCELING) &&
                 session.getXaState() != null && session.getXaState() != TxState.TX_INITIALIZE_STATE) {

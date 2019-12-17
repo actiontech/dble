@@ -60,7 +60,7 @@ public final class TsQueriesCounter {
         return INSTANCE;
     }
 
-    public class CalculateResult {
+    public static class CalculateResult {
         public final long queries;
         public final long transactions;
 

@@ -374,7 +374,7 @@ public abstract class PhysicalDatasource {
         });
     }
 
-    public abstract void createNewConnection(ResponseHandler handler, String schema) throws IOException;
+    protected abstract void createNewConnection(ResponseHandler handler, String schema) throws IOException;
 
     public void getConnection(String schema, boolean autocommit, final ResponseHandler handler,
                               final Object attachment, boolean mustWrite) throws IOException {

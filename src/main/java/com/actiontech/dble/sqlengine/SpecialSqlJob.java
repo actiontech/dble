@@ -9,7 +9,6 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
-import com.actiontech.dble.backend.mysql.nio.handler.DelegateResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ErrorInfo;
 import com.actiontech.dble.net.mysql.ErrorPacket;
@@ -54,7 +53,7 @@ public class SpecialSqlJob extends SQLJob {
                 @Override
                 public void run() {
                     try {
-                        ds.createNewConnection(new DelegateResponseHandler(sqlJob), schema);
+                        ds.getConnection(schema, true, sqlJob, null, true);
                     } catch (Exception e) {
                         sqlJob.connectionError(e, null);
                     }

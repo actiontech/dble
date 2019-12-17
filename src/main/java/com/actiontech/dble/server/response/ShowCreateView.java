@@ -23,6 +23,7 @@ import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowCreateViewStatement;
 
 import java.nio.ByteBuffer;
+import java.sql.SQLException;
 
 /**
  * Created by szf on 2017/12/15.
@@ -73,34 +74,34 @@ public final class ShowCreateView {
                 view = statement.getName().toString();
             }
             sendOutTheViewInfo(c, schema, view);
-        } catch (Exception e) {
-            c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.getMessage());
+        } catch (SQLException e) {
+            c.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());
         }
     }
 
     public static void response(ServerConnection c, String schema, String viewName) {
         try {
             sendOutTheViewInfo(c, schema, viewName);
-        } catch (Exception e) {
-            c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.getMessage());
+        } catch (SQLException e) {
+            c.writeErrMessage(e.getSQLState(), e.getMessage(), e.getErrorCode());
         }
     }
 
-    public static void sendOutTheViewInfo(ServerConnection c, String schema, String viewName) throws Exception {
+    public static void sendOutTheViewInfo(ServerConnection c, String schema, String viewName) throws SQLException {
         //check if the view or schema doesn't exist
         if (schema == null || "".equals(schema)) {
-            throw new Exception(" No database selected");
+            throw new SQLException("No database selected", "3D000", ErrorCode.ER_NO_DB_ERROR);
         }
 
         schema = StringUtil.removeBackQuote(schema);
         SchemaMeta schemaMeta = ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema);
         if (schemaMeta == null) {
-            throw new Exception("Table '" + schema + "." + viewName + "' doesn't exist");
+            throw new SQLException("Table '" + schema + "." + viewName + "' doesn't exist", "42S02", ErrorCode.ER_NO_SUCH_TABLE);
         }
         viewName = StringUtil.removeBackQuote(viewName);
         ViewMeta view = schemaMeta.getViewMetas().get(viewName);
         if (view == null) {
-            throw new Exception("Table '" + schema + "." + viewName + "' doesn't exist");
+            throw new SQLException("Table '" + schema + "." + viewName + "' doesn't exist", "42S02", ErrorCode.ER_NO_SUCH_TABLE);
         }
 
         ByteBuffer buffer = c.allocate();

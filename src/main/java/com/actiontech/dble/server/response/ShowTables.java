@@ -104,10 +104,7 @@ public final class ShowTables {
             sql.append("TABLES ");
             if (info.getCond() != null) {
                 sql.append(info.getCond());
-            } else {
-                sql.append(" where ");
             }
-            sql.append(" Table_Type='BASE TABLE'");
             rrs.setStatement(sql.toString());
         }
         RouterUtil.routeToSingleNode(rrs, node);

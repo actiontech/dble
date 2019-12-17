@@ -5,6 +5,8 @@
 
 package com.actiontech.dble.meta;
 
+import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.node.MergeNode;
@@ -15,10 +17,10 @@ import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
-import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
-import com.alibaba.druid.sql.ast.statement.SQLSelectQueryBlock;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 
+import java.sql.SQLException;
+import java.sql.SQLNonTransientException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -44,28 +46,39 @@ public class ViewMeta {
         this.tmManager = tmManager;
     }
 
-    public void init(boolean isReplace, boolean isMysqlView) throws Exception {
+    public void init(boolean isReplace) throws Exception {
         ViewMetaParser viewParser = new ViewMetaParser(createSql);
         viewParser.parseCreateView(this);
         //check if the select part has
-        this.checkDuplicate(viewParser, isReplace);
-        this.parseSelectInView(isMysqlView);
+        checkDuplicate(viewParser.getType(), isReplace);
+        parseSelectInView();
     }
 
-    private void parseSelectInView(boolean isMysqlView) throws Exception {
+    private void parseSelectInView() throws SQLException {
         SQLSelectStatement selectStatement = (SQLSelectStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(selectSql);
-        if (isMysqlView) {
-            List<SQLSelectItem> selectItems = ((SQLSelectQueryBlock) selectStatement.getSelect().getQuery()).getSelectList();
+        MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(this.schema, 63, tmManager, false);
+        msv.visit(selectStatement.getSelect().getQuery());
+        PlanNode selNode = msv.getTableNode();
+
+        HashSet<String> schemas = new HashSet<>(4, 1);
+        for (TableNode tableNode : selNode.getReferedTableNodes()) {
+            if (DbleServer.getInstance().getConfig().getSchemas().get(tableNode.getSchema()).isNoSharding()) {
+                schemas.add(tableNode.getSchema());
+            } else {
+                break;
+            }
+        }
+
+        if (schemas.size() == 1 && schemas.iterator().next().equals(schema)) {
+            selNode.setUpFields();
+            List<Item> selectItems = selNode.getColumnsSelected();
             viewColumnMeta = new ArrayList<>(selectItems.size());
-            for (SQLSelectItem item : selectItems) {
-                String alias = item.getAlias() == null ? item.getExpr().toString() : item.getAlias();
+            for (Item item : selectItems) {
+                String alias = item.getAlias() == null ? item.getItemName() : item.getAlias();
                 viewColumnMeta.add(StringUtil.removeBackQuote(alias));
             }
             viewQuery = new TableNode(schema, viewName, viewColumnMeta);
         } else {
-            MySQLPlanNodeVisitor msv = new MySQLPlanNodeVisitor(this.schema, 63, tmManager, false);
-            msv.visit(selectStatement.getSelect().getQuery());
-            PlanNode selNode = msv.getTableNode();
             if (selNode instanceof MergeNode) {
                 this.setFieldsAlias(selNode, true);
                 selNode.setUpFields();
@@ -77,21 +90,10 @@ public class ViewMeta {
         }
     }
 
-    public void initAndSet(boolean isReplace, boolean isNewCreate, boolean isMysqlView) throws Exception {
-        //check the create sql is legal
-        //parse sql into three parts
-        ViewMetaParser viewParser = new ViewMetaParser(createSql);
-        viewParser.parseCreateView(this);
-        if ("".equals(viewName)) {
-            throw new Exception("sql not supported ");
-        }
-
+    public void addMeta(boolean isNewCreate) throws SQLNonTransientException {
         try {
             tmManager.addMetaLock(schema, viewName, createSql);
-            //check if the select part has
-            checkDuplicate(viewParser, isReplace);
-            parseSelectInView(isMysqlView);
-            if (isNewCreate) {
+            if (isNewCreate && viewQuery instanceof QueryNode) {
                 ProxyMeta.getInstance().getTmManager().getRepository().put(schema, viewName, this.createSql);
             }
             tmManager.getCatalogs().get(schema).getViewMetas().put(viewName, this);
@@ -100,15 +102,15 @@ public class ViewMeta {
         }
     }
 
-    private void checkDuplicate(ViewMetaParser viewParser, Boolean isReplace) throws Exception {
+    private void checkDuplicate(int type, Boolean isReplace) throws SQLException {
 
         ViewMeta viewNode = tmManager.getCatalogs().get(schema).getViewMetas().get(viewName);
         //.getSyncView(schema,viewName);
         StructureMeta.TableMeta tableMeta = tmManager.getCatalogs().get(schema).getTableMeta(viewName);
         //if the alter table
-        if (viewParser.getType() == ViewMetaParser.TYPE_ALTER_VIEW && !isReplace) {
+        if (type == ViewMetaParser.TYPE_ALTER_VIEW && !isReplace) {
             if (viewNode == null) {
-                throw new Exception("Table '" + viewName + "' doesn't exist");
+                throw new SQLException("Table '" + viewName + "' doesn't exist", "42S02", ErrorCode.ER_NO_SUCH_TABLE);
             }
         }
 
@@ -116,7 +118,7 @@ public class ViewMeta {
             Set<String> tempMap = new HashSet<String>();
             for (String t : viewColumnMeta) {
                 if (tempMap.contains(t.trim())) {
-                    throw new Exception("Duplicate column name '" + t + "'");
+                    throw new SQLException("Duplicate column name '" + t + "'", "HY000", ErrorCode.ER_WRONG_COLUMN_NAME);
                 }
                 tempMap.add(t.trim());
             }
@@ -124,31 +126,31 @@ public class ViewMeta {
 
         // if the table with same name exists
         if (tableMeta != null) {
-            throw new Exception("Table '" + viewName + "' already exists");
+            throw new SQLException("Table '" + viewName + "' already exists", "42S01", ErrorCode.ER_TABLE_EXISTS_ERROR);
         }
 
-        if (viewParser.getType() == ViewMetaParser.TYPE_CREATE_VIEW && !isReplace) {
+        if (type == ViewMetaParser.TYPE_CREATE_VIEW && !isReplace) {
             // if the sql without replace & the view exists
             if (viewNode != null) {
                 // return error because the view is exists
-                throw new Exception("Table '" + viewName + "' already exists");
+                throw new SQLException("Table '" + viewName + "' already exists", "42S01", ErrorCode.ER_TABLE_EXISTS_ERROR);
             }
         }
     }
 
-    private void setFieldsAlias(PlanNode selNode, boolean isMergeNode) throws Exception {
+    private void setFieldsAlias(PlanNode selNode, boolean isMergeNode) throws SQLException {
         if (viewColumnMeta == null) {
             List<Item> selectList = selNode.getColumnsSelected();
             Set<String> tempMap = new HashSet<>();
             for (Item t : selectList) {
                 if (t.getAlias() != null) {
                     if (tempMap.contains(t.getAlias())) {
-                        throw new Exception("Duplicate column name '" + t.getItemName() + "'");
+                        throw new SQLException("Duplicate column name '" + t + "'", "HY000", ErrorCode.ER_WRONG_COLUMN_NAME);
                     }
                     tempMap.add(t.getAlias());
                 } else {
                     if (tempMap.contains(t.getItemName())) {
-                        throw new Exception("Duplicate column name '" + t.getItemName() + "'");
+                        throw new SQLException("Duplicate column name '" + t + "'", "HY000", ErrorCode.ER_WRONG_COLUMN_NAME);
                     }
                     tempMap.add(t.getItemName());
                 }
@@ -168,7 +170,7 @@ public class ViewMeta {
         //check if the column number of view is same as the selectList in selectStatement
         if (viewColumnMeta.size() != size) {
             //return error
-            throw new Exception("The Column_list Size and Select_statement Size Not Match");
+            throw new SQLException("The Column_list Size and Select_statement Size Not Match", "HY000", ErrorCode.ER_WRONG_NUMBER_OF_COLUMNS_IN_SELECT);
         }
         Item column;
         for (int i = 0; i < size; i++) {

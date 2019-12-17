@@ -71,7 +71,8 @@ public class ViewChildResponse implements ClusterXmlLoader {
                         return;
                     }
                     ViewMeta vm = new ViewMeta(schema, stmt, ProxyMeta.getInstance().getTmManager());
-                    vm.initAndSet(true, false, false);
+                    vm.init(true);
+                    vm.addMeta(false);
 
                     Map<String, Map<String, String>> viewCreateSqlMap = ProxyMeta.getInstance().getTmManager().getRepository().getViewCreateSqlMap();
                     Map<String, String> schemaMap = viewCreateSqlMap.get(schema);

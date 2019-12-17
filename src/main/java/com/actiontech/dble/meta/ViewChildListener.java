@@ -79,7 +79,8 @@ public class ViewChildListener implements PathChildrenCacheListener {
         String schema = paths[paths.length - 1].split(SCHEMA_VIEW_SPLIT)[0];
 
         ViewMeta vm = new ViewMeta(schema, createSql, ProxyMeta.getInstance().getTmManager());
-        vm.initAndSet(isReplace, false, false);
+        vm.init(isReplace);
+        vm.addMeta(false);
 
     }
 

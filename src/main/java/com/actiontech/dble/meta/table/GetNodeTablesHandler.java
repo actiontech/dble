@@ -49,7 +49,7 @@ public abstract class GetNodeTablesHandler {
     public void execute() {
         PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
         String mysqlShowTableCol = "Tables_in_" + dn.getDatabase();
-        String[] mysqlShowTableCols = new String[]{mysqlShowTableCol};
+        String[] mysqlShowTableCols = new String[]{mysqlShowTableCol, "Table_type"};
         PhysicalDatasource ds = dn.getDbPool().getSource();
         if (ds.isAlive()) {
             MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(mysqlShowTableCols, new MySQLShowTablesListener(mysqlShowTableCol, dn.getDatabase(), ds));
@@ -62,7 +62,7 @@ public abstract class GetNodeTablesHandler {
         }
     }
 
-    protected abstract void handleTable(String table);
+    protected abstract void handleTable(String table, String tableType);
 
     protected void handleFinished() {
         lock.lock();
@@ -113,10 +113,11 @@ public abstract class GetNodeTablesHandler {
             List<Map<String, String>> rows = result.getResult();
             for (Map<String, String> row : rows) {
                 String table = row.get(mysqlShowTableCol);
+                String type = row.get("Table_type");
                 if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
                     table = table.toLowerCase();
                 }
-                handleTable(table);
+                handleTable(table, type);
             }
             handleFinished();
         }

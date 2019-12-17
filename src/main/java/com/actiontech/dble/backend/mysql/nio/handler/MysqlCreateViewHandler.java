@@ -10,6 +10,7 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.meta.ViewMeta;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -18,7 +19,6 @@ import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.server.handler.ViewHandler;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,16 +28,18 @@ import java.util.List;
 /**
  * @Author collapsar
  */
-public class MysqlViewHandler implements ResponseHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MysqlViewHandler.class);
+public class MysqlCreateViewHandler implements ResponseHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MysqlCreateViewHandler.class);
     private NonBlockingSession session;
     private RouteResultset rrs;
     private volatile byte packetId;
+    private ViewMeta vm;
 
-    public MysqlViewHandler(NonBlockingSession session, RouteResultset rrs) {
+    public MysqlCreateViewHandler(NonBlockingSession session, RouteResultset rrs, ViewMeta vm) {
         this.session = session;
         this.rrs = rrs;
         this.packetId = (byte) session.getPacketId().get();
+        this.vm = vm;
     }
 
     public void execute() throws Exception {
@@ -91,7 +93,7 @@ public class MysqlViewHandler implements ResponseHandler {
         }
 
         try {
-            ViewHandler.handleView(rrs.getSqlType(), rrs.getSchema(), rrs.getStatement(), true);
+            vm.addMeta(true);
         } catch (Exception e) {
             ErrorPacket errPkg = new ErrorPacket();
             errPkg.setPacketId(++packetId);

@@ -64,7 +64,7 @@ public class DryRunGetNodeTablesHandler extends GetNodeTablesHandler {
     }
 
     @Override
-    protected void handleTable(String table) {
+    protected void handleTable(String table, String tableType) {
         returnMap.get(phyDataNode.getName()).add(table);
     }
 
@@ -89,14 +89,14 @@ public class DryRunGetNodeTablesHandler extends GetNodeTablesHandler {
                 handleFinished();
                 return;
             }
-            returnMap.put(phyDataNode.getName(), new HashSet<String>());
+            returnMap.put(phyDataNode.getName(), new HashSet<>());
             List<Map<String, String>> rows = result.getResult();
             for (Map<String, String> row : rows) {
                 String table = row.get(mysqlShowTableCol);
                 if (isLowerCase) {
                     table = table.toLowerCase();
                 }
-                handleTable(table);
+                handleTable(table, null);
             }
             handleFinished();
         }

@@ -47,10 +47,10 @@ public class DruidLockTableParser extends DefaultDruidParser {
             if (tableConfig != null) {
                 handleConfigTable(dataNodeToLocks, tableConfig, item.getTableSource().getAlias(), item.getLockType());
                 continue;
-            } else if (ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaName, table) != null) {
+            } else if (ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaName, table) != null || ProxyMeta.getInstance().getTmManager().getSyncView(schemaName, table) instanceof TableNode) {
                 handleNoshardTable(dataNodeToLocks, table, schemaConfig.getDataNode(), item.getTableSource().getAlias(), item.getLockType());
                 continue;
-            } else if (ProxyMeta.getInstance().getTmManager().getSyncView(schemaName, table) != null) {
+            } else if (ProxyMeta.getInstance().getTmManager().getSyncView(schemaName, table) instanceof QueryNode) {
                 handleSingleViewLock(dataNodeToLocks, ProxyMeta.getInstance().getTmManager().getSyncView(schemaName, table), item.getTableSource().getAlias(), item.getLockType(), schemaName);
                 continue;
             }

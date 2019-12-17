@@ -451,7 +451,7 @@ public class ProxyMetaManager {
             for (Map.Entry<String, String> view : schemaName.getValue().entrySet()) {
                 try {
                     ViewMeta vm = new ViewMeta(schemaName.getKey(), view.getValue(), this);
-                    vm.init(true, false);
+                    vm.init(true);
                     SchemaMeta schemaMeta = this.getCatalogs().get(schemaName.getKey());
                     if (schemaMeta == null) {
                         LOGGER.warn("View " + view.getKey() + " can not find it's schema,view " + view.getKey() + " not initialized");
@@ -471,8 +471,8 @@ public class ProxyMetaManager {
             for (Map.Entry<String, String> view : schemaName.getValue().entrySet()) {
                 try {
                     ViewMeta vm = new ViewMeta(schemaName.getKey(), view.getValue(), this);
+                    vm.init(true);
                     schemaViewMeta.put(vm.getViewName(), vm);
-                    vm.init(true, false);
                 } catch (Exception e) {
                     LOGGER.warn("reload view meta error", e);
                 }

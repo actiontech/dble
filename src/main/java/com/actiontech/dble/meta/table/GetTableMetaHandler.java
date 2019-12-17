@@ -96,6 +96,8 @@ public abstract class GetTableMetaHandler {
             List<Map<String, String>> rows = result.getResult();
             for (Map<String, String> row : rows) {
                 boolean isView = false;
+                // when table is view, we select view,create_view and character_set_client
+                // but if not, we only select table, create_table
                 if (row.size() < 3) {
                     table = row.get(MYSQL_TABLE_COLS);
                     createSQL = row.get(MYSQL_CREATE_TABLE_COLS);

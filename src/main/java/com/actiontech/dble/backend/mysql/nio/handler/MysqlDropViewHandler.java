@@ -10,6 +10,7 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.meta.ViewMeta;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -18,26 +19,32 @@ import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.server.handler.ViewHandler;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.SQLNonTransientException;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @Author collapsar
  */
-public class MysqlViewHandler implements ResponseHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MysqlViewHandler.class);
+public class MysqlDropViewHandler implements ResponseHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MysqlDropViewHandler.class);
     private NonBlockingSession session;
     private RouteResultset rrs;
     private volatile byte packetId;
+    private List<String> views;
+    private AtomicInteger viewNum;
+    private ViewMeta vm;
 
-    public MysqlViewHandler(NonBlockingSession session, RouteResultset rrs) {
+    public MysqlDropViewHandler(NonBlockingSession session, RouteResultset rrs, List<String> views) {
         this.session = session;
         this.rrs = rrs;
         this.packetId = (byte) session.getPacketId().get();
+        this.views = views;
+        this.viewNum = new AtomicInteger(views.size());
     }
 
     public void execute() throws Exception {
@@ -50,6 +57,10 @@ public class MysqlViewHandler implements ResponseHandler {
             PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
             dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), session.getSource().isAutocommit(), node, this, node);
         }
+    }
+
+    public void setVm(ViewMeta vm) {
+        this.vm = vm;
     }
 
     private void innerExecute(BackendConnection conn, RouteResultsetNode node) {
@@ -90,28 +101,32 @@ public class MysqlViewHandler implements ResponseHandler {
             return;
         }
 
-        try {
-            ViewHandler.handleView(rrs.getSqlType(), rrs.getSchema(), rrs.getStatement(), true);
-        } catch (Exception e) {
-            ErrorPacket errPkg = new ErrorPacket();
-            errPkg.setPacketId(++packetId);
-            errPkg.setMessage(StringUtil.encode(e.getMessage(), session.getSource().getCharset().getResults()));
-            backConnectionErr(errPkg, conn, conn.syncAndExecute());
-            return;
-        }
+        if (viewNum.decrementAndGet() == 0) {
+            if (vm != null) {
+                try {
+                    vm.addMeta(true);
+                } catch (SQLNonTransientException e) {
+                    ErrorPacket errPkg = new ErrorPacket();
+                    errPkg.setPacketId(++packetId);
+                    errPkg.setMessage(StringUtil.encode(e.getMessage(), session.getSource().getCharset().getResults()));
+                    backConnectionErr(errPkg, conn, conn.syncAndExecute());
+                    return;
+                }
+            }
 
-        // return ok
-        OkPacket ok = new OkPacket();
-        ok.read(data);
-        ok.setPacketId(++packetId); // OK_PACKET
-        ok.setServerStatus(session.getSource().isAutocommit() ? 2 : 1);
-        session.setBackendResponseEndTime((MySQLConnection) conn);
-        session.releaseConnectionIfSafe(conn, false);
-        session.setResponseTime(true);
-        session.multiStatementPacket(ok, packetId);
-        boolean multiStatementFlag = session.getIsMultiStatement().get();
-        ok.write(session.getSource());
-        session.multiStatementNextSql(multiStatementFlag);
+            // return ok
+            OkPacket ok = new OkPacket();
+            ok.read(data);
+            ok.setPacketId(++packetId); // OK_PACKET
+            ok.setServerStatus(session.getSource().isAutocommit() ? 2 : 1);
+            session.setBackendResponseEndTime((MySQLConnection) conn);
+            session.releaseConnectionIfSafe(conn, false);
+            session.setResponseTime(true);
+            session.multiStatementPacket(ok, packetId);
+            boolean multiStatementFlag = session.getIsMultiStatement().get();
+            ok.write(session.getSource());
+            session.multiStatementNextSql(multiStatementFlag);
+        }
     }
 
     private void backConnectionErr(ErrorPacket errPkg, BackendConnection conn, boolean syncFinished) {
@@ -130,8 +145,11 @@ public class MysqlViewHandler implements ResponseHandler {
             conn.closeWithoutRsp("unfinished sync");
             session.getTargetMap().remove(conn.getAttachment());
         }
-        source.setTxInterrupt(errMsg);
-        errPkg.write(source);
+
+        if (viewNum.decrementAndGet() == 0) {
+            source.setTxInterrupt(errMsg);
+            errPkg.write(source);
+        }
     }
 
     @Override

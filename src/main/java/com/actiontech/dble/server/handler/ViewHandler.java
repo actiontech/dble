@@ -6,12 +6,15 @@
 package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.mysql.nio.handler.MysqlViewHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.MysqlCreateOrReplaceViewHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.MysqlDropViewHandler;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.ViewMeta;
 import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.plan.node.PlanNode;
+import com.actiontech.dble.plan.node.QueryNode;
+import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
@@ -24,6 +27,9 @@ import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Created by collapsar on 2019/12/10.
@@ -41,48 +47,27 @@ public final class ViewHandler {
         }
 
         try {
-            // view in mysql
-            SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schema);
-            if (schemaConfig.isNoSharding()) {
-                RouteResultset rrs = new RouteResultset(RouterUtil.removeSchema(sql, schema), type);
-                rrs.setSchema(schema);
-                RouterUtil.routeToSingleNode(rrs, schemaConfig.getDataNode());
-                MysqlViewHandler handler = new MysqlViewHandler(c.getSession2(), rrs);
-                handler.execute();
-                return;
-            }
-
-            // view in dble
-            handleView(type, schema, sql, false);
+            handleView(type, schema, sql, c);
         } catch (SQLException e) {
             c.writeErrMessage(e.getErrorCode(), e.getMessage());
-            return;
         } catch (Exception e) {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage());
-            return;
         }
-
-        // if the create success with no error send back OK
-        byte packetId = (byte) c.getSession2().getPacketId().get();
-        OkPacket ok = new OkPacket();
-        ok.setPacketId(++packetId);
-        c.getSession2().multiStatementPacket(ok, packetId);
-        ok.write(c);
-        boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-        c.getSession2().multiStatementNextSql(multiStatementFlag);
     }
 
-    public static void handleView(int sqlType, String schema, String sql, boolean isMysqlView) throws Exception {
+    public static void handleView(int sqlType, String schema, String sql, ServerConnection c) throws Exception {
         switch (sqlType) {
             case ServerParse.CREATE_VIEW:
+                createView(schema, sql, sqlType, c);
+                break;
             case ServerParse.ALTER_VIEW:
-                createOrReplaceView(schema, sql, false, isMysqlView);
+                replaceView(schema, sql, sqlType, false, c);
                 break;
             case ServerParse.REPLACE_VIEW:
-                createOrReplaceView(schema, sql, true, isMysqlView);
+                replaceView(schema, sql, sqlType, true, c);
                 break;
             case ServerParse.DROP_VIEW:
-                deleteView(schema, sql, isMysqlView);
+                deleteView(schema, sql, c);
                 break;
             default:
                 break;
@@ -94,13 +79,50 @@ public final class ViewHandler {
      *
      * @param schema
      * @param sql
-     * @param isReplace
      * @throws Exception
      */
-    private static void createOrReplaceView(String schema, String sql, boolean isReplace, boolean isMysqlView) throws Exception {
+    private static void createView(String schema, String sql, int sqlType, ServerConnection c) throws Exception {
         //create a new object of the view
         ViewMeta vm = new ViewMeta(schema, sql, ProxyMeta.getInstance().getTmManager());
-        vm.initAndSet(isReplace, true, isMysqlView);
+        vm.init(false);
+        if (vm.getViewQuery() instanceof TableNode) {
+            RouteResultset rrs = new RouteResultset(RouterUtil.removeSchema(sql, schema), sqlType);
+            rrs.setSchema(schema);
+            RouterUtil.routeToSingleNode(rrs, DbleServer.getInstance().getConfig().getSchemas().get(schema).getDataNode());
+            MysqlCreateOrReplaceViewHandler handler = new MysqlCreateOrReplaceViewHandler(c.getSession2(), rrs, vm);
+            handler.execute();
+            return;
+        }
+        vm.addMeta(true);
+        writeOkPackage(c);
+    }
+
+    private static void replaceView(String schema, String sql, int sqlType, boolean isReplace, ServerConnection c) throws Exception {
+        //create a new object of the view
+        ViewMeta vm = new ViewMeta(schema, sql, ProxyMeta.getInstance().getTmManager());
+        vm.init(isReplace);
+        // if exist
+        PlanNode oldViewNode = ProxyMeta.getInstance().getTmManager().getSyncView(schema, vm.getViewName());
+        if (oldViewNode instanceof TableNode && vm.getViewQuery() instanceof QueryNode) {
+            RouteResultset rrs = new RouteResultset("drop view `" + vm.getViewName() + "`", sqlType);
+            rrs.setSchema(schema);
+            RouterUtil.routeToSingleNode(rrs, DbleServer.getInstance().getConfig().getSchemas().get(schema).getDataNode());
+            MysqlDropViewHandler handler = new MysqlDropViewHandler(c.getSession2(), rrs, new ArrayList<>(Collections.singleton(vm.getViewName())));
+            handler.setVm(vm);
+            handler.execute();
+            return;
+        }
+
+        if (vm.getViewQuery() instanceof TableNode) {
+            RouteResultset rrs = new RouteResultset(RouterUtil.removeSchema(sql, schema), sqlType);
+            rrs.setSchema(schema);
+            RouterUtil.routeToSingleNode(rrs, DbleServer.getInstance().getConfig().getSchemas().get(schema).getDataNode());
+            MysqlCreateOrReplaceViewHandler handler = new MysqlCreateOrReplaceViewHandler(c.getSession2(), rrs, vm);
+            handler.execute();
+            return;
+        }
+        vm.addMeta(true);
+        writeOkPackage(c);
     }
 
     /**
@@ -110,7 +132,7 @@ public final class ViewHandler {
      * @param sql
      * @throws Exception
      */
-    private static void deleteView(String currentSchema, String sql, boolean isMysqlView) throws SQLException {
+    private static void deleteView(String currentSchema, String sql, ServerConnection c) throws Exception {
         SQLStatementParser parser = new MySqlStatementParser(sql);
         SQLDropViewStatement viewStatement = (SQLDropViewStatement) parser.parseStatement(true);
         if (viewStatement.getTableSources() == null || viewStatement.getTableSources().size() == 0) {
@@ -119,21 +141,58 @@ public final class ViewHandler {
 
         boolean ifExistsFlag = viewStatement.isIfExists();
         ProxyMetaManager proxyManger = ProxyMeta.getInstance().getTmManager();
-        for (SQLExprTableSource table : viewStatement.getTableSources()) {
-            String schema = table.getSchema() == null ? currentSchema : StringUtil.removeBackQuote(table.getSchema());
-            String viewName = StringUtil.removeBackQuote(table.getName().getSimpleName()).trim();
 
+        List<String> deleteMysqlViews = new ArrayList<>(5);
+        String schema = null;
+        for (SQLExprTableSource table : viewStatement.getTableSources()) {
+            schema = table.getSchema() == null ? currentSchema : StringUtil.removeBackQuote(table.getSchema());
+            String viewName = StringUtil.removeBackQuote(table.getName().getSimpleName()).trim();
             if (!proxyManger.getCatalogs().get(schema).getViewMetas().containsKey(viewName) && !ifExistsFlag) {
                 throw new SQLException("Unknown view '" + viewName + "'", "HY000", ErrorCode.ER_NO_TABLES_USED);
             }
 
             proxyManger.addMetaLock(table.getSchema(), viewName, sql);
             try {
-                if (!isMysqlView) proxyManger.getRepository().delete(schema, viewName);
-                proxyManger.getCatalogs().get(schema).getViewMetas().remove(viewName);
+                proxyManger.getRepository().delete(schema, viewName);
+                ViewMeta vm = proxyManger.getCatalogs().get(schema).getViewMetas().remove(viewName);
+                if (vm != null && vm.getViewQuery() instanceof TableNode) {
+                    deleteMysqlViews.add(viewName);
+                }
             } finally {
                 proxyManger.removeMetaLock(table.getSchema(), viewName);
             }
         }
+
+        if (deleteMysqlViews.size() > 0) {
+            StringBuilder dropStmt = new StringBuilder("drop view ");
+            if (ifExistsFlag) {
+                dropStmt.append(" if exists ");
+            }
+            for (String table : deleteMysqlViews) {
+                dropStmt.append("`");
+                dropStmt.append(table);
+                dropStmt.append("`,");
+            }
+            dropStmt.deleteCharAt(dropStmt.length() - 1);
+            RouteResultset rrs = new RouteResultset(dropStmt.toString(), ServerParse.DROP_VIEW);
+            RouterUtil.routeToSingleNode(rrs, DbleServer.getInstance().getConfig().getSchemas().get(schema).getDataNode());
+            MysqlDropViewHandler handler = new MysqlDropViewHandler(c.getSession2(), rrs, deleteMysqlViews);
+            handler.execute();
+            return;
+        }
+
+        writeOkPackage(c);
     }
+
+    private static void writeOkPackage(ServerConnection c) {
+        // if the create success with no error send back OK
+        byte packetId = (byte) c.getSession2().getPacketId().get();
+        OkPacket ok = new OkPacket();
+        ok.setPacketId(++packetId);
+        c.getSession2().multiStatementPacket(ok, packetId);
+        ok.write(c);
+        boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+        c.getSession2().multiStatementNextSql(multiStatementFlag);
+    }
+
 }

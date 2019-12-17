@@ -40,7 +40,7 @@ public class GetConfigTablesHandler extends GetNodeTablesHandler {
     }
 
     @Override
-    protected void handleTable(String table) {
+    protected void handleTable(String table, String tableType) {
         if (expectedTables.contains(table)) {
             existsTables.add(table);
             return;

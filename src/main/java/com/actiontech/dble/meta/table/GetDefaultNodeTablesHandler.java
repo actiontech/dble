@@ -9,11 +9,13 @@ import com.actiontech.dble.config.model.SchemaConfig;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class GetDefaultNodeTablesHandler extends GetNodeTablesHandler {
 
-    private final Set<String> tables = new HashSet<>();
+    private final Set<String> tables = new LinkedHashSet<>();
+    private final Set<String> views = new HashSet<>();
     private SchemaConfig config;
 
     GetDefaultNodeTablesHandler(SchemaConfig config) {
@@ -22,8 +24,10 @@ public class GetDefaultNodeTablesHandler extends GetNodeTablesHandler {
     }
 
     @Override
-    protected void handleTable(String table) {
-        if (!config.getTables().containsKey(table)) {
+    protected void handleTable(String table, String tableType) {
+        if (tableType.equalsIgnoreCase("view")) {
+            views.add(table);
+        } else if (!config.getTables().containsKey(table)) {
             tables.add(table);
         }
     }
@@ -39,6 +43,10 @@ public class GetDefaultNodeTablesHandler extends GetNodeTablesHandler {
             return Collections.emptySet();
         } finally {
             lock.unlock();
+        }
+
+        if (!views.isEmpty()) {
+            tables.addAll(views);
         }
         return tables;
     }

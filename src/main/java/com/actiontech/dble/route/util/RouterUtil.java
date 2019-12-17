@@ -14,6 +14,7 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.model.rule.RuleConfig;
 import com.actiontech.dble.plan.node.PlanNode;
+import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
@@ -53,6 +54,7 @@ import static com.actiontech.dble.plan.optimizer.JoinStrategyProcessor.NEED_REPL
 public final class RouterUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(RouterUtil.class);
     private static ThreadLocalRandom rand = ThreadLocalRandom.current();
+
     private RouterUtil() {
     }
 
@@ -1143,7 +1145,7 @@ public final class RouterUtil {
      * @return dataNode DataNode of no-sharding table
      */
     public static String isNoSharding(SchemaConfig schemaConfig, String tableName) throws SQLNonTransientException {
-        if (schemaConfig == null || (ProxyMeta.getInstance().getTmManager().getSyncView(schemaConfig.getName(), tableName) != null && !schemaConfig.isNoSharding())) {
+        if (schemaConfig == null || ProxyMeta.getInstance().getTmManager().getSyncView(schemaConfig.getName(), tableName) instanceof QueryNode) {
             return null;
         }
         if (schemaConfig.isNoSharding()) { //schema without table

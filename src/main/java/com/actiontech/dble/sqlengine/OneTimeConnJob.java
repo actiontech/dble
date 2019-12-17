@@ -7,8 +7,6 @@ package com.actiontech.dble.sqlengine;
 
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
-import com.actiontech.dble.backend.mysql.nio.handler.DelegateResponseHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +17,6 @@ public class OneTimeConnJob extends SQLJob {
     public static final Logger LOGGER = LoggerFactory.getLogger(OneTimeConnJob.class);
 
     private final SQLJobHandler jobHandler;
-    private final ResponseHandler sqlJob;
     private final PhysicalDatasource ds;
     private final String schema;
     private final String sql;
@@ -31,15 +28,14 @@ public class OneTimeConnJob extends SQLJob {
         this.ds = ds;
         this.schema = schema;
         this.sql = sql;
-        this.sqlJob = this;
         this.finished = new AtomicBoolean(false);
     }
 
     public void run() {
         try {
-            ds.createNewConnection(new DelegateResponseHandler(sqlJob), schema);
+            ds.getConnection(schema, true, this, null, true);
         } catch (Exception e) {
-            sqlJob.connectionError(e, null);
+            this.connectionError(e, null);
         }
     }
 

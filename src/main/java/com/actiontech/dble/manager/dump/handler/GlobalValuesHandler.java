@@ -13,11 +13,9 @@ public class GlobalValuesHandler extends DefaultValuesHandler {
     private long time = new Date().getTime();
 
     @Override
-    public void process(DumpFileContext context, List<SQLExpr> values, boolean isFirst) throws SQLNonTransientException, InterruptedException {
-        // increment column
-        super.process(context, values, isFirst);
-
+    public void process(DumpFileContext context, List<SQLExpr> values, boolean isFirst) throws InterruptedException, SQLNonTransientException {
         values.add(new SQLIntegerExpr(time));
+        super.process(context, values, isFirst);
     }
 
 }

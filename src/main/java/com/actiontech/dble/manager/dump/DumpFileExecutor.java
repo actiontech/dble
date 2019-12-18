@@ -74,7 +74,9 @@ public final class DumpFileExecutor implements Runnable {
                 StatementHandler handler = StatementHandlerManager.getHandler(type);
                 SQLStatement statement = handler.preHandle(context, stmt);
                 if (statement == null) {
-                    handler.handle(context, stmt);
+                    if (!context.isSkipContext()) {
+                        handler.handle(context, stmt);
+                    }
                 } else {
                     handler.handle(context, statement);
                 }

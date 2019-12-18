@@ -6,10 +6,13 @@ import com.actiontech.dble.manager.dump.DumpFileContext;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.singleton.ProxyMeta;
+import com.actiontech.dble.singleton.SequenceManager;
 import com.actiontech.dble.util.CollectionUtil;
 import com.actiontech.dble.util.StringUtil;
+import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 
@@ -20,10 +23,12 @@ import java.util.regex.Pattern;
 
 class InsertHandler extends DefaultHandler {
 
-    private StringBuilder insertHeader;
+    private static final Pattern INSERT_STMT = Pattern.compile("insert\\s+into\\s+`?(.*)`\\s+values", Pattern.CASE_INSENSITIVE);
+    private final GlobalValuesHandler globalValuesHandler = new GlobalValuesHandler();
+    private final ShardingValuesHandler shardingValuesHandler = new ShardingValuesHandler();
+    private final DefaultValuesHandler defaultValuesHandler = new DefaultValuesHandler();
     private DefaultValuesHandler valuesHandler;
-
-    public static final Pattern INSERT_STMT = Pattern.compile("insert\\s+into\\s(.*)\\s", Pattern.CASE_INSENSITIVE);
+    private String currentTable;
 
     @Override
     public SQLStatement preHandle(DumpFileContext context, String stmt) throws DumpException, SQLNonTransientException {
@@ -33,8 +38,17 @@ class InsertHandler extends DefaultHandler {
         if (matcher.find()) {
             table = matcher.group(1);
         }
-        context.setTable(table);
-        if (context.canPushDown()) {
+
+        if (table != null && table.equalsIgnoreCase(currentTable)) {
+            if (context.isSkipContext() || context.getTableType() == TableType.DEFAULT) {
+                return null;
+            }
+            return RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
+        } else {
+            currentTable = table;
+        }
+
+        if (context.isSkipContext()) {
             return null;
         }
 
@@ -42,7 +56,7 @@ class InsertHandler extends DefaultHandler {
         // check columns from insert columns
         checkColumns(context, insert.getColumns());
         // add
-        insertHeader = new StringBuilder("INSERT INTO ");
+        StringBuilder insertHeader = new StringBuilder("INSERT INTO ");
         insertHeader.append("`");
         insertHeader.append(context.getTable());
         insertHeader.append("`");
@@ -50,13 +64,15 @@ class InsertHandler extends DefaultHandler {
             insertHeader.append(insert.getColumns().toString());
         }
         insertHeader.append(" VALUES");
-        if (context.getPartitionColumnIndex() != -1) {
-            valuesHandler = new ShardingValuesHandler();
-        } else if (context.getTableConfig().isGlobalTable() && context.isGlobalCheck()) {
-            valuesHandler = new GlobalValuesHandler();
+        if (context.getTableType() == TableType.SHARDING) {
+            shardingValuesHandler.reset();
+            valuesHandler = shardingValuesHandler;
+        } else if (context.getTableType() == TableType.GLOBAL) {
+            valuesHandler = globalValuesHandler;
         } else {
-            valuesHandler = new DefaultValuesHandler();
+            valuesHandler = defaultValuesHandler;
         }
+        valuesHandler.setInsertHeader(insertHeader);
         return insert;
     }
 
@@ -69,12 +85,29 @@ class InsertHandler extends DefaultHandler {
         for (int i = 0; i < insert.getValuesList().size(); i++) {
             valueClause = insert.getValuesList().get(i);
             try {
+                processIncrementColumn(context, valueClause.getValues());
                 valuesHandler.process(context, valueClause.getValues(), i == 0);
             } catch (SQLNonTransientException e) {
                 context.addError(e.getMessage());
             }
         }
         valuesHandler.postProcess(context);
+    }
+
+    private void processIncrementColumn(DumpFileContext context, List<SQLExpr> values) throws SQLNonTransientException {
+        int incrementIndex = context.getIncrementColumnIndex();
+        if (incrementIndex == -1) {
+            return;
+        }
+
+        String tableKey = StringUtil.getFullName(context.getSchema(), context.getTable());
+        long val = SequenceManager.getHandler().nextId(tableKey);
+        SQLExpr value = values.get(incrementIndex);
+        if (!StringUtil.isEmpty(SQLUtils.toMySqlString(value)) && !context.isNeedSkipError()) {
+            context.addError("For table using global sequence, dble has set increment column values for you.");
+            context.setNeedSkipError(true);
+        }
+        values.set(incrementIndex, new SQLIntegerExpr(val));
     }
 
     /**
@@ -99,7 +132,7 @@ class InsertHandler extends DefaultHandler {
 
         boolean isAutoIncrement = tableConfig.isAutoIncrement();
         if (isAutoIncrement || tableConfig.getPartitionColumn() != null) {
-            if (columns != null) {
+            if (!CollectionUtil.isEmpty(columns)) {
                 for (int i = 0; i < columns.size(); i++) {
                     SQLExpr column = columns.get(i);
                     String columnName = StringUtil.removeBackQuote(column.toString());
@@ -113,7 +146,7 @@ class InsertHandler extends DefaultHandler {
             } else {
                 StructureMeta.TableMeta tableMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(context.getSchema(), context.getTable());
                 if (tableMeta == null) {
-                    throw new DumpException("table doesn't exist");
+                    throw new DumpException("can't find meta of table and the table has no create statement.");
                 }
 
                 for (int i = 0; i < tableMeta.getColumnsList().size(); i++) {

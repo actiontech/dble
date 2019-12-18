@@ -26,7 +26,7 @@ public class TableHandler extends DefaultHandler {
         if (sqlStatement instanceof MySqlCreateTableStatement) {
             tableName = StringUtil.removeBackQuote(((MySqlCreateTableStatement) sqlStatement).getTableSource().getName().getSimpleName());
             context.setTable(tableName);
-            if (context.canPushDown()) {
+            if (context.getTableType() == TableType.DEFAULT) {
                 return null;
             }
             boolean isChanged = preHandleCreateTable(context, sqlStatement);

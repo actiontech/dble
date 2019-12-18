@@ -3,6 +3,7 @@ package com.actiontech.dble.manager.dump;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.manager.dump.handler.DefaultHandler;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,16 +14,20 @@ import java.util.Set;
  */
 public final class DumpFileContext {
 
+    // current schema
     private String schema;
     private String defaultDataNode;
     private Set<String> allDataNodes;
 
+    // current table
     private String table;
     private TableConfig tableConfig;
     private boolean globalCheck = DbleServer.getInstance().getConfig().getSystem().getUseGlobleTableCheck() == 1;
     private int partitionColumnIndex = -1;
     private int incrementColumnIndex = -1;
+    private DefaultHandler.TableType tableType = null;
 
+    // other
     private boolean isSkip = false;
     private DumpFileWriter writer;
     private List<ErrorMsg> errors;
@@ -39,12 +44,6 @@ public final class DumpFileContext {
         return schema;
     }
 
-    public void setDefaultSchema(SchemaConfig schemaConfig) {
-        this.schema = schemaConfig.getName();
-        this.defaultDataNode = schemaConfig.getDataNode();
-        this.allDataNodes = schemaConfig.getAllDataNodes();
-    }
-
     public void setSchema(String schema) throws DumpException {
         SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schema);
         if (schemaConfig == null) {
@@ -54,6 +53,12 @@ public final class DumpFileContext {
         this.defaultDataNode = schemaConfig.getDataNode();
         this.allDataNodes = schemaConfig.getAllDataNodes();
         this.table = null;
+    }
+
+    void setDefaultSchema(SchemaConfig schemaConfig) {
+        this.schema = schemaConfig.getName();
+        this.defaultDataNode = schemaConfig.getDataNode();
+        this.allDataNodes = schemaConfig.getAllDataNodes();
     }
 
     public boolean isSkipContext() {
@@ -99,11 +104,23 @@ public final class DumpFileContext {
         if (this.tableConfig != null && this.tableConfig.getParentTC() != null) {
             throw new DumpException("can't process child table, skip.");
         }
+        if (this.tableConfig != null) {
+            if (tableConfig.isGlobalTable() && globalCheck) {
+                this.tableType = DefaultHandler.TableType.GLOBAL;
+                return;
+            } else if (tableConfig.getPartitionColumn() != null) {
+                this.tableType = DefaultHandler.TableType.SHARDING;
+                return;
+            } else if (tableConfig.isAutoIncrement()) {
+                this.tableType = DefaultHandler.TableType.INCREMENT;
+                return;
+            }
+        }
+        this.tableType = DefaultHandler.TableType.DEFAULT;
     }
 
-    public boolean canPushDown() {
-        return this.tableConfig == null || (!this.tableConfig.isAutoIncrement() && ((tableConfig.isGlobalTable() && !globalCheck) ||
-                this.tableConfig.isNoSharding()));
+    public DefaultHandler.TableType getTableType() {
+        return tableType;
     }
 
     public TableConfig getTableConfig() {

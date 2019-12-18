@@ -1,19 +1,18 @@
 package com.actiontech.dble.manager.dump.handler;
 
 import com.actiontech.dble.manager.dump.DumpFileContext;
-import com.actiontech.dble.singleton.SequenceManager;
-import com.actiontech.dble.util.StringUtil;
-import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 
 import java.sql.SQLNonTransientException;
 import java.util.List;
 
-class DefaultValuesHandler {
+public class DefaultValuesHandler {
 
-//    protected StringBuilder insertHeader;
-    
+    StringBuilder insertHeader;
+
+    void setInsertHeader(StringBuilder insertHeader) {
+        this.insertHeader = insertHeader;
+    }
 
     public void preProcess(DumpFileContext context) throws InterruptedException {
         if (insertHeader == null) {
@@ -28,23 +27,12 @@ class DefaultValuesHandler {
         for (String dataNode : context.getTableConfig().getDataNodes()) {
             context.getWriter().write(dataNode, ";", false, false);
         }
-        insertHeader = null;
     }
 
-    public void process(DumpFileContext context, List<SQLExpr> values, boolean isFirst) throws SQLNonTransientException, InterruptedException {
-        int incrementIndex = context.getIncrementColumnIndex();
-        if (incrementIndex == -1) {
-            return;
+    public void process(DumpFileContext context, List<SQLExpr> values, boolean isFirst) throws InterruptedException, SQLNonTransientException {
+        for (String dataNode : context.getTableConfig().getDataNodes()) {
+            context.getWriter().write(dataNode, toString(values, isFirst), false, false);
         }
-
-        String tableKey = StringUtil.getFullName(context.getSchema(), context.getTable());
-        long val = SequenceManager.getHandler().nextId(tableKey);
-        SQLExpr value = values.get(incrementIndex);
-        if (!StringUtil.isEmpty(SQLUtils.toMySqlString(value)) && !context.isNeedSkipError()) {
-            context.addError("For table using global sequence, dble has set increment column values for you.");
-            context.setNeedSkipError(true);
-        }
-        values.set(incrementIndex, new SQLIntegerExpr(val));
     }
 
     protected String toString(List<SQLExpr> values, boolean isFirst) {

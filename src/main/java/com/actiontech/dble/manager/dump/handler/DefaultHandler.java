@@ -8,6 +8,10 @@ import java.sql.SQLNonTransientException;
 
 public class DefaultHandler implements StatementHandler {
 
+    public enum TableType {
+        GLOBAL, SHARDING, INCREMENT, DEFAULT
+    }
+
     @Override
     public SQLStatement preHandle(DumpFileContext context, String stmt) throws SQLNonTransientException {
         return null;
@@ -15,7 +19,9 @@ public class DefaultHandler implements StatementHandler {
 
     @Override
     public void handle(DumpFileContext context, SQLStatement sqlStatement) throws InterruptedException {
-        handle(context, SQLUtils.toMySqlString(sqlStatement));
+        for (String dataNode : context.getTableConfig().getDataNodes()) {
+            context.getWriter().write(dataNode, SQLUtils.toMySqlString(sqlStatement), true, true);
+        }
     }
 
     @Override

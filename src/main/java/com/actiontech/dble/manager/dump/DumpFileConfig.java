@@ -9,7 +9,7 @@ public class DumpFileConfig {
     private int readQueueSize = 500;
     private String writePath;
     private int writeQueueSize = 500;
-    private int maxValues = 10000;
+    private int maxValues = 4000;
 
     public String getDefaultSchema() {
         return defaultSchema;

@@ -54,6 +54,10 @@ public class DumpFileWriter {
     public void write(String dataNode, String stmt, boolean isChanged, boolean needEOF) throws InterruptedException {
         DataNodeWriter writer = this.dataNodeWriters.get(dataNode);
         if (writer != null) {
+            if (writer.isAddEof()) {
+                writer.write(";");
+                writer.setAddEof(false);
+            }
             if (isChanged) writer.write("\n");
             writer.write(stmt);
             if (needEOF) writer.write(";");
@@ -62,6 +66,22 @@ public class DumpFileWriter {
 
     public void write(String dataNode, String stmt) throws InterruptedException {
         write(dataNode, stmt, false, true);
+    }
+
+    public void writeInsertHeader(String dataNode, String stmt) throws InterruptedException {
+        DataNodeWriter writer = this.dataNodeWriters.get(dataNode);
+        if (writer != null) {
+            writer.write("\n");
+            writer.write(stmt);
+            writer.setAddEof(true);
+        }
+    }
+
+    public void writeInsertValues(String dataNode, String stmt) throws InterruptedException {
+        DataNodeWriter writer = this.dataNodeWriters.get(dataNode);
+        if (writer != null) {
+            writer.write(stmt);
+        }
     }
 
     public void writeAll(String stmt) throws InterruptedException {
@@ -81,11 +101,21 @@ public class DumpFileWriter {
         private int queueSize;
         private String dataNode;
         private Thread self;
+        // insert values eof
+        private boolean addEof = false;
 
         DataNodeWriter(String dataNode, int queueSize) {
             this.dataNode = dataNode;
             this.queueSize = queueSize;
             this.queue = new ArrayBlockingQueue<>(queueSize);
+        }
+
+        public void setAddEof(boolean addEof) {
+            this.addEof = addEof;
+        }
+
+        public boolean isAddEof() {
+            return addEof;
         }
 
         void open(String fileName) throws IOException {

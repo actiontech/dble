@@ -283,7 +283,7 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         if (this.dataHostConfig.getBalance() != BALANCE_NONE) {
             return getReadSourceAll();
         } else {
-            return new HashMap<Integer, PhysicalDatasource[]>();
+            return Collections.emptyMap();
         }
     }
 
@@ -292,7 +292,7 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         if (this.dataHostConfig.getBalance() == BALANCE_NONE) {
             return getReadSourceAll();
         } else {
-            return new HashMap<Integer, PhysicalDatasource[]>();
+            return Collections.emptyMap();
         }
     }
 

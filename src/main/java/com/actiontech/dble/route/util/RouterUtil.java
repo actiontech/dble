@@ -387,11 +387,10 @@ public final class RouterUtil {
 
     public static String getRandomDataNode(ArrayList<String> dataNodes) {
         int index = Math.abs(rand.nextInt(Integer.MAX_VALUE)) % dataNodes.size();
-        ArrayList<String> x = new ArrayList<>();
-        x.addAll(dataNodes);
+        ArrayList<String> x = new ArrayList<>(dataNodes);
         Map<String, PhysicalDBNode> dataNodeMap = DbleServer.getInstance().getConfig().getDataNodes();
         while (x.size() > 1) {
-            for (PhysicalDatasource ds : dataNodeMap.get(x.get(index)).getDbPool().getAllDataSources()) {
+            for (PhysicalDatasource ds : dataNodeMap.get(x.get(index)).getDbPool().getAllActiveDataSources()) {
                 if (ds.isAlive()) {
                     return x.get(index);
                 } else {

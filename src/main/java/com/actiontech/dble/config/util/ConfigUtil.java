@@ -275,7 +275,7 @@ public final class ConfigUtil {
                 }
             }
             for (PhysicalDatasource ds : pool.getAllDataSources()) {
-                if (ds.getConfig().isDisabled() || !ds.isTestConnSuccess()) {
+                if (ds.isDisabled() || !ds.isTestConnSuccess()) {
                     continue;
                 }
                 getKeyVariablesForDataSource(service, ds, hostName, keyVariablesTaskMap);

@@ -447,7 +447,9 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         try {
             for (String dsName : nameList) {
                 PhysicalDatasource datasource = allSourceMap.get(dsName);
-                datasource.setDisabled(false);
+                if (datasource.setDisabled(false)) {
+                    datasource.startHeartbeat();
+                }
             }
 
             HaConfigManager.getInstance().updateConfDataHost(this, syncWriteConf);

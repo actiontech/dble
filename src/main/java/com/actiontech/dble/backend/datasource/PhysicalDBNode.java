@@ -138,7 +138,7 @@ public class PhysicalDBNode {
         checkRequest(schema);
         if (dbPool.isInitSuccess()) {
             PhysicalDatasource writeSource = dbPool.getSource();
-            if (writeSource.getConfig().isDisabled()) {
+            if (writeSource.isDisabled()) {
                 throw new IllegalArgumentException("[" + writeSource.getHostConfig().getName() + "." + writeSource.getConfig().getHostName() + "] is disabled");
             }
 

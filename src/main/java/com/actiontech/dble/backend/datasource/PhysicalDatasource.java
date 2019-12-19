@@ -317,6 +317,7 @@ public abstract class PhysicalDatasource {
     public void startHeartbeat() {
         if (!this.getConfig().isDisabled()) {
             heartbeat.start();
+            heartbeat.heartbeat();
         }
     }
 

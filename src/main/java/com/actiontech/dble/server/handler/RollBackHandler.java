@@ -14,6 +14,7 @@ public final class RollBackHandler {
 
     public static void handle(String stmt, ServerConnection c) {
         TxnLogHelper.putTxnLog(c, stmt);
+        c.getSession2().transactionsCount();
         c.rollback();
     }
 }

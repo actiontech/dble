@@ -80,6 +80,7 @@ public final class ManagerParseShow {
     public static final int SHOW_RELOAD = 64;
     public static final int SHOW_USER = 65;
     public static final int SHOW_USER_PRIVILEGE = 66;
+    public static final int SHOW_QUESTIONS = 67;
 
     public static final Pattern PATTERN_FOR_TABLE_INFO = Pattern.compile("^\\s*schema\\s*=\\s*" +
             "(('|\")((?!`)((?!\\2).))+\\2|[a-zA-Z_0-9\\-]+)" +
@@ -158,6 +159,9 @@ public final class ManagerParseShow {
                 case 'P':
                 case 'p':
                     return show2PCheck(stmt, offset);
+                case 'Q':
+                case 'q':
+                    return show2QCheck(stmt, offset);
                 case 'R':
                 case 'r':
                     return show2RCheck(stmt, offset);
@@ -688,6 +692,33 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
+    //SHOW @@Questions
+    private static int show2QCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "uestions".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            if ((c1 == 'U' || c1 == 'u') &&
+                    (c2 == 'E' || c2 == 'e') &&
+                    (c3 == 'S' || c3 == 's') &&
+                    (c4 == 'T' || c4 == 't') &&
+                    (c5 == 'I' || c5 == 'i') &&
+                    (c6 == 'O' || c6 == 'o') &&
+                    (c7 == 'N' || c7 == 'n') &&
+                    (c8 == 'S' || c8 == 's')) {
+                if (ParseUtil.isErrorTail(++offset, stmt)) {
+                    return OTHER;
+                }
+                return SHOW_QUESTIONS;
+            }
+        }
+        return OTHER;
+    }
 
     // SHOW @@P
     private static int show2PCheck(String stmt, int offset) {

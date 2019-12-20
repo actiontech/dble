@@ -65,6 +65,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
 import static com.actiontech.dble.meta.PauseEndThreadPool.CONTINUE_TYPE_MULTIPLE;
@@ -83,6 +84,8 @@ public class NonBlockingSession implements Session {
     private long queryStartTime = 0;
     private final ServerConnection source;
     private final ConcurrentMap<RouteResultsetNode, BackendConnection> target;
+    private final AtomicLong queriesCounter = new AtomicLong(0);
+    private final AtomicLong transactionsCounter = new AtomicLong(0);
     private RollbackNodesHandler rollbackHandler;
     private CommitNodesHandler commitHandler;
     private SavePointHandler savePointHandler;
@@ -1111,6 +1114,19 @@ public class NonBlockingSession implements Session {
         return ok.toBytes();
     }
 
+    public void queryCount() {
+        queriesCounter.incrementAndGet();
+    }
+
+    public void transactionsCount() {
+        transactionsCounter.incrementAndGet();
+    }
+
+    public void singleTransactionsCount() {
+        if (!source.isTxStart()) {
+            transactionsCounter.incrementAndGet();
+        }
+    }
 
     /**
      * reset the session multiStatementStatus
@@ -1196,5 +1212,20 @@ public class NonBlockingSession implements Session {
     public boolean isRetryXa() {
         return retryXa;
     }
+
+
+    public long getQueriesCounter() {
+        return queriesCounter.get();
+    }
+
+    public long getTransactionsCounter() {
+        return transactionsCounter.get();
+    }
+
+    public void resetCounter() {
+        queriesCounter.set(Long.MIN_VALUE);
+        transactionsCounter.set(Long.MIN_VALUE);
+    }
+
 
 }

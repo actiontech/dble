@@ -92,7 +92,7 @@ public class TableHandler extends DefaultHandler {
             }
             String columnName = StringUtil.removeBackQuote(((SQLColumnDefinition) column).getNameAsString());
             // find index of increment column
-            if (isAutoIncrement && columnName.equalsIgnoreCase(tableConfig.getTrueIncrementColumn())) {
+            if (isAutoIncrement && columnName.equalsIgnoreCase(tableConfig.getIncrementColumn())) {
                 // check data type of increment column
                 // if the column is increment column, data type must be bigint.
                 SQLColumnDefinition columnDef = (SQLColumnDefinition) column;

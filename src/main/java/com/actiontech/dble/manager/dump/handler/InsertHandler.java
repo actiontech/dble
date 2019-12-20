@@ -136,7 +136,7 @@ class InsertHandler extends DefaultHandler {
                 for (int i = 0; i < columns.size(); i++) {
                     SQLExpr column = columns.get(i);
                     String columnName = StringUtil.removeBackQuote(column.toString());
-                    if (isAutoIncrement && columnName.equalsIgnoreCase(tableConfig.getTrueIncrementColumn())) {
+                    if (isAutoIncrement && columnName.equalsIgnoreCase(tableConfig.getIncrementColumn())) {
                         incrementColumnIndex = i;
                     }
                     if (columnName.equalsIgnoreCase(tableConfig.getPartitionColumn())) {
@@ -152,7 +152,7 @@ class InsertHandler extends DefaultHandler {
                 for (int i = 0; i < tableMeta.getColumnsList().size(); i++) {
                     StructureMeta.ColumnMeta column = tableMeta.getColumnsList().get(i);
                     String columnName = column.getName();
-                    if (isAutoIncrement && columnName.equalsIgnoreCase(tableConfig.getTrueIncrementColumn())) {
+                    if (isAutoIncrement && columnName.equalsIgnoreCase(tableConfig.getIncrementColumn())) {
                         incrementColumnIndex = i;
                     }
                     if (columnName.equalsIgnoreCase(tableConfig.getPartitionColumn())) {

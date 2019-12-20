@@ -384,7 +384,7 @@ public abstract class PhysicalDatasource {
                                 handler.connectionError(new IOException("dataSource disabled"), conn);
                                 conn.close("disabled dataHost");
                             } else if (mustWrite && isReadNode()) {
-                                handler.connectionError(new IOException("writeSrouce switched"), conn);
+                                handler.connectionError(new IOException("writeSource switched"), conn);
                             } else {
                                 takeCon(conn, handler, attachment, schema);
                             }

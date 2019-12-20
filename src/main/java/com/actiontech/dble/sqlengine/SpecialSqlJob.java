@@ -53,7 +53,7 @@ public class SpecialSqlJob extends SQLJob {
                 @Override
                 public void run() {
                     try {
-                        ds.getConnection(schema, true, sqlJob, null, true);
+                        ds.getConnection(schema, true, sqlJob, null, false);
                     } catch (Exception e) {
                         sqlJob.connectionError(e, null);
                     }

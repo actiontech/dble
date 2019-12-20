@@ -8,7 +8,6 @@ package com.actiontech.dble.route.parser.druid.impl;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.actiontech.dble.plan.node.*;
@@ -18,6 +17,7 @@ import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlLockTableStatement;
@@ -47,10 +47,10 @@ public class DruidLockTableParser extends DefaultDruidParser {
             if (tableConfig != null) {
                 handleConfigTable(dataNodeToLocks, tableConfig, item.getTableSource().getAlias(), item.getLockType());
                 continue;
-            } else if (ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaName, table) != null) {
+            } else if (ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaName, table) != null || ProxyMeta.getInstance().getTmManager().getSyncView(schemaName, table) instanceof TableNode) {
                 handleNoshardTable(dataNodeToLocks, table, schemaConfig.getDataNode(), item.getTableSource().getAlias(), item.getLockType());
                 continue;
-            } else if (ProxyMeta.getInstance().getTmManager().getSyncView(schemaName, table) != null) {
+            } else if (ProxyMeta.getInstance().getTmManager().getSyncView(schemaName, table) instanceof QueryNode) {
                 handleSingleViewLock(dataNodeToLocks, ProxyMeta.getInstance().getTmManager().getSyncView(schemaName, table), item.getTableSource().getAlias(), item.getLockType(), schemaName);
                 continue;
             }
@@ -109,7 +109,7 @@ public class DruidLockTableParser extends DefaultDruidParser {
         locks.add(sbItem.toString());
     }
 
-    private void handleSingleViewLock(Map<String, Set<String>> dataNodeToLocks, QueryNode viewQuery, String alias, MySqlLockTableStatement.LockType lockType, String schemaName) throws SQLNonTransientException {
+    private void handleSingleViewLock(Map<String, Set<String>> dataNodeToLocks, PlanNode viewQuery, String alias, MySqlLockTableStatement.LockType lockType, String schemaName) throws SQLNonTransientException {
         Map<String, Set<String>> tableMap = new HashMap<>();
         findTableInPlanNode(tableMap, viewQuery, schemaName);
         for (Map.Entry<String, Set<String>> entry : tableMap.entrySet()) {
@@ -209,6 +209,4 @@ public class DruidLockTableParser extends DefaultDruidParser {
             tableSet.get(schema).add(table);
         }
     }
-
-
 }

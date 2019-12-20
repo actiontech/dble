@@ -7,14 +7,13 @@ package com.actiontech.dble.cluster.response;
 
 import com.actiontech.dble.backend.mysql.view.Repository;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.bean.KvBean;
-import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.meta.ViewMeta;
-import com.actiontech.dble.net.mysql.ErrorPacket;
+import com.actiontech.dble.singleton.ClusterGeneralConfig;
+import com.actiontech.dble.singleton.ProxyMeta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,25 +70,20 @@ public class ViewChildResponse implements ClusterXmlLoader {
                         ClusterHelper.setKV(configValue.getKey() + SEPARATOR + myId, ClusterPathUtil.SUCCESS);
                         return;
                     }
-                    ViewMeta vm = new ViewMeta(stmt, schema, ProxyMeta.getInstance().getTmManager());
-                    ErrorPacket error = vm.initAndSet(true, false);
+                    ViewMeta vm = new ViewMeta(schema, stmt, ProxyMeta.getInstance().getTmManager());
+                    vm.init(true);
+                    vm.addMeta(false);
 
                     Map<String, Map<String, String>> viewCreateSqlMap = ProxyMeta.getInstance().getTmManager().getRepository().getViewCreateSqlMap();
                     Map<String, String> schemaMap = viewCreateSqlMap.get(schema);
                     schemaMap.put(viewName, stmt);
 
-                    LOGGER.info("update view result == " + error);
-                    if (error != null) {
-                        ClusterDelayProvider.delayBeforeReponseView();
-                        ClusterHelper.setKV(configValue.getKey() + SEPARATOR + myId, new String(error.getMessage()));
-                        return;
-                    }
-
                     ClusterDelayProvider.delayBeforeReponseView();
                     ClusterHelper.setKV(configValue.getKey() + SEPARATOR + myId, ClusterPathUtil.SUCCESS);
                 }
             } catch (Exception e) {
-                ClusterHelper.setKV(configValue.getKey() + "/" + myId, e.toString());
+                ClusterDelayProvider.delayBeforeReponseView();
+                ClusterHelper.setKV(configValue.getKey() + SEPARATOR + myId, e.toString());
             }
         }
     }

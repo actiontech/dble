@@ -294,7 +294,7 @@ public abstract class PhysicalDatasource {
 
 
     public void startHeartbeat() {
-        if (!this.getConfig().isDisabled()) {
+        if (!this.isDisabled()) {
             heartbeat.start();
             heartbeat.heartbeat();
         }
@@ -553,7 +553,7 @@ public abstract class PhysicalDatasource {
     public boolean equals(PhysicalDatasource dataSource) {
         return dataSource.getConfig().getUser().equals(this.getConfig().getUser()) && dataSource.getConfig().getUrl().equals(this.getConfig().getUrl()) &&
                 dataSource.getConfig().getPassword().equals(this.getConfig().getPassword()) && dataSource.getConfig().getHostName().equals(this.getConfig().getHostName()) &&
-                dataSource.getConfig().isDisabled() == this.getConfig().isDisabled() && dataSource.getConfig().getWeight() == this.getConfig().getWeight();
+                dataSource.isDisabled() == this.isDisabled() && dataSource.getConfig().getWeight() == this.getConfig().getWeight();
     }
 
     public boolean equals(Object obj) {

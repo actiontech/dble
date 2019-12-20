@@ -127,7 +127,7 @@ public final class ShowDatasourceSyn {
             String datahost = entry.getKey();
             AbstractPhysicalDBPool pool = entry.getValue();
             for (PhysicalDatasource ds : pool.getAllDataSources()) {
-                if (ds.getConfig().isDisabled()) {
+                if (ds.isDisabled()) {
                     continue;
                 }
                 MySQLHeartbeat hb = ds.getHeartbeat();

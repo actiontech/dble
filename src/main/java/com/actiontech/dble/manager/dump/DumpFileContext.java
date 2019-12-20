@@ -1,27 +1,34 @@
 package com.actiontech.dble.manager.dump;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.manager.dump.handler.DefaultHandler;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Baofengqi
  */
 public final class DumpFileContext {
 
-    private String stmt;
-
+    // current schema
     private String schema;
     private String defaultDataNode;
+    private Set<String> allDataNodes;
+
+    // current table
     private String table;
     private TableConfig tableConfig;
+    private boolean globalCheck = DbleServer.getInstance().getConfig().getSystem().getUseGlobleTableCheck() == 1;
     private int partitionColumnIndex = -1;
     private int incrementColumnIndex = -1;
+    private DefaultHandler.TableType tableType = null;
 
+    // other
     private boolean isSkip = false;
-    private boolean globalCheck = DbleServer.getInstance().getConfig().getSystem().getUseGlobleTableCheck() == 1;
     private DumpFileWriter writer;
     private List<ErrorMsg> errors;
     private boolean needSkipError;
@@ -33,28 +40,33 @@ public final class DumpFileContext {
         this.config = config;
     }
 
-    public void setStmt(String stmt) {
-        this.stmt = stmt;
-    }
-
-    public String getStmt() {
-        return stmt;
-    }
-
     public String getSchema() {
         return schema;
     }
 
-    public void setSchema(String schema) {
+    public void setSchema(String schema) throws DumpException {
+        SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schema);
+        if (schemaConfig == null) {
+            throw new DumpException("schema[" + schema + "] doesn't exist in config.");
+        }
         this.schema = schema;
+        this.defaultDataNode = schemaConfig.getDataNode();
+        this.allDataNodes = schemaConfig.getAllDataNodes();
+        this.table = null;
     }
 
-    public void setSkipContext(boolean skip) {
-        this.isSkip = skip;
+    void setDefaultSchema(SchemaConfig schemaConfig) {
+        this.schema = schemaConfig.getName();
+        this.defaultDataNode = schemaConfig.getDataNode();
+        this.allDataNodes = schemaConfig.getAllDataNodes();
     }
 
     public boolean isSkipContext() {
         return this.isSkip;
+    }
+
+    public void setSkipContext(boolean skip) {
+        this.isSkip = skip;
     }
 
     public boolean isGlobalCheck() {
@@ -63,10 +75,6 @@ public final class DumpFileContext {
 
     public String getDefaultDataNode() {
         return defaultDataNode;
-    }
-
-    public void setDefaultDataNode(String defaultDataNode) {
-        this.defaultDataNode = defaultDataNode;
     }
 
     public String getTable() {
@@ -96,11 +104,23 @@ public final class DumpFileContext {
         if (this.tableConfig != null && this.tableConfig.getParentTC() != null) {
             throw new DumpException("can't process child table, skip.");
         }
+        if (this.tableConfig != null) {
+            if (tableConfig.isGlobalTable() && globalCheck) {
+                this.tableType = DefaultHandler.TableType.GLOBAL;
+                return;
+            } else if (tableConfig.getPartitionColumn() != null) {
+                this.tableType = DefaultHandler.TableType.SHARDING;
+                return;
+            } else if (tableConfig.isAutoIncrement()) {
+                this.tableType = DefaultHandler.TableType.INCREMENT;
+                return;
+            }
+        }
+        this.tableType = DefaultHandler.TableType.DEFAULT;
     }
 
-    public boolean isPushDown() {
-        return this.tableConfig == null || (!this.tableConfig.isAutoIncrement() && ((tableConfig.isGlobalTable() && !globalCheck) ||
-                this.tableConfig.isNoSharding()));
+    public DefaultHandler.TableType getTableType() {
+        return tableType;
     }
 
     public TableConfig getTableConfig() {
@@ -149,6 +169,10 @@ public final class DumpFileContext {
 
     public DumpFileConfig getConfig() {
         return config;
+    }
+
+    public Set<String> getAllDataNodes() {
+        return allDataNodes;
     }
 
 }

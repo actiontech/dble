@@ -7,55 +7,50 @@ import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
-import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 
 import java.sql.SQLNonTransientException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ShardingTableInsertHandler extends InsertHandler {
+public class ShardingValuesHandler extends DefaultValuesHandler {
 
     private Map<String, LongPtr> dataNodes = new HashMap<>(64);
 
+    public void reset() {
+        dataNodes.clear();
+    }
+
     @Override
     public void preProcess(DumpFileContext context) {
-        if (!dataNodes.isEmpty()) {
-            dataNodes.clear();
-        }
     }
 
     @Override
-    public void postProcess(DumpFileContext context) throws InterruptedException {
-        for (String dataNode : dataNodes.keySet()) {
-            context.getWriter().write(dataNode, ";", false, false);
-        }
-        insertHeader = null;
+    public void postProcess(DumpFileContext context) {
     }
 
     @Override
-    public void process(DumpFileContext context, SQLInsertStatement.ValuesClause valueClause, boolean isFirst) throws SQLNonTransientException, InterruptedException {
-        Integer nodeIndex = handleShardingColumn(context, valueClause.getValues());
+    public void process(DumpFileContext context, List<SQLExpr> values, boolean isFirst) throws SQLNonTransientException, InterruptedException {
+        Integer nodeIndex = handleShardingColumn(context, values);
         String dataNode = context.getTableConfig().getDataNodes().get(nodeIndex);
         // sharding table
         LongPtr num = dataNodes.get(dataNode);
         if (num == null) {
             dataNodes.put(dataNode, new LongPtr(1));
-            context.getWriter().write(dataNode, insertHeader.toString(), true, false);
-            context.getWriter().write(dataNode, toString(valueClause.getValues(), true), false, false);
+            context.getWriter().writeInsertHeader(dataNode, insertHeader.toString() + toString(values, true));
             return;
         }
         String stmt;
         if (num.get() <= context.getConfig().getMaxValues()) {
             num.incre();
-            stmt = toString(valueClause.getValues(), false);
+            stmt = toString(values, false);
         } else {
             dataNodes.put(dataNode, new LongPtr(1));
-            context.getWriter().write(dataNode, ";", false, false);
-            context.getWriter().write(dataNode, insertHeader.toString(), true, false);
-            stmt = toString(valueClause.getValues(), true);
+            context.getWriter().writeInsertValues(dataNode, ";");
+            context.getWriter().writeInsertHeader(dataNode, insertHeader.toString());
+            stmt = toString(values, true);
         }
-        context.getWriter().write(dataNode, stmt, false, false);
+        context.getWriter().writeInsertValues(dataNode, stmt);
     }
 
     private Integer handleShardingColumn(DumpFileContext context, List<SQLExpr> values) throws SQLNonTransientException {

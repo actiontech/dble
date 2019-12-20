@@ -3,6 +3,9 @@ package com.actiontech.dble.manager.dump.handler;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.manager.dump.DumpException;
 import com.actiontech.dble.manager.dump.DumpFileContext;
+import com.actiontech.dble.meta.protocol.StructureMeta;
+import com.actiontech.dble.route.factory.RouteStrategyFactory;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.singleton.SequenceManager;
 import com.actiontech.dble.util.CollectionUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -15,18 +18,45 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 
 import java.sql.SQLNonTransientException;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-public class InsertHandler extends DefaultHandler {
+class InsertHandler extends DefaultHandler {
 
-    protected StringBuilder insertHeader;
+    private static final Pattern INSERT_STMT = Pattern.compile("insert\\s+into\\s+`?(.*)`\\s+values", Pattern.CASE_INSENSITIVE);
+    private final GlobalValuesHandler globalValuesHandler = new GlobalValuesHandler();
+    private final ShardingValuesHandler shardingValuesHandler = new ShardingValuesHandler();
+    private final DefaultValuesHandler defaultValuesHandler = new DefaultValuesHandler();
+    private DefaultValuesHandler valuesHandler;
+    private String currentTable;
 
     @Override
-    public boolean preHandle(DumpFileContext context, SQLStatement sqlStatement) throws DumpException {
-        MySqlInsertStatement insert = (MySqlInsertStatement) sqlStatement;
+    public SQLStatement preHandle(DumpFileContext context, String stmt) throws DumpException, SQLNonTransientException {
+        // get table name simply
+        String table = null;
+        Matcher matcher = InsertHandler.INSERT_STMT.matcher(stmt);
+        if (matcher.find()) {
+            table = matcher.group(1);
+        }
+
+        if (table != null && table.equalsIgnoreCase(currentTable)) {
+            if (context.isSkipContext() || context.getTableType() == TableType.DEFAULT) {
+                return null;
+            }
+            return RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
+        } else {
+            currentTable = table;
+        }
+
+        if (context.isSkipContext()) {
+            return null;
+        }
+
+        MySqlInsertStatement insert = (MySqlInsertStatement) RouteStrategyFactory.getRouteStrategy().parserSQL(stmt);
         // check columns from insert columns
         checkColumns(context, insert.getColumns());
         // add
-        insertHeader = new StringBuilder("INSERT INTO ");
+        StringBuilder insertHeader = new StringBuilder("INSERT INTO ");
         insertHeader.append("`");
         insertHeader.append(context.getTable());
         insertHeader.append("`");
@@ -34,7 +64,16 @@ public class InsertHandler extends DefaultHandler {
             insertHeader.append(insert.getColumns().toString());
         }
         insertHeader.append(" VALUES");
-        return false;
+        if (context.getTableType() == TableType.SHARDING) {
+            shardingValuesHandler.reset();
+            valuesHandler = shardingValuesHandler;
+        } else if (context.getTableType() == TableType.GLOBAL) {
+            valuesHandler = globalValuesHandler;
+        } else {
+            valuesHandler = defaultValuesHandler;
+        }
+        valuesHandler.setInsertHeader(insertHeader);
+        return insert;
     }
 
     @Override
@@ -42,20 +81,20 @@ public class InsertHandler extends DefaultHandler {
         MySqlInsertStatement insert = (MySqlInsertStatement) sqlStatement;
         SQLInsertStatement.ValuesClause valueClause;
 
-        preProcess(context);
+        valuesHandler.preProcess(context);
         for (int i = 0; i < insert.getValuesList().size(); i++) {
             valueClause = insert.getValuesList().get(i);
             try {
-                handleIncrementColumn(context, valueClause.getValues());
-                process(context, valueClause, i == 0);
+                processIncrementColumn(context, valueClause.getValues());
+                valuesHandler.process(context, valueClause.getValues(), i == 0);
             } catch (SQLNonTransientException e) {
                 context.addError(e.getMessage());
             }
         }
-        postProcess(context);
+        valuesHandler.postProcess(context);
     }
 
-    private void handleIncrementColumn(DumpFileContext context, List<SQLExpr> values) throws SQLNonTransientException {
+    private void processIncrementColumn(DumpFileContext context, List<SQLExpr> values) throws SQLNonTransientException {
         int incrementIndex = context.getIncrementColumnIndex();
         if (incrementIndex == -1) {
             return;
@@ -71,75 +110,67 @@ public class InsertHandler extends DefaultHandler {
         values.set(incrementIndex, new SQLIntegerExpr(val));
     }
 
-    private void checkColumns(DumpFileContext context, List<SQLExpr> columns) throws DumpException {
-        if (columns.isEmpty()) {
-            return;
-        }
+    /**
+     * if sharding column index or increment column index is -1,
+     * find from dble meta data or columns in insert statement
+     *
+     * @param context
+     * @param columns
+     * @throws DumpException
+     * @throws SQLNonTransientException
+     */
+    private void checkColumns(DumpFileContext context, List<SQLExpr> columns) throws DumpException, SQLNonTransientException {
+        int partitionColumnIndex = context.getPartitionColumnIndex();
+        int incrementColumnIndex = context.getIncrementColumnIndex();
 
         TableConfig tableConfig = context.getTableConfig();
-        int partitionColumnIndex = -1;
-        int incrementColumnIndex = -1;
-        boolean isAutoIncrement = tableConfig.isAutoIncrement();
-        if (isAutoIncrement || tableConfig.getPartitionColumn() != null) {
-            for (int i = 0; i < columns.size(); i++) {
-                SQLExpr column = columns.get(i);
-                String columnName = StringUtil.removeBackQuote(column.toString());
-                if (isAutoIncrement && columnName.equalsIgnoreCase(tableConfig.getIncrementColumn())) {
-                    incrementColumnIndex = i;
-                }
-                if (columnName.equalsIgnoreCase(tableConfig.getPartitionColumn())) {
-                    partitionColumnIndex = i;
-                }
-            }
-            // partition column check
-            if (tableConfig.getPartitionColumn() != null && partitionColumnIndex == -1) {
-                throw new DumpException("can't find partition column in insert.");
-            }
-            // increment column check
-            if (tableConfig.isAutoIncrement() && incrementColumnIndex == -1) {
-                throw new DumpException("can't find increment column in insert.");
-            }
-            context.setIncrementColumnIndex(incrementColumnIndex);
-            context.setPartitionColumnIndex(partitionColumnIndex);
-        }
-    }
-
-    protected String toString(List<SQLExpr> values, boolean isFirst) {
-        StringBuilder sbValues = new StringBuilder();
-        if (!isFirst) {
-            sbValues.append(",");
-        }
-        sbValues.append("(");
-        for (int i = 0; i < values.size(); i++) {
-            if (i != 0) {
-                sbValues.append(",");
-            }
-            sbValues.append(values.get(i).toString());
-        }
-        sbValues.append(")");
-        return sbValues.toString();
-    }
-
-    public void preProcess(DumpFileContext context) throws InterruptedException {
-        if (insertHeader == null) {
+        // partition column check
+        if ((tableConfig.getPartitionColumn() != null && partitionColumnIndex != -1) ||
+                (tableConfig.isAutoIncrement() && incrementColumnIndex != -1)) {
             return;
         }
-        for (String dataNode : context.getTableConfig().getDataNodes()) {
-            context.getWriter().write(dataNode, insertHeader.toString(), true, false);
-        }
-    }
 
-    public void postProcess(DumpFileContext context) throws InterruptedException {
-        for (String dataNode : context.getTableConfig().getDataNodes()) {
-            context.getWriter().write(dataNode, ";", false, false);
-        }
-        insertHeader = null;
-    }
+        boolean isAutoIncrement = tableConfig.isAutoIncrement();
+        if (isAutoIncrement || tableConfig.getPartitionColumn() != null) {
+            if (!CollectionUtil.isEmpty(columns)) {
+                for (int i = 0; i < columns.size(); i++) {
+                    SQLExpr column = columns.get(i);
+                    String columnName = StringUtil.removeBackQuote(column.toString());
+                    if (isAutoIncrement && columnName.equalsIgnoreCase(tableConfig.getIncrementColumn())) {
+                        incrementColumnIndex = i;
+                    }
+                    if (columnName.equalsIgnoreCase(tableConfig.getPartitionColumn())) {
+                        partitionColumnIndex = i;
+                    }
+                }
+            } else {
+                StructureMeta.TableMeta tableMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(context.getSchema(), context.getTable());
+                if (tableMeta == null) {
+                    throw new DumpException("can't find meta of table and the table has no create statement.");
+                }
 
-    public void process(DumpFileContext context, SQLInsertStatement.ValuesClause valueClause, boolean isFirst) throws InterruptedException, SQLNonTransientException {
-        for (String dataNode : context.getTableConfig().getDataNodes()) {
-            context.getWriter().write(dataNode, toString(valueClause.getValues(), isFirst), false, false);
+                for (int i = 0; i < tableMeta.getColumnsList().size(); i++) {
+                    StructureMeta.ColumnMeta column = tableMeta.getColumnsList().get(i);
+                    String columnName = column.getName();
+                    if (isAutoIncrement && columnName.equalsIgnoreCase(tableConfig.getIncrementColumn())) {
+                        incrementColumnIndex = i;
+                    }
+                    if (columnName.equalsIgnoreCase(tableConfig.getPartitionColumn())) {
+                        partitionColumnIndex = i;
+                    }
+                }
+            }
         }
-    }
 
+        // partition column check
+        if (tableConfig.getPartitionColumn() != null && partitionColumnIndex == -1) {
+            throw new DumpException("can't find partition column in insert.");
+        }
+        // increment column check
+        if (isAutoIncrement && incrementColumnIndex == -1) {
+            throw new DumpException("can't find increment column in insert.");
+        }
+        context.setIncrementColumnIndex(incrementColumnIndex);
+        context.setPartitionColumnIndex(partitionColumnIndex);
+    }
 }

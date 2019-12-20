@@ -33,7 +33,7 @@ public class ChildTable implements Named {
     @XmlAttribute(required = true)
     protected String parentKey;
     @XmlAttribute
-    protected String primaryKey;
+    protected String cacheKey;
     @XmlAttribute
     protected Boolean autoIncrement;
     @XmlAttribute
@@ -68,12 +68,12 @@ public class ChildTable implements Named {
         this.parentKey = parentKey;
     }
 
-    public String getPrimaryKey() {
-        return primaryKey;
+    public String getCacheKey() {
+        return cacheKey;
     }
 
-    public void setPrimaryKey(String primaryKey) {
-        this.primaryKey = primaryKey;
+    public void setCacheKey(String cacheKey) {
+        this.cacheKey = cacheKey;
     }
 
     public Boolean isAutoIncrement() {
@@ -120,8 +120,8 @@ public class ChildTable implements Named {
                 joinKey +
                 ", parentKey=" +
                 parentKey +
-                ", primaryKey=" +
-                primaryKey +
+                ", cacheKey=" +
+                cacheKey +
                 ", autoIncrement=" +
                 autoIncrement +
                 ", childTable=" +

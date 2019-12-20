@@ -565,7 +565,7 @@ public final class RouterUtil {
         Map<String, Set<ColumnRoutePair>> columnsMap = entry.getValue();
 
         Map<String, Set<String>> tablesRouteMap = new HashMap<>();
-        if (tryRouteWithPrimaryCache(rrs, tablesRouteMap, CacheService.getTableId2DataNodeCache(), columnsMap, schema, tableName, tableConfig.getPrimaryKey(), isSelect)) {
+        if (tryRouteWithCache(rrs, tablesRouteMap, CacheService.getTableId2DataNodeCache(), columnsMap, schema, tableName, tableConfig.getCacheKey(), isSelect)) {
             Set<String> nodes = tablesRouteMap.get(tableName);
             if (nodes == null || nodes.size() != 1) {
                 return false;
@@ -846,11 +846,11 @@ public final class RouterUtil {
     }
 
 
-    private static boolean tryRouteWithPrimaryCache(
+    private static boolean tryRouteWithCache(
             RouteResultset rrs, Map<String, Set<String>> tablesRouteMap,
             LayerCachePool cachePool, Map<String, Set<ColumnRoutePair>> columnsMap,
-            SchemaConfig schema, String tableName, String primaryKey, boolean isSelect) {
-        if (cachePool == null || primaryKey == null || columnsMap.get(primaryKey) == null) {
+            SchemaConfig schema, String tableName, String cacheKey, boolean isSelect) {
+        if (cachePool == null || cacheKey == null || columnsMap.get(cacheKey) == null) {
             return false;
         }
         if (LOGGER.isDebugEnabled() && rrs.getStatement().startsWith(LoadData.LOAD_DATA_HINT) || rrs.isLoadData()) {
@@ -858,16 +858,16 @@ public final class RouterUtil {
             return false;
         }
         //try by primary key if found in cache
-        Set<ColumnRoutePair> primaryKeyPairs = columnsMap.get(primaryKey);
+        Set<ColumnRoutePair> cacheKeyPairs = columnsMap.get(cacheKey);
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("try to find cache by primary key ");
         }
 
         String tableKey = StringUtil.getFullName(schema.getName(), tableName, '_');
         boolean allFound = true;
-        for (ColumnRoutePair pair : primaryKeyPairs) { // may be has multi value of primary key, eg: in(1,2,3)
-            String cacheKey = pair.colValue;
-            String dataNode = (String) cachePool.get(tableKey, cacheKey);
+        for (ColumnRoutePair pair : cacheKeyPairs) { // may be has multi value of primary key, eg: in(1,2,3)
+            String cacheValue = pair.colValue;
+            String dataNode = (String) cachePool.get(tableKey, cacheValue);
             if (dataNode == null) {
                 allFound = false;
                 break;
@@ -920,7 +920,7 @@ public final class RouterUtil {
                 continue;
             } else { //shard-ing table,childTable or others
                 Map<String, Set<ColumnRoutePair>> columnsMap = entry.getValue();
-                if (tryRouteWithPrimaryCache(rrs, tablesRouteMap, cachePool, columnsMap, schema, tableName, tableConfig.getPrimaryKey(), isSelect)) {
+                if (tryRouteWithCache(rrs, tablesRouteMap, cachePool, columnsMap, schema, tableName, tableConfig.getCacheKey(), isSelect)) {
                     continue;
                 }
 
@@ -987,7 +987,7 @@ public final class RouterUtil {
                 continue;
             } else { //shard-ing table,childTable or others
                 Map<String, Set<ColumnRoutePair>> columnsMap = entry.getValue();
-                if (tryRouteWithPrimaryCache(rrs, tablesRouteMap, cachePool, columnsMap, schema, tableName, tableConfig.getPrimaryKey(), isSelect)) {
+                if (tryRouteWithCache(rrs, tablesRouteMap, cachePool, columnsMap, schema, tableName, tableConfig.getCacheKey(), isSelect)) {
                     continue;
                 }
 

@@ -79,7 +79,7 @@ public class CreateTableHandler extends DefaultHandler {
                 continue;
             }
             String columnName = StringUtil.removeBackQuote(((SQLColumnDefinition) column).getNameAsString());
-            if (isAutoIncrement && columnName.equalsIgnoreCase(tableConfig.getTrueIncrementColumn())) {
+            if (isAutoIncrement && columnName.equalsIgnoreCase(tableConfig.getIncrementColumn())) {
                 context.setIncrementColumnIndex(j);
             }
             if (columnName.equalsIgnoreCase(tableConfig.getPartitionColumn())) {

@@ -14,9 +14,9 @@ import java.util.Map;
  */
 public interface LayerCachePool extends CachePool {
 
-    void putIfAbsent(String primaryKey, Object secondKey, Object value);
+    void putIfAbsent(String cacheKey, Object secondKey, Object value);
 
-    Object get(String primaryKey, Object secondKey);
+    Object get(String cacheKey, Object secondKey);
 
     /**
      * get all cache static, name is cache name

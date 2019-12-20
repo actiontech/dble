@@ -27,13 +27,12 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class ServerMetaHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerMetaHandler.class);
+    private final ProxyMetaManager tmManager;
     private Lock lock;
     private Condition allSchemaDone;
     private int schemaNumber;
-
     private ServerConfig config;
     private Set<String> selfNode;
-    private final ProxyMetaManager tmManager;
     private Map<String, Set<String>> filter;
     private Map<String, SchemaConfig> reloadSchemas;
 
@@ -48,19 +47,21 @@ public class ServerMetaHandler {
     }
 
     private void filter() {
-        if (!CollectionUtil.isEmpty(filter)) {
-            Map<String, SchemaConfig> newReload = new HashMap<>();
-            for (Entry<String, Set<String>> entry : filter.entrySet()) {
-                String schema = entry.getKey();
-                if (config.getSchemas().containsKey(schema)) {
-                    newReload.put(schema, config.getSchemas().get(schema));
-                } else {
-                    ReloadLogHelper.warn("reload schema[" + schema + "] metadata, but schema doesn't exist", LOGGER);
-                }
-            }
-            this.reloadSchemas = newReload;
-            this.schemaNumber = reloadSchemas.size();
+        if (CollectionUtil.isEmpty(filter)) {
+            return;
         }
+
+        Map<String, SchemaConfig> newReload = new HashMap<>();
+        for (Entry<String, Set<String>> entry : filter.entrySet()) {
+            String schema = entry.getKey();
+            if (config.getSchemas().containsKey(schema)) {
+                newReload.put(schema, config.getSchemas().get(schema));
+            } else {
+                ReloadLogHelper.warn("reload schema[" + schema + "] metadata, but schema doesn't exist", LOGGER);
+            }
+        }
+        this.reloadSchemas = newReload;
+        this.schemaNumber = reloadSchemas.size();
     }
 
     public boolean execute() {

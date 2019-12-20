@@ -186,7 +186,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         }
 
         if (tableConfig != null && tableConfig.isAutoIncrement() && autoIncrementIndex == -1) {
-            final String incrementColumn = tableConfig.getTrueIncrementColumn();
+            final String incrementColumn = tableConfig.getIncrementColumn();
             statement.getColumns().add(new SQLIdentifierExpr(incrementColumn));
             autoIncrementIndex = statement.getColumns().size() - 1;
             appendAutoIncrementColumn = true;
@@ -250,7 +250,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             String pColumn = getPartitionColumn();
             boolean autoIncrement = tableConfig.isAutoIncrement();
             if (pColumn != null || autoIncrement) {
-                String incrementColumn = tableConfig.getTrueIncrementColumn();
+                String incrementColumn = tableConfig.getIncrementColumn();
                 if (columns != null && columns.size() > 0) {
                     for (int i = 0, columnsSize = columns.size(); i < columnsSize; i++) {
                         String column = StringUtil.removeBackQuote(columns.get(i).toString());

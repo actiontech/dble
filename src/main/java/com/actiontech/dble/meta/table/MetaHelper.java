@@ -8,6 +8,8 @@ package com.actiontech.dble.meta.table;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.meta.ProxyMetaManager;
+import com.actiontech.dble.meta.ViewMeta;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
@@ -28,15 +30,29 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 public final class MetaHelper {
+    public static final String PRIMARY = "PRIMARY";
+    private static final Logger LOGGER = LoggerFactory.getLogger(MetaHelper.class);
+
     private MetaHelper() {
     }
 
-    public enum IndexType {
-        PRI, UNI, MUL
-    }
+    public static ViewMeta initViewMeta(String schema, String sql, long timeStamp, ProxyMetaManager tmManager) {
+        if (sql == null) {
+            return null;
+        }
 
-    public static final String PRIMARY = "PRIMARY";
-    private static final Logger LOGGER = LoggerFactory.getLogger(MetaHelper.class);
+        int viewIndex = sql.indexOf("VIEW");
+        String str = sql.substring(viewIndex);
+        ViewMeta meta = null;
+        try {
+            meta = new ViewMeta(schema, "CREATE " + str, tmManager);
+            meta.init(false);
+            meta.setTimestamp(timeStamp);
+        } catch (Exception e) {
+            LOGGER.warn("sql[" + sql + "] parser error:", e);
+        }
+        return meta;
+    }
 
     public static StructureMeta.TableMeta initTableMeta(String table, String sql, long timeStamp) {
         if (sql == null) {
@@ -169,5 +185,9 @@ public final class MetaHelper {
             cmBuilder.setAutoIncre(true);
         }
         return cmBuilder;
+    }
+
+    public enum IndexType {
+        PRI, UNI, MUL
     }
 }

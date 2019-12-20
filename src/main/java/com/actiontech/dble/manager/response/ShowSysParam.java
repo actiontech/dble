@@ -97,6 +97,7 @@ public final class ShowSysParam {
         paramValues.add(sysConfig.getCharset() + "");
         paramValues.add(sysConfig.getMaxPacketSize() / 1024 / 1024 + "M");
         paramValues.add(sysConfig.getTxIsolation() > 4 || sysConfig.getTxIsolation() < 1 ? "Incorrect isolation" : ISOLATION_LEVELS[sysConfig.getTxIsolation()]);
+        paramValues.add(sysConfig.getAutocommit() + "");
         paramValues.add(sysConfig.getCheckTableConsistency() + "");
         paramValues.add(sysConfig.getCheckTableConsistencyPeriod() + "ms");
         paramValues.add(sysConfig.getUseGlobleTableCheck() + "");
@@ -199,6 +200,7 @@ public final class ShowSysParam {
             "charset",
             "maxPacketSize",
             "txIsolation",
+            "autocommit",
             "checkTableConsistency",
             "checkTableConsistencyPeriod",
             "useGlobleTableCheck",
@@ -283,6 +285,7 @@ public final class ShowSysParam {
             "The initially charset of connection. The default is utf8mb4",
             "The maximum size of one packet. The default is 4MB.",
             "The initially isolation level of the front end connection. The default is REPEATABLE_READ",
+            "The initially autocommit value.The default value is 1",
             "Whether the consistency tableStructure check is enabled.The default value is 0",
             "The period of consistency tableStructure check .The default value is 30*60*1000",
             "Whether global Table check is enable.The default value is 1",

@@ -8,7 +8,10 @@ package com.actiontech.dble.meta.table;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.config.ErrorInfo;
-import com.actiontech.dble.sqlengine.*;
+import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
+import com.actiontech.dble.sqlengine.SQLQueryResult;
+import com.actiontech.dble.sqlengine.SQLQueryResultListener;
+import com.actiontech.dble.sqlengine.SpecialSqlJob;
 
 import java.util.HashSet;
 import java.util.List;
@@ -61,7 +64,7 @@ public class DryRunGetNodeTablesHandler extends GetNodeTablesHandler {
     }
 
     @Override
-    protected void handleTables(String table) {
+    protected void handleTable(String table, String tableType) {
         returnMap.get(phyDataNode.getName()).add(table);
     }
 
@@ -86,14 +89,14 @@ public class DryRunGetNodeTablesHandler extends GetNodeTablesHandler {
                 handleFinished();
                 return;
             }
-            returnMap.put(phyDataNode.getName(), new HashSet<String>());
+            returnMap.put(phyDataNode.getName(), new HashSet<>());
             List<Map<String, String>> rows = result.getResult();
             for (Map<String, String> row : rows) {
                 String table = row.get(mysqlShowTableCol);
                 if (isLowerCase) {
                     table = table.toLowerCase();
                 }
-                handleTables(table);
+                handleTable(table, null);
             }
             handleFinished();
         }

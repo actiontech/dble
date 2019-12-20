@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2019 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.server;
 
 import com.actiontech.dble.DbleServer;
@@ -17,7 +17,6 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.model.UserConfig;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
-import com.actiontech.dble.singleton.*;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.util.Pair;
@@ -27,7 +26,9 @@ import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.response.Heartbeat;
 import com.actiontech.dble.server.response.InformationSchemaProfiling;
 import com.actiontech.dble.server.response.Ping;
+import com.actiontech.dble.server.response.ShowCreateView;
 import com.actiontech.dble.server.util.SchemaUtil;
+import com.actiontech.dble.singleton.*;
 import com.actiontech.dble.util.*;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
@@ -66,15 +67,6 @@ public class ServerConnection extends FrontendConnection {
     private AtomicLong txID;
     private List<Pair<SetHandler.KeyType, Pair<String, String>>> contextTask = new ArrayList<>();
 
-    public long getAndIncrementXid() {
-        return txID.getAndIncrement();
-    }
-
-
-    public long getXid() {
-        return txID.get();
-    }
-
     public ServerConnection(NetworkChannel channel)
             throws IOException {
         super(channel);
@@ -86,8 +78,17 @@ public class ServerConnection extends FrontendConnection {
         this.sysVariables = new LinkedHashMap<>();
     }
 
+
     public ServerConnection() {
         /* just for unit test */
+    }
+
+    public long getAndIncrementXid() {
+        return txID.getAndIncrement();
+    }
+
+    public long getXid() {
+        return txID.get();
     }
 
     public ServerSptPrepare getSptPrepare() {
@@ -290,8 +291,8 @@ public class ServerConnection extends FrontendConnection {
             } else {
                 TableConfig tc = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
                 if (tc == null) {
-                    String msg = "Table '" + schemaInfo.getSchema() + "." + schemaInfo.getTable() + "' doesn't exist";
-                    writeErrMessage("42S02", msg, ErrorCode.ER_NO_SUCH_TABLE);
+                    // check view
+                    ShowCreateView.response(this, schemaInfo.getSchema(), schemaInfo.getTable());
                     return;
                 }
                 RouterUtil.routeToRandomNode(rrs, schemaInfo.getSchemaConfig(), schemaInfo.getTable());

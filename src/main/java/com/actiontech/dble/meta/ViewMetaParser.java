@@ -149,7 +149,7 @@ public class ViewMetaParser {
                 break;
             }
         }
-        return new ArrayList<String>(Arrays.asList(columnList.split(",")));
+        return new ArrayList<>(Arrays.asList(columnList.split(",")));
     }
 
 

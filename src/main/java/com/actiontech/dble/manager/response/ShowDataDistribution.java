@@ -76,7 +76,7 @@ public final class ShowDataDistribution {
         }
         TableConfig tableConfig = schemaConfig.getTables().get(schemaInfo[1]);
         if (tableConfig == null) {
-            c.writeErrMessage(ErrorCode.ER_YES, "The table " + name + " is not exists");
+            c.writeErrMessage(ErrorCode.ER_YES, "The table " + name + " doesn‘t exist");
             return;
         } else if (tableConfig.isNoSharding()) {
             c.writeErrMessage(ErrorCode.ER_YES, "The schema table " + name + " is no sharding table");

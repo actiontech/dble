@@ -81,6 +81,7 @@ public final class ManagerParseShow {
     public static final int SHOW_USER = 65;
     public static final int SHOW_USER_PRIVILEGE = 66;
     public static final int SHOW_QUESTIONS = 67;
+    public static final int DATADISTRIBUTION_WHERE = 68;
 
     public static final Pattern PATTERN_FOR_TABLE_INFO = Pattern.compile("^\\s*schema\\s*=\\s*" +
             "(('|\")((?!`)((?!\\2).))+\\2|[a-zA-Z_0-9\\-]+)" +
@@ -450,6 +451,8 @@ public final class ManagerParseShow {
                     case 'S':
                     case 's':
                         return show2DataSCheck(stmt, offset);
+                    case '_':
+                        return show2DataDistributionCheck(stmt, offset);
                     default:
                         return OTHER;
                 }
@@ -1302,6 +1305,43 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
+    private static int show2DataDistributionCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "DISTRIBUTION".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            char c9 = stmt.charAt(++offset);
+            char c10 = stmt.charAt(++offset);
+            char c11 = stmt.charAt(++offset);
+            char c12 = stmt.charAt(++offset);
+            if ((c1 == 'D' || c1 == 'd') && (c2 == 'I' || c2 == 'i') && (c3 == 'S' || c3 == 's') &&
+                    (c4 == 'T' || c4 == 't') && (c5 == 'R' || c5 == 'r') && (c6 == 'I' || c6 == 'i') &&
+                    (c7 == 'B' || c7 == 'b') && (c8 == 'U' || c8 == 'u') && (c9 == 'T' || c9 == 't') &&
+                    (c10 == 'I' || c10 == 'i') && (c11 == 'O' || c11 == 'o') && (c12 == 'N' || c12 == 'n')) {
+                while (stmt.length() > ++offset) {
+                    switch (stmt.charAt(offset)) {
+                        case ' ':
+                            continue;
+                        case 'W':
+                        case 'w':
+                            if (stmt.charAt(offset - 1) != ' ') {
+                                return OTHER;
+                            }
+                            return show2DataDistributionWhereCheck(stmt, offset);
+                        default:
+                            return OTHER;
+                    }
+                }
+            }
+        }
+        return OTHER;
+    }
+
     // SHOW @@DATASOURCE WHERE
     private static int show2DataSWhereCheck(String stmt, int offset) {
         if (stmt.length() > offset + "HERE".length()) {
@@ -1330,6 +1370,63 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
+    private static int show2DataDistributionWhereCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "HERE".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            if ((c1 == 'H' || c1 == 'h') && (c2 == 'E' || c2 == 'e') && (c3 == 'R' || c3 == 'r') &&
+                    (c4 == 'E' || c4 == 'e')) {
+                while (stmt.length() > ++offset) {
+                    switch (stmt.charAt(offset)) {
+                        case ' ':
+                            continue;
+                        case 't':
+                        case 'T':
+                            if (stmt.charAt(offset - 1) != ' ') {
+                                return OTHER;
+                            }
+                            return show2DataDWhereTableCheck(stmt, offset);
+                        default:
+                            return OTHER;
+                    }
+                }
+            }
+        }
+        return OTHER;
+    }
+
+    private static int show2DataDWhereTableCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "ABLE".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            if ((c1 == 'A' || c1 == 'a') && (c2 == 'B' || c2 == 'b') && (c3 == 'L' || c3 == 'l') &&
+                    (c4 == 'E' || c4 == 'e')) {
+                while (stmt.length() > ++offset) {
+                    switch (stmt.charAt(offset)) {
+                        case ' ':
+                            continue;
+                        case '=':
+                            while (stmt.length() > ++offset) {
+                                switch (stmt.charAt(offset)) {
+                                    case ' ':
+                                        continue;
+                                    default:
+                                        return (offset << 8) | DATADISTRIBUTION_WHERE;
+                                }
+                            }
+                            return OTHER;
+                        default:
+                            return OTHER;
+                    }
+                }
+            }
+        }
+        return OTHER;
+    }
     // SHOW @@DATASOURCE WHERE DATANODE = XXXXXX
     private static int show2DataSWhereDatanodeCheck(String stmt, int offset) {
         if (stmt.length() > offset + "ATANODE".length()) {

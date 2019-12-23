@@ -232,6 +232,14 @@ public final class ShowHandler {
             case ManagerParseShow.SHOW_QUESTIONS:
                 ShowQuestions.execute(c);
                 break;
+            case ManagerParseShow.DATADISTRIBUTION_WHERE:
+                String name = stmt.substring(rs >>> 8).trim();
+                if (StringUtil.isEmpty(name)) {
+                    c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
+                } else {
+                    ShowDataDistribution.execute(c, name);
+                }
+                break;
             default:
                 if (isSupportShow(stmt)) {
                     Iterator<AbstractPhysicalDBPool> iterator = DbleServer.getInstance().getConfig().getDataHosts().values().iterator();

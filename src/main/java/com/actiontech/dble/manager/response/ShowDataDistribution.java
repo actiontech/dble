@@ -68,7 +68,7 @@ public final class ShowDataDistribution {
         }
         SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schemaInfo[0]);
         if (schemaConfig == null) {
-            c.writeErrMessage(ErrorCode.ER_YES, "The schema " + schemaInfo[0] + " is not exists");
+            c.writeErrMessage(ErrorCode.ER_YES, "The schema " + schemaInfo[0] + " doesn‘t exist");
             return;
         } else if (schemaConfig.isNoSharding()) {
             c.writeErrMessage(ErrorCode.ER_YES, "The schema " + schemaInfo[0] + " is no sharding schema");

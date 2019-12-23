@@ -72,4 +72,9 @@ public class MultiNodeFakeHandler extends MultiNodeMergeHandler {
         return execHandler.toSQLString();
     }
 
+
+    @Override
+    public HandlerType type() {
+        return HandlerType.FAKE_MERGE;
+    }
 }

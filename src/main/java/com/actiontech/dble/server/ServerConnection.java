@@ -188,6 +188,11 @@ public class ServerConnection extends FrontendConnection {
         session.startProcess();
     }
 
+    @Override
+    public void markFinished() {
+        session.setStageFinished();
+    }
+
     public void executeTask() {
         for (Pair<SetHandler.KeyType, Pair<String, String>> task : contextTask) {
             switch (task.getKey()) {
@@ -583,12 +588,14 @@ public class ServerConnection extends FrontendConnection {
     @Override
     public void write(byte[] data) {
         SerializableLock.getInstance().unLock(this.id);
+        markFinished();
         super.write(data);
     }
 
     @Override
     public final void write(ByteBuffer buffer) {
         SerializableLock.getInstance().unLock(this.id);
+        markFinished();
         super.write(buffer);
     }
 }

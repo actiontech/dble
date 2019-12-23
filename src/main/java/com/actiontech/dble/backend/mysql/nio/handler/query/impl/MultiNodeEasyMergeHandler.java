@@ -110,4 +110,9 @@ public class MultiNodeEasyMergeHandler extends MultiNodeMergeHandler {
     @Override
     protected void recycleResources() {
     }
+
+    @Override
+    public HandlerType type() {
+        return HandlerType.EASY_MERGE;
+    }
 }

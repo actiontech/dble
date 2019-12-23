@@ -29,8 +29,6 @@ import com.actiontech.dble.btrace.provider.CostTimeProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
-import com.actiontech.dble.singleton.PauseDatanodeManager;
-import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.net.handler.BackEndDataCleaner;
 import com.actiontech.dble.net.handler.FrontendCommandHandler;
 import com.actiontech.dble.net.mysql.EOFPacket;
@@ -49,6 +47,8 @@ import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.status.SlowQueryLog;
 import com.actiontech.dble.server.trace.TraceRecord;
 import com.actiontech.dble.server.trace.TraceResult;
+import com.actiontech.dble.singleton.PauseDatanodeManager;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.statistic.stat.QueryTimeCost;
 import com.actiontech.dble.statistic.stat.QueryTimeCostContainer;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
@@ -116,8 +116,7 @@ public class NonBlockingSession implements Session {
     private volatile boolean traceEnable = false;
     private volatile TraceResult traceResult = new TraceResult();
     private volatile RouteResultset complexRrs = null;
-
-    private AtomicInteger test = new AtomicInteger(0);
+    private volatile SessionStage sessionStage = SessionStage.Init;
 
     public NonBlockingSession(ServerConnection source) {
         this.source = source;
@@ -140,7 +139,9 @@ public class NonBlockingSession implements Session {
     }
 
     void setRequestTime() {
+        sessionStage = SessionStage.Read_SQL;
         long requestTime = 0;
+
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             requestTime = System.nanoTime();
             traceResult.setVeryStartPrepare(requestTime);
@@ -171,6 +172,7 @@ public class NonBlockingSession implements Session {
     }
 
     void startProcess() {
+        sessionStage = SessionStage.Parse_SQL;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             traceResult.setParseStartPrepare(new TraceRecord(System.nanoTime()));
         }
@@ -181,6 +183,7 @@ public class NonBlockingSession implements Session {
     }
 
     public void endParse() {
+        sessionStage = SessionStage.Route_Calculation;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             traceResult.ready();
             traceResult.setRouteStart(new TraceRecord(System.nanoTime()));
@@ -193,6 +196,7 @@ public class NonBlockingSession implements Session {
 
 
     void endRoute(RouteResultset rrs) {
+        sessionStage = SessionStage.Prepare_to_Push;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             traceResult.setPreExecuteStart(new TraceRecord(System.nanoTime()));
         }
@@ -225,6 +229,7 @@ public class NonBlockingSession implements Session {
     }
 
     public void setPreExecuteEnd() {
+        sessionStage = SessionStage.Execute_SQL;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             traceResult.setPreExecuteEnd(new TraceRecord(System.nanoTime()));
             traceResult.clearConnReceivedMap();
@@ -248,6 +253,7 @@ public class NonBlockingSession implements Session {
     }
 
     public void setBackendResponseTime(MySQLConnection conn) {
+        sessionStage = SessionStage.First_Node_Fetching_Result;
         long responseTime = 0;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
@@ -303,6 +309,7 @@ public class NonBlockingSession implements Session {
     }
 
     public void setResponseTime(boolean isSuccess) {
+        sessionStage = SessionStage.Finished;
         long responseTime = 0;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             responseTime = System.nanoTime();
@@ -325,7 +332,12 @@ public class NonBlockingSession implements Session {
         QueryTimeCostContainer.getInstance().add(queryTimeCost);
     }
 
+    public void setStageFinished() {
+        sessionStage = SessionStage.Finished;
+    }
+
     public void setBackendResponseEndTime(MySQLConnection conn) {
+        sessionStage = SessionStage.First_Node_Fetched_Result;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
             ResponseHandler responseHandler = conn.getRespHandler();
@@ -344,6 +356,7 @@ public class NonBlockingSession implements Session {
     }
 
     public void setBeginCommitTime() {
+        sessionStage = SessionStage.Distributed_Transaction_Commit;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             traceResult.setAdtCommitBegin(new TraceRecord(System.nanoTime()));
         }
@@ -362,6 +375,10 @@ public class NonBlockingSession implements Session {
     }
 
     public void setHandlerEnd(DMLResponseHandler handler) {
+        if (handler.getNextHandler() != null) {
+            DMLResponseHandler next = handler.getNextHandler();
+            sessionStage = SessionStage.changeFromHandlerType(next.type());
+        }
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             traceResult.addToRecordEndMap(handler, new TraceRecord(System.nanoTime()));
         }
@@ -402,6 +419,10 @@ public class NonBlockingSession implements Session {
 
     public boolean isNeedWaitFinished() {
         return needWaitFinished;
+    }
+
+    public SessionStage getSessionStage() {
+        return sessionStage;
     }
 
     /**

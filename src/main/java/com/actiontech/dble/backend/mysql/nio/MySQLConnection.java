@@ -624,7 +624,7 @@ public class MySQLConnection extends AbstractConnection implements
     public void query(String query) {
         RouteResultsetNode rrn = new RouteResultsetNode("default",
                 ServerParse.SELECT, query);
-        synAndDoExecute(null, rrn, this.charsetName, this.txIsolation, true, this.getUsrVariables(), this.getSysVariables());
+        synAndDoExecute(null, rrn, this.charsetName, this.txIsolation, this.autocommit, this.getUsrVariables(), this.getSysVariables());
 
     }
 

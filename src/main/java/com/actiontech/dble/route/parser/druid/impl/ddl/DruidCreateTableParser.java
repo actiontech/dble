@@ -15,18 +15,12 @@ import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.druid.impl.DefaultDruidParser;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.server.util.GlobalTableUtil;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
-import com.actiontech.dble.util.StringUtil;
-import com.alibaba.druid.sql.ast.SQLName;
 import com.alibaba.druid.sql.ast.SQLObject;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
-import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
-import com.alibaba.druid.sql.ast.statement.SQLTableElement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 
 import java.sql.SQLException;
@@ -74,13 +68,6 @@ public class DruidCreateTableParser extends DefaultDruidParser {
             return schemaInfo.getSchemaConfig();
         }
         sharingTableCheck(createStmt);
-        if (GlobalTableUtil.useGlobalTableCheck() &&
-                GlobalTableUtil.isGlobalTable(schemaInfo.getSchemaConfig(), schemaInfo.getTable())) {
-            String sql = addColumnIfCreate(createStmt);
-            rrs.setSrcStatement(sql);
-            sql = RouterUtil.removeSchema(sql, schemaInfo.getSchema());
-            rrs.setStatement(sql);
-        }
         try {
             RouterUtil.routeToDDLNode(schemaInfo, rrs);
         } catch (SQLException e) {
@@ -90,28 +77,6 @@ public class DruidCreateTableParser extends DefaultDruidParser {
         return schemaInfo.getSchemaConfig();
     }
 
-    private String addColumnIfCreate(MySqlCreateTableStatement createStmt) {
-        removeGlobalColumnIfExist(createStmt);
-        createStmt.getTableElementList().add(GlobalTableUtil.createCheckColumn());
-        return createStmt.toString();
-    }
-
-    private static void removeGlobalColumnIfExist(SQLCreateTableStatement statement) {
-        for (SQLTableElement tableElement : statement.getTableElementList()) {
-            SQLName sqlName = null;
-            if (tableElement instanceof SQLColumnDefinition) {
-                sqlName = ((SQLColumnDefinition) tableElement).getName();
-            }
-            if (sqlName != null) {
-                String simpleName = sqlName.getSimpleName();
-                simpleName = StringUtil.removeBackQuote(simpleName);
-                if (GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN.equalsIgnoreCase(simpleName)) {
-                    statement.getTableElementList().remove(tableElement);
-                    break;
-                }
-            }
-        }
-    }
 
     /**
      */

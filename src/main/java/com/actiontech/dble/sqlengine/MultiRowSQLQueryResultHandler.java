@@ -17,7 +17,7 @@ public class MultiRowSQLQueryResultHandler extends OneRawSQLQueryResultHandler {
     // callback  after get ResultSet
     private final SQLQueryResultListener<SQLQueryResult<List<Map<String, String>>>> callback;
 
-    private List<Map<String, String>> resultRows = new LinkedList<>();
+    protected List<Map<String, String>> resultRows = new LinkedList<>();
 
     public MultiRowSQLQueryResultHandler(String[] fetchCols,
                                          SQLQueryResultListener<SQLQueryResult<List<Map<String, String>>>> callback) {

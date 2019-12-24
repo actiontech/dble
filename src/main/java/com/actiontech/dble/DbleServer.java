@@ -265,6 +265,8 @@ public final class DbleServer {
         Scheduler.getInstance().init(system, timerExecutor);
         LOGGER.info("=======================================Scheduler started==========================================");
 
+        CronScheduler.getInstance().init(config.getSchemas());
+        LOGGER.info("====================================CronScheduler started=========================================");
         if (isUseZkSwitch()) {
             initZkDnindex();
         }

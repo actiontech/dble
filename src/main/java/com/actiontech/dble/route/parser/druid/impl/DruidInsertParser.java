@@ -23,7 +23,6 @@ import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.handler.ExplainHandler;
-import com.actiontech.dble.server.util.GlobalTableUtil;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 import com.actiontech.dble.singleton.SequenceManager;
@@ -79,8 +78,8 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         checkTableExists(tc, schema.getName(), tableName, CheckType.INSERT);
         if (tc.isGlobalTable()) {
             String sql = rrs.getStatement();
-            if (tc.isAutoIncrement() || GlobalTableUtil.useGlobalTableCheck()) {
-                sql = convertInsertSQL(schemaInfo, insert, sql, tc, GlobalTableUtil.useGlobalTableCheck());
+            if (tc.isAutoIncrement()) {
+                sql = convertInsertSQL(schemaInfo, insert, sql, tc);
             } else {
                 sql = RouterUtil.removeSchema(sql, schemaInfo.getSchema());
             }
@@ -91,7 +90,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         }
 
         if (tc.isAutoIncrement()) {
-            String sql = convertInsertSQL(schemaInfo, insert, rrs.getStatement(), tc, false);
+            String sql = convertInsertSQL(schemaInfo, insert, rrs.getStatement(), tc);
             rrs.setStatement(sql);
             SQLStatementParser parser = new MySqlStatementParser(sql);
             stmt = parser.parseStatement();
@@ -337,22 +336,13 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         return tryGetShardingColIndex(schemaInfo, insertStmt, joinKey);
     }
 
-    private String convertInsertSQL(SchemaInfo schemaInfo, MySqlInsertStatement insert, String originSql, TableConfig tc,
-                                    boolean isGlobalCheck) throws SQLNonTransientException {
+    private String convertInsertSQL(SchemaInfo schemaInfo, MySqlInsertStatement insert, String originSql, TableConfig tc) throws SQLNonTransientException {
 
         StructureMeta.TableMeta orgTbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
         if (orgTbMeta == null)
             return originSql;
 
         boolean isAutoIncrement = tc.isAutoIncrement();
-
-        if (isGlobalCheck && !GlobalTableUtil.isInnerColExist(schemaInfo, orgTbMeta)) {
-            if (!isAutoIncrement) {
-                return originSql;
-            } else {
-                isGlobalCheck = false;
-            }
-        }
 
         StringBuilder sb = new StringBuilder(200);
         sb.append("insert ");
@@ -366,7 +356,6 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         List<SQLExpr> columns = insert.getColumns();
 
         int autoIncrement = -1;
-        int idxGlobal = -1;
         int colSize;
         // insert without columns :insert into t values(xxx,xxx)
         if (columns == null || columns.size() <= 0) {
@@ -374,19 +363,13 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
                 autoIncrement = getIncrementKeyIndex(schemaInfo, tc.getIncrementColumn());
             }
             colSize = orgTbMeta.getColumnsList().size();
-            idxGlobal = getIdxGlobalByMeta(isGlobalCheck, orgTbMeta, sb, colSize);
         } else {
-            genColumnNames(tc, isGlobalCheck, isAutoIncrement, sb, columns);
+            genColumnNames(tc, isAutoIncrement, sb, columns);
             colSize = columns.size();
             if (isAutoIncrement) {
                 getIncrementKeyIndex(schemaInfo, tc.getIncrementColumn());
                 autoIncrement = columns.size();
                 sb.append(",").append("`").append(tc.getIncrementColumn()).append("`");
-                colSize++;
-            }
-            if (isGlobalCheck) {
-                idxGlobal = isAutoIncrement ? columns.size() + 1 : columns.size();
-                sb.append(",").append("`").append(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN).append("`");
                 colSize++;
             }
             sb.append(")");
@@ -398,25 +381,24 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         if (vcl != null && vcl.size() > 1) { // batch insert
             for (int j = 0; j < vcl.size(); j++) {
                 if (j != vcl.size() - 1)
-                    appendValues(tableKey, vcl.get(j).getValues(), sb, autoIncrement, idxGlobal, colSize).append(",");
+                    appendValues(tableKey, vcl.get(j).getValues(), sb, autoIncrement, colSize).append(",");
                 else
-                    appendValues(tableKey, vcl.get(j).getValues(), sb, autoIncrement, idxGlobal, colSize);
+                    appendValues(tableKey, vcl.get(j).getValues(), sb, autoIncrement, colSize);
             }
         } else {
             List<SQLExpr> values = insert.getValues().getValues();
-            appendValues(tableKey, values, sb, autoIncrement, idxGlobal, colSize);
+            appendValues(tableKey, values, sb, autoIncrement, colSize);
         }
 
         List<SQLExpr> dku = insert.getDuplicateKeyUpdate();
         if (dku != null && dku.size() > 0) {
-            genDuplicate(isGlobalCheck, sb, dku);
+            genDuplicate(sb, dku);
         }
         return RouterUtil.removeSchema(sb.toString(), schemaInfo.getSchema());
     }
 
-    private void genColumnNames(TableConfig tc, boolean isGlobalCheck, boolean isAutoIncrement, StringBuilder sb,
+    private void genColumnNames(TableConfig tc, boolean isAutoIncrement, StringBuilder sb,
                                 List<SQLExpr> columns) throws SQLNonTransientException {
-
         sb.append("(");
         for (int i = 0; i < columns.size(); i++) {
             String columnName = columns.get(i).toString();
@@ -426,11 +408,6 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
                 sb.append("`").append(StringUtil.removeBackQuote(columnName)).append("`");
             }
             String simpleColumnName = StringUtil.removeBackQuote(columnName);
-            if (isGlobalCheck && simpleColumnName.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
-                String msg = "In insert Syntax, you can't set value for Global check column!";
-                LOGGER.info(msg);
-                throw new SQLNonTransientException(msg);
-            }
             if (isAutoIncrement && simpleColumnName.equalsIgnoreCase(tc.getIncrementColumn())) {
                 String msg = "In insert Syntax, you can't set value for Autoincrement column!";
                 LOGGER.info(msg);
@@ -439,7 +416,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         }
     }
 
-    private void genDuplicate(boolean isGlobalCheck, StringBuilder sb, List<SQLExpr> dku) throws SQLNonTransientException {
+    private void genDuplicate(StringBuilder sb, List<SQLExpr> dku) throws SQLNonTransientException {
         boolean flag = false;
         sb.append(" on duplicate key update ");
         for (int i = 0; i < dku.size(); i++) {
@@ -450,34 +427,19 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
                 throw new SQLNonTransientException(msg);
             }
             SQLBinaryOpExpr binaryOpExpr = (SQLBinaryOpExpr) exp;
-            if (isGlobalCheck && !flag && GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN.equals(binaryOpExpr.getLeft().toString())) {
-                flag = true;
-                onDuplicateGlobalColumn(sb);
-            } else {
-                sb.append(binaryOpExpr.toString());
-            }
+            sb.append(binaryOpExpr.toString());
             if (i < dku.size() - 1) {
                 sb.append(",");
             }
         }
-        if (isGlobalCheck && !flag) {
-            sb.append(",");
-            onDuplicateGlobalColumn(sb);
-        }
     }
 
-    private static void onDuplicateGlobalColumn(StringBuilder sb) {
-        sb.append(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN);
-        sb.append("=values(");
-        sb.append(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN);
-        sb.append(")");
-    }
 
-    private static StringBuilder appendValues(String tableKey, List<SQLExpr> values, StringBuilder sb, int autoIncrement, int idxGlobal,
+    private static StringBuilder appendValues(String tableKey, List<SQLExpr> values, StringBuilder sb, int autoIncrement,
                                               int colSize) throws SQLNonTransientException {
 
         int size = values.size();
-        int checkSize = colSize - (autoIncrement < 0 ? 0 : 1) - (idxGlobal < 0 ? 0 : 1);
+        int checkSize = colSize - (autoIncrement < 0 ? 0 : 1);
         if (checkSize < size) {
             String msg = "In insert Syntax, you can't set value for Autoincrement column! Or column count doesn't match value count";
             if (autoIncrement < 0) {
@@ -493,9 +455,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         sb.append("(");
         int iValue = 0;
         for (int i = 0; i < colSize; i++) {
-            if (i == idxGlobal) {
-                sb.append(String.valueOf(new Date().getTime()));
-            } else if (i == autoIncrement) {
+            if (i == autoIncrement) {
                 long id = SequenceManager.getHandler().nextId(tableKey);
                 sb.append(id);
             } else {

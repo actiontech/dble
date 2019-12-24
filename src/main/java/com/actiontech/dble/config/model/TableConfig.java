@@ -31,6 +31,9 @@ public class TableConfig {
     private final String partitionColumn;
     private final boolean ruleRequired;
     private final boolean isNoSharding;
+    private final boolean globalCheck;
+    private final String cron;
+    private final String checkClass;
     /**
      * Child Table
      */
@@ -41,13 +44,15 @@ public class TableConfig {
     private final TableConfig directRouteTC;
 
     public TableConfig(String name, String cacheKey, boolean autoIncrement, boolean needAddLimit,
-                       TableTypeEnum tableType, String dataNode, RuleConfig rule, boolean ruleRequired, String incrementColumn) {
-        this(name, cacheKey, autoIncrement, needAddLimit, tableType, dataNode, rule, ruleRequired, null, null, null, incrementColumn);
+                       TableTypeEnum tableType, String dataNode, RuleConfig rule, boolean ruleRequired, String incrementColumn,
+                       String cron, String checkClass, boolean globalCheck) {
+        this(name, cacheKey, autoIncrement, needAddLimit, tableType, dataNode, rule, ruleRequired,
+                null, null, null, incrementColumn, cron, checkClass, globalCheck);
     }
 
     public TableConfig(String name, String cacheKey, boolean autoIncrement, boolean needAddLimit,
                        TableTypeEnum tableType, String dataNode, RuleConfig rule, boolean ruleRequired, TableConfig parentTC,
-                       String joinKey, String parentKey, String incrementColumn) {
+                       String joinKey, String parentKey, String incrementColumn, String cron, String checkClass, boolean globalCheck) {
         if (name == null) {
             throw new IllegalArgumentException("table name is null");
         } else if (dataNode == null) {
@@ -58,6 +63,9 @@ public class TableConfig {
         this.autoIncrement = autoIncrement;
         this.needAddLimit = needAddLimit;
         this.tableType = tableType;
+        this.cron = cron;
+        this.checkClass = checkClass;
+        this.globalCheck = globalCheck;
         if (ruleRequired && rule == null) {
             throw new IllegalArgumentException("ruleRequired but rule is null");
         }
@@ -116,12 +124,15 @@ public class TableConfig {
 
     public TableConfig(String name, String cacheKey, boolean autoIncrement, boolean needAddLimit,
                        TableTypeEnum tableType, ArrayList<String> dataNode, RuleConfig rule, boolean ruleRequired, TableConfig parentTC,
-                       String joinKey, String parentKey, String incrementColumn) {
+                       String joinKey, String parentKey, String incrementColumn, String cron, String checkClass, boolean globalCheck) {
         this.cacheKey = cacheKey;
         this.autoIncrement = autoIncrement;
         this.needAddLimit = needAddLimit;
         this.tableType = tableType;
         this.name = name;
+        this.cron = cron;
+        this.checkClass = checkClass;
+        this.globalCheck = globalCheck;
         this.dataNodes = dataNode;
         this.rule = rule;
         this.partitionColumn = (rule == null) ? null : rule.getColumn();
@@ -162,7 +173,8 @@ public class TableConfig {
 
     TableConfig lowerCaseCopy(TableConfig parent) {
         return new TableConfig(this.name.toLowerCase(), this.cacheKey, this.autoIncrement, this.needAddLimit,
-                this.tableType, this.dataNodes, this.rule, this.ruleRequired, parent, this.joinKey, this.parentKey, this.incrementColumn);
+                this.tableType, this.dataNodes, this.rule, this.ruleRequired, parent, this.joinKey, this.parentKey, this.incrementColumn,
+                this.cron, this.checkClass, this.globalCheck);
 
     }
 
@@ -286,4 +298,15 @@ public class TableConfig {
         return isNoSharding;
     }
 
+    public boolean isGlobalCheck() {
+        return globalCheck;
+    }
+
+    public String getCron() {
+        return cron;
+    }
+
+    public String getCheckClass() {
+        return checkClass;
+    }
 }

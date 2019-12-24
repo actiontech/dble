@@ -4,7 +4,6 @@ import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.manager.dump.DumpException;
 import com.actiontech.dble.manager.dump.DumpFileContext;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
-import com.actiontech.dble.server.util.GlobalTableUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.SQLCharacterDataType;
@@ -63,12 +62,6 @@ public class TableHandler extends DefaultHandler {
             if (tableConfig.isAutoIncrement() && context.getIncrementColumnIndex() == -1) {
                 throw new DumpException("can't find increment column in create.");
             }
-        }
-
-        // if table is global, add column
-        if (tableConfig.isGlobalTable() && context.isGlobalCheck()) {
-            columns.add(GlobalTableUtil.createCheckColumn());
-            isChanged = true;
         }
         return isChanged;
     }

@@ -47,9 +47,11 @@ public final class TsQueriesCounter {
     public void addToHistory(NonBlockingSession session) {
         lock.writeLock().lock();
         try {
-            hisQueriesCount += session.getQueriesCounter();
-            hisTransCount += session.getTransactionsCounter();
-            session.resetCounter();
+            if (session.getQueriesCounter() > 0) {
+                hisQueriesCount += session.getQueriesCounter();
+                hisTransCount += session.getTransactionsCounter();
+                session.resetCounter();
+            }
         } finally {
             lock.writeLock().unlock();
         }

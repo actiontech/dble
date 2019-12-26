@@ -45,7 +45,7 @@ public final class ShowHandler {
                 ShowCommand.execute(c);
                 break;
             case ManagerParseShow.CONNECTION:
-                ShowConnection.execute(c, stmt.substring(rs >>> 8).trim());
+                ShowConnection.execute(c);
                 break;
             case ManagerParseShow.BACKEND:
                 ShowBackend.execute(c);

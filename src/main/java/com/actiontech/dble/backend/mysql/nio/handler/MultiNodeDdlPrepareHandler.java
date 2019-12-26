@@ -267,7 +267,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
                     }
                     finishedTest = true;
                     session.setTraceSimpleHandler(handler);
-                    session.setPreExecuteEnd();
+                    session.setPreExecuteEnd(false);
                     handler.execute();
                 } catch (Exception e) {
                     DDLTraceManager.getInstance().endDDL(source, "take Connection error:" + e.getMessage());

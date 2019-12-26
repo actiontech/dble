@@ -68,7 +68,7 @@ public final class ShowDataDistribution {
         }
         SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schemaInfo[0]);
         if (schemaConfig == null) {
-            c.writeErrMessage(ErrorCode.ER_YES, "The schema " + schemaInfo[0] + " doesn‘t exist");
+            c.writeErrMessage(ErrorCode.ER_YES, "The schema " + schemaInfo[0] + " doesn't exist");
             return;
         } else if (schemaConfig.isNoSharding()) {
             c.writeErrMessage(ErrorCode.ER_YES, "The schema " + schemaInfo[0] + " is no sharding schema");
@@ -97,14 +97,14 @@ public final class ShowDataDistribution {
                 cond.await();
             }
         } catch (InterruptedException e) {
-            c.writeErrMessage(ErrorCode.ER_YES, "occur InterruptedException,so try again later ");
+            c.writeErrMessage(ErrorCode.ER_YES, "occur InterruptedException, so try again later ");
             return;
         } finally {
             lock.unlock();
         }
 
         if (!succeed.get()) {
-            c.writeErrMessage(ErrorCode.ER_YES, "occur Exception,so try again later ");
+            c.writeErrMessage(ErrorCode.ER_YES, "occur Exception, so try again later ");
             return;
         }
         ByteBuffer buffer = c.allocate();

@@ -13,17 +13,17 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.impl.BaseSelectHandle
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandler;
 import com.actiontech.dble.plan.util.ComplexQueryPlanUtil;
 import com.actiontech.dble.plan.util.ReferenceHandlerInfo;
+import com.actiontech.dble.route.RouteResultsetNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 public class TraceResult implements Cloneable {
     private static final Logger LOGGER = LoggerFactory.getLogger(TraceResult.class);
+    private boolean prepareFinished = false;
     private long veryStartPrepare;
     private long veryStart;
     private TraceRecord requestStartPrepare;
@@ -32,6 +32,7 @@ public class TraceResult implements Cloneable {
     private TraceRecord parseStart; //requestEnd
     private TraceRecord routeStart; //parseEnd
     private TraceRecord preExecuteStart; //routeEnd
+    private RouteResultsetNode[] dataNodes;
     private TraceRecord preExecuteEnd;
 
     private TraceRecord adtCommitBegin; //auto Distributed Transaction commit begin
@@ -45,8 +46,11 @@ public class TraceResult implements Cloneable {
     private ConcurrentMap<DMLResponseHandler, TraceRecord> recordStartMap = new ConcurrentHashMap<>();
     private ConcurrentMap<DMLResponseHandler, TraceRecord> recordEndMap = new ConcurrentHashMap<>();
     private long veryEnd;
+    private boolean complexQuery = false;
+    private boolean subQuery = false;
 
     public void setVeryStartPrepare(long veryStartPrepare) {
+        prepareFinished = false;
         this.veryStartPrepare = veryStartPrepare;
     }
 
@@ -70,6 +74,21 @@ public class TraceResult implements Cloneable {
         this.preExecuteEnd = preExecuteEnd;
     }
 
+    public RouteResultsetNode[] getDataNodes() {
+        return dataNodes;
+    }
+
+    public void setDataNodes(RouteResultsetNode[] dataNodes) {
+        if (this.dataNodes == null) {
+            this.dataNodes = dataNodes;
+        } else {
+            RouteResultsetNode[] tempDataNodes = new RouteResultsetNode[this.dataNodes.length + dataNodes.length];
+            System.arraycopy(this.dataNodes, 0, tempDataNodes, 0, this.dataNodes.length);
+            System.arraycopy(dataNodes, 0, tempDataNodes, this.dataNodes.length, dataNodes.length);
+            this.dataNodes = tempDataNodes;
+        }
+    }
+
     public void setSimpleHandler(ResponseHandler simpleHandler) {
         this.simpleHandler = simpleHandler;
     }
@@ -84,6 +103,14 @@ public class TraceResult implements Cloneable {
 
     public void setAdtCommitEnd(TraceRecord adtCommitEnd) {
         this.adtCommitEnd = adtCommitEnd;
+    }
+
+    public void setComplexQuery(boolean complexQuery) {
+        this.complexQuery = complexQuery;
+    }
+
+    public void setSubQuery(boolean subQuery) {
+        this.subQuery = subQuery;
     }
 
     public synchronized Boolean addToConnFlagMap(String item) {
@@ -125,10 +152,14 @@ public class TraceResult implements Cloneable {
     }
 
     public void ready() {
+        prepareFinished = true;
         clear();
         veryStart = veryStartPrepare;
         requestStart = requestStartPrepare;
         parseStart = parseStartPrepare;
+        veryStartPrepare = 0;
+        requestStartPrepare = null;
+        parseStartPrepare = null;
     }
 
     private void clear() {
@@ -138,9 +169,11 @@ public class TraceResult implements Cloneable {
         routeStart = null;
         preExecuteStart = null;
         preExecuteEnd = null;
+        dataNodes = null;
         adtCommitBegin = null;
         adtCommitEnd = null;
-
+        complexQuery = false;
+        subQuery = false;
         simpleHandler = null;
         builder = null; //for complex query
         connFlagMap.clear();
@@ -155,6 +188,67 @@ public class TraceResult implements Cloneable {
         recordStartMap.clear();
         recordEndMap.clear();
         veryEnd = 0;
+    }
+
+    public List<String[]> genRunningSQLStage() {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("start genRunningSQLStage");
+        }
+        List<String[]> lst = new ArrayList<>();
+        if (!prepareFinished) {
+            if (requestStartPrepare == null) {
+                return lst;
+            } else {
+                if (parseStartPrepare == null) {
+                    lst.add(genTraceRecord("Read_SQL", requestStartPrepare.getTimestamp()));
+                    return lst;
+                } else {
+                    lst.add(genTraceRecord("Read_SQL", requestStartPrepare.getTimestamp(), parseStartPrepare.getTimestamp()));
+                    lst.add(genTraceRecord("Parse_SQL", parseStartPrepare.getTimestamp()));
+                    return lst;
+                }
+            }
+        }
+        lst.add(genTraceRecord("Read_SQL", requestStart.getTimestamp(), parseStart.getTimestamp()));
+
+        if (routeStart == null) {
+            lst.add(genTraceRecord("Parse_SQL", parseStart.getTimestamp()));
+            return lst;
+        } else {
+            lst.add(genTraceRecord("Parse_SQL", parseStart.getTimestamp(), routeStart.getTimestamp()));
+        }
+
+        if (preExecuteStart == null) {
+            lst.add(genTraceRecord("Route_Calculation", routeStart.getTimestamp()));
+            return lst;
+        } else {
+            lst.add(genTraceRecord("Route_Calculation", routeStart.getTimestamp(), preExecuteStart.getTimestamp()));
+        }
+
+        if (preExecuteEnd == null) {
+            lst.add(genTraceRecord("Prepare_to_Push/Optimize", preExecuteStart.getTimestamp()));
+            return lst;
+        } else {
+            lst.add(genTraceRecord("Prepare_to_Push/Optimize", preExecuteStart.getTimestamp(), preExecuteEnd.getTimestamp()));
+        }
+        if (simpleHandler != null) {
+            genRunningSimpleResults(lst);
+            return lst;
+        } else if (builder != null) {
+            genRunningComplexQueryResults(lst);
+            return lst;
+        } else if (dataNodes == null || subQuery) {
+            lst.add(genTraceRecord("Doing_SubQuery", preExecuteEnd.getTimestamp()));
+            return lst;
+        } else if (dataNodes == null || complexQuery) {
+            lst.add(genTraceRecord("Generate_Query_Explain", preExecuteEnd.getTimestamp()));
+            return lst;
+        } else {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("not support trace this query or unfinished");
+            }
+            return lst;
+        }
     }
 
     public List<String[]> genTraceResult() {
@@ -188,6 +282,76 @@ public class TraceResult implements Cloneable {
         }
         clear();
         return lst;
+    }
+
+    private void genRunningComplexQueryResults(List<String[]> lst) {
+        List<ReferenceHandlerInfo> results = ComplexQueryPlanUtil.getComplexQueryResult(builder);
+        long lastChildFinished = preExecuteEnd.getTimestamp();
+        for (ReferenceHandlerInfo result : results) {
+            DMLResponseHandler handler = result.getHandler();
+            if (handler instanceof BaseSelectHandler) {
+                Map<MySQLConnection, TraceRecord> fetchStartRecordMap = connReceivedMap.get(handler);
+                if (fetchStartRecordMap == null) {
+                    if (!result.isNestLoopQuery()) {
+                        lst.add(genTraceRecord("Execute_SQL", lastChildFinished, result.getName(), result.getRefOrSQL())); // lastChildFinished may is Long.MAX_VALUE
+                    } else {
+                        lst.add(genTraceRecord("Generate_New_Query", lastChildFinished)); // lastChildFinished may is Long.MAX_VALUE
+                    }
+                    lst.add(genTraceRecord("Fetch_result", result.getName(), result.getRefOrSQL()));
+                } else {
+                    TraceRecord fetchStartRecord = fetchStartRecordMap.values().iterator().next();
+                    if (!result.isNestLoopQuery()) {
+                        lst.add(genTraceRecord("Execute_SQL", lastChildFinished, fetchStartRecord.getTimestamp(), result.getName(), result.getRefOrSQL()));
+                    } else {
+                        TraceRecord handlerStart = recordStartMap.get(handler);
+                        TraceRecord handlerEnd = recordEndMap.get(handler);
+                        if (handlerStart == null) {
+                            lst.add(genTraceRecord("Generate_New_Query", lastChildFinished)); // lastChildFinished may is Long.MAX_VALUE
+                        } else if (handlerEnd == null) {
+                            lst.add(genTraceRecord("Generate_New_Query", lastChildFinished, handlerStart.getTimestamp()));
+                            lst.add(genTraceRecord("Execute_SQL", handlerStart.getTimestamp(), result.getName(), result.getRefOrSQL()));
+                        } else {
+                            lst.add(genTraceRecord("Generate_New_Query", lastChildFinished, handlerStart.getTimestamp()));
+                            lst.add(genTraceRecord("Execute_SQL", handlerStart.getTimestamp(), handlerEnd.getTimestamp(), result.getName(), result.getRefOrSQL()));
+                        }
+                    }
+                    Map<MySQLConnection, TraceRecord> fetchEndRecordMap = connFinishedMap.get(handler);
+                    if (fetchEndRecordMap == null) {
+                        lst.add(genTraceRecord("Fetch_result", fetchStartRecord.getTimestamp(), result.getName(), result.getRefOrSQL()));
+                    } else {
+                        TraceRecord fetchEndRecord = fetchEndRecordMap.values().iterator().next();
+                        lst.add(genTraceRecord("Fetch_result", fetchStartRecord.getTimestamp(), fetchEndRecord.getTimestamp(), result.getName(), result.getRefOrSQL()));
+                    }
+                }
+            } else if (handler instanceof OutputHandler) {
+                TraceRecord startWrite = recordStartMap.get(handler);
+                if (startWrite == null) {
+                    lst.add(genTraceRecord("Write_to_Client"));
+                } else if (veryEnd == 0) {
+                    lst.add(genTraceRecord("Write_to_Client", startWrite.getTimestamp()));
+                } else {
+                    lst.add(genTraceRecord("Write_to_Client", startWrite.getTimestamp(), veryEnd));
+                }
+            } else {
+                TraceRecord handlerStart = recordStartMap.get(handler);
+                TraceRecord handlerEnd = recordEndMap.get(handler);
+                if (handlerStart == null) {
+                    lst.add(genTraceRecord(result.getType()));
+                } else if (handlerEnd == null) {
+                    lst.add(genTraceRecord(result.getType(), handlerStart.getTimestamp(), result.getName(), result.getRefOrSQL()));
+                } else {
+                    lst.add(genTraceRecord(result.getType(), handlerStart.getTimestamp(), handlerEnd.getTimestamp(), result.getName(), result.getRefOrSQL()));
+                }
+
+                if (handler.getNextHandler() == null) {
+                    if (handlerEnd != null) {
+                        lastChildFinished = Math.max(lastChildFinished, handlerEnd.getTimestamp());
+                    } else {
+                        lastChildFinished = Long.MAX_VALUE;
+                    }
+                }
+            }
+        }
     }
 
     private boolean genComplexQueryResults(List<String[]> lst) {
@@ -289,6 +453,98 @@ public class TraceResult implements Cloneable {
         }
         lst.add(genTraceRecord("Write_to_Client", minFetchStart, veryEnd));
         return false;
+    }
+
+    private void genRunningSimpleResults(List<String[]> lst) {
+        Map<MySQLConnection, TraceRecord> connFetchStartMap = connReceivedMap.get(simpleHandler);
+
+        Set<String> receivedNode = new HashSet<>();
+        long minFetchStart = Long.MAX_VALUE;
+        long maxFetchEnd = 0;
+        if (connFetchStartMap != null) {
+            Map<MySQLConnection, TraceRecord> connFetchEndMap = connFinishedMap.get(simpleHandler);
+            List<String[]> executeList = new ArrayList<>(connFetchStartMap.size());
+            List<String[]> fetchList = new ArrayList<>(connFetchStartMap.size());
+            for (Map.Entry<MySQLConnection, TraceRecord> fetchStart : connFetchStartMap.entrySet()) {
+                TraceRecord fetchStartRecord = fetchStart.getValue();
+                receivedNode.add(fetchStartRecord.getDataNode());
+                minFetchStart = Math.min(minFetchStart, fetchStartRecord.getTimestamp());
+                executeList.add(genTraceRecord("Execute_SQL", preExecuteEnd.getTimestamp(), fetchStartRecord.getTimestamp(), fetchStartRecord.getDataNode(), fetchStartRecord.getRef()));
+                if (connFetchEndMap == null) {
+                    fetchList.add(genTraceRecord("Fetch_result", fetchStartRecord.getTimestamp(), fetchStartRecord.getDataNode(), fetchStartRecord.getRef()));
+                } else {
+                    TraceRecord fetchEndRecord = connFetchEndMap.get(fetchStart.getKey());
+                    if (fetchEndRecord == null) {
+                        fetchList.add(genTraceRecord("Fetch_result", fetchStartRecord.getTimestamp(), fetchStartRecord.getDataNode(), fetchStartRecord.getRef()));
+                    } else {
+                        fetchList.add(genTraceRecord("Fetch_result", fetchStartRecord.getTimestamp(), fetchEndRecord.getTimestamp(), fetchStartRecord.getDataNode(), fetchStartRecord.getRef()));
+                        maxFetchEnd = Math.max(maxFetchEnd, fetchEndRecord.getTimestamp());
+                    }
+                }
+            }
+            lst.addAll(executeList);
+            if (receivedNode.size() != dataNodes.length) {
+                for (RouteResultsetNode dataNode : dataNodes) {
+                    if (!receivedNode.contains(dataNode.getName())) {
+                        lst.add(genTraceRecord("Execute_SQL", preExecuteEnd.getTimestamp(), dataNode.getName(), dataNode.getStatement()));
+                        fetchList.add(genTraceRecord("Fetch_result", dataNode.getName(), dataNode.getStatement()));
+                    }
+                }
+            }
+            lst.addAll(fetchList);
+        } else {
+            for (RouteResultsetNode dataNode : dataNodes) {
+                if (!receivedNode.contains(dataNode.getName())) {
+                    lst.add(genTraceRecord("Execute_SQL", preExecuteEnd.getTimestamp(), dataNode.getName(), dataNode.getStatement()));
+                    lst.add(genTraceRecord("Fetch_result", dataNode.getName(), dataNode.getStatement()));
+                }
+            }
+        }
+        if (adtCommitBegin != null) {
+            lst.add(genTraceRecord("Distributed_Transaction_Prepare", maxFetchEnd, adtCommitBegin.getTimestamp()));
+            lst.add(genTraceRecord("Distributed_Transaction_Commit", adtCommitBegin.getTimestamp(), adtCommitEnd.getTimestamp()));
+        }
+        if (minFetchStart == Long.MAX_VALUE) {
+            lst.add(genTraceRecord("Write_to_Client"));
+        } else if (veryEnd == 0) {
+            lst.add(genTraceRecord("Write_to_Client", minFetchStart));
+        } else {
+            lst.add(genTraceRecord("Write_to_Client", minFetchStart, veryEnd));
+        }
+    }
+
+    private String[] genTraceRecord(String operation, long start) {
+        return genTraceRecord(operation, start, "-", "-");
+
+    }
+
+    private String[] genTraceRecord(String operation, long start, String dataNode, String ref) {
+        if (start == Long.MAX_VALUE) {
+            return genTraceRecord(operation, dataNode, ref);
+        }
+        String[] readQuery = new String[6];
+        readQuery[0] = operation;
+        readQuery[1] = nanoToMilliSecond(start - veryStart);
+        readQuery[2] = "unfinished";
+        readQuery[3] = "unknown";
+        readQuery[4] = dataNode;
+        readQuery[5] = ref.replaceAll("[\\t\\n\\r]", " ");
+        return readQuery;
+    }
+
+    private String[] genTraceRecord(String operation, String dataNode, String ref) {
+        String[] readQuery = new String[6];
+        readQuery[0] = operation;
+        readQuery[1] = "not started";
+        readQuery[2] = "unfinished";
+        readQuery[3] = "unknown";
+        readQuery[4] = dataNode;
+        readQuery[5] = ref.replaceAll("[\\t\\n\\r]", " ");
+        return readQuery;
+    }
+
+    private String[] genTraceRecord(String operation) {
+        return genTraceRecord(operation, "-", "-");
     }
 
     private String[] genTraceRecord(String operation, long start, long end) {

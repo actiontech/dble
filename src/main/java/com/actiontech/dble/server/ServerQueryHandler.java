@@ -41,7 +41,12 @@ public class ServerQueryHandler implements FrontendQueryHandler {
     public void query(String sql) {
         ServerConnection c = this.source;
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(String.valueOf(c) + sql);
+            LOGGER.debug(c + sql);
+        }
+        if (c.getSession2().isKilled()) {
+            LOGGER.info("sql[" + sql + "] is killed.");
+            c.writeErrMessage(ErrorCode.ER_QUERY_INTERRUPTED, "The query is interrupted.");
+            return;
         }
 
         source.getSession2().queryCount();
@@ -109,11 +114,10 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                     SavepointHandler.release(sql, c);
                     break;
                 case ServerParse.KILL:
-                    KillHandler.handle(sql, rs >>> 8, c);
+                    KillHandler.handle(KillHandler.Type.KILL_CONNECTION, sql.substring(rs >>> 8).trim(), c);
                     break;
                 case ServerParse.KILL_QUERY:
-                    LOGGER.info("Unsupported command:" + sql);
-                    c.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unsupported command");
+                    KillHandler.handle(KillHandler.Type.KILL_QUERY, sql.substring(rs >>> 8).trim(), c);
                     break;
                 case ServerParse.USE:
                     UseHandler.handle(sql, c, rs >>> 8);

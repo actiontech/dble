@@ -158,7 +158,9 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         LOGGER.info("execute sql err :" + errMsg + " con:" + conn +
                 " frontend host:" + errHost + "/" + errPort + "/" + errUser);
 
-        if (syncFinished) {
+        if (conn.isClosed()) {
+            session.getTargetMap().remove(conn.getAttachment());
+        } else if (syncFinished) {
             session.releaseConnectionIfSafe(conn, false);
         } else {
             conn.closeWithoutRsp("unfinished sync");

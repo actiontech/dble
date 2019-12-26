@@ -97,6 +97,10 @@ public class NonBlockingSession implements Session {
     // cancel status  0 - CANCEL_STATUS_INIT 1 - CANCEL_STATUS_COMMITTING  2 - CANCEL_STATUS_CANCELING
     private int cancelStatus = 0;
 
+    // kill query
+    private volatile boolean killed = false;
+    private volatile boolean discard = false;
+
     private OutputHandler outputHandler;
 
     // the memory controller for join,orderby,other in this session
@@ -439,6 +443,11 @@ public class NonBlockingSession implements Session {
 
     @Override
     public void execute(RouteResultset rrs) {
+        if (killed) {
+            source.writeErrMessage(ErrorCode.ER_QUERY_INTERRUPTED, "The query is interrupted.");
+            return;
+        }
+
         // clear prev execute resources
         clearHandlesResources();
         if (LOGGER.isDebugEnabled()) {
@@ -496,6 +505,7 @@ public class NonBlockingSession implements Session {
         }
         try {
             singleNodeHandler.execute();
+            discard = true;
         } catch (Exception e) {
             handleSpecial(rrs, false);
             LOGGER.info(String.valueOf(source) + rrs, e);
@@ -519,6 +529,7 @@ public class NonBlockingSession implements Session {
             MultiNodeDdlPrepareHandler multiNodeDdlHandler = new MultiNodeDdlPrepareHandler(rrs, this);
             try {
                 multiNodeDdlHandler.execute();
+                discard = true;
             } catch (Exception e) {
                 if (this.getSessionXaID() != null) {
                     this.xaState = TxState.TX_INITIALIZE_STATE;
@@ -542,6 +553,7 @@ public class NonBlockingSession implements Session {
             }
             try {
                 multiNodeSelectHandler.execute();
+                discard = true;
             } catch (Exception e) {
                 LOGGER.info(String.valueOf(source) + rrs, e);
                 source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
@@ -559,6 +571,7 @@ public class NonBlockingSession implements Session {
             }
             try {
                 multiNodeHandler.execute();
+                discard = true;
             } catch (Exception e) {
                 LOGGER.info(String.valueOf(source) + rrs, e);
                 if (!source.isAutocommit() || source.isTxStart()) {
@@ -583,6 +596,7 @@ public class NonBlockingSession implements Session {
             if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
                 traceResult.setBuilder(baseBuilder);
             }
+            discard = true;
         } catch (SQLSyntaxErrorException e) {
             LOGGER.info(String.valueOf(source) + " execute plan is : " + node, e);
             source.writeErrMessage(ErrorCode.ER_YES, "optimizer build error");
@@ -626,12 +640,9 @@ public class NonBlockingSession implements Session {
         setPreExecuteEnd();
         if (PlanUtil.containsSubQuery(node)) {
             final PlanNode finalNode = node;
-            DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
-                //sub Query build will be blocked, so use ComplexQueryExecutor
-                @Override
-                public void run() {
-                    executeMultiResultSet(finalNode);
-                }
+            //sub Query build will be blocked, so use ComplexQueryExecutor
+            DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
+                executeMultiResultSet(finalNode);
             });
         } else {
             if (!visitor.isContainSchema()) {
@@ -846,7 +857,7 @@ public class NonBlockingSession implements Session {
                         c.release();
                     } else if (needClose) {
                         //c.rollback();
-                        c.close("the  need to be closed");
+                        c.close("the need to be closed");
                     } else {
                         c.release();
                     }
@@ -1248,5 +1259,20 @@ public class NonBlockingSession implements Session {
         transactionsCounter.set(Long.MIN_VALUE);
     }
 
+    public boolean isKilled() {
+        return killed;
+    }
+
+    public void setKilled(boolean killed) {
+        this.killed = killed;
+    }
+
+    public boolean isDiscard() {
+        return discard;
+    }
+
+    public void setDiscard(boolean discard) {
+        this.discard = discard;
+    }
 
 }

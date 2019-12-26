@@ -70,12 +70,14 @@ public class ViewMeta {
         }
 
         if (schemas.size() == 1 && schemas.iterator().next().equals(schema)) {
-            selNode.setUpFields();
-            List<Item> selectItems = selNode.getColumnsSelected();
-            viewColumnMeta = new ArrayList<>(selectItems.size());
-            for (Item item : selectItems) {
-                String alias = item.getAlias() == null ? item.getItemName() : item.getAlias();
-                viewColumnMeta.add(StringUtil.removeBackQuote(alias));
+            if (viewColumnMeta == null) {
+                selNode.setUpFields();
+                List<Item> selectItems = selNode.getColumnsSelected();
+                viewColumnMeta = new ArrayList<>(selectItems.size());
+                for (Item item : selectItems) {
+                    String alias = item.getAlias() == null ? item.getItemName() : item.getAlias();
+                    viewColumnMeta.add(StringUtil.removeBackQuote(alias));
+                }
             }
             viewQuery = new TableNode(schema, viewName, viewColumnMeta);
         } else {

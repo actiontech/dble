@@ -221,7 +221,7 @@ public final class ShowHelp {
         HELPS.put("dataHost @@events ", "show all the dataHost ha event which not finished yet ");
 
         //dump file
-        HELPS.put("split src dest -r500 -w500 -l10000", "split dump file into multi dump files according to dataNode");
+        HELPS.put("split src dest -sschema -r500 -w500 -l10000", "split dump file into multi dump files according to dataNode");
 
         // list sort
         KEYS.addAll(HELPS.keySet());

@@ -598,4 +598,9 @@ public class ServerConnection extends FrontendConnection {
         markFinished();
         super.write(buffer);
     }
+
+    @Override
+    public void writePart(ByteBuffer buffer) {
+        super.write(buffer);
+    }
 }

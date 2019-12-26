@@ -38,12 +38,15 @@ public final class SplitDumpHandler {
             return;
         }
 
-        SchemaConfig defaultSchemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(config.getDefaultSchema());
-        if (defaultSchemaConfig == null) {
-            String errMsg = "Default schema[" + config.getDefaultSchema() + "] doesn't exist in config.";
-            LOGGER.info(errMsg);
-            c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, errMsg);
-            return;
+        SchemaConfig defaultSchemaConfig = null;
+        if (config.getDefaultSchema() != null) {
+            defaultSchemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(config.getDefaultSchema());
+            if (defaultSchemaConfig == null) {
+                String errMsg = "Default schema[" + config.getDefaultSchema() + "] doesn't exist in config.";
+                LOGGER.info(errMsg);
+                c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, errMsg);
+                return;
+            }
         }
 
         DumpFileWriter writer = new DumpFileWriter();

@@ -50,7 +50,7 @@
         <!--<property name="charset">utf8mb4</property>-->
         <!--<property name="maxPacketSize">4194304</property>-->
         <!--<property name="txIsolation">3</property>-->
-
+        <!--<property name="autocommit">1</property>-->
         <!--consistency-->
         <!-- check the consistency of table structure between nodes,default not -->
         <property name="checkTableConsistency">0</property>

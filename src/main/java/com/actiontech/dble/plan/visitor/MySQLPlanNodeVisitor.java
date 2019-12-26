@@ -517,6 +517,9 @@ public class MySQLPlanNodeVisitor {
         }
         SQLExpr rowCount = limit.getRowCount();
         long to = ((SQLIntegerExpr) rowCount).getNumber().longValue();
+        if (to < 0) {
+            throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "", "You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '" + to + "'");
+        }
         tableNode.setLimitFrom(from);
         tableNode.setLimitTo(to);
     }

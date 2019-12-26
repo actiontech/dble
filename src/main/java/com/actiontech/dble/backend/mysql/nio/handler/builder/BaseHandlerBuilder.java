@@ -264,7 +264,7 @@ public abstract class BaseHandlerBuilder {
                 }
             }
         }
-        if (node.getLimitTo() > 0) {
+        if (node.getLimitTo() >= 0) {
             LimitHandler lh = new LimitHandler(getSequenceId(), session, node.getLimitFrom(), node.getLimitTo());
             addHandler(lh);
         }

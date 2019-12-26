@@ -237,7 +237,7 @@ public class TraceResult implements Cloneable {
         } else if (builder != null) {
             genRunningComplexQueryResults(lst);
             return lst;
-        } else if (dataNodes == null || subQuery) {
+        } else if (subQuery) {
             lst.add(genTraceRecord("Doing_SubQuery", preExecuteEnd.getTimestamp()));
             return lst;
         } else if (dataNodes == null || complexQuery) {

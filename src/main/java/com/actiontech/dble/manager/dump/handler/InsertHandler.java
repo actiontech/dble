@@ -38,7 +38,7 @@ class InsertHandler extends DefaultHandler {
         if (matcher.find()) {
             table = matcher.group(1);
         }
-
+        context.setTable(table);
         if (table != null && table.equalsIgnoreCase(currentTable)) {
             if (context.isSkipContext() || context.getTableType() == TableType.DEFAULT) {
                 return null;
@@ -48,7 +48,7 @@ class InsertHandler extends DefaultHandler {
             currentTable = table;
         }
 
-        if (context.isSkipContext()) {
+        if (context.isSkipContext() || context.getTableType() == TableType.DEFAULT) {
             return null;
         }
 

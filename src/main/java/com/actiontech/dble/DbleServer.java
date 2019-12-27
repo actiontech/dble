@@ -116,7 +116,7 @@ public final class DbleServer {
             LOGGER.info("=========================================Init Outter Ha Config==================================");
             HaConfigManager.getInstance().init();
         } else if (ClusterHelper.useClusterHa()) {
-            new Exception("useOuterHa can not be false when useClusterHa in myid is true");
+            throw new Exception("useOuterHa can not be false when useClusterHa in myid is true");
         }
         if (system.getEnableAlert() == 1) {
             AlertUtil.switchAlert(true);

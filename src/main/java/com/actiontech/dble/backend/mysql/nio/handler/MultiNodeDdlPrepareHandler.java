@@ -93,7 +93,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
             TxnLogHelper.putTxnLog(session.getSource(), sb.toString());
         }
 
-        DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.LINK_TEST_START, session.getSource());
+        DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.CONN_TEST_START, session.getSource());
 
         for (final RouteResultsetNode node : rrs.getNodes()) {
             BackendConnection conn = session.getTarget(node);
@@ -202,7 +202,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
         final RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
         session.bindConnection(node, conn);
         DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(),
-                (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.TEST_START);
+                (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.CONN_TEST_START);
         innerExecute(conn, node);
     }
 
@@ -210,7 +210,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
     @Override
     public void errorResponse(byte[] data, BackendConnection conn) {
         DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(),
-                (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.TEST_ERROR);
+                (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.CONN_TEST_RESULT_ERROR);
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(data);
         errPacket.setPacketId(1);
@@ -242,7 +242,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
     @Override
     public void rowEofResponse(final byte[] eof, boolean isLeft, BackendConnection conn) {
         DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(),
-                (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.TEST_SUCCESS);
+                (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.CONN_TEST_SUCCESS);
         final ServerConnection source = session.getSource();
         if (clearIfSessionClosed()) {
             return;
@@ -261,7 +261,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
                 }
             } else {
                 try {
-                    DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.LINK_TEST_END, source);
+                    DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.CONN_TEST_END, source);
                     if (session.isPrepared()) {
                         handler.setPrepared(true);
                     }

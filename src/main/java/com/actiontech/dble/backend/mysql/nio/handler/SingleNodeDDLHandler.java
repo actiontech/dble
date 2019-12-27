@@ -30,7 +30,7 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
 
 
     public void execute(BackendConnection conn) {
-        DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(), (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.EXECUTE_START);
+        DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(), (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_START);
         super.execute(conn);
     }
 
@@ -47,7 +47,7 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
     @Override
     public void errorResponse(byte[] data, BackendConnection conn) {
         DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(),
-                (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.EXECUTE_ERROR);
+                (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_ERROR);
         DDLTraceManager.getInstance().endDDL(session.getSource(), "ddl end with execution failure");
         super.errorResponse(data, conn);
     }
@@ -65,7 +65,7 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
     public void okResponse(byte[] data, BackendConnection conn) {
         boolean executeResponse = conn.syncAndExecute();
         if (executeResponse) {
-            DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(), (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.EXECUTE_SUCCESS);
+            DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(), (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_SUCCESS);
             DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.META_UPDATE, session.getSource());
             //handleSpecial
             boolean metaInited = session.handleSpecial(rrs, true);

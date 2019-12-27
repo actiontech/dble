@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.cluster.xmltoKv;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.ClusterController;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.listener.ClusterClearKeyListener;

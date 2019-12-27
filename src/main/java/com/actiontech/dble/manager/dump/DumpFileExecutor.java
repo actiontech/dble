@@ -90,7 +90,7 @@ public final class DumpFileExecutor implements Runnable {
                 LOGGER.warn("dump file executor is interrupted.");
                 return;
             } catch (Exception e) {
-                LOGGER.warn("dump file executor exit, due to :" + e.getMessage());
+                LOGGER.warn("dump file executor exit", e);
                 try {
                     writer.writeAll(DumpFileReader.EOF);
                 } catch (InterruptedException ex) {
@@ -120,6 +120,9 @@ public final class DumpFileExecutor implements Runnable {
         // footer
         if (stmt.contains("=@OLD_")) {
             writer.writeAll(stmt);
+            return true;
+        }
+        if (stmt.contains("Dump completed")) {
             return true;
         }
         return false;

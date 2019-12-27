@@ -82,7 +82,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
     @Override
     public void errorResponse(byte[] data, BackendConnection conn) {
         DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(), (MySQLConnection) conn,
-                DDLTraceInfo.DDLConnectionStatus.EXECUTE_ERROR);
+                DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_ERROR);
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(data);
         byte lastPacketId = packetId;
@@ -149,7 +149,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
         mysqlCon.setResponseHandler(this);
         mysqlCon.setSession(session);
         DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(), mysqlCon,
-                DDLTraceInfo.DDLConnectionStatus.EXECUTE_START);
+                DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_START);
         mysqlCon.executeMultiNode(node, session.getSource(), sessionAutocommit && !session.getSource().isTxStart() && !node.isModifySQL());
     }
 
@@ -162,7 +162,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
         }
         if (executeResponse) {
             DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(), (MySQLConnection) conn,
-                    DDLTraceInfo.DDLConnectionStatus.EXECUTE_SUCCESS);
+                    DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_SUCCESS);
             ServerConnection source = session.getSource();
             OkPacket ok = new OkPacket();
             ok.read(data);

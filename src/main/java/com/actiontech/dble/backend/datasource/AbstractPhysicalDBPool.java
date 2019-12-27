@@ -87,17 +87,15 @@ public abstract class AbstractPhysicalDBPool {
 
     abstract boolean getReadCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception;
 
-    public boolean equalsBaseInfo(AbstractPhysicalDBPool pool) {
-
-        if (pool.getDataHostConfig().getName().equals(this.dataHostConfig.getName()) &&
+    boolean equalsBaseInfo(AbstractPhysicalDBPool pool) {
+        return pool.getDataHostConfig().getName().equals(this.dataHostConfig.getName()) &&
                 pool.getDataHostConfig().getHearbeatSQL().equals(this.dataHostConfig.getHearbeatSQL()) &&
+                pool.getDataHostConfig().getHeartbeatTimeout() == this.dataHostConfig.getHeartbeatTimeout() &&
+                pool.getDataHostConfig().getErrorRetryCount() == this.dataHostConfig.getErrorRetryCount() &&
                 pool.getDataHostConfig().getBalance() == this.dataHostConfig.getBalance() &&
                 pool.getDataHostConfig().getMaxCon() == this.dataHostConfig.getMaxCon() &&
                 pool.getDataHostConfig().getMinCon() == this.dataHostConfig.getMinCon() &&
-                pool.getHostName().equals(this.hostName)) {
-            return true;
-        }
-        return false;
+                pool.getHostName().equals(this.hostName);
     }
 
     public String[] getSchemas() {

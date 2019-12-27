@@ -212,7 +212,6 @@ public final class ReloadConfig {
             ReloadLogHelper.info("reload config: single instance(self) finished", LOGGER);
             ClusterDelayProvider.delayAfterMasterLoad();
 
-            ReloadManager.waitingOthers();
             XmltoZkMain.writeConfFileToZK(loadAllMode);
             ReloadLogHelper.info("reload config: sent config status to zk", LOGGER);
             //tell zk this instance has prepared
@@ -223,11 +222,13 @@ public final class ReloadConfig {
             List<String> preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
             List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
 
+            ReloadManager.waitingOthers();
             while (preparedList.size() < onlineList.size()) {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));
                 onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
                 preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
             }
+
             ReloadLogHelper.info("reload config: all instances finished ", LOGGER);
             ClusterDelayProvider.delayBeforeDeleteReloadLock();
             StringBuilder sbErrorInfo = new StringBuilder();

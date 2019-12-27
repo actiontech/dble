@@ -366,7 +366,7 @@ public class ProxyMetaManager {
         //add watcher
         ZKUtils.addChildPathCache(ddlPath, new DDLChildListener());
         //add tow ha status && ha lock watcher
-        if (ClusterHelper.useCluster()) {
+        if (ClusterHelper.useClusterHa()) {
             ZKUtils.addChildPathCache(KVPathUtil.getHaStatusPath(), new DataHostStatusListener());
             ZKUtils.addChildPathCache(KVPathUtil.getHaResponsePath(), new DataHostResponseListener());
         }

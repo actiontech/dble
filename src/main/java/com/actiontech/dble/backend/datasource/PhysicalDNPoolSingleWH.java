@@ -508,10 +508,15 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
             for (DataSourceStatus status : list) {
                 PhysicalDatasource phys = allSourceMap.get(status.getName());
                 if (phys != null) {
-                    if (phys.setDisabled(status.isDisable()) && status.isDisable()) {
-                        //clear old resource
-                        phys.clearCons("ha command disable datasource");
-                        phys.stopHeartbeat();
+                    if (phys.setDisabled(status.isDisable())) {
+                        if (status.isDisable()) {
+                            //clear old resource
+                            phys.clearCons("ha command disable datasource");
+                            phys.stopHeartbeat();
+                        } else {
+                            //change dataSource from disable to enable ,start heartbeat
+                            phys.startHeartbeat();
+                        }
                     }
                     if (status.isWriteHost() &&
                             phys != writeSource) {

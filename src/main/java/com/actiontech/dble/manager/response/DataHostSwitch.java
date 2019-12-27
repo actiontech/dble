@@ -38,7 +38,7 @@ public final class DataHostSwitch {
     public static void execute(Matcher switcher, ManagerConnection mc) {
         String dhName = switcher.group(1);
         String masterName = switcher.group(2);
-        boolean useCluster = ClusterHelper.useCluster();
+        boolean useCluster = ClusterHelper.useClusterHa();
         //check the dataHost is exists
 
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();

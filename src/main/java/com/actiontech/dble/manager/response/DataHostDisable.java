@@ -45,7 +45,7 @@ public final class DataHostDisable {
     public static void execute(Matcher disable, ManagerConnection mc) {
         String dhName = disable.group(1);
         String subHostName = disable.group(3);
-        boolean useCluster = ClusterHelper.useCluster();
+        boolean useCluster = ClusterHelper.useClusterHa();
 
         //check the dataHost is exists
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();

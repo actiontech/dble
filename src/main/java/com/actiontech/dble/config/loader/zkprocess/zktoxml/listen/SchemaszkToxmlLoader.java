@@ -114,7 +114,7 @@ public class SchemaszkToxmlLoader extends ZkMultiLoader implements NotifyService
         List<DataHost> dataHostList = parseJsonDataHost.parseJsonToBean(dataHostZkDirectory.getDataValue());
         schema.setDataHost(dataHostList);
         try {
-            if (ClusterHelper.useCluster()) {
+            if (ClusterHelper.useClusterHa()) {
                 List<String> chindrenList = getCurator().getChildren().forPath(KVPathUtil.getHaStatusPath());
                 if (chindrenList != null && chindrenList.size() > 0) {
                     for (String child : chindrenList) {

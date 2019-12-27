@@ -45,19 +45,21 @@ public class DataHostResponseListener implements PathChildrenCacheListener {
 
 
     private void updateStatus(ChildData childData) throws Exception {
-        String data = new String(childData.getData(), StandardCharsets.UTF_8);
-        LOGGER.info("Ha disable node " + childData.getPath() + " updated , and data is " + data);
-        try {
-            if (!"".equals(data)) {
-                response(data, childData.getPath());
-            } else {
-                CuratorFramework zkConn = ZKUtils.getConnection();
-                String newData = new String(zkConn.getData().forPath(childData.getPath()), "UTF-8");
-                response(newData, childData.getPath());
+        if (DbleServer.getInstance().isUseOuterHa()) {
+            String data = new String(childData.getData(), StandardCharsets.UTF_8);
+            LOGGER.info("Ha disable node " + childData.getPath() + " updated , and data is " + data);
+            try {
+                if (!"".equals(data)) {
+                    response(data, childData.getPath());
+                } else {
+                    CuratorFramework zkConn = ZKUtils.getConnection();
+                    String newData = new String(zkConn.getData().forPath(childData.getPath()), "UTF-8");
+                    response(newData, childData.getPath());
+                }
+            } catch (Exception e) {
+                LOGGER.warn("get error when try to response to the disable");
+                ZKUtils.createTempNode(childData.getPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), e.getMessage().getBytes());
             }
-        } catch (Exception e) {
-            LOGGER.warn("get error when try to response to the disable");
-            ZKUtils.createTempNode(childData.getPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), e.getMessage().getBytes());
         }
     }
 

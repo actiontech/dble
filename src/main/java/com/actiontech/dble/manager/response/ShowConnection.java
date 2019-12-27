@@ -31,7 +31,6 @@ import java.nio.ByteBuffer;
 import java.sql.SQLSyntaxErrorException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * Show Active Connection
@@ -43,8 +42,6 @@ public final class ShowConnection {
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
-    private static final Pattern WHERE_COND = Pattern.compile("where\\s+(processor\\s*=\\s*'([^\\s]+)')?\\s+and\\s+(front_id\\s*=\\s*[\\d+])?\\s+" +
-            "and\\s+(host\\s*=\\s*'([^\\s]+)')?\\s+and\\s+(user\\s*=\\s*'([^\\s]+)')?", Pattern.CASE_INSENSITIVE);
 
     static {
         int i = 0;

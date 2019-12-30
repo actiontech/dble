@@ -6,6 +6,7 @@
 package com.actiontech.dble.cluster.xmltoKv;
 
 import com.actiontech.dble.cluster.ClusterController;
+import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.listener.ClusterClearKeyListener;
 import com.actiontech.dble.cluster.response.*;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
@@ -46,7 +47,9 @@ public final class XmltoCluster {
 
         xmlProcess.initJaxbClass();
         ucoreListen.initAllNode();
-        new DataHostHaResponse().notifyCluster();
+        if (ClusterHelper.useClusterHa()) {
+            new DataHostHaResponse().notifyCluster();
+        }
     }
 
 }

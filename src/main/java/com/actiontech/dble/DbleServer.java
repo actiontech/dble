@@ -13,6 +13,7 @@ import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.KVStoreRepository;
 import com.actiontech.dble.buffer.DirectByteBufferPool;
+import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
@@ -114,6 +115,8 @@ public final class DbleServer {
         if (system.isUseOuterHa()) {
             LOGGER.info("=========================================Init Outter Ha Config==================================");
             HaConfigManager.getInstance().init();
+        } else if (ClusterHelper.useClusterHa()) {
+            throw new Exception("useOuterHa can not be false when useClusterHa in myid is true");
         }
         if (system.getEnableAlert() == 1) {
             AlertUtil.switchAlert(true);
@@ -446,6 +449,9 @@ public final class DbleServer {
         return ClusterGeneralConfig.isUseZK() && this.config.getSystem().isUseZKSwitch();
     }
 
+    public boolean isUseOuterHa() {
+        return config.getSystem().isUseOuterHa();
+    }
 
     public NIOProcessor nextFrontProcessor() {
         int i = ++nextFrontProcessor;

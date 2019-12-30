@@ -5,7 +5,9 @@
 
 package com.actiontech.dble.config.loader.zkprocess.xmltozk;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.ClusterController;
+import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
@@ -50,7 +52,9 @@ public final class XmltoZkMain {
         // xmltozk for rule
         new RulesxmlTozkLoader(zkListen, zkConn, xmlProcess);
 
-        new DataHostStatusTozkLoader(zkListen, zkConn);
+        if (ClusterHelper.useClusterHa() && DbleServer.getInstance().isUseOuterHa()) {
+            new DataHostStatusTozkLoader(zkListen, zkConn);
+        }
 
         xmlProcess.initJaxbClass();
 

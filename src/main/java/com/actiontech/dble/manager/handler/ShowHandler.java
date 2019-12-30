@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2019 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.manager.handler;
 
 import com.actiontech.dble.DbleServer;
@@ -46,10 +46,10 @@ public final class ShowHandler {
                 ShowCommand.execute(c);
                 break;
             case ManagerParseShow.CONNECTION:
-                ShowConnection.execute(c);
+                ShowConnection.execute(c, stmt.substring(rs >>> 8).trim());
                 break;
             case ManagerParseShow.BACKEND:
-                ShowBackend.execute(c);
+                ShowBackend.execute(c, stmt.substring(rs >>> 8).trim());
                 break;
             case ManagerParseShow.BACKEND_OLD:
                 ShowBackendOld.execute(c);
@@ -260,9 +260,6 @@ public final class ShowHandler {
     private static boolean isSupportShow(String stmt) {
         SQLStatementParser parser = new MySqlStatementParser(stmt);
         SQLStatement statement = parser.parseStatement();
-        if (!(statement instanceof MySqlShowWarningsStatement || statement instanceof MySqlShowVariantsStatement)) {
-            return false;
-        }
-        return true;
+        return statement instanceof MySqlShowWarningsStatement || statement instanceof MySqlShowVariantsStatement;
     }
 }

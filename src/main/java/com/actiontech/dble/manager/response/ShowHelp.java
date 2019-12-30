@@ -108,9 +108,9 @@ public final class ShowHelp {
         HELPS.put("show @@datasource.cluster", "Report datasource galary cluster variables");
         HELPS.put("show @@processor", "Report processor status");
         HELPS.put("show @@command", "Report commands status");
-        HELPS.put("show @@connection", "Report connection status");
+        HELPS.put("show @@connection where processor=? and front_id=? and host=? and user=?", "Report connection status");
         HELPS.put("show @@cache", "Report system cache usage");
-        HELPS.put("show @@backend", "Report backend connection status");
+        HELPS.put("show @@backend where processor=? and backend_id=? and mysql_id=? and host=? and port=?", "Report backend connection status");
         HELPS.put("show @@session", "Report front session details");
         HELPS.put("show @@session.xa", "Report front session and associated xa transaction details");
         HELPS.put("show @@connection.sql", "Report connection sql");

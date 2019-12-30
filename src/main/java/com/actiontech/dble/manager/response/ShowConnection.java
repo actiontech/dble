@@ -1,12 +1,13 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2019 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.FrontendConnection;
@@ -15,24 +16,28 @@ import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.IntegerUtil;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
+import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 
 import java.nio.ByteBuffer;
+import java.sql.SQLSyntaxErrorException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Show Active Connection
  *
  * @author mycat
- * @author mycat
  */
 public final class ShowConnection {
-    private ShowConnection() {
-    }
-
     private static final int FIELD_COUNT = 19;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
@@ -43,8 +48,7 @@ public final class ShowConnection {
         byte packetId = 0;
         HEADER.setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("PROCESSOR",
-                Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("PROCESSOR", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("FRONT_ID", Fields.FIELD_TYPE_LONG);
@@ -104,7 +108,23 @@ public final class ShowConnection {
         EOF.setPacketId(++packetId);
     }
 
-    public static void execute(ManagerConnection c) {
+    private ShowConnection() {
+    }
+
+    public static void execute(ManagerConnection c, String whereCondition) {
+        Map<String, String> whereInfo = new HashMap<>(8);
+        if (!StringUtil.isEmpty(whereCondition)) {
+            SQLStatement statement;
+            try {
+                statement = RouteStrategyFactory.getRouteStrategy().parserSQL("select 1 " + whereCondition);
+                SQLExpr whereExpr = ((SQLSelectStatement) statement).getSelect().getQueryBlock().getWhere();
+                getWhereCondition(whereExpr, whereInfo);
+            } catch (SQLSyntaxErrorException e) {
+                c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "The sql has error syntax.");
+                return;
+            }
+        }
+
         ByteBuffer buffer = c.allocate();
 
         // write header
@@ -120,10 +140,46 @@ public final class ShowConnection {
 
         // write rows
         byte packetId = EOF.getPacketId();
-        NIOProcessor[] processors = DbleServer.getInstance().getFrontProcessors();
+        NIOProcessor[] processors = null;
+
+        if (!whereInfo.isEmpty() && whereInfo.get("processor") != null) {
+            for (NIOProcessor nioProcessor : DbleServer.getInstance().getFrontProcessors()) {
+                if (nioProcessor.getName().equals(whereInfo.get("processor"))) {
+                    processors = new NIOProcessor[1];
+                    processors[0] = nioProcessor;
+                    whereInfo.remove("processor");
+                    break;
+                }
+            }
+        } else {
+            processors = DbleServer.getInstance().getFrontProcessors();
+        }
+
+        if (processors == null) {
+            EOFPacket lastEof = new EOFPacket();
+            lastEof.setPacketId(++packetId);
+            buffer = lastEof.write(buffer, c, true);
+            c.write(buffer);
+            return;
+        }
+
         for (NIOProcessor p : processors) {
+            if (!whereInfo.isEmpty() && whereInfo.get("front_id") != null) {
+                FrontendConnection fc = p.getFrontends().get(Long.parseLong(whereInfo.get("front_id")));
+                if (fc == null) {
+                    continue;
+                }
+                whereInfo.remove("front_id");
+                if (whereInfo.isEmpty() || checkConn(fc, whereInfo)) {
+                    RowDataPacket row = getRow(fc, c.getCharset().getResults());
+                    row.setPacketId(++packetId);
+                    buffer = row.write(buffer, c, true);
+                }
+                break;
+            }
+
             for (FrontendConnection fc : p.getFrontends().values()) {
-                if (fc != null) {
+                if (fc != null && (whereInfo.isEmpty() || checkConn(c, whereInfo))) {
                     RowDataPacket row = getRow(fc, c.getCharset().getResults());
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);
@@ -138,6 +194,25 @@ public final class ShowConnection {
 
         // write buffer
         c.write(buffer);
+    }
+
+    static void getWhereCondition(SQLExpr whereExpr, Map<String, String> whereInfo) {
+        if (whereExpr instanceof SQLBinaryOpExpr) {
+            SQLBinaryOpExpr tmp = (SQLBinaryOpExpr) whereExpr;
+            if (tmp.getLeft() instanceof SQLBinaryOpExpr) {
+                getWhereCondition(tmp.getLeft(), whereInfo);
+                getWhereCondition(tmp.getRight(), whereInfo);
+            } else {
+                whereInfo.put(tmp.getLeft().toString().toLowerCase(), StringUtil.removeApostrophe(tmp.getRight().toString()));
+            }
+        }
+    }
+
+    private static boolean checkConn(FrontendConnection fc, Map<String, String> whereInfo) {
+        if (!fc.getHost().equalsIgnoreCase(whereInfo.get("host"))) {
+            return false;
+        }
+        return fc.getUser().equalsIgnoreCase(whereInfo.get("user"));
     }
 
     private static RowDataPacket getRow(FrontendConnection c, String charset) {

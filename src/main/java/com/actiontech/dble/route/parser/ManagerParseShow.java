@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2019 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.route.parser;
 
 import com.actiontech.dble.route.parser.util.ParseUtil;
@@ -13,9 +13,6 @@ import java.util.regex.Pattern;
  * @author mycat
  */
 public final class ManagerParseShow {
-    private ManagerParseShow() {
-    }
-
     public static final int OTHER = -1;
     public static final int COMMAND = 1;
     public static final int CONNECTION = 2;
@@ -33,7 +30,6 @@ public final class ManagerParseShow {
     public static final int SQL_CONDITION = 18;
     public static final int SQL_LARGE = 19;
     public static final int SQL_RESULTSET = 20;
-
     public static final int THREADPOOL = 21;
     public static final int TIME_CURRENT = 22;
     public static final int TIME_STARTUP = 23;
@@ -45,7 +41,6 @@ public final class ManagerParseShow {
     public static final int TABLE_DATA_NODE = 31;
     public static final int BACKEND = 33;
     public static final int BACKEND_OLD = 34;
-
     public static final int CACHE = 35;
     public static final int SESSION = 36;
     public static final int SYSPARAM = 37;
@@ -54,12 +49,10 @@ public final class ManagerParseShow {
     public static final int DATASOURCE_SYNC = 40;
     public static final int DATASOURCE_SYNC_DETAIL = 41;
     public static final int DATASOURCE_CLUSTER = 42;
-
     public static final int WHITE_HOST = 43;
     public static final int WHITE_HOST_SET = 44;
     public static final int DIRECTMEMORY = 45;
     public static final int BINLOG_STATUS = 47;
-
     public static final int CONNECTION_COUNT = 48;
     public static final int COMMAND_COUNT = 49;
     public static final int BACKEND_STAT = 50;
@@ -72,7 +65,6 @@ public final class ManagerParseShow {
     public static final int SLOW_QUERY_FLUSH_PERIOD = 57;
     public static final int SLOW_QUERY_FLUSH_SIZE = 58;
     public static final int ALERT = 59;
-
     public static final int COLLATION = 60;
     public static final int DDL_STATE = 61;
     public static final int PROCESS_LIST = 62;
@@ -82,12 +74,14 @@ public final class ManagerParseShow {
     public static final int SHOW_USER_PRIVILEGE = 66;
     public static final int SHOW_QUESTIONS = 67;
     public static final int DATADISTRIBUTION_WHERE = 68;
-
     public static final Pattern PATTERN_FOR_TABLE_INFO = Pattern.compile("^\\s*schema\\s*=\\s*" +
             "(('|\")((?!`)((?!\\2).))+\\2|[a-zA-Z_0-9\\-]+)" +
             "\\s+and\\s+table\\s*=\\s*" +
             "(('|\")((?!`)((?!\\6).))+\\6|[a-zA-Z_0-9\\-]+)" +
             "\\s*$", Pattern.CASE_INSENSITIVE);
+
+    private ManagerParseShow() {
+    }
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -314,23 +308,18 @@ public final class ManagerParseShow {
             char c6 = stmt.charAt(++offset);
             if ((c2 == 'C' || c2 == 'c') && (c3 == 'K' || c3 == 'k') && (c4 == 'E' || c4 == 'e') && (c5 == 'N' || c5 == 'n') &&
                     (c6 == 'D' || c6 == 'd')) {
-
                 if (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ';':
                         case ' ':
-                            if (ParseUtil.isErrorTail(offset, stmt)) {
-                                return OTHER;
-                            }
-                            return BACKEND;
+                            return (offset << 8) | BACKEND;
                         case '.':
                             return show2BackendDot(stmt, offset);
                         default:
                             return OTHER;
                     }
                 }
-                return BACKEND;
-
+                return (offset << 8) | BACKEND;
             }
         }
         return OTHER;
@@ -484,7 +473,7 @@ public final class ManagerParseShow {
     // SHOW @@DDL
     private static int show2DDCheck(String stmt, int offset) {
         char c1 = stmt.charAt(++offset);
-        if ((c1 == 'L' || c1 == 'l') && (++offset == stmt.length() || stmt.substring(offset, stmt.length()).trim().length() == 0)) {
+        if ((c1 == 'L' || c1 == 'l') && (++offset == stmt.length() || stmt.substring(offset).trim().length() == 0)) {
             return DDL_STATE;
         }
         return OTHER;
@@ -1427,6 +1416,7 @@ public final class ManagerParseShow {
         }
         return OTHER;
     }
+
     // SHOW @@DATASOURCE WHERE DATANODE = XXXXXX
     private static int show2DataSWhereDatanodeCheck(String stmt, int offset) {
         if (stmt.length() > offset + "ATANODE".length()) {
@@ -1752,17 +1742,14 @@ public final class ManagerParseShow {
                 if (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':
-                            if (ParseUtil.isErrorTail(offset, stmt)) {
-                                return OTHER;
-                            }
-                            return CONNECTION;
+                            return (offset << 8) | CONNECTION;
                         case '.':
                             return show2ConnectonDot(stmt, offset);
                         default:
                             return OTHER;
                     }
                 }
-                return CONNECTION;
+                return (offset << 8) | CONNECTION;
             }
         }
         return OTHER;

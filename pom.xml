@@ -19,7 +19,7 @@
         <app.encoding>UTF-8</app.encoding>
         <version.template.file>version.txt.template</version.template.file>
         <version.file>version.txt</version.file>
-        <config.version>1.0</config.version>
+        <config.version>2.0</config.version>
         <server.comment>dble Server (ActionTech)</server.comment>
         <project.build.sourceEncoding>
             UTF-8

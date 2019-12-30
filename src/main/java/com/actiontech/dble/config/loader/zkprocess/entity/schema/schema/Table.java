@@ -45,7 +45,7 @@ public class Table implements Named {
     @XmlAttribute
     protected String incrementColumn;
     @XmlAttribute
-    protected String checkClass;
+    protected String globalCheckClass;
     @XmlAttribute
     protected String cron;
     @XmlAttribute
@@ -145,12 +145,12 @@ public class Table implements Named {
         this.incrementColumn = incrementColumn;
     }
 
-    public String getCheckClass() {
-        return checkClass;
+    public String getGlobalCheckClass() {
+        return globalCheckClass;
     }
 
-    public void setCheckClass(String checkClass) {
-        this.checkClass = checkClass;
+    public void setGlobalCheckClass(String globalCheckClass) {
+        this.globalCheckClass = globalCheckClass;
     }
 
     public String getCron() {

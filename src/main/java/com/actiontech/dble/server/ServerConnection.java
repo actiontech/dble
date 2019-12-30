@@ -7,7 +7,6 @@ package com.actiontech.dble.server;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitCommitHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
 import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.config.ErrorCode;
@@ -311,6 +310,11 @@ public class ServerConnection extends FrontendConnection {
     private void routeEndExecuteSQL(String sql, int type, SchemaConfig schema) {
         RouteResultset rrs = null;
         try {
+            if (session.isKilled()) {
+                writeErrMessage(ErrorCode.ER_QUERY_INTERRUPTED, "The query is interrupted.");
+                return;
+            }
+
             rrs = RouteService.getInstance().route(schema, type, sql, this);
             if (rrs == null) {
                 return;
@@ -431,12 +435,7 @@ public class ServerConnection extends FrontendConnection {
     void lockTable(String sql) {
         // except xa transaction
         if ((!isAutocommit() || isTxStart()) && session.getSessionXaID() == null) {
-            session.implictCommit(new ImplicitCommitHandler() {
-                @Override
-                public void next() {
-                    doLockTable(sql);
-                }
-            });
+            session.implictCommit(() -> doLockTable(sql));
             return;
         }
         doLockTable(sql);
@@ -577,12 +576,20 @@ public class ServerConnection extends FrontendConnection {
     public void writeErrMessage(String sqlState, String msg, int vendorCode) {
         byte packetId = (byte) this.getSession2().getPacketId().get();
         super.writeErrMessage(++packetId, vendorCode, sqlState, msg);
+        if (session.isKilled()) {
+            session.setKilled(false);
+            session.setDiscard(false);
+        }
     }
 
     @Override
     public void writeErrMessage(int vendorCode, String msg) {
         byte packetId = (byte) this.getSession2().getPacketId().get();
         super.writeErrMessage(++packetId, vendorCode, msg);
+        if (session.isKilled()) {
+            session.setKilled(false);
+            session.setDiscard(false);
+        }
     }
 
     @Override
@@ -590,6 +597,10 @@ public class ServerConnection extends FrontendConnection {
         SerializableLock.getInstance().unLock(this.id);
         markFinished();
         super.write(data);
+        if (session.isKilled()) {
+            session.setKilled(false);
+            session.setDiscard(false);
+        }
     }
 
     @Override
@@ -597,6 +608,10 @@ public class ServerConnection extends FrontendConnection {
         SerializableLock.getInstance().unLock(this.id);
         markFinished();
         super.write(buffer);
+        if (session.isKilled()) {
+            session.setKilled(false);
+            session.setDiscard(false);
+        }
     }
 
     @Override

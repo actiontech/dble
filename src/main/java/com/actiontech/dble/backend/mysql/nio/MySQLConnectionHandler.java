@@ -61,6 +61,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
     @Override
     public void handle(byte[] data) {
         if (session != null) {
+            if (session.isKilled()) return;
             session.setBackendResponseTime(source);
         }
         if (source.isComplexQuery()) {

@@ -247,7 +247,7 @@ public class ConfigInitializer implements ProblemReporter {
                 errorInfos.add(new ErrorInfo("Backend", "WARNING", "Can't connect to [" + ds.getHostConfig().getName() + "," + ds.getName() + "]"));
                 markDataSourceSchemaFail(errNodeKeys, nodeList, dataSourceName);
             } else {
-                BoolPtr isSchemaConnectedPtr = new BoolPtr(false);
+                BoolPtr isSchemaConnectedPtr = new BoolPtr(true);
                 TestSchemasTask testSchemaTask = new TestSchemasTask(ds, nodeList, errNodeKeys, isSchemaConnectedPtr, isMaster);
                 testSchemaTask.start();
                 testSchemaTask.join(3000);

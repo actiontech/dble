@@ -70,7 +70,7 @@ public class ServerConnection extends FrontendConnection {
             throws IOException {
         super(channel);
         this.txInterrupted = false;
-        this.autocommit = true;
+        this.autocommit = DbleServer.getInstance().getConfig().getSystem().getAutocommit() == 1;
         this.txID = new AtomicLong(1);
         this.sptprepare = new ServerSptPrepare(this);
         this.usrVariables = new LinkedHashMap<>();
@@ -493,8 +493,7 @@ public class ServerConnection extends FrontendConnection {
         }
         this.getSysVariables().clear();
         this.getUsrVariables().clear();
-        String defaultAutocommit = DbleServer.getInstance().getSystemVariables().getDefaultValue("autocommit").toLowerCase();
-        autocommit = "1".equals(defaultAutocommit) || "on".equals(defaultAutocommit) || "true".equals(defaultAutocommit);
+        autocommit = DbleServer.getInstance().getConfig().getSystem().getAutocommit() == 1;
         txIsolation = DbleServer.getInstance().getConfig().getSystem().getTxIsolation();
         this.setCharacterSet(DbleServer.getInstance().getConfig().getSystem().getCharset());
         lastInsertId = 0;

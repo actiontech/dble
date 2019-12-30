@@ -613,4 +613,9 @@ public class ServerConnection extends FrontendConnection {
             session.setDiscard(false);
         }
     }
+
+    @Override
+    public void writePart(ByteBuffer buffer) {
+        super.write(buffer);
+    }
 }

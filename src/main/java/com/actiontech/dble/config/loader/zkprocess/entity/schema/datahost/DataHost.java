@@ -44,16 +44,16 @@ public class DataHost implements Named {
     @XmlAttribute
     protected Integer keepOrig;
 
-    protected String heartbeat;
+    protected HeartBeat heartbeat;
 
     protected List<WriteHost> writeHost;
     protected ReadHost readHost;
 
-    public String getHeartbeat() {
+    public HeartBeat getHeartbeat() {
         return heartbeat;
     }
 
-    public void setHeartbeat(String heartbeat) {
+    public void setHeartbeat(HeartBeat heartbeat) {
         this.heartbeat = heartbeat;
     }
 
@@ -163,7 +163,7 @@ public class DataHost implements Named {
                 ", keepOrig=" +
                 keepOrig +
                 ", heartbeat=" +
-                heartbeat +
+                heartbeat.toString() +
                 ", writeHost=" +
                 writeHost +
                 "]";

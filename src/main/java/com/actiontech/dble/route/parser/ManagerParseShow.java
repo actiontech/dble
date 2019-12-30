@@ -34,6 +34,7 @@ public final class ManagerParseShow {
     public static final int TIME_CURRENT = 22;
     public static final int TIME_STARTUP = 23;
     public static final int VERSION = 24;
+    public static final int CONNECTION_SQL_STATUS = 26;
     public static final int CONNECTION_SQL = 27;
     public static final int DATANODE_SCHEMA = 28;
     public static final int DATASOURCE_WHERE = 29;
@@ -1777,10 +1778,107 @@ public final class ManagerParseShow {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             if ((c1 == 'q' || c1 == 'Q') && (c2 == 'l' || c2 == 'L')) {
-                if (ParseUtil.isErrorTail(++offset, stmt)) {
-                    return OTHER;
+                while (stmt.length() > ++offset) {
+                    if (ParseUtil.isSpace(stmt.charAt(offset))) {
+                        continue;
+                    } else if ('.' == stmt.charAt(offset)) {
+                        return show2ConnectonStatusCheck(stmt, offset);
+                    } else {
+                        return OTHER;
+                    }
                 }
                 return CONNECTION_SQL;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int show2ConnectonStatusCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "STATUS".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            if ((c1 == 'S' || c1 == 's') && (c2 == 'T' || c2 == 't') && (c3 == 'A' || c3 == 'a') &&
+                    (c4 == 'T' || c4 == 't') && (c5 == 'U' || c5 == 'u') && (c6 == 'S' || c6 == 's')) {
+                while (stmt.length() > ++offset) {
+                    if (ParseUtil.isSpace(stmt.charAt(offset))) {
+                        continue;
+                    }
+                    switch (stmt.charAt(offset)) {
+                        case 'W':
+                        case 'w':
+                            if (!ParseUtil.isSpace(stmt.charAt(offset - 1))) {
+                                return OTHER;
+                            }
+                            return show2ConnectonStatusWhereCheck(stmt, offset);
+                        default:
+                            return OTHER;
+                    }
+                }
+            }
+        }
+        return OTHER;
+    }
+
+    private static int show2ConnectonStatusWhereCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "HERE".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            if ((c1 == 'H' || c1 == 'h') && (c2 == 'E' || c2 == 'e') && (c3 == 'R' || c3 == 'r') &&
+                    (c4 == 'E' || c4 == 'e')) {
+                while (stmt.length() > ++offset) {
+                    if (ParseUtil.isSpace(stmt.charAt(offset))) {
+                        continue;
+                    }
+                    switch (stmt.charAt(offset)) {
+                        case 'f':
+                        case 'F':
+                            if (!ParseUtil.isSpace(stmt.charAt(offset - 1))) {
+                                return OTHER;
+                            }
+                            return show2ConnectonStatusFrontCheck(stmt, offset);
+                        default:
+                            return OTHER;
+                    }
+                }
+            }
+        }
+        return OTHER;
+    }
+
+    private static int show2ConnectonStatusFrontCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "RONT_ID".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            if ((c1 == 'R' || c1 == 'r') && (c2 == 'O' || c2 == 'o') &&
+                    (c3 == 'N' || c3 == 'n') && (c4 == 'T' || c4 == 't') && c5 == '_' &&
+                    (c6 == 'I' || c6 == 'i') && (c7 == 'D' || c7 == 'd')) {
+                while (stmt.length() > ++offset) {
+                    if (ParseUtil.isSpace(stmt.charAt(offset))) {
+                        continue;
+                    }
+                    switch (stmt.charAt(offset)) {
+                        case '=':
+                            while (stmt.length() > ++offset) {
+                                if (!ParseUtil.isSpace(stmt.charAt(offset))) {
+                                    return (offset << 8) | CONNECTION_SQL_STATUS;
+                                }
+                            }
+                            return OTHER;
+                        default:
+                            return OTHER;
+                    }
+                }
             }
         }
         return OTHER;

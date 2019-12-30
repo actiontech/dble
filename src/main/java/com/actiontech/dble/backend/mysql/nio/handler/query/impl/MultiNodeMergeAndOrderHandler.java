@@ -47,6 +47,7 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
         this.queueSize = DbleServer.getInstance().getConfig().getSystem().getMergeQueueSize();
         this.queues = new ConcurrentHashMap<>();
         this.merges.add(this);
+
     }
 
     @Override

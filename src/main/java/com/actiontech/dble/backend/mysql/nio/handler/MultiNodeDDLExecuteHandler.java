@@ -163,6 +163,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
         if (executeResponse) {
             DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(), (MySQLConnection) conn,
                     DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_SUCCESS);
+            session.setBackendResponseEndTime((MySQLConnection) conn);
             ServerConnection source = session.getSource();
             OkPacket ok = new OkPacket();
             ok.read(data);

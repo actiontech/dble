@@ -209,6 +209,7 @@ public final class ShowHelp {
 
         //check @@metadata
         HELPS.put("check @@metadata", "show last time of `reload @@metadata`/start dble");
+        HELPS.put("check @@global (schema = '?'( and table = '?'))", "check global and get check result immediately");
         HELPS.put("check full @@metadata", "show detail information of metadata");
 
         //alert

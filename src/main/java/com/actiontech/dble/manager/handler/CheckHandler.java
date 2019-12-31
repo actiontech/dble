@@ -7,6 +7,7 @@ package com.actiontech.dble.manager.handler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.manager.response.CheckFullMetaData;
+import com.actiontech.dble.manager.response.CheckGlobalConsistency;
 import com.actiontech.dble.manager.response.ShowTime;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.route.parser.ManagerParseCheck;
@@ -26,6 +27,9 @@ public final class CheckHandler {
                 break;
             case ManagerParseCheck.FULL_META_DATA:
                 CheckFullMetaData.execute(c, stmt);
+                break;
+            case ManagerParseCheck.GLOBAL_CONSISTENCY:
+                CheckGlobalConsistency.execute(c, stmt);
                 break;
             default:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");

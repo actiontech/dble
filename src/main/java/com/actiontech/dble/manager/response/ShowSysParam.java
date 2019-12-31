@@ -100,8 +100,6 @@ public final class ShowSysParam {
         paramValues.add(sysConfig.getAutocommit() + "");
         paramValues.add(sysConfig.getCheckTableConsistency() + "");
         paramValues.add(sysConfig.getCheckTableConsistencyPeriod() + "ms");
-        paramValues.add(sysConfig.getUseGlobleTableCheck() + "");
-        paramValues.add(sysConfig.getGlableTableCheckPeriod() + "ms");
         paramValues.add(sysConfig.getDataNodeIdleCheckPeriod() / 1000 + " Seconds");
         paramValues.add(sysConfig.getDataNodeHeartbeatPeriod() / 1000 + " Seconds");
         paramValues.add(sysConfig.getProcessorCheckPeriod() / 1000 + " Seconds");

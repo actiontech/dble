@@ -20,7 +20,7 @@ public abstract class Versions {
     public static final String ANNOTATION_NAME = "dble:";
     public static final String ROOT_PREFIX = "dble";
     public static final String DOMAIN = "http://dble.cloud/";
-    public static final String CONFIG_VERSION = "1.0";
+    public static final String CONFIG_VERSION = "2.0";
     private static final Pattern VERSION_PATTERN = Pattern.compile("^(\\d{1,})\\.(\\d{1,})$", Pattern.CASE_INSENSITIVE);
 
     public static void setServerVersion(String version) {

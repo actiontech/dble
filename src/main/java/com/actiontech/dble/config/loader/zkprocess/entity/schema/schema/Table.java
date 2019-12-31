@@ -44,6 +44,12 @@ public class Table implements Named {
     protected String type;
     @XmlAttribute
     protected String incrementColumn;
+    @XmlAttribute
+    protected String globalCheckClass;
+    @XmlAttribute
+    protected String cron;
+    @XmlAttribute
+    protected Boolean globalCheck;
 
     protected List<ChildTable> childTable;
 
@@ -137,6 +143,30 @@ public class Table implements Named {
 
     public void setIncrementColumn(String incrementColumn) {
         this.incrementColumn = incrementColumn;
+    }
+
+    public String getGlobalCheckClass() {
+        return globalCheckClass;
+    }
+
+    public void setGlobalCheckClass(String globalCheckClass) {
+        this.globalCheckClass = globalCheckClass;
+    }
+
+    public String getCron() {
+        return cron;
+    }
+
+    public void setCron(String cron) {
+        this.cron = cron;
+    }
+
+    public Boolean getGlobalCheck() {
+        return globalCheck;
+    }
+
+    public void setGlobalCheck(Boolean globalCheck) {
+        this.globalCheck = globalCheck;
     }
 
     @Override

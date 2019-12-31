@@ -27,6 +27,9 @@ import java.io.InputStream;
 import java.util.*;
 import java.util.Map.Entry;
 
+import static com.actiontech.dble.backend.datasource.check.GlobalCheckJob.GLOBAL_TABLE_CHECK_DEFAULT;
+import static com.actiontech.dble.backend.datasource.check.GlobalCheckJob.GLOBAL_TABLE_CHECK_DEFAULT_CRON;
+
 /**
  * @author mycat
  */
@@ -253,6 +256,7 @@ public class XMLSchemaLoader implements SchemaLoader {
                         problemReporter.warn("Table[" + tableElement.getAttribute("name") + "] attribute type value '" + tableTypeStr + "' in schema.xml is illegal, use default replaced");
                 }
             }
+
             //dataNode of table
             boolean globalTableContainsRule = false;
             TableRuleConfig tableRule = null;
@@ -264,37 +268,47 @@ public class XMLSchemaLoader implements SchemaLoader {
                 }
                 globalTableContainsRule = tableType == TableTypeEnum.TYPE_GLOBAL_TABLE;
             }
+
             //ruleRequired?
             String ruleRequiredStr = ConfigUtil.checkAndGetAttribute(tableElement, "ruleRequired", "false", problemReporter);
             boolean ruleRequired = Boolean.parseBoolean(ruleRequiredStr);
 
             String dataNode = tableElement.getAttribute("dataNode");
+
             //distribute function
             String distPrex = "distribute(";
             boolean distTableDns = dataNode.startsWith(distPrex);
             if (distTableDns) {
                 dataNode = dataNode.substring(distPrex.length(), dataNode.length() - 1);
             }
+
             String tableNameElement = tableElement.getAttribute("name");
             if (isLowerCaseNames) {
                 tableNameElement = tableNameElement.toLowerCase();
             }
             String[] tableNames = tableNameElement.split(",");
+
             if (tableNames == null) {
                 throw new ConfigException("table name is not found!");
             }
+
             //cacheKey used for cache and autoincrement
             String cacheKey = tableElement.hasAttribute("cacheKey") ? tableElement.getAttribute("cacheKey").toUpperCase() : null;
             //if autoIncrement,it will use sequence handler
             String incrementColumn = tableElement.hasAttribute("incrementColumn") ? tableElement.getAttribute("incrementColumn").toUpperCase() : null;
             boolean autoIncrement = isAutoIncrement(tableElement, incrementColumn);
-
             if (incrementColumn != null && !autoIncrement) {
                 throw new ConfigException("table " + tableNameElement + " has incrementColumn but not autoIncrement");
             }
+
+
+            String checkClass = tableElement.hasAttribute("globalCheckClass") ? tableElement.getAttribute("globalCheckClass").toUpperCase() : GLOBAL_TABLE_CHECK_DEFAULT;
+            String corn = tableElement.hasAttribute("cron") ? tableElement.getAttribute("cron").toUpperCase() : GLOBAL_TABLE_CHECK_DEFAULT_CRON;
+            boolean globalCheck = tableElement.hasAttribute("globalCheck") ? Boolean.valueOf(tableElement.getAttribute("globalCheck")) : false;
             for (String tableName : tableNames) {
                 TableConfig table = new TableConfig(tableName, cacheKey, autoIncrement, needAddLimit, tableType,
-                        dataNode, (tableRule != null) ? tableRule.getRule() : null, ruleRequired, incrementColumn);
+                        dataNode, (tableRule != null) ? tableRule.getRule() : null, ruleRequired, incrementColumn,
+                        corn, checkClass, globalCheck);
                 checkDataNodeExists(table.getDataNodes());
                 if (table.getRule() != null) {
                     checkRuleSuitTable(table);
@@ -393,7 +407,8 @@ public class XMLSchemaLoader implements SchemaLoader {
                 throw new ConfigException("table " + cdTbName + " has incrementColumn but not AutoIncrement");
             }
             TableConfig table = new TableConfig(cdTbName, cacheKey, autoIncrement, needAddLimit,
-                    TableTypeEnum.TYPE_SHARDING_TABLE, strDatoNodes, null, false, parentTable, joinKey, parentKey, incrementColumn);
+                    TableTypeEnum.TYPE_SHARDING_TABLE, strDatoNodes, null, false, parentTable, joinKey, parentKey, incrementColumn,
+                    null, null, false);
 
             if (tables.containsKey(table.getName())) {
                 throw new ConfigException("table " + table.getName() + " duplicated!");

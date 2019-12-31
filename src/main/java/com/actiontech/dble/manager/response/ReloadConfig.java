@@ -16,6 +16,7 @@ import com.actiontech.dble.config.ConfigInitializer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.singleton.ClusterGeneralConfig;
+import com.actiontech.dble.singleton.CronScheduler;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
@@ -384,6 +385,7 @@ public final class ReloadConfig {
             try {
                 result = config.reload(newUsers, newSchemas, newDataNodes, mergedDataHosts, addOrChangeHosts, recycleHosts, newErRelations, newFirewall,
                         newSystemVariables, loader.isDataHostWithoutWH(), loadAllMode);
+                CronScheduler.getInstance().init(config.getSchemas());
                 if (!result) {
                     initFailed(newDataHosts);
                 }
@@ -443,6 +445,7 @@ public final class ReloadConfig {
             try {
                 result = config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newDataHosts, config.getDataHosts(), newErRelations, newFirewall,
                         newSystemVariables, loader.isDataHostWithoutWH(), loadAllMode);
+                CronScheduler.getInstance().init(config.getSchemas());
                 if (!result) {
                     initFailed(newDataHosts);
                 }

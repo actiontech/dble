@@ -22,7 +22,6 @@ public final class DumpFileContext {
     // current table
     private String table;
     private TableConfig tableConfig;
-    private boolean globalCheck = DbleServer.getInstance().getConfig().getSystem().getUseGlobleTableCheck() == 1;
     private int partitionColumnIndex = -1;
     private int incrementColumnIndex = -1;
     private DefaultHandler.TableType tableType = null;
@@ -69,9 +68,6 @@ public final class DumpFileContext {
         this.isSkip = skip;
     }
 
-    public boolean isGlobalCheck() {
-        return this.globalCheck;
-    }
 
     public String getDefaultDataNode() {
         return defaultDataNode;
@@ -105,7 +101,7 @@ public final class DumpFileContext {
             throw new DumpException("can't process child table, skip.");
         }
         if (this.tableConfig != null) {
-            if (tableConfig.isGlobalTable() && globalCheck) {
+            if (tableConfig.isGlobalTable()) {
                 this.tableType = DefaultHandler.TableType.GLOBAL;
                 return;
             } else if (tableConfig.getPartitionColumn() != null) {

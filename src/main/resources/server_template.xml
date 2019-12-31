@@ -56,9 +56,6 @@
         <property name="checkTableConsistency">0</property>
         <!-- check periodt, he default period is 60000 milliseconds -->
         <property name="checkTableConsistencyPeriod">60000</property>
-        <!-- 1 check the consistency of global table, 0 is not -->
-        <property name="useGlobleTableCheck">0</property>
-        <property name="glableTableCheckPeriod">86400000</property>
 
         <!-- heartbeat check period -->
         <property name="dataNodeIdleCheckPeriod">300000</property>

@@ -9,14 +9,11 @@ import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.model.ERTable;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.singleton.ProxyMeta;
-import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.server.util.GlobalTableUtil;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 import com.actiontech.dble.util.StringUtil;
@@ -83,10 +80,6 @@ public class DruidUpdateParser extends DefaultDruidParser {
 
 
             if (tc.isGlobalTable()) {
-                if (GlobalTableUtil.useGlobalTableCheck()) {
-                    String sql = convertUpdateSQL(schemaInfo, update, rrs.getStatement());
-                    rrs.setStatement(sql);
-                }
                 RouterUtil.routeToMultiNode(false, rrs, tc.getDataNodes(), tc.isGlobalTable());
                 rrs.setFinishedRoute(true);
                 return schema;
@@ -111,38 +104,6 @@ public class DruidUpdateParser extends DefaultDruidParser {
             }
         }
         return schema;
-    }
-
-    private String convertUpdateSQL(SchemaInfo schemaInfo, MySqlUpdateStatement update, String originSQL) throws SQLNonTransientException {
-        long opTimestamp = new Date().getTime();
-        StructureMeta.TableMeta orgTbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
-                schemaInfo.getTable());
-        if (orgTbMeta == null)
-            return originSQL;
-        if (!GlobalTableUtil.isInnerColExist(schemaInfo, orgTbMeta))
-            return originSQL; // no inner column
-        List<SQLUpdateSetItem> items = update.getItems();
-        boolean flag = false;
-        for (int i = 0; i < items.size(); i++) {
-            SQLUpdateSetItem item = items.get(i);
-            String col = item.getColumn().toString();
-
-            if (StringUtil.removeBackQuote(col).equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
-                flag = true;
-                SQLUpdateSetItem newItem = new SQLUpdateSetItem();
-                newItem.setColumn(item.getColumn());
-                newItem.setValue(new SQLIntegerExpr(opTimestamp));
-                items.remove(item);
-                items.add(i, newItem);
-            }
-        }
-        if (!flag) {
-            SQLUpdateSetItem newItem = new SQLUpdateSetItem();
-            newItem.setColumn(new SQLIdentifierExpr(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN));
-            newItem.setValue(new SQLIntegerExpr(opTimestamp));
-            items.add(newItem);
-        }
-        return RouterUtil.removeSchema(statementToString(update), schemaInfo.getSchema());
     }
 
     private static boolean columnInExpr(SQLExpr sqlExpr, String colName) throws SQLNonTransientException {

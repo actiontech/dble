@@ -37,6 +37,9 @@
         <!ATTLIST table incrementColumn NMTOKEN #IMPLIED>
         <!ATTLIST table needAddLimit NMTOKEN #IMPLIED>
         <!ATTLIST table type NMTOKEN #IMPLIED>
+        <!ATTLIST table globalCheckClass NMTOKEN #IMPLIED>
+        <!ATTLIST table cron CDATA #IMPLIED>
+        <!ATTLIST table globalCheck NMTOKEN #IMPLIED>
 
 
         <!ELEMENT childTable (childTable*)>

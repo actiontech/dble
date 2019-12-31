@@ -229,6 +229,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
         }
         this.source.setExecuting(false);
         this.source.setRowDataFlowing(false);
+        this.source.getLogResponse().set(false);
         this.source.signal();
         if (responseHandler != null) {
             responseHandler.rowEofResponse(data, false, source);

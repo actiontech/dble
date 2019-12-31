@@ -9,7 +9,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 
 public enum SessionStage {
     Init,
-    Read_SQL, Parse_SQL, Route_Calculation, Prepare_to_Push, Execute_SQL, First_Node_Fetching_Result,
+    Read_SQL, Parse_SQL, Route_Calculation, Prepare_to_Push, Execute_SQL, Fetching_Result,
     First_Node_Fetched_Result, Distributed_Transaction_Commit, Finished, Generate_New_Query,
     Nested_Loop, Easy_Merge, Merge_and_Order, fake_merge, Join, Not_In, Where_Filter, Aggregate, Having_filter,
     Order, Limit, Union, Distinct, Send_Maker, Write_to_Client, Scalar_Sub_Query, In_Sub_Query, All_Any_Sub_Query, Renamed_Filed,;

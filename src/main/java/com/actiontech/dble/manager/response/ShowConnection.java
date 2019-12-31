@@ -179,7 +179,7 @@ public final class ShowConnection {
             }
 
             for (FrontendConnection fc : p.getFrontends().values()) {
-                if (fc != null && (whereInfo.isEmpty() || checkConn(c, whereInfo))) {
+                if (fc != null && (whereInfo.isEmpty() || checkConn(fc, whereInfo))) {
                     RowDataPacket row = getRow(fc, c.getCharset().getResults());
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);
@@ -209,10 +209,14 @@ public final class ShowConnection {
     }
 
     private static boolean checkConn(FrontendConnection fc, Map<String, String> whereInfo) {
-        if (!fc.getHost().equalsIgnoreCase(whereInfo.get("host"))) {
-            return false;
+        boolean isMatch = true;
+        if (whereInfo.get("host") != null) {
+            isMatch = fc.getHost().equals(whereInfo.get("host"));
         }
-        return fc.getUser().equalsIgnoreCase(whereInfo.get("user"));
+        if (whereInfo.get("user") != null) {
+            isMatch = isMatch && fc.getUser().equals(whereInfo.get("user"));
+        }
+        return isMatch;
     }
 
     private static RowDataPacket getRow(FrontendConnection c, String charset) {

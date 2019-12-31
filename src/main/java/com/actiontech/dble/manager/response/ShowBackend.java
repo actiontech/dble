@@ -180,13 +180,17 @@ public final class ShowBackend {
     }
 
     private static boolean checkConn(MySQLConnection bc, Map<String, String> whereInfo) {
-        if (!bc.getHost().equals(whereInfo.get("host"))) {
-            return false;
+        boolean isMatch = true;
+        if (whereInfo.get("host") != null) {
+            isMatch = bc.getHost().equals(whereInfo.get("host"));
         }
-        if (!String.valueOf(bc.getPort()).equals(whereInfo.get("port"))) {
-            return false;
+        if (whereInfo.get("port") != null) {
+            isMatch = isMatch && String.valueOf(bc.getPort()).equals(whereInfo.get("port"));
         }
-        return String.valueOf(bc.getThreadId()).equals(whereInfo.get("mysql_id"));
+        if (whereInfo.get("mysql_id") != null) {
+            isMatch = isMatch && String.valueOf(bc.getThreadId()).equals(whereInfo.get("mysql_id"));
+        }
+        return isMatch;
     }
 
     private static RowDataPacket getRow(BackendConnection c, String charset) {

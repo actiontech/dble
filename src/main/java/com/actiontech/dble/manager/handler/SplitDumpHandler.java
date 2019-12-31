@@ -64,7 +64,7 @@ public final class SplitDumpHandler {
             // start write
             writer.start();
             // start read
-            reader.start(c);
+            reader.start(c, dumpFileExecutor);
         } catch (IOException e) {
             LOGGER.info("finish to split dump file.");
             c.writeErrMessage(ErrorCode.ER_IO_EXCEPTION, e.getMessage());

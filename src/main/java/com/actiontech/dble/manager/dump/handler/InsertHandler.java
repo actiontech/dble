@@ -24,7 +24,6 @@ import java.util.regex.Pattern;
 class InsertHandler extends DefaultHandler {
 
     private static final Pattern INSERT_STMT = Pattern.compile("insert\\s+into\\s+`?(.*)`\\s+values", Pattern.CASE_INSENSITIVE);
-    private final GlobalValuesHandler globalValuesHandler = new GlobalValuesHandler();
     private final ShardingValuesHandler shardingValuesHandler = new ShardingValuesHandler();
     private final DefaultValuesHandler defaultValuesHandler = new DefaultValuesHandler();
     private DefaultValuesHandler valuesHandler;
@@ -67,8 +66,6 @@ class InsertHandler extends DefaultHandler {
         if (context.getTableType() == TableType.SHARDING) {
             shardingValuesHandler.reset();
             valuesHandler = shardingValuesHandler;
-        } else if (context.getTableType() == TableType.GLOBAL) {
-            valuesHandler = globalValuesHandler;
         } else {
             valuesHandler = defaultValuesHandler;
         }

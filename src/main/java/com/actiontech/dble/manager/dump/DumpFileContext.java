@@ -101,10 +101,7 @@ public final class DumpFileContext {
             throw new DumpException("can't process child table, skip.");
         }
         if (this.tableConfig != null) {
-            if (tableConfig.isGlobalTable()) {
-                this.tableType = DefaultHandler.TableType.GLOBAL;
-                return;
-            } else if (tableConfig.getPartitionColumn() != null) {
+            if (tableConfig.getPartitionColumn() != null) {
                 this.tableType = DefaultHandler.TableType.SHARDING;
                 return;
             } else if (tableConfig.isAutoIncrement()) {

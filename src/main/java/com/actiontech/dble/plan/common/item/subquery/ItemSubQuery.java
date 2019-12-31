@@ -14,11 +14,14 @@ import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.visitor.MySQLPlanNodeVisitor;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 
+import java.util.Map;
+
 public abstract class ItemSubQuery extends ItemResultField {
     protected SQLSelectQuery query;
     protected String currentDb;
     protected PlanNode planNode;
     protected ProxyMetaManager metaManager;
+    protected Map<String, String> usrVariables;
 
     public enum SubSelectType {
         UNKNOWN_SUBS, SINGLEROW_SUBS, EXISTS_SUBS, IN_SUBS, ALL_SUBS, ANY_SUBS
@@ -28,10 +31,11 @@ public abstract class ItemSubQuery extends ItemResultField {
         return SubSelectType.UNKNOWN_SUBS;
     }
 
-    public ItemSubQuery(String currentDb, SQLSelectQuery query, ProxyMetaManager metaManager) {
+    public ItemSubQuery(String currentDb, SQLSelectQuery query, ProxyMetaManager metaManager, Map<String, String> usrVariables) {
         this.query = query;
         this.currentDb = currentDb;
         this.metaManager = metaManager;
+        this.usrVariables = usrVariables;
         init();
     }
 
@@ -41,7 +45,7 @@ public abstract class ItemSubQuery extends ItemResultField {
     }
 
     private void init() {
-        MySQLPlanNodeVisitor pv = new MySQLPlanNodeVisitor(currentDb, charsetIndex, metaManager, true);
+        MySQLPlanNodeVisitor pv = new MySQLPlanNodeVisitor(currentDb, charsetIndex, metaManager, true, usrVariables);
         pv.visit(this.query);
         this.planNode = pv.getTableNode();
         this.withSubQuery = true;

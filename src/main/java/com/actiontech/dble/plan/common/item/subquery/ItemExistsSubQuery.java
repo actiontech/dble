@@ -19,11 +19,12 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Map;
 
 public class ItemExistsSubQuery extends ItemSingleRowSubQuery {
     private boolean isNot;
-    public ItemExistsSubQuery(String currentDb, SQLSelectQuery query, boolean isNot, ProxyMetaManager metaManager) {
-        super(currentDb, query, false, metaManager);
+    public ItemExistsSubQuery(String currentDb, SQLSelectQuery query, boolean isNot, ProxyMetaManager metaManager, Map<String, String> usrVariables) {
+        super(currentDb, query, false, metaManager, usrVariables);
         this.isNot = isNot;
         if (!this.correlatedSubQuery) {
             if ((this.planNode.getLimitFrom() == -1)) {
@@ -77,7 +78,7 @@ public class ItemExistsSubQuery extends ItemSingleRowSubQuery {
 
     @Override
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
-        return new ItemExistsSubQuery(this.currentDb, this.query, this.isNot, this.metaManager);
+        return new ItemExistsSubQuery(this.currentDb, this.query, this.isNot, this.metaManager, this.usrVariables);
     }
     @Override
     public SubSelectType subType() {

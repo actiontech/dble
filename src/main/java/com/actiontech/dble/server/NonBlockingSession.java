@@ -643,7 +643,7 @@ public class NonBlockingSession implements Session {
 
     public void executeMultiSelect(RouteResultset rrs) {
         SQLSelectStatement ast = (SQLSelectStatement) rrs.getSqlStatement();
-        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(this.getSource().getSchema(), this.getSource().getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false);
+        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(this.getSource().getSchema(), this.getSource().getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false, this.getSource().getUsrVariables());
         visitor.visit(ast);
         PlanNode node = visitor.getTableNode();
         if (node.isCorrelatedSubQuery()) {

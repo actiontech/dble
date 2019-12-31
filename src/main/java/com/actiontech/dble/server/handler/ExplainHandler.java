@@ -81,7 +81,7 @@ public final class ExplainHandler {
 
     private static BaseHandlerBuilder buildNodes(RouteResultset rrs, ServerConnection c) {
         SQLSelectStatement ast = (SQLSelectStatement) rrs.getSqlStatement();
-        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(c.getSchema(), c.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false);
+        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(c.getSchema(), c.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false, c.getUsrVariables());
         visitor.visit(ast);
         PlanNode node = visitor.getTableNode();
         node.setSql(rrs.getStatement());

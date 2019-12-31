@@ -120,7 +120,7 @@ public final class ShowTables {
             List<FieldPacket> fieldPackets = new ArrayList<>(2);
             bufInf = writeFullTablesHeader(buffer, c, cSchema, fieldPackets);
             if (info.getWhere() != null) {
-                MySQLItemVisitor mev = new MySQLItemVisitor(c.getSchema(), c.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager());
+                MySQLItemVisitor mev = new MySQLItemVisitor(c.getSchema(), c.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), c.getUsrVariables());
                 info.getWhereExpr().accept(mev);
                 List<Field> sourceFields = HandlerTool.createFields(fieldPackets);
                 Item whereItem = HandlerTool.createItem(mev.getItem(), sourceFields, 0, false, DMLResponseHandler.HandlerType.WHERE);

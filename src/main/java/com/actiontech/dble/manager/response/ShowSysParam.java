@@ -201,8 +201,6 @@ public final class ShowSysParam {
             "autocommit",
             "checkTableConsistency",
             "checkTableConsistencyPeriod",
-            "useGlobleTableCheck",
-            "glableTableCheckPeriod",
             "dataNodeIdleCheckPeriod",
             "dataNodeHeartbeatPeriod",
             "processorCheckPeriod",

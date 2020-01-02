@@ -264,7 +264,7 @@ public class NonBlockingSession implements Session {
     }
 
     public void setBackendResponseTime(MySQLConnection conn) {
-        sessionStage = SessionStage.First_Node_Fetching_Result;
+        sessionStage = SessionStage.Fetching_Result;
         long responseTime = 0;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();

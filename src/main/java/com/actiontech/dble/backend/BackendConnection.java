@@ -38,6 +38,8 @@ public interface BackendConnection extends ClosableConnection {
 
     void query(String sql) throws UnsupportedEncodingException;
 
+    void query(String query, boolean isAutocommit);
+
     Object getAttachment();
 
     // long getThreadId();

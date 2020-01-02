@@ -622,11 +622,16 @@ public class MySQLConnection extends AbstractConnection implements
      * by wuzh ,execute a query and ignore transaction settings for performance
      */
     public void query(String query) {
+        query(query, this.autocommit);
+    }
+
+    public void query(String query, boolean isAutocommit) {
         RouteResultsetNode rrn = new RouteResultsetNode("default",
                 ServerParse.SELECT, query);
-        synAndDoExecute(null, rrn, this.charsetName, this.txIsolation, this.autocommit, this.getUsrVariables(), this.getSysVariables());
+        synAndDoExecute(null, rrn, this.charsetName, this.txIsolation, isAutocommit, this.getUsrVariables(), this.getSysVariables());
 
     }
+
 
     public long getLastTime() {
         return lastTime;

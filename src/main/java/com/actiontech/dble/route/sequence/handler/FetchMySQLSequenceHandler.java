@@ -54,7 +54,7 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
         conn.setResponseHandler(this);
         ((MySQLConnection) conn).setComplexQuery(true);
         try {
-            conn.query(((SequenceVal) conn.getAttachment()).sql);
+            conn.query(((SequenceVal) conn.getAttachment()).sql, true);
         } catch (Exception e) {
             LOGGER.warn("connection acquired error: " + e);
             handleError(conn, e.getMessage());

@@ -113,37 +113,37 @@ public class TraceResult implements Cloneable {
         this.subQuery = subQuery;
     }
 
-    public synchronized Boolean addToConnFlagMap(String item) {
+    public Boolean addToConnFlagMap(String item) {
         return connFlagMap.putIfAbsent(item, true);
     }
 
-    public synchronized void clearConnFlagMap() {
+    public void clearConnFlagMap() {
         connFlagMap.clear();
     }
 
-    public synchronized void addToConnReceivedMap(ResponseHandler responseHandler, Map<MySQLConnection, TraceRecord> connMap) {
+    public void addToConnReceivedMap(ResponseHandler responseHandler, Map<MySQLConnection, TraceRecord> connMap) {
         Map<MySQLConnection, TraceRecord> existReceivedMap = connReceivedMap.putIfAbsent(responseHandler, connMap);
         if (existReceivedMap != null) {
             existReceivedMap.putAll(connMap);
         }
     }
 
-    public synchronized void clearConnReceivedMap() {
+    public void clearConnReceivedMap() {
         connReceivedMap.clear();
     }
 
-    public synchronized void addToConnFinishedMap(ResponseHandler responseHandler, Map<MySQLConnection, TraceRecord> connMap) {
+    public void addToConnFinishedMap(ResponseHandler responseHandler, Map<MySQLConnection, TraceRecord> connMap) {
         Map<MySQLConnection, TraceRecord> existReceivedMap = connFinishedMap.putIfAbsent(responseHandler, connMap);
         if (existReceivedMap != null) {
             existReceivedMap.putAll(connMap);
         }
     }
 
-    public synchronized void addToRecordStartMap(DMLResponseHandler handler, TraceRecord traceRecord) {
+    public void addToRecordStartMap(DMLResponseHandler handler, TraceRecord traceRecord) {
         recordStartMap.putIfAbsent(handler, traceRecord);
     }
 
-    public synchronized void addToRecordEndMap(DMLResponseHandler handler, TraceRecord traceRecord) {
+    public void addToRecordEndMap(DMLResponseHandler handler, TraceRecord traceRecord) {
         recordEndMap.putIfAbsent(handler, traceRecord);
     }
 

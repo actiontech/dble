@@ -1,21 +1,6 @@
 DROP TABLE IF EXISTS DBLE_SEQUENCE;
 CREATE TABLE DBLE_SEQUENCE (  name VARCHAR(64) NOT NULL,  current_value BIGINT(20) NOT NULL,  increment INT NOT NULL DEFAULT 1, PRIMARY KEY (name) ) ENGINE=InnoDB;
 
--- ----------------------------
--- Function structure for `dble_seq_currval`
--- ----------------------------
-DROP FUNCTION IF EXISTS `dble_seq_currval`;
-DELIMITER ;;
-CREATE FUNCTION `dble_seq_currval`(seq_name VARCHAR(64)) RETURNS varchar(64) CHARSET latin1
-    DETERMINISTIC
-BEGIN
-    DECLARE retval VARCHAR(64);
-    SET retval="-1,0";
-    SELECT concat(CAST(current_value AS CHAR),",",CAST(increment AS CHAR) ) INTO retval FROM DBLE_SEQUENCE  WHERE name = seq_name;
-    RETURN retval ;
-END
-;;
-DELIMITER ;
 
 -- ----------------------------
 -- Function structure for `dble_seq_nextval`
@@ -46,50 +31,5 @@ END
 ;;
 DELIMITER ;
 
--- ----------------------------
--- Function structure for `dble_seq_setvals`
--- ----------------------------
-DROP FUNCTION IF EXISTS `dble_seq_nextvals`;
-DELIMITER ;;
-CREATE FUNCTION `dble_seq_nextvals`(seq_name VARCHAR(64), count INT) RETURNS VARCHAR(64) CHARSET latin1
-    DETERMINISTIC
-BEGIN
-    DECLARE retval VARCHAR(64);
-    DECLARE val BIGINT;
-    DECLARE seq_lock INT;
-    SET val = -1;
-    SET seq_lock = -1;
-    SELECT GET_LOCK(seq_name, 15) into seq_lock;
-    if seq_lock = 1 then
-        SELECT current_value + count INTO val FROM DBLE_SEQUENCE WHERE name = seq_name for update;
-        IF val != -1 THEN
-            UPDATE DBLE_SEQUENCE SET current_value = val WHERE name = seq_name;
-        END IF;
-        SELECT RELEASE_LOCK(seq_name) into seq_lock;
-    end if;
-    SELECT CONCAT(CAST((val - count + 1) as CHAR), ",", CAST(count as CHAR)) INTO retval;
-    RETURN retval;
-END
-;;
-DELIMITER ;
 
--- ----------------------------
--- Function structure for `dble_seq_setval`
--- ----------------------------
-DROP FUNCTION IF EXISTS `dble_seq_setval`;
-DELIMITER ;;
-CREATE FUNCTION `dble_seq_setval`(seq_name VARCHAR(64), value BIGINT) RETURNS varchar(64) CHARSET latin1
-    DETERMINISTIC
-BEGIN
-    DECLARE retval VARCHAR(64);
-    DECLARE inc INT;
-    SET inc = 0;
-    SELECT increment INTO inc FROM DBLE_SEQUENCE WHERE name = seq_name;
-    UPDATE DBLE_SEQUENCE SET current_value = value WHERE name = seq_name;
-    SELECT concat(CAST(value as CHAR),",",CAST(inc as CHAR)) INTO retval;
-    RETURN retval;
-END
-;;
-DELIMITER ;
-
-INSERT INTO DBLE_SEQUENCE VALUES ('`testdb`.`GLOBAL`', 0, 1);
+INSERT INTO DBLE_SEQUENCE VALUES ('`testdb`.`testTable', 0, 1);

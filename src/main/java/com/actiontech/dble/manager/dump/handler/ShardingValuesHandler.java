@@ -41,7 +41,7 @@ public class ShardingValuesHandler extends DefaultValuesHandler {
             return;
         }
         String stmt;
-        if (num.get() <= context.getConfig().getMaxValues()) {
+        if (num.get() < context.getConfig().getMaxValues()) {
             num.incre();
             stmt = toString(values, false);
         } else {

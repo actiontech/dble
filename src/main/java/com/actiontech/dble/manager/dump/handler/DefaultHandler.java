@@ -9,7 +9,7 @@ import java.sql.SQLNonTransientException;
 public class DefaultHandler implements StatementHandler {
 
     public enum TableType {
-        GLOBAL, SHARDING, INCREMENT, DEFAULT
+        SHARDING, INCREMENT, DEFAULT
     }
 
     @Override
@@ -26,10 +26,6 @@ public class DefaultHandler implements StatementHandler {
 
     @Override
     public void handle(DumpFileContext context, String stmt) throws InterruptedException {
-        if (context.isSkipContext()) {
-            return;
-        }
-
         if (context.getTable() == null) {
             for (String dataNode : context.getAllDataNodes()) {
                 context.getWriter().write(dataNode, stmt);

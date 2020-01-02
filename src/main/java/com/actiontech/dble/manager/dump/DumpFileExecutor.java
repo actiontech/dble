@@ -40,6 +40,10 @@ public final class DumpFileExecutor implements Runnable {
         this.self.interrupt();
     }
 
+    public boolean isStop() {
+        return this.self.isInterrupted();
+    }
+
     @Override
     public void run() {
         String stmt = null;
@@ -74,7 +78,7 @@ public final class DumpFileExecutor implements Runnable {
                 StatementHandler handler = StatementHandlerManager.getHandler(type);
                 SQLStatement statement = handler.preHandle(context, stmt);
                 if (statement == null) {
-                    if (!context.isSkipContext()) {
+                    if (!context.isSkipContext() || type == ServerParse.UNLOCK) {
                         handler.handle(context, stmt);
                     }
                 } else {
@@ -84,20 +88,23 @@ public final class DumpFileExecutor implements Runnable {
             } catch (DumpException | SQLSyntaxErrorException e) {
                 String currentStmt = stmt.length() <= 1024 ? stmt : stmt.substring(0, 1024);
                 context.setSkipContext(true);
-                LOGGER.warn("current stmt[" + currentStmt + "] error,because:" + e.getMessage());
+                LOGGER.warn("current stmt[" + currentStmt + "] error.", e);
                 context.addError("current stmt[" + currentStmt + "] error,because:" + e.getMessage());
             } catch (InterruptedException ie) {
                 LOGGER.warn("dump file executor is interrupted.");
                 return;
             } catch (Exception e) {
                 LOGGER.warn("dump file executor exit", e);
+                context.addError("dump file executor exit, because:" + e.getMessage());
                 try {
+                    writer.setDeleteFile(true);
                     writer.writeAll(DumpFileReader.EOF);
                 } catch (InterruptedException ex) {
                     // ignore
                     LOGGER.warn("dump file executor is interrupted.");
+                } finally {
+                    stop();
                 }
-                return;
             }
         }
     }
@@ -106,9 +113,12 @@ public final class DumpFileExecutor implements Runnable {
         return context;
     }
 
-    private boolean preHandle(DumpFileWriter writer, int type, String stmt) throws InterruptedException {
+    private boolean preHandle(DumpFileWriter writer, int type, String stmt) throws InterruptedException, RuntimeException {
         // push down statement util containing schema
         if (!(ServerParse.CREATE_DATABASE == type || ServerParse.USE == (0xff & type)) && context.getSchema() == null) {
+            if (ServerParse.DDL == type || ServerParse.INSERT == type || ServerParse.LOCK == type) {
+                throw new RuntimeException("Please set schema by -s option or make sure that there are statement about schema in dump file.");
+            }
             writer.writeAll(stmt);
             return true;
         }
@@ -122,10 +132,7 @@ public final class DumpFileExecutor implements Runnable {
             writer.writeAll(stmt);
             return true;
         }
-        if (stmt.contains("Dump completed")) {
-            return true;
-        }
-        return false;
+        return stmt.contains("Dump completed");
     }
 
     private boolean skipView(String stmt) {

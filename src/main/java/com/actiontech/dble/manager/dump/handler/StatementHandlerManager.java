@@ -27,7 +27,6 @@ public final class StatementHandlerManager {
         if (ServerParse.LOCK == sqlType || ServerParse.DDL == sqlType) {
             return handlers.get("table");
         }
-
         if (ServerParse.INSERT == sqlType) {
             return handlers.get("insert");
         }

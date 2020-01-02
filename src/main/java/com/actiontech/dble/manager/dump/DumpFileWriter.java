@@ -19,10 +19,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class DumpFileWriter {
 
-    public static final Logger LOGGER = LoggerFactory.getLogger("dumpFileLog");
+    private static final Logger LOGGER = LoggerFactory.getLogger("dumpFileLog");
     private static final String FILE_NAME_FORMAT = "%s-%s-%d.dump";
     private Map<String, DataNodeWriter> dataNodeWriters = new ConcurrentHashMap<>();
     private AtomicInteger finished = new AtomicInteger(0);
+    private volatile boolean isDeleteFile = false;
 
     public void open(String writePath, int writeQueueSize) throws IOException {
         Set<String> dataNodes = DbleServer.getInstance().getConfig().getDataNodes().keySet();
@@ -95,11 +96,16 @@ public class DumpFileWriter {
         return finished.get() == 0;
     }
 
+    public void setDeleteFile(boolean deleteFile) {
+        this.isDeleteFile = deleteFile;
+    }
+
     class DataNodeWriter implements Runnable {
         private FileChannel fileChannel;
         private BlockingQueue<String> queue;
         private int queueSize;
         private String dataNode;
+        private String path;
         private Thread self;
         // insert values eof
         private boolean addEof = false;
@@ -119,9 +125,7 @@ public class DumpFileWriter {
         }
 
         void open(String fileName) throws IOException {
-            if (FileUtils.exists(fileName)) {
-                FileUtils.delete(fileName);
-            }
+            this.path = fileName;
             this.fileChannel = FileUtils.open(fileName, "rw");
         }
 
@@ -132,6 +136,9 @@ public class DumpFileWriter {
         void close() throws IOException {
             this.fileChannel.close();
             dataNodeWriters.remove(dataNode);
+            if (isDeleteFile) {
+                FileUtils.delete(path);
+            }
         }
 
         @Override

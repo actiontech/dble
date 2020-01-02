@@ -15,7 +15,6 @@ import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.server.SessionStage;
 import com.actiontech.dble.util.StringUtil;
 
 import java.util.Map;
@@ -62,37 +61,25 @@ public final class KillHandler {
     private static void killQuery(long id, ServerConnection c) {
         FrontendConnection killConn;
         if (id == c.getId()) {
-            killConn = c;
-        } else {
-            killConn = findFrontConn(id);
-            if (killConn == null) {
-                c.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "Unknown connection id:" + id);
-                return;
-            } else if (!killConn.getUser().equals(c.getUser())) {
-                c.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "can't kill other user's connection" + id);
-                return;
-            }
-        }
-
-        NonBlockingSession killSession = ((ServerConnection) killConn).getSession2();
-        if (killSession.getSessionStage() == SessionStage.Init || killSession.getSessionStage() == SessionStage.Finished) {
-            if (!c.equals(killConn)) {
-                boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-                getOkPacket(c).write(c);
-                c.getSession2().multiStatementNextSql(multiStatementFlag);
-            }
-            boolean multiStatementFlag = killSession.getIsMultiStatement().get();
-            getOkPacket((ServerConnection) killConn).write(killConn);
-            killSession.multiStatementNextSql(multiStatementFlag);
+            c.writeErrMessage(ErrorCode.ER_QUERY_INTERRUPTED, "Query was interrupted.");
             return;
         }
 
-        killSession.setKilled(true);
-        if (!c.equals(killConn)) {
-            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-            getOkPacket(c).write(c);
-            c.getSession2().multiStatementNextSql(multiStatementFlag);
+        killConn = findFrontConn(id);
+        if (killConn == null) {
+            c.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "Unknown connection id:" + id);
+            return;
+        } else if (!killConn.getUser().equals(c.getUser())) {
+            c.writeErrMessage(ErrorCode.ER_NO_SUCH_THREAD, "can't kill other user's connection" + id);
+            return;
         }
+
+        NonBlockingSession killSession = ((ServerConnection) killConn).getSession2();
+        killSession.setKilled(true);
+        // return ok to front connection that sends kill query
+        boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+        getOkPacket(c).write(c);
+        c.getSession2().multiStatementNextSql(multiStatementFlag);
 
         while (true) {
             if (!killSession.isKilled()) {
@@ -107,13 +94,11 @@ public final class KillHandler {
         if (killSession.isKilled() && killSession.isDiscard()) {
             // discard backend conn in session target map
             Map<RouteResultsetNode, BackendConnection> target = killSession.getTargetMap();
-            if (!target.isEmpty()) {
-                for (BackendConnection backendConnection : target.values()) {
-                    MySQLConnection conn = (MySQLConnection) backendConnection;
-                    if (conn.isExecuting()) {
-                        conn.execCmd("kill query " + conn.getThreadId());
-                        conn.close("The query is interrupted.");
-                    }
+            for (BackendConnection backendConnection : target.values()) {
+                MySQLConnection conn = (MySQLConnection) backendConnection;
+                if (conn.isExecuting()) {
+                    conn.execCmd("kill query " + conn.getThreadId());
+                    conn.close("Query was interrupted.");
                 }
             }
         }

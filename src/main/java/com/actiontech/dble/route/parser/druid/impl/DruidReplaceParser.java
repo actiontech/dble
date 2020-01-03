@@ -136,6 +136,11 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     private boolean parserNoSharding(ServerConnection sc, String contextSchema, SchemaInfo schemaInfo, RouteResultset rrs, SQLReplaceStatement replace) throws SQLException {
         String noShardingNode = RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable());
         if (noShardingNode != null) {
+            // table with single datanode and has autoIncrement property
+            TableConfig tbConfig = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
+            if (tbConfig != null && tbConfig.isAutoIncrement()) {
+                return false;
+            }
             StringPtr noShardingNodePr = new StringPtr(noShardingNode);
             Set<String> schemas = new HashSet<>();
             if (replace.getQuery() != null) {

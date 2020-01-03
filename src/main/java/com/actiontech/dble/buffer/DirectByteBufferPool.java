@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import sun.nio.ch.DirectBuffer;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * DirectByteBufferPool
@@ -25,7 +25,7 @@ public class DirectByteBufferPool implements BufferPool {
     private ByteBufferPage[] allPages;
     private final int chunkSize;
     // private int prevAllocatedPage = 0;
-    private AtomicInteger prevAllocatedPage;
+    private AtomicLong prevAllocatedPage;
     private final int pageSize;
     private final short pageCount;
 
@@ -34,7 +34,7 @@ public class DirectByteBufferPool implements BufferPool {
         this.chunkSize = chunkSize;
         this.pageSize = pageSize;
         this.pageCount = pageCount;
-        prevAllocatedPage = new AtomicInteger(0);
+        prevAllocatedPage = new AtomicLong(0);
         for (int i = 0; i < pageCount; i++) {
             allPages[i] = new ByteBufferPage(ByteBuffer.allocateDirect(pageSize), chunkSize);
         }
@@ -64,13 +64,14 @@ public class DirectByteBufferPool implements BufferPool {
 
     public ByteBuffer allocate(int size) {
         final int theChunkCount = size / chunkSize + (size % chunkSize == 0 ? 0 : 1);
-        int selectedPage = prevAllocatedPage.incrementAndGet() % allPages.length;
+        int selectedPage = (int) (prevAllocatedPage.incrementAndGet() % allPages.length);
         ByteBuffer byteBuf = allocateBuffer(theChunkCount, selectedPage, allPages.length);
         if (byteBuf == null) {
             byteBuf = allocateBuffer(theChunkCount, 0, selectedPage);
         }
 
         if (byteBuf == null) {
+            LOGGER.warn("can't allocate DirectByteBuffer from DirectByteBufferPool. Please pay attention to whether it is a memory leak or there is no enough direct memory.");
             return ByteBuffer.allocate(size);
         }
         return byteBuf;

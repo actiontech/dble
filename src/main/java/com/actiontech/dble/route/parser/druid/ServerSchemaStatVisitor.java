@@ -528,6 +528,9 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     }
 
     private void checkAliasInColumn(String tableName) {
+        if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+            tableName = tableName.toLowerCase();
+        }
         if (aliasMap.containsKey(tableName)) {
             return;
         }

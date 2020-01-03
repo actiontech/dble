@@ -10,6 +10,7 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.config.util.ParameterMapping;
+import com.actiontech.dble.memory.unsafe.Platform;
 import com.actiontech.dble.util.StringUtil;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -34,6 +35,10 @@ public class SystemConfigLoader implements Loader<SystemConfig, XMLServerLoader>
                     throw new ConfigException("These properties of system are not recognized: " + StringUtil.join(propItem, ","));
                 }
             }
+        }
+
+        if (system.isUseDefaultPageNumber()) {
+            system.setBufferPoolPageNumber((short) (Platform.getMaxDirectMemory() * 0.8 / system.getBufferPoolPageSize()));
         }
 
         if (system.getFakeMySQLVersion() != null) {

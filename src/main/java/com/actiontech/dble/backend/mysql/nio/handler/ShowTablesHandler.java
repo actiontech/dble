@@ -60,7 +60,7 @@ public class ShowTablesHandler extends SingleNodeHandler {
             packetId = bufInf.getPacketId();
             buffer = bufInf.getBuffer();
             if (info.getWhere() != null) {
-                MySQLItemVisitor mev = new MySQLItemVisitor(source.getSchema(), source.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager());
+                MySQLItemVisitor mev = new MySQLItemVisitor(source.getSchema(), source.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), source.getUsrVariables());
                 info.getWhereExpr().accept(mev);
                 sourceFields = HandlerTool.createFields(fieldPackets);
                 whereItem = HandlerTool.createItem(mev.getItem(), sourceFields, 0, false, DMLResponseHandler.HandlerType.WHERE);

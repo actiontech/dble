@@ -92,7 +92,6 @@ public class GetAndSyncDataSourceKeyVariables implements Callable<KeyVariables> 
                 } else {
                     ds.setIsolationSynced(true);
                 }
-                // todo:keyVariables.isReadOnly();
                 keyVariables.setReadOnly(result.getResult().get(COLUMNS[3]).equals("1"));
 
                 if (needSync) {

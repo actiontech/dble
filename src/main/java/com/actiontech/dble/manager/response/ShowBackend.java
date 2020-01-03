@@ -187,8 +187,8 @@ public final class ShowBackend {
         if (whereInfo.get("port") != null) {
             isMatch = isMatch && String.valueOf(bc.getPort()).equals(whereInfo.get("port"));
         }
-        if (whereInfo.get("mysql_id") != null) {
-            isMatch = isMatch && String.valueOf(bc.getThreadId()).equals(whereInfo.get("mysql_id"));
+        if (whereInfo.get("mysqlid") != null) {
+            isMatch = isMatch && String.valueOf(bc.getThreadId()).equals(whereInfo.get("mysqlid"));
         }
         return isMatch;
     }

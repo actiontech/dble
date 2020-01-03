@@ -15,6 +15,7 @@ import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.server.SessionStage;
 import com.actiontech.dble.util.StringUtil;
 
 import java.util.Map;
@@ -75,11 +76,16 @@ public final class KillHandler {
         }
 
         NonBlockingSession killSession = ((ServerConnection) killConn).getSession2();
+        if (killSession.getSessionStage() == SessionStage.Init || killSession.getSessionStage() == SessionStage.Finished) {
+            getOkPacket(c).write(c);
+            c.getSession2().multiStatementNextSql(c.getSession2().getIsMultiStatement().get());
+            return;
+        }
+
         killSession.setKilled(true);
         // return ok to front connection that sends kill query
-        boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
         getOkPacket(c).write(c);
-        c.getSession2().multiStatementNextSql(multiStatementFlag);
+        c.getSession2().multiStatementNextSql(c.getSession2().getIsMultiStatement().get());
 
         while (true) {
             if (!killSession.isKilled()) {
@@ -146,7 +152,7 @@ public final class KillHandler {
     private static OkPacket getOkPacket(ServerConnection c) {
         byte packetId = (byte) c.getSession2().getPacketId().get();
         OkPacket packet = new OkPacket();
-        packet.setPacketId(packetId);
+        packet.setPacketId(++packetId);
         packet.setAffectedRows(0);
         packet.setServerStatus(2);
         c.getSession2().multiStatementPacket(packet, packetId);

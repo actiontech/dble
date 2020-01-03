@@ -27,6 +27,8 @@ import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Condition;
@@ -78,13 +80,18 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         try {
             sendFinishedFlag = false;
             unResponseRrns.addAll(session.getTargetKeys());
+            List<MySQLConnection> conns = new ArrayList<>(session.getTargetCount());
             for (RouteResultsetNode rrn : session.getTargetKeys()) {
                 final BackendConnection conn = session.getTarget(rrn);
                 conn.setResponseHandler(this);
-                if (!executeCommit((MySQLConnection) conn, position++)) {
+                conns.add((MySQLConnection) conn);
+            }
+            for (MySQLConnection con : conns) {
+                if (!executeCommit(con, position++)) {
                     break;
                 }
             }
+
         } finally {
             lockForErrorHandle.lock();
             try {

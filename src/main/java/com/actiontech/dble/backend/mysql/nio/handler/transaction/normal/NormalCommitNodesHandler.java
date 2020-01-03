@@ -13,6 +13,9 @@ import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     protected byte[] sendData;
 
@@ -33,10 +36,14 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
         }
         int position = 0;
         unResponseRrns.addAll(session.getTargetKeys());
+        List<MySQLConnection> conns = new ArrayList<>(session.getTargetCount());
         for (RouteResultsetNode rrn : session.getTargetKeys()) {
             final BackendConnection conn = session.getTarget(rrn);
             conn.setResponseHandler(this);
-            if (!executeCommit((MySQLConnection) conn, position++)) {
+            conns.add((MySQLConnection) conn);
+        }
+        for (MySQLConnection con : conns) {
+            if (!executeCommit(con, position++)) {
                 break;
             }
         }

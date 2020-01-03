@@ -1,18 +1,22 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2019 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.backend.mysql.nio.handler.transaction.normal;
 
 
 import com.actiontech.dble.backend.BackendConnection;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AbstractRollbackNodesHandler;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.util.StringUtil;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author mycat
@@ -37,17 +41,18 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
             lock.unlock();
         }
         int position = 0;
+        List<MySQLConnection> conns = new ArrayList<>(session.getTargetCount());
         for (final RouteResultsetNode node : session.getTargetKeys()) {
             final BackendConnection conn = session.getTarget(node);
             if (!conn.isClosed()) {
                 unResponseRrns.add(node);
+                conn.setResponseHandler(this);
+                conns.add((MySQLConnection) conn);
             }
         }
-        for (final RouteResultsetNode node : session.getTargetKeys()) {
-            final BackendConnection conn = session.getTarget(node);
+        for (final MySQLConnection conn : conns) {
             if (!conn.isClosed()) {
                 position++;
-                conn.setResponseHandler(this);
                 conn.rollback();
             }
         }

@@ -92,7 +92,7 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
         conn.setResponseHandler(this);
         ((MySQLConnection) conn).setComplexQuery(true);
         try {
-            conn.query(sql);
+            conn.query(sql, true);
             connection = conn;
         } catch (Exception e) { // (UnsupportedEncodingException e) {
             doFinished(true);

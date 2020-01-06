@@ -37,7 +37,7 @@ public final class DDLTraceManager {
         DDLTraceInfo info = traceMap.get(sc);
         if (info != null) {
             info.updateConnectionStatus(mc, status);
-            LOGGER.info("[DDL][" + info.getId() + "] MySQLConnection status update : id = " + mc.getId() + " " + status);
+            LOGGER.info("[DDL][" + info.getId() + "] MySQLConnection status update : backendId = " + mc.getId() + " mysqlId = " + mc.getThreadId() + " " + status);
         }
     }
 

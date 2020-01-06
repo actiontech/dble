@@ -150,7 +150,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
         mysqlCon.setSession(session);
         DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(), mysqlCon,
                 DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_START);
-        mysqlCon.executeMultiNode(node, session.getSource(), sessionAutocommit && !session.getSource().isTxStart() && !node.isModifySQL());
+        mysqlCon.executeMultiNode(node, session.getSource(), sessionAutocommit && !session.getSource().isTxStart());
     }
 
 
@@ -272,7 +272,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
     }
 
 
-    void handleEndPacket(byte[] data, boolean isSuccess) {
+    private void handleEndPacket(byte[] data, boolean isSuccess) {
         session.clearResources(false);
         session.setResponseTime(isSuccess);
         session.getSource().write(data);

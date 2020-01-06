@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
@@ -221,7 +221,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (byteBuffer != null) {
                     session.getSource().write(byteBuffer);
                 }
-                handleEndPacket(errPacket.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
+                handleEndPacket(errPacket.toBytes(), AutoTxOperation.ROLLBACK, false);
             }
         } finally {
             lock.unlock();
@@ -257,7 +257,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     return;
                 if (isFail()) {
                     session.resetMultiStatementStatus();
-                    handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
+                    handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, false);
                     return;
                 }
                 ok.setPacketId(++packetId); // OK_PACKET
@@ -276,7 +276,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
                 session.multiStatementPacket(ok, packetId);
                 doSqlStat();
-                handleEndPacket(ok.toBytes(), AutoTxOperation.COMMIT, conn, true);
+                handleEndPacket(ok.toBytes(), AutoTxOperation.COMMIT, true);
             } finally {
                 lock.unlock();
             }
@@ -353,7 +353,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     session.resetMultiStatementStatus();
                     source.write(byteBuffer);
                     ErrorPacket errorPacket = createErrPkg(this.error);
-                    handleEndPacket(errorPacket.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
+                    handleEndPacket(errorPacket.toBytes(), AutoTxOperation.ROLLBACK, false);
                     return;
                 }
             }
@@ -457,10 +457,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         if (canResponse()) {
             packetId++;
             if (byteBuffer == null) {
-                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
+                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, false);
             } else {
                 session.getSource().write(byteBuffer);
-                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
+                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, false);
             }
         }
     }
@@ -569,9 +569,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
 
-    void handleEndPacket(byte[] data, AutoTxOperation txOperation, BackendConnection conn, boolean isSuccess) {
+    void handleEndPacket(byte[] data, AutoTxOperation txOperation, boolean isSuccess) {
         ServerConnection source = session.getSource();
-        if (source.isAutocommit() && !source.isTxStart() && this.modifiedSQL) {
+        if (source.isAutocommit() && !source.isTxStart() && this.modifiedSQL && !this.session.isKilled()) {
             //Implicit Distributed Transaction,send commit or rollback automatically
             if (txOperation == AutoTxOperation.COMMIT) {
                 session.checkBackupStatus();

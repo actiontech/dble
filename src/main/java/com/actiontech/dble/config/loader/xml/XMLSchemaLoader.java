@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
+* Copyright (C) 2016-2020 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -18,9 +18,11 @@ import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.SplitUtil;
+
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -30,6 +32,9 @@ import java.io.InputStream;
 import java.util.*;
 import java.util.Map.Entry;
 
+import static com.actiontech.dble.backend.datasource.check.GlobalCheckJob.GLOBAL_TABLE_CHECK_DEFAULT;
+import static com.actiontech.dble.backend.datasource.check.GlobalCheckJob.GLOBAL_TABLE_CHECK_DEFAULT_CRON;
+
 /**
  * @author mycat
  */
@@ -37,7 +42,6 @@ import java.util.Map.Entry;
 public class XMLSchemaLoader implements SchemaLoader {
     private static final String DEFAULT_DTD = "/schema.dtd";
     private static final String DEFAULT_XML = "/schema.xml";
-    private static final Logger LOGGER = LoggerFactory.getLogger(XMLSchemaLoader.class);
 
     private final Map<String, TableRuleConfig> tableRules;
     private final Map<String, DataHostConfig> dataHosts;
@@ -257,6 +261,7 @@ public class XMLSchemaLoader implements SchemaLoader {
                         problemReporter.warn("Table[" + tableElement.getAttribute("name") + "] attribute type value '" + tableTypeStr + "' in schema.xml is illegal, use default replaced");
                 }
             }
+
             //dataNode of table
             boolean globalTableContainsRule = false;
             TableRuleConfig tableRule = null;
@@ -268,37 +273,47 @@ public class XMLSchemaLoader implements SchemaLoader {
                 }
                 globalTableContainsRule = tableType == TableTypeEnum.TYPE_GLOBAL_TABLE;
             }
+
             //ruleRequired?
             String ruleRequiredStr = ConfigUtil.checkAndGetAttribute(tableElement, "ruleRequired", "false", problemReporter);
             boolean ruleRequired = Boolean.parseBoolean(ruleRequiredStr);
 
             String dataNode = tableElement.getAttribute("dataNode");
+
             //distribute function
             String distPrex = "distribute(";
             boolean distTableDns = dataNode.startsWith(distPrex);
             if (distTableDns) {
                 dataNode = dataNode.substring(distPrex.length(), dataNode.length() - 1);
             }
+
             String tableNameElement = tableElement.getAttribute("name");
             if (isLowerCaseNames) {
                 tableNameElement = tableNameElement.toLowerCase();
             }
             String[] tableNames = tableNameElement.split(",");
+
             if (tableNames == null) {
                 throw new ConfigException("table name is not found!");
             }
-            //primaryKey used for cache and autoincrement
-            String primaryKey = tableElement.hasAttribute("primaryKey") ? tableElement.getAttribute("primaryKey").toUpperCase() : null;
+
+            //cacheKey used for cache and autoincrement
+            String cacheKey = tableElement.hasAttribute("cacheKey") ? tableElement.getAttribute("cacheKey").toUpperCase() : null;
             //if autoIncrement,it will use sequence handler
             String incrementColumn = tableElement.hasAttribute("incrementColumn") ? tableElement.getAttribute("incrementColumn").toUpperCase() : null;
-            boolean autoIncrement = isAutoIncrement(tableElement, primaryKey, incrementColumn);
-
+            boolean autoIncrement = isAutoIncrement(tableElement, incrementColumn);
             if (incrementColumn != null && !autoIncrement) {
                 throw new ConfigException("table " + tableNameElement + " has incrementColumn but not autoIncrement");
             }
+
+
+            String checkClass = tableElement.hasAttribute("globalCheckClass") ? tableElement.getAttribute("globalCheckClass").toUpperCase() : GLOBAL_TABLE_CHECK_DEFAULT;
+            String corn = tableElement.hasAttribute("cron") ? tableElement.getAttribute("cron").toUpperCase() : GLOBAL_TABLE_CHECK_DEFAULT_CRON;
+            boolean globalCheck = tableElement.hasAttribute("globalCheck") ? Boolean.valueOf(tableElement.getAttribute("globalCheck")) : false;
             for (String tableName : tableNames) {
-                TableConfig table = new TableConfig(tableName, primaryKey, autoIncrement, needAddLimit, tableType,
-                        dataNode, (tableRule != null) ? tableRule.getRule() : null, ruleRequired, incrementColumn);
+                TableConfig table = new TableConfig(tableName, cacheKey, needAddLimit, tableType,
+                        dataNode, (tableRule != null) ? tableRule.getRule() : null, ruleRequired, incrementColumn,
+                        corn, checkClass, globalCheck);
                 checkDataNodeExists(table.getDataNodes());
                 if (table.getRule() != null) {
                     checkRuleSuitTable(table);
@@ -325,11 +340,11 @@ public class XMLSchemaLoader implements SchemaLoader {
         return tables;
     }
 
-    private boolean isAutoIncrement(Element tableElement, String primaryKey, String incrementColumn) {
+    private boolean isAutoIncrement(Element tableElement, String incrementColumn) {
         String autoIncrementStr = ConfigUtil.checkAndGetAttribute(tableElement, "autoIncrement", "false", problemReporter);
         boolean autoIncrement = Boolean.parseBoolean(autoIncrementStr);
-        if (autoIncrement && primaryKey == null && incrementColumn == null) {
-            throw new ConfigException("autoIncrement is true but primaryKey and incrementColumn is not setting!");
+        if (autoIncrement && incrementColumn == null) {
+            throw new ConfigException("autoIncrement is true but cacheKey and incrementColumn is not setting!");
         }
         return autoIncrement;
     }
@@ -390,14 +405,15 @@ public class XMLSchemaLoader implements SchemaLoader {
             //join key ,the parent's column
             String joinKey = childTbElement.getAttribute("joinKey").toUpperCase();
             String parentKey = childTbElement.getAttribute("parentKey").toUpperCase();
-            String primaryKey = childTbElement.hasAttribute("primaryKey") ? childTbElement.getAttribute("primaryKey").toUpperCase() : null;
+            String cacheKey = childTbElement.hasAttribute("cacheKey") ? childTbElement.getAttribute("cacheKey").toUpperCase() : null;
             String incrementColumn = childTbElement.hasAttribute("incrementColumn") ? childTbElement.getAttribute("incrementColumn").toUpperCase() : null;
-            boolean autoIncrement = isAutoIncrement(childTbElement, primaryKey, incrementColumn);
+            boolean autoIncrement = isAutoIncrement(childTbElement, incrementColumn);
             if (incrementColumn != null && !autoIncrement) {
                 throw new ConfigException("table " + cdTbName + " has incrementColumn but not AutoIncrement");
             }
-            TableConfig table = new TableConfig(cdTbName, primaryKey, autoIncrement, needAddLimit,
-                    TableTypeEnum.TYPE_SHARDING_TABLE, strDatoNodes, null, false, parentTable, joinKey, parentKey, incrementColumn);
+            TableConfig table = new TableConfig(cdTbName, cacheKey, needAddLimit,
+                    TableTypeEnum.TYPE_SHARDING_TABLE, strDatoNodes, null, false, parentTable, joinKey, parentKey, incrementColumn,
+                    null, null, false);
 
             if (tables.containsKey(table.getName())) {
                 throw new ConfigException("table " + table.getName() + " duplicated!");

@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
+* Copyright (C) 2016-2020 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -35,7 +35,7 @@ public final class RouteResultset implements Serializable {
     private int limitStart;
     private boolean cacheAble;
     // used to store table's ID->data nodes cache
-    private String primaryKey;
+    private String cacheKey;
     private boolean containsPrimaryFilter = false;
     // limit output total
     private int limitSize;
@@ -159,12 +159,12 @@ public final class RouteResultset implements Serializable {
         this.limitStart = limitStart;
     }
 
-    public boolean hasPrimaryKeyToCache() {
-        return schema != null && table != null && primaryKey != null;
+    public boolean hasCacheKeyToCache() {
+        return schema != null && table != null && cacheKey != null;
     }
 
-    public void setPrimaryKey(String primaryKey) {
-        this.primaryKey = primaryKey;
+    public void setCacheKey(String cacheKey) {
+        this.cacheKey = cacheKey;
     }
 
     public boolean isContainsPrimaryFilter() {
@@ -177,10 +177,10 @@ public final class RouteResultset implements Serializable {
 
 
     /**
-     * return primary key items ,first is table name ,seconds is primary key
+     * return cache key items ,first is table name ,seconds is primary key
      */
-    public String[] getPrimaryKeyItems() {
-        return new String[]{StringUtil.getFullName(schema, table, '_'), primaryKey};
+    public String[] getCacheKeyItems() {
+        return new String[]{StringUtil.getFullName(schema, table, '_'), cacheKey};
     }
 
     public void setSrcStatement(String srcStatement) {

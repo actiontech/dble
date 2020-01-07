@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -49,7 +49,8 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
         if (hybridType == ItemResult.DECIMAL_RESULT) {
             BigDecimal val = decimalOp();
             if (val == null)
-                return BigDecimal.ZERO; // null is setreturn val;
+                return BigDecimal.ZERO; // null is set
+            return val;
         } else if (hybridType == ItemResult.INT_RESULT) {
             BigInteger result = intOp();
             return new BigDecimal(result);
@@ -143,7 +144,8 @@ public abstract class ItemFuncNumhybrid extends ItemFunc {
         if (hybridType == ItemResult.DECIMAL_RESULT) {
             BigDecimal val = decimalOp();
             if (val == null)
-                return null; // null is setstr = val.toString();
+                return null; // null is set
+            str = val.toString();
         } else if (hybridType == ItemResult.INT_RESULT) {
             BigInteger nr = intOp();
             if (nullValue)

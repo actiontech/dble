@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -13,9 +13,8 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.model.rule.RuleConfig;
-import com.actiontech.dble.singleton.CacheService;
-import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.plan.node.PlanNode;
+import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
@@ -27,6 +26,8 @@ import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
+import com.actiontech.dble.singleton.CacheService;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.sqlengine.mpp.ColumnRoutePair;
 import com.actiontech.dble.sqlengine.mpp.LoadData;
 import com.actiontech.dble.util.StringUtil;
@@ -51,11 +52,11 @@ import static com.actiontech.dble.plan.optimizer.JoinStrategyProcessor.NEED_REPL
  * @author wang.dw
  */
 public final class RouterUtil {
-    private RouterUtil() {
-    }
-
     private static final Logger LOGGER = LoggerFactory.getLogger(RouterUtil.class);
     private static ThreadLocalRandom rand = ThreadLocalRandom.current();
+
+    private RouterUtil() {
+    }
 
     public static String removeSchema(String stmt, String schema) {
         return removeSchema(stmt, schema, DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames());
@@ -73,8 +74,8 @@ public final class RouterUtil {
         final String forCmpStmt = isLowerCase ? stmt.toLowerCase() : stmt;
         final String maySchema1 = schema + ".";
         final String maySchema2 = "`" + schema + "`.";
-        int index1 = forCmpStmt.indexOf(maySchema1, 0);
-        int index2 = forCmpStmt.indexOf(maySchema2, 0);
+        int index1 = forCmpStmt.indexOf(maySchema1);
+        int index2 = forCmpStmt.indexOf(maySchema2);
         if (index1 < 0 && index2 < 0) {
             return stmt;
         }
@@ -91,17 +92,17 @@ public final class RouterUtil {
                 flag = false;
             } else flag = index2 < index1;
             if (flag) {
-                result.append(stmt.substring(startPos, index2));
+                result.append(stmt, startPos, index2);
                 startPos = index2 + maySchema2.length();
                 if (index2 > firstE && index2 < endE && countChar(stmt, index2) % 2 != 0) {
-                    result.append(stmt.substring(index2, startPos));
+                    result.append(stmt, index2, startPos);
                 }
                 index2 = forCmpStmt.indexOf(maySchema2, startPos);
             } else {
-                result.append(stmt.substring(startPos, index1));
+                result.append(stmt, startPos, index1);
                 startPos = index1 + maySchema1.length();
                 if (index1 > firstE && index1 < endE && countChar(stmt, index1) % 2 != 0) {
-                    result.append(stmt.substring(index1, startPos));
+                    result.append(stmt, index1, startPos);
                 }
                 index1 = forCmpStmt.indexOf(maySchema1, startPos);
             }
@@ -386,8 +387,7 @@ public final class RouterUtil {
 
     public static String getRandomDataNode(ArrayList<String> dataNodes) {
         int index = Math.abs(rand.nextInt(Integer.MAX_VALUE)) % dataNodes.size();
-        ArrayList<String> x = new ArrayList<>();
-        x.addAll(dataNodes);
+        ArrayList<String> x = new ArrayList<>(dataNodes);
         Map<String, PhysicalDBNode> dataNodeMap = DbleServer.getInstance().getConfig().getDataNodes();
         while (x.size() > 1) {
             for (PhysicalDatasource ds : dataNodeMap.get(x.get(index)).getDbPool().getAllActiveDataSources()) {
@@ -470,7 +470,7 @@ public final class RouterUtil {
                         routeNodeSet.addAll(tc.getDataNodes());
                     } else {
                         ArrayList<String> dataNodes = tc.getDataNodes();
-                        String dataNode = null;
+                        String dataNode;
                         for (Integer nodeId : nodeRange) {
                             dataNode = dataNodes.get(nodeId);
                             routeNodeSet.add(dataNode);
@@ -565,7 +565,7 @@ public final class RouterUtil {
         Map<String, Set<ColumnRoutePair>> columnsMap = entry.getValue();
 
         Map<String, Set<String>> tablesRouteMap = new HashMap<>();
-        if (tryRouteWithPrimaryCache(rrs, tablesRouteMap, CacheService.getTableId2DataNodeCache(), columnsMap, schema, tableName, tableConfig.getPrimaryKey(), isSelect)) {
+        if (tryRouteWithCache(rrs, tablesRouteMap, CacheService.getTableId2DataNodeCache(), columnsMap, schema, tableName, tableConfig.getCacheKey(), isSelect)) {
             Set<String> nodes = tablesRouteMap.get(tableName);
             if (nodes == null || nodes.size() != 1) {
                 return false;
@@ -630,9 +630,7 @@ public final class RouterUtil {
             }
             resultNodes.addAll(dataNodeSet);
             tablesSet.remove(tableName);
-            if (resultNodes.size() != 1) {
-                return false;
-            }
+            return resultNodes.size() == 1;
         } else {
             return false;
         }
@@ -848,11 +846,11 @@ public final class RouterUtil {
     }
 
 
-    private static boolean tryRouteWithPrimaryCache(
+    private static boolean tryRouteWithCache(
             RouteResultset rrs, Map<String, Set<String>> tablesRouteMap,
             LayerCachePool cachePool, Map<String, Set<ColumnRoutePair>> columnsMap,
-            SchemaConfig schema, String tableName, String primaryKey, boolean isSelect) {
-        if (cachePool == null || primaryKey == null || columnsMap.get(primaryKey) == null) {
+            SchemaConfig schema, String tableName, String cacheKey, boolean isSelect) {
+        if (cachePool == null || cacheKey == null || columnsMap.get(cacheKey) == null) {
             return false;
         }
         if (LOGGER.isDebugEnabled() && rrs.getStatement().startsWith(LoadData.LOAD_DATA_HINT) || rrs.isLoadData()) {
@@ -860,16 +858,16 @@ public final class RouterUtil {
             return false;
         }
         //try by primary key if found in cache
-        Set<ColumnRoutePair> primaryKeyPairs = columnsMap.get(primaryKey);
+        Set<ColumnRoutePair> cacheKeyPairs = columnsMap.get(cacheKey);
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("try to find cache by primary key ");
         }
 
         String tableKey = StringUtil.getFullName(schema.getName(), tableName, '_');
         boolean allFound = true;
-        for (ColumnRoutePair pair : primaryKeyPairs) { // may be has multi value of primary key, eg: in(1,2,3)
-            String cacheKey = pair.colValue;
-            String dataNode = (String) cachePool.get(tableKey, cacheKey);
+        for (ColumnRoutePair pair : cacheKeyPairs) { // may be has multi value of primary key, eg: in(1,2,3)
+            String cacheValue = pair.colValue;
+            String dataNode = (String) cachePool.get(tableKey, cacheValue);
             if (dataNode == null) {
                 allFound = false;
                 break;
@@ -922,7 +920,7 @@ public final class RouterUtil {
                 continue;
             } else { //shard-ing table,childTable or others
                 Map<String, Set<ColumnRoutePair>> columnsMap = entry.getValue();
-                if (tryRouteWithPrimaryCache(rrs, tablesRouteMap, cachePool, columnsMap, schema, tableName, tableConfig.getPrimaryKey(), isSelect)) {
+                if (tryRouteWithCache(rrs, tablesRouteMap, cachePool, columnsMap, schema, tableName, tableConfig.getCacheKey(), isSelect)) {
                     continue;
                 }
 
@@ -989,7 +987,7 @@ public final class RouterUtil {
                 continue;
             } else { //shard-ing table,childTable or others
                 Map<String, Set<ColumnRoutePair>> columnsMap = entry.getValue();
-                if (tryRouteWithPrimaryCache(rrs, tablesRouteMap, cachePool, columnsMap, schema, tableName, tableConfig.getPrimaryKey(), isSelect)) {
+                if (tryRouteWithCache(rrs, tablesRouteMap, cachePool, columnsMap, schema, tableName, tableConfig.getCacheKey(), isSelect)) {
                     continue;
                 }
 
@@ -1146,7 +1144,7 @@ public final class RouterUtil {
      * @return dataNode DataNode of no-sharding table
      */
     public static String isNoSharding(SchemaConfig schemaConfig, String tableName) throws SQLNonTransientException {
-        if (schemaConfig == null || ProxyMeta.getInstance().getTmManager().getSyncView(schemaConfig.getName(), tableName) != null) {
+        if (schemaConfig == null || ProxyMeta.getInstance().getTmManager().getSyncView(schemaConfig.getName(), tableName) instanceof QueryNode) {
             return null;
         }
         if (schemaConfig.isNoSharding()) { //schema without table
@@ -1162,7 +1160,6 @@ public final class RouterUtil {
         return null;
     }
 
-
     /**
      * no shard-ing table dataNode
      *
@@ -1170,7 +1167,7 @@ public final class RouterUtil {
      * @param tableName    the TableName
      * @return dataNode DataNode of no-sharding table
      */
-    public static String isNoShardingDDL(SchemaConfig schemaConfig, String tableName) throws SQLNonTransientException {
+    public static String isNoShardingDDL(SchemaConfig schemaConfig, String tableName) {
         if (schemaConfig == null) {
             return null;
         }

@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
+* Copyright (C) 2016-2020 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -61,6 +61,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
     @Override
     public void handle(byte[] data) {
         if (session != null) {
+            if (session.isKilled()) return;
             session.setBackendResponseTime(source);
         }
         if (source.isComplexQuery()) {
@@ -228,6 +229,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
         }
         this.source.setExecuting(false);
         this.source.setRowDataFlowing(false);
+        this.source.getLogResponse().set(false);
         this.source.signal();
         if (responseHandler != null) {
             responseHandler.rowEofResponse(data, false, source);

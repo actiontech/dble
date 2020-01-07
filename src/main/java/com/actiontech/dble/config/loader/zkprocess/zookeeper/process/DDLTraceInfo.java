@@ -14,11 +14,11 @@ public class DDLTraceInfo {
 
 
     public enum DDLStage {
-        ROUTE_END, LOCK_END, LINK_TEST_START, LINK_TEST_END, EXECUTE_START, EXECUTE_END, META_UPDATE
+        ROUTE_END, LOCK_END, CONN_TEST_START, CONN_TEST_END, EXECUTE_START, EXECUTE_END, META_UPDATE
     }
 
     public enum DDLConnectionStatus {
-        TEST_START, TEST_SUCCESS, TEST_CONN_ERROR, TEST_ERROR, TEST_CONN_CLOSE, EXECUTE_START, EXECUTE_SUCCESS, EXECUTE_CONN_ERROR, EXECUTE_ERROR, EXECUTE_CONN_CLOSE
+        CONN_TEST_START, CONN_TEST_SUCCESS, TEST_CONN_ERROR, CONN_TEST_RESULT_ERROR, TEST_CONN_CLOSE, CONN_EXECUTE_START, CONN_EXECUTE_SUCCESS, EXECUTE_CONN_ERROR, CONN_EXECUTE_ERROR, EXECUTE_CONN_CLOSE
     }
 
     private final long serverId;
@@ -39,6 +39,15 @@ public class DDLTraceInfo {
         this.id = id;
     }
 
+    public String toBriefString() {
+        StringBuilder sb = new StringBuilder("[DDL][");
+        sb.append(id).append("]SQL = ").append(sql);
+        sb.append(" serverConnection id = ").append(serverId);
+        sb.append(" startTime = ").append(new Date(startTimestamp));
+        sb.append(" stage = ").append(stage);
+        return sb.toString();
+    }
+
     public String toString() {
         StringBuilder sb = new StringBuilder("[DDL][");
         sb.append(id).append("]SQL = ").append(sql);
@@ -46,20 +55,19 @@ public class DDLTraceInfo {
         sb.append(" startTime = ").append(new Date(startTimestamp));
         sb.append(" stage = ").append(stage);
         if (testConnections.size() > 0) {
-            sb.append("\n test connections \n:");
+            sb.append("\n[DDL][").append(id).append("] test connections :");
             for (Map.Entry<MySQLConnection, DDLConnectionStatus> entry : testConnections.entrySet()) {
-                sb.append(" -----------------connection:");
+                sb.append("\n[DDL][").append(id).append("] connection:");
                 sb.append(entry.getKey().getId()).append(" status: ").append(entry.getValue());
-                sb.append(" dataNode: ").append(((RouteResultsetNode) entry.getKey().getAttachment()).getName()).append("\n");
+                sb.append(" dataNode: ").append(((RouteResultsetNode) entry.getKey().getAttachment()).getName());
 
             }
         }
         if (executeConnections.size() > 0) {
-            sb.append("\n execute connections \n:");
+            sb.append("\n[DDL][").append(id).append("] execute connections :");
             for (Map.Entry<MySQLConnection, DDLConnectionStatus> entry : executeConnections.entrySet()) {
-                sb.append(" -----------------connection:'\n");
-                sb.append("                              ").append(entry.getKey()).append(" \n                          status: ").
-                        append(entry.getValue()).append("\n");
+                sb.append("\n[DDL][").append(id).append("] connection:");
+                sb.append(entry.getKey().getId()).append(" status: ").append(entry.getValue());
             }
         }
         return sb.toString();
@@ -79,16 +87,16 @@ public class DDLTraceInfo {
 
     public void updateConnectionStatus(MySQLConnection c, DDLConnectionStatus status) {
         switch (status) {
-            case TEST_START:
-            case TEST_SUCCESS:
-            case TEST_ERROR:
+            case CONN_TEST_START:
+            case CONN_TEST_SUCCESS:
+            case CONN_TEST_RESULT_ERROR:
             case TEST_CONN_ERROR:
             case TEST_CONN_CLOSE:
                 testConnections.put(c, status);
                 break;
-            case EXECUTE_START:
-            case EXECUTE_SUCCESS:
-            case EXECUTE_ERROR:
+            case CONN_EXECUTE_START:
+            case CONN_EXECUTE_SUCCESS:
+            case CONN_EXECUTE_ERROR:
             case EXECUTE_CONN_ERROR:
             case EXECUTE_CONN_CLOSE:
                 executeConnections.put(c, status);

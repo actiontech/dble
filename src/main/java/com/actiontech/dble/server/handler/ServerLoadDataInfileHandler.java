@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
@@ -85,13 +85,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     private LayerCachePool tableId2DataNodeCache;
     private boolean isStartLoadData = false;
 
-    public int getPackID() {
-        return packID;
-    }
-
-    public void setPackID(byte packID) {
-        this.packID = packID;
-    }
 
     public ServerLoadDataInfileHandler(ServerConnection serverConnection) {
         this.serverConnection = serverConnection;
@@ -138,6 +131,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     public void start(String strSql) {
         clear();
         this.sql = strSql;
+        this.packID = (byte) serverConnection.getSession2().getPacketId().get();
 
         if (this.checkPartition(strSql)) {
             serverConnection.writeErrMessage(ErrorCode.ER_UNSUPPORTED_PS, " unsupported load data with Partition");
@@ -186,7 +180,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         }
 
         if (tableConfig != null && tableConfig.isAutoIncrement() && autoIncrementIndex == -1) {
-            final String incrementColumn = tableConfig.getTrueIncrementColumn();
+            final String incrementColumn = tableConfig.getIncrementColumn();
             statement.getColumns().add(new SQLIdentifierExpr(incrementColumn));
             autoIncrementIndex = statement.getColumns().size() - 1;
             appendAutoIncrementColumn = true;
@@ -211,7 +205,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 clear();
                 serverConnection.writeErrMessage(ErrorCode.ER_FILE_NOT_FOUND, msg);
             } else {
-                if (parseFileByLine((byte) 0, fileName, loadData.getCharset(), loadData.getLineTerminatedBy())) {
+                if (parseFileByLine(fileName, loadData.getCharset())) {
                     RouteResultset rrs = buildResultSet(routeResultMap);
                     if (rrs != null) {
                         flushDataToFile();
@@ -250,7 +244,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             String pColumn = getPartitionColumn();
             boolean autoIncrement = tableConfig.isAutoIncrement();
             if (pColumn != null || autoIncrement) {
-                String incrementColumn = tableConfig.getTrueIncrementColumn();
+                String incrementColumn = tableConfig.getIncrementColumn();
                 if (columns != null && columns.size() > 0) {
                     for (int i = 0, columnsSize = columns.size(); i < columnsSize; i++) {
                         String column = StringUtil.removeBackQuote(columns.get(i).toString());
@@ -606,7 +600,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         saveByteOrToFile(null, true);
 
         if (isHasStoreToFile) {
-            parseFileByLine(packId, tempFile, loadData.getCharset(), loadData.getLineTerminatedBy());
+            parseFileByLine(tempFile, loadData.getCharset());
         } else {
             String content = new String(tempByteBuffer.toByteArray(), Charset.forName(loadData.getCharset()));
             if ("".equals(content)) {
@@ -674,7 +668,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     }
 
 
-    private boolean parseFileByLine(byte packetID, String file, String encode, String split) {
+    private boolean parseFileByLine(String file, String encode) {
         CsvParserSettings settings = new CsvParserSettings();
         settings.setMaxColumns(DEFAULT_MAX_COLUMNS);
         settings.setMaxCharsPerColumn(systemConfig.getMaxCharsPerColumn());
@@ -713,7 +707,8 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                         parseOneLine(row, true);
                     } catch (Exception e) {
                         clear();
-                        serverConnection.writeErrMessage(++packetID, ErrorCode.ER_WRONG_VALUE_COUNT_ON_ROW, "row data can't not calculate a sharding value," + e.getMessage());
+                        byte packId = packID;
+                        serverConnection.writeErrMessage(++packId, ErrorCode.ER_WRONG_VALUE_COUNT_ON_ROW, "row data can't not calculate a sharding value," + e.getMessage());
                         return false;
                     }
                     empty = false;

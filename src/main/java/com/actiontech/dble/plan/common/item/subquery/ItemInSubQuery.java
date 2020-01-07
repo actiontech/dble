@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -18,12 +18,13 @@ import com.alibaba.druid.sql.ast.statement.SQLSelect;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 
 import java.util.List;
+import java.util.Map;
 
 public class ItemInSubQuery extends ItemMultiRowSubQuery {
     private boolean isNeg;
     protected Item leftOperand;
-    public ItemInSubQuery(String currentDb, SQLSelectQuery query, Item leftOperand, boolean isNeg, ProxyMetaManager metaManager) {
-        super(currentDb, query, metaManager);
+    public ItemInSubQuery(String currentDb, SQLSelectQuery query, Item leftOperand, boolean isNeg, ProxyMetaManager metaManager, Map<String, String> usrVariables) {
+        super(currentDb, query, metaManager, usrVariables);
         this.leftOperand = leftOperand;
         this.isNeg = isNeg;
         if (this.planNode.getColumnsSelected().size() > 1) {
@@ -66,7 +67,7 @@ public class ItemInSubQuery extends ItemMultiRowSubQuery {
 
     @Override
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fields) {
-        return new ItemInSubQuery(this.currentDb, this.query, this.leftOperand.cloneItem(), this.isNeg, this.metaManager);
+        return new ItemInSubQuery(this.currentDb, this.query, this.leftOperand.cloneItem(), this.isNeg, this.metaManager, this.usrVariables);
     }
 
     public Item getLeftOperand() {

@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
+* Copyright (C) 2016-2020 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -41,8 +41,15 @@ public class ServerQueryHandler implements FrontendQueryHandler {
     public void query(String sql) {
         ServerConnection c = this.source;
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(String.valueOf(c) + sql);
+            LOGGER.debug(c + sql);
         }
+        if (c.getSession2().isKilled()) {
+            LOGGER.info("sql[" + sql + "] is killed.");
+            c.writeErrMessage(ErrorCode.ER_QUERY_INTERRUPTED, "The query is interrupted.");
+            return;
+        }
+
+        source.getSession2().queryCount();
 
         if (source.getSession2().getRemingSql() != null) {
             sql = source.getSession2().getRemingSql();
@@ -67,6 +74,10 @@ public class ServerQueryHandler implements FrontendQueryHandler {
             }
             c.execute(sql, rs & 0xff);
         } else {
+            if (sqlType != ServerParse.START && sqlType != ServerParse.BEGIN &&
+                    sqlType != ServerParse.COMMIT && sqlType != ServerParse.ROLLBACK) {
+                source.getSession2().singleTransactionsCount();
+            }
             switch (sqlType) {
                 //explain sql
                 case ServerParse.EXPLAIN:
@@ -104,11 +115,10 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                     SavepointHandler.release(sql, c);
                     break;
                 case ServerParse.KILL:
-                    KillHandler.handle(sql, rs >>> 8, c);
+                    KillHandler.handle(KillHandler.Type.KILL_CONNECTION, sql.substring(rs >>> 8).trim(), c);
                     break;
                 case ServerParse.KILL_QUERY:
-                    LOGGER.info("Unsupported command:" + sql);
-                    c.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unsupported command");
+                    KillHandler.handle(KillHandler.Type.KILL_QUERY, sql.substring(rs >>> 8).trim(), c);
                     break;
                 case ServerParse.USE:
                     UseHandler.handle(sql, c, rs >>> 8);
@@ -146,16 +156,10 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                     c.unLockTable(sql);
                     break;
                 case ServerParse.CREATE_VIEW:
-                    CreateViewHandler.handle(sql, c, false);
-                    break;
                 case ServerParse.REPLACE_VIEW:
-                    CreateViewHandler.handle(sql, c, true);
-                    break;
                 case ServerParse.ALTER_VIEW:
-                    CreateViewHandler.handle(sql, c, false);
-                    break;
                 case ServerParse.DROP_VIEW:
-                    DropViewHandler.handle(sql, c);
+                    ViewHandler.handle(sqlType, sql, c);
                     break;
                 case ServerParse.CREATE_DATABASE:
                     CreateDatabaseHandler.handle(sql, c);

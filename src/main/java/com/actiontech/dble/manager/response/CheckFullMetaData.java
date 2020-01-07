@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -12,13 +12,14 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.manager.ManagerConnection;
-import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.meta.SchemaMeta;
+import com.actiontech.dble.meta.ViewMeta;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.FormatUtil;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -53,10 +54,6 @@ public final class CheckFullMetaData {
             "|(reload_time\\s*([><])?=\\s*(['\"])([0-9:\\-\\s]+)(['\"]))" +
             "|(reload_time\\s+is\\s+null)" +
             "|((consistent_in_data_nodes|consistent_in_memory)\\s*=\\s*([01]))))?\\s*$", Pattern.CASE_INSENSITIVE);
-
-    private CheckFullMetaData() {
-    }
-
     private static final int FIELD_COUNT = 6;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
@@ -88,6 +85,9 @@ public final class CheckFullMetaData {
         EOF.setPacketId(++packetId);
     }
 
+    private CheckFullMetaData() {
+    }
+
     public static void execute(ManagerConnection c, String stmt) {
         Matcher ma = PATTERN.matcher(stmt);
         if (!ma.matches()) {
@@ -106,6 +106,7 @@ public final class CheckFullMetaData {
                         c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The schema [" + schema + "] doesn't exist");
                         return;
                     }
+
                     if (ma.group(9) != null) {
                         String table = StringUtil.removeAllApostrophe(ma.group(10));
                         if (DbleServer.getInstance().getConfig().getSchemas().get(schema).getTables().get(table) == null &&
@@ -235,12 +236,17 @@ public final class CheckFullMetaData {
         if (schemaMeta != null) {
             StructureMeta.TableMeta tableMeta = schemaMeta.getTableMetas().get(tableName);
             if (tableMeta != null) {
-                RowDataPacket row = genNormalRowData(schemaName, tableName, tableMeta, charset);
+                RowDataPacket row = genNormalRowData(schemaName, tableName, tableMeta.getCreateSql(), tableMeta.getVersion(), charset);
                 list.add(row);
             } else {
-                //null metadata
-                RowDataPacket row = genNullRowData(charset, schemaName, tableName);
-                list.add(row);
+                if (schemaConfigMap.get(schemaName).isNoSharding() && schemaMeta.getViewMeta(tableName) != null) {
+                    RowDataPacket row = genNormalRowData(schemaName, tableName, schemaMeta.getViewMeta(tableName).getCreateSql(), schemaMeta.getViewMeta(tableName).getTimestamp(), charset);
+                    list.add(row);
+                } else {
+                    //null metadata
+                    RowDataPacket row = genNullRowData(charset, schemaName, tableName);
+                    list.add(row);
+                }
             }
         } else {
             SchemaConfig configSchema = schemaConfigMap.get(schemaName);
@@ -267,8 +273,17 @@ public final class CheckFullMetaData {
                 String tableName = tableMetaEntry.getKey();
                 hasMetaTables.add(tableName);
                 StructureMeta.TableMeta tableMeta = tableMetaEntry.getValue();
-                RowDataPacket row = genNormalRowData(schemaName, tableName, tableMeta, charset);
+                RowDataPacket row = genNormalRowData(schemaName, tableName, tableMeta.getCreateSql(), tableMeta.getVersion(), charset);
                 list.add(row);
+            }
+            if (schemaConfigMap.get(schemaName).isNoSharding()) {
+                for (Map.Entry<String, ViewMeta> viewMetaEntry : schemaMeta.getViewMetas().entrySet()) {
+                    String viewName = viewMetaEntry.getKey();
+                    hasMetaTables.add(viewName);
+                    ViewMeta viewMeta = viewMetaEntry.getValue();
+                    RowDataPacket row = genNormalRowData(schemaName, viewName, viewMeta.getCreateSql(), viewMeta.getTimestamp(), charset);
+                    list.add(row);
+                }
             }
             for (String configTables : schemaConfigMap.get(schemaName).getTables().keySet()) {
                 if (!hasMetaTables.contains(configTables)) {
@@ -290,14 +305,12 @@ public final class CheckFullMetaData {
         return list;
     }
 
-    private static RowDataPacket genNormalRowData(String schemaName, String tableName, StructureMeta.TableMeta tableMeta, String charset) {
-        long timeStamp = tableMeta.getVersion();
-        String createQuery = tableMeta.getCreateSql();
+    private static RowDataPacket genNormalRowData(String schemaName, String tableName, String createSql, long timestamp, String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(StringUtil.encode(schemaName, charset));
         row.add(StringUtil.encode(tableName, charset));
-        row.add(StringUtil.encode(FormatUtil.formatDate(timeStamp), charset));
-        row.add(StringUtil.encode(createQuery, charset));
+        row.add(StringUtil.encode(FormatUtil.formatDate(timestamp), charset));
+        row.add(StringUtil.encode(createSql, charset));
         String tableID = schemaName + "." + tableName;
         if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(tableID)) {
             row.add(LongUtil.toBytes(0L));
@@ -336,7 +349,7 @@ public final class CheckFullMetaData {
                 String tableID = schemaName + "." + tableName;
                 if (checkFilter.contains(tableID) ^ checkValue) {
                     StructureMeta.TableMeta tableMeta = tableMetaEntry.getValue();
-                    RowDataPacket row = genNormalRowData(schemaName, tableName, tableMeta, charset);
+                    RowDataPacket row = genNormalRowData(schemaName, tableName, tableMeta.getCreateSql(), tableMeta.getVersion(), charset);
                     list.add(row);
                 }
             }
@@ -373,6 +386,7 @@ public final class CheckFullMetaData {
         Map<String, SchemaMeta> schemaMetaMap = ProxyMeta.getInstance().getTmManager().getCatalogs();
         Map<String, SchemaConfig> schemaConfigMap = DbleServer.getInstance().getConfig().getSchemas();
         Set<String> hasMetaSchemas = new HashSet<>();
+        SchemaConfig schemaConfig = null;
         for (Map.Entry<String, SchemaMeta> schemaMetaEntry : schemaMetaMap.entrySet()) {
             String schemaName = schemaMetaEntry.getKey();
             hasMetaSchemas.add(schemaName);
@@ -382,10 +396,19 @@ public final class CheckFullMetaData {
                 String tableName = tableMetaEntry.getKey();
                 hasMetaTables.add(tableName);
                 StructureMeta.TableMeta tableMeta = tableMetaEntry.getValue();
-                RowDataPacket row = genNormalRowData(schemaName, tableName, tableMeta, charset);
+                RowDataPacket row = genNormalRowData(schemaName, tableName, tableMeta.getCreateSql(), tableMeta.getVersion(), charset);
                 list.add(row);
             }
-            for (String configTables : schemaConfigMap.get(schemaName).getTables().keySet()) {
+            schemaConfig = schemaConfigMap.get(schemaName);
+            if (schemaConfig.isNoSharding()) {
+                for (Map.Entry<String, ViewMeta> tableMetaEntry : schemaMeta.getViewMetas().entrySet()) {
+                    String viewName = tableMetaEntry.getKey();
+                    ViewMeta viewMeta = tableMetaEntry.getValue();
+                    RowDataPacket row = genNormalRowData(schemaName, viewName, viewMeta.getCreateSql(), viewMeta.getTimestamp(), charset);
+                    list.add(row);
+                }
+            }
+            for (String configTables : schemaConfig.getTables().keySet()) {
                 if (!hasMetaTables.contains(configTables)) {
                     //null metadata
                     RowDataPacket row = genNullRowData(charset, schemaName, configTables);

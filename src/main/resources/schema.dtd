@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
         <!--
-  ~ Copyright (C) 2016-2019 ActionTech.
+  ~ Copyright (C) 2016-2020 ActionTech.
   ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
   -->
 
@@ -32,11 +32,13 @@
         <!ATTLIST table dataNode CDATA #REQUIRED>
         <!ATTLIST table rule NMTOKEN #IMPLIED>
         <!ATTLIST table ruleRequired NMTOKEN #IMPLIED>
-        <!ATTLIST table primaryKey NMTOKEN #IMPLIED>
-        <!ATTLIST table autoIncrement NMTOKEN #IMPLIED>
+        <!ATTLIST table cacheKey NMTOKEN #IMPLIED>
         <!ATTLIST table incrementColumn NMTOKEN #IMPLIED>
         <!ATTLIST table needAddLimit NMTOKEN #IMPLIED>
         <!ATTLIST table type NMTOKEN #IMPLIED>
+        <!ATTLIST table globalCheckClass NMTOKEN #IMPLIED>
+        <!ATTLIST table cron CDATA #IMPLIED>
+        <!ATTLIST table globalCheck NMTOKEN #IMPLIED>
 
 
         <!ELEMENT childTable (childTable*)>
@@ -45,8 +47,7 @@
         <!ATTLIST childTable parentKey NMTOKEN #REQUIRED>
         <!ATTLIST childTable incrementColumn NMTOKEN #IMPLIED>
         <!ATTLIST childTable needAddLimit NMTOKEN #IMPLIED>
-        <!ATTLIST childTable primaryKey NMTOKEN #IMPLIED>
-        <!ATTLIST childTable autoIncrement NMTOKEN #IMPLIED>
+        <!ATTLIST childTable cacheKey NMTOKEN #IMPLIED>
 
 
         <!ELEMENT dataNode EMPTY>

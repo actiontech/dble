@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -22,7 +22,6 @@ import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.handler.ExplainHandler;
-import com.actiontech.dble.server.util.GlobalTableUtil;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 import com.actiontech.dble.singleton.SequenceManager;
@@ -82,8 +81,8 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         //if the target table is global table than
         if (tc.isGlobalTable()) {
             String sql = rrs.getStatement();
-            if (tc.isAutoIncrement() || GlobalTableUtil.useGlobalTableCheck()) {
-                sql = convertReplaceSQL(schemaInfo, replace, sql, tc, GlobalTableUtil.useGlobalTableCheck(), sc);
+            if (tc.isAutoIncrement()) {
+                sql = convertReplaceSQL(schemaInfo, replace, sql, tc, sc);
             } else {
                 sql = RouterUtil.removeSchema(sql, schemaInfo.getSchema());
             }
@@ -94,7 +93,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         }
 
         if (tc.isAutoIncrement()) {
-            String sql = convertReplaceSQL(schemaInfo, replace, rrs.getStatement(), tc, false, sc);
+            String sql = convertReplaceSQL(schemaInfo, replace, rrs.getStatement(), tc, sc);
             rrs.setStatement(sql);
             SQLStatementParser parser = new MySqlStatementParser(sql);
             stmt = parser.parseStatement();
@@ -137,6 +136,11 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     private boolean parserNoSharding(ServerConnection sc, String contextSchema, SchemaInfo schemaInfo, RouteResultset rrs, SQLReplaceStatement replace) throws SQLException {
         String noShardingNode = RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable());
         if (noShardingNode != null) {
+            // table with single datanode and has autoIncrement property
+            TableConfig tbConfig = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
+            if (tbConfig != null && tbConfig.isAutoIncrement()) {
+                return false;
+            }
             StringPtr noShardingNodePr = new StringPtr(noShardingNode);
             Set<String> schemas = new HashSet<>();
             if (replace.getQuery() != null) {
@@ -154,7 +158,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     }
 
 
-    private String convertReplaceSQL(SchemaInfo schemaInfo, SQLReplaceStatement replace, String originSql, TableConfig tc, boolean isGlobalCheck, ServerConnection sc) throws SQLNonTransientException {
+    private String convertReplaceSQL(SchemaInfo schemaInfo, SQLReplaceStatement replace, String originSql, TableConfig tc, ServerConnection sc) throws SQLNonTransientException {
         StructureMeta.TableMeta orgTbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
                 schemaInfo.getTable());
         if (orgTbMeta == null)
@@ -163,13 +167,6 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         boolean isAutoIncrement = tc.isAutoIncrement();
 
         String tableName = schemaInfo.getTable();
-        if (isGlobalCheck && !GlobalTableUtil.isInnerColExist(schemaInfo, orgTbMeta)) {
-            if (!isAutoIncrement) {
-                return originSql;
-            } else {
-                isGlobalCheck = false;
-            }
-        }
 
         StringBuilder sb = new StringBuilder(200/* this is to improve the performance) */).append("replace into ").append(tableName);
 
@@ -181,22 +178,16 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         // replace with no column name ：replace into t values(xxx,xxx)
         if (columns == null || columns.size() <= 0) {
             if (isAutoIncrement) {
-                autoIncrement = getIncrementKeyIndex(schemaInfo, tc.getTrueIncrementColumn());
+                autoIncrement = getIncrementKeyIndex(schemaInfo, tc.getIncrementColumn());
             }
             colSize = orgTbMeta.getColumnsList().size();
-            idxGlobal = getIdxGlobalByMeta(isGlobalCheck, orgTbMeta, sb, colSize);
         } else { // replace sql with  column names
-            boolean hasIncrementInSql = concatColumns(replace, tc, isGlobalCheck, isAutoIncrement, sb, columns);
+            boolean hasIncrementInSql = concatColumns(replace, tc, isAutoIncrement, sb, columns);
             colSize = columns.size();
             if (isAutoIncrement && !hasIncrementInSql) {
-                getIncrementKeyIndex(schemaInfo, tc.getTrueIncrementColumn());
+                getIncrementKeyIndex(schemaInfo, tc.getIncrementColumn());
                 autoIncrement = columns.size();
-                sb.append(",").append(tc.getTrueIncrementColumn());
-                colSize++;
-            }
-            if (isGlobalCheck) {
-                idxGlobal = (isAutoIncrement && !hasIncrementInSql) ? columns.size() + 1 : columns.size();
-                sb.append(",").append(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN);
+                sb.append(",").append(tc.getIncrementColumn());
                 colSize++;
             }
             sb.append(")");
@@ -220,23 +211,17 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         return RouterUtil.removeSchema(sb.toString(), schemaInfo.getSchema());
     }
 
-    private boolean concatColumns(SQLReplaceStatement replace, TableConfig tc, boolean isGlobalCheck, boolean isAutoIncrement, StringBuilder sb, List<SQLExpr> columns) throws SQLNonTransientException {
+    private boolean concatColumns(SQLReplaceStatement replace, TableConfig tc, boolean isAutoIncrement, StringBuilder sb, List<SQLExpr> columns) throws SQLNonTransientException {
         sb.append("(");
         boolean hasIncrementInSql = false;
         for (int i = 0; i < columns.size(); i++) {
-            if (isAutoIncrement && columns.get(i).toString().equalsIgnoreCase(tc.getTrueIncrementColumn())) {
+            if (isAutoIncrement && columns.get(i).toString().equalsIgnoreCase(tc.getIncrementColumn())) {
                 hasIncrementInSql = true;
             }
             if (i < columns.size() - 1)
                 sb.append(columns.get(i).toString()).append(",");
             else
                 sb.append(columns.get(i).toString());
-            String column = StringUtil.removeBackQuote(replace.getColumns().get(i).toString());
-            if (isGlobalCheck && column.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
-                String msg = "In insert Syntax, you can't set value for Global check column!";
-                LOGGER.info(msg);
-                throw new SQLNonTransientException(msg);
-            }
         }
         return hasIncrementInSql;
     }

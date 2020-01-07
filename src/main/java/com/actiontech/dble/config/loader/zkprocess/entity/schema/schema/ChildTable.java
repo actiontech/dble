@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -33,9 +33,7 @@ public class ChildTable implements Named {
     @XmlAttribute(required = true)
     protected String parentKey;
     @XmlAttribute
-    protected String primaryKey;
-    @XmlAttribute
-    protected Boolean autoIncrement;
+    protected String cacheKey;
     @XmlAttribute
     protected String incrementColumn;
 
@@ -68,20 +66,12 @@ public class ChildTable implements Named {
         this.parentKey = parentKey;
     }
 
-    public String getPrimaryKey() {
-        return primaryKey;
+    public String getCacheKey() {
+        return cacheKey;
     }
 
-    public void setPrimaryKey(String primaryKey) {
-        this.primaryKey = primaryKey;
-    }
-
-    public Boolean isAutoIncrement() {
-        return autoIncrement;
-    }
-
-    public void setAutoIncrement(Boolean autoIncrement) {
-        this.autoIncrement = autoIncrement;
+    public void setCacheKey(String cacheKey) {
+        this.cacheKey = cacheKey;
     }
 
     public List<ChildTable> getChildTable() {
@@ -120,10 +110,8 @@ public class ChildTable implements Named {
                 joinKey +
                 ", parentKey=" +
                 parentKey +
-                ", primaryKey=" +
-                primaryKey +
-                ", autoIncrement=" +
-                autoIncrement +
+                ", cacheKey=" +
+                cacheKey +
                 ", childTable=" +
                 childTable +
                 "]";

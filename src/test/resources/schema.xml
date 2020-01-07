@@ -47,15 +47,15 @@
         <table name="company" type="global" dataNode="dn1,dn2,dn3"/>
         <table name="goods" type="global" dataNode="dn1,dn2,dn3"/>
         <table name="notpartionTable" dataNode="dn1"/>
-        <table name="area" primaryKey="ID" type="global" dataNode="dn1,dn2,dn3"/>
-        <table name="employee" primaryKey="id" dataNode="dn1,dn2" rule="sharding-by-intfile"/>
+        <table name="area" cacheKey="ID" type="global" dataNode="dn1,dn2,dn3"/>
+        <table name="employee" cacheKey="id" dataNode="dn1,dn2" rule="sharding-by-intfile"/>
         <table name="customer" dataNode="dn1,dn2" rule="auto-sharding-long2">
             <childTable name="orders" joinKey="customer_id" parentKey="id">
                 <childTable name="order_items" joinKey="order_id" parentKey="id"/>
             </childTable>
             <childTable name="customer_addr" joinKey="customer_id" parentKey="id"/>
         </table>
-        <table name="globalsn" primaryKey="ID" type="global" dataNode="dn1"/>
+        <table name="globalsn" cacheKey="ID" type="global" dataNode="dn1"/>
     </schema>
 
     <schema name="mysqldb" sqlMaxLimit="100">

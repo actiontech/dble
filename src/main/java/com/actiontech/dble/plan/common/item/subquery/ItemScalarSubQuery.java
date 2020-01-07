@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -16,10 +16,11 @@ import com.alibaba.druid.sql.ast.statement.SQLSelect;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 
 import java.util.List;
+import java.util.Map;
 
 public class ItemScalarSubQuery extends ItemSingleRowSubQuery {
-    public ItemScalarSubQuery(String currentDb, SQLSelectQuery query, ProxyMetaManager metaManager) {
-        super(currentDb, query, false, metaManager);
+    public ItemScalarSubQuery(String currentDb, SQLSelectQuery query, ProxyMetaManager metaManager, Map<String, String> usrVariables) {
+        super(currentDb, query, false, metaManager, usrVariables);
         if (this.planNode.getColumnsSelected().size() > 1) {
             throw new MySQLOutPutException(ErrorCode.ER_OPERAND_COLUMNS, "", "Operand should contain 1 column(s)");
         }
@@ -51,7 +52,7 @@ public class ItemScalarSubQuery extends ItemSingleRowSubQuery {
 
     @Override
     protected Item cloneStruct(boolean forCalculate, List<Item> calArgs, boolean isPushDown, List<Field> fieldList) {
-        return new ItemScalarSubQuery(this.currentDb, this.query, this.metaManager);
+        return new ItemScalarSubQuery(this.currentDb, this.query, this.metaManager, this.usrVariables);
     }
 
 }

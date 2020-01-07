@@ -283,10 +283,7 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         if (this.dataHostConfig.getBalance() != BALANCE_NONE) {
             return getReadSourceAll();
         } else {
-            PhysicalDatasource[] list = new PhysicalDatasource[allSourceMap.size() - 1];
-            Map<Integer, PhysicalDatasource[]> result = new HashMap<Integer, PhysicalDatasource[]>();
-            result.put(0, list);
-            return result;
+            return Collections.emptyMap();
         }
     }
 
@@ -295,10 +292,7 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         if (this.dataHostConfig.getBalance() == BALANCE_NONE) {
             return getReadSourceAll();
         } else {
-            PhysicalDatasource[] list = new PhysicalDatasource[allSourceMap.size() - 1];
-            Map<Integer, PhysicalDatasource[]> result = new HashMap<Integer, PhysicalDatasource[]>();
-            result.put(0, list);
-            return result;
+            return Collections.emptyMap();
         }
     }
 
@@ -464,7 +458,9 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         try {
             for (String dsName : nameList) {
                 PhysicalDatasource datasource = allSourceMap.get(dsName);
-                datasource.setDisabled(false);
+                if (datasource.setDisabled(false)) {
+                    datasource.startHeartbeat();
+                }
             }
 
             HaConfigManager.getInstance().updateConfDataHost(this, syncWriteConf);
@@ -512,10 +508,15 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
             for (DataSourceStatus status : list) {
                 PhysicalDatasource phys = allSourceMap.get(status.getName());
                 if (phys != null) {
-                    if (phys.setDisabled(status.isDisable()) && status.isDisable()) {
-                        //clear old resource
-                        phys.clearCons("ha command disable datasource");
-                        phys.stopHeartbeat();
+                    if (phys.setDisabled(status.isDisable())) {
+                        if (status.isDisable()) {
+                            //clear old resource
+                            phys.clearCons("ha command disable datasource");
+                            phys.stopHeartbeat();
+                        } else {
+                            //change dataSource from disable to enable ,start heartbeat
+                            phys.startHeartbeat();
+                        }
                     }
                     if (status.isWriteHost() &&
                             phys != writeSource) {

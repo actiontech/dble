@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -40,6 +40,7 @@ public abstract class MultiNodeMergeHandler extends OwnThreadDMLHandler {
             this.exeHandlers.add(exeHandler);
         }
         this.route = route;
+        session.setRouteResultToTrace(route);
     }
 
     public MultiNodeMergeHandler(long id, NonBlockingSession session) {
@@ -75,11 +76,6 @@ public abstract class MultiNodeMergeHandler extends OwnThreadDMLHandler {
             current.terminate();
             current = current.getNextHandler();
         }
-    }
-
-    @Override
-    public HandlerType type() {
-        return HandlerType.MERGE;
     }
 
 }

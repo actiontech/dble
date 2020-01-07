@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -9,9 +9,9 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
 import com.actiontech.dble.manager.ManagerConnection;
-import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.meta.ReloadManager;
 import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.CollectionUtil;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
@@ -29,11 +29,6 @@ import java.util.regex.Pattern;
 import static com.actiontech.dble.meta.ReloadStatus.TRIGGER_TYPE_COMMAND;
 
 public final class ReloadMetaData {
-    private ReloadMetaData() {
-    }
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(ReloadMetaData.class);
-
     public static final Pattern PATTERN_IN = Pattern.compile("^\\s*table\\s+in\\s*\\(" +
             "(('((?!')((?!\\.)((?!`).)))+\\.((?!')((?!\\.)((?!`).)))+',)*" +
             "'((?!')((?!\\.)((?!`).)))+\\.((?!')((?!\\.)((?!`).)))+')" +
@@ -43,6 +38,9 @@ public final class ReloadMetaData {
             "(\\s+and\\s+table\\s*=\\s*" +
             "(('|\")((?!`)((?!\\7).))+\\7|[a-zA-Z_0-9\\-]+)" +
             ")?\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReloadMetaData.class);
+    private ReloadMetaData() {
+    }
 
     public static void execute(ManagerConnection c, String whereCondition) {
         Map<String, Set<String>> filter = null;
@@ -130,11 +128,7 @@ public final class ReloadMetaData {
             String schemaTable = matcher.group(1);
             for (String s : schemaTable.split(",")) {
                 String temp = s.replaceAll("'", "");
-                Set<String> tables = filter.get(temp.split("\\.")[0]);
-                if (tables == null) {
-                    tables = new HashSet<>();
-                    filter.put(temp.split("\\.")[0], tables);
-                }
+                Set<String> tables = filter.computeIfAbsent(temp.split("\\.")[0], k -> new HashSet<>());
                 tables.add(temp.split("\\.")[1]);
             }
         }

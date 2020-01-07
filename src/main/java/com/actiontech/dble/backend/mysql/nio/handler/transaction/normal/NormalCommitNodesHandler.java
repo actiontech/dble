@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -8,10 +8,13 @@ package com.actiontech.dble.backend.mysql.nio.handler.transaction.normal;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AbstractCommitNodesHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplictCommitHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitCommitHandler;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     protected byte[] sendData;
@@ -19,7 +22,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     @Override
     public void commit() {
         if (session.getTargetCount() <= 0) {
-            if (implictCommitHandler == null && sendData == null) {
+            if (implicitCommitHandler == null && sendData == null) {
                 sendData = session.getOkByteArray();
             }
             cleanAndFeedback();
@@ -33,10 +36,14 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
         }
         int position = 0;
         unResponseRrns.addAll(session.getTargetKeys());
+        List<MySQLConnection> conns = new ArrayList<>(session.getTargetCount());
         for (RouteResultsetNode rrn : session.getTargetKeys()) {
             final BackendConnection conn = session.getTarget(rrn);
             conn.setResponseHandler(this);
-            if (!executeCommit((MySQLConnection) conn, position++)) {
+            conns.add((MySQLConnection) conn);
+        }
+        for (MySQLConnection con : conns) {
+            if (!executeCommit(con, position++)) {
                 break;
             }
         }
@@ -45,7 +52,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     @Override
     public void clearResources() {
         sendData = null;
-        implictCommitHandler = null;
+        implicitCommitHandler = null;
         if (closedConnSet != null) {
             closedConnSet.clear();
         }
@@ -64,7 +71,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
         if (decrementToZero(conn)) {
-            if (implictCommitHandler == null && sendData == null) {
+            if (implicitCommitHandler == null && sendData == null) {
                 sendData = session.getOkByteArray();
             }
             cleanAndFeedback();
@@ -117,7 +124,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
 
     private void cleanAndFeedback() {
         byte[] send = sendData;
-        ImplictCommitHandler handler = implictCommitHandler;
+        ImplicitCommitHandler handler = implicitCommitHandler;
         // clear all resources
         session.clearResources(false);
         if (session.closed()) {

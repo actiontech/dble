@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
+* Copyright (C) 2016-2020 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -16,6 +16,7 @@ import com.actiontech.dble.config.ConfigInitializer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.singleton.ClusterGeneralConfig;
+import com.actiontech.dble.singleton.CronScheduler;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
@@ -212,7 +213,6 @@ public final class ReloadConfig {
             ReloadLogHelper.info("reload config: single instance(self) finished", LOGGER);
             ClusterDelayProvider.delayAfterMasterLoad();
 
-            ReloadManager.waitingOthers();
             XmltoZkMain.writeConfFileToZK(loadAllMode);
             ReloadLogHelper.info("reload config: sent config status to zk", LOGGER);
             //tell zk this instance has prepared
@@ -223,11 +223,13 @@ public final class ReloadConfig {
             List<String> preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
             List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
 
+            ReloadManager.waitingOthers();
             while (preparedList.size() < onlineList.size()) {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));
                 onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
                 preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
             }
+
             ReloadLogHelper.info("reload config: all instances finished ", LOGGER);
             ClusterDelayProvider.delayBeforeDeleteReloadLock();
             StringBuilder sbErrorInfo = new StringBuilder();
@@ -383,6 +385,7 @@ public final class ReloadConfig {
             try {
                 result = config.reload(newUsers, newSchemas, newDataNodes, mergedDataHosts, addOrChangeHosts, recycleHosts, newErRelations, newFirewall,
                         newSystemVariables, loader.isDataHostWithoutWH(), loadAllMode);
+                CronScheduler.getInstance().init(config.getSchemas());
                 if (!result) {
                     initFailed(newDataHosts);
                 }
@@ -442,6 +445,7 @@ public final class ReloadConfig {
             try {
                 result = config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newDataHosts, config.getDataHosts(), newErRelations, newFirewall,
                         newSystemVariables, loader.isDataHostWithoutWH(), loadAllMode);
+                CronScheduler.getInstance().init(config.getSchemas());
                 if (!result) {
                     initFailed(newDataHosts);
                 }

@@ -26,7 +26,7 @@ public class DataHostStatusTozkLoader extends ZkMultiLoader implements NotifySer
     @Override
     public boolean notifyProcess() throws Exception {
         HaConfigManager.getInstance().init();
-        if (ClusterHelper.useCluster()) {
+        if (ClusterHelper.useClusterHa()) {
             Map<String, String> map = HaConfigManager.getInstance().getSourceJsonList();
             for (Map.Entry<String, String> entry : map.entrySet()) {
                 this.checkAndWriteString(KVPathUtil.getHaStatusPath() + SEPARATOR, entry.getKey(), entry.getValue());

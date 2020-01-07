@@ -39,17 +39,19 @@ public class DataHostStatusListener implements PathChildrenCacheListener {
 
     private void updateStatus(ChildData childData) {
         try {
-            String nodeName = childData.getPath().substring(childData.getPath().lastIndexOf("/") + 1);
-            String data = new String(childData.getData(), StandardCharsets.UTF_8);
-            int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.RESPONSE_NOTIFY, HaInfo.HaStartType.CLUSTER_NOTIFY, "");
-            AbstractPhysicalDBPool physicalDBPool = DbleServer.getInstance().getConfig().getDataHosts().get(nodeName);
-            if (!(physicalDBPool instanceof PhysicalDNPoolSingleWH)) {
-                LOGGER.warn("The property 'useOuterHa' in server.xml may be changed, you have to restart dble to make it effective.");
-                return;
+            if (DbleServer.getInstance().isUseOuterHa()) {
+                String nodeName = childData.getPath().substring(childData.getPath().lastIndexOf("/") + 1);
+                String data = new String(childData.getData(), StandardCharsets.UTF_8);
+                int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.RESPONSE_NOTIFY, HaInfo.HaStartType.CLUSTER_NOTIFY, "");
+                AbstractPhysicalDBPool physicalDBPool = DbleServer.getInstance().getConfig().getDataHosts().get(nodeName);
+                if (!(physicalDBPool instanceof PhysicalDNPoolSingleWH)) {
+                    LOGGER.warn("The property 'useOuterHa' in server.xml may be changed, you have to restart dble to make it effective.");
+                    return;
+                }
+                PhysicalDNPoolSingleWH dataHost = (PhysicalDNPoolSingleWH) physicalDBPool;
+                dataHost.changeIntoLatestStatus(data);
+                HaConfigManager.getInstance().haFinish(id, null, data);
             }
-            PhysicalDNPoolSingleWH dataHost = (PhysicalDNPoolSingleWH) physicalDBPool;
-            dataHost.changeIntoLatestStatus(data);
-            HaConfigManager.getInstance().haFinish(id, null, data);
         } catch (Exception e) {
             LOGGER.warn("get Error when update Ha status", e);
         }

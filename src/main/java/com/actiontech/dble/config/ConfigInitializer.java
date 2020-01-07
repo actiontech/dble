@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
+* Copyright (C) 2016-2020 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -247,7 +247,7 @@ public class ConfigInitializer implements ProblemReporter {
                 errorInfos.add(new ErrorInfo("Backend", "WARNING", "Can't connect to [" + ds.getHostConfig().getName() + "," + ds.getName() + "]"));
                 markDataSourceSchemaFail(errNodeKeys, nodeList, dataSourceName);
             } else {
-                BoolPtr isSchemaConnectedPtr = new BoolPtr(false);
+                BoolPtr isSchemaConnectedPtr = new BoolPtr(true);
                 TestSchemasTask testSchemaTask = new TestSchemasTask(ds, nodeList, errNodeKeys, isSchemaConnectedPtr, isMaster);
                 testSchemaTask.start();
                 testSchemaTask.join(3000);

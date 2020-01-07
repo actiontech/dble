@@ -22,7 +22,6 @@ public class TableConfig {
 
     private final String name;
     private final String cacheKey;
-    private final boolean autoIncrement;
     private final String incrementColumn;
     private final boolean needAddLimit;
     private final TableTypeEnum tableType;
@@ -43,14 +42,14 @@ public class TableConfig {
     private final String locateRTableKeySql;
     private final TableConfig directRouteTC;
 
-    public TableConfig(String name, String cacheKey, boolean autoIncrement, boolean needAddLimit,
+    public TableConfig(String name, String cacheKey, boolean needAddLimit,
                        TableTypeEnum tableType, String dataNode, RuleConfig rule, boolean ruleRequired, String incrementColumn,
                        String cron, String globalCheckClass, boolean globalCheck) {
-        this(name, cacheKey, autoIncrement, needAddLimit, tableType, dataNode, rule, ruleRequired,
+        this(name, cacheKey, needAddLimit, tableType, dataNode, rule, ruleRequired,
                 null, null, null, incrementColumn, cron, globalCheckClass, globalCheck);
     }
 
-    public TableConfig(String name, String cacheKey, boolean autoIncrement, boolean needAddLimit,
+    public TableConfig(String name, String cacheKey, boolean needAddLimit,
                        TableTypeEnum tableType, String dataNode, RuleConfig rule, boolean ruleRequired, TableConfig parentTC,
                        String joinKey, String parentKey, String incrementColumn, String cron, String globalCheckClass, boolean globalCheck) {
         if (name == null) {
@@ -60,7 +59,6 @@ public class TableConfig {
         }
         this.incrementColumn = incrementColumn;
         this.cacheKey = cacheKey;
-        this.autoIncrement = autoIncrement;
         this.needAddLimit = needAddLimit;
         this.tableType = tableType;
         this.cron = cron;
@@ -122,11 +120,10 @@ public class TableConfig {
     }
 
 
-    public TableConfig(String name, String cacheKey, boolean autoIncrement, boolean needAddLimit,
+    public TableConfig(String name, String cacheKey, boolean needAddLimit,
                        TableTypeEnum tableType, ArrayList<String> dataNode, RuleConfig rule, boolean ruleRequired, TableConfig parentTC,
                        String joinKey, String parentKey, String incrementColumn, String cron, String globalCheckClass, boolean globalCheck) {
         this.cacheKey = cacheKey;
-        this.autoIncrement = autoIncrement;
         this.needAddLimit = needAddLimit;
         this.tableType = tableType;
         this.name = name;
@@ -172,7 +169,7 @@ public class TableConfig {
 
 
     TableConfig lowerCaseCopy(TableConfig parent) {
-        return new TableConfig(this.name.toLowerCase(), this.cacheKey, this.autoIncrement, this.needAddLimit,
+        return new TableConfig(this.name.toLowerCase(), this.cacheKey, this.needAddLimit,
                 this.tableType, this.dataNodes, this.rule, this.ruleRequired, parent, this.joinKey, this.parentKey, this.incrementColumn,
                 this.cron, this.globalCheckClass, this.globalCheck);
 
@@ -187,7 +184,7 @@ public class TableConfig {
     }
 
     public boolean isAutoIncrement() {
-        return autoIncrement;
+        return incrementColumn != null;
     }
 
     public boolean isNeedAddLimit() {

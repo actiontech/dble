@@ -37,8 +37,6 @@ public class Table implements Named {
     @XmlAttribute
     protected String cacheKey;
     @XmlAttribute
-    protected Boolean autoIncrement;
-    @XmlAttribute
     protected Boolean needAddLimit;
     @XmlAttribute
     protected String type;
@@ -112,14 +110,6 @@ public class Table implements Named {
         this.cacheKey = cacheKey;
     }
 
-    public Boolean isAutoIncrement() {
-        return autoIncrement;
-    }
-
-    public void setAutoIncrement(Boolean autoIncrement) {
-        this.autoIncrement = autoIncrement;
-    }
-
     public Boolean isNeedAddLimit() {
         return needAddLimit;
     }
@@ -183,8 +173,6 @@ public class Table implements Named {
                 ruleRequired +
                 ", cacheKey=" +
                 cacheKey +
-                ", autoIncrement=" +
-                autoIncrement +
                 ", needAddLimit=" +
                 needAddLimit +
                 ", type=" +

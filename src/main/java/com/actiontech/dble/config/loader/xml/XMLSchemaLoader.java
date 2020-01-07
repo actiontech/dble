@@ -306,7 +306,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             String corn = tableElement.hasAttribute("cron") ? tableElement.getAttribute("cron").toUpperCase() : GLOBAL_TABLE_CHECK_DEFAULT_CRON;
             boolean globalCheck = tableElement.hasAttribute("globalCheck") ? Boolean.valueOf(tableElement.getAttribute("globalCheck")) : false;
             for (String tableName : tableNames) {
-                TableConfig table = new TableConfig(tableName, cacheKey, autoIncrement, needAddLimit, tableType,
+                TableConfig table = new TableConfig(tableName, cacheKey, needAddLimit, tableType,
                         dataNode, (tableRule != null) ? tableRule.getRule() : null, ruleRequired, incrementColumn,
                         corn, checkClass, globalCheck);
                 checkDataNodeExists(table.getDataNodes());
@@ -406,7 +406,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             if (incrementColumn != null && !autoIncrement) {
                 throw new ConfigException("table " + cdTbName + " has incrementColumn but not AutoIncrement");
             }
-            TableConfig table = new TableConfig(cdTbName, cacheKey, autoIncrement, needAddLimit,
+            TableConfig table = new TableConfig(cdTbName, cacheKey, needAddLimit,
                     TableTypeEnum.TYPE_SHARDING_TABLE, strDatoNodes, null, false, parentTable, joinKey, parentKey, incrementColumn,
                     null, null, false);
 

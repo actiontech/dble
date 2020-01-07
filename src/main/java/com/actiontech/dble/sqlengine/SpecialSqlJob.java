@@ -88,7 +88,7 @@ public class SpecialSqlJob extends SQLJob {
         conn.setResponseHandler(this);
         ((MySQLConnection) conn).setComplexQuery(true);
         try {
-            conn.query(sql);
+            conn.query(sql, true);
         } catch (Exception e) { // (UnsupportedEncodingException e) {
             doFinished(true);
         }

@@ -87,7 +87,7 @@ public class MultiTablesMetaJob implements ResponseHandler, Runnable {
         conn.setResponseHandler(this);
         ((MySQLConnection) conn).setComplexQuery(true);
         try {
-            conn.query(sql);
+            conn.query(sql, true);
             connection = conn;
         } catch (Exception e) { // (UnsupportedEncodingException e) {
             doFinished(true);

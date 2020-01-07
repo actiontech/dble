@@ -73,7 +73,7 @@ public abstract class AbstractConsistencyChecker implements SQLQueryResultListen
         if (distinctList.size() > 1) {
             failResponse(distinctList);
         } else {
-            successResponse(errorList);
+            resultResponse(errorList);
         }
 
         if (handler != null) {
@@ -109,5 +109,5 @@ public abstract class AbstractConsistencyChecker implements SQLQueryResultListen
 
     abstract void failResponse(List<SQLQueryResult<List<Map<String, String>>>> res);
 
-    abstract void successResponse(List<SQLQueryResult<List<Map<String, String>>>> elist);
+    abstract void resultResponse(List<SQLQueryResult<List<Map<String, String>>>> elist);
 }

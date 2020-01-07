@@ -18,6 +18,7 @@ import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.SplitUtil;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
@@ -448,7 +449,7 @@ public class XMLSchemaLoader implements SchemaLoader {
                 databaseStr = databaseStr.toLowerCase();
             }
             String host = element.getAttribute("dataHost");
-            if (empty(dnNamePre) || empty(databaseStr) || empty(host)) {
+            if (StringUtils.isNotBlank(dnNamePre) || StringUtils.isNotBlank(databaseStr) || StringUtils.isNotBlank(host)) {
                 throw new ConfigException("dataNode " + dnNamePre + " define error ,attribute can't be empty");
             }
             //dnNamePre(name),databaseStr(database),host(dataHost) can use ',', '$', '-' to configure multi nodes
@@ -460,9 +461,9 @@ public class XMLSchemaLoader implements SchemaLoader {
             String[] databases = SplitUtil.split(databaseStr, ',', '$', '-');
             String[] hostStrings = SplitUtil.split(host, ',', '$', '-');
 
-            if (dnNames.length > 1 && dnNames.length != databases.length * hostStrings.length) {
+            if (dnNames.length != databases.length * hostStrings.length) {
                 throw new ConfigException("dataNode " + dnNamePre +
-                        " define error ,dnNames.length must be=databases.length*hostStrings.length");
+                        " define error ,Number of dataNode name must be = Number of database * Number of dataHost");
             }
             if (dnNames.length > 1) {
 

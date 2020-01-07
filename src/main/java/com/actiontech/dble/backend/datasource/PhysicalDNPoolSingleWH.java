@@ -9,6 +9,8 @@ import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.GetConnectionHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
+import com.actiontech.dble.config.helper.GetAndSyncDataSourceKeyVariables;
+import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.loader.zkprocess.parse.JsonProcessBase;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DataSourceStatus;
 import com.actiontech.dble.config.model.DataHostConfig;
@@ -482,6 +484,16 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
             writeSource.setReadNode(true);
             //close all old master connection ,so that new write query would not put into the old writeHost
             writeSource.clearCons("ha command switch datasource");
+            if (!newWriteHost.isDisabled()) {
+                GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(newWriteHost);
+                KeyVariables variables = task.call();
+                if (variables != null) {
+                    newWriteHost.setReadOnly(variables.isReadOnly());
+                } else {
+                    LOGGER.warn(" GetAndSyncDataSourceKeyVariables failed, set newWriteHost ReadOnly");
+                    newWriteHost.setReadOnly(true);
+                }
+            }
             newWriteHost.setReadNode(false);
             writeSource = newWriteHost;
             HaConfigManager.getInstance().updateConfDataHost(this, syncWriteConf);

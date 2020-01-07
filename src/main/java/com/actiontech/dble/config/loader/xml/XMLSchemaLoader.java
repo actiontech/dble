@@ -449,7 +449,7 @@ public class XMLSchemaLoader implements SchemaLoader {
                 databaseStr = databaseStr.toLowerCase();
             }
             String host = element.getAttribute("dataHost");
-            if (StringUtils.isNotBlank(dnNamePre) || StringUtils.isNotBlank(databaseStr) || StringUtils.isNotBlank(host)) {
+            if (StringUtils.isBlank(dnNamePre) || StringUtils.isBlank(databaseStr) || StringUtils.isBlank(host)) {
                 throw new ConfigException("dataNode " + dnNamePre + " define error ,attribute can't be empty");
             }
             //dnNamePre(name),databaseStr(database),host(dataHost) can use ',', '$', '-' to configure multi nodes

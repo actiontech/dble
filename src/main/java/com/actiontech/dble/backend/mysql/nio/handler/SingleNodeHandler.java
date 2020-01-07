@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
@@ -49,8 +49,8 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     private long resultSize;
     long selectRows;
 
-    private String primaryKeyTable = null;
-    private int primaryKeyIndex = -1;
+    private String cacheKeyTable = null;
+    private int cacheKeyIndex = -1;
 
     private boolean prepared;
     private int fieldCount;
@@ -118,7 +118,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             TxnLogHelper.putTxnLog(session.getSource(), node.getStatement());
         }
         session.readyToDeliver();
-        session.setPreExecuteEnd();
+        session.setPreExecuteEnd(false);
         conn.execute(node, session.getSource(), isAutocommit);
     }
 
@@ -158,7 +158,9 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         LOGGER.info("execute sql err :" + errMsg + " con:" + conn +
                 " frontend host:" + errHost + "/" + errPort + "/" + errUser);
 
-        if (syncFinished) {
+        if (conn.isClosed()) {
+            session.getTargetMap().remove(conn.getAttachment());
+        } else if (syncFinished) {
             session.releaseConnectionIfSafe(conn, false);
         } else {
             conn.closeWithoutRsp("unfinished sync");
@@ -312,11 +314,11 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         this.resultSize += eof.length;
 
 
-        String primaryKey = null;
-        if (rrs.hasPrimaryKeyToCache()) {
-            String[] items = rrs.getPrimaryKeyItems();
-            primaryKeyTable = items[0];
-            primaryKey = items[1];
+        String cacheKey = null;
+        if (rrs.hasCacheKeyToCache()) {
+            String[] items = rrs.getCacheKeyItems();
+            cacheKeyTable = items[0];
+            cacheKey = items[1];
         }
 
         header[3] = ++packetId;
@@ -342,11 +344,11 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                 }
                 fieldPackets.add(fieldPk);
 
-                // find primary key index
-                if (primaryKey != null && primaryKeyIndex == -1) {
+                // find cache key index
+                if (cacheKey != null && cacheKeyIndex == -1) {
                     String fieldName = new String(fieldPk.getName());
-                    if (primaryKey.equalsIgnoreCase(fieldName)) {
-                        primaryKeyIndex = i;
+                    if (cacheKey.equalsIgnoreCase(fieldName)) {
+                        cacheKeyIndex = i;
                     }
                 }
 
@@ -369,17 +371,17 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         row[3] = ++packetId;
 
         RowDataPacket rowDataPk = null;
-        // cache primaryKey-> dataNode
-        if (primaryKeyIndex != -1) {
+        // cache cacheKey-> dataNode
+        if (cacheKeyIndex != -1) {
             rowDataPk = new RowDataPacket(fieldCount);
             rowDataPk.read(row);
-            byte[] key = rowDataPk.fieldValues.get(primaryKeyIndex);
+            byte[] key = rowDataPk.fieldValues.get(cacheKeyIndex);
             if (key != null) {
-                String primaryKey = new String(key);
+                String cacheKey = new String(key);
                 RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
                 LayerCachePool pool = CacheService.getTableId2DataNodeCache();
                 if (pool != null) {
-                    pool.putIfAbsent(primaryKeyTable, primaryKey, rNode.getName());
+                    pool.putIfAbsent(cacheKeyTable, cacheKey, rNode.getName());
                 }
             }
         }

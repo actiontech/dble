@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
+* Copyright (C) 2016-2020 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -21,8 +21,7 @@ public class TableConfig {
     }
 
     private final String name;
-    private final String primaryKey;
-    private final boolean autoIncrement;
+    private final String cacheKey;
     private final String incrementColumn;
     private final boolean needAddLimit;
     private final TableTypeEnum tableType;
@@ -30,8 +29,10 @@ public class TableConfig {
     private final RuleConfig rule;
     private final String partitionColumn;
     private final boolean ruleRequired;
-    private final boolean partionKeyIsPrimaryKey;
     private final boolean isNoSharding;
+    private final boolean globalCheck;
+    private final String cron;
+    private final String globalCheckClass;
     /**
      * Child Table
      */
@@ -41,24 +42,28 @@ public class TableConfig {
     private final String locateRTableKeySql;
     private final TableConfig directRouteTC;
 
-    public TableConfig(String name, String primaryKey, boolean autoIncrement, boolean needAddLimit,
-                       TableTypeEnum tableType, String dataNode, RuleConfig rule, boolean ruleRequired, String incrementColumn) {
-        this(name, primaryKey, autoIncrement, needAddLimit, tableType, dataNode, rule, ruleRequired, null, null, null, incrementColumn);
+    public TableConfig(String name, String cacheKey, boolean needAddLimit,
+                       TableTypeEnum tableType, String dataNode, RuleConfig rule, boolean ruleRequired, String incrementColumn,
+                       String cron, String globalCheckClass, boolean globalCheck) {
+        this(name, cacheKey, needAddLimit, tableType, dataNode, rule, ruleRequired,
+                null, null, null, incrementColumn, cron, globalCheckClass, globalCheck);
     }
 
-    public TableConfig(String name, String primaryKey, boolean autoIncrement, boolean needAddLimit,
+    public TableConfig(String name, String cacheKey, boolean needAddLimit,
                        TableTypeEnum tableType, String dataNode, RuleConfig rule, boolean ruleRequired, TableConfig parentTC,
-                       String joinKey, String parentKey, String incrementColumn) {
+                       String joinKey, String parentKey, String incrementColumn, String cron, String globalCheckClass, boolean globalCheck) {
         if (name == null) {
             throw new IllegalArgumentException("table name is null");
         } else if (dataNode == null) {
             throw new IllegalArgumentException("dataNode name is null");
         }
         this.incrementColumn = incrementColumn;
-        this.primaryKey = primaryKey;
-        this.autoIncrement = autoIncrement;
+        this.cacheKey = cacheKey;
         this.needAddLimit = needAddLimit;
         this.tableType = tableType;
+        this.cron = cron;
+        this.globalCheckClass = globalCheckClass;
+        this.globalCheck = globalCheck;
         if (ruleRequired && rule == null) {
             throw new IllegalArgumentException("ruleRequired but rule is null");
         }
@@ -75,7 +80,6 @@ public class TableConfig {
         Collections.addAll(dataNodes, theDataNodes);
         this.rule = rule;
         this.partitionColumn = (rule == null) ? null : rule.getColumn();
-        partionKeyIsPrimaryKey = (partitionColumn == null) ? primaryKey == null : partitionColumn.equals(primaryKey);
         this.ruleRequired = ruleRequired;
         this.parentTC = parentTC;
         if (parentTC != null) {
@@ -116,19 +120,20 @@ public class TableConfig {
     }
 
 
-    public TableConfig(String name, String primaryKey, boolean autoIncrement, boolean needAddLimit,
+    public TableConfig(String name, String cacheKey, boolean needAddLimit,
                        TableTypeEnum tableType, ArrayList<String> dataNode, RuleConfig rule, boolean ruleRequired, TableConfig parentTC,
-                       String joinKey, String parentKey, String incrementColumn) {
-        this.primaryKey = primaryKey;
-        this.autoIncrement = autoIncrement;
+                       String joinKey, String parentKey, String incrementColumn, String cron, String globalCheckClass, boolean globalCheck) {
+        this.cacheKey = cacheKey;
         this.needAddLimit = needAddLimit;
         this.tableType = tableType;
         this.name = name;
+        this.cron = cron;
+        this.globalCheckClass = globalCheckClass;
+        this.globalCheck = globalCheck;
         this.dataNodes = dataNode;
         this.rule = rule;
         this.partitionColumn = (rule == null) ? null : rule.getColumn();
         this.incrementColumn = incrementColumn;
-        partionKeyIsPrimaryKey = (partitionColumn == null) ? primaryKey == null : partitionColumn.equals(primaryKey);
         this.ruleRequired = ruleRequired;
         this.parentTC = parentTC;
         this.joinKey = joinKey;
@@ -164,21 +169,22 @@ public class TableConfig {
 
 
     TableConfig lowerCaseCopy(TableConfig parent) {
-        return new TableConfig(this.name.toLowerCase(), this.primaryKey, this.autoIncrement, this.needAddLimit,
-                this.tableType, this.dataNodes, this.rule, this.ruleRequired, parent, this.joinKey, this.parentKey, this.incrementColumn);
+        return new TableConfig(this.name.toLowerCase(), this.cacheKey, this.needAddLimit,
+                this.tableType, this.dataNodes, this.rule, this.ruleRequired, parent, this.joinKey, this.parentKey, this.incrementColumn,
+                this.cron, this.globalCheckClass, this.globalCheck);
 
     }
 
-    public String getTrueIncrementColumn() {
-        return incrementColumn != null ? incrementColumn : primaryKey;
+    public String getIncrementColumn() {
+        return incrementColumn;
     }
 
-    public String getPrimaryKey() {
-        return primaryKey;
+    public String getCacheKey() {
+        return cacheKey;
     }
 
     public boolean isAutoIncrement() {
-        return autoIncrement;
+        return incrementColumn != null;
     }
 
     public boolean isNeedAddLimit() {
@@ -284,13 +290,20 @@ public class TableConfig {
         return rule;
     }
 
-    public boolean primaryKeyIsPartionKey() {
-        return partionKeyIsPrimaryKey;
-    }
-
 
     public boolean isNoSharding() {
         return isNoSharding;
     }
 
+    public boolean isGlobalCheck() {
+        return globalCheck;
+    }
+
+    public String getCron() {
+        return cron;
+    }
+
+    public String getGlobalCheckClass() {
+        return globalCheckClass;
+    }
 }

@@ -4,10 +4,9 @@ import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.ReloadManager;
 import com.actiontech.dble.util.CollectionUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
@@ -16,25 +15,16 @@ import java.util.concurrent.locks.LockSupport;
  */
 public final class ProxyMeta {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ProxyMeta.class);
     private static final ProxyMeta INSTANCE = new ProxyMeta();
-
     private volatile ProxyMetaManager tmManager;
-
     private volatile boolean metaChanging = false;
 
     private ProxyMeta() {
-
     }
 
     public static ProxyMeta getInstance() {
         return INSTANCE;
     }
-
-    public void setTmManager(ProxyMetaManager tmManager) {
-        this.tmManager = tmManager;
-    }
-
 
     public ProxyMetaManager getTmManager() {
         while (metaChanging) {
@@ -43,12 +33,15 @@ public final class ProxyMeta {
         return tmManager;
     }
 
+    public void setTmManager(ProxyMetaManager tmManager) {
+        this.tmManager = tmManager;
+    }
 
     public boolean reloadMetaData(ServerConfig conf, Map<String, Set<String>> specifiedSchemas) {
         this.metaChanging = true;
         ReloadManager.metaReload();
         try {
-            //back up orgin meta data
+            //back up origin meta data
             ProxyMetaManager tmpManager = tmManager;
             ProxyMetaManager newManager;
             if (CollectionUtil.isEmpty(specifiedSchemas)) {

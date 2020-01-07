@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
@@ -15,7 +15,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.builder.HandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.CommitNodesHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplictCommitHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitCommitHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.RollbackNodesHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.NormalCommitNodesHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.NormalRollbackNodesHandler;
@@ -29,8 +29,6 @@ import com.actiontech.dble.btrace.provider.CostTimeProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
-import com.actiontech.dble.singleton.PauseDatanodeManager;
-import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.net.handler.BackEndDataCleaner;
 import com.actiontech.dble.net.handler.FrontendCommandHandler;
 import com.actiontech.dble.net.mysql.EOFPacket;
@@ -49,6 +47,8 @@ import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.status.SlowQueryLog;
 import com.actiontech.dble.server.trace.TraceRecord;
 import com.actiontech.dble.server.trace.TraceResult;
+import com.actiontech.dble.singleton.PauseDatanodeManager;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.statistic.stat.QueryTimeCost;
 import com.actiontech.dble.statistic.stat.QueryTimeCostContainer;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
@@ -65,6 +65,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
 import static com.actiontech.dble.meta.PauseEndThreadPool.CONTINUE_TYPE_MULTIPLE;
@@ -83,6 +84,8 @@ public class NonBlockingSession implements Session {
     private long queryStartTime = 0;
     private final ServerConnection source;
     private final ConcurrentMap<RouteResultsetNode, BackendConnection> target;
+    private final AtomicLong queriesCounter = new AtomicLong(0);
+    private final AtomicLong transactionsCounter = new AtomicLong(0);
     private RollbackNodesHandler rollbackHandler;
     private CommitNodesHandler commitHandler;
     private SavePointHandler savePointHandler;
@@ -93,6 +96,10 @@ public class NonBlockingSession implements Session {
     private volatile boolean needWaitFinished = false;
     // cancel status  0 - CANCEL_STATUS_INIT 1 - CANCEL_STATUS_COMMITTING  2 - CANCEL_STATUS_CANCELING
     private int cancelStatus = 0;
+
+    // kill query
+    private volatile boolean killed = false;
+    private volatile boolean discard = false;
 
     private OutputHandler outputHandler;
 
@@ -113,8 +120,7 @@ public class NonBlockingSession implements Session {
     private volatile boolean traceEnable = false;
     private volatile TraceResult traceResult = new TraceResult();
     private volatile RouteResultset complexRrs = null;
-
-    private AtomicInteger test = new AtomicInteger(0);
+    private volatile SessionStage sessionStage = SessionStage.Init;
 
     public NonBlockingSession(ServerConnection source) {
         this.source = source;
@@ -137,7 +143,9 @@ public class NonBlockingSession implements Session {
     }
 
     void setRequestTime() {
+        sessionStage = SessionStage.Read_SQL;
         long requestTime = 0;
+
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             requestTime = System.nanoTime();
             traceResult.setVeryStartPrepare(requestTime);
@@ -168,6 +176,7 @@ public class NonBlockingSession implements Session {
     }
 
     void startProcess() {
+        sessionStage = SessionStage.Parse_SQL;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             traceResult.setParseStartPrepare(new TraceRecord(System.nanoTime()));
         }
@@ -178,6 +187,7 @@ public class NonBlockingSession implements Session {
     }
 
     public void endParse() {
+        sessionStage = SessionStage.Route_Calculation;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             traceResult.ready();
             traceResult.setRouteStart(new TraceRecord(System.nanoTime()));
@@ -190,6 +200,7 @@ public class NonBlockingSession implements Session {
 
 
     void endRoute(RouteResultset rrs) {
+        sessionStage = SessionStage.Prepare_to_Push;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             traceResult.setPreExecuteStart(new TraceRecord(System.nanoTime()));
         }
@@ -221,11 +232,19 @@ public class NonBlockingSession implements Session {
         provider.readyToDeliver(source.getId());
     }
 
-    public void setPreExecuteEnd() {
+    public void setPreExecuteEnd(boolean isComplexQuery) {
+        sessionStage = SessionStage.Execute_SQL;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
+            traceResult.setComplexQuery(isComplexQuery);
             traceResult.setPreExecuteEnd(new TraceRecord(System.nanoTime()));
             traceResult.clearConnReceivedMap();
             traceResult.clearConnFlagMap();
+        }
+    }
+
+    public void setSubQuery() {
+        if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
+            traceResult.setSubQuery(true);
         }
     }
 
@@ -245,6 +264,7 @@ public class NonBlockingSession implements Session {
     }
 
     public void setBackendResponseTime(MySQLConnection conn) {
+        sessionStage = SessionStage.Fetching_Result;
         long responseTime = 0;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
@@ -300,6 +320,7 @@ public class NonBlockingSession implements Session {
     }
 
     public void setResponseTime(boolean isSuccess) {
+        sessionStage = SessionStage.Finished;
         long responseTime = 0;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             responseTime = System.nanoTime();
@@ -322,7 +343,12 @@ public class NonBlockingSession implements Session {
         QueryTimeCostContainer.getInstance().add(queryTimeCost);
     }
 
+    public void setStageFinished() {
+        sessionStage = SessionStage.Finished;
+    }
+
     public void setBackendResponseEndTime(MySQLConnection conn) {
+        sessionStage = SessionStage.First_Node_Fetched_Result;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
             ResponseHandler responseHandler = conn.getRespHandler();
@@ -341,6 +367,7 @@ public class NonBlockingSession implements Session {
     }
 
     public void setBeginCommitTime() {
+        sessionStage = SessionStage.Distributed_Transaction_Commit;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             traceResult.setAdtCommitBegin(new TraceRecord(System.nanoTime()));
         }
@@ -359,6 +386,10 @@ public class NonBlockingSession implements Session {
     }
 
     public void setHandlerEnd(DMLResponseHandler handler) {
+        if (handler.getNextHandler() != null) {
+            DMLResponseHandler next = handler.getNextHandler();
+            sessionStage = SessionStage.changeFromHandlerType(next.type());
+        }
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
             traceResult.addToRecordEndMap(handler, new TraceRecord(System.nanoTime()));
         }
@@ -367,6 +398,15 @@ public class NonBlockingSession implements Session {
     public List<String[]> genTraceResult() {
         if (traceEnable) {
             return traceResult.genTraceResult();
+        } else {
+            return null;
+        }
+    }
+
+    public List<String[]> genRunningSQLStage() {
+        if (SlowQueryLog.getInstance().isEnableSlowLog()) {
+            TraceResult tmpResult = (TraceResult) traceResult.clone();
+            return tmpResult.genRunningSQLStage();
         } else {
             return null;
         }
@@ -401,6 +441,10 @@ public class NonBlockingSession implements Session {
         return needWaitFinished;
     }
 
+    public SessionStage getSessionStage() {
+        return sessionStage;
+    }
+
     /**
      * SET CANCELABLE STATUS
      */
@@ -415,6 +459,11 @@ public class NonBlockingSession implements Session {
 
     @Override
     public void execute(RouteResultset rrs) {
+        if (killed) {
+            source.writeErrMessage(ErrorCode.ER_QUERY_INTERRUPTED, "The query is interrupted.");
+            return;
+        }
+
         // clear prev execute resources
         clearHandlesResources();
         if (LOGGER.isDebugEnabled()) {
@@ -451,6 +500,8 @@ public class NonBlockingSession implements Session {
             }
             return;
         }
+
+        setRouteResultToTrace(rrs.getNodes());
         if (this.getSessionXaID() != null && this.xaState == TxState.TX_INITIALIZE_STATE) {
             this.xaState = TxState.TX_STARTED_STATE;
         }
@@ -458,6 +509,12 @@ public class NonBlockingSession implements Session {
             executeForSingleNode(rrs);
         } else {
             executeMultiResultSet(rrs);
+        }
+    }
+
+    public void setRouteResultToTrace(RouteResultsetNode[] nodes) {
+        if (SlowQueryLog.getInstance().isEnableSlowLog()) {
+            traceResult.setDataNodes(nodes);
         }
     }
 
@@ -472,6 +529,7 @@ public class NonBlockingSession implements Session {
         }
         try {
             singleNodeHandler.execute();
+            discard = true;
         } catch (Exception e) {
             handleSpecial(rrs, false);
             LOGGER.info(String.valueOf(source) + rrs, e);
@@ -495,6 +553,7 @@ public class NonBlockingSession implements Session {
             MultiNodeDdlPrepareHandler multiNodeDdlHandler = new MultiNodeDdlPrepareHandler(rrs, this);
             try {
                 multiNodeDdlHandler.execute();
+                discard = true;
             } catch (Exception e) {
                 if (this.getSessionXaID() != null) {
                     this.xaState = TxState.TX_INITIALIZE_STATE;
@@ -511,13 +570,14 @@ public class NonBlockingSession implements Session {
         } else if (ServerParse.SELECT == rrs.getSqlType() && rrs.getGroupByCols() != null) {
             MultiNodeSelectHandler multiNodeSelectHandler = new MultiNodeSelectHandler(rrs, this);
             setTraceSimpleHandler(multiNodeSelectHandler);
-            setPreExecuteEnd();
+            setPreExecuteEnd(false);
             readyToDeliver();
             if (this.isPrepared()) {
                 multiNodeSelectHandler.setPrepared(true);
             }
             try {
                 multiNodeSelectHandler.execute();
+                discard = true;
             } catch (Exception e) {
                 LOGGER.info(String.valueOf(source) + rrs, e);
                 source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
@@ -528,13 +588,14 @@ public class NonBlockingSession implements Session {
         } else {
             MultiNodeQueryHandler multiNodeHandler = new MultiNodeQueryHandler(rrs, this);
             setTraceSimpleHandler(multiNodeHandler);
-            setPreExecuteEnd();
+            setPreExecuteEnd(false);
             readyToDeliver();
             if (this.isPrepared()) {
                 multiNodeHandler.setPrepared(true);
             }
             try {
                 multiNodeHandler.execute();
+                discard = true;
             } catch (Exception e) {
                 LOGGER.info(String.valueOf(source) + rrs, e);
                 if (!source.isAutocommit() || source.isTxStart()) {
@@ -559,6 +620,7 @@ public class NonBlockingSession implements Session {
             if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
                 traceResult.setBuilder(baseBuilder);
             }
+            discard = true;
         } catch (SQLSyntaxErrorException e) {
             LOGGER.info(String.valueOf(source) + " execute plan is : " + node, e);
             source.writeErrMessage(ErrorCode.ER_YES, "optimizer build error");
@@ -581,7 +643,7 @@ public class NonBlockingSession implements Session {
 
     public void executeMultiSelect(RouteResultset rrs) {
         SQLSelectStatement ast = (SQLSelectStatement) rrs.getSqlStatement();
-        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(this.getSource().getSchema(), this.getSource().getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false);
+        MySQLPlanNodeVisitor visitor = new MySQLPlanNodeVisitor(this.getSource().getSchema(), this.getSource().getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), false, this.getSource().getUsrVariables());
         visitor.visit(ast);
         PlanNode node = visitor.getTableNode();
         if (node.isCorrelatedSubQuery()) {
@@ -599,15 +661,13 @@ public class NonBlockingSession implements Session {
                 return;
             }
         }
-        setPreExecuteEnd();
+        setPreExecuteEnd(true);
         if (PlanUtil.containsSubQuery(node)) {
+            setSubQuery();
             final PlanNode finalNode = node;
-            DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
-                //sub Query build will be blocked, so use ComplexQueryExecutor
-                @Override
-                public void run() {
-                    executeMultiResultSet(finalNode);
-                }
+            //sub Query build will be blocked, so use ComplexQueryExecutor
+            DbleServer.getInstance().getComplexQueryExecutor().execute(() -> {
+                executeMultiResultSet(finalNode);
             });
         } else {
             if (!visitor.isContainSchema()) {
@@ -655,9 +715,9 @@ public class NonBlockingSession implements Session {
         commitHandler.commit();
     }
 
-    public void implictCommit(ImplictCommitHandler handler) {
+    public void implictCommit(ImplicitCommitHandler handler) {
         resetCommitNodesHandler();
-        commitHandler.setImplictCommitHandler(handler);
+        commitHandler.setImplicitCommitHandler(handler);
         commit();
     }
 
@@ -822,7 +882,7 @@ public class NonBlockingSession implements Session {
                         c.release();
                     } else if (needClose) {
                         //c.rollback();
-                        c.close("the  need to be closed");
+                        c.close("the need to be closed");
                     } else {
                         c.release();
                     }
@@ -1111,6 +1171,19 @@ public class NonBlockingSession implements Session {
         return ok.toBytes();
     }
 
+    public void queryCount() {
+        queriesCounter.incrementAndGet();
+    }
+
+    public void transactionsCount() {
+        transactionsCounter.incrementAndGet();
+    }
+
+    public void singleTransactionsCount() {
+        if (!source.isTxStart()) {
+            transactionsCounter.incrementAndGet();
+        }
+    }
 
     /**
      * reset the session multiStatementStatus
@@ -1195,6 +1268,36 @@ public class NonBlockingSession implements Session {
 
     public boolean isRetryXa() {
         return retryXa;
+    }
+
+
+    public long getQueriesCounter() {
+        return queriesCounter.get();
+    }
+
+    public long getTransactionsCounter() {
+        return transactionsCounter.get();
+    }
+
+    public void resetCounter() {
+        queriesCounter.set(Long.MIN_VALUE);
+        transactionsCounter.set(Long.MIN_VALUE);
+    }
+
+    public boolean isKilled() {
+        return killed;
+    }
+
+    public void setKilled(boolean killed) {
+        this.killed = killed;
+    }
+
+    public boolean isDiscard() {
+        return discard;
+    }
+
+    public void setDiscard(boolean discard) {
+        this.discard = discard;
     }
 
 }

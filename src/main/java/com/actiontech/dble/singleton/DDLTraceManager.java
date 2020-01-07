@@ -37,7 +37,7 @@ public final class DDLTraceManager {
         DDLTraceInfo info = traceMap.get(sc);
         if (info != null) {
             info.updateConnectionStatus(mc, status);
-            LOGGER.info("[DDL][" + info.getId() + "] connection status updaste : " + mc.getId() + " " + status);
+            LOGGER.info("[DDL][" + info.getId() + "] MySQLConnection status update : backendId = " + mc.getId() + " mysqlId = " + mc.getThreadId() + " " + status);
         }
     }
 
@@ -45,7 +45,7 @@ public final class DDLTraceManager {
         DDLTraceInfo info = traceMap.get(c);
         if (info != null) {
             info.setStage(stage);
-            LOGGER.info("STAGE CHANGE " + info.toString());
+            LOGGER.info("STAGE CHANGE " + info.toBriefString());
         }
     }
 

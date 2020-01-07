@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
+* Copyright (C) 2016-2020 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -444,10 +444,14 @@ public abstract class AbstractConnection implements NIOConnection {
         }
     }
 
+    public void writePart(ByteBuffer buffer) {
+        write(buffer);
+    }
+
     public ByteBuffer checkWriteBuffer(ByteBuffer buffer, int capacity, boolean writeSocketIfFull) {
         if (capacity > buffer.remaining()) {
             if (writeSocketIfFull) {
-                write(buffer);
+                writePart(buffer);
                 return processor.getBufferPool().allocate(capacity);
             } else { // Relocate a larger buffer
                 buffer.flip();
@@ -471,7 +475,7 @@ public abstract class AbstractConnection implements NIOConnection {
                 break;
             } else {
                 buffer.put(src, offset, remaining);
-                write(buffer);
+                writePart(buffer);
                 buffer = allocate();
                 offset += remaining;
                 length -= remaining;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -10,7 +10,6 @@ import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.util.RouterUtil;
-import com.actiontech.dble.server.util.GlobalTableUtil;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.mpp.ColumnRoutePair;
 import com.actiontech.dble.util.StringUtil;
@@ -86,54 +85,24 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
         return shardingValue;
     }
 
-    protected static int getIdxGlobalByMeta(boolean isGlobalCheck, StructureMeta.TableMeta orgTbMeta, StringBuilder sb, int colSize) {
-        int idxGlobal = -1;
-        sb.append("(");
-        for (int i = 0; i < colSize; i++) {
-            String column = orgTbMeta.getColumnsList().get(i).getName();
-            if (i > 0) {
-                sb.append(",");
-            }
-            sb.append("`").append(column).append("`");
-            if (isGlobalCheck && column.equalsIgnoreCase(GlobalTableUtil.GLOBAL_TABLE_CHECK_COLUMN)) {
-                idxGlobal = i; // find the index of inner column
-            }
-        }
-        sb.append(")");
-        return idxGlobal;
-    }
 
     protected int getIncrementKeyIndex(SchemaInfo schemaInfo, String incrementColumn) throws SQLNonTransientException {
         if (incrementColumn == null) {
-            throw new SQLNonTransientException("please make sure the primaryKey's config is not null in schemal.xml");
+            throw new SQLNonTransientException("please make sure the incrementColumn's config is not null in schemal.xml");
         }
-        int primaryKeyIndex = -1;
         StructureMeta.TableMeta tbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
                 schemaInfo.getTable());
         if (tbMeta != null) {
-            boolean hasIncrementColumn = false;
-            StructureMeta.IndexMeta primaryKey = tbMeta.getPrimary();
-            if (primaryKey != null) {
-                for (int i = 0; i < tbMeta.getColumnsList().size(); i++) {
-                    if (incrementColumn.equalsIgnoreCase(tbMeta.getColumns(i).getName())) {
-                        hasIncrementColumn = true;
-                        break;
-                    }
-                }
-            }
-            if (!hasIncrementColumn) {
-                String msg = "please make sure your table structure has primaryKey or incrementColumn";
-                LOGGER.info(msg);
-                throw new SQLNonTransientException(msg);
-            }
-
-            for (int i = 0; i < tbMeta.getColumnsCount(); i++) {
+            for (int i = 0; i < tbMeta.getColumnsList().size(); i++) {
                 if (incrementColumn.equalsIgnoreCase(tbMeta.getColumns(i).getName())) {
                     return i;
                 }
             }
+            String msg = "please make sure your table structure has incrementColumn";
+            LOGGER.info(msg);
+            throw new SQLNonTransientException(msg);
         }
-        return primaryKeyIndex;
+        return -1;
     }
 
     protected int getTableColumns(SchemaInfo schemaInfo, List<SQLExpr> columnExprList)

@@ -1,10 +1,15 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
+* Copyright (C) 2016-2020 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
 package com.actiontech.dble.backend.heartbeat;
 
+import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.alarm.AlarmCode;
+import com.actiontech.dble.alarm.Alert;
+import com.actiontech.dble.alarm.AlertUtil;
+import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
@@ -146,15 +151,28 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                     }
                 }
             } else if (heartbeat.getStatus() != MySQLHeartbeat.TIMEOUT_STATUS) { //error/init ->ok
-                if (!source.isSalveOrRead()) { // writehost check read only
-                    GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(source);
-                    KeyVariables variables = task.call();
+                GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(source);
+                KeyVariables variables = task.call();
+                if (variables == null || variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+                    String url = con.getHost() + ":" + con.getPort();
+                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", url);
+                    String errMsg = variables == null ? "GetAndSyncDataSourceKeyVariables failed" : "this dataHost[=" + url + "]'s lower_case is wrong";
+                    LOGGER.warn(errMsg + ", set heartbeat Error");
                     if (variables != null) {
+                        AlertUtil.alert(AlarmCode.DATA_HOST_LOWER_CASE_ERROR, Alert.AlertLevel.WARN, errMsg, "mysql", this.heartbeat.getSource().getConfig().getId(), labels);
+                        ToResolveContainer.DATA_HOST_LOWER_CASE_ERROR.add(con.getHost() + ":" + con.getPort());
+                    }
+                    heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS);
+                    return;
+                } else {
+                    String url = con.getHost() + ":" + con.getPort();
+                    if (ToResolveContainer.DATA_HOST_LOWER_CASE_ERROR.contains(url)) {
+                        Map<String, String> labels = AlertUtil.genSingleLabel("data_host", url);
+                        AlertUtil.alertResolve(AlarmCode.DATA_HOST_LOWER_CASE_ERROR, Alert.AlertLevel.WARN, "mysql", this.heartbeat.getSource().getConfig().getId(), labels,
+                                ToResolveContainer.DATA_HOST_LOWER_CASE_ERROR, url);
+                    }
+                    if (!source.isSalveOrRead()) { // writehost check read only
                         source.setReadOnly(variables.isReadOnly());
-                    } else {
-                        LOGGER.warn("GetAndSyncDataSourceKeyVariables failed, set heartbeat Error");
-                        heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS);
-                        return;
                     }
                 }
             }

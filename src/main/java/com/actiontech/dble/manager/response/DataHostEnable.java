@@ -39,7 +39,7 @@ public final class DataHostEnable {
     public static void execute(Matcher enable, ManagerConnection mc) {
         String dhName = enable.group(1);
         String subHostName = enable.group(3);
-        boolean useCluster = ClusterHelper.useCluster();
+        boolean useCluster = ClusterHelper.useClusterHa();
         //check the dataHost is exists
 
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();

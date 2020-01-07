@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 package com.actiontech.dble.backend.mysql.nio.handler;
@@ -59,13 +59,13 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
     @Override
     public void fieldEofResponse(byte[] header, List<byte[]> fields, List<FieldPacket> fieldPacketsNull, byte[] eof,
                                  boolean isLeft, BackendConnection conn) {
-        queues.put(conn, new LinkedBlockingQueue<HeapItem>(queueSize));
+        queues.put(conn, new LinkedBlockingQueue<>(queueSize));
         lock.lock();
         try {
             if (isFail()) {
                 if (decrementToZero(conn)) {
                     session.resetMultiStatementStatus();
-                    handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
+                    handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, false);
                 }
             } else {
                 if (!fieldsReturned) {
@@ -145,30 +145,22 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
     }
 
     private void startOwnThread() {
-        DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
-            @Override
-            public void run() {
-                ownThreadJob();
-            }
-        });
+        DbleServer.getInstance().getComplexQueryExecutor().execute(() -> ownThreadJob());
     }
 
     private void ownThreadJob() {
         try {
-            ArrayMinHeap<HeapItem> heap = new ArrayMinHeap<>(new Comparator<HeapItem>() {
-                @Override
-                public int compare(HeapItem o1, HeapItem o2) {
-                    RowDataPacket row1 = o1.getRowPacket();
-                    RowDataPacket row2 = o2.getRowPacket();
-                    if (row1 == null || row2 == null) {
-                        if (row1 == row2)
-                            return 0;
-                        if (row1 == null)
-                            return -1;
-                        return 1;
-                    }
-                    return rowComparator.compare(row1, row2);
+            ArrayMinHeap<HeapItem> heap = new ArrayMinHeap<>((o1, o2) -> {
+                RowDataPacket row1 = o1.getRowPacket();
+                RowDataPacket row2 = o2.getRowPacket();
+                if (row1 == null || row2 == null) {
+                    if (row1 == row2)
+                        return 0;
+                    if (row1 == null)
+                        return -1;
+                    return 1;
                 }
+                return rowComparator.compare(row1, row2);
             });
             // init heap
             for (Map.Entry<BackendConnection, BlockingQueue<HeapItem>> entry : queues.entrySet()) {

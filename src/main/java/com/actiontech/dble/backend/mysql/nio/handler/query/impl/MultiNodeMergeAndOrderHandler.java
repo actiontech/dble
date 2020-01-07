@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -47,6 +47,7 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
         this.queueSize = DbleServer.getInstance().getConfig().getSystem().getMergeQueueSize();
         this.queues = new ConcurrentHashMap<>();
         this.merges.add(this);
+
     }
 
     @Override
@@ -237,5 +238,10 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
         }
         sb.append('}');
         return sb.toString();
+    }
+
+    @Override
+    public HandlerType type() {
+        return HandlerType.MERGE_AND_ORDER;
     }
 }

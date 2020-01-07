@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
+* Copyright (C) 2016-2020 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -82,7 +82,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
     @Override
     public void errorResponse(byte[] data, BackendConnection conn) {
         DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(), (MySQLConnection) conn,
-                DDLTraceInfo.DDLConnectionStatus.EXECUTE_ERROR);
+                DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_ERROR);
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(data);
         byte lastPacketId = packetId;
@@ -149,8 +149,8 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
         mysqlCon.setResponseHandler(this);
         mysqlCon.setSession(session);
         DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(), mysqlCon,
-                DDLTraceInfo.DDLConnectionStatus.EXECUTE_START);
-        mysqlCon.executeMultiNode(node, session.getSource(), sessionAutocommit && !session.getSource().isTxStart() && !node.isModifySQL());
+                DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_START);
+        mysqlCon.executeMultiNode(node, session.getSource(), sessionAutocommit && !session.getSource().isTxStart());
     }
 
 
@@ -162,7 +162,8 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
         }
         if (executeResponse) {
             DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(), (MySQLConnection) conn,
-                    DDLTraceInfo.DDLConnectionStatus.EXECUTE_SUCCESS);
+                    DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_SUCCESS);
+            session.setBackendResponseEndTime((MySQLConnection) conn);
             ServerConnection source = session.getSource();
             OkPacket ok = new OkPacket();
             ok.read(data);
@@ -271,7 +272,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
     }
 
 
-    void handleEndPacket(byte[] data, boolean isSuccess) {
+    private void handleEndPacket(byte[] data, boolean isSuccess) {
         session.clearResources(false);
         session.setResponseTime(isSuccess);
         session.getSource().write(data);

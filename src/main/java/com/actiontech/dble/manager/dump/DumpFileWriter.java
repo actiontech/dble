@@ -19,10 +19,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class DumpFileWriter {
 
-    public static final Logger LOGGER = LoggerFactory.getLogger("dumpFileLog");
+    private static final Logger LOGGER = LoggerFactory.getLogger("dumpFileLog");
     private static final String FILE_NAME_FORMAT = "%s-%s-%d.dump";
     private Map<String, DataNodeWriter> dataNodeWriters = new ConcurrentHashMap<>();
     private AtomicInteger finished = new AtomicInteger(0);
+    private volatile boolean isDeleteFile = false;
 
     public void open(String writePath, int writeQueueSize) throws IOException {
         Set<String> dataNodes = DbleServer.getInstance().getConfig().getDataNodes().keySet();
@@ -54,6 +55,10 @@ public class DumpFileWriter {
     public void write(String dataNode, String stmt, boolean isChanged, boolean needEOF) throws InterruptedException {
         DataNodeWriter writer = this.dataNodeWriters.get(dataNode);
         if (writer != null) {
+            if (writer.isAddEof()) {
+                writer.write(";");
+                writer.setAddEof(false);
+            }
             if (isChanged) writer.write("\n");
             writer.write(stmt);
             if (needEOF) writer.write(";");
@@ -61,7 +66,23 @@ public class DumpFileWriter {
     }
 
     public void write(String dataNode, String stmt) throws InterruptedException {
-        write(dataNode, stmt, true, true);
+        write(dataNode, stmt, false, true);
+    }
+
+    public void writeInsertHeader(String dataNode, String stmt) throws InterruptedException {
+        DataNodeWriter writer = this.dataNodeWriters.get(dataNode);
+        if (writer != null) {
+            writer.write("\n");
+            writer.write(stmt);
+            writer.setAddEof(true);
+        }
+    }
+
+    public void writeInsertValues(String dataNode, String stmt) throws InterruptedException {
+        DataNodeWriter writer = this.dataNodeWriters.get(dataNode);
+        if (writer != null) {
+            writer.write(stmt);
+        }
     }
 
     public void writeAll(String stmt) throws InterruptedException {
@@ -75,12 +96,19 @@ public class DumpFileWriter {
         return finished.get() == 0;
     }
 
+    public void setDeleteFile(boolean deleteFile) {
+        this.isDeleteFile = deleteFile;
+    }
+
     class DataNodeWriter implements Runnable {
         private FileChannel fileChannel;
         private BlockingQueue<String> queue;
         private int queueSize;
         private String dataNode;
+        private String path;
         private Thread self;
+        // insert values eof
+        private boolean addEof = false;
 
         DataNodeWriter(String dataNode, int queueSize) {
             this.dataNode = dataNode;
@@ -88,10 +116,16 @@ public class DumpFileWriter {
             this.queue = new ArrayBlockingQueue<>(queueSize);
         }
 
+        public void setAddEof(boolean addEof) {
+            this.addEof = addEof;
+        }
+
+        public boolean isAddEof() {
+            return addEof;
+        }
+
         void open(String fileName) throws IOException {
-            if (FileUtils.exists(fileName)) {
-                FileUtils.delete(fileName);
-            }
+            this.path = fileName;
             this.fileChannel = FileUtils.open(fileName, "rw");
         }
 
@@ -102,6 +136,9 @@ public class DumpFileWriter {
         void close() throws IOException {
             this.fileChannel.close();
             dataNodeWriters.remove(dataNode);
+            if (isDeleteFile) {
+                FileUtils.delete(path);
+            }
         }
 
         @Override

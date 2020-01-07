@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
+* Copyright (C) 2016-2020 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -24,6 +24,8 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.singleton.XASessionCheck;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Condition;
@@ -80,10 +82,14 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
         try {
             sendFinishedFlag = false;
             unResponseRrns.addAll(session.getTargetKeys());
+            List<MySQLConnection> conns = new ArrayList<>(session.getTargetCount());
             for (final RouteResultsetNode node : session.getTargetKeys()) {
                 final BackendConnection conn = session.getTarget(node);
                 conn.setResponseHandler(this);
-                if (!executeRollback((MySQLConnection) conn, position++)) {
+                conns.add((MySQLConnection) conn);
+            }
+            for (MySQLConnection con : conns) {
+                if (!executeRollback(con, position++)) {
                     break;
                 }
             }

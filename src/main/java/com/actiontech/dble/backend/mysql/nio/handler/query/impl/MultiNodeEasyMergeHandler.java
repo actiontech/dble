@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -109,5 +109,10 @@ public class MultiNodeEasyMergeHandler extends MultiNodeMergeHandler {
 
     @Override
     protected void recycleResources() {
+    }
+
+    @Override
+    public HandlerType type() {
+        return HandlerType.EASY_MERGE;
     }
 }

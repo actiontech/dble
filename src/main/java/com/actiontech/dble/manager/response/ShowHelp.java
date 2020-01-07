@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
+* Copyright (C) 2016-2020 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -108,12 +108,13 @@ public final class ShowHelp {
         HELPS.put("show @@datasource.cluster", "Report datasource galary cluster variables");
         HELPS.put("show @@processor", "Report processor status");
         HELPS.put("show @@command", "Report commands status");
-        HELPS.put("show @@connection", "Report connection status");
+        HELPS.put("show @@connection where processor=? and front_id=? and host=? and user=?", "Report connection status");
         HELPS.put("show @@cache", "Report system cache usage");
-        HELPS.put("show @@backend", "Report backend connection status");
+        HELPS.put("show @@backend where processor=? and backend_id=? and mysql_id=? and host=? and port=?", "Report backend connection status");
         HELPS.put("show @@session", "Report front session details");
         HELPS.put("show @@session.xa", "Report front session and associated xa transaction details");
         HELPS.put("show @@connection.sql", "Report connection sql");
+        HELPS.put("show @@connection.sql.status where FRONT_ID= ?;", "Show current connection sql status and detail");
         HELPS.put("show @@sql", "Report SQL list");
         // helps.put("show @@sql where id = ?", "Report  specify SQL");
         HELPS.put("show @@sql.high", "Report Hight Frequency SQL");
@@ -146,6 +147,9 @@ public final class ShowHelp {
         HELPS.put("show @@reload_status", "Report latest reload status in this dble");
         HELPS.put("show @@user", "Report all user in this dble");
         HELPS.put("show @@user.privilege", "Report privilege of all business user in this dble");
+        HELPS.put("show @@questions", "Report the questions & transactions have been executed in server port");
+        HELPS.put("show @@data_distribution where table ='schema.table'", "Report the data distribution in different data node");
+
         // switch
         HELPS.put("switch @@datasource name:index", "Switch dataSource");
 
@@ -206,6 +210,7 @@ public final class ShowHelp {
 
         //check @@metadata
         HELPS.put("check @@metadata", "show last time of `reload @@metadata`/start dble");
+        HELPS.put("check @@global (schema = '?'( and table = '?'))", "check global and get check result immediately");
         HELPS.put("check full @@metadata", "show detail information of metadata");
 
         //alert
@@ -218,7 +223,7 @@ public final class ShowHelp {
         HELPS.put("dataHost @@events ", "show all the dataHost ha event which not finished yet ");
 
         //dump file
-        HELPS.put("split src dest -r500 -w500 -l10000", "split dump file into multi dump files according to dataNode");
+        HELPS.put("split src dest -sschema -r500 -w500 -l10000", "split dump file into multi dump files according to dataNode");
 
         // list sort
         KEYS.addAll(HELPS.keySet());

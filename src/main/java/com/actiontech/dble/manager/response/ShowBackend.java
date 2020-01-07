@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
@@ -10,6 +10,7 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.NIOProcessor;
@@ -17,10 +18,17 @@ import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.sqlengine.HeartbeatSQLJob;
 import com.actiontech.dble.util.*;
+import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 
 import java.nio.ByteBuffer;
+import java.sql.SQLSyntaxErrorException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * ShowBackend
@@ -28,9 +36,6 @@ import java.nio.ByteBuffer;
  * @author mycat
  */
 public final class ShowBackend {
-    private ShowBackend() {
-    }
-
     private static final int FIELD_COUNT = 23;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
@@ -92,7 +97,23 @@ public final class ShowBackend {
         EOF.setPacketId(++packetId);
     }
 
-    public static void execute(ManagerConnection c) {
+    private ShowBackend() {
+    }
+
+    public static void execute(ManagerConnection c, String whereCondition) {
+        Map<String, String> whereInfo = new HashMap<>(8);
+        if (!StringUtil.isEmpty(whereCondition)) {
+            SQLStatement statement;
+            try {
+                statement = RouteStrategyFactory.getRouteStrategy().parserSQL("select 1 " + whereCondition);
+                SQLExpr whereExpr = ((SQLSelectStatement) statement).getSelect().getQueryBlock().getWhere();
+                ShowConnection.getWhereCondition(whereExpr, whereInfo);
+            } catch (SQLSyntaxErrorException e) {
+                c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, "The sql has error syntax.");
+                return;
+            }
+        }
+
         ByteBuffer buffer = c.allocate();
         buffer = HEADER.write(buffer, c, true);
         for (FieldPacket field : FIELDS) {
@@ -100,9 +121,49 @@ public final class ShowBackend {
         }
         buffer = EOF.write(buffer, c, true);
         byte packetId = EOF.getPacketId();
-        for (NIOProcessor p : DbleServer.getInstance().getBackendProcessors()) {
+
+        NIOProcessor[] processors = null;
+        // return row
+        if (!whereInfo.isEmpty() && whereInfo.get("processor") != null) {
+            for (NIOProcessor nioProcessor : DbleServer.getInstance().getBackendProcessors()) {
+                if (nioProcessor.getName().equals(whereInfo.get("processor"))) {
+                    processors = new NIOProcessor[1];
+                    processors[0] = nioProcessor;
+                    whereInfo.remove("processor");
+                    break;
+                }
+            }
+        } else {
+            processors = DbleServer.getInstance().getBackendProcessors();
+        }
+
+        if (processors == null) {
+            EOFPacket lastEof = new EOFPacket();
+            lastEof.setPacketId(++packetId);
+            buffer = lastEof.write(buffer, c, true);
+            c.write(buffer);
+            return;
+        }
+
+        for (NIOProcessor p : processors) {
+            if (!whereInfo.isEmpty() && whereInfo.get("backend_id") != null) {
+                BackendConnection bc = p.getBackends().get(Long.parseLong(whereInfo.get("backend_id")));
+                if (bc == null) {
+                    continue;
+                }
+                whereInfo.remove("backend_id");
+                if (whereInfo.isEmpty() || checkConn((MySQLConnection) bc, whereInfo)) {
+                    RowDataPacket row = getRow(bc, c.getCharset().getResults());
+                    if (row != null) {
+                        row.setPacketId(++packetId);
+                        buffer = row.write(buffer, c, true);
+                    }
+                }
+                break;
+            }
+
             for (BackendConnection bc : p.getBackends().values()) {
-                if (bc != null) {
+                if (bc != null && (whereInfo.isEmpty() || checkConn((MySQLConnection) bc, whereInfo))) {
                     RowDataPacket row = getRow(bc, c.getCharset().getResults());
                     if (row != null) {
                         row.setPacketId(++packetId);
@@ -111,10 +172,25 @@ public final class ShowBackend {
                 }
             }
         }
+
         EOFPacket lastEof = new EOFPacket();
         lastEof.setPacketId(++packetId);
         buffer = lastEof.write(buffer, c, true);
         c.write(buffer);
+    }
+
+    private static boolean checkConn(MySQLConnection bc, Map<String, String> whereInfo) {
+        boolean isMatch = true;
+        if (whereInfo.get("host") != null) {
+            isMatch = bc.getHost().equals(whereInfo.get("host"));
+        }
+        if (whereInfo.get("port") != null) {
+            isMatch = isMatch && String.valueOf(bc.getPort()).equals(whereInfo.get("port"));
+        }
+        if (whereInfo.get("mysqlid") != null) {
+            isMatch = isMatch && String.valueOf(bc.getThreadId()).equals(whereInfo.get("mysqlid"));
+        }
+        return isMatch;
     }
 
     private static RowDataPacket getRow(BackendConnection c, String charset) {

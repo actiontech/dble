@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 package com.actiontech.dble.route.parser;
@@ -16,6 +16,7 @@ public final class ManagerParseCheck {
     public static final int OTHER = -1;
     public static final int META_DATA = 1;
     public static final int FULL_META_DATA = 2;
+    public static final int GLOBAL_CONSISTENCY = 3;
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -45,6 +46,9 @@ public final class ManagerParseCheck {
                 case 'M':
                 case 'm':
                     return check2MCheck(stmt, offset);
+                case 'G':
+                case 'g':
+                    return check2GCheck(stmt, offset);
                 default:
                     return OTHER;
             }
@@ -94,6 +98,25 @@ public final class ManagerParseCheck {
             if ((c1 == 'E' || c1 == 'e') && (c2 == 'T' || c2 == 't') && (c3 == 'A' || c3 == 'a') &&
                     (c4 == 'D' || c4 == 'd') && (c5 == 'A' || c5 == 'a') && (c6 == 'T' || c6 == 't') && (c7 == 'A' || c7 == 'a')) {
                 return META_DATA;
+            }
+        }
+        return OTHER;
+    }
+
+    // CHECK @@GLOBAL
+    private static int check2GCheck(String stmt, int offset) {
+        if (stmt.length() > offset + 5) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            if ((c1 == 'L' || c1 == 'l') &&
+                    (c2 == 'O' || c2 == 'o') &&
+                    (c3 == 'B' || c3 == 'b') &&
+                    (c4 == 'A' || c4 == 'a') &&
+                    (c5 == 'L' || c5 == 'l')) {
+                return GLOBAL_CONSISTENCY;
             }
         }
         return OTHER;

@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
+* Copyright (C) 2016-2020 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -8,9 +8,11 @@ package com.actiontech.dble.config.model;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.config.ProblemReporter;
+import com.actiontech.dble.memory.unsafe.Platform;
 
 import java.io.File;
 import java.io.IOException;
+
 
 /**
  * SystemConfig
@@ -71,8 +73,6 @@ public final class SystemConfig {
     //consistency
     private int checkTableConsistency = 0;
     private long checkTableConsistencyPeriod = 30 * 60 * 1000;
-    private int useGlobleTableCheck = 1;
-    private long glableTableCheckPeriod = 24 * 60 * 60 * 1000L;
 
     //heartbeat check period
     private long dataNodeIdleCheckPeriod = 5 * 60 * 1000L;
@@ -109,11 +109,12 @@ public final class SystemConfig {
 
     // off Heap unit:bytes
     // a page size
-    private int bufferPoolPageSize = 512 * 1024 * 4;
+    private int bufferPoolPageSize = 1024 * 1024 * 2;
     //minimum allocation unit
     private short bufferPoolChunkSize = 4096;
     // buffer pool page number
-    private short bufferPoolPageNumber = (short) (DEFAULT_PROCESSORS * 20);
+    private short bufferPoolPageNumber = (short) (Platform.getMaxDirectMemory() * 0.8 / bufferPoolPageSize);
+    private boolean useDefaultPageNumber = true;
     private int mappedFileSize = 1024 * 1024 * 64;
 
     // sql statistics
@@ -235,31 +236,6 @@ public final class SystemConfig {
         this.xaRecoveryLogBaseName = xaRecoveryLogBaseName;
     }
 
-    public int getUseGlobleTableCheck() {
-        return useGlobleTableCheck;
-    }
-
-    @SuppressWarnings("unused")
-    public void setUseGlobleTableCheck(int useGlobleTableCheck) {
-        if (useGlobleTableCheck >= 0 && useGlobleTableCheck <= 1) {
-            this.useGlobleTableCheck = useGlobleTableCheck;
-        } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "useGlobleTableCheck", useGlobleTableCheck, this.useGlobleTableCheck));
-        }
-    }
-
-    public long getGlableTableCheckPeriod() {
-        return glableTableCheckPeriod;
-    }
-
-    @SuppressWarnings("unused")
-    public void setGlableTableCheckPeriod(long glableTableCheckPeriod) {
-        if (glableTableCheckPeriod > 0) {
-            this.glableTableCheckPeriod = glableTableCheckPeriod;
-        } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "glableTableCheckPeriod", glableTableCheckPeriod, this.glableTableCheckPeriod));
-        }
-    }
 
     public int getSequnceHandlerType() {
         return sequnceHandlerType;
@@ -719,10 +695,18 @@ public final class SystemConfig {
     public void setBufferPoolPageNumber(short bufferPoolPageNumber) {
         if (bufferPoolPageNumber > 0) {
             this.bufferPoolPageNumber = bufferPoolPageNumber;
+            useDefaultPageNumber = false;
         } else if (this.problemReporter != null) {
             problemReporter.warn(String.format(WARNING_FORMATE, "bufferPoolPageNumber", bufferPoolPageNumber, this.bufferPoolPageNumber));
         }
     }
+
+
+
+    public boolean isUseDefaultPageNumber() {
+        return useDefaultPageNumber;
+    }
+
 
     public int getFrontSocketSoRcvbuf() {
         return frontSocketSoRcvbuf;
@@ -1059,6 +1043,7 @@ public final class SystemConfig {
     public int getUseSerializableMode() {
         return useSerializableMode;
     }
+
     @SuppressWarnings("unused")
     public void setUseSerializableMode(int useSerializableMode) {
         if (useSerializableMode >= 0 && useSerializableMode <= 1) {
@@ -1221,6 +1206,7 @@ public final class SystemConfig {
         }
     }
 
+
     @Override
     public String toString() {
         return "SystemConfig [" +
@@ -1254,8 +1240,6 @@ public final class SystemConfig {
                 ", txIsolation=" + txIsolation +
                 ", checkTableConsistency=" + checkTableConsistency +
                 ", checkTableConsistencyPeriod=" + checkTableConsistencyPeriod +
-                ", useGlobleTableCheck=" + useGlobleTableCheck +
-                ", glableTableCheckPeriod=" + glableTableCheckPeriod +
                 ", dataNodeIdleCheckPeriod=" + dataNodeIdleCheckPeriod +
                 ", dataNodeHeartbeatPeriod=" + dataNodeHeartbeatPeriod +
                 ", processorCheckPeriod=" + processorCheckPeriod +

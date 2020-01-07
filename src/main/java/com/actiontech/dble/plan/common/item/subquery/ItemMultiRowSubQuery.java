@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public abstract class ItemMultiRowSubQuery extends ItemSubQuery {
 
@@ -30,8 +31,8 @@ public abstract class ItemMultiRowSubQuery extends ItemSubQuery {
      * @param currentDb
      * @param query
      */
-    public ItemMultiRowSubQuery(String currentDb, SQLSelectQuery query, ProxyMetaManager metaManager) {
-        super(currentDb, query, metaManager);
+    public ItemMultiRowSubQuery(String currentDb, SQLSelectQuery query, ProxyMetaManager metaManager, Map<String, String> usrVariables) {
+        super(currentDb, query, metaManager, usrVariables);
     }
 
     @Override

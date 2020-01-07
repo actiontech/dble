@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
+* Copyright (C) 2016-2020 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -622,11 +622,16 @@ public class MySQLConnection extends AbstractConnection implements
      * by wuzh ,execute a query and ignore transaction settings for performance
      */
     public void query(String query) {
+        query(query, this.autocommit);
+    }
+
+    public void query(String query, boolean isAutocommit) {
         RouteResultsetNode rrn = new RouteResultsetNode("default",
                 ServerParse.SELECT, query);
-        synAndDoExecute(null, rrn, this.charsetName, this.txIsolation, true, this.getUsrVariables(), this.getSysVariables());
+        synAndDoExecute(null, rrn, this.charsetName, this.txIsolation, isAutocommit, this.getUsrVariables(), this.getSysVariables());
 
     }
+
 
     public long getLastTime() {
         return lastTime;

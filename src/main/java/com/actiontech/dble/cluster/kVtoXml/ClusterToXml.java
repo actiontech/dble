@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
 package com.actiontech.dble.cluster.kVtoXml;
 
+import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.listener.ClusterClearKeyListener;
 import com.actiontech.dble.cluster.response.*;
@@ -80,9 +81,11 @@ public final class ClusterToXml {
             thread4.setName("ONLINE_UCORE_LISTENER");
             thread4.start();
 
-            Thread thread5 = new Thread(dataHostHaListener);
-            thread5.setName("DATA_HOST_HA_LISTENER");
-            thread5.start();
+            if (ClusterHelper.useClusterHa()) {
+                Thread thread5 = new Thread(dataHostHaListener);
+                thread5.setName("DATA_HOST_HA_LISTENER");
+                thread5.start();
+            }
 
         } catch (Exception e) {
             e.printStackTrace();

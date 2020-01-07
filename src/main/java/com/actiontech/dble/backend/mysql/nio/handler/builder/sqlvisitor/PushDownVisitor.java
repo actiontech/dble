@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -288,7 +288,11 @@ public class PushDownVisitor extends MysqlVisitor {
                         if (groupCol.basicConstItem())
                             pdName = "'" + StringUtil.trim(groupCol.toString(), '\'') + "'";
                         if (pdName.isEmpty())
-                            pdName = visitUnSelPushDownName(groupCol, true);
+                            if (query instanceof TableNode) {
+                                pdName = visitUnSelPushDownName(groupCol, false);
+                            } else {
+                                pdName = visitUnSelPushDownName(groupCol, true);
+                            }
                         sqlBuilder.append(pdName).append(" ").append(group.getSortOrder()).append(",");
                     }
                     sqlBuilder.deleteCharAt(sqlBuilder.length() - 1);

@@ -109,7 +109,7 @@ public final class ClusterHelper {
         }
     }
 
-    public static boolean useCluster() {
+    public static boolean useClusterHa() {
         return "true".equals(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_CLUSTER_HA)) ||
                 "true".equals(ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_CLUSTER_HA));
     }

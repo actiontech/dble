@@ -5,10 +5,19 @@ import java.io.File;
 public class DumpFileConfig {
 
     private String readFile;
+    private String defaultSchema;
     private int readQueueSize = 500;
     private String writePath;
     private int writeQueueSize = 500;
-    private int maxValues = 10000;
+    private int maxValues = 4000;
+
+    public String getDefaultSchema() {
+        return defaultSchema;
+    }
+
+    public void setDefaultSchema(String defaultSchema) {
+        this.defaultSchema = defaultSchema;
+    }
 
     public String getReadFile() {
         return readFile;

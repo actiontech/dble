@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -35,15 +35,19 @@ public class Table implements Named {
     @XmlAttribute
     protected Boolean ruleRequired;
     @XmlAttribute
-    protected String primaryKey;
-    @XmlAttribute
-    protected Boolean autoIncrement;
+    protected String cacheKey;
     @XmlAttribute
     protected Boolean needAddLimit;
     @XmlAttribute
     protected String type;
     @XmlAttribute
     protected String incrementColumn;
+    @XmlAttribute
+    protected String globalCheckClass;
+    @XmlAttribute
+    protected String cron;
+    @XmlAttribute
+    protected Boolean globalCheck;
 
     protected List<ChildTable> childTable;
 
@@ -98,20 +102,12 @@ public class Table implements Named {
         this.ruleRequired = ruleRequired;
     }
 
-    public String getPrimaryKey() {
-        return primaryKey;
+    public String getCacheKey() {
+        return cacheKey;
     }
 
-    public void setPrimaryKey(String primaryKey) {
-        this.primaryKey = primaryKey;
-    }
-
-    public Boolean isAutoIncrement() {
-        return autoIncrement;
-    }
-
-    public void setAutoIncrement(Boolean autoIncrement) {
-        this.autoIncrement = autoIncrement;
+    public void setCacheKey(String cacheKey) {
+        this.cacheKey = cacheKey;
     }
 
     public Boolean isNeedAddLimit() {
@@ -139,6 +135,30 @@ public class Table implements Named {
         this.incrementColumn = incrementColumn;
     }
 
+    public String getGlobalCheckClass() {
+        return globalCheckClass;
+    }
+
+    public void setGlobalCheckClass(String globalCheckClass) {
+        this.globalCheckClass = globalCheckClass;
+    }
+
+    public String getCron() {
+        return cron;
+    }
+
+    public void setCron(String cron) {
+        this.cron = cron;
+    }
+
+    public Boolean getGlobalCheck() {
+        return globalCheck;
+    }
+
+    public void setGlobalCheck(Boolean globalCheck) {
+        this.globalCheck = globalCheck;
+    }
+
     @Override
     public String toString() {
         String builder = "Table [name=" +
@@ -151,10 +171,8 @@ public class Table implements Named {
                 rule +
                 ", ruleRequired=" +
                 ruleRequired +
-                ", primaryKey=" +
-                primaryKey +
-                ", autoIncrement=" +
-                autoIncrement +
+                ", cacheKey=" +
+                cacheKey +
                 ", needAddLimit=" +
                 needAddLimit +
                 ", type=" +

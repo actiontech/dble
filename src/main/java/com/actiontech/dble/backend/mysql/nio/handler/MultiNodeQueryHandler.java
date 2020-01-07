@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
@@ -55,8 +55,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     protected int fieldCount = 0;
     volatile boolean fieldsReturned;
     private long insertId;
-    private String primaryKeyTable = null;
-    private int primaryKeyIndex = -1;
+    private String cacheKeyTable = null;
+    private int cacheKeyIndex = -1;
     private List<FieldPacket> fieldPackets = new ArrayList<>();
     protected volatile ByteBuffer byteBuffer;
     protected Set<BackendConnection> closedConnSet;
@@ -221,7 +221,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (byteBuffer != null) {
                     session.getSource().write(byteBuffer);
                 }
-                handleEndPacket(errPacket.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
+                handleEndPacket(errPacket.toBytes(), AutoTxOperation.ROLLBACK, false);
             }
         } finally {
             lock.unlock();
@@ -257,7 +257,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     return;
                 if (isFail()) {
                     session.resetMultiStatementStatus();
-                    handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
+                    handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, false);
                     return;
                 }
                 ok.setPacketId(++packetId); // OK_PACKET
@@ -276,7 +276,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
                 session.multiStatementPacket(ok, packetId);
                 doSqlStat();
-                handleEndPacket(ok.toBytes(), AutoTxOperation.COMMIT, conn, true);
+                handleEndPacket(ok.toBytes(), AutoTxOperation.COMMIT, true);
             } finally {
                 lock.unlock();
             }
@@ -353,7 +353,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     session.resetMultiStatementStatus();
                     source.write(byteBuffer);
                     ErrorPacket errorPacket = createErrPkg(this.error);
-                    handleEndPacket(errorPacket.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
+                    handleEndPacket(errorPacket.toBytes(), AutoTxOperation.ROLLBACK, false);
                     return;
                 }
             }
@@ -391,16 +391,16 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             this.resultSize += row.length;
             row[3] = ++packetId;
             RowDataPacket rowDataPkg = null;
-            // cache primaryKey-> dataNode
-            if (primaryKeyIndex != -1) {
+            // cache cacheKey-> dataNode
+            if (cacheKeyIndex != -1) {
                 rowDataPkg = new RowDataPacket(fieldCount);
                 rowDataPkg.read(row);
-                byte[] key = rowDataPkg.fieldValues.get(primaryKeyIndex);
+                byte[] key = rowDataPkg.fieldValues.get(cacheKeyIndex);
                 if (key != null) {
-                    String primaryKey = new String(rowDataPkg.fieldValues.get(primaryKeyIndex));
+                    String cacheKey = new String(rowDataPkg.fieldValues.get(cacheKeyIndex));
                     LayerCachePool pool = CacheService.getTableId2DataNodeCache();
                     if (pool != null) {
-                        pool.putIfAbsent(primaryKeyTable, primaryKey, dataNode);
+                        pool.putIfAbsent(cacheKeyTable, cacheKey, dataNode);
                     }
                 }
             }
@@ -457,10 +457,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         if (canResponse()) {
             packetId++;
             if (byteBuffer == null) {
-                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
+                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, false);
             } else {
                 session.getSource().write(byteBuffer);
-                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, conn, false);
+                handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, false);
             }
         }
     }
@@ -498,11 +498,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         fieldCount = fields.size();
         header[3] = ++packetId;
         byteBuffer = source.writeToBuffer(header, byteBuffer);
-        String primaryKey = null;
-        if (rrs.hasPrimaryKeyToCache()) {
-            String[] items = rrs.getPrimaryKeyItems();
-            primaryKeyTable = items[0];
-            primaryKey = items[1];
+        String cacheKey = null;
+        if (rrs.hasCacheKeyToCache()) {
+            String[] items = rrs.getCacheKeyItems();
+            cacheKeyTable = items[0];
+            cacheKey = items[1];
         }
 
         if (!errorResponse.get()) {
@@ -521,11 +521,11 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
                 fieldPackets.add(fieldPkg);
                 fieldCount = fields.size();
-                if (primaryKey != null && primaryKeyIndex == -1) {
+                if (cacheKey != null && cacheKeyIndex == -1) {
                     // find primary key index
                     String fieldName = new String(fieldPkg.getName());
-                    if (primaryKey.equalsIgnoreCase(fieldName)) {
-                        primaryKeyIndex = i;
+                    if (cacheKey.equalsIgnoreCase(fieldName)) {
+                        cacheKeyIndex = i;
                     }
                 }
                 fieldPkg.setPacketId(++packetId);
@@ -569,9 +569,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
 
-    void handleEndPacket(byte[] data, AutoTxOperation txOperation, BackendConnection conn, boolean isSuccess) {
+    void handleEndPacket(byte[] data, AutoTxOperation txOperation, boolean isSuccess) {
         ServerConnection source = session.getSource();
-        if (source.isAutocommit() && !source.isTxStart() && this.modifiedSQL) {
+        if (source.isAutocommit() && !source.isTxStart() && this.modifiedSQL && !this.session.isKilled()) {
             //Implicit Distributed Transaction,send commit or rollback automatically
             if (txOperation == AutoTxOperation.COMMIT) {
                 session.checkBackupStatus();

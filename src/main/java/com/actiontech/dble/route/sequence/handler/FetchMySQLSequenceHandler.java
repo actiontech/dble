@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -54,7 +54,7 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
         conn.setResponseHandler(this);
         ((MySQLConnection) conn).setComplexQuery(true);
         try {
-            conn.query(((SequenceVal) conn.getAttachment()).sql);
+            conn.query(((SequenceVal) conn.getAttachment()).sql, true);
         } catch (Exception e) {
             LOGGER.warn("connection acquired error: " + e);
             handleError(conn, e.getMessage());

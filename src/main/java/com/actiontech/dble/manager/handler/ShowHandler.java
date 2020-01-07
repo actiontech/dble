@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.manager.handler;
 
 import com.actiontech.dble.DbleServer;
@@ -39,17 +39,16 @@ public final class ShowHandler {
                 ShowSysParam.execute(c);
                 break;
             case ManagerParseShow.SYSLOG: //add by zhuam
-                String lines = stmt.substring(rs >>> 8).trim();
-                ShowSysLog.execute(c, Integer.parseInt(lines));
+                ShowSysLog.execute(c, Integer.parseInt(stmt.substring(rs >>> 8).trim()));
                 break;
             case ManagerParseShow.COMMAND:
                 ShowCommand.execute(c);
                 break;
             case ManagerParseShow.CONNECTION:
-                ShowConnection.execute(c);
+                ShowConnection.execute(c, stmt.substring(rs >>> 8).trim());
                 break;
             case ManagerParseShow.BACKEND:
-                ShowBackend.execute(c);
+                ShowBackend.execute(c, stmt.substring(rs >>> 8).trim());
                 break;
             case ManagerParseShow.BACKEND_OLD:
                 ShowBackendOld.execute(c);
@@ -117,19 +116,19 @@ public final class ShowHandler {
                 ShowWhiteHost.execute(c);
                 break;
             case ManagerParseShow.SQL:
-                boolean isClearSql = Boolean.valueOf(stmt.substring(rs >>> 8).trim());
+                boolean isClearSql = Boolean.parseBoolean(stmt.substring(rs >>> 8).trim());
                 ShowSQL.execute(c, isClearSql);
                 break;
             case ManagerParseShow.SQL_SLOW:
-                boolean isClearSlow = Boolean.valueOf(stmt.substring(rs >>> 8).trim());
+                boolean isClearSlow = Boolean.parseBoolean(stmt.substring(rs >>> 8).trim());
                 ShowSQLSlow.execute(c, isClearSlow);
                 break;
             case ManagerParseShow.SQL_HIGH:
-                boolean isClearHigh = Boolean.valueOf(stmt.substring(rs >>> 8).trim());
+                boolean isClearHigh = Boolean.parseBoolean(stmt.substring(rs >>> 8).trim());
                 ShowSQLHigh.execute(c, isClearHigh);
                 break;
             case ManagerParseShow.SQL_LARGE:
-                boolean isClearLarge = Boolean.valueOf(stmt.substring(rs >>> 8).trim());
+                boolean isClearLarge = Boolean.parseBoolean(stmt.substring(rs >>> 8).trim());
                 ShowSQLLarge.execute(c, isClearLarge);
                 break;
             case ManagerParseShow.SQL_CONDITION:
@@ -139,11 +138,11 @@ public final class ShowHandler {
                 ShowSqlResultSet.execute(c);
                 break;
             case ManagerParseShow.SQL_SUM_USER:
-                boolean isClearSum = Boolean.valueOf(stmt.substring(rs >>> 8).trim());
+                boolean isClearSum = Boolean.parseBoolean(stmt.substring(rs >>> 8).trim());
                 ShowSQLSumUser.execute(c, isClearSum);
                 break;
             case ManagerParseShow.SQL_SUM_TABLE:
-                boolean isClearTable = Boolean.valueOf(stmt.substring(rs >>> 8).trim());
+                boolean isClearTable = Boolean.parseBoolean(stmt.substring(rs >>> 8).trim());
                 ShowSQLSumTable.execute(c, isClearTable);
                 break;
             case ManagerParseShow.THREADPOOL:
@@ -229,6 +228,25 @@ public final class ShowHandler {
             case ManagerParseShow.SHOW_USER_PRIVILEGE:
                 ShowUserPrivilege.execute(c);
                 break;
+            case ManagerParseShow.SHOW_QUESTIONS:
+                ShowQuestions.execute(c);
+                break;
+            case ManagerParseShow.DATADISTRIBUTION_WHERE:
+                String name = stmt.substring(rs >>> 8).trim();
+                if (StringUtil.isEmpty(name)) {
+                    c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
+                } else {
+                    ShowDataDistribution.execute(c, name);
+                }
+                break;
+            case ManagerParseShow.CONNECTION_SQL_STATUS:
+                String id = stmt.substring(rs >>> 8).trim();
+                if (StringUtil.isEmpty(id)) {
+                    c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
+                } else {
+                    ShowConnectionSQLStatus.execute(c, id);
+                }
+                break;
             default:
                 if (isSupportShow(stmt)) {
                     Iterator<AbstractPhysicalDBPool> iterator = DbleServer.getInstance().getConfig().getDataHosts().values().iterator();
@@ -249,9 +267,6 @@ public final class ShowHandler {
     private static boolean isSupportShow(String stmt) {
         SQLStatementParser parser = new MySqlStatementParser(stmt);
         SQLStatement statement = parser.parseStatement();
-        if (!(statement instanceof MySqlShowWarningsStatement || statement instanceof MySqlShowVariantsStatement)) {
-            return false;
-        }
-        return true;
+        return statement instanceof MySqlShowWarningsStatement || statement instanceof MySqlShowVariantsStatement;
     }
 }

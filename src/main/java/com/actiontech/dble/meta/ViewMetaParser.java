@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -149,7 +149,7 @@ public class ViewMetaParser {
                 break;
             }
         }
-        return new ArrayList<String>(Arrays.asList(columnList.split(",")));
+        return new ArrayList<>(Arrays.asList(columnList.split(",")));
     }
 
 

@@ -36,13 +36,13 @@ public final class DumpFileReader {
         this.fileLength = this.fileChannel.size();
     }
 
-    public void start(ManagerConnection c) throws IOException, InterruptedException {
+    public void start(ManagerConnection c, DumpFileExecutor executor) throws IOException, InterruptedException {
         LOGGER.info("begin to read dump file.");
         try {
             ByteBuffer buffer = ByteBuffer.allocate(0x20000);
             int byteRead = fileChannel.read(buffer);
             while (byteRead != -1) {
-                if (c.isClosed()) {
+                if (c.isClosed() || executor.isStop()) {
                     LOGGER.info("finish to read dump file, tha task is interrupted.");
                     throw new InterruptedException();
                 }

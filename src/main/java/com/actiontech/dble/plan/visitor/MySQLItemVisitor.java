@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -63,11 +63,13 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     private String currentDb;
     private final int charsetIndex;
     private final ProxyMetaManager metaManager;
+    private Map<String, String> usrVariables;
 
-    public MySQLItemVisitor(String currentDb, int charsetIndex, ProxyMetaManager metaManager) {
+    public MySQLItemVisitor(String currentDb, int charsetIndex, ProxyMetaManager metaManager, Map<String, String> usrVariables) {
         this.currentDb = currentDb;
         this.charsetIndex = charsetIndex;
         this.metaManager = metaManager;
+        this.usrVariables = usrVariables;
     }
 
     private Item item;
@@ -77,7 +79,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     }
 
     private Item getItem(SQLExpr expr) {
-        MySQLItemVisitor fv = new MySQLItemVisitor(currentDb, this.charsetIndex, this.metaManager);
+        MySQLItemVisitor fv = new MySQLItemVisitor(currentDb, this.charsetIndex, this.metaManager, this.usrVariables);
         expr.accept(fv);
         return fv.getItem();
     }
@@ -96,7 +98,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     @Override
     public void endVisit(SQLQueryExpr x) {
         SQLSelectQuery sqlSelect = x.getSubQuery().getQuery();
-        item = new ItemScalarSubQuery(currentDb, sqlSelect, metaManager);
+        item = new ItemScalarSubQuery(currentDb, sqlSelect, metaManager, usrVariables);
         initName(x);
         item.setItemName(item.getItemName().replaceAll("\n\\t", " "));
     }
@@ -116,7 +118,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     public void endVisit(SQLInSubQueryExpr x) {
         boolean isNeg = x.isNot();
         Item left = getItem(x.getExpr());
-        item = new ItemInSubQuery(currentDb, x.getSubQuery().getQuery(), left, isNeg, metaManager);
+        item = new ItemInSubQuery(currentDb, x.getSubQuery().getQuery(), left, isNeg, metaManager, usrVariables);
         initName(x);
         item.setItemName(item.getItemName().replaceAll("\n\\t", " "));
     }
@@ -457,7 +459,29 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
 
     @Override
     public void endVisit(SQLVariantRefExpr x) {
-        item = new ItemVariables(x.getName(), new ItemField(null, null, x.getName()));
+        String variable = x.getName();
+        if (this.usrVariables != null) {
+            String realValue = this.usrVariables.get(variable.toUpperCase());
+            if (realValue != null) {
+                try {
+                    long value = Long.parseLong(realValue);
+                    item = new ItemInt(value);
+                    item.setItemName(realValue);
+                    return;
+                } catch (NumberFormatException e) {
+                    //ignore error
+                }
+                try {
+                    Float.parseFloat(realValue);
+                    item = new ItemFloat(new BigDecimal(realValue));
+                    item.setItemName(realValue);
+                    return;
+                } catch (NumberFormatException e) {
+                    //ignore error
+                }
+            }
+        }
+        item = new ItemVariables(x.getName(), new ItemField(null, null, variable));
         initName(x);
     }
 
@@ -716,7 +740,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     @Override
     public void endVisit(SQLExistsExpr x) {
         SQLSelectQuery sqlSelect = x.getSubQuery().getQuery();
-        item = new ItemExistsSubQuery(currentDb, sqlSelect, x.isNot(), metaManager);
+        item = new ItemExistsSubQuery(currentDb, sqlSelect, x.isNot(), metaManager, usrVariables);
         initName(x);
         item.setItemName(item.getItemName().replaceAll("\n\\t", " "));
     }
@@ -753,7 +777,7 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
     @Override
     public void endVisit(SQLSelectStatement node) {
         SQLSelectQuery sqlSelect = node.getSelect().getQuery();
-        item = new ItemScalarSubQuery(currentDb, sqlSelect, metaManager);
+        item = new ItemScalarSubQuery(currentDb, sqlSelect, metaManager, usrVariables);
     }
 
 
@@ -762,26 +786,26 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
         switch (operator) {
             case Equality:
                 if (isAll) {
-                    item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, true, metaManager);
+                    item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, true, metaManager, usrVariables);
                 } else {
                     Item left = getItem(parent.getLeft());
-                    item = new ItemInSubQuery(currentDb, sqlSelect, left, false, metaManager);
+                    item = new ItemInSubQuery(currentDb, sqlSelect, left, false, metaManager, usrVariables);
                 }
                 break;
             case NotEqual:
             case LessThanOrGreater:
                 if (isAll) {
                     Item left = getItem(parent.getLeft());
-                    item = new ItemInSubQuery(currentDb, sqlSelect, left, true, metaManager);
+                    item = new ItemInSubQuery(currentDb, sqlSelect, left, true, metaManager, usrVariables);
                 } else {
-                    item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, false, metaManager);
+                    item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, false, metaManager, usrVariables);
                 }
                 break;
             case LessThan:
             case LessThanOrEqual:
             case GreaterThan:
             case GreaterThanOrEqual:
-                item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, isAll, metaManager);
+                item = new ItemAllAnySubQuery(currentDb, sqlSelect, operator, isAll, metaManager, usrVariables);
                 break;
             default:
                 throw new MySQLOutPutException(ErrorCode.ER_OPTIMIZER, "",

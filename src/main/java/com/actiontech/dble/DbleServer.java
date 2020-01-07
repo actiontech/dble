@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
@@ -13,6 +13,7 @@ import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.KVStoreRepository;
 import com.actiontech.dble.buffer.DirectByteBufferPool;
+import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
@@ -114,6 +115,8 @@ public final class DbleServer {
         if (system.isUseOuterHa()) {
             LOGGER.info("=========================================Init Outter Ha Config==================================");
             HaConfigManager.getInstance().init();
+        } else if (ClusterHelper.useClusterHa()) {
+            throw new Exception("useOuterHa can not be false when useClusterHa in myid is true");
         }
         if (system.getEnableAlert() == 1) {
             AlertUtil.switchAlert(true);
@@ -265,6 +268,8 @@ public final class DbleServer {
         Scheduler.getInstance().init(system, timerExecutor);
         LOGGER.info("=======================================Scheduler started==========================================");
 
+        CronScheduler.getInstance().init(config.getSchemas());
+        LOGGER.info("====================================CronScheduler started=========================================");
         if (isUseZkSwitch()) {
             initZkDnindex();
         }
@@ -446,6 +451,9 @@ public final class DbleServer {
         return ClusterGeneralConfig.isUseZK() && this.config.getSystem().isUseZKSwitch();
     }
 
+    public boolean isUseOuterHa() {
+        return config.getSystem().isUseOuterHa();
+    }
 
     public NIOProcessor nextFrontProcessor() {
         int i = ++nextFrontProcessor;

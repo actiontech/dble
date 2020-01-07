@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
+* Copyright (C) 2016-2020 ActionTech.
 * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
 * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
 */
@@ -275,7 +275,7 @@ public final class ConfigUtil {
                 }
             }
             for (PhysicalDatasource ds : pool.getAllDataSources()) {
-                if (ds.getConfig().isDisabled() || !ds.isTestConnSuccess()) {
+                if (ds.isDisabled() || !ds.isTestConnSuccess()) {
                     continue;
                 }
                 getKeyVariablesForDataSource(service, ds, hostName, keyVariablesTaskMap);

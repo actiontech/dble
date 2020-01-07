@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -33,7 +33,7 @@ public class OneTimeConnJob extends SQLJob {
 
     public void run() {
         try {
-            ds.getConnection(schema, true, this, null, true);
+            ds.getConnection(schema, true, this, null, false);
         } catch (Exception e) {
             this.connectionError(e, null);
         }

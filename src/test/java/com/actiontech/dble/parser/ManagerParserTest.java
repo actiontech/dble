@@ -39,11 +39,11 @@ public class ManagerParserTest {
 
     @Test
     public void testShowConnection() {
-        Assert.assertEquals(ManagerParseShow.CONNECTION, ManagerParseShow.parse("show @@connection", 5));
-        Assert.assertEquals(ManagerParseShow.CONNECTION, ManagerParseShow.parse("SHOW @@CONNECTION", 5));
-        Assert.assertEquals(ManagerParseShow.CONNECTION, ManagerParseShow.parse("show @@CONNECTION", 5));
+        Assert.assertEquals(ManagerParseShow.CONNECTION, 0xff & ManagerParseShow.parse("show @@connection", 5));
+        Assert.assertEquals(ManagerParseShow.CONNECTION, 0xff & ManagerParseShow.parse("SHOW @@CONNECTION", 5));
+        Assert.assertEquals(ManagerParseShow.CONNECTION, 0xff & ManagerParseShow.parse("show @@CONNECTION", 5));
+        Assert.assertEquals(ManagerParseShow.CONNECTION, 0xff &ManagerParseShow.parse("show @@CONNECTION ADFASDF", 5));
         Assert.assertEquals(ManagerParseShow.OTHER, ManagerParseShow.parse("show @@CONNECTIONADFASDF", 5));
-        Assert.assertEquals(ManagerParseShow.OTHER, ManagerParseShow.parse("show @@CONNECTION ADFASDF", 5));
     }
 
     @Test
@@ -146,11 +146,11 @@ public class ManagerParserTest {
 
     @Test
     public void testShowBackend() {
-        Assert.assertEquals(ManagerParseShow.BACKEND, ManagerParseShow.parse("show @@backend", 5));
-        Assert.assertEquals(ManagerParseShow.BACKEND, ManagerParseShow.parse("SHOW @@BACkend", 5));
-        Assert.assertEquals(ManagerParseShow.BACKEND, ManagerParseShow.parse("show @@BACKEND ", 5));
+        Assert.assertEquals(ManagerParseShow.BACKEND, 0xff & ManagerParseShow.parse("show @@backend", 5));
+        Assert.assertEquals(ManagerParseShow.BACKEND, 0xff & ManagerParseShow.parse("SHOW @@BACkend", 5));
+        Assert.assertEquals(ManagerParseShow.BACKEND, 0xff & ManagerParseShow.parse("show @@BACKEND ", 5));
+        Assert.assertEquals(ManagerParseShow.BACKEND, 0xff & ManagerParseShow.parse("show @@backend ASDFASDF", 5));
         Assert.assertEquals(ManagerParseShow.OTHER, ManagerParseShow.parse("show @@backendASDFASDF", 5));
-        Assert.assertEquals(ManagerParseShow.OTHER, ManagerParseShow.parse("show @@backend ASDFASDF", 5));
     }
 
     @Test

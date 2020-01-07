@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 ActionTech.
+ * Copyright (C) 2016-2020 ActionTech.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
@@ -12,14 +12,15 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectQuery;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Map;
 
 public abstract class ItemSingleRowSubQuery extends ItemSubQuery {
     protected Item value;
     protected Item select;
     protected boolean isField;
 
-    public ItemSingleRowSubQuery(String currentDb, SQLSelectQuery query, boolean isField, ProxyMetaManager metaManager) {
-        super(currentDb, query, metaManager);
+    public ItemSingleRowSubQuery(String currentDb, SQLSelectQuery query, boolean isField, ProxyMetaManager metaManager, Map<String, String> usrVariables) {
+        super(currentDb, query, metaManager, usrVariables);
         this.select = this.planNode.getColumnsSelected().get(0);
         this.isField = isField;
     }

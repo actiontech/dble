@@ -1,13 +1,12 @@
 /*
-* Copyright (C) 2016-2019 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.server;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplictCommitHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
 import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.config.ErrorCode;
@@ -17,7 +16,6 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.model.UserConfig;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
-import com.actiontech.dble.singleton.*;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.util.Pair;
@@ -27,7 +25,9 @@ import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.response.Heartbeat;
 import com.actiontech.dble.server.response.InformationSchemaProfiling;
 import com.actiontech.dble.server.response.Ping;
+import com.actiontech.dble.server.response.ShowCreateView;
 import com.actiontech.dble.server.util.SchemaUtil;
+import com.actiontech.dble.singleton.*;
 import com.actiontech.dble.util.*;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
@@ -66,28 +66,28 @@ public class ServerConnection extends FrontendConnection {
     private AtomicLong txID;
     private List<Pair<SetHandler.KeyType, Pair<String, String>>> contextTask = new ArrayList<>();
 
-    public long getAndIncrementXid() {
-        return txID.getAndIncrement();
-    }
-
-
-    public long getXid() {
-        return txID.get();
-    }
-
     public ServerConnection(NetworkChannel channel)
             throws IOException {
         super(channel);
         this.txInterrupted = false;
-        this.autocommit = true;
+        this.autocommit = DbleServer.getInstance().getConfig().getSystem().getAutocommit() == 1;
         this.txID = new AtomicLong(1);
         this.sptprepare = new ServerSptPrepare(this);
         this.usrVariables = new LinkedHashMap<>();
         this.sysVariables = new LinkedHashMap<>();
     }
 
+
     public ServerConnection() {
         /* just for unit test */
+    }
+
+    public long getAndIncrementXid() {
+        return txID.getAndIncrement();
+    }
+
+    public long getXid() {
+        return txID.get();
     }
 
     public ServerSptPrepare getSptPrepare() {
@@ -185,6 +185,11 @@ public class ServerConnection extends FrontendConnection {
     @Override
     public void startProcess() {
         session.startProcess();
+    }
+
+    @Override
+    public void markFinished() {
+        session.setStageFinished();
     }
 
     public void executeTask() {
@@ -290,8 +295,8 @@ public class ServerConnection extends FrontendConnection {
             } else {
                 TableConfig tc = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
                 if (tc == null) {
-                    String msg = "Table '" + schemaInfo.getSchema() + "." + schemaInfo.getTable() + "' doesn't exist";
-                    writeErrMessage("42S02", msg, ErrorCode.ER_NO_SUCH_TABLE);
+                    // check view
+                    ShowCreateView.response(this, schemaInfo.getSchema(), schemaInfo.getTable());
                     return;
                 }
                 RouterUtil.routeToRandomNode(rrs, schemaInfo.getSchemaConfig(), schemaInfo.getTable());
@@ -305,6 +310,11 @@ public class ServerConnection extends FrontendConnection {
     private void routeEndExecuteSQL(String sql, int type, SchemaConfig schema) {
         RouteResultset rrs = null;
         try {
+            if (session.isKilled()) {
+                writeErrMessage(ErrorCode.ER_QUERY_INTERRUPTED, "The query is interrupted.");
+                return;
+            }
+
             rrs = RouteService.getInstance().route(schema, type, sql, this);
             if (rrs == null) {
                 return;
@@ -425,12 +435,7 @@ public class ServerConnection extends FrontendConnection {
     void lockTable(String sql) {
         // except xa transaction
         if ((!isAutocommit() || isTxStart()) && session.getSessionXaID() == null) {
-            session.implictCommit(new ImplictCommitHandler() {
-                @Override
-                public void next() {
-                    doLockTable(sql);
-                }
-            });
+            session.implictCommit(() -> doLockTable(sql));
             return;
         }
         doLockTable(sql);
@@ -488,8 +493,7 @@ public class ServerConnection extends FrontendConnection {
         }
         this.getSysVariables().clear();
         this.getUsrVariables().clear();
-        String defaultAutocommit = DbleServer.getInstance().getSystemVariables().getDefaultValue("autocommit").toLowerCase();
-        autocommit = "1".equals(defaultAutocommit) || "on".equals(defaultAutocommit) || "true".equals(defaultAutocommit);
+        autocommit = DbleServer.getInstance().getConfig().getSystem().getAutocommit() == 1;
         txIsolation = DbleServer.getInstance().getConfig().getSystem().getTxIsolation();
         this.setCharacterSet(DbleServer.getInstance().getConfig().getSystem().getCharset());
         lastInsertId = 0;
@@ -503,6 +507,7 @@ public class ServerConnection extends FrontendConnection {
     @Override
     public synchronized void close(String reason) {
 
+        TsQueriesCounter.getInstance().addToHistory(session);
         //XA transaction in this phase,close it
         if (session.getSource().isTxStart() && session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_CANCELING) &&
                 session.getXaState() != null && session.getXaState() != TxState.TX_INITIALIZE_STATE) {
@@ -570,23 +575,46 @@ public class ServerConnection extends FrontendConnection {
     public void writeErrMessage(String sqlState, String msg, int vendorCode) {
         byte packetId = (byte) this.getSession2().getPacketId().get();
         super.writeErrMessage(++packetId, vendorCode, sqlState, msg);
+        if (session.isKilled()) {
+            session.setKilled(false);
+            session.setDiscard(false);
+        }
     }
 
     @Override
     public void writeErrMessage(int vendorCode, String msg) {
         byte packetId = (byte) this.getSession2().getPacketId().get();
         super.writeErrMessage(++packetId, vendorCode, msg);
+        if (session.isKilled()) {
+            session.setKilled(false);
+            session.setDiscard(false);
+        }
     }
 
     @Override
     public void write(byte[] data) {
         SerializableLock.getInstance().unLock(this.id);
+        markFinished();
         super.write(data);
+        if (session.isKilled()) {
+            session.setKilled(false);
+            session.setDiscard(false);
+        }
     }
 
     @Override
     public final void write(ByteBuffer buffer) {
         SerializableLock.getInstance().unLock(this.id);
+        markFinished();
+        super.write(buffer);
+        if (session.isKilled()) {
+            session.setKilled(false);
+            session.setDiscard(false);
+        }
+    }
+
+    @Override
+    public void writePart(ByteBuffer buffer) {
         super.write(buffer);
     }
 }

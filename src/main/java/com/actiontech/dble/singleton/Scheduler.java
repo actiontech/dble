@@ -7,7 +7,6 @@ import com.actiontech.dble.backend.mysql.xa.XAStateLog;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.NIOProcessor;
-import com.actiontech.dble.server.util.GlobalTableUtil;
 import com.actiontech.dble.statistic.stat.SqlResultSizeRecorder;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import com.actiontech.dble.statistic.stat.UserStat;
@@ -53,10 +52,6 @@ public final class Scheduler {
         if (system.getUseSqlStat() == 1) {
             //sql record detail timing clean
             scheduler.scheduleWithFixedDelay(recycleSqlStat(), 0L, DEFAULT_SQL_STAT_RECYCLE_PERIOD, TimeUnit.MILLISECONDS);
-        }
-
-        if (system.getUseGlobleTableCheck() == 1) {    // will be influence by dataHostWithoutWR
-            scheduler.scheduleWithFixedDelay(globalTableConsistencyCheck(), 0L, system.getGlableTableCheckPeriod(), TimeUnit.MILLISECONDS);
         }
         scheduler.scheduleAtFixedRate(threadStatRenew(), 0L, 1, TimeUnit.SECONDS);
         scheduler.scheduleAtFixedRate(printLongTimeDDL(), 0L, DDL_EXECUTE_CHECK_PERIOD, TimeUnit.SECONDS);
@@ -224,25 +219,6 @@ public final class Scheduler {
                     userStat.getSqlHigh().recycle();
                     userStat.getSqlLargeRowStat().recycle();
                 }
-            }
-        };
-    }
-
-
-    //  Table Consistency Check for global table
-    private Runnable globalTableConsistencyCheck() {
-        return new Runnable() {
-            @Override
-            public void run() {
-
-                timerExecutor.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (!DbleServer.getInstance().getConfig().isDataHostWithoutWR()) {
-                            GlobalTableUtil.consistencyCheck();
-                        }
-                    }
-                });
             }
         };
     }

@@ -553,6 +553,7 @@ public class NonBlockingSession implements Session {
             MultiNodeDdlPrepareHandler multiNodeDdlHandler = new MultiNodeDdlPrepareHandler(rrs, this);
             try {
                 multiNodeDdlHandler.execute();
+                discard = true;
             } catch (Exception e) {
                 if (this.getSessionXaID() != null) {
                     this.xaState = TxState.TX_INITIALIZE_STATE;

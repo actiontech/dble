@@ -75,7 +75,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         this.session = session;
     }
 
-
     public void execute() throws Exception {
         connClosed = false;
         if (rrs.isLoadData()) {
@@ -110,13 +109,10 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
         dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), session.getSource().isAutocommit(), node, this, node);
     }
-
     protected void execute(BackendConnection conn) {
         if (session.closed()) {
             session.clearResources(rrs);
-            if (buffer != null) {
-                session.getSource().recycle(buffer);
-            }
+            recycleBuffer();
             return;
         }
         conn.setResponseHandler(this);
@@ -154,6 +150,12 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         err.setPacketId(++packetId);
         backConnectionErr(err, conn, conn.syncAndExecute());
         session.resetMultiStatementStatus();
+    }
+
+    public void recycleBuffer() {
+        if (buffer != null) {
+            session.getSource().recycle(buffer);
+        }
     }
 
     private void backConnectionErr(ErrorPacket errPkg, BackendConnection conn, boolean syncFinished) {

@@ -136,7 +136,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
     private void innerExecute(BackendConnection conn, RouteResultsetNode node) {
         if (clearIfSessionClosed(session)) {
-            cleanBufferIfSessionClosed();
+            cleanBuffer();
             return;
         }
         MySQLConnection mysqlCon = (MySQLConnection) conn;
@@ -145,7 +145,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         mysqlCon.executeMultiNode(node, session.getSource(), sessionAutocommit && !session.getSource().isTxStart() && !node.isModifySQL());
     }
 
-    private void cleanBufferIfSessionClosed() {
+    public void cleanBuffer() {
         if (recycledBuffer.compareAndSet(false, true)) {
             if (byteBuffer != null) {
                 session.getSource().recycle(byteBuffer);
@@ -230,7 +230,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             if (decrementToZero(conn)) {
                 packetId++;
                 if (session.closed()) {
-                    cleanBufferIfSessionClosed();
+                    cleanBuffer();
                 } else if (byteBuffer != null) {
                     session.getSource().write(byteBuffer);
                 }
@@ -311,7 +311,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         lock.lock();
         try {
             if (session.closed()) {
-                cleanBufferIfSessionClosed();
+                cleanBuffer();
                 return;
             }
             if (fieldsReturned) {
@@ -366,7 +366,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                         session.setResponseTime(false);
                         session.resetMultiStatementStatus();
                         if (session.closed()) {
-                            cleanBufferIfSessionClosed();
+                            cleanBuffer();
                         } else {
                             session.getSource().write(byteBuffer);
                         }
@@ -379,7 +379,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 boolean multiStatementFlag = session.getIsMultiStatement().get();
 
                 if (session.closed()) {
-                    cleanBufferIfSessionClosed();
+                    cleanBuffer();
                 } else {
                     writeEofResult(eof, source);
                 }
@@ -405,7 +405,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         lock.lock();
         try {
             if (session.closed()) {
-                cleanBufferIfSessionClosed();
+                cleanBuffer();
             }
             this.selectRows++;
             RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
@@ -489,7 +489,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             if (byteBuffer == null) {
                 handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, false);
             } else if (session.closed()) {
-                cleanBufferIfSessionClosed();
+                cleanBuffer();
             } else {
                 session.getSource().write(byteBuffer);
                 handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, false);

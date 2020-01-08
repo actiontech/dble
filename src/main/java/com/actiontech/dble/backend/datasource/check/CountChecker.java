@@ -41,7 +41,7 @@ public class CountChecker extends AbstractConsistencyChecker {
     void failResponse(List<SQLQueryResult<List<Map<String, String>>>> res) {
         String tableId = schema + "." + tableName;
         String errorMsg = "Global Consistency Check fail for table :" + schema + "-" + tableName;
-        LOGGER.info(errorMsg);
+        LOGGER.warn(errorMsg);
         for (SQLQueryResult<List<Map<String, String>>> r : res) {
             LOGGER.info("Checksum is : " + r.getResult().get(0).get("cr"));
         }
@@ -52,14 +52,15 @@ public class CountChecker extends AbstractConsistencyChecker {
     @Override
     void resultResponse(List<SQLQueryResult<List<Map<String, String>>>> elist) {
         String tableId = schema + "." + tableName;
-        LOGGER.info("Global Consistency Check success for table :" + schema + "-" + tableName);
 
         if (elist.size() == 0) {
+            LOGGER.info("Global Consistency Check success for table :" + schema + "-" + tableName);
             if (ToResolveContainer.GLOBAL_TABLE_CONSISTENCY.contains(tableId)) {
                 AlertUtil.alertSelfResolve(AlarmCode.GLOBAL_TABLE_COLUMN_LOST, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId),
                         ToResolveContainer.GLOBAL_TABLE_CONSISTENCY, tableId);
             }
         } else {
+            LOGGER.warn("Global Consistency Check fail for table :" + schema + "-" + tableName);
             StringBuilder sb = new StringBuilder("Error when check Global Consistency, Table ");
             sb.append(tableName).append(" dataNode ");
             for (SQLQueryResult<List<Map<String, String>>> r : elist) {

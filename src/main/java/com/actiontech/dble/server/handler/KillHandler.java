@@ -100,8 +100,9 @@ public final class KillHandler {
         if (killSession.isKilled() && killSession.isDiscard()) {
             // discard backend conn in session target map
             Map<RouteResultsetNode, BackendConnection> target = killSession.getTargetMap();
+            MySQLConnection conn;
             for (BackendConnection backendConnection : target.values()) {
-                MySQLConnection conn = (MySQLConnection) backendConnection;
+                conn = (MySQLConnection) backendConnection;
                 if (conn.isExecuting()) {
                     conn.execCmd("kill query " + conn.getThreadId());
                     conn.close("Query was interrupted.");

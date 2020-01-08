@@ -268,7 +268,13 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
                     finishedTest = true;
                     session.setTraceSimpleHandler(handler);
                     session.setPreExecuteEnd(false);
-                    handler.execute();
+                    if (!session.isKilled()) {
+                        handler.execute();
+                    } else {
+                        DDLTraceManager.getInstance().endDDL(source, "Query was interrupted");
+                        session.handleSpecial(oriRrs, false);
+                        source.writeErrMessage(ErrorCode.ER_QUERY_INTERRUPTED, "Query was interrupted");
+                    }
                 } catch (Exception e) {
                     DDLTraceManager.getInstance().endDDL(source, "take Connection error:" + e.getMessage());
                     LOGGER.warn(String.valueOf(source) + oriRrs, e);

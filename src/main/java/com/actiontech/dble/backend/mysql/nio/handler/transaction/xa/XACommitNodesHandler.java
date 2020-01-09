@@ -86,12 +86,13 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 conn.setResponseHandler(this);
                 conns.add((MySQLConnection) conn);
             }
+            session.setDiscard(false);
             for (MySQLConnection con : conns) {
                 if (!executeCommit(con, position++)) {
                     break;
                 }
             }
-
+            session.setDiscard(true);
         } finally {
             lockForErrorHandle.lock();
             try {
@@ -230,6 +231,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     public void okResponse(byte[] ok, BackendConnection conn) {
         this.waitUntilSendFinish();
         MySQLConnection mysqlCon = (MySQLConnection) conn;
+        conn.syncAndExecute();
         TxState state = mysqlCon.getXaStatus();
         if (state == TxState.TX_STARTED_STATE) {
             mysqlCon.setXaStatus(TxState.TX_ENDED_STATE);
@@ -266,6 +268,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     @Override
     public void errorResponse(byte[] err, BackendConnection conn) {
         this.waitUntilSendFinish();
+        conn.syncAndExecute();
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);
         String errMsg = new String(errPacket.getMessage());
@@ -431,6 +434,14 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             // partially committed,must commit again
         } else if (session.getXaState() == TxState.TX_COMMIT_FAILED_STATE) {
             MySQLConnection errConn = session.releaseExcept(TxState.TX_COMMIT_FAILED_STATE);
+            if (session.isKilled()) {
+                XAStateLog.saveXARecoveryLog(session.getSessionXaID(), session.getXaState());
+                setResponseTime(false);
+                session.clearSavepoint();
+                session.getSource().write(sendData);
+                session.clearResources(true);
+                return;
+            }
             if (errConn != null) {
                 final String xaId = session.getSessionXaID();
                 XAStateLog.saveXARecoveryLog(xaId, session.getXaState());

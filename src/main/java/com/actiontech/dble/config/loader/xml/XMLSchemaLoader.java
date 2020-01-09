@@ -296,12 +296,6 @@ public class XMLSchemaLoader implements SchemaLoader {
             String cacheKey = tableElement.hasAttribute("cacheKey") ? tableElement.getAttribute("cacheKey").toUpperCase() : null;
             //if autoIncrement,it will use sequence handler
             String incrementColumn = tableElement.hasAttribute("incrementColumn") ? tableElement.getAttribute("incrementColumn").toUpperCase() : null;
-            boolean autoIncrement = isAutoIncrement(tableElement, incrementColumn);
-            if (incrementColumn != null && !autoIncrement) {
-                throw new ConfigException("table " + tableNameElement + " has incrementColumn but not autoIncrement");
-            }
-
-
             String checkClass = tableElement.hasAttribute("globalCheckClass") ? tableElement.getAttribute("globalCheckClass").toUpperCase() : GLOBAL_TABLE_CHECK_DEFAULT;
             String corn = tableElement.hasAttribute("cron") ? tableElement.getAttribute("cron").toUpperCase() : GLOBAL_TABLE_CHECK_DEFAULT_CRON;
             boolean globalCheck = tableElement.hasAttribute("globalCheck") ? Boolean.valueOf(tableElement.getAttribute("globalCheck")) : false;
@@ -333,15 +327,6 @@ public class XMLSchemaLoader implements SchemaLoader {
             }
         }
         return tables;
-    }
-
-    private boolean isAutoIncrement(Element tableElement, String incrementColumn) {
-        String autoIncrementStr = ConfigUtil.checkAndGetAttribute(tableElement, "autoIncrement", "false", problemReporter);
-        boolean autoIncrement = Boolean.parseBoolean(autoIncrementStr);
-        if (autoIncrement && incrementColumn == null) {
-            throw new ConfigException("autoIncrement is true but cacheKey and incrementColumn is not setting!");
-        }
-        return autoIncrement;
     }
 
     /**
@@ -402,10 +387,6 @@ public class XMLSchemaLoader implements SchemaLoader {
             String parentKey = childTbElement.getAttribute("parentKey").toUpperCase();
             String cacheKey = childTbElement.hasAttribute("cacheKey") ? childTbElement.getAttribute("cacheKey").toUpperCase() : null;
             String incrementColumn = childTbElement.hasAttribute("incrementColumn") ? childTbElement.getAttribute("incrementColumn").toUpperCase() : null;
-            boolean autoIncrement = isAutoIncrement(childTbElement, incrementColumn);
-            if (incrementColumn != null && !autoIncrement) {
-                throw new ConfigException("table " + cdTbName + " has incrementColumn but not AutoIncrement");
-            }
             TableConfig table = new TableConfig(cdTbName, cacheKey, needAddLimit,
                     TableTypeEnum.TYPE_SHARDING_TABLE, strDatoNodes, null, false, parentTable, joinKey, parentKey, incrementColumn,
                     null, null, false);

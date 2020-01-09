@@ -171,7 +171,7 @@ public final class CheckGlobalConsistency {
     }
 
 
-    public void collectResult(String schema, String table, int distinctNo, int errorNo) {
+    public synchronized void collectResult(String schema, String table, int distinctNo, int errorNo) {
         List<ConsistencyResult> list = resultMap.get(schema);
         if (list == null) {
             list = Collections.synchronizedList(new ArrayList<ConsistencyResult>());

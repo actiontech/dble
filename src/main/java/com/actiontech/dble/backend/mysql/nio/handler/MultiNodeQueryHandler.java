@@ -360,6 +360,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
             boolean multiStatementFlag = session.getIsMultiStatement().get();
             writeEofResult(eof, source);
+            //set after writeEof because packetId would increase in that function
             session.multiStatementPacket(eof, packetId);
             session.multiStatementNextSql(multiStatementFlag);
         }

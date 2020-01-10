@@ -325,6 +325,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             fieldsReturned = true;
             executeFieldEof(header, fields, eof);
         } catch (Exception e) {
+            cleanBuffer();
             handleDataProcessException(e);
         } finally {
             lock.unlock();
@@ -449,6 +450,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
             }
         } catch (Exception e) {
+            cleanBuffer();
             handleDataProcessException(e);
         } finally {
             lock.unlock();

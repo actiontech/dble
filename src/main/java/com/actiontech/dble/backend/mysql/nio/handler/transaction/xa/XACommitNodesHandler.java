@@ -370,8 +370,10 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         if (checkClosedConn(conn)) {
             return;
         }
-        this.setFail(reason);
-        sendData = makeErrorPacket(reason);
+        String closeReason = "Connection {DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
+                ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
+        this.setFail(closeReason);
+        sendData = makeErrorPacket(closeReason);
         innerConnectError(conn, decrementToZero(conn));
     }
 

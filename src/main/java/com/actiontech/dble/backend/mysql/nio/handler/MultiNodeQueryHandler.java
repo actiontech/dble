@@ -338,13 +338,14 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
 
         this.netOutBytes += eof.length;
-        if (isFailed.get()) {
+        if (errorResponse.get()) {
             return;
         }
         RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
         final ServerConnection source = session.getSource();
         if (!rrs.isCallStatement()) {
             if (clearIfSessionClosed(session)) {
+                cleanBuffer();
                 return;
             } else {
                 session.releaseConnectionIfSafe(conn, false);
@@ -393,7 +394,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     @Override
     public boolean rowResponse(final byte[] row, RowDataPacket rowPacketNull, boolean isLeft, BackendConnection conn) {
         this.netOutBytes += row.length;
-        if (isFailed.get()) {
+        if (errorResponse.get()) {
             // the connection has been closed or set to "txInterrupt" properly
             //in tryErrorFinished() method! If we close it here, it can
             // lead to tx error such as blocking rollback tx for ever.
@@ -433,7 +434,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     }
                 }
             }
-            if (!isFailed.get()) {
+            if (!errorResponse.get()) {
                 if (prepared) {
                     if (rowDataPkg == null) {
                         rowDataPkg = new RowDataPacket(fieldCount);
@@ -536,7 +537,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             cacheKey = items[1];
         }
 
-        if (!isFailed.get()) {
+        if (!errorResponse.get()) {
             for (int i = 0, len = fieldCount; i < len; ++i) {
                 byte[] field = fields.get(i);
                 FieldPacket fieldPkg = new FieldPacket();
@@ -569,7 +570,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
 
     void handleDataProcessException(Exception e) {
-        if (!isFailed.get()) {
+        if (!errorResponse.get()) {
             this.error = e.toString();
             LOGGER.info("caught exception ", e);
             setFail(e.toString());

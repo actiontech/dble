@@ -97,7 +97,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
 
     @Override
     public boolean rowResponse(final byte[] row, RowDataPacket rowPacketNull, boolean isLeft, BackendConnection conn) {
-        if (isFailed.get() || noNeedRows) {
+        if (errorResponse.get() || noNeedRows) {
             return true;
         }
         BlockingQueue<HeapItem> queue = queues.get(conn);

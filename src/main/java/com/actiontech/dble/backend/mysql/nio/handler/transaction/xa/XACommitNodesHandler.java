@@ -166,8 +166,22 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
                     @Override
                     public void run() {
-                        XAAutoRollbackNodesHandler nextHandler = new XAAutoRollbackNodesHandler(session, sendData, null, null);
-                        nextHandler.rollback();
+                        if (session.isKilled()) {
+                            XAStateLog.saveXARecoveryLog(session.getSessionXaID(), session.getXaState());
+                            session.getSource().setTxInterrupt("Query is interrupted.");
+                            setResponseTime(false);
+                            session.clearSavepoint();
+                            if (!session.closed()) {
+                                ErrorPacket errPacket = new ErrorPacket();
+                                errPacket.setErrNo(ErrorCode.ER_QUERY_INTERRUPTED);
+                                errPacket.setMessage("Query is interrupted.".getBytes());
+                                errPacket.setPacketId(++packetId);
+                                session.getSource().write(errPacket.toBytes());
+                            }
+                        } else {
+                            XAAutoRollbackNodesHandler nextHandler = new XAAutoRollbackNodesHandler(session, sendData, null, null);
+                            nextHandler.rollback();
+                        }
                     }
                 });
             }

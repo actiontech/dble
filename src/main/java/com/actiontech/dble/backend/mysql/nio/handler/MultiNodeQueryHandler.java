@@ -36,6 +36,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 /**
@@ -63,6 +64,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     private final boolean modifiedSQL;
     protected Set<RouteResultsetNode> connRrns = new ConcurrentSkipListSet<>();
     private Map<String, Integer> dataNodePauseInfo; // only for debug
+    private AtomicBoolean recycledBuffer = new AtomicBoolean(false);
 
     public MultiNodeQueryHandler(RouteResultset rrs, NonBlockingSession session) {
         super(session);
@@ -134,12 +136,21 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
     private void innerExecute(BackendConnection conn, RouteResultsetNode node) {
         if (clearIfSessionClosed(session)) {
+            cleanBuffer();
             return;
         }
         MySQLConnection mysqlCon = (MySQLConnection) conn;
         mysqlCon.setResponseHandler(this);
         mysqlCon.setSession(session);
         mysqlCon.executeMultiNode(node, session.getSource(), sessionAutocommit && !session.getSource().isTxStart() && !node.isModifySQL());
+    }
+
+    public void cleanBuffer() {
+        if (recycledBuffer.compareAndSet(false, true)) {
+            if (byteBuffer != null) {
+                session.getSource().recycle(byteBuffer);
+            }
+        }
     }
 
     @Override
@@ -218,7 +229,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             errConnection.add(conn);
             if (decrementToZero(conn)) {
                 packetId++;
-                if (byteBuffer != null) {
+                if (session.closed()) {
+                    cleanBuffer();
+                } else if (byteBuffer != null) {
                     session.getSource().write(byteBuffer);
                 }
                 handleEndPacket(errPacket.toBytes(), AutoTxOperation.ROLLBACK, false);
@@ -297,6 +310,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
         lock.lock();
         try {
+            if (session.closed()) {
+                cleanBuffer();
+                return;
+            }
             if (fieldsReturned) {
                 return;
             }
@@ -308,6 +325,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             fieldsReturned = true;
             executeFieldEof(header, fields, eof);
         } catch (Exception e) {
+            cleanBuffer();
             handleDataProcessException(e);
         } finally {
             lock.unlock();
@@ -328,6 +346,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         final ServerConnection source = session.getSource();
         if (!rrs.isCallStatement()) {
             if (clearIfSessionClosed(session)) {
+                cleanBuffer();
                 return;
             } else {
                 session.releaseConnectionIfSafe(conn, false);
@@ -338,31 +357,40 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         try {
             unResponseRrns.remove(rNode);
             zeroReached = canResponse();
-        } finally {
-            lock.unlock();
-        }
-        if (zeroReached) {
-            this.resultSize += eof.length;
-            if (!rrs.isCallStatement()) {
-                if (this.sessionAutocommit && !session.getSource().isTxStart() && !session.getSource().isLocked()) { // clear all connections
-                    session.releaseConnections(false);
-                }
+            if (zeroReached) {
+                this.resultSize += eof.length;
+                if (!rrs.isCallStatement()) {
+                    if (this.sessionAutocommit && !session.getSource().isTxStart() && !session.getSource().isLocked()) { // clear all connections
+                        session.releaseConnections(false);
+                    }
 
-                if (this.isFail()) {
-                    session.setResponseTime(false);
-                    session.resetMultiStatementStatus();
-                    source.write(byteBuffer);
-                    ErrorPacket errorPacket = createErrPkg(this.error);
-                    handleEndPacket(errorPacket.toBytes(), AutoTxOperation.ROLLBACK, false);
-                    return;
+                    if (this.isFail()) {
+                        session.setResponseTime(false);
+                        session.resetMultiStatementStatus();
+                        if (session.closed()) {
+                            cleanBuffer();
+                        } else {
+                            session.getSource().write(byteBuffer);
+                        }
+                        ErrorPacket errorPacket = createErrPkg(this.error);
+                        handleEndPacket(errorPacket.toBytes(), AutoTxOperation.ROLLBACK, false);
+                        return;
+                    }
+                }
+                boolean multiStatementFlag = session.getIsMultiStatement().get();
+
+                if (session.closed()) {
+                    cleanBuffer();
+                } else {
+                    writeEofResult(eof, source);
+                    session.multiStatementPacket(eof, packetId);
+                    //set after writeEof because packetId would increase in that function
+                    session.multiStatementPacket(eof, packetId);
+                    session.multiStatementNextSql(multiStatementFlag);
                 }
             }
-
-            boolean multiStatementFlag = session.getIsMultiStatement().get();
-            writeEofResult(eof, source);
-            //set after writeEof because packetId would increase in that function
-            session.multiStatementPacket(eof, packetId);
-            session.multiStatementNextSql(multiStatementFlag);
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -380,6 +408,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         }
         lock.lock();
         try {
+            if (session.closed()) {
+                cleanBuffer();
+            }
             this.selectRows++;
             RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
             String dataNode = rNode.getName();
@@ -421,6 +452,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
             }
         } catch (Exception e) {
+            cleanBuffer();
             handleDataProcessException(e);
         } finally {
             lock.unlock();
@@ -456,10 +488,13 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         if (conn.isClosed() && (!session.getSource().isAutocommit() || session.getSource().isTxStart())) {
             session.getSource().setTxInterrupt(error);
         }
+
         if (canResponse()) {
             packetId++;
             if (byteBuffer == null) {
                 handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, false);
+            } else if (session.closed()) {
+                cleanBuffer();
             } else {
                 session.getSource().write(byteBuffer);
                 handleEndPacket(err.toBytes(), AutoTxOperation.ROLLBACK, false);
@@ -468,7 +503,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
     private void writeEofResult(byte[] eof, ServerConnection source) {
-
         eof[3] = ++packetId;
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("last packet id:" + packetId);

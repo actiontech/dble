@@ -116,7 +116,9 @@ public class SetTestJob implements ResponseHandler, Runnable {
     public void okResponse(byte[] ok, BackendConnection conn) {
         if (hasReturn.compareAndSet(false, true)) {
             doFinished(false);
-            sc.write(ok);
+            boolean multiStatementFlag = sc.getSession2().getIsMultiStatement().get();
+            sc.write(sc.writeToBuffer(sc.getSession2().getOkByteArray(), sc.allocate()));
+            sc.getSession2().multiStatementNextSql(multiStatementFlag);
             ResetConnHandler handler = new ResetConnHandler();
             conn.setResponseHandler(handler);
             ((MySQLConnection) conn).setComplexQuery(true);

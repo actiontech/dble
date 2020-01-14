@@ -35,8 +35,6 @@ public class ChildTable implements Named {
     @XmlAttribute
     protected String cacheKey;
     @XmlAttribute
-    protected Boolean autoIncrement;
-    @XmlAttribute
     protected String incrementColumn;
 
     @XmlAttribute
@@ -74,14 +72,6 @@ public class ChildTable implements Named {
 
     public void setCacheKey(String cacheKey) {
         this.cacheKey = cacheKey;
-    }
-
-    public Boolean isAutoIncrement() {
-        return autoIncrement;
-    }
-
-    public void setAutoIncrement(Boolean autoIncrement) {
-        this.autoIncrement = autoIncrement;
     }
 
     public List<ChildTable> getChildTable() {
@@ -122,8 +112,6 @@ public class ChildTable implements Named {
                 parentKey +
                 ", cacheKey=" +
                 cacheKey +
-                ", autoIncrement=" +
-                autoIncrement +
                 ", childTable=" +
                 childTable +
                 "]";

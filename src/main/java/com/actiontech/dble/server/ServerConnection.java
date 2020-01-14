@@ -575,7 +575,7 @@ public class ServerConnection extends FrontendConnection {
     public void writeErrMessage(String sqlState, String msg, int vendorCode) {
         byte packetId = (byte) this.getSession2().getPacketId().get();
         super.writeErrMessage(++packetId, vendorCode, sqlState, msg);
-        if (session.isKilled()) {
+        if (session.isDiscard() || session.isKilled()) {
             session.setKilled(false);
             session.setDiscard(false);
         }
@@ -585,7 +585,7 @@ public class ServerConnection extends FrontendConnection {
     public void writeErrMessage(int vendorCode, String msg) {
         byte packetId = (byte) this.getSession2().getPacketId().get();
         super.writeErrMessage(++packetId, vendorCode, msg);
-        if (session.isKilled()) {
+        if (session.isDiscard() || session.isKilled()) {
             session.setKilled(false);
             session.setDiscard(false);
         }
@@ -596,7 +596,7 @@ public class ServerConnection extends FrontendConnection {
         SerializableLock.getInstance().unLock(this.id);
         markFinished();
         super.write(data);
-        if (session.isKilled()) {
+        if (session.isDiscard() || session.isKilled()) {
             session.setKilled(false);
             session.setDiscard(false);
         }
@@ -607,7 +607,7 @@ public class ServerConnection extends FrontendConnection {
         SerializableLock.getInstance().unLock(this.id);
         markFinished();
         super.write(buffer);
-        if (session.isKilled()) {
+        if (session.isDiscard() || session.isKilled()) {
             session.setKilled(false);
             session.setDiscard(false);
         }

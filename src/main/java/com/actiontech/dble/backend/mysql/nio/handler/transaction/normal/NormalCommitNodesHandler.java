@@ -47,6 +47,7 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
                 break;
             }
         }
+        session.setDiscard(true);
     }
 
     @Override

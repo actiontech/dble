@@ -640,7 +640,7 @@ public class MySQLConnection extends AbstractConnection implements
                     closeReason = reason;
                     write(writeToBuffer(QuitPacket.QUIT, allocate()));
                 } catch (Throwable e) {
-                    LOGGER.info("error when try to quite the connection ,drop the error and close it anyway");
+                    LOGGER.info("error when try to quit the connection ,drop the error and close it anyway", e);
                     closeInner(reason);
                 }
             } else {

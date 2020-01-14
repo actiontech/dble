@@ -411,7 +411,13 @@ public abstract class AbstractConnection implements NIOConnection {
 
     @Override
     public void write(ByteBuffer buffer) {
-
+        if (isClosed) {
+            if (buffer != null) {
+                recycle(buffer);
+            }
+            this.cleanup();
+            return;
+        }
         if (isSupportCompress()) {
             ByteBuffer newBuffer = CompressUtil.compressMysqlPacket(buffer, this, compressUnfinishedDataQueue);
             writeQueue.offer(newBuffer);
@@ -543,7 +549,6 @@ public abstract class AbstractConnection implements NIOConnection {
         if (!compressUnfinishedDataQueue.isEmpty()) {
             compressUnfinishedDataQueue.clear();
         }
-
         ByteBuffer buffer;
         while ((buffer = writeQueue.poll()) != null) {
             recycle(buffer);

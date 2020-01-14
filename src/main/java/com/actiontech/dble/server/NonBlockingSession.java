@@ -453,6 +453,7 @@ public class NonBlockingSession implements Session {
             try {
                 singleNodeHandler.execute();
             } catch (Exception e) {
+                singleNodeHandler.recycleBuffer();
                 handleSpecial(rrs, false);
                 LOGGER.info(String.valueOf(source) + rrs, e);
                 if (this.getSessionXaID() != null) {
@@ -503,6 +504,14 @@ public class NonBlockingSession implements Session {
                 multiNodeSelectHandler.execute();
             } catch (Exception e) {
                 LOGGER.info(String.valueOf(source) + rrs, e);
+                if (!source.isAutocommit() || source.isTxStart()) {
+                    source.setTxInterrupt("ROLLBACK");
+                }
+                multiNodeSelectHandler.waitAllConnConnectorError();
+                multiNodeSelectHandler.cleanBuffer();
+                closeConnections();
+                setResponseTime(false);
+                LOGGER.info(String.valueOf(source) + rrs, e);
                 source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
             }
             if (this.isPrepared()) {
@@ -524,6 +533,7 @@ public class NonBlockingSession implements Session {
                     source.setTxInterrupt("ROLLBACK");
                 }
                 multiNodeHandler.waitAllConnConnectorError();
+                multiNodeHandler.cleanBuffer();
                 closeConnections();
                 setResponseTime(false);
                 source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());

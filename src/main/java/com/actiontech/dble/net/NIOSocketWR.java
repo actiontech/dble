@@ -110,17 +110,31 @@ public class NIOSocketWR extends SocketWR {
                 if (buffer.position() == 5 && bufferIsQuit(buffer)) {
                     quitFlag = true;
                 }
-                written = channel.write(buffer);
-                if (written > 0) {
-                    con.netOutBytes += written;
-                    con.processor.addNetOutBytes(written);
-                    con.lastWriteTime = TimeUtil.currentTimeMillis();
-                } else {
-                    break;
+                try {
+                    written = channel.write(buffer);
+                    if (written > 0) {
+                        con.netOutBytes += written;
+                        con.processor.addNetOutBytes(written);
+                        con.lastWriteTime = TimeUtil.currentTimeMillis();
+                    } else {
+                        break;
+                    }
+                } catch (Throwable e) {
+                    con.writeBuffer = null;
+                    con.recycle(buffer);
+                    if (!quitFlag) {
+                        throw e;
+                    } else {
+                        startClearCon();
+                        con.isClosed = true;
+                        AbstractConnection.LOGGER.info("write quit error and ignore ");
+                        return true;
+                    }
                 }
             }
 
             if (quitFlag) {
+                con.recycle(buffer);
                 startClearCon();
                 return true;
             }
@@ -154,12 +168,20 @@ public class NIOSocketWR extends SocketWR {
                         break;
                     }
                 }
-            } catch (IOException e) {
+            } catch (Throwable e) {
                 con.recycle(buffer);
-                throw e;
+                if (!quitFlag) {
+                    throw e;
+                } else {
+                    startClearCon();
+                    con.isClosed = true;
+                    AbstractConnection.LOGGER.info("write quit error and ignore ");
+                    return true;
+                }
             }
 
             if (quitFlag) {
+                con.recycle(buffer);
                 startClearCon();
                 return true;
             }

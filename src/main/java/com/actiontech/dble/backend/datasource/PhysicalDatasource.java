@@ -456,14 +456,20 @@ public abstract class PhysicalDatasource {
         return con;
     }
 
-    public BackendConnection getConnectionForHeartbeat(String schema, boolean autocommit) throws IOException {
+    public BackendConnection getConnectionForHeartbeat(String schema) throws IOException {
         BackendConnection con;
         if (!disabled.get()) {
             if (!this.createNewCount()) {
-                LOGGER.warn("no ilde connection in pool and reached maxCon, but still try to create new connection for heartbeat ");
+                ConQueue queue = conMap.getSchemaConQueue(null);
+                BackendConnection conIdle = queue.takeIdleCon(true);
+                if (conIdle != null) {
+                    conIdle.close("create new connection for heartbeat, so close an old idle con");
+                } else {
+                    LOGGER.warn("now connection in pool and reached maxCon, but still try to create new connection for heartbeat ");
+                }
                 con = createNewBackendConnection(schema);
             } else { // create connection
-                LOGGER.info("no ilde connection in pool,create new connection for heartbeat ");
+                LOGGER.info("create new connection for heartbeat ");
                 con = createNewBackendConnection(schema);
             }
         } else {

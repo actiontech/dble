@@ -462,6 +462,7 @@ public abstract class PhysicalDatasource {
             if (!this.createNewCount()) {
                 ConQueue queue = conMap.getSchemaConQueue(null);
                 BackendConnection conIdle = queue.takeIdleCon(true);
+                this.connectionCount.incrementAndGet();
                 if (conIdle != null) {
                     conIdle.close("create new connection for heartbeat, so close an old idle con");
                 } else {

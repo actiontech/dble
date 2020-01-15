@@ -19,7 +19,6 @@ import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.statistic.stat.QueryResult;
 import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
 import com.actiontech.dble.util.StringUtil;
@@ -67,9 +66,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         }
         if (session == null) {
             throw new IllegalArgumentException("session is null!");
-        }
-        if (ServerParse.SELECT == rrs.getSqlType()) {
-            buffer = session.getSource().allocate();
         }
         this.session = session;
     }
@@ -156,8 +152,13 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     }
 
     public void recycleBuffer() {
-        if (buffer != null) {
-            session.getSource().recycle(buffer);
+        lock.lock();
+        try {
+            if (buffer != null) {
+                session.getSource().recycle(buffer);
+            }
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -337,6 +338,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         lock.lock();
         try {
             if (!writeToClient.get()) {
+                buffer = session.getSource().allocate();
                 buffer = source.writeToBuffer(header, buffer);
                 for (int i = 0, len = fields.size(); i < len; ++i) {
                     byte[] field = fields.get(i);

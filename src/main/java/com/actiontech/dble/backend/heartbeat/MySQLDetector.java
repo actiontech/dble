@@ -63,7 +63,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         con = null;
         try {
             MySQLDataSource ds = heartbeat.getSource();
-            con = ds.getConnectionForHeartbeat(null, true);
+            con = ds.getConnectionForHeartbeat(null);
         } catch (IOException e) {
             LOGGER.warn("heartbeat error", e);
 

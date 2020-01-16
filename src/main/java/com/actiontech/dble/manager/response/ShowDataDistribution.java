@@ -88,7 +88,7 @@ public final class ShowDataDistribution {
         AtomicBoolean succeed = new AtomicBoolean(true);
         for (String dataNode : tableConfig.getDataNodes()) {
             OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(new String[]{"COUNT"}, new ShowDataDistributionListener(dataNode, lock, cond, results, succeed));
-            SQLJob sqlJob = new SQLJob("SELECT COUNT(*) AS COUNT FROM " + schemaInfo[1], dataNode, resultHandler, false);
+            SQLJob sqlJob = new SQLJob("SELECT COUNT(*) AS COUNT FROM " + schemaInfo[1], dataNode, resultHandler, true);
             sqlJob.run();
         }
         lock.lock();
@@ -104,7 +104,7 @@ public final class ShowDataDistribution {
         }
 
         if (!succeed.get()) {
-            c.writeErrMessage(ErrorCode.ER_YES, "occur Exception, so try again later ");
+            c.writeErrMessage(ErrorCode.ER_YES, "occur Exception, so see dble.log to check reason");
             return;
         }
         ByteBuffer buffer = c.allocate();

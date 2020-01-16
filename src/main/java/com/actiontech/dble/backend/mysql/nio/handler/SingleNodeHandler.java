@@ -169,12 +169,18 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                 " frontend host:" + errHost + "/" + errPort + "/" + errUser);
 
         if (conn.isClosed()) {
-            session.getTargetMap().remove(conn.getAttachment());
+            if (conn.getAttachment() != null) {
+                RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+                session.getTargetMap().remove(rNode);
+            }
         } else if (syncFinished) {
             session.releaseConnectionIfSafe(conn, false);
         } else {
             conn.closeWithoutRsp("unfinished sync");
-            session.getTargetMap().remove(conn.getAttachment());
+            if (conn.getAttachment() != null) {
+                RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+                session.getTargetMap().remove(rNode);
+            }
         }
         source.setTxInterrupt(errMsg);
         session.handleSpecial(rrs, false);

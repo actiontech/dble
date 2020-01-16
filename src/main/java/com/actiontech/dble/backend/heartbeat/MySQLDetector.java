@@ -70,7 +70,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
     }
 
     public void heartbeat() {
-        if (con == null) {
+        if (con == null || con.isClosed()) {
             heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS);
             return;
         }

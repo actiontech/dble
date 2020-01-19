@@ -53,6 +53,7 @@ public class ConfigStatusResponse implements ClusterXmlLoader {
             //check if the reload is already be done by this node
             if (!"".equals(ClusterHelper.getKV(ClusterPathUtil.getSelfConfStatusPath()).getValue()) ||
                     "".equals(ClusterHelper.getKV(ClusterPathUtil.getConfStatusPath()).getValue())) {
+                LOGGER.info("return because self already response to the request");
                 return;
             }
 

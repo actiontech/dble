@@ -377,11 +377,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         } finally {
             lock.unlock();
         }
-
-        fieldCount = fieldPackets.size();
-
-        eof[3] = ++packetId;
-        buffer = source.writeToBuffer(eof, buffer);
     }
 
     @Override

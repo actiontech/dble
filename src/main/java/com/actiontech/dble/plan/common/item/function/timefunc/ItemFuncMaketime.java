@@ -39,10 +39,12 @@ public class ItemFuncMaketime extends ItemTimeFunc {
     public boolean getTime(MySQLTime ltime) {
         long minute = args.get(1).valInt().longValue();
         BigDecimal sec = args.get(2).valDecimal();
-        if ((nullValue = (sec == null || args.get(0).isNullValue() || args.get(1).isNullValue() || args.get(2).isNullValue() ||
-                minute < 0 || minute > 59))) {
+        if (sec == null || args.get(0).isNullValue() || args.get(1).isNullValue() || args.get(2).isNullValue() ||
+                minute < 0 || minute > 59) {
+            nullValue = true;
             return true;
         }
+        nullValue = false;
         long scdquot = sec.longValue(); // sec can not be null
         long scdrem = (long) ((sec.doubleValue() - scdquot) * 1000000);
         if ((nullValue = (scdquot < 0 || scdquot > 59 || scdrem < 0))) {

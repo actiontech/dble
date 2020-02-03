@@ -30,12 +30,12 @@
         <repository>
             <id>repo1</id>
             <name>Maven Repository Switchboard</name>
-            <url>http://repo1.maven.org/maven2/</url>
+            <url>https://repo1.maven.org/maven2/</url>
         </repository>
         <repository>
             <id>repo2</id>
             <name>Human Readable Name for this Mirror.</name>
-            <url>http://repo2.maven.org/maven2/</url>
+            <url>https://repo2.maven.org/maven2/</url>
         </repository>
         <repository>
             <id>UK</id>
@@ -45,19 +45,19 @@
         <repository>
             <id>jenkins</id>
             <name>Jenkins Releases Repository</name>
-            <url>http://repo.jenkins-ci.org/releases/</url>
+            <url>https://repo.jenkins-ci.org/releases/</url>
         </repository>
     </repositories>
     <pluginRepositories>
         <pluginRepository>
             <id>repo1</id>
             <name>Maven Repository Switchboard</name>
-            <url>http://repo1.maven.org/maven2/</url>
+            <url>https://repo1.maven.org/maven2/</url>
         </pluginRepository>
         <pluginRepository>
             <id>repo2</id>
             <name>Human Readable Name for this Mirror.</name>
-            <url>http://repo2.maven.org/maven2/</url>
+            <url>https://repo2.maven.org/maven2/</url>
         </pluginRepository>
         <pluginRepository>
             <id>UK</id>
@@ -67,7 +67,7 @@
         <pluginRepository>
             <id>jenkins</id>
             <name>Jenkins Releases Repository</name>
-            <url>http://repo.jenkins-ci.org/releases/</url>
+            <url>https://repo.jenkins-ci.org/releases/</url>
         </pluginRepository>
     </pluginRepositories>
 

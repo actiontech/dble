@@ -38,11 +38,6 @@
             <url>https://repo2.maven.org/maven2/</url>
         </repository>
         <repository>
-            <id>UK</id>
-            <name>UK Central</name>
-            <url>http://uk.maven.org/maven2</url>
-        </repository>
-        <repository>
             <id>jenkins</id>
             <name>Jenkins Releases Repository</name>
             <url>https://repo.jenkins-ci.org/releases/</url>
@@ -58,11 +53,6 @@
             <id>repo2</id>
             <name>Human Readable Name for this Mirror.</name>
             <url>https://repo2.maven.org/maven2/</url>
-        </pluginRepository>
-        <pluginRepository>
-            <id>UK</id>
-            <name>UK Central</name>
-            <url>http://uk.maven.org/maven2</url>
         </pluginRepository>
         <pluginRepository>
             <id>jenkins</id>

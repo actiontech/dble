@@ -217,7 +217,7 @@ public abstract class Item {
         if (i == ItemResult.STRING_RESULT) {
             return stringFieldType();
         } else if (i == ItemResult.INT_RESULT) {
-            return FieldTypes.MYSQL_TYPE_LONG;
+            return FieldTypes.MYSQL_TYPE_LONGLONG;
         } else if (i == ItemResult.DECIMAL_RESULT) {
             return FieldTypes.MYSQL_TYPE_NEWDECIMAL;
         } else if (i == ItemResult.REAL_RESULT) {

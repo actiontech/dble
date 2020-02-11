@@ -22,17 +22,17 @@ public class CheckSumChecker extends AbstractConsistencyChecker {
     }
 
     @Override
-    String[] getFetchCols() {
+    public String[] getFetchCols() {
         return new String[]{"Checksum"};
     }
 
     @Override
-    String getCountSQL(String dbName, String tName) {
+    public String getCountSQL(String dbName, String tName) {
         return "checksum table " + tName;
     }
 
     @Override
-    boolean resultEquals(SQLQueryResult<List<Map<String, String>>> or, SQLQueryResult<List<Map<String, String>>> cr) {
+    public boolean resultEquals(SQLQueryResult<List<Map<String, String>>> or, SQLQueryResult<List<Map<String, String>>> cr) {
         Map<String, String> oresult = or.getResult().get(0);
         Map<String, String> cresult = cr.getResult().get(0);
         return (oresult.get("Checksum") == null && cresult.get("Checksum") == null) ||
@@ -41,7 +41,7 @@ public class CheckSumChecker extends AbstractConsistencyChecker {
     }
 
     @Override
-    void failResponse(List<SQLQueryResult<List<Map<String, String>>>> res) {
+    public void failResponse(List<SQLQueryResult<List<Map<String, String>>>> res) {
         String tableId = schema + "." + tableName;
         String errorMsg = "Global Consistency Check fail for table :" + schema + "-" + tableName;
         LOGGER.warn(errorMsg);
@@ -53,7 +53,7 @@ public class CheckSumChecker extends AbstractConsistencyChecker {
     }
 
     @Override
-    void resultResponse(List<SQLQueryResult<List<Map<String, String>>>> elist) {
+    public void resultResponse(List<SQLQueryResult<List<Map<String, String>>>> elist) {
         String tableId = schema + "." + tableName;
 
         if (elist.size() == 0) {

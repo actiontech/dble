@@ -101,13 +101,13 @@ public abstract class AbstractConsistencyChecker implements SQLQueryResultListen
         this.handler = handler;
     }
 
-    abstract String[] getFetchCols();
+    public abstract String[] getFetchCols();
 
-    abstract String getCountSQL(String dbName, String tName);
+    public abstract String getCountSQL(String dbName, String tName);
 
-    abstract boolean resultEquals(SQLQueryResult<List<Map<String, String>>> or, SQLQueryResult<List<Map<String, String>>> cr);
+    public abstract boolean resultEquals(SQLQueryResult<List<Map<String, String>>> or, SQLQueryResult<List<Map<String, String>>> cr);
 
-    abstract void failResponse(List<SQLQueryResult<List<Map<String, String>>>> res);
+    public abstract void failResponse(List<SQLQueryResult<List<Map<String, String>>>> res);
 
-    abstract void resultResponse(List<SQLQueryResult<List<Map<String, String>>>> elist);
+    public abstract void resultResponse(List<SQLQueryResult<List<Map<String, String>>>> elist);
 }

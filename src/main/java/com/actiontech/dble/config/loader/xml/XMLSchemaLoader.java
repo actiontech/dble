@@ -301,7 +301,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             String cacheKey = tableElement.hasAttribute("cacheKey") ? tableElement.getAttribute("cacheKey").toUpperCase() : null;
             //if autoIncrement,it will use sequence handler
             String incrementColumn = tableElement.hasAttribute("incrementColumn") ? tableElement.getAttribute("incrementColumn").toUpperCase() : null;
-            String checkClass = tableElement.hasAttribute("globalCheckClass") ? tableElement.getAttribute("globalCheckClass").toUpperCase() : GLOBAL_TABLE_CHECK_DEFAULT;
+            String checkClass = tableElement.hasAttribute("globalCheckClass") ? tableElement.getAttribute("globalCheckClass") : GLOBAL_TABLE_CHECK_DEFAULT;
             String corn = tableElement.hasAttribute("cron") ? tableElement.getAttribute("cron").toUpperCase() : GLOBAL_TABLE_CHECK_DEFAULT_CRON;
             boolean globalCheck = tableElement.hasAttribute("globalCheck") ? Boolean.valueOf(tableElement.getAttribute("globalCheck")) : false;
             for (String tableName : tableNames) {

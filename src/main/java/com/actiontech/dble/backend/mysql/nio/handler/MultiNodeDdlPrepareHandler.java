@@ -173,7 +173,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
             if (releaseDDLLock.compareAndSet(false, true)) {
                 session.handleSpecial(oriRrs, false);
             }
-            handleRollbackPacket(err.toBytes());
+            handleRollbackPacket(err.toBytes(), "DDL prepared failed");
         }
     }
 
@@ -223,7 +223,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
             }
             if (decrementToZero(conn) && errorResponse.compareAndSet(false, true)) {
                 session.handleSpecial(oriRrs, false);
-                handleRollbackPacket(err.toBytes());
+                handleRollbackPacket(err.toBytes(), "DDL prepared failed");
             }
         } finally {
             lock.unlock();
@@ -257,7 +257,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
             if (this.isFail()) {
                 if (errorResponse.compareAndSet(false, true)) {
                     session.handleSpecial(oriRrs, false);
-                    handleRollbackPacket(err.toBytes());
+                    handleRollbackPacket(err.toBytes(), "DDL prepared failed");
                 }
             } else {
                 try {
@@ -268,7 +268,17 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
                     finishedTest = true;
                     session.setTraceSimpleHandler(handler);
                     session.setPreExecuteEnd(false);
-                    handler.execute();
+                    if (!session.isKilled()) {
+                        handler.execute();
+                    } else {
+                        DDLTraceManager.getInstance().endDDL(source, "Query was interrupted");
+                        session.handleSpecial(oriRrs, false);
+                        ErrorPacket errPacket = new ErrorPacket();
+                        errPacket.setPacketId(++packetId);
+                        errPacket.setErrNo(ErrorCode.ER_QUERY_INTERRUPTED);
+                        errPacket.setMessage(StringUtil.encode("Query was interrupted", session.getSource().getCharset().getResults()));
+                        handleRollbackPacket(errPacket.toBytes(), "Query was interrupted");
+                    }
                 } catch (Exception e) {
                     DDLTraceManager.getInstance().endDDL(source, "take Connection error:" + e.getMessage());
                     LOGGER.warn(String.valueOf(source) + oriRrs, e);
@@ -307,16 +317,15 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
     }
 
 
-    private void handleRollbackPacket(byte[] data) {
+    private void handleRollbackPacket(byte[] data, String reason) {
         ServerConnection source = session.getSource();
         boolean inTransaction = !source.isAutocommit() || source.isTxStart();
         if (!inTransaction) {
             // normal query
-            session.closeAndClearResources("DDL prepared failed");
-        }
-        // Explicit distributed transaction
-        if (inTransaction) {
-            source.setTxInterrupt("ROLLBACK");
+            session.closeAndClearResources(reason);
+        } else {
+            // Explicit distributed transaction
+            source.setTxInterrupt(reason);
         }
         session.getSource().write(data);
     }

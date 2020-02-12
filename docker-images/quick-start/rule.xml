@@ -13,7 +13,7 @@
 	License for the specific language governing permissions and - limitations
 	under the License. -->
 <!DOCTYPE dble:rule SYSTEM "rule.dtd">
-<dble:rule xmlns:dble="http://dble.cloud/">
+<dble:rule xmlns:dble="http://dble.cloud/" version="2.0">
     <tableRule name="rule_enum">
         <rule>
             <columns>code</columns>
@@ -141,7 +141,8 @@
     <function name="func_date" class="Date">
         <property name="dateFormat">yyyy-MM-dd</property>
         <property name="sBeginDate">2015-01-01</property>
-        <property name="sEndDate">2015-01-31 </property> <!--if not set sEndDate,then in fact ,the sEndDate = sBeginDate+ (node size)*sPartionDay-1 -->
+        <property name="sEndDate">2015-01-31
+        </property> <!--if not set sEndDate,then in fact ,the sEndDate = sBeginDate+ (node size)*sPartionDay-1 -->
         <property name="sPartionDay">10</property>
         <property name="defaultNode">0</property><!--the default is -1-->
     </function>

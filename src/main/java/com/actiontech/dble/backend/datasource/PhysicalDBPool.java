@@ -448,7 +448,7 @@ public class PhysicalDBPool extends AbstractPhysicalDBPool {
             }
         }
         if (!theNode.isAlive()) {
-            String heartbeatError = "the data source[" + theNode.getConfig().getUrl() + "] can't reached. Please check the dataHost status";
+            String heartbeatError = "the data source[" + theNode.getConfig().getUrl() + "] can't reach. Please check the dataHost status";
             if (dataHostConfig.isShowSlaveSql()) {
                 heartbeatError += ",Tip:heartbeat[show slave status] need the SUPER or REPLICATION CLIENT privilege(s)";
             }

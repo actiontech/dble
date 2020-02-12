@@ -27,8 +27,13 @@ import java.io.InputStream;
 import java.util.*;
 import java.util.Map.Entry;
 
+
+
+
 import static com.actiontech.dble.backend.datasource.check.GlobalCheckJob.GLOBAL_TABLE_CHECK_DEFAULT;
 import static com.actiontech.dble.backend.datasource.check.GlobalCheckJob.GLOBAL_TABLE_CHECK_DEFAULT_CRON;
+
+import org.apache.commons.lang.StringUtils;
 
 /**
  * @author mycat
@@ -296,13 +301,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             String cacheKey = tableElement.hasAttribute("cacheKey") ? tableElement.getAttribute("cacheKey").toUpperCase() : null;
             //if autoIncrement,it will use sequence handler
             String incrementColumn = tableElement.hasAttribute("incrementColumn") ? tableElement.getAttribute("incrementColumn").toUpperCase() : null;
-            boolean autoIncrement = isAutoIncrement(tableElement, incrementColumn);
-            if (incrementColumn != null && !autoIncrement) {
-                throw new ConfigException("table " + tableNameElement + " has incrementColumn but not autoIncrement");
-            }
-
-
-            String checkClass = tableElement.hasAttribute("globalCheckClass") ? tableElement.getAttribute("globalCheckClass").toUpperCase() : GLOBAL_TABLE_CHECK_DEFAULT;
+            String checkClass = tableElement.hasAttribute("globalCheckClass") ? tableElement.getAttribute("globalCheckClass") : GLOBAL_TABLE_CHECK_DEFAULT;
             String corn = tableElement.hasAttribute("cron") ? tableElement.getAttribute("cron").toUpperCase() : GLOBAL_TABLE_CHECK_DEFAULT_CRON;
             boolean globalCheck = tableElement.hasAttribute("globalCheck") ? Boolean.valueOf(tableElement.getAttribute("globalCheck")) : false;
             for (String tableName : tableNames) {
@@ -333,15 +332,6 @@ public class XMLSchemaLoader implements SchemaLoader {
             }
         }
         return tables;
-    }
-
-    private boolean isAutoIncrement(Element tableElement, String incrementColumn) {
-        String autoIncrementStr = ConfigUtil.checkAndGetAttribute(tableElement, "autoIncrement", "false", problemReporter);
-        boolean autoIncrement = Boolean.parseBoolean(autoIncrementStr);
-        if (autoIncrement && incrementColumn == null) {
-            throw new ConfigException("autoIncrement is true but cacheKey and incrementColumn is not setting!");
-        }
-        return autoIncrement;
     }
 
     /**
@@ -402,10 +392,6 @@ public class XMLSchemaLoader implements SchemaLoader {
             String parentKey = childTbElement.getAttribute("parentKey").toUpperCase();
             String cacheKey = childTbElement.hasAttribute("cacheKey") ? childTbElement.getAttribute("cacheKey").toUpperCase() : null;
             String incrementColumn = childTbElement.hasAttribute("incrementColumn") ? childTbElement.getAttribute("incrementColumn").toUpperCase() : null;
-            boolean autoIncrement = isAutoIncrement(childTbElement, incrementColumn);
-            if (incrementColumn != null && !autoIncrement) {
-                throw new ConfigException("table " + cdTbName + " has incrementColumn but not AutoIncrement");
-            }
             TableConfig table = new TableConfig(cdTbName, cacheKey, needAddLimit,
                     TableTypeEnum.TYPE_SHARDING_TABLE, strDatoNodes, null, false, parentTable, joinKey, parentKey, incrementColumn,
                     null, null, false);
@@ -460,7 +446,7 @@ public class XMLSchemaLoader implements SchemaLoader {
                 databaseStr = databaseStr.toLowerCase();
             }
             String host = element.getAttribute("dataHost");
-            if (empty(dnNamePre) || empty(databaseStr) || empty(host)) {
+            if (StringUtils.isBlank(dnNamePre) || StringUtils.isBlank(databaseStr) || StringUtils.isBlank(host)) {
                 throw new ConfigException("dataNode " + dnNamePre + " define error ,attribute can't be empty");
             }
             //dnNamePre(name),databaseStr(database),host(dataHost) can use ',', '$', '-' to configure multi nodes
@@ -472,9 +458,9 @@ public class XMLSchemaLoader implements SchemaLoader {
             String[] databases = SplitUtil.split(databaseStr, ',', '$', '-');
             String[] hostStrings = SplitUtil.split(host, ',', '$', '-');
 
-            if (dnNames.length > 1 && dnNames.length != databases.length * hostStrings.length) {
+            if (dnNames.length != databases.length * hostStrings.length) {
                 throw new ConfigException("dataNode " + dnNamePre +
-                        " define error ,dnNames.length must be=databases.length*hostStrings.length");
+                        " define error ,Number of dataNode name must be = Number of database * Number of dataHost");
             }
             if (dnNames.length > 1) {
 

@@ -63,7 +63,7 @@ public class ConfigTableMetaHandler extends GetTableMetaHandler {
     }
 
     private Set<String> listExistTables(String dataNode, Set<String> tables) {
-        GetConfigTablesHandler showTablesHandler = new GetConfigTablesHandler(tables, dataNode);
+        GetConfigTablesHandler showTablesHandler = new GetConfigTablesHandler(tables, dataNode, this);
         showTablesHandler.execute();
         return showTablesHandler.getExistsTables();
     }

@@ -97,6 +97,9 @@ public class OutputHandler extends BaseDMLHandler {
         }
         lock.lock();
         try {
+            if (terminate.get()) {
+                return;
+            }
             if (this.isBinary)
                 this.fieldPackets = fieldPackets;
             ResultSetHeaderPacket hp = new ResultSetHeaderPacket();
@@ -126,6 +129,9 @@ public class OutputHandler extends BaseDMLHandler {
         }
         lock.lock();
         try {
+            if (terminate.get()) {
+                return true;
+            }
             selectRows++;
             byte[] row;
             if (this.isBinary) {
@@ -161,6 +167,9 @@ public class OutputHandler extends BaseDMLHandler {
         ServerConnection source = session.getSource();
         lock.lock();
         try {
+            if (terminate.get()) {
+                return;
+            }
             EOFPacket eofPacket = new EOFPacket();
             if (data != null) {
                 eofPacket.read(data);

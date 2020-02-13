@@ -112,7 +112,7 @@ public class PhysicalDBNode {
         if (runOnSlave == null) {
             PhysicalDatasource readSource = dbPool.getRWBalanceNode();
             if (!readSource.isAlive()) {
-                String heartbeatError = "the data source[" + readSource.getConfig().getUrl() + "] can't reached. Please check the dataHost status";
+                String heartbeatError = "the data source[" + readSource.getConfig().getUrl() + "] can't reach. Please check the dataHost status";
                 if (dbPool.getDataHostConfig().isShowSlaveSql()) {
                     heartbeatError += ",Tip:heartbeat[show slave status] need the SUPER or REPLICATION CLIENT privilege(s)";
                 }

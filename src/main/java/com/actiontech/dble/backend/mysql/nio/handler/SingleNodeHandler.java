@@ -30,6 +30,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author mycat
@@ -37,7 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SingleNodeHandler.class);
-
+    protected final ReentrantLock lock = new ReentrantLock();
     private final RouteResultsetNode node;
     protected final RouteResultset rrs;
     protected final NonBlockingSession session;
@@ -69,7 +70,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         }
         this.session = session;
     }
-
 
     public void execute() throws Exception {
         connClosed = false;
@@ -105,10 +105,10 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
         dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), session.getSource().isAutocommit(), node, this, node);
     }
-
     protected void execute(BackendConnection conn) {
         if (session.closed()) {
             session.clearResources(rrs);
+            recycleBuffer();
             return;
         }
         conn.setResponseHandler(this);
@@ -148,6 +148,17 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         session.resetMultiStatementStatus();
     }
 
+    public void recycleBuffer() {
+        lock.lock();
+        try {
+            if (buffer != null) {
+                session.getSource().recycle(buffer);
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+
     private void backConnectionErr(ErrorPacket errPkg, BackendConnection conn, boolean syncFinished) {
         ServerConnection source = session.getSource();
         String errUser = source.getUser();
@@ -159,25 +170,35 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                 " frontend host:" + errHost + "/" + errPort + "/" + errUser);
 
         if (conn.isClosed()) {
-            session.getTargetMap().remove(conn.getAttachment());
+            if (conn.getAttachment() != null) {
+                RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+                session.getTargetMap().remove(rNode);
+            }
         } else if (syncFinished) {
             session.releaseConnectionIfSafe(conn, false);
         } else {
             conn.closeWithoutRsp("unfinished sync");
-            session.getTargetMap().remove(conn.getAttachment());
+            if (conn.getAttachment() != null) {
+                RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+                session.getTargetMap().remove(rNode);
+            }
         }
         source.setTxInterrupt(errMsg);
         session.handleSpecial(rrs, false);
-
-        if (writeToClient.compareAndSet(false, true)) {
-            if (buffer != null) {
-                /* SELECT 9223372036854775807 + 1;    response: field_count, field, eof, err */
-                buffer = source.writeToBuffer(errPkg.toBytes(), allocBuffer());
-                session.setResponseTime(false);
-                source.write(buffer);
-            } else {
-                errPkg.write(source);
+        lock.lock();
+        try {
+            if (writeToClient.compareAndSet(false, true)) {
+                if (buffer != null) {
+                    /* SELECT 9223372036854775807 + 1;    response: field_count, field, eof, err */
+                    buffer = source.writeToBuffer(errPkg.toBytes(), buffer);
+                    session.setResponseTime(false);
+                    source.write(buffer);
+                } else {
+                    errPkg.write(source);
+                }
             }
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -221,6 +242,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             session.multiStatementPacket(ok, packetId);
             boolean multiStatementFlag = session.getIsMultiStatement().get();
             doSqlStat();
+
             if (rrs.isCallStatement() || writeToClient.compareAndSet(false, true)) {
                 ok.write(source);
             }
@@ -267,11 +289,16 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         session.multiStatementPacket(eof, packetId);
         ServerConnection source = session.getSource();
         session.setResponseTime(true);
-        boolean multiStatementFlag = session.getIsMultiStatement().get();
+        final boolean multiStatementFlag = session.getIsMultiStatement().get();
         doSqlStat();
-        if (writeToClient.compareAndSet(false, true)) {
-            buffer = source.writeToBuffer(eof, allocBuffer());
-            source.write(buffer);
+        lock.lock();
+        try {
+            if (writeToClient.compareAndSet(false, true)) {
+                buffer = source.writeToBuffer(eof, buffer);
+                source.write(buffer);
+            }
+        } finally {
+            lock.unlock();
         }
         session.multiStatementNextSql(multiStatementFlag);
     }
@@ -289,16 +316,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             }
             QueryResultDispatcher.dispatchQuery(queryResult);
         }
-    }
-
-    /**
-     * lazy create ByteBuffer only when needed
-     */
-    ByteBuffer allocBuffer() {
-        if (buffer == null) {
-            buffer = session.getSource().allocate();
-        }
-        return buffer;
     }
 
     @Override
@@ -324,41 +341,47 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         header[3] = ++packetId;
 
         ServerConnection source = session.getSource();
-        if (!writeToClient.get()) {
-            buffer = source.writeToBuffer(header, allocBuffer());
-            for (int i = 0, len = fields.size(); i < len; ++i) {
-                byte[] field = fields.get(i);
-                field[3] = ++packetId;
+        lock.lock();
+        try {
+            if (!writeToClient.get()) {
+                buffer = session.getSource().allocate();
+                buffer = source.writeToBuffer(header, buffer);
+                for (int i = 0, len = fields.size(); i < len; ++i) {
+                    byte[] field = fields.get(i);
+                    field[3] = ++packetId;
 
-                // save field
-                FieldPacket fieldPk = new FieldPacket();
-                fieldPk.read(field);
-                if (rrs.getSchema() != null) {
-                    fieldPk.setDb(rrs.getSchema().getBytes());
-                }
-                if (rrs.getTableAlias() != null) {
-                    fieldPk.setTable(rrs.getTableAlias().getBytes());
-                }
-                if (rrs.getTable() != null) {
-                    fieldPk.setOrgTable(rrs.getTable().getBytes());
-                }
-                fieldPackets.add(fieldPk);
-
-                // find cache key index
-                if (cacheKey != null && cacheKeyIndex == -1) {
-                    String fieldName = new String(fieldPk.getName());
-                    if (cacheKey.equalsIgnoreCase(fieldName)) {
-                        cacheKeyIndex = i;
+                    // save field
+                    FieldPacket fieldPk = new FieldPacket();
+                    fieldPk.read(field);
+                    if (rrs.getSchema() != null) {
+                        fieldPk.setDb(rrs.getSchema().getBytes());
                     }
+                    if (rrs.getTableAlias() != null) {
+                        fieldPk.setTable(rrs.getTableAlias().getBytes());
+                    }
+                    if (rrs.getTable() != null) {
+                        fieldPk.setOrgTable(rrs.getTable().getBytes());
+                    }
+                    fieldPackets.add(fieldPk);
+
+                    // find cache key index
+                    if (cacheKey != null && cacheKeyIndex == -1) {
+                        String fieldName = new String(fieldPk.getName());
+                        if (cacheKey.equalsIgnoreCase(fieldName)) {
+                            cacheKeyIndex = i;
+                        }
+                    }
+
+                    buffer = fieldPk.write(buffer, source, false);
                 }
 
-                buffer = fieldPk.write(buffer, source, false);
+                fieldCount = fieldPackets.size();
+
+                eof[3] = ++packetId;
+                buffer = source.writeToBuffer(eof, buffer);
             }
-
-            fieldCount = fieldPackets.size();
-
-            eof[3] = ++packetId;
-            buffer = source.writeToBuffer(eof, buffer);
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -386,20 +409,24 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             }
         }
 
-        if (!writeToClient.get()) {
-            if (prepared) {
-                if (rowDataPk == null) {
-                    rowDataPk = new RowDataPacket(fieldCount);
-                    rowDataPk.read(row);
+        lock.lock();
+        try {
+            if (!writeToClient.get()) {
+                if (prepared) {
+                    if (rowDataPk == null) {
+                        rowDataPk = new RowDataPacket(fieldCount);
+                        rowDataPk.read(row);
+                    }
+                    BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
+                    binRowDataPk.read(fieldPackets, rowDataPk);
+                    binRowDataPk.setPacketId(rowDataPk.getPacketId());
+                    buffer = binRowDataPk.write(buffer, session.getSource(), true);
+                } else {
+                    buffer = session.getSource().writeToBuffer(row, buffer);
                 }
-                BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
-                binRowDataPk.read(fieldPackets, rowDataPk);
-                binRowDataPk.setPacketId(rowDataPk.getPacketId());
-                buffer = binRowDataPk.write(buffer, session.getSource(), true);
-            } else {
-                buffer = session.getSource().writeToBuffer(row, allocBuffer());
-                //session.getSource().write(row);
             }
+        } finally {
+            lock.unlock();
         }
         return false;
     }

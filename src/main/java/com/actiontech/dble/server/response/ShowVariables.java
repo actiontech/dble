@@ -32,7 +32,12 @@ public final class ShowVariables {
         try {
             RouterUtil.routeToSingleNode(rrs, schema.getRandomDataNode());
             ShowVariablesHandler handler = new ShowVariablesHandler(rrs, c.getSession2());
-            handler.execute();
+            try {
+                handler.execute();
+            } catch (Exception e1) {
+                handler.recycleBuffer();
+                c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e1.toString());
+            }
         } catch (Exception e) {
             // Could this only be ER_PARSE_ERROR?
             c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.toString());

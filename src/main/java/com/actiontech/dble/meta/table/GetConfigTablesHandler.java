@@ -17,11 +17,13 @@ import java.util.Set;
 public class GetConfigTablesHandler extends GetNodeTablesHandler {
 
     private final Set<String> expectedTables;
+    private final ConfigTableMetaHandler metaHandler;
     private final Set<String> existsTables = new HashSet<>();
 
-    GetConfigTablesHandler(Set<String> expectedTables, String dataNode) {
+    GetConfigTablesHandler(Set<String> expectedTables, String dataNode, ConfigTableMetaHandler metaHandler) {
         super(dataNode);
         this.expectedTables = expectedTables;
+        this.metaHandler = metaHandler;
     }
 
     Set<String> getExistsTables() {
@@ -43,13 +45,26 @@ public class GetConfigTablesHandler extends GetNodeTablesHandler {
     protected void handleTable(String table, String tableType) {
         if (expectedTables.contains(table)) {
             existsTables.add(table);
-            return;
         }
-        String tableId = "DataNode[" + dataNode + "]:Table[" + table + "]";
-        String warnMsg = "Can't get table " + table + "'s config from DataNode:" + dataNode + "! Maybe the table is not initialized!";
-        LOGGER.warn(warnMsg);
-        AlertUtil.alertSelf(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, warnMsg, AlertUtil.genSingleLabel("TABLE", tableId));
-        ToResolveContainer.TABLE_LACK.add(tableId);
     }
 
+    @Override
+    protected void handleFinished() {
+        if (expectedTables.size() == existsTables.size()) {
+            super.handleFinished();
+            return;
+        }
+        for (String table : expectedTables) {
+            if (existsTables.contains(table)) {
+                continue;
+            }
+            metaHandler.handleTable(dataNode, table, false, null);
+            String tableId = "DataNode[" + dataNode + "]:Table[" + table + "]";
+            String warnMsg = "Can't get table " + table + "'s config from DataNode:" + dataNode + "! Maybe the table is not initialized!";
+            LOGGER.warn(warnMsg);
+            AlertUtil.alertSelf(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, warnMsg, AlertUtil.genSingleLabel("TABLE", tableId));
+            ToResolveContainer.TABLE_LACK.add(tableId);
+        }
+        super.handleFinished();
+    }
 }

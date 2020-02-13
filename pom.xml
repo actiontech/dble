@@ -30,50 +30,38 @@
         <repository>
             <id>repo1</id>
             <name>Maven Repository Switchboard</name>
-            <url>http://repo1.maven.org/maven2/</url>
+            <url>https://repo1.maven.org/maven2/</url>
         </repository>
         <repository>
             <id>repo2</id>
             <name>Human Readable Name for this Mirror.</name>
-            <url>http://repo2.maven.org/maven2/</url>
-        </repository>
-        <repository>
-            <id>UK</id>
-            <name>UK Central</name>
-            <url>http://uk.maven.org/maven2</url>
+            <url>https://repo2.maven.org/maven2/</url>
         </repository>
         <repository>
             <id>jenkins</id>
             <name>Jenkins Releases Repository</name>
-            <url>http://repo.jenkins-ci.org/releases/</url>
+            <url>https://repo.jenkins-ci.org/releases/</url>
         </repository>
     </repositories>
     <pluginRepositories>
         <pluginRepository>
             <id>repo1</id>
             <name>Maven Repository Switchboard</name>
-            <url>http://repo1.maven.org/maven2/</url>
+            <url>https://repo1.maven.org/maven2/</url>
         </pluginRepository>
         <pluginRepository>
             <id>repo2</id>
             <name>Human Readable Name for this Mirror.</name>
-            <url>http://repo2.maven.org/maven2/</url>
-        </pluginRepository>
-        <pluginRepository>
-            <id>UK</id>
-            <name>UK Central</name>
-            <url>http://uk.maven.org/maven2</url>
+            <url>https://repo2.maven.org/maven2/</url>
         </pluginRepository>
         <pluginRepository>
             <id>jenkins</id>
             <name>Jenkins Releases Repository</name>
-            <url>http://repo.jenkins-ci.org/releases/</url>
+            <url>https://repo.jenkins-ci.org/releases/</url>
         </pluginRepository>
     </pluginRepositories>
 
     <dependencies>
-        <!-- <dependency> <groupId>com.google.guava</groupId> <artifactId>guava-parent</artifactId>
-            <version>18.0</version> </dependency> -->
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
@@ -162,11 +150,6 @@
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-1.2-api</artifactId>
             <version>2.7</version>
-        </dependency>
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>1.2.17</version>
         </dependency>
         <dependency>
             <groupId>com.univocity</groupId>
@@ -682,7 +665,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>2.17</version>
+                <version>3.1.0</version>
                 <executions>
                     <execution>
                         <id>checkstyle</id>
@@ -700,7 +683,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>8.18</version>
+                        <version>8.29</version>
                     </dependency>
                 </dependencies>
                 <configuration>

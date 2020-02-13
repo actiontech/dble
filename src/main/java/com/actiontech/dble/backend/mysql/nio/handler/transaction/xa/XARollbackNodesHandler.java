@@ -88,11 +88,13 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                 conn.setResponseHandler(this);
                 conns.add((MySQLConnection) conn);
             }
+            session.setDiscard(false);
             for (MySQLConnection con : conns) {
                 if (!executeRollback(con, position++)) {
                     break;
                 }
             }
+            session.setDiscard(true);
         } finally {
             lockForErrorHandle.lock();
             try {
@@ -194,6 +196,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
         this.waitUntilSendFinish();
+        conn.syncAndExecute();
         if (conn instanceof MySQLConnection) {
             MySQLConnection mysqlCon = (MySQLConnection) conn;
             if (mysqlCon.getXaStatus() == TxState.TX_STARTED_STATE) {
@@ -235,6 +238,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
     @Override
     public void errorResponse(byte[] err, BackendConnection conn) {
         this.waitUntilSendFinish();
+        conn.syncAndExecute();
         if (conn instanceof MySQLConnection) {
             MySQLConnection mysqlCon = (MySQLConnection) conn;
             if (mysqlCon.getXaStatus() == TxState.TX_STARTED_STATE) {
@@ -408,16 +412,35 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_ROLLBACKED_STATE);
             session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_INIT);
             session.clearResources(false);
+            session.clearSavepoint();
+            byte[] send = sendData;
+            if (session.isKilled()) {
+                ErrorPacket errPacket = new ErrorPacket();
+                errPacket.setErrNo(ErrorCode.ER_QUERY_INTERRUPTED);
+                errPacket.setMessage("Query is interrupted.".getBytes());
+                errPacket.setPacketId(++packetId);
+                send = errPacket.toBytes();
+            }
+            setResponseTime(false);
             if (session.closed()) {
                 return;
             }
-            setResponseTime(false);
-            byte[] send = sendData;
             session.getSource().write(send);
 
             //partially committed,must commit again
         } else if (session.getXaState() == TxState.TX_ROLLBACK_FAILED_STATE || session.getXaState() == TxState.TX_PREPARED_STATE ||
                 session.getXaState() == TxState.TX_PREPARE_UNCONNECT_STATE) {
+            if (session.isKilled()) {
+                XAStateLog.saveXARecoveryLog(session.getSessionXaID(), session.getXaState());
+                setResponseTime(false);
+                session.clearSavepoint();
+                session.clearResources(true);
+                if (session.closed()) {
+                    return;
+                }
+                session.getSource().write(sendData);
+                return;
+            }
             MySQLConnection errConn = session.releaseExcept(session.getXaState());
             if (errConn != null) {
                 final String xaId = session.getSessionXaID();

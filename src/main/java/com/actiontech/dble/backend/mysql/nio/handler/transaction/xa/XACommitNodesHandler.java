@@ -86,12 +86,13 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 conn.setResponseHandler(this);
                 conns.add((MySQLConnection) conn);
             }
+            session.setDiscard(false);
             for (MySQLConnection con : conns) {
                 if (!executeCommit(con, position++)) {
                     break;
                 }
             }
-
+            session.setDiscard(true);
         } finally {
             lockForErrorHandle.lock();
             try {
@@ -165,8 +166,22 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
                     @Override
                     public void run() {
-                        XAAutoRollbackNodesHandler nextHandler = new XAAutoRollbackNodesHandler(session, sendData, null, null);
-                        nextHandler.rollback();
+                        if (session.isKilled()) {
+                            XAStateLog.saveXARecoveryLog(session.getSessionXaID(), session.getXaState());
+                            session.getSource().setTxInterrupt("Query is interrupted.");
+                            setResponseTime(false);
+                            session.clearSavepoint();
+                            if (!session.closed()) {
+                                ErrorPacket errPacket = new ErrorPacket();
+                                errPacket.setErrNo(ErrorCode.ER_QUERY_INTERRUPTED);
+                                errPacket.setMessage("Query is interrupted.".getBytes());
+                                errPacket.setPacketId(++packetId);
+                                session.getSource().write(errPacket.toBytes());
+                            }
+                        } else {
+                            XAAutoRollbackNodesHandler nextHandler = new XAAutoRollbackNodesHandler(session, sendData, null, null);
+                            nextHandler.rollback();
+                        }
                     }
                 });
             }
@@ -230,6 +245,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     public void okResponse(byte[] ok, BackendConnection conn) {
         this.waitUntilSendFinish();
         MySQLConnection mysqlCon = (MySQLConnection) conn;
+        conn.syncAndExecute();
         TxState state = mysqlCon.getXaStatus();
         if (state == TxState.TX_STARTED_STATE) {
             mysqlCon.setXaStatus(TxState.TX_ENDED_STATE);
@@ -266,6 +282,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     @Override
     public void errorResponse(byte[] err, BackendConnection conn) {
         this.waitUntilSendFinish();
+        conn.syncAndExecute();
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.read(err);
         String errMsg = new String(errPacket.getMessage());
@@ -367,8 +384,10 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         if (checkClosedConn(conn)) {
             return;
         }
-        this.setFail(reason);
-        sendData = makeErrorPacket(reason);
+        String closeReason = "Connection {DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
+                ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
+        this.setFail(closeReason);
+        sendData = makeErrorPacket(closeReason);
         innerConnectError(conn, decrementToZero(conn));
     }
 
@@ -431,6 +450,14 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             // partially committed,must commit again
         } else if (session.getXaState() == TxState.TX_COMMIT_FAILED_STATE) {
             MySQLConnection errConn = session.releaseExcept(TxState.TX_COMMIT_FAILED_STATE);
+            if (session.isKilled()) {
+                XAStateLog.saveXARecoveryLog(session.getSessionXaID(), session.getXaState());
+                setResponseTime(false);
+                session.clearSavepoint();
+                session.getSource().write(sendData);
+                session.clearResources(true);
+                return;
+            }
             if (errConn != null) {
                 final String xaId = session.getSessionXaID();
                 XAStateLog.saveXARecoveryLog(xaId, session.getXaState());

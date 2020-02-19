@@ -572,7 +572,7 @@ public abstract class PhysicalDatasource {
     }
 
     public boolean isAlive() {
-        return !disabled.get() && (heartbeat.isHeartBeatOK() || (heartbeat.isStop() && testConnSuccess));
+        return !disabled.get() && ((heartbeat.getStatus() == MySQLHeartbeat.INIT_STATUS && testConnSuccess) || heartbeat.isHeartBeatOK());
     }
 
 

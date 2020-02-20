@@ -120,7 +120,9 @@ public final class KillHandler {
     private static void killConnection(long id, ServerConnection c) {
         // kill myself
         if (id == c.getId()) {
-            getOkPacket(c).write(c);
+            OkPacket packet = getOkPacket(c);
+            packet.setPacketId(0);
+            packet.write(c);
             return;
         }
 

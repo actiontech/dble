@@ -76,7 +76,7 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
 
         private static final long SEQUENCE_MASK = ~(-1L << SEQUENCE_BITS);
 
-        private static long lastTimestamp = -1L;
+        private long lastTimestamp;
         private final long workerId;
         private final long datacenterId;
         private final long startTimeMillisecond;
@@ -93,7 +93,7 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
             this.workerId = workerId;
             this.datacenterId = datacenterId;
             this.startTimeMillisecond = startTimeMillisecond;
-            lastTimestamp = startTimeMillisecond;
+            this.lastTimestamp = startTimeMillisecond;
             this.deadline = startTimeMillisecond + (1L << 41);
         }
 

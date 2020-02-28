@@ -50,9 +50,9 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
 
     /**
      * @author sw
-     *         <p>
-     *         Now:
-     *         64 bit ID 30 (millisecond high 30 )+5(DATA_CENTER_ID)+5(WORKER_ID)+12(autoincrement)+12 (millisecond low 12)
+     * <p>
+     * Now:
+     * 64 bit ID 30 (millisecond high 30 )+5(DATA_CENTER_ID)+5(WORKER_ID)+12(autoincrement)+12 (millisecond low 12)
      */
     static class IdWorker {
         private static final long TIMESTAMP_LOW_BITS = 12L;
@@ -76,13 +76,12 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
 
         private static final long SEQUENCE_MASK = ~(-1L << SEQUENCE_BITS);
 
-        private static long lastTimestamp = -1L;
-
-        private long sequence = 0L;
+        private long lastTimestamp;
         private final long workerId;
         private final long datacenterId;
         private final long startTimeMillisecond;
         private final long deadline;
+        private long sequence = 0L;
 
         IdWorker(long workerId, long datacenterId, long startTimeMillisecond) {
             if (workerId > MAX_WORKER_ID || workerId < 0) {
@@ -94,6 +93,7 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
             this.workerId = workerId;
             this.datacenterId = datacenterId;
             this.startTimeMillisecond = startTimeMillisecond;
+            this.lastTimestamp = startTimeMillisecond;
             this.deadline = startTimeMillisecond + (1L << 41);
         }
 
@@ -114,10 +114,11 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
             } else {
                 sequence = 0;
             }
-            lastTimestamp = timestamp;
+
             if (timestamp >= deadline) {
                 throw new SQLNonTransientException("Global sequence has reach to max limit and can generate duplicate sequences.");
             }
+            lastTimestamp = timestamp;
             //42 bit timestamp, right shift 12 bit ,get high 30 bit,than left shift 34 bit
             return (((timestamp - startTimeMillisecond) >> TIMESTAMP_LOW_BITS) << TIMESTAMP_HIGH_SHIFT) |
                     (datacenterId << DATACENTER_ID_SHIFT) |

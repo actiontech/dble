@@ -398,14 +398,19 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
     public void connectionClose(BackendConnection conn, String reason) {
         this.waitUntilSendFinish();
         this.setFail(reason);
-        if (conn instanceof MySQLConnection) {
+        boolean[] result = decrementToZeroAndCheckNode(conn);
+        boolean finished = result[0];
+        boolean justRemoved = result[1];
+
+        if (justRemoved && conn instanceof MySQLConnection) {
             MySQLConnection mysqlCon = (MySQLConnection) conn;
+
             LOGGER.info("connectionClose " + mysqlCon);
             if (mysqlCon.getXaStatus() == TxState.TX_STARTED_STATE) {
                 mysqlCon.close();
                 mysqlCon.setXaStatus(TxState.TX_ROLLBACKED_STATE);
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
-                if (decrementToZero(mysqlCon)) {
+                if (finished) {
                     session.setXaState(TxState.TX_ENDED_STATE);
                     rollback();
                 }
@@ -414,7 +419,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                 mysqlCon.close();
                 mysqlCon.setXaStatus(TxState.TX_ROLLBACKED_STATE);
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
-                if (decrementToZero(mysqlCon)) {
+                if (finished) {
                     session.setXaState(TxState.TX_INITIALIZE_STATE);
                     cleanAndFeedback();
                 }
@@ -425,7 +430,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                 mysqlCon.close();
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                 session.setXaState(TxState.TX_ROLLBACK_FAILED_STATE);
-                if (decrementToZero(mysqlCon)) {
+                if (finished) {
                     cleanAndFeedback();
                 }
             } else {

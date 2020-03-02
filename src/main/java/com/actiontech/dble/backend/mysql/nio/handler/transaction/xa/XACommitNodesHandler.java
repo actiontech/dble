@@ -397,7 +397,12 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
         this.setFail(closeReason);
         sendData = makeErrorPacket(closeReason);
-        innerConnectError(conn, decrementToZero(conn), "connectionClose");
+        boolean[] result = decrementToZeroAndCheckNode(conn);
+        boolean finished = result[0];
+        boolean justRemoved = result[1];
+        if (justRemoved) {
+            innerConnectError(conn, finished, "connectionClose");
+        }
     }
 
     private void innerConnectError(BackendConnection conn, boolean finished, String reason) {

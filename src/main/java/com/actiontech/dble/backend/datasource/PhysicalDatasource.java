@@ -199,7 +199,11 @@ public abstract class PhysicalDatasource {
     }
 
     public boolean isSalveOrRead() {
-        return dbPool.isSlave(this) || this.readNode;
+        if (dbPool != null) {
+            return dbPool.isSlave(this) || this.readNode;
+        } else {
+            return this.readNode;
+        }
     }
 
     public void connectionHeatBeatCheck(long conHeartBeatPeriod) {

@@ -343,6 +343,11 @@ public class PhysicalDBPool extends AbstractPhysicalDBPool {
         for (PhysicalDatasource source : all) {
             if (source != null) {
                 source.doHeartbeat();
+                for (PhysicalDatasource[] physicalDatasource : source.getDbPool().standbyReadSourcesMap.values()) {
+                    for (PhysicalDatasource ds : physicalDatasource) {
+                        ds.startHeartbeat();
+                    }
+                }
             } else {
                 LOGGER.warn(hostName + " current dataSource is null!");
             }
@@ -382,6 +387,11 @@ public class PhysicalDBPool extends AbstractPhysicalDBPool {
 
         for (PhysicalDatasource source : all) {
             source.startHeartbeat();
+            for (PhysicalDatasource[] physicalDatasource : source.getDbPool().standbyReadSourcesMap.values()) {
+                for (PhysicalDatasource ds : physicalDatasource) {
+                    ds.startHeartbeat();
+                }
+            }
         }
     }
 

@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.backend.datasource;
 
 import com.actiontech.dble.DbleServer;
@@ -24,11 +24,20 @@ public class PhysicalDBNode {
     protected final String name;
     protected String database;
     protected volatile AbstractPhysicalDBPool dbPool;
+    private boolean isSchemaExists = true;
 
     public PhysicalDBNode(String hostName, String database, AbstractPhysicalDBPool dbPool) {
         this.name = hostName;
         this.database = database;
         this.dbPool = dbPool;
+    }
+
+    public boolean isSchemaExists() {
+        return isSchemaExists;
+    }
+
+    public void setSchemaExists(boolean schemaExists) {
+        isSchemaExists = schemaExists;
     }
 
     public String getName() {
@@ -37,6 +46,10 @@ public class PhysicalDBNode {
 
     public AbstractPhysicalDBPool getDbPool() {
         return dbPool;
+    }
+
+    public void setDbPool(AbstractPhysicalDBPool dbPool) {
+        this.dbPool = dbPool;
     }
 
     public String getDatabase() {
@@ -155,10 +168,5 @@ public class PhysicalDBNode {
         } else {
             throw new IllegalArgumentException("Invalid DataSource:" + dbPool.getActiveIndex());
         }
-    }
-
-
-    public void setDbPool(AbstractPhysicalDBPool dbPool) {
-        this.dbPool = dbPool;
     }
 }

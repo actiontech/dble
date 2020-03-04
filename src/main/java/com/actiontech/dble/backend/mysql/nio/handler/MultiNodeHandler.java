@@ -84,6 +84,20 @@ public abstract class MultiNodeHandler implements ResponseHandler {
 
     }
 
+    protected boolean[] decrementToZeroAndCheckNode(BackendConnection conn) {
+        boolean zeroReached;
+        boolean justRemoved;
+        lock.lock();
+        try {
+            RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+            justRemoved = unResponseRrns.remove(rNode);
+            zeroReached = canResponse();
+        } finally {
+            lock.unlock();
+        }
+        return new boolean[]{zeroReached, justRemoved};
+    }
+
     protected boolean decrementToZero(BackendConnection conn) {
         boolean zeroReached;
         lock.lock();

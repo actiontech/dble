@@ -49,6 +49,10 @@ public class TestSchemasTask extends Thread {
 
     }
 
+    public Map<String, String> getNodes() {
+        return nodes;
+    }
+
     @Override
     public void run() {
         String mysqlShowDataBasesCols = "Database";

@@ -33,10 +33,13 @@ import java.util.regex.Pattern;
 /**
  * Created by szf on 2018/7/2.
  */
-public final class CreateDatabaseHandler {
+public final class DatabaseHandler {
 
     private static final OkPacket OK = new OkPacket();
-    private static final Pattern PATTERN = Pattern.compile("^\\s*create\\s*database\\s*@@dataNode\\s*=\\s*(['\"])([a-zA-Z_0-9,$\\-]+)(['\"])\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN = Pattern.compile("^\\s*(create|drop)\\s*database\\s*@@dataNode\\s*=\\s*(['\"])([a-zA-Z_0-9,$\\-]+)(['\"])\\s*$", Pattern.CASE_INSENSITIVE);
+
+    private static final String CREATE_DATABASE = "create database if not exists `%s`";
+    private static final String DROP_DATABASE = "drop database if exists `%s`";
 
     static {
         OK.setPacketId(1);
@@ -44,17 +47,17 @@ public final class CreateDatabaseHandler {
         OK.setServerStatus(2);
     }
 
-    private CreateDatabaseHandler() {
+    private DatabaseHandler() {
     }
 
-    public static void handle(String stmt, ManagerConnection c) {
+    public static void handle(String stmt, ManagerConnection c, boolean isCreate) {
 
         Matcher ma = PATTERN.matcher(stmt);
-        if (!ma.matches() || !ma.group(1).equals(ma.group(3))) {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql did not match create database @@dataNode ='dn......'");
+        if (!ma.matches() || !ma.group(2).equals(ma.group(4))) {
+            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql did not match create|drop database @@dataNode ='dn......'");
             return;
         }
-        String dataNodeStr = ma.group(2);
+        String dataNodeStr = ma.group(3);
         Set<String> dataNodes = new HashSet<>(Arrays.asList(SplitUtil.split(dataNodeStr, ',', '$', '-')));
         //check dataNodes
         for (String singleDn : dataNodes) {
@@ -63,31 +66,32 @@ public final class CreateDatabaseHandler {
                 return;
             }
         }
-        final List<String> errMsg = new CopyOnWriteArrayList<>();
+
+        final List<String> errDataNodes = new CopyOnWriteArrayList<>();
+        final Map<String, PhysicalDBNode> allDataNodes = DbleServer.getInstance().getConfig().getDataNodes();
         final AtomicInteger numberCount = new AtomicInteger(dataNodes.size());
         for (final String dataNode : dataNodes) {
-            PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
+            PhysicalDBNode dn = allDataNodes.get(dataNode);
             final PhysicalDatasource ds = dn.getDbPool().getSource();
             final String schema = dn.getDatabase();
             OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(new String[0], new SQLQueryResultListener<SQLQueryResult<Map<String, String>>>() {
                 @Override
                 public void onResult(SQLQueryResult<Map<String, String>> result) {
                     if (!result.isSuccess()) {
-                        errMsg.add(dataNode);
+                        dn.setSchemaExists(false);
+                        errDataNodes.add(dataNode);
+                    } else if (isCreate) {
+                        dn.setSchemaExists(true);
+                        tryResolve(ds.getHostConfig().getName(), ds.getConfig().getHostName(), dataNode, schema, ds.getConfig().getId());
                     } else {
-                        String key = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getConfig().getHostName() + "],data_node[" + dataNode + "],schema[" + schema + "]";
-                        if (ToResolveContainer.DATA_NODE_LACK.contains(key)) {
-                            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName());
-                            labels.put("data_node", dataNode);
-                            AlertUtil.alertResolve(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "mysql", ds.getConfig().getId(), labels,
-                                    ToResolveContainer.DATA_NODE_LACK, key);
-                        }
+                        dn.setSchemaExists(false);
+                        tryAlert(ds.getHostConfig().getName(), ds.getConfig().getHostName(), dataNode, schema, ds.getConfig().getId());
                     }
                     numberCount.decrementAndGet();
                 }
 
             });
-            SQLJob sqlJob = new SQLJob("create database if not exists `" + dn.getDatabase() + "`", null, resultHandler, ds);
+            SQLJob sqlJob = new SQLJob(isCreate ? String.format(CREATE_DATABASE, schema) : String.format(DROP_DATABASE, schema), null, resultHandler, ds);
             sqlJob.run();
         }
 
@@ -95,16 +99,36 @@ public final class CreateDatabaseHandler {
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
         }
 
-        writeResponse(c, errMsg);
+        writeResponse(c, errDataNodes);
     }
 
     private static void writeResponse(ManagerConnection c, List<String> errMsg) {
         if (errMsg.size() == 0) {
             OK.write(c);
         } else {
-            String msg = "create database error in [" + StringUtils.join(errMsg, ',') + "]";
+            String msg = "Occur error in [" + StringUtils.join(errMsg, ',') + "]";
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, msg);
             errMsg.clear();
+        }
+    }
+
+    private static void tryResolve(String dataHost, String dataHost2, String dataNode, String schema, String dataHostId) {
+        String key = "DataHost[" + dataHost + "." + dataHost2 + "],data_node[" + dataNode + "],schema[" + schema + "]";
+        if (ToResolveContainer.DATA_NODE_LACK.contains(key)) {
+            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", dataHost + "-" + dataHost2);
+            labels.put("data_node", dataNode);
+            AlertUtil.alertResolve(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "mysql", dataHostId, labels,
+                    ToResolveContainer.DATA_NODE_LACK, key);
+        }
+    }
+
+    private static void tryAlert(String dataHost, String dataHost2, String dataNode, String schema, String dataHostId) {
+        String key = "DataHost[" + dataHost + "." + dataHost2 + "],data_node[" + dataNode + "],schema[" + schema + "]";
+        if (ToResolveContainer.DATA_NODE_LACK.contains(key)) {
+            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", dataHost + "-" + dataHost2);
+            labels.put("data_node", dataNode);
+            AlertUtil.alert(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "{" + key + "} is lack", "mysql", dataHostId, labels);
+            ToResolveContainer.DATA_NODE_LACK.add(key);
         }
     }
 }

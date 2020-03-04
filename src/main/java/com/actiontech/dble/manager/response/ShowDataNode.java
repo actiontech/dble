@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
@@ -37,11 +37,8 @@ import java.util.*;
  * @author mycat
  */
 public final class ShowDataNode {
-    private ShowDataNode() {
-    }
-
     private static final NumberFormat NF = DecimalFormat.getInstance();
-    private static final int FIELD_COUNT = 8;
+    private static final int FIELD_COUNT = 9;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
@@ -59,6 +56,9 @@ public final class ShowDataNode {
         FIELDS[i] = PacketUtil.getField("DATHOST", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
+        FIELDS[i] = PacketUtil.getField("SCHEMA_EXISTS", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].setPacketId(++packetId);
+
         FIELDS[i] = PacketUtil.getField("INDEX", Fields.FIELD_TYPE_LONG);
         FIELDS[i++].setPacketId(++packetId);
 
@@ -74,11 +74,13 @@ public final class ShowDataNode {
         FIELDS[i] = PacketUtil.getField("EXECUTE", Fields.FIELD_TYPE_LONGLONG);
         FIELDS[i++].setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("RECOVERY_TIME",
-                Fields.FIELD_TYPE_LONGLONG);
-        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i] = PacketUtil.getField("RECOVERY_TIME", Fields.FIELD_TYPE_LONGLONG);
+        FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
+    }
+
+    private ShowDataNode() {
     }
 
     public static void execute(ManagerConnection c, String name) {
@@ -146,6 +148,7 @@ public final class ShowDataNode {
             row.add(StringUtil.encode(
                     node.getDbPool().getHostName() + '/' + node.getDatabase(),
                     charset));
+            row.add(StringUtil.encode(node.isSchemaExists() ? "true" : "false", charset));
             int active = ds.getActiveCountForSchema(node.getDatabase());
             int idle = ds.getIdleCountForSchema(node.getDatabase());
             row.add(IntegerUtil.toBytes(pool.getActiveIndex()));

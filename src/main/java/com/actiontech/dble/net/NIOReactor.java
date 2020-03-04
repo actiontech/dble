@@ -115,6 +115,9 @@ public final class NIOReactor {
                     Object att = key.attachment();
                     if (att != null) {
                         con = (AbstractConnection) att;
+                        if (con.isClosed) {
+                            key.cancel();
+                        }
                         if (key.isValid() && key.isReadable()) {
                             try {
                                 con.asyncRead();

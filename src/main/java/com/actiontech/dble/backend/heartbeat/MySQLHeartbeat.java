@@ -85,7 +85,6 @@ public class MySQLHeartbeat {
         reentrantLock.lock();
         try {
             isStop.compareAndSet(true, false);
-            this.status = OK_STATUS;
         } finally {
             reentrantLock.unlock();
         }
@@ -96,6 +95,7 @@ public class MySQLHeartbeat {
         reentrantLock.lock();
         try {
             if (isStop.compareAndSet(false, true)) {
+                this.status = INIT_STATUS;
                 if (!isChecking.get()) {
                     if (detector != null) {
                         detector.quit();

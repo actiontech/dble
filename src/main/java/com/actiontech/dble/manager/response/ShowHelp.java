@@ -207,6 +207,8 @@ public final class ShowHelp {
 
         //create database
         HELPS.put("create database @@dataNode ='dn......'", "create database for datanode setted in schema.xml");
+        //drop database
+        HELPS.put("drop database @@dataNode ='dn......'", "drop database for datanode setted in schema.xml");
 
         //check @@metadata
         HELPS.put("check @@metadata", "show last time of `reload @@metadata`/start dble");

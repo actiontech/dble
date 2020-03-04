@@ -40,6 +40,7 @@ public final class ManagerParse {
     public static final int RELEASE_RELOAD_METADATA = 22;
     public static final int DATAHOST = 23;
     public static final int SPLIT = 24;
+    public static final int DROP_DB = 25;
 
     public static int parse(String stmt) {
         for (int i = 0; i < stmt.length(); i++) {
@@ -105,7 +106,7 @@ public final class ManagerParse {
                     return dataHostCheck(stmt, --offset);
                 case 'R':
                 case 'r':
-                    return dryRunCheck(stmt, --offset);
+                    return drCheck(stmt, offset);
                 case 'I':
                 case 'i':
                     return disCheck(stmt, --offset);
@@ -138,10 +139,35 @@ public final class ManagerParse {
         return OTHER;
     }
 
+    private static int drCheck(String stmt, int offset) {
+        if (stmt.length() > ++offset) {
+            switch (stmt.charAt(offset)) {
+                case 'o':
+                case 'O':
+                    return dropCheck(stmt, offset);
+                case 'y':
+                case 'Y':
+                    return dryRunCheck(stmt, offset);
+                default:
+                    return OTHER;
+            }
+        }
+        return OTHER;
+    }
+
     private static int dryRunCheck(String stmt, int offset) {
         String thePart = stmt.substring(offset).toUpperCase();
-        if (thePart.startsWith("DRYRUN")) {
+        if (thePart.startsWith("YRUN")) {
             return DRY_RUN;
+        } else {
+            return OTHER;
+        }
+    }
+
+    private static int dropCheck(String stmt, int offset) {
+        String thePart = stmt.substring(offset).toUpperCase();
+        if (thePart.startsWith("OP")) {
+            return DROP_DB;
         } else {
             return OTHER;
         }

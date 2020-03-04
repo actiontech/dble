@@ -24,7 +24,7 @@ public class PhysicalDBNode {
     protected final String name;
     protected String database;
     protected volatile AbstractPhysicalDBPool dbPool;
-    private boolean isSchemaExists = true;
+    private volatile boolean isSchemaExists = true;
 
     public PhysicalDBNode(String hostName, String database, AbstractPhysicalDBPool dbPool) {
         this.name = hostName;

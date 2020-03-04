@@ -78,10 +78,13 @@ public final class DatabaseHandler {
                 @Override
                 public void onResult(SQLQueryResult<Map<String, String>> result) {
                     if (!result.isSuccess()) {
+                        dn.setSchemaExists(false);
                         errDataNodes.add(dataNode);
                     } else if (isCreate) {
+                        dn.setSchemaExists(true);
                         tryResolve(ds.getHostConfig().getName(), ds.getConfig().getHostName(), dataNode, schema, ds.getConfig().getId());
                     } else {
+                        dn.setSchemaExists(false);
                         tryAlert(ds.getHostConfig().getName(), ds.getConfig().getHostName(), dataNode, schema, ds.getConfig().getId());
                     }
                     numberCount.decrementAndGet();

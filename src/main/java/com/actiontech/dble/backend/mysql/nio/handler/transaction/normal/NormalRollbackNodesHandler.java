@@ -56,6 +56,7 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
                 conn.rollback();
             }
         }
+        session.setDiscard(true);
         if (position == 0) {
             if (sendData == null) {
                 sendData = OkPacket.OK;

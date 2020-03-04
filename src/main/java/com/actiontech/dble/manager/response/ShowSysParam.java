@@ -284,8 +284,6 @@ public final class ShowSysParam {
             "The initially autocommit value.The default value is 1",
             "Whether the consistency tableStructure check is enabled.The default value is 0",
             "The period of consistency tableStructure check .The default value is 30*60*1000",
-            "Whether global Table check is enable.The default value is 1",
-            "Global table check period.The default value is 24 * 60 * 60 * 1000",
             "The period between the heartbeat jobs for checking the health of all idle connections. The default is 300 seconds",
             "The period between the heartbeat jobs for checking the health of all write/read data sources. The default is 10 seconds",
             "The period between the jobs for cleaning the closed or overtime connections. The default is 1 second",

@@ -19,18 +19,10 @@ import com.actiontech.dble.plan.common.item.function.sumfunc.ItemSum;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.alibaba.druid.sql.ast.SQLOrderingSpecification;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 
 public abstract class PlanNode {
-    private static final Logger LOGGER = LoggerFactory.getLogger(PlanNode.class);
-
 
     /**
      * select subQuery list
@@ -138,13 +130,7 @@ public abstract class PlanNode {
     /**
      * map :childnode->iselectable
      */
-    private LoadingCache<PlanNode, List<Item>> columnsReferredCache = CacheBuilder.newBuilder().build(
-            new CacheLoader<PlanNode, List<Item>>() {
-                @Override
-                public List<Item> load(PlanNode tn) {
-                    return new ArrayList<>();
-                }
-            });
+    private Map<PlanNode, List<Item>> columnsReferredCache = new LinkedHashMap<>();
 
 
     private List<Item> columnsReferList = new ArrayList<>();
@@ -256,7 +242,7 @@ public abstract class PlanNode {
             setUpItemRefer(orderBy.getItem());
         }
         // make list
-        for (List<Item> selSet : columnsReferredCache.asMap().values()) {
+        for (List<Item> selSet : columnsReferredCache.values()) {
             columnsReferList.addAll(selSet);
         }
     }
@@ -581,21 +567,13 @@ public abstract class PlanNode {
     }
 
     public List<Item> getColumnsReferedByChild(PlanNode tn) {
-        try {
-            return this.columnsReferredCache.get(tn);
-        } catch (ExecutionException e) {
-            LOGGER.info("columnsReferedCache error", e);
-        }
-        return null;
+        return this.columnsReferredCache.get(tn);
     }
 
     public void addSelToReferedMap(PlanNode tn, Item sel) {
         // the same ReferedMap's selects have the same columnname
-        try {
-            this.columnsReferredCache.get(tn).add(sel);
-        } catch (ExecutionException e) {
-            LOGGER.info("columnsReferedCache error", e);
-        }
+        this.columnsReferredCache.computeIfAbsent(tn, k -> new ArrayList<>());
+        this.columnsReferredCache.get(tn).add(sel);
     }
 
     public List<Item> getColumnsRefered() {

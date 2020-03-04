@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,6 +32,7 @@ public final class CheckGlobalConsistency {
     private AtomicInteger counter;
     private final ManagerConnection c;
     private final List<GlobalCheckJob> globalCheckJobs;
+    private final ReentrantLock lock = new ReentrantLock();
 
 
     private static final int FIELD_COUNT = 4;
@@ -172,12 +174,17 @@ public final class CheckGlobalConsistency {
 
 
     public void collectResult(String schema, String table, int distinctNo, int errorNo) {
-        List<ConsistencyResult> list = resultMap.get(schema);
-        if (list == null) {
-            list = Collections.synchronizedList(new ArrayList<ConsistencyResult>());
-            resultMap.put(schema, list);
+        lock.lock();
+        try {
+            List<ConsistencyResult> list = resultMap.get(schema);
+            if (list == null) {
+                list = Collections.synchronizedList(new ArrayList<ConsistencyResult>());
+                resultMap.put(schema, list);
+            }
+            list.add(new ConsistencyResult(table, distinctNo, errorNo));
+        } finally {
+            lock.unlock();
         }
-        list.add(new ConsistencyResult(table, distinctNo, errorNo));
         if (counter.decrementAndGet() <= 0) {
             response();
         }

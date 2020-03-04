@@ -1,5 +1,6 @@
 package com.actiontech.dble.singleton;
 
+import com.actiontech.dble.backend.datasource.check.AbstractConsistencyChecker;
 import com.actiontech.dble.backend.datasource.check.GlobalCheckJob;
 import com.actiontech.dble.backend.datasource.check.CheckSumChecker;
 import com.actiontech.dble.config.model.SchemaConfig;
@@ -89,12 +90,12 @@ public final class CronScheduler {
                 break;
             default:
                 clz = Class.forName(clazz);
-                if (!CheckSumChecker.class.isAssignableFrom(clz)) {
+                if (!AbstractConsistencyChecker.class.isAssignableFrom(clz)) {
                     throw new IllegalArgumentException("rule function must implements " +
                             CheckSumChecker.class.getName() + ", name=" + clazz);
                 }
                 //test if the Instance can be create
-                CheckSumChecker test = (CheckSumChecker) clz.newInstance();
+                AbstractConsistencyChecker test = (AbstractConsistencyChecker) clz.newInstance();
         }
     }
 

@@ -44,7 +44,7 @@ public final class FilterUtils {
             } else if (cond.functype() == Functype.COND_OR_FUNC) {
 
                 //step1 divide the args into base  part
-                Set<List<Item>> saveSet = new HashSet<List<Item>>();
+                Set<List<Item>> saveSet = new LinkedHashSet<>();
                 for (int index = 0; index < cond.getArgCount(); index++) {
                     Item subFilter = cond.arguments().get(index);
                     if (subFilter == null)

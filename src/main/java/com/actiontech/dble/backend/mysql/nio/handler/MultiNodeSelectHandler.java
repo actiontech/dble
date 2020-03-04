@@ -77,6 +77,7 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
                 }
             }
         } catch (Exception e) {
+            cleanBuffer();
             handleDataProcessException(e);
         } finally {
             lock.unlock();

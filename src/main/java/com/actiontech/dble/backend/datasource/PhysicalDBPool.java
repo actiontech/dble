@@ -343,6 +343,11 @@ public class PhysicalDBPool extends AbstractPhysicalDBPool {
         for (PhysicalDatasource source : all) {
             if (source != null) {
                 source.doHeartbeat();
+                for (PhysicalDatasource[] physicalDatasource : source.getDbPool().standbyReadSourcesMap.values()) {
+                    for (PhysicalDatasource ds : physicalDatasource) {
+                        ds.startHeartbeat();
+                    }
+                }
             } else {
                 LOGGER.warn(hostName + " current dataSource is null!");
             }
@@ -382,6 +387,11 @@ public class PhysicalDBPool extends AbstractPhysicalDBPool {
 
         for (PhysicalDatasource source : all) {
             source.startHeartbeat();
+            for (PhysicalDatasource[] physicalDatasource : source.getDbPool().standbyReadSourcesMap.values()) {
+                for (PhysicalDatasource ds : physicalDatasource) {
+                    ds.startHeartbeat();
+                }
+            }
         }
     }
 
@@ -448,7 +458,7 @@ public class PhysicalDBPool extends AbstractPhysicalDBPool {
             }
         }
         if (!theNode.isAlive()) {
-            String heartbeatError = "the data source[" + theNode.getConfig().getUrl() + "] can't reached. Please check the dataHost status";
+            String heartbeatError = "the data source[" + theNode.getConfig().getUrl() + "] can't reach. Please check the dataHost status";
             if (dataHostConfig.isShowSlaveSql()) {
                 heartbeatError += ",Tip:heartbeat[show slave status] need the SUPER or REPLICATION CLIENT privilege(s)";
             }

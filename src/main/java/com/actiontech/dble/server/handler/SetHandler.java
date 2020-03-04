@@ -531,7 +531,9 @@ public final class SetHandler {
             return false;
         } else if (switchStatus) {
             if (c.isAutocommit()) {
-                c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+                boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+                c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+                c.getSession2().multiStatementNextSql(multiStatementFlag);
             } else {
                 c.commit("commit[because of " + stmt + "]");
                 c.setAutocommit(true);
@@ -541,7 +543,9 @@ public final class SetHandler {
                 c.setAutocommit(false);
                 TxnLogHelper.putTxnLog(c, stmt);
             }
-            c.write(c.writeToBuffer(AC_OFF, c.allocate()));
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
         }
         return true;
     }

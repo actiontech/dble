@@ -63,7 +63,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         con = null;
         try {
             MySQLDataSource ds = heartbeat.getSource();
-            con = ds.getConnectionForHeartbeat(null, true);
+            con = ds.getConnectionForHeartbeat(null);
         } catch (IOException e) {
             LOGGER.warn("heartbeat error", e);
 
@@ -80,7 +80,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
     }
 
     public void heartbeat() {
-        if (con == null) {
+        if (con == null || con.isClosed()) {
             heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS);
             return;
         }
@@ -214,7 +214,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             } else {
                 heartbeat.setSlaveBehindMaster(null);
             }
-        } else if (source.isSalveOrRead()) {
+        } else if (source.isSalveOrRead() && source.getHostConfig().getBalance() > 0) {
             //String Last_IO_Error = resultResult != null ? resultResult.get("Last_IO_Error") : null;
             MySQLHeartbeat.LOGGER.warn("found MySQL master/slave Replication err !!! " +
                     heartbeat.getSource().getConfig() + ", " + resultResult);

@@ -888,7 +888,8 @@ public class MySQLConnection extends AbstractConnection implements
         result.append(statusSync);
         result.append(", writeQueue=");
         result.append(this.getWriteQueue().size());
-        result.append(", modifiedSQLExecuted=");
+        result.append(", xaStatus=");
+        result.append(xaStatus);
         if (sysVariables.size() > 0) {
             result.append(", ");
             result.append(getStringOfSysVariables());

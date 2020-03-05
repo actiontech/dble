@@ -412,6 +412,9 @@ public abstract class AbstractConnection implements NIOConnection {
     @Override
     public void write(ByteBuffer buffer) {
         if (isClosed) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("it will not write because of closed " + this);
+            }
             if (buffer != null) {
                 recycle(buffer);
             }

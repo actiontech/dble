@@ -148,6 +148,9 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             if (position == 0) {
                 this.debugRollbackDelay();
             }
+            if (mysqlCon.isClosed()) {
+                mysqlCon.setXaStatus(TxState.TX_CONN_QUIT);
+            }
             rollbackPhase(mysqlCon);
         } else {
             LOGGER.info("Wrong session XA status " + session.getXaState());
@@ -362,7 +365,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                     rollback();
                 }
 
-                // 'xa rollback' ok without prepared
+                // 'xa rollback' err without prepared
             } else if (mysqlCon.getXaStatus() == TxState.TX_ENDED_STATE) {
                 mysqlCon.close();
                 mysqlCon.setXaStatus(TxState.TX_ROLLBACKED_STATE);
@@ -414,7 +417,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                     session.setXaState(TxState.TX_ENDED_STATE);
                     rollback();
                 }
-                // 'xa rollback' ok without prepared
+                // 'xa rollback' close without prepared
             } else if (mysqlCon.getXaStatus() == TxState.TX_ENDED_STATE) {
                 mysqlCon.close();
                 mysqlCon.setXaStatus(TxState.TX_ROLLBACKED_STATE);

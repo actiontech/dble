@@ -1,4 +1,4 @@
-package com.actiontech.dble.cluster.xmlTokv;
+package com.actiontech.dble.cluster.xmltoKv;
 
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.loader.zkprocess.entity.Server;

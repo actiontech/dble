@@ -6,6 +6,7 @@
 package com.actiontech.dble.config.helper;
 
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
@@ -28,11 +29,13 @@ public class SyncDataSourceKeyVariables implements Callable<Boolean> {
     private PhysicalDatasource ds;
     private KeyVariables keyVariables;
     private volatile BoolPtr success = new BoolPtr(false);
+    private final String isolationName;
 
 
     public SyncDataSourceKeyVariables(KeyVariables keyVariables, PhysicalDatasource ds) {
         this.keyVariables = keyVariables;
         this.ds = ds;
+        isolationName = VersionUtil.getIsolationNameByVersion(ds.getDsVersion());
     }
 
     @Override
@@ -73,7 +76,7 @@ public class SyncDataSourceKeyVariables implements Callable<Boolean> {
                 //} else {
                 //    needAddComma = true; // may use in feature
             }
-            sql.append("tx_isolation='");
+            sql.append(isolationName).append("='");
             switch (keyVariables.getTargetIsolation()) {
                 case Isolations.READ_UNCOMMITTED:
                     sql.append("READ-UNCOMMITTED");

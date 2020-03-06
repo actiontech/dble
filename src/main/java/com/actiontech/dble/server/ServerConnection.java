@@ -593,7 +593,6 @@ public class ServerConnection extends FrontendConnection {
 
     @Override
     public void write(byte[] data) {
-        SerializableLock.getInstance().unLock(this.id);
         markFinished();
         super.write(data);
         if (session.isDiscard() || session.isKilled()) {

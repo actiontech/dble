@@ -13,11 +13,14 @@ import com.actiontech.dble.server.NonBlockingSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public abstract class AbstractRollbackNodesHandler extends MultiNodeHandler implements RollbackNodesHandler {
 
     protected static final Logger LOGGER = LoggerFactory.getLogger(AbstractRollbackNodesHandler.class);
+    protected Set<BackendConnection> closedConnSet;
 
     public AbstractRollbackNodesHandler(NonBlockingSession session) {
         super(session);
@@ -56,4 +59,21 @@ public abstract class AbstractRollbackNodesHandler extends MultiNodeHandler impl
 
     }
 
+    protected boolean checkClosedConn(BackendConnection conn) {
+        lock.lock();
+        try {
+            if (closedConnSet == null) {
+                closedConnSet = new HashSet<>(1);
+                closedConnSet.add(conn);
+            } else {
+                if (closedConnSet.contains(conn)) {
+                    return true;
+                }
+                closedConnSet.add(conn);
+            }
+            return false;
+        } finally {
+            lock.unlock();
+        }
+    }
 }

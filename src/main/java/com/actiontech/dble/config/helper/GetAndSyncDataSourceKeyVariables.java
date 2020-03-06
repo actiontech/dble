@@ -7,6 +7,7 @@ package com.actiontech.dble.config.helper;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.OneTimeConnJob;
@@ -22,23 +23,36 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class GetAndSyncDataSourceKeyVariables implements Callable<KeyVariables> {
     private static final Logger LOGGER = LoggerFactory.getLogger(GetAndSyncDataSourceKeyVariables.class);
-    private static final String[] COLUMNS = new String[]{"@@lower_case_table_names", "@@autocommit", "@@tx_isolation", "@@read_only"};
-    private static final String SQL = "select @@lower_case_table_names,@@autocommit, @@tx_isolation,@@read_only";
+    private static final String COLUMN_LOWER_CASE = "@@lower_case_table_names";
+    private static final String COLUMN_AUTOCOMMIT = "@@autocommit";
+    private static final String COLUMN_READONLY = "@@read_only";
+    private static final String SQL = "select @@lower_case_table_names,@@autocommit, @@read_only,";
     private ReentrantLock lock = new ReentrantLock();
     private volatile boolean isFinish = false;
     private Condition finishCond = lock.newCondition();
     private volatile KeyVariables keyVariables;
     private volatile boolean needSync = false;
     private PhysicalDatasource ds;
+    private final String columnIsolation;
 
     public GetAndSyncDataSourceKeyVariables(PhysicalDatasource ds) {
         this.ds = ds;
+        String isolationName = VersionUtil.getIsolationNameByVersion(ds.getDsVersion());
+        if (isolationName != null) {
+            columnIsolation = "@@" + isolationName;
+        } else {
+            columnIsolation = null;
+        }
     }
 
     @Override
     public KeyVariables call() {
-        OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(COLUMNS, new GetDataSourceKeyVariablesListener());
-        OneTimeConnJob sqlJob = new OneTimeConnJob(SQL, null, resultHandler, ds);
+        if (columnIsolation == null) {
+            return keyVariables;
+        }
+        String[] columns = new String[]{COLUMN_LOWER_CASE, COLUMN_AUTOCOMMIT, COLUMN_READONLY, columnIsolation};
+        OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(columns, new GetDataSourceKeyVariablesListener());
+        OneTimeConnJob sqlJob = new OneTimeConnJob(SQL + columnIsolation, null, resultHandler, ds);
         sqlJob.run();
         lock.lock();
         try {
@@ -59,9 +73,9 @@ public class GetAndSyncDataSourceKeyVariables implements Callable<KeyVariables> 
         public void onResult(SQLQueryResult<Map<String, String>> result) {
             if (result.isSuccess()) {
                 keyVariables = new KeyVariables();
-                keyVariables.setLowerCase(!result.getResult().get(COLUMNS[0]).equals("0"));
-                keyVariables.setAutocommit(result.getResult().get(COLUMNS[1]).equals("1"));
-                String isolation = result.getResult().get(COLUMNS[2]);
+                keyVariables.setLowerCase(!result.getResult().get(COLUMN_LOWER_CASE).equals("0"));
+                keyVariables.setAutocommit(result.getResult().get(COLUMN_AUTOCOMMIT).equals("1"));
+                String isolation = result.getResult().get(columnIsolation);
                 switch (isolation) {
                     case "READ-COMMITTED":
                         keyVariables.setIsolation(Isolations.READ_COMMITTED);
@@ -92,7 +106,7 @@ public class GetAndSyncDataSourceKeyVariables implements Callable<KeyVariables> 
                 } else {
                     ds.setIsolationSynced(true);
                 }
-                keyVariables.setReadOnly(result.getResult().get(COLUMNS[3]).equals("1"));
+                keyVariables.setReadOnly(result.getResult().get(COLUMN_READONLY).equals("1"));
 
                 if (needSync) {
                     SyncDataSourceKeyVariables task = new SyncDataSourceKeyVariables(keyVariables, ds);

@@ -44,7 +44,10 @@ public final class SelectHandler {
                 SelectVersionComment.response(c);
                 break;
             case SESSION_TX_READ_ONLY:
-                SelectSessionTxReadOnly.execute(c);
+                SelectSessionTxReadOnly.execute(c, stmt.substring(offset).trim());
+                break;
+            case SESSION_TRANSACTION_READ_ONLY:
+                SelectSessionTxReadOnly.execute(c, stmt.substring(offset).trim());
                 break;
             case MAX_ALLOWED_PACKET:
                 SelectMaxAllowedPacket.execute(c);

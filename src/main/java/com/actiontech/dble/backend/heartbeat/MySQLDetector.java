@@ -151,6 +151,13 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                     }
                 }
             } else if (heartbeat.getStatus() != MySQLHeartbeat.TIMEOUT_STATUS) { //error/init ->ok
+                try {
+                    source.testConnection();
+                } catch (Exception e) {
+                    LOGGER.warn("testConnection failed, set heartbeat Error");
+                    heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS);
+                    return;
+                }
                 GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(source);
                 KeyVariables variables = task.call();
                 if (variables == null || variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {

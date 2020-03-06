@@ -38,7 +38,7 @@ public final class SerializableLock {
             }
             this.id.set(frontId);
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("locked id " + frontId + ", trace" + printTrace());
+                LOGGER.debug("locked id " + frontId + " success, trace " + printTrace());
             }
         }
     }
@@ -46,11 +46,11 @@ public final class SerializableLock {
     public void unLock(long frontId) {
         if (DbleServer.getInstance().getConfig().getSystem().getUseSerializableMode() == 1) {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("unlock id " + frontId + ", trace" + printTrace());
+                LOGGER.debug("try unlock id " + frontId + ", trace" + printTrace());
             }
             if (this.id.get() == frontId) {
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("unlock id " + frontId + ", success");
+                    LOGGER.debug("unlocked id " + frontId + " success, trace " + printTrace());
                 }
                 working.set(false);
             }

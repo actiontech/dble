@@ -109,6 +109,9 @@ public class NormalRollbackNodesHandler extends AbstractRollbackNodesHandler {
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
+        if (checkClosedConn(conn)) {
+            return;
+        }
         // quitted
         this.setFail(reason);
         RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();

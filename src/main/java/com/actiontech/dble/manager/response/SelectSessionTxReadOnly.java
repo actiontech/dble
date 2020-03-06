@@ -20,40 +20,29 @@ public final class SelectSessionTxReadOnly {
     private SelectSessionTxReadOnly() {
     }
 
-    private static final String SESSION_TX_READ_ONLY = "@@SESSION.TX_READ_ONLY";
-    private static final int FIELD_COUNT = 1;
-    private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
-    private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
-    private static final EOFPacket EOF = new EOFPacket();
 
-    static {
-        int i = 0;
-        byte packetId = 0;
-        HEADER.setPacketId(++packetId);
-
-        FIELDS[i] = PacketUtil.getField(SESSION_TX_READ_ONLY, Fields.FIELD_TYPE_INT24);
-        FIELDS[i].setPacketId(++packetId);
-
-        EOF.setPacketId(++packetId);
-    }
-
-    public static void execute(ManagerConnection c) {
+    public static void execute(ManagerConnection c, String column) {
         ByteBuffer buffer = c.allocate();
-
+        byte packetId = 0;
+        ResultSetHeaderPacket header = PacketUtil.getHeader(1);
+        header.setPacketId(++packetId);
         // write header
-        buffer = HEADER.write(buffer, c, true);
+        buffer = header.write(buffer, c, true);
+        FieldPacket[] fields = new FieldPacket[1];
+        fields[0] = PacketUtil.getField(column, Fields.FIELD_TYPE_INT24);
+        fields[0].setPacketId(++packetId);
 
         // write fields
-        for (FieldPacket field : FIELDS) {
+        for (FieldPacket field : fields) {
             buffer = field.write(buffer, c, true);
         }
-
+        EOFPacket eof = new EOFPacket();
+        eof.setPacketId(++packetId);
         // write eof
-        buffer = EOF.write(buffer, c, true);
+        buffer = eof.write(buffer, c, true);
 
         // write rows
-        byte packetId = EOF.getPacketId();
-        RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+        RowDataPacket row = new RowDataPacket(1);
         row.setPacketId(++packetId);
         row.add(LongUtil.toBytes(0));
         buffer = row.write(buffer, c, true);

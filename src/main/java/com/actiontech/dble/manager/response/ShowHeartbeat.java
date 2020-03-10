@@ -138,6 +138,35 @@ public final class ShowHeartbeat {
                 }
                 list.add(row);
             }
+            for (PhysicalDatasource[] physicalDatasource : pool.getStandbyReadSourcesMap().values()) {
+                for (PhysicalDatasource ds : physicalDatasource) {
+                    MySQLHeartbeat hb = ds.getHeartbeat();
+                    RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+                    row.add(ds.getName().getBytes());
+                    if (hb != null) {
+                        row.add(ds.getConfig().getIp().getBytes());
+                        row.add(IntegerUtil.toBytes(ds.getConfig().getPort()));
+                        row.add(IntegerUtil.toBytes(hb.getStatus()));
+                        row.add(IntegerUtil.toBytes(hb.getErrorCount()));
+                        row.add(hb.isChecking() ? "checking".getBytes() : "idle".getBytes());
+                        row.add(LongUtil.toBytes(hb.getHeartbeatTimeout()));
+                        row.add(hb.getRecorder().get().getBytes());
+                        String lat = hb.getLastActiveTime();
+                        row.add(lat == null ? null : lat.getBytes());
+                        row.add(hb.isStop() ? "true".getBytes() : "false".getBytes());
+                    } else {
+                        row.add(null);
+                        row.add(null);
+                        row.add(null);
+                        row.add(null);
+                        row.add(null);
+                        row.add(null);
+                        row.add(null);
+                        row.add(null);
+                    }
+                    list.add(row);
+                }
+            }
         }
         return list;
     }

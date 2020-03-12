@@ -1139,7 +1139,7 @@ public class NonBlockingSession implements Session {
     /**
      * backend packet server_status change and next round start
      */
-    public void multiStatementPacket(MySQLPacket packet, byte packetNum) {
+    public boolean multiStatementPacket(MySQLPacket packet, byte packetNum) {
         if (this.isMultiStatement.get()) {
             if (packet instanceof OkPacket) {
                 ((OkPacket) packet).markMoreResultsExists();
@@ -1147,19 +1147,23 @@ public class NonBlockingSession implements Session {
                 ((EOFPacket) packet).markMoreResultsExists();
             }
             this.packetId.set(packetNum);
+            return true;
         }
+        return false;
     }
 
     /**
      * backend row eof packet server_status change and next round start
      */
-    public void multiStatementPacket(byte[] eof, byte packetNum) {
+    public boolean multiStatementPacket(byte[] eof, byte packetNum) {
         if (this.getIsMultiStatement().get()) {
             //if there is another statement is need to be executed ,start another round
             eof[7] = (byte) (eof[7] | StatusFlags.SERVER_MORE_RESULTS_EXISTS);
 
             this.packetId.set(packetNum);
+            return true;
         }
+        return false;
     }
 
 

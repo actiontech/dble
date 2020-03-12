@@ -155,6 +155,10 @@ public class MySQLConnection extends AbstractConnection implements
         this.sysVariables.clear();
     }
 
+    public NonBlockingSession getSession() {
+        return session;
+    }
+
     public void setHost(String host) {
         this.host = host;
     }

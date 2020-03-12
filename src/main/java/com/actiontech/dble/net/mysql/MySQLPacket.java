@@ -171,6 +171,8 @@ public abstract class MySQLPacket {
     //HEADER_SIZE
     public static final int PACKET_HEADER_SIZE = 4;
 
+    public static final int MAX_SQL_PACKET_SIZE = 16777215;
+
 
     protected int packetLength;
     protected byte packetId;

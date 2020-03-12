@@ -126,8 +126,12 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
                         handleErrorPacket(data);
                         break;
                     case EOFPacket.FIELD_COUNT:
-                        resultStatus = RESULT_STATUS_INIT;
-                        handleRowEofPacket(data);
+                        if (data.length > 9) {
+                            handleRowPacket(data);
+                        } else {
+                            resultStatus = RESULT_STATUS_INIT;
+                            handleRowEofPacket(data);
+                        }
                         break;
                     default:
                         handleRowPacket(data);

@@ -75,6 +75,7 @@ public class CommandPacket extends MySQLPacket {
 
     private byte command;
     private byte[] arg;
+    private int remain;
 
     public void read(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data);
@@ -94,13 +95,35 @@ public class CommandPacket extends MySQLPacket {
 
     @Override
     public void write(MySQLConnection c) {
-        ByteBuffer buffer = c.allocate();
+        int size = -1;
+        ByteBuffer buffer = null;
         try {
-            BufferUtil.writeUB3(buffer, calcPacketSize());
-            buffer.put(packetId);
-            buffer.put(command);
-            buffer = c.writeToBuffer(arg, buffer);
-            c.write(buffer);
+            size = calcPacketSize();
+            boolean isFirst = true;
+            while (size >= MySQLPacket.MAX_SQL_PACKET_SIZE) {
+                buffer = c.allocate(MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
+                size = size - MySQLPacket.MAX_SQL_PACKET_SIZE;
+                BufferUtil.writeUB3(buffer, MySQLPacket.MAX_SQL_PACKET_SIZE);
+                buffer.put(packetId++);
+                writeBody(buffer, isFirst);
+                c.write(buffer);
+                isFirst = false;
+            }
+            if (isFirst) {
+                buffer = c.allocate();
+                BufferUtil.writeUB3(buffer, calcPacketSize());
+                buffer.put(packetId);
+                buffer.put(command);
+                buffer = c.writeToBuffer(arg, buffer);
+                c.write(buffer);
+            } else {
+                buffer = c.allocate(size + MySQLPacket.PACKET_HEADER_SIZE);
+                BufferUtil.writeUB3(buffer, size);
+                buffer.put(packetId);
+                c.getSession().getSource().setPacketId(packetId);
+                writeBody(buffer, isFirst);
+                c.write(buffer);
+            }
         } catch (java.nio.BufferOverflowException e1) {
             //fixed issues #98 #1072
             buffer = c.checkWriteBuffer(buffer, PACKET_HEADER_SIZE + calcPacketSize(), false);
@@ -109,6 +132,22 @@ public class CommandPacket extends MySQLPacket {
             buffer.put(command);
             buffer = c.writeToBuffer(arg, buffer);
             c.write(buffer);
+        }
+    }
+
+    private void writeBody(ByteBuffer buffer, boolean isFirst) {
+        if (isFirst) {
+            remain = arg.length + 1;
+            buffer.put(command);
+            remain--;
+        }
+        if (remain < MySQLPacket.MAX_SQL_PACKET_SIZE) {
+            buffer.put(arg, arg.length - remain, remain);
+        } else {
+            int start = arg.length - remain;
+            int available = buffer.limit() - buffer.position();
+            buffer.put(arg, start, available);
+            remain -= available;
         }
     }
 

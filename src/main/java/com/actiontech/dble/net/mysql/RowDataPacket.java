@@ -166,4 +166,11 @@ public class RowDataPacket extends MySQLPacket {
     public List<byte[]> getFieldValues() {
         return fieldValues;
     }
+
+    public static byte[] writeRowLength(byte[] b, int i) {
+        b[0] = (byte) (i & 0xff);
+        b[1] = (byte) (i >>> 8);
+        b[2] = (byte) (i >>> 16);
+        return b;
+    }
 }

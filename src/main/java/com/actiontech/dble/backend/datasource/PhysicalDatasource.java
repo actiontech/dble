@@ -317,7 +317,7 @@ public abstract class PhysicalDatasource {
     public void startHeartbeat() {
         if (!this.isDisabled()) {
             heartbeat.start();
-            heartbeat.heartbeat();
+            //heartbeat.heartbeat();
         }
     }
 
@@ -330,7 +330,7 @@ public abstract class PhysicalDatasource {
             return;
         }
         if (!heartbeat.isStop()) {
-            heartbeat.heartbeat();
+            //heartbeat.heartbeat();
         }
     }
 

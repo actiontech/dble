@@ -7,6 +7,7 @@ package com.actiontech.dble.net;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
+import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.CharsetNames;
@@ -22,6 +23,7 @@ import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousChannel;
 import java.nio.channels.NetworkChannel;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -234,6 +236,10 @@ public abstract class AbstractConnection implements NIOConnection {
         return this.processor.getBufferPool().allocate(size);
     }
 
+    public ByteBuffer allocate(int size) {
+        return this.processor.getBufferPool().allocate(size);
+    }
+
     public final void recycle(ByteBuffer buffer) {
         this.processor.getBufferPool().recycle(buffer);
     }
@@ -318,6 +324,7 @@ public abstract class AbstractConnection implements NIOConnection {
                 readBuffer.position(offset);
                 byte[] data = new byte[length];
                 readBuffer.get(data, 0, length);
+                //dataMerge(data,true);
                 handle(data);
                 // maybe handle stmt_close
                 if (isClosed()) {
@@ -346,6 +353,7 @@ public abstract class AbstractConnection implements NIOConnection {
             }
         }
     }
+
 
     private void readReachEnd() {
         // if cur buffer is temper none direct byte buffer and not

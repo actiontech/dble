@@ -20,6 +20,8 @@ import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -37,6 +39,7 @@ public class FrontendCommandHandler implements NIOHandler {
     private Queue<byte[]> blobDataQueue = new ConcurrentLinkedQueue<byte[]>();
     private AtomicBoolean isAuthSwitch = new AtomicBoolean(false);
     private volatile ChangeUserPacket changeUserPacket;
+    private List<byte[]> dataList=new ArrayList<>();
 
     FrontendCommandHandler(FrontendConnection source) {
         this.source = source;
@@ -45,18 +48,19 @@ public class FrontendCommandHandler implements NIOHandler {
 
     @Override
     public void handle(byte[] data) {
-        if (data.length > DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize()) {
-            MySQLMessage mm = new MySQLMessage(data);
-            mm.readUB3();
-            byte packetId = mm.read();
-            ErrorPacket errPacket = new ErrorPacket();
-            errPacket.setErrNo(ErrorCode.ER_NET_PACKET_TOO_LARGE);
-            errPacket.setMessage("Got a packet bigger than 'max_allowed_packet' bytes.".getBytes());
-            //close the mysql connection if error occur
-            errPacket.setPacketId(++packetId);
-            errPacket.write(source);
-            return;
-        }
+        System.out.println("xx");
+        //        if (data.length > DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize()) {
+        //            MySQLMessage mm = new MySQLMessage(data);
+        //            mm.readUB3();
+        //            byte packetId = mm.read();
+        //            ErrorPacket errPacket = new ErrorPacket();
+        //            errPacket.setErrNo(ErrorCode.ER_NET_PACKET_TOO_LARGE);
+        //            errPacket.setMessage("Got a packet bigger than 'max_allowed_packet' bytes.".getBytes());
+        //            //close the mysql connection if error occur
+        //            errPacket.setPacketId(++packetId);
+        //            errPacket.write(source);
+        //            return;
+        //        }
         if (source.getLoadDataInfileHandler() != null && source.getLoadDataInfileHandler().isStartLoadData()) {
             MySQLMessage mm = new MySQLMessage(data);
             int packetLength = mm.readUB3();
@@ -75,7 +79,22 @@ public class FrontendCommandHandler implements NIOHandler {
             source.stmtClose(data);
             return;
         } else {
-            dataTodo = data;
+            if(data.length >= MySQLPacket.MAX_SQL_PACKET__SIZE + MySQLPacket.PACKET_HEADER_SIZE){
+                if(dataTodo==null) {
+                    dataTodo = data;
+                }else{
+                    dataMerge(dataTodo,true);
+                }
+                return;
+            }else{
+                if(dataTodo==null) {
+                    dataTodo = data;
+                }else {
+                    byte[] b1 = new byte[data.length - 5];
+                    System.arraycopy(data, 5, b1, 0, data.length - 5);
+                    dataTodo=dataMerge(b1, true);
+                }
+            }
             if (MySQLPacket.COM_STMT_RESET == data[4]) {
                 blobDataQueue.clear();
             }
@@ -84,6 +103,13 @@ public class FrontendCommandHandler implements NIOHandler {
             ((ServerConnection) source).getSession2().resetMultiStatementStatus();
         }
         DbleServer.getInstance().getFrontHandlerQueue().offer(this);
+    }
+
+    private byte[] dataMerge(byte data[], boolean isFirst){
+        byte[] byte_3 = new byte[dataTodo.length + data.length];
+        System.arraycopy(dataTodo, 0, byte_3, 0, dataTodo.length);
+        System.arraycopy(data, 0, byte_3, dataTodo.length, data.length);
+        return byte_3;
     }
 
     public void handle() {

@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.backend.mysql.nio.handler.transaction.xa;
 
 import com.actiontech.dble.DbleServer;
@@ -161,7 +161,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
     private void endPhase(MySQLConnection mysqlCon) {
         if (mysqlCon.getXaStatus() == TxState.TX_STARTED_STATE) {
             RouteResultsetNode rrn = (RouteResultsetNode) mysqlCon.getAttachment();
-            String xaTxId = mysqlCon.getConnXID(session, rrn.getMultiplexNum().longValue());
+            String xaTxId = mysqlCon.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
             XaDelayProvider.delayBeforeXaEnd(rrn.getName(), xaTxId);
             if (logger.isDebugEnabled()) {
                 logger.debug("XA END " + xaTxId + " to " + mysqlCon);
@@ -186,7 +186,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                 RouteResultsetNode rrn = (RouteResultsetNode) mysqlCon.getAttachment();
                 xaOldThreadIds.putIfAbsent(rrn, mysqlCon.getThreadId());
                 mysqlCon = newConn;
-                String xaTxId = mysqlCon.getConnXID(session, rrn.getMultiplexNum().longValue());
+                String xaTxId = mysqlCon.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
                 XaDelayProvider.delayBeforeXaRollback(rrn.getName(), xaTxId);
                 if (logger.isDebugEnabled()) {
                     logger.debug("XA ROLLBACK " + xaTxId + " to " + mysqlCon);
@@ -198,7 +198,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
 
         } else if (mysqlCon.getXaStatus() == TxState.TX_ENDED_STATE || mysqlCon.getXaStatus() == TxState.TX_PREPARED_STATE) {
             RouteResultsetNode rrn = (RouteResultsetNode) mysqlCon.getAttachment();
-            String xaTxId = mysqlCon.getConnXID(session, rrn.getMultiplexNum().longValue());
+            String xaTxId = mysqlCon.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
             XaDelayProvider.delayBeforeXaRollback(rrn.getName(), xaTxId);
             if (logger.isDebugEnabled()) {
                 logger.debug("XA ROLLBACK " + xaTxId + " to " + mysqlCon);
@@ -304,7 +304,7 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             } else if (mysqlCon.getXaStatus() == TxState.TX_PREPARE_UNCONNECT_STATE || mysqlCon.getXaStatus() == TxState.TX_ROLLBACK_FAILED_STATE) {
                 if (errPacket.getErrNo() == ErrorCode.ER_XAER_NOTA) {
                     RouteResultsetNode rrn = (RouteResultsetNode) mysqlCon.getAttachment();
-                    String xid = mysqlCon.getConnXID(session, rrn.getMultiplexNum().longValue());
+                    String xid = mysqlCon.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
                     XACheckHandler handler = new XACheckHandler(xid, mysqlCon.getSchema(), rrn.getName(), mysqlCon.getPool().getDbPool().getSource());
                     // if mysql connection holding xa transaction wasn't released, may result in ER_XAER_NOTA.
                     // so we need check xid here

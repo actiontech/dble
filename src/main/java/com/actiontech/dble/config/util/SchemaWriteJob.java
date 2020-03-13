@@ -50,6 +50,7 @@ public class SchemaWriteJob implements Runnable {
             errorMessage = e.getMessage();
             HaConfigManager.getInstance().log("get error from SchemaWriteJob", e);
         } finally {
+            HaConfigManager.getInstance().finishAndNext();
             this.signalAll();
         }
     }

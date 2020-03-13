@@ -109,7 +109,7 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
                 LOGGER.info(hostName + " " + writeSource.getName() + " init success");
             }
         }
-        if (initSuccess) {
+        if (!initSuccess) {
             LOGGER.warn(hostName + " init failure");
         }
     }

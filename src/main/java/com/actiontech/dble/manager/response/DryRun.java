@@ -7,19 +7,23 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.PacketUtil;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterParamCfg;
-import com.actiontech.dble.config.*;
 import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.config.*;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.model.UserConfig;
+import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.meta.table.DryRunGetNodeTablesHandler;
-import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.net.mysql.EOFPacket;
+import com.actiontech.dble.net.mysql.FieldPacket;
+import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
+import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.variables.VarsExtractorHandler;
+import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,6 +85,12 @@ public final class DryRun {
                 LOGGER.debug("just test ,not stop reload, catch exception", e);
             }
         }
+        try {
+            ConfigUtil.getAndSyncKeyVariables(false, loader.getDataHosts());
+        } catch (Exception e) {
+            list.add(new ErrorInfo("Backend", "ERROR", e.getMessage()));
+        }
+
 
         list.addAll(loader.getErrorInfos());
 

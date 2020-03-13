@@ -293,26 +293,23 @@ public class PushDownVisitor extends MysqlVisitor {
                             } else {
                                 pdName = visitUnSelPushDownName(groupCol, true);
                             }
-                        sqlBuilder.append(pdName).append(" ").append(group.getSortOrder()).append(",");
+                        sqlBuilder.append(pdName).append(",");
                     }
                     sqlBuilder.deleteCharAt(sqlBuilder.length() - 1);
                 }
-            } else {
-                // change to push down order by
-                pushDownOrderBy.addAll(query.getGroupBys());
-                if (pushDownOrderBy.size() > 0) {
-                    sqlBuilder.append(" ORDER BY ");
-                    for (Order order : pushDownOrderBy) {
-                        Item orderSel = order.getItem();
-                        String pdName = "";
-                        if (orderSel.basicConstItem())
-                            pdName = "'" + StringUtil.trim(orderSel.toString(), '\'') + "'";
-                        if (pdName.isEmpty())
-                            pdName = visitUnSelPushDownName(orderSel, true);
-                        sqlBuilder.append(pdName).append(" ").append(order.getSortOrder()).append(",");
-                    }
-                    sqlBuilder.deleteCharAt(sqlBuilder.length() - 1);
+            }
+            if (pushDownOrderBy.size() > 0) {
+                sqlBuilder.append(" ORDER BY ");
+                for (Order order : pushDownOrderBy) {
+                    Item orderSel = order.getItem();
+                    String pdName = "";
+                    if (orderSel.basicConstItem())
+                        pdName = "'" + StringUtil.trim(orderSel.toString(), '\'') + "'";
+                    if (pdName.isEmpty())
+                        pdName = visitUnSelPushDownName(orderSel, true);
+                    sqlBuilder.append(pdName).append(" ").append(order.getSortOrder()).append(",");
                 }
+                sqlBuilder.deleteCharAt(sqlBuilder.length() - 1);
             }
         }
     }

@@ -11,6 +11,9 @@ import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.CharsetNames;
 import com.actiontech.dble.net.mysql.MySQLPacket;
+import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.plan.common.ptr.BytePtr;
+import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.base.Strings;
@@ -67,6 +70,18 @@ public abstract class AbstractConnection implements NIOConnection {
     private long idleTimeout;
 
     private final SocketWR socketWR;
+
+    private byte[] rowData;
+
+    public void setPacketId(byte packetId) {
+        this.packetId = packetId;
+    }
+
+    private volatile byte packetId;
+
+    public byte getPacketId() {
+        return packetId;
+    }
 
     public AbstractConnection(NetworkChannel channel) {
         this.channel = channel;
@@ -234,6 +249,10 @@ public abstract class AbstractConnection implements NIOConnection {
         return this.processor.getBufferPool().allocate(size);
     }
 
+    public ByteBuffer allocate(int size) {
+        return this.processor.getBufferPool().allocate(size);
+    }
+
     public final void recycle(ByteBuffer buffer) {
         this.processor.getBufferPool().recycle(buffer);
     }
@@ -318,6 +337,10 @@ public abstract class AbstractConnection implements NIOConnection {
                 readBuffer.position(offset);
                 byte[] data = new byte[length];
                 readBuffer.get(data, 0, length);
+                data = checkData(data, length);
+                if (data == null) {
+                    return;
+                }
                 handle(data);
                 // maybe handle stmt_close
                 if (isClosed()) {
@@ -346,6 +369,7 @@ public abstract class AbstractConnection implements NIOConnection {
             }
         }
     }
+
 
     private void readReachEnd() {
         // if cur buffer is temper none direct byte buffer and not
@@ -474,6 +498,7 @@ public abstract class AbstractConnection implements NIOConnection {
         }
     }
 
+
     public ByteBuffer writeToBuffer(byte[] src, ByteBuffer buffer) {
         int offset = 0;
         int length = src.length;
@@ -490,6 +515,49 @@ public abstract class AbstractConnection implements NIOConnection {
                 length -= remaining;
                 remaining = buffer.remaining();
             }
+        }
+        return buffer;
+    }
+
+    public ByteBuffer writeBigPackageToBuffer(byte[] row, ByteBuffer buffer, BytePtr bytePtr) {
+        int length = row.length;
+        int srcPos = 0;
+        byte pid = bytePtr.get();
+        boolean isFirst = true;
+        if (length >= MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
+            while (true) {
+                byte[] b = null;
+                if (length >= MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
+                    if (isFirst) {
+                        b = new byte[MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE];
+                        System.arraycopy(row, 0, b, 0, MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
+                        srcPos = MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE;
+                        length -= (MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
+                        b[3] = ++pid;
+                        bytePtr.incre();
+                        isFirst = false;
+                    } else {
+                        b = new byte[MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE];
+                        RowDataPacket.writeRowLength(b, MySQLPacket.MAX_SQL_PACKET_SIZE);
+                        b[3] = ++pid;
+                        bytePtr.incre();
+                        System.arraycopy(row, srcPos, b, MySQLPacket.PACKET_HEADER_SIZE, MySQLPacket.MAX_SQL_PACKET_SIZE);
+                        srcPos += MySQLPacket.MAX_SQL_PACKET_SIZE;
+                        length -= MySQLPacket.MAX_SQL_PACKET_SIZE;
+                    }
+                } else {
+                    b = new byte[length + MySQLPacket.PACKET_HEADER_SIZE];
+                    RowDataPacket.writeRowLength(b, length);
+                    b[3] = ++pid;
+                    bytePtr.incre();
+                    System.arraycopy(row, srcPos, b, MySQLPacket.PACKET_HEADER_SIZE, length);
+                    buffer = writeToBuffer(b, buffer);
+                    break;
+                }
+                buffer = writeToBuffer(b, buffer);
+            }
+        } else {
+            buffer = writeToBuffer(row, buffer);
         }
         return buffer;
     }
@@ -660,5 +728,35 @@ public abstract class AbstractConnection implements NIOConnection {
         this.setIdleTimeout(system.getIdleTimeout());
         this.initCharacterSet(system.getCharset());
         this.setReadBufferChunk(soRcvBuf);
+    }
+
+    private byte[] checkData(byte[] data, int length) {
+        if (length >= MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
+            if (rowData == null) {
+                rowData = data;
+            } else {
+                byte[] nextData = new byte[data.length - MySQLPacket.PACKET_HEADER_SIZE];
+                System.arraycopy(data, MySQLPacket.PACKET_HEADER_SIZE, nextData, 0, data.length - MySQLPacket.PACKET_HEADER_SIZE);
+                rowData = dataMerge(nextData);
+            }
+            readReachEnd();
+            return null;
+        } else {
+            if (rowData != null) {
+                byte[] nextData = new byte[data.length - MySQLPacket.PACKET_HEADER_SIZE];
+                System.arraycopy(data, MySQLPacket.PACKET_HEADER_SIZE, nextData, 0, data.length - MySQLPacket.PACKET_HEADER_SIZE);
+                rowData = dataMerge(nextData);
+                data = rowData;
+                rowData = null;
+            }
+            return data;
+        }
+    }
+
+    private byte[] dataMerge(byte[] data) {
+        byte[] newData = new byte[rowData.length + data.length];
+        System.arraycopy(rowData, 0, newData, 0, rowData.length);
+        System.arraycopy(data, 0, newData, rowData.length, data.length);
+        return newData;
     }
 }

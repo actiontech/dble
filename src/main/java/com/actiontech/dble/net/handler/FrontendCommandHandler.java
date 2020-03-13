@@ -12,7 +12,6 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOHandler;
 import com.actiontech.dble.net.mysql.ChangeUserPacket;
-import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.statistic.CommandCount;
@@ -45,18 +44,6 @@ public class FrontendCommandHandler implements NIOHandler {
 
     @Override
     public void handle(byte[] data) {
-        if (data.length > DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize()) {
-            MySQLMessage mm = new MySQLMessage(data);
-            mm.readUB3();
-            byte packetId = mm.read();
-            ErrorPacket errPacket = new ErrorPacket();
-            errPacket.setErrNo(ErrorCode.ER_NET_PACKET_TOO_LARGE);
-            errPacket.setMessage("Got a packet bigger than 'max_allowed_packet' bytes.".getBytes());
-            //close the mysql connection if error occur
-            errPacket.setPacketId(++packetId);
-            errPacket.write(source);
-            return;
-        }
         if (source.getLoadDataInfileHandler() != null && source.getLoadDataInfileHandler().isStartLoadData()) {
             MySQLMessage mm = new MySQLMessage(data);
             int packetLength = mm.readUB3();
@@ -89,6 +76,7 @@ public class FrontendCommandHandler implements NIOHandler {
     public void handle() {
         try {
             handleData(dataTodo);
+            dataTodo = null;
         } catch (Throwable e) {
             String msg = e.getMessage();
             if (StringUtil.isEmpty(msg)) {

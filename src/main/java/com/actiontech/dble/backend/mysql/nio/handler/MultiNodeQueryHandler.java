@@ -19,6 +19,7 @@ import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.plan.common.ptr.BytePtr;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -130,6 +131,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 node.setRunOnSlave(rrs.getRunOnSlave());
                 PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), sessionAutocommit, node, this, node);
+                packetId = session.getSource().getPacketId();
             }
         }
     }
@@ -421,7 +423,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
             }
             this.resultSize += row.length;
-            row[3] = ++packetId;
+            //row[3] = ++packetId;
             RowDataPacket rowDataPkg = null;
             // cache cacheKey-> dataNode
             if (cacheKeyIndex != -1) {
@@ -447,7 +449,14 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     binRowDataPk.setPacketId(rowDataPkg.getPacketId());
                     byteBuffer = binRowDataPk.write(byteBuffer, session.getSource(), true);
                 } else {
-                    byteBuffer = session.getSource().writeToBuffer(row, byteBuffer);
+                    if (row.length >= MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
+                        BytePtr bytePtr = new BytePtr(packetId);
+                        byteBuffer = session.getSource().writeBigPackageToBuffer(row, byteBuffer, bytePtr);
+                        this.packetId = bytePtr.get();
+                    } else {
+                        row[3] = ++packetId;
+                        byteBuffer = session.getSource().writeToBuffer(row, byteBuffer);
+                    }
                 }
             }
         } catch (Exception e) {

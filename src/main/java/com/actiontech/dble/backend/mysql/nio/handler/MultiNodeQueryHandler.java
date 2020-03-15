@@ -65,6 +65,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     protected Set<RouteResultsetNode> connRrns = new ConcurrentSkipListSet<>();
     private Map<String, Integer> dataNodePauseInfo; // only for debug
     private AtomicBoolean recycledBuffer = new AtomicBoolean(false);
+    private byte[] rowData;
+    private int rowPacketNum;
 
     public MultiNodeQueryHandler(RouteResultset rrs, NonBlockingSession session) {
         super(session);
@@ -130,6 +132,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 node.setRunOnSlave(rrs.getRunOnSlave());
                 PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), sessionAutocommit, node, this, node);
+                packetId = (byte) session.getPacketId().get();
             }
         }
     }
@@ -394,7 +397,30 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
     @Override
-    public boolean rowResponse(final byte[] row, RowDataPacket rowPacketNull, boolean isLeft, BackendConnection conn) {
+    public boolean rowResponse(byte[] row, RowDataPacket rowPacketNull, boolean isLeft, BackendConnection conn) {
+        System.out.println("row");
+        if (row.length >= MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
+            session.getSource().setRowPackageEnd(false);
+            if (rowData == null) {
+                rowData = row;
+                rowPacketNum++;
+            } else {
+                byte[] nextData = new byte[row.length - MySQLPacket.PACKET_HEADER_SIZE];
+                System.arraycopy(row, MySQLPacket.PACKET_HEADER_SIZE, nextData, 0, row.length - MySQLPacket.PACKET_HEADER_SIZE);
+                rowData = dataMerge(nextData);
+                rowPacketNum++;
+            }
+            return false;
+        } else {
+            if (rowData != null) {
+                byte[] nextData = new byte[row.length - MySQLPacket.PACKET_HEADER_SIZE];
+                System.arraycopy(row, MySQLPacket.PACKET_HEADER_SIZE, nextData, 0, row.length - MySQLPacket.PACKET_HEADER_SIZE);
+                row = dataMerge(nextData);
+                rowPacketNum++;
+                session.getSource().setRowPackageEnd(true);
+                rowData = null;
+            }
+        }
         this.netOutBytes += row.length;
         if (errorResponse.get()) {
             // the connection has been closed or set to "txInterrupt" properly
@@ -421,7 +447,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
             }
             this.resultSize += row.length;
-            row[3] = ++packetId;
+            //row[3] = ++packetId;
             RowDataPacket rowDataPkg = null;
             // cache cacheKey-> dataNode
             if (cacheKeyIndex != -1) {
@@ -447,12 +473,39 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     binRowDataPk.setPacketId(rowDataPkg.getPacketId());
                     byteBuffer = binRowDataPk.write(byteBuffer, session.getSource(), true);
                 } else {
-                    byteBuffer = session.getSource().writeToBuffer(row, byteBuffer);
+                    int length = row.length;
+                    int srcPos = 0;
+                    for (int i = 0; i < rowPacketNum; i++) {
+                        byte[] b = null;
+                        if (length >= MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
+                            if (i == 0) {
+                                b = new byte[MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE];
+                                System.arraycopy(row, 0, b, 0, MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
+                                srcPos = MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE;
+                                length -= (MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
+                                b[3] = ++packetId;
+                            } else {
+                                b = new byte[MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE];
+                                RowDataPacket.writeRowLength(b, MySQLPacket.MAX_SQL_PACKET_SIZE);
+                                b[3] = ++packetId;
+                                System.arraycopy(row, srcPos, b, MySQLPacket.PACKET_HEADER_SIZE, MySQLPacket.MAX_SQL_PACKET_SIZE);
+                                srcPos += MySQLPacket.MAX_SQL_PACKET_SIZE;
+                                length -= MySQLPacket.MAX_SQL_PACKET_SIZE;
+                            }
+                        } else {
+                            b = new byte[length + MySQLPacket.PACKET_HEADER_SIZE];
+                            RowDataPacket.writeRowLength(b, length);
+                            b[3] = ++packetId;
+                            System.arraycopy(row, srcPos, b, MySQLPacket.PACKET_HEADER_SIZE, length);
+                            rowPacketNum = 0;
+                        }
+                        byteBuffer = session.getSource().writeToBuffer(row, byteBuffer);
+                    }
                 }
             }
         } catch (Exception e) {
-            cleanBuffer();
             handleDataProcessException(e);
+            cleanBuffer();
         } finally {
             lock.unlock();
         }
@@ -696,5 +749,12 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             }
             LOGGER.debug("datanode[" + rNode.getName() + "], which conn threadid[" + ((MySQLConnection) conn).getThreadId() + "] has slept for " + millis + " milliseconds");
         }
+    }
+
+    private byte[] dataMerge(byte[] data) {
+        byte[] newData = new byte[rowData.length + data.length];
+        System.arraycopy(rowData, 0, newData, 0, rowData.length);
+        System.arraycopy(data, 0, newData, rowData.length, data.length);
+        return newData;
     }
 }

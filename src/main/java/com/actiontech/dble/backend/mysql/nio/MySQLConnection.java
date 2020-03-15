@@ -22,6 +22,7 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.server.Session;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.util.PasswordAuthPlugin;
 import com.actiontech.dble.util.StringUtil;
@@ -819,6 +820,10 @@ public class MySQLConnection extends AbstractConnection implements
         if (handler instanceof MySQLConnectionHandler) {
             ((MySQLConnectionHandler) handler).setSession(session);
         }
+    }
+
+    public Session getSession() {
+        return session;
     }
 
     public boolean isTesting() {

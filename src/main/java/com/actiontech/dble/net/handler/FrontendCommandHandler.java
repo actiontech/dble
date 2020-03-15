@@ -39,7 +39,6 @@ public class FrontendCommandHandler implements NIOHandler {
     private Queue<byte[]> blobDataQueue = new ConcurrentLinkedQueue<byte[]>();
     private AtomicBoolean isAuthSwitch = new AtomicBoolean(false);
     private volatile ChangeUserPacket changeUserPacket;
-    private List<byte[]> dataList=new ArrayList<>();
 
     FrontendCommandHandler(FrontendConnection source) {
         this.source = source;
@@ -48,7 +47,6 @@ public class FrontendCommandHandler implements NIOHandler {
 
     @Override
     public void handle(byte[] data) {
-        System.out.println("xx");
         //        if (data.length > DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize()) {
         //            MySQLMessage mm = new MySQLMessage(data);
         //            mm.readUB3();
@@ -79,20 +77,22 @@ public class FrontendCommandHandler implements NIOHandler {
             source.stmtClose(data);
             return;
         } else {
-            if(data.length >= MySQLPacket.MAX_SQL_PACKET__SIZE + MySQLPacket.PACKET_HEADER_SIZE){
-                if(dataTodo==null) {
+            if (data.length >= MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
+                if (dataTodo == null) {
                     dataTodo = data;
-                }else{
-                    dataMerge(dataTodo,true);
+                } else {
+                    byte[] nextData = new byte[data.length - 5];
+                    System.arraycopy(data, 5, nextData, 0, data.length - 5);
+                    dataTodo = dataMerge(nextData);
                 }
                 return;
-            }else{
-                if(dataTodo==null) {
+            } else {
+                if (dataTodo == null) {
                     dataTodo = data;
-                }else {
-                    byte[] b1 = new byte[data.length - 5];
-                    System.arraycopy(data, 5, b1, 0, data.length - 5);
-                    dataTodo=dataMerge(b1, true);
+                } else {
+                    byte[] nextData = new byte[data.length - 5];
+                    System.arraycopy(data, 5, nextData, 0, data.length - 5);
+                    dataTodo = dataMerge(nextData);
                 }
             }
             if (MySQLPacket.COM_STMT_RESET == data[4]) {
@@ -105,16 +105,17 @@ public class FrontendCommandHandler implements NIOHandler {
         DbleServer.getInstance().getFrontHandlerQueue().offer(this);
     }
 
-    private byte[] dataMerge(byte data[], boolean isFirst){
-        byte[] byte_3 = new byte[dataTodo.length + data.length];
-        System.arraycopy(dataTodo, 0, byte_3, 0, dataTodo.length);
-        System.arraycopy(data, 0, byte_3, dataTodo.length, data.length);
-        return byte_3;
+    private byte[] dataMerge(byte[] data) {
+        byte[] newData = new byte[dataTodo.length + data.length];
+        System.arraycopy(dataTodo, 0, newData, 0, dataTodo.length);
+        System.arraycopy(data, 0, newData, dataTodo.length, data.length);
+        return newData;
     }
 
     public void handle() {
         try {
             handleData(dataTodo);
+            dataTodo = null;
         } catch (Throwable e) {
             String msg = e.getMessage();
             if (StringUtil.isEmpty(msg)) {

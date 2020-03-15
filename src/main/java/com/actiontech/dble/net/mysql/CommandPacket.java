@@ -101,10 +101,10 @@ public class CommandPacket extends MySQLPacket {
         try {
             size = calcPacketSize();
             boolean isFirst = true;
-            while (size >= MySQLPacket.MAX_SQL_PACKET__SIZE) {
-                buffer = c.allocate(MySQLPacket.MAX_SQL_PACKET__SIZE + MySQLPacket.PACKET_HEADER_SIZE);
-                size = size - MySQLPacket.MAX_SQL_PACKET__SIZE;
-                BufferUtil.writeUB3(buffer, MySQLPacket.MAX_SQL_PACKET__SIZE);
+            while (size >= MySQLPacket.MAX_SQL_PACKET_SIZE) {
+                buffer = c.allocate(MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
+                size = size - MySQLPacket.MAX_SQL_PACKET_SIZE;
+                BufferUtil.writeUB3(buffer, MySQLPacket.MAX_SQL_PACKET_SIZE);
                 buffer.put(packetId++);
                 writeBody(buffer, isFirst);
                 c.write(buffer);
@@ -121,6 +121,9 @@ public class CommandPacket extends MySQLPacket {
                 buffer = c.allocate(size + MySQLPacket.PACKET_HEADER_SIZE);
                 BufferUtil.writeUB3(buffer, size);
                 buffer.put(packetId);
+                if (c.getSession() != null) {
+                    c.getSession().getPacketId().set(packetId);
+                }
                 writeBody(buffer, isFirst);
                 c.write(buffer);
             }
@@ -141,7 +144,7 @@ public class CommandPacket extends MySQLPacket {
             buffer.put(command);
             remain--;
         }
-        if (remain < MySQLPacket.MAX_SQL_PACKET__SIZE) {
+        if (remain < MySQLPacket.MAX_SQL_PACKET_SIZE) {
             buffer.put(arg, arg.length - remain, remain);
         } else {
             int start = arg.length - remain;

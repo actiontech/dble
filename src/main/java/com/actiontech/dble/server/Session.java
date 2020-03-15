@@ -8,6 +8,8 @@ package com.actiontech.dble.server;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.route.RouteResultset;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * @author mycat
  */
@@ -42,5 +44,7 @@ public interface Session {
      * terminated the session ,do it after close front conn
      */
     void terminate();
+
+    AtomicInteger getPacketId();
 
 }

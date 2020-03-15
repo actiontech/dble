@@ -84,6 +84,9 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
         if (source.isClosed()) {
             return;
         }
+        if (session != null && session.getSource() != null && !session.getSource().isRowPackageEnd()) {
+            handleRowPacket(data);
+        }
         switch (resultStatus) {
             case RESULT_STATUS_INIT:
                 if (session != null) {
@@ -126,8 +129,12 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
                         handleErrorPacket(data);
                         break;
                     case EOFPacket.FIELD_COUNT:
-                        resultStatus = RESULT_STATUS_INIT;
-                        handleRowEofPacket(data);
+                        if (data.length > 9) {
+                            handleRowPacket(data);
+                        } else {
+                            resultStatus = RESULT_STATUS_INIT;
+                            handleRowEofPacket(data);
+                        }
                         break;
                     default:
                         handleRowPacket(data);

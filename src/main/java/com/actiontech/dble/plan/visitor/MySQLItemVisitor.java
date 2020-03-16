@@ -479,10 +479,17 @@ public class MySQLItemVisitor extends MySqlASTVisitorAdapter {
                 } catch (NumberFormatException e) {
                     //ignore error
                 }
+                item = new ItemString(realValue);
+                item.setCharsetIndex(this.charsetIndex);
+                item.setItemName(realValue);
+            } else {
+                item = new ItemNull();
+                initName(x);
             }
+        } else {
+            item = new ItemVariables(x.getName(), new ItemField(null, null, variable));
+            initName(x);
         }
-        item = new ItemVariables(x.getName(), new ItemField(null, null, variable));
-        initName(x);
     }
 
     @Override

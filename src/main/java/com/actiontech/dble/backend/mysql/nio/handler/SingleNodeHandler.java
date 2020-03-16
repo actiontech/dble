@@ -436,6 +436,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         lock.lock();
         try {
             if (!writeToClient.get()) {
+                prepared = true;
                 if (prepared) {
                     if (rowDataPk == null) {
                         rowDataPk = new RowDataPacket(fieldCount);
@@ -446,39 +447,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                     binRowDataPk.setPacketId(rowDataPk.getPacketId());
                     buffer = binRowDataPk.write(buffer, session.getSource(), true);
                 } else {
-//                    if(rowPacketNum==0){
-//                        row[3] = ++packetId;
-//                        buffer = session.getSource().writeToBuffer(row, buffer);
-//                        return false;
-//                    }
-                    int length = row.length;
-                    int srcPos = 0;
-                    for (int i = 0; i <  Math.ceil((double) row.length/16777215); i++) {
-                        byte[] b = null;
-                        if (length >= MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
-                            if (i == 0) {
-                                b = new byte[MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE];
-                                System.arraycopy(row, 0, b, 0, MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
-                                srcPos = MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE;
-                                length -= (MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
-                                b[3] = ++packetId;
-                            } else {
-                                b = new byte[MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE];
-                                RowDataPacket.writeRowLength(b, MySQLPacket.MAX_SQL_PACKET_SIZE);
-                                b[3] = ++packetId;
-                                System.arraycopy(row, srcPos, b, MySQLPacket.PACKET_HEADER_SIZE, MySQLPacket.MAX_SQL_PACKET_SIZE);
-                                srcPos += MySQLPacket.MAX_SQL_PACKET_SIZE;
-                                length -= MySQLPacket.MAX_SQL_PACKET_SIZE;
-                            }
-                        } else {
-                            b = new byte[length + MySQLPacket.PACKET_HEADER_SIZE];
-                            RowDataPacket.writeRowLength(b, length);
-                            b[3] = ++packetId;
-                            System.arraycopy(row, srcPos, b, MySQLPacket.PACKET_HEADER_SIZE, length);
-                            rowPacketNum = 0;
-                        }
-                        buffer = session.getSource().writeToBuffer(b, buffer);
-                    }
+                    buffer = session.getSource().writeToBuffer(row, buffer);
                 }
             }
         } finally {

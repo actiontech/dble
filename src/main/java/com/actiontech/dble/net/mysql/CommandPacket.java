@@ -95,7 +95,6 @@ public class CommandPacket extends MySQLPacket {
 
     @Override
     public void write(MySQLConnection c) {
-        //ByteBuffer buffer = c.allocate();
         int size = -1;
         ByteBuffer buffer = null;
         try {

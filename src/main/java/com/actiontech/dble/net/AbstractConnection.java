@@ -11,6 +11,7 @@ import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.CharsetNames;
 import com.actiontech.dble.net.mysql.MySQLPacket;
+import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.base.Strings;
@@ -71,6 +72,7 @@ public abstract class AbstractConnection implements NIOConnection {
     private volatile boolean rowPackageEnd = true;
 
     private byte[] rowData;
+    protected volatile byte packetId=5;
 
     public AbstractConnection(NetworkChannel channel) {
         this.channel = channel;
@@ -326,7 +328,7 @@ public abstract class AbstractConnection implements NIOConnection {
                 readBuffer.position(offset);
                 byte[] data = new byte[length];
                 readBuffer.get(data, 0, length);
-                if(length >= MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
+                if (length >= MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
                     if (rowData == null) {
                         rowData = data;
                     } else {
@@ -499,7 +501,7 @@ public abstract class AbstractConnection implements NIOConnection {
         }
     }
 
-    public ByteBuffer writeToBuffer(byte[] src, ByteBuffer buffer) {
+    public ByteBuffer writeBuffer(byte[] src, ByteBuffer buffer) {
         int offset = 0;
         int length = src.length;
         int remaining = buffer.remaining();
@@ -515,6 +517,41 @@ public abstract class AbstractConnection implements NIOConnection {
                 length -= remaining;
                 remaining = buffer.remaining();
             }
+        }
+        return buffer;
+    }
+
+    public ByteBuffer writeToBuffer(byte[] row, ByteBuffer buffer) {
+        int length = row.length;
+        int srcPos = 0;
+        if (length >= MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
+            for (int i = 0; i < Math.ceil((double) row.length / 16777215); i++) {
+                byte[] b = null;
+                if (length >= MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
+                    if (i == 0) {
+                        b = new byte[MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE];
+                        System.arraycopy(row, 0, b, 0, MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
+                        srcPos = MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE;
+                        length -= (MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
+                        b[3] = ++packetId;
+                    } else {
+                        b = new byte[MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE];
+                        RowDataPacket.writeRowLength(b, MySQLPacket.MAX_SQL_PACKET_SIZE);
+                        b[3] = ++packetId;
+                        System.arraycopy(row, srcPos, b, MySQLPacket.PACKET_HEADER_SIZE, MySQLPacket.MAX_SQL_PACKET_SIZE);
+                        srcPos += MySQLPacket.MAX_SQL_PACKET_SIZE;
+                        length -= MySQLPacket.MAX_SQL_PACKET_SIZE;
+                    }
+                } else {
+                    b = new byte[length + MySQLPacket.PACKET_HEADER_SIZE];
+                    RowDataPacket.writeRowLength(b, length);
+                    b[3] = ++packetId;
+                    System.arraycopy(row, srcPos, b, MySQLPacket.PACKET_HEADER_SIZE, length);
+                }
+                buffer = writeBuffer(b, buffer);
+            }
+        } else {
+            buffer = writeBuffer(row, buffer);
         }
         return buffer;
     }

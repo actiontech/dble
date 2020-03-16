@@ -146,42 +146,10 @@ public class OutputHandler extends BaseDMLHandler {
                     this.netOutBytes += rowPacket.calcPacketSize();
                     buffer = rowPacket.write(buffer, session.getSource(), true);
                 } else {
-//                    row = rowNull;
-//                    this.netOutBytes += row.length;
-//                    row[3] = ++packetId;
-//                    buffer = session.getSource().writeToBuffer(row, buffer);
-                    if(rowNull.length<16777215){
-                        rowNull[3] = ++packetId;
-                        buffer = session.getSource().writeToBuffer(rowNull, buffer);
-                        return false;
-                    }
-                    int length = rowNull.length;
-                    int srcPos = 0;
-                    for (int i = 0; i < Math.ceil((double) rowNull.length/16777215); i++) {
-                        byte[] b = null;
-                        if (length >= MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
-                            if (i == 0) {
-                                b = new byte[MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE];
-                                System.arraycopy(rowNull, 0, b, 0, MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
-                                srcPos = MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE;
-                                length -= (MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
-                                b[3] = ++packetId;
-                            } else {
-                                b = new byte[MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE];
-                                RowDataPacket.writeRowLength(b, MySQLPacket.MAX_SQL_PACKET_SIZE);
-                                b[3] = ++packetId;
-                                System.arraycopy(rowNull, srcPos, b, MySQLPacket.PACKET_HEADER_SIZE, MySQLPacket.MAX_SQL_PACKET_SIZE);
-                                srcPos += MySQLPacket.MAX_SQL_PACKET_SIZE;
-                                length -= MySQLPacket.MAX_SQL_PACKET_SIZE;
-                            }
-                        } else {
-                            b = new byte[length + MySQLPacket.PACKET_HEADER_SIZE];
-                            RowDataPacket.writeRowLength(b, length);
-                            b[3] = ++packetId;
-                            System.arraycopy(rowNull, srcPos, b, MySQLPacket.PACKET_HEADER_SIZE, length);
-                        }
-                        buffer = session.getSource().writeToBuffer(b, buffer);
-                    }
+                    row = rowNull;
+                    this.netOutBytes += row.length;
+                    //row[3] = ++packetId;
+                    buffer = session.getSource().writeToBuffer(row, buffer);
                 }
             }
         } finally {

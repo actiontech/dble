@@ -106,7 +106,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         ServerConfig conf = DbleServer.getInstance().getConfig();
         PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
         dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), session.getSource().isAutocommit(), node, this, node);
-        packetId = (byte) session.getPacketId().get();
+        //packetId = (byte) session.getPacketId().get();
     }
     protected void execute(BackendConnection conn) {
         if (session.closed()) {
@@ -287,7 +287,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         if (!rrs.isCallStatement()) {
             session.releaseConnectionIfSafe(conn, false);
         }
-
+        packetId = session.getSource().getPacketId();
         eof[3] = ++packetId;
         session.multiStatementPacket(eof, packetId);
         ServerConnection source = session.getSource();
@@ -390,28 +390,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
     @Override
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
-        //        if (row.length >= MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
-        //            session.getSource().setRowPackageEnd(false);
-        //            if (rowData == null) {
-        //                rowData = row;
-        //                rowPacketNum++;
-        //            } else {
-        //                byte[] nextData = new byte[row.length - MySQLPacket.PACKET_HEADER_SIZE];
-        //                System.arraycopy(row, MySQLPacket.PACKET_HEADER_SIZE, nextData, 0, row.length - MySQLPacket.PACKET_HEADER_SIZE);
-        //                rowData = dataMerge(nextData);
-        //                rowPacketNum++;
-        //            }
-        //            return false;
-        //        } else {
-        //            if (rowData != null) {
-        //                byte[] nextData = new byte[row.length - MySQLPacket.PACKET_HEADER_SIZE];
-        //                System.arraycopy(row, MySQLPacket.PACKET_HEADER_SIZE, nextData, 0, row.length - MySQLPacket.PACKET_HEADER_SIZE);
-        //                row = dataMerge(nextData);
-        //                rowPacketNum++;
-        //                session.getSource().setRowPackageEnd(true);
-        //                rowData = null;
-        //            }
-        //        }
 
         this.netOutBytes += row.length;
         this.resultSize += row.length;
@@ -436,7 +414,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         lock.lock();
         try {
             if (!writeToClient.get()) {
-                prepared = true;
                 if (prepared) {
                     if (rowDataPk == null) {
                         rowDataPk = new RowDataPacket(fieldCount);
@@ -447,7 +424,16 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                     binRowDataPk.setPacketId(rowDataPk.getPacketId());
                     buffer = binRowDataPk.write(buffer, session.getSource(), true);
                 } else {
-                    buffer = session.getSource().writeToBuffer(row, buffer);
+                    if (packetId > session.getSource().getPacketId()) {
+                        session.getSource().setPacketId(packetId);
+                    }
+                    if (row.length >= MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
+                        buffer = session.getSource().writeToBuffer(row, buffer);
+                    } else {
+                        row[3] = ++packetId;
+                        session.getSource().setPacketId(packetId);
+                        buffer = session.getSource().writeToBuffer(row, buffer);
+                    }
                 }
             }
         } finally {

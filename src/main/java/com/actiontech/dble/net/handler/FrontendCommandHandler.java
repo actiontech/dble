@@ -47,18 +47,6 @@ public class FrontendCommandHandler implements NIOHandler {
 
     @Override
     public void handle(byte[] data) {
-        //        if (data.length > DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize()) {
-        //            MySQLMessage mm = new MySQLMessage(data);
-        //            mm.readUB3();
-        //            byte packetId = mm.read();
-        //            ErrorPacket errPacket = new ErrorPacket();
-        //            errPacket.setErrNo(ErrorCode.ER_NET_PACKET_TOO_LARGE);
-        //            errPacket.setMessage("Got a packet bigger than 'max_allowed_packet' bytes.".getBytes());
-        //            //close the mysql connection if error occur
-        //            errPacket.setPacketId(++packetId);
-        //            errPacket.write(source);
-        //            return;
-        //        }
         if (source.getLoadDataInfileHandler() != null && source.getLoadDataInfileHandler().isStartLoadData()) {
             MySQLMessage mm = new MySQLMessage(data);
             int packetLength = mm.readUB3();

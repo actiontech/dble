@@ -12,6 +12,7 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.CharsetNames;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.base.Strings;
@@ -72,7 +73,18 @@ public abstract class AbstractConnection implements NIOConnection {
     private volatile boolean rowPackageEnd = true;
 
     private byte[] rowData;
-    protected volatile byte packetId=5;
+
+    public byte getPacketId() {
+        return packetId;
+    }
+
+    public void setPacketId(byte packetId) {
+        this.packetId = packetId;
+    }
+
+    protected volatile byte packetId;
+
+    private volatile NonBlockingSession session;
 
     public AbstractConnection(NetworkChannel channel) {
         this.channel = channel;
@@ -548,6 +560,7 @@ public abstract class AbstractConnection implements NIOConnection {
                     b[3] = ++packetId;
                     System.arraycopy(row, srcPos, b, MySQLPacket.PACKET_HEADER_SIZE, length);
                 }
+                this.packetId = packetId;
                 buffer = writeBuffer(b, buffer);
             }
         } else {

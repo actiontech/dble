@@ -85,10 +85,6 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
         if (source.isClosed()) {
             return;
         }
-//        if (session != null && session.getSource() != null && !session.getSource().isRowPackageEnd()) {
-        ////            handleRowPacket(data);
-        ////            return;
-        ////        }
         switch (resultStatus) {
             case RESULT_STATUS_INIT:
                 if (session != null) {
@@ -213,7 +209,6 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
      * execute Row Packet
      */
     private void handleRowPacket(byte[] data) {
-        rowLength++;
         ResponseHandler respHand = responseHandler;
         if (respHand != null) {
             respHand.rowResponse(data, null, false, source);

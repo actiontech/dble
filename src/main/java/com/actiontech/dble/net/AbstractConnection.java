@@ -70,6 +70,8 @@ public abstract class AbstractConnection implements NIOConnection {
 
     private volatile boolean rowPackageEnd = true;
 
+    private byte[] rowData;
+
     public AbstractConnection(NetworkChannel channel) {
         this.channel = channel;
         boolean isAIO = (channel instanceof AsynchronousChannel);
@@ -324,6 +326,25 @@ public abstract class AbstractConnection implements NIOConnection {
                 readBuffer.position(offset);
                 byte[] data = new byte[length];
                 readBuffer.get(data, 0, length);
+                if(length >= MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
+                    if (rowData == null) {
+                        rowData = data;
+                    } else {
+                        byte[] nextData = new byte[data.length - MySQLPacket.PACKET_HEADER_SIZE];
+                        System.arraycopy(data, MySQLPacket.PACKET_HEADER_SIZE, nextData, 0, data.length - MySQLPacket.PACKET_HEADER_SIZE);
+                        rowData = dataMerge(nextData);
+                    }
+                    readReachEnd();
+                    return;
+                } else {
+                    if (rowData != null) {
+                        byte[] nextData = new byte[data.length - MySQLPacket.PACKET_HEADER_SIZE];
+                        System.arraycopy(data, MySQLPacket.PACKET_HEADER_SIZE, nextData, 0, data.length - MySQLPacket.PACKET_HEADER_SIZE);
+                        rowData = dataMerge(nextData);
+                        data = rowData;
+                        rowData = null;
+                    }
+                }
                 handle(data);
                 // maybe handle stmt_close
                 if (isClosed()) {
@@ -672,5 +693,12 @@ public abstract class AbstractConnection implements NIOConnection {
 
     public void setRowPackageEnd(boolean rowPackageEnd) {
         this.rowPackageEnd = rowPackageEnd;
+    }
+
+    private byte[] dataMerge(byte[] data) {
+        byte[] newData = new byte[rowData.length + data.length];
+        System.arraycopy(rowData, 0, newData, 0, rowData.length);
+        System.arraycopy(data, 0, newData, rowData.length, data.length);
+        return newData;
     }
 }

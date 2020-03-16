@@ -67,6 +67,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     private AtomicBoolean recycledBuffer = new AtomicBoolean(false);
     private byte[] rowData;
     private int rowPacketNum;
+//    private List<Map<Integer,Object>> rowPacketList = new ArrayList();
+//    private Map<Long,Object>rowPacketMap=new HashMap<>();
 
     public MultiNodeQueryHandler(RouteResultset rrs, NonBlockingSession session) {
         super(session);
@@ -132,7 +134,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 node.setRunOnSlave(rrs.getRunOnSlave());
                 PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), sessionAutocommit, node, this, node);
-                packetId = (byte) session.getPacketId().get();
+               // packetId = (byte) session.getPacketId().get();
             }
         }
     }
@@ -398,29 +400,27 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
     @Override
     public boolean rowResponse(byte[] row, RowDataPacket rowPacketNull, boolean isLeft, BackendConnection conn) {
-        System.out.println("row");
-        if (row.length >= MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
-            session.getSource().setRowPackageEnd(false);
-            if (rowData == null) {
-                rowData = row;
-                rowPacketNum++;
-            } else {
-                byte[] nextData = new byte[row.length - MySQLPacket.PACKET_HEADER_SIZE];
-                System.arraycopy(row, MySQLPacket.PACKET_HEADER_SIZE, nextData, 0, row.length - MySQLPacket.PACKET_HEADER_SIZE);
-                rowData = dataMerge(nextData);
-                rowPacketNum++;
-            }
-            return false;
-        } else {
-            if (rowData != null) {
-                byte[] nextData = new byte[row.length - MySQLPacket.PACKET_HEADER_SIZE];
-                System.arraycopy(row, MySQLPacket.PACKET_HEADER_SIZE, nextData, 0, row.length - MySQLPacket.PACKET_HEADER_SIZE);
-                row = dataMerge(nextData);
-                rowPacketNum++;
-                session.getSource().setRowPackageEnd(true);
-                rowData = null;
-            }
-        }
+//        if (row.length >= MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
+//            session.getSource().setRowPackageEnd(false);
+//            if (rowData == null) {
+//                rowData = row;
+//            } else {
+//                byte[] nextData = new byte[row.length - MySQLPacket.PACKET_HEADER_SIZE];
+//                System.arraycopy(row, MySQLPacket.PACKET_HEADER_SIZE, nextData, 0, row.length - MySQLPacket.PACKET_HEADER_SIZE);
+//                rowData = dataMerge(nextData);
+//            }
+//            rowPacketNum++;
+//            return false;
+//        } else {
+//            if (rowData != null) {
+//                byte[] nextData = new byte[row.length - MySQLPacket.PACKET_HEADER_SIZE];
+//                System.arraycopy(row, MySQLPacket.PACKET_HEADER_SIZE, nextData, 0, row.length - MySQLPacket.PACKET_HEADER_SIZE);
+//                row = dataMerge(nextData);
+//                rowPacketNum++;
+//                session.getSource().setRowPackageEnd(true);
+//                rowData = null;
+//            }
+//        }
         this.netOutBytes += row.length;
         if (errorResponse.get()) {
             // the connection has been closed or set to "txInterrupt" properly
@@ -473,9 +473,14 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     binRowDataPk.setPacketId(rowDataPkg.getPacketId());
                     byteBuffer = binRowDataPk.write(byteBuffer, session.getSource(), true);
                 } else {
+                    if(row.length < MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE){
+                        row[3] = ++packetId;
+                        byteBuffer = session.getSource().writeToBuffer(row, byteBuffer);
+                        return false;
+                    }
                     int length = row.length;
                     int srcPos = 0;
-                    for (int i = 0; i < rowPacketNum; i++) {
+                    for (int i = 0; i < Math.ceil((double) row.length/16777215); i++) {
                         byte[] b = null;
                         if (length >= MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
                             if (i == 0) {
@@ -499,7 +504,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                             System.arraycopy(row, srcPos, b, MySQLPacket.PACKET_HEADER_SIZE, length);
                             rowPacketNum = 0;
                         }
-                        byteBuffer = session.getSource().writeToBuffer(row, byteBuffer);
+                        byteBuffer = session.getSource().writeToBuffer(b, byteBuffer);
                     }
                 }
             }

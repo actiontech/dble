@@ -190,15 +190,7 @@ public class ConfigInitializer implements ProblemReporter {
                 testDataSource(errNodeKeys, errSourceKeys, isConnectivity, isAllDataSourceConnected, nodeList, pool, ds);
             }
         }
-        if (!isConnectivity.get()) {
-            StringBuilder sb = new StringBuilder("SelfCheck### there are some data node connection failed, pls check these datasource:");
-            for (String key : errNodeKeys) {
-                sb.append("{");
-                sb.append(key);
-                sb.append("},");
-            }
-            LOGGER.warn(sb.toString());
-        }
+
         if (!isAllDataSourceConnected.get()) {
             StringBuilder sb = new StringBuilder("SelfCheck### there are some datasource connection failed, pls check these datasource:");
             for (String key : errSourceKeys) {
@@ -207,6 +199,16 @@ public class ConfigInitializer implements ProblemReporter {
                 sb.append("},");
             }
             throw new ConfigException(sb.toString());
+        }
+
+        if (!isConnectivity.get()) {
+            StringBuilder sb = new StringBuilder("SelfCheck### there are some data node connection failed, pls check these datasource:");
+            for (String key : errNodeKeys) {
+                sb.append("{");
+                sb.append(key);
+                sb.append("},");
+            }
+            LOGGER.warn(sb.toString());
         }
     }
 
@@ -254,6 +256,9 @@ public class ConfigInitializer implements ProblemReporter {
                 boolean isConnected = isSchemaConnectedPtr.get();
                 if (!isConnected) {
                     isConnectivity.set(false);
+                    for (Map.Entry<String, String> entry : testSchemaTask.getNodes().entrySet()) {
+                        dataNodes.get(entry.getValue()).setSchemaExists(false);
+                    }
                 }
             }
         } catch (InterruptedException e) {
@@ -268,6 +273,7 @@ public class ConfigInitializer implements ProblemReporter {
         for (Pair<String, String> node : nodeList) {
             String key = dataSourceName + ",data_node[" + node.getKey() + "],schema[" + node.getValue() + "]";
             errKeys.add(key);
+            dataNodes.get(node.getKey()).setSchemaExists(false);
             LOGGER.warn("SelfCheck### test " + key + " database connection failed ");
         }
     }

@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.manager;
 
 import com.actiontech.dble.config.ErrorCode;
@@ -95,7 +95,10 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
                 ShowServerLog.handle(sql, c);
                 break;
             case ManagerParse.CREATE_DB:
-                CreateDatabaseHandler.handle(sql, c);
+                DatabaseHandler.handle(sql, c, true);
+                break;
+            case ManagerParse.DROP_DB:
+                DatabaseHandler.handle(sql, c, false);
                 break;
             case ManagerParse.ENABLE:
                 EnableHandler.handle(sql, c, rs >>> SHIFT);

@@ -22,7 +22,7 @@ public class TestTask extends Thread {
     @Override
     public void run() {
         try {
-            boolean isConnected = ds.testConnection(null);
+            boolean isConnected = ds.testConnection();
             boolPtr.set(isConnected);
         } catch (IOException e) {
             boolPtr.set(false);

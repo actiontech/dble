@@ -56,6 +56,7 @@ public abstract class PhysicalDatasource {
     private volatile boolean readOnly = false;
     private AtomicLong readCount = new AtomicLong(0);
     private AtomicLong writeCount = new AtomicLong(0);
+    private String dsVersion;
     public PhysicalDatasource(DBHostConfig config, DataHostConfig hostConfig, boolean isReadNode) {
         this.size = config.getMaxCon();
         this.config = config;
@@ -154,6 +155,14 @@ public abstract class PhysicalDatasource {
         this.size = size;
     }
 
+    public String getDsVersion() {
+        return dsVersion;
+    }
+
+    public void setDsVersion(String dsVersion) {
+        this.dsVersion = dsVersion;
+    }
+
     public String getName() {
         return name;
     }
@@ -199,7 +208,11 @@ public abstract class PhysicalDatasource {
     }
 
     public boolean isSalveOrRead() {
-        return dbPool.isSlave(this) || this.readNode;
+        if (dbPool != null) {
+            return dbPool.isSlave(this) || this.readNode;
+        } else {
+            return this.readNode;
+        }
     }
 
     public void connectionHeatBeatCheck(long conHeartBeatPeriod) {
@@ -557,7 +570,7 @@ public abstract class PhysicalDatasource {
     /**
      * used for init or reload
      */
-    public abstract boolean testConnection(String schema) throws IOException;
+    public abstract boolean testConnection() throws IOException;
 
     public long getHeartbeatRecoveryTime() {
         return heartbeatRecoveryTime;

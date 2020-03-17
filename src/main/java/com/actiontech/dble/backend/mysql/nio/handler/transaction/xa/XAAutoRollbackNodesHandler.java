@@ -8,10 +8,13 @@ package com.actiontech.dble.backend.mysql.nio.handler.transaction.xa;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 public class XAAutoRollbackNodesHandler extends XARollbackNodesHandler {
+    private static Logger logger = LoggerFactory.getLogger(XAAutoRollbackNodesHandler.class);
     private RouteResultsetNode[] nodes;
     private List<BackendConnection> errConnection;
 
@@ -20,6 +23,7 @@ public class XAAutoRollbackNodesHandler extends XARollbackNodesHandler {
         this.sendData = packet;
         this.nodes = nodes;
         this.errConnection = errConnection;
+        logger.debug(" new XAAutoRollbackNodesHandler");
     }
 
     @Override

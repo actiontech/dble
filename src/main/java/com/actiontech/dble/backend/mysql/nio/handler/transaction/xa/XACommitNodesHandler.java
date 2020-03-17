@@ -202,7 +202,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         String xaTxId = mysqlCon.getConnXID(session, rrn.getMultiplexNum().longValue());
         XaDelayProvider.delayBeforeXaEnd(rrn.getName(), xaTxId);
         if (logger.isDebugEnabled()) {
-            logger.debug("XA END " + xaTxId + " from " + mysqlCon);
+            logger.debug("XA END " + xaTxId + " to " + mysqlCon);
         }
         mysqlCon.execCmd("XA END " + xaTxId);
     }
@@ -215,7 +215,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         mysqlCon.setXaStatus(TxState.TX_PREPARING_STATE);
         XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
         if (logger.isDebugEnabled()) {
-            logger.debug("XA PREPARE " + xaTxId + " from " + mysqlCon);
+            logger.debug("XA PREPARE " + xaTxId + " to " + mysqlCon);
         }
         mysqlCon.execCmd("XA PREPARE " + xaTxId);
 
@@ -236,7 +236,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         String xaTxId = mysqlCon.getConnXID(session, rrn.getMultiplexNum().longValue());
         XaDelayProvider.delayBeforeXaCommit(rrn.getName(), xaTxId);
         if (logger.isDebugEnabled()) {
-            logger.debug("XA COMMIT " + xaTxId + " from " + mysqlCon);
+            logger.debug("XA COMMIT " + xaTxId + " to " + mysqlCon);
         }
         mysqlCon.execCmd("XA COMMIT " + xaTxId);
     }
@@ -245,6 +245,9 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     public void okResponse(byte[] ok, BackendConnection conn) {
         this.waitUntilSendFinish();
         MySQLConnection mysqlCon = (MySQLConnection) conn;
+        if (logger.isDebugEnabled()) {
+            logger.debug("receive ok from " + mysqlCon);
+        }
         conn.syncAndExecute();
         TxState state = mysqlCon.getXaStatus();
         if (state == TxState.TX_STARTED_STATE) {
@@ -276,6 +279,8 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 }
                 cleanAndFeedback(true);
             }
+        } else {
+            LOGGER.info("Wrong session XA status " + mysqlCon);
         }
     }
 
@@ -290,6 +295,9 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         sendData = makeErrorPacket(errMsg);
         if (conn instanceof MySQLConnection) {
             MySQLConnection mysqlCon = (MySQLConnection) conn;
+            if (logger.isDebugEnabled()) {
+                logger.debug("receive error [" + errMsg + "] from " + mysqlCon);
+            }
             if (mysqlCon.getXaStatus() == TxState.TX_STARTED_STATE) {
                 mysqlCon.close();
                 mysqlCon.setXaStatus(TxState.TX_CONN_QUIT);
@@ -356,6 +364,8 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                         cleanAndFeedback(false);
                     }
                 }
+            } else {
+                LOGGER.info("Wrong session XA status " + mysqlCon);
             }
         }
     }
@@ -363,7 +373,6 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
         this.waitUntilSendFinish();
-        LOGGER.info("backend connect", e);
         String errMsg = new String(StringUtil.encode(e.getMessage(), session.getSource().getCharset().getResults()));
         this.setFail(errMsg);
         sendData = makeErrorPacket(errMsg);
@@ -375,7 +384,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         } finally {
             lock.unlock();
         }
-        innerConnectError(conn, finished);
+        innerConnectError(conn, finished, "backend connect " + e.toString());
     }
 
     @Override
@@ -388,12 +397,18 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
         this.setFail(closeReason);
         sendData = makeErrorPacket(closeReason);
-        innerConnectError(conn, decrementToZero(conn));
+        boolean[] result = decrementToZeroAndCheckNode(conn);
+        boolean finished = result[0];
+        boolean justRemoved = result[1];
+        if (justRemoved) {
+            innerConnectError(conn, finished, "connectionClose");
+        }
     }
 
-    private void innerConnectError(BackendConnection conn, boolean finished) {
+    private void innerConnectError(BackendConnection conn, boolean finished, String reason) {
         if (conn instanceof MySQLConnection) {
             MySQLConnection mysqlCon = (MySQLConnection) conn;
+            LOGGER.info(reason + mysqlCon);
             if (mysqlCon.getXaStatus() == TxState.TX_STARTED_STATE) {
                 mysqlCon.close();
                 mysqlCon.setXaStatus(TxState.TX_CONN_QUIT);
@@ -418,6 +433,8 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 if (finished) {
                     cleanAndFeedback(false);
                 }
+            } else {
+                LOGGER.info("Wrong session XA status " + mysqlCon);
             }
         }
     }

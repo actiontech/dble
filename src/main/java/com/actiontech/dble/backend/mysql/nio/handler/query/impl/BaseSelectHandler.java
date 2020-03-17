@@ -50,29 +50,33 @@ public class BaseSelectHandler extends BaseDMLHandler {
 
         MySQLConnection exeConn = (MySQLConnection) session.getTarget(rrss);
         if (session.tryExistsCon(exeConn, rrss)) {
+            exeConn.setRowDataFlowing(true);
             return exeConn;
         } else {
             PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(rrss.getName());
             //autocommit is session.getSource().isAutocommit() && !session.getSource().isTxStart()
             final BackendConnection newConn = dn.getConnection(dn.getDatabase(), autocommit, rrss.getRunOnSlave(), rrss);
             session.bindConnection(rrss, newConn);
+            newConn.setResponseHandler(this);
+            ((MySQLConnection) newConn).setRowDataFlowing(true);
             return (MySQLConnection) newConn;
         }
     }
 
     public void execute(MySQLConnection conn) {
         if (session.closed()) {
+            conn.setRowDataFlowing(false);
             session.clearResources(true);
             return;
         }
-        conn.setResponseHandler(this);
         conn.setSession(session);
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(conn.toString() + " send sql:" + rrss.getStatement());
-        }
-        if (session.closed()) {
+        if (conn.isClosed()) {
+            conn.setRowDataFlowing(false);
             session.onQueryError("failed or cancelled by other thread".getBytes());
             return;
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(conn.toString() + " send sql:" + rrss.getStatement());
         }
         conn.execute(rrss, session.getSource(), autocommit);
     }

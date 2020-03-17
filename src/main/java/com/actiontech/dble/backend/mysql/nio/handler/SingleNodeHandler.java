@@ -394,7 +394,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
         this.netOutBytes += row.length;
         this.resultSize += row.length;
-
+        this.selectRows++;
 
         RowDataPacket rowDataPk = null;
         // cache cacheKey-> dataNode
@@ -474,13 +474,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     @Override
     public String toString() {
         return "SingleNodeHandler [node=" + node + ", packetId=" + packetId + "]";
-    }
-
-    private byte[] dataMerge(byte[] data) {
-        byte[] newData = new byte[rowData.length + data.length];
-        System.arraycopy(rowData, 0, newData, 0, rowData.length);
-        System.arraycopy(data, 0, newData, rowData.length, data.length);
-        return newData;
     }
 
 }

@@ -80,8 +80,7 @@ public class RowDataPacket extends MySQLPacket {
         packetLength = mm.readUB3();
         packetId = mm.read();
         for (int i = 0; i < fieldCount; i++) {
-            byte[] b = mm.readBytesWithLength();
-            fieldValues.add(b);
+            fieldValues.add(mm.readBytesWithLength());
         }
     }
 

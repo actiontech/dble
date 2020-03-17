@@ -12,7 +12,6 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOHandler;
 import com.actiontech.dble.net.mysql.ChangeUserPacket;
-import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.statistic.CommandCount;
@@ -20,8 +19,6 @@ import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -74,13 +71,6 @@ public class FrontendCommandHandler implements NIOHandler {
             ((ServerConnection) source).getSession2().resetMultiStatementStatus();
         }
         DbleServer.getInstance().getFrontHandlerQueue().offer(this);
-    }
-
-    private byte[] dataMerge(byte[] data) {
-        byte[] newData = new byte[dataTodo.length + data.length];
-        System.arraycopy(dataTodo, 0, newData, 0, dataTodo.length);
-        System.arraycopy(data, 0, newData, dataTodo.length, data.length);
-        return newData;
     }
 
     public void handle() {

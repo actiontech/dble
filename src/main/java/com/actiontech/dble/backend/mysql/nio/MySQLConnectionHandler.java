@@ -38,7 +38,6 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
     private volatile int resultStatus;
     private volatile byte[] header;
     private volatile List<byte[]> fields;
-    private int rowLength = 0;
 
     /**
      * life cycle: one SQL execution

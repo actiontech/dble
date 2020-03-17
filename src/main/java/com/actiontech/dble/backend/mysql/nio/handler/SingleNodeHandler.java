@@ -14,7 +14,9 @@ import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
+import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.plan.common.ptr.BytePtr;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -106,7 +108,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         ServerConfig conf = DbleServer.getInstance().getConfig();
         PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
         dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), session.getSource().isAutocommit(), node, this, node);
-        //packetId = (byte) session.getPacketId().get();
+        packetId = session.getSource().getPacketId();
     }
     protected void execute(BackendConnection conn) {
         if (session.closed()) {
@@ -287,8 +289,8 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         if (!rrs.isCallStatement()) {
             session.releaseConnectionIfSafe(conn, false);
         }
-        packetId = session.getSource().getPacketId();
         eof[3] = ++packetId;
+        System.out.println("eof "+packetId);
         session.multiStatementPacket(eof, packetId);
         ServerConnection source = session.getSource();
         session.setResponseTime(true);
@@ -424,14 +426,12 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                     binRowDataPk.setPacketId(rowDataPk.getPacketId());
                     buffer = binRowDataPk.write(buffer, session.getSource(), true);
                 } else {
-                    if (packetId > session.getSource().getPacketId()) {
-                        session.getSource().setPacketId(packetId);
-                    }
                     if (row.length >= MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
-                        buffer = session.getSource().writeToBuffer(row, buffer);
+                        BytePtr bytePtr = new BytePtr(packetId);
+                        buffer = session.getSource().writeBigPackageToBuffer(row, buffer, bytePtr);
+                        this.packetId = bytePtr.get();
                     } else {
                         row[3] = ++packetId;
-                        session.getSource().setPacketId(packetId);
                         buffer = session.getSource().writeToBuffer(row, buffer);
                     }
                 }

@@ -120,10 +120,7 @@ public class CommandPacket extends MySQLPacket {
                 buffer = c.allocate(size + MySQLPacket.PACKET_HEADER_SIZE);
                 BufferUtil.writeUB3(buffer, size);
                 buffer.put(packetId);
-                //                if (c.getSession() != null) {
-                //                    c.getSession().getPacketId().set(packetId);
-                //                }
-                c.setPacketId(packetId);
+                c.getSession().getSource().setPacketId(packetId);
                 writeBody(buffer, isFirst);
                 c.write(buffer);
             }

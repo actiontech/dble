@@ -89,7 +89,7 @@
             <AppenderRef ref="DumpFileLog"/>
             <AppenderRef ref="RollingFile"/>
         </Logger>
-        <asyncRoot level="error" includeLocation="true">
+        <asyncRoot level="debug" includeLocation="true">
             <AppenderRef ref="Console"/>
             <AppenderRef ref="RollingFile"/>
         </asyncRoot>

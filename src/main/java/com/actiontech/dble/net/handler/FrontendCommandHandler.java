@@ -65,24 +65,7 @@ public class FrontendCommandHandler implements NIOHandler {
             source.stmtClose(data);
             return;
         } else {
-            if (data.length >= MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
-                if (dataTodo == null) {
-                    dataTodo = data;
-                } else {
-                    byte[] nextData = new byte[data.length - 5];
-                    System.arraycopy(data, 5, nextData, 0, data.length - 5);
-                    dataTodo = dataMerge(nextData);
-                }
-                return;
-            } else {
-                if (dataTodo == null) {
-                    dataTodo = data;
-                } else {
-                    byte[] nextData = new byte[data.length - 5];
-                    System.arraycopy(data, 5, nextData, 0, data.length - 5);
-                    dataTodo = dataMerge(nextData);
-                }
-            }
+            dataTodo = data;
             if (MySQLPacket.COM_STMT_RESET == data[4]) {
                 blobDataQueue.clear();
             }

@@ -1240,7 +1240,6 @@ public class NonBlockingSession implements Session {
         return remingSql;
     }
 
-    @Override
     public AtomicInteger getPacketId() {
         return packetId;
     }

@@ -547,7 +547,6 @@
                                     <extraArgument>-XX:+PrintGCDetails</extraArgument>
                                     <extraArgument>-XX:+HeapDumpOnOutOfMemoryError</extraArgument>
                                     <extraArgument>-XX:HeapDumpPath=./logs/</extraArgument>
-                                    <extraArgument>-XX:OnOutOfMemoryError=kill -9 %p</extraArgument>
                                 </extraArguments>
                             </jvmSettings>
                             <generatorConfigurations>

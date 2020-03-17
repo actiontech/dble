@@ -515,25 +515,6 @@ public abstract class AbstractConnection implements NIOConnection {
         }
     }
 
-    //    public ByteBuffer writeBuffer(byte[] src, ByteBuffer buffer) {
-    //        int offset = 0;
-    //        int length = src.length;
-    //        int remaining = buffer.remaining();
-    //        while (length > 0) {
-    //            if (remaining >= length) {
-    //                buffer.put(src, offset, length);
-    //                break;
-    //            } else {
-    //                buffer.put(src, offset, remaining);
-    //                writePart(buffer);
-    //                buffer = allocate();
-    //                offset += remaining;
-    //                length -= remaining;
-    //                remaining = buffer.remaining();
-    //            }
-    //        }
-    //        return buffer;
-    //    }
 
     public ByteBuffer writeToBuffer(byte[] src, ByteBuffer buffer) {
         int offset = 0;
@@ -559,17 +540,19 @@ public abstract class AbstractConnection implements NIOConnection {
         int length = row.length;
         int srcPos = 0;
         byte packetId = bytePtr.get();
+        boolean isFirst = true;
         if (length >= MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
-            for (int i = 0; i < Math.ceil((double) row.length / 16777215); i++) {
+            while (true) {
                 byte[] b = null;
                 if (length >= MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
-                    if (i == 0) {
+                    if (isFirst) {
                         b = new byte[MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE];
                         System.arraycopy(row, 0, b, 0, MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
                         srcPos = MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE;
                         length -= (MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
                         b[3] = ++packetId;
                         bytePtr.incre();
+                        isFirst = false;
                     } else {
                         b = new byte[MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE];
                         RowDataPacket.writeRowLength(b, MySQLPacket.MAX_SQL_PACKET_SIZE);
@@ -585,6 +568,8 @@ public abstract class AbstractConnection implements NIOConnection {
                     b[3] = ++packetId;
                     bytePtr.incre();
                     System.arraycopy(row, srcPos, b, MySQLPacket.PACKET_HEADER_SIZE, length);
+                    buffer = writeToBuffer(b, buffer);
+                    break;
                 }
                 buffer = writeToBuffer(b, buffer);
             }

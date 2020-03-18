@@ -8,7 +8,6 @@ package com.actiontech.dble.backend.mysql.nio.handler.transaction.refactor.handl
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.MultiNodeHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.refactor.XATransactionContext;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.refactor.stage.XAStage;
 import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.config.ErrorCode;
@@ -28,11 +27,9 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
 
     private static Logger logger = LoggerFactory.getLogger(AbstractXAHandler.class);
     volatile XAStage currentStage;
-    protected XATransactionContext context;
 
     public AbstractXAHandler(NonBlockingSession session) {
         super(session);
-        this.context = new XATransactionContext(session, this);
     }
 
     protected XAStage next() {
@@ -43,7 +40,7 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
                 session.getSource().write(makeErrorPacket(error));
             } else {
                 session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_INIT);
-                context.clearInvolvedRrns();
+                session.getXaContext().clearInvolvedRrns();
                 session.clearResources(false);
                 if (session.closed()) {
                     return null;

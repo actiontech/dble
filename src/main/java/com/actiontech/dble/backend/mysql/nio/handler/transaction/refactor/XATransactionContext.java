@@ -12,6 +12,8 @@ import com.actiontech.dble.server.NonBlockingSession;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class XATransactionContext {
 
@@ -22,6 +24,7 @@ public class XATransactionContext {
     private boolean isRollback;
     private int retryTimes = 1;
     private int backgroundRetryTimes = 1;
+    private ConcurrentMap<Object, Long> xaOldThreadIds;
 
     public boolean isRollback() {
         return isRollback;
@@ -58,6 +61,10 @@ public class XATransactionContext {
     public XATransactionContext(NonBlockingSession session, AbstractXAHandler handler) {
         this.session = session;
         this.handler = handler;
+    }
+
+    public ConcurrentMap<Object, Long> getXaOldThreadIds() {
+        return xaOldThreadIds;
     }
 
     public String getSessionXaId() {
@@ -104,5 +111,6 @@ public class XATransactionContext {
             position++;
         }
         involvedRrns = rrns;
+        xaOldThreadIds = new ConcurrentHashMap<>(rrns.size());
     }
 }

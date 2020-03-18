@@ -19,8 +19,10 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitCommitH
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.RollbackNodesHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.NormalCommitNodesHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.NormalRollbackNodesHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.refactor.handler.XACommitHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.refactor.handler.XARollbackHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.refactor.TransactionHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.refactor.XATransactionContext;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.refactor.handler.AbstractXAHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.refactor.handler.XAHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
 import com.actiontech.dble.backend.mysql.store.memalloc.MemSizeController;
 import com.actiontech.dble.backend.mysql.xa.TxState;
@@ -89,11 +91,13 @@ public class NonBlockingSession implements Session {
 
     private RollbackNodesHandler rollbackHandler;
     private CommitNodesHandler commitHandler;
+    private TransactionHandler xaTransactionHandler;
     private SavePointHandler savePointHandler;
 
     private volatile boolean retryXa = true;
     private volatile String xaTxId;
     private volatile TxState xaState;
+    private XATransactionContext xaContext;
 
     // cancel status  0 - CANCEL_STATUS_INIT 1 - CANCEL_STATUS_COMMITTING  2 - CANCEL_STATUS_CANCELING
     private int cancelStatus = 0;
@@ -693,26 +697,27 @@ public class NonBlockingSession implements Session {
 
     private void resetCommitNodesHandler() {
         if (commitHandler == null) {
-            if (this.getSessionXaID() == null) {
-                commitHandler = new NormalCommitNodesHandler(this);
-            } else {
-                commitHandler = new XACommitHandler(this);
-            }
-        } else {
-            if (this.getSessionXaID() == null && (commitHandler instanceof XACommitHandler)) {
-                commitHandler = new NormalCommitNodesHandler(this);
-            }
-            if (this.getSessionXaID() != null && (commitHandler instanceof NormalCommitNodesHandler)) {
-                commitHandler = new XACommitHandler(this);
-            }
+            commitHandler = new NormalCommitNodesHandler(this);
         }
+
+        if (xaTransactionHandler == null) {
+            xaTransactionHandler = new XAHandler(this);
+            xaContext = new XATransactionContext(this, (AbstractXAHandler) xaTransactionHandler);
+        }
+    }
+
+    public XATransactionContext getXaContext() {
+        return xaContext;
     }
 
     public void commit() {
         checkBackupStatus();
         resetCommitNodesHandler();
-
-        commitHandler.commit();
+        if (xaTxId != null) {
+            xaTransactionHandler.commit();
+        } else {
+            commitHandler.commit();
+        }
     }
 
     public void implictCommit(ImplicitCommitHandler handler) {
@@ -743,18 +748,12 @@ public class NonBlockingSession implements Session {
 
     private void resetRollbackNodesHandler() {
         if (rollbackHandler == null) {
-            if (this.getSessionXaID() == null) {
-                rollbackHandler = new NormalRollbackNodesHandler(this);
-            } else {
-                rollbackHandler = new XARollbackHandler(this);
-            }
-        } else {
-            if (this.getSessionXaID() == null && (rollbackHandler instanceof XARollbackHandler)) {
-                rollbackHandler = new NormalRollbackNodesHandler(this);
-            }
-            if (this.getSessionXaID() != null && (rollbackHandler instanceof NormalRollbackNodesHandler)) {
-                rollbackHandler = new XARollbackHandler(this);
-            }
+            rollbackHandler = new NormalRollbackNodesHandler(this);
+        }
+
+        if (xaTransactionHandler == null) {
+            xaTransactionHandler = new XAHandler(this);
+            xaContext = new XATransactionContext(this, (AbstractXAHandler) xaTransactionHandler);
         }
     }
 
@@ -771,7 +770,12 @@ public class NonBlockingSession implements Session {
             return;
         }
         resetRollbackNodesHandler();
-        rollbackHandler.rollback();
+
+        if (xaTxId != null) {
+            xaTransactionHandler.rollback();
+        } else {
+            rollbackHandler.rollback();
+        }
     }
 
     /**

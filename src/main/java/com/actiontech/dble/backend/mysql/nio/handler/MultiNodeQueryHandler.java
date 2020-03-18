@@ -287,9 +287,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     ok.setInsertId(insertId);
                     source.setLastInsertId(insertId);
                 }
-                session.multiStatementPacket(ok, packetId);
+                boolean multiStatementFlag = session.multiStatementPacket(ok, packetId);
                 doSqlStat();
                 handleEndPacket(ok.toBytes(), AutoTxOperation.COMMIT, true);
+                session.multiStatementNextSql(multiStatementFlag);
             } finally {
                 lock.unlock();
             }
@@ -381,10 +382,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (session.closed()) {
                     cleanBuffer();
                 } else {
-                    boolean multiStatementFlag = session.getIsMultiStatement().get();
+                    boolean multiStatementFlag = session.multiStatementPacket(eof, ++packetId);
                     writeEofResult(eof, source);
-                    //set after writeEof because packetId would increase in that function
-                    session.multiStatementPacket(eof, packetId);
                     session.multiStatementNextSql(multiStatementFlag);
                 }
             }
@@ -502,7 +501,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
     private void writeEofResult(byte[] eof, ServerConnection source) {
-        eof[3] = ++packetId;
+        eof[3] = packetId;
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("last packet id:" + packetId);
         }
@@ -643,7 +642,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             }
             session.setResponseTime(isSuccess);
             session.getSource().write(data);
-            session.multiStatementNextSql(session.getIsMultiStatement().get());
         }
     }
 

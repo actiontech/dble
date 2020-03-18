@@ -58,8 +58,9 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
     public void commit() {
         participantLogSize = session.getTargetCount();
         if (participantLogSize <= 0) {
+            boolean multiStatementFlag = session.getIsMultiStatement().get();
             session.getSource().write(session.getOkByteArray());
-            session.multiStatementNextSql(session.getIsMultiStatement().get());
+            session.multiStatementNextSql(multiStatementFlag);
             return;
         }
         lock.lock();

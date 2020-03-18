@@ -77,15 +77,17 @@ public final class KillHandler {
 
         NonBlockingSession killSession = ((ServerConnection) killConn).getSession2();
         if (killSession.getSessionStage() == SessionStage.Init || killSession.getSessionStage() == SessionStage.Finished) {
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
             getOkPacket(c).write(c);
-            c.getSession2().multiStatementNextSql(c.getSession2().getIsMultiStatement().get());
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
             return;
         }
 
         killSession.setKilled(true);
         // return ok to front connection that sends kill query
+        boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
         getOkPacket(c).write(c);
-        c.getSession2().multiStatementNextSql(c.getSession2().getIsMultiStatement().get());
+        c.getSession2().multiStatementNextSql(multiStatementFlag);
 
         while (true) {
             if (!killSession.isKilled()) {

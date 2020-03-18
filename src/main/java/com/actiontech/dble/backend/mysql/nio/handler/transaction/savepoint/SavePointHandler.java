@@ -234,8 +234,9 @@ public class SavePointHandler extends MultiNodeHandler {
                     LOGGER.warn("unknown savepoint perform type!");
                     break;
             }
+            boolean multiStatementFlag = session.getIsMultiStatement().get();
             session.getSource().write(send);
-            session.multiStatementNextSql(session.getIsMultiStatement().get());
+            session.multiStatementNextSql(multiStatementFlag);
         }
     }
 

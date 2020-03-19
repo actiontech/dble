@@ -340,6 +340,7 @@ public final class FilterPusher {
      */
     public static ItemFunc replaceFunctionArg(ItemFunc f, List<Item> sels1, List<Item> sels2) {
         ItemFunc ret = (ItemFunc) f.cloneStruct();
+        boolean hasFieldInFunc = false;
         for (int index = 0; index < ret.getArgCount(); index++) {
             Item arg = ret.arguments().get(index);
             if (arg instanceof ItemFunc) {
@@ -349,6 +350,7 @@ public final class FilterPusher {
                 else
                     ret.arguments().set(index, newfArg);
             } else if (arg instanceof ItemField) {
+                hasFieldInFunc = true;
                 int tmpIndex = sels1.indexOf(arg);
                 if (tmpIndex < 0) {
                     return null;
@@ -359,6 +361,9 @@ public final class FilterPusher {
             } else {
                 // do nothing;
             }
+        }
+        if (!hasFieldInFunc) {
+            return null;
         }
         ret.setPushDownName(null);
         PlanUtil.refreshReferTables(ret);

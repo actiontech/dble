@@ -20,10 +20,10 @@ public class WriteToBackendTask {
     }
 
     public void execute() {
-        int size=packet.calcPacketSize();
-        if(size >= MySQLPacket.MAX_PACKET_SIZE){
-            packet.writeBigPackage(conn,size);
-        }else{
+        int size = packet.calcPacketSize();
+        if (size >= MySQLPacket.MAX_PACKET_SIZE) {
+            packet.writeBigPackage(conn, size);
+        } else {
             writeCommonPackage(conn);
         }
     }

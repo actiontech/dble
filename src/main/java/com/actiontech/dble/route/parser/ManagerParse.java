@@ -19,7 +19,6 @@ public final class ManagerParse {
     public static final int SELECT = 1;
     public static final int SET = 2;
     public static final int SHOW = 3;
-    public static final int SWITCH = 4;
     public static final int KILL_CONN = 5;
     public static final int STOP = 6;
     public static final int RELOAD = 7;
@@ -291,9 +290,6 @@ public final class ManagerParse {
                 case 'H':
                 case 'h':
                     return show(stmt, offset);
-                case 'W':
-                case 'w':
-                    return swh(stmt, offset);
                 case 'P':
                 case 'p':
                     return split(stmt, offset);
@@ -564,23 +560,6 @@ public final class ManagerParse {
             if ((c1 == 'L' || c1 == 'l') && (c2 == 'I' || c2 == 'i') &&
                     (c3 == 'T' || c3 == 't') && ParseUtil.isSpace(c4)) {
                 return (offset << 8) | SPLIT;
-            }
-        }
-        return OTHER;
-    }
-
-    // SWITCH' '
-    private static int swh(String stmt, int offset) {
-        if (stmt.length() > offset + 5) {
-            char c1 = stmt.charAt(++offset);
-            char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-            char c4 = stmt.charAt(++offset);
-            char c5 = stmt.charAt(++offset);
-            if ((c1 == 'I' || c1 == 'i') && (c2 == 'T' || c2 == 't') &&
-                    (c3 == 'C' || c3 == 'c') && (c4 == 'H' || c4 == 'h') &&
-                    (c5 == ' ' || c5 == '\t' || c5 == '\r' || c5 == '\n')) {
-                return (offset << 8) | SWITCH;
             }
         }
         return OTHER;

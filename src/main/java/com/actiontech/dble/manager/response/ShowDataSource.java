@@ -114,29 +114,12 @@ public final class ShowDataSource {
             for (Map.Entry<String, AbstractPhysicalDBPool> entry : conf.getDataHosts().entrySet()) {
                 AbstractPhysicalDBPool dataHost = entry.getValue();
                 String datahost = entry.getKey();
-                for (int i = 0; i < dataHost.getSources().length; i++) {
-                    RowDataPacket row = getRow(datahost, dataHost.getSources()[i], c.getCharset().getResults());
-                    row.setPacketId(++packetId);
-                    buffer = row.write(buffer, c, true);
-                    if (dataHost.getReadSources().get(i) != null) {
-                        for (PhysicalDatasource r : dataHost.getReadSources().get(i)) {
-                            RowDataPacket sRow = getRow(datahost, r, c.getCharset().getResults());
-                            sRow.setPacketId(++packetId);
-                            buffer = sRow.write(buffer, c, true);
-                        }
-                    }
-                    if (dataHost.getStandbyReadSourcesMap() != null) {
-                        for (PhysicalDatasource[] rs : dataHost.getStandbyReadSourcesMap().values()) {
-                            for (PhysicalDatasource r : rs) {
-                                RowDataPacket sRow = getRow(datahost, r, c.getCharset().getResults());
-                                sRow.setPacketId(++packetId);
-                                buffer = sRow.write(buffer, c, true);
-                            }
-                        }
-                    }
+                for (PhysicalDatasource source : dataHost.getAllDataSources()) {
+                    RowDataPacket sRow = getRow(datahost, source, c.getCharset().getResults());
+                    sRow.setPacketId(++packetId);
+                    buffer = sRow.write(buffer, c, true);
                 }
             }
-
         }
         // write last eof
         EOFPacket lastEof = new EOFPacket();

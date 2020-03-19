@@ -255,7 +255,7 @@ public final class RollbackConfig {
             boolean rollbackStatus = true;
             String errorMsg = null;
             for (AbstractPhysicalDBPool dn : dataHosts.values()) {
-                dn.init(dn.getActiveIndex());
+                dn.init();
                 if (!dn.isInitSuccess()) {
                     rollbackStatus = false;
                     errorMsg = "dataHost[" + dn.getHostName() + "] inited failure";

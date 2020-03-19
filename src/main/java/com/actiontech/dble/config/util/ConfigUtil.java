@@ -264,7 +264,7 @@ public final class ConfigUtil {
 
             if (isStart) {
                 // start for first time, 1.you can set write host as empty
-                if (pool.getSources() == null || pool.getSources().length == 0) {
+                if (pool.getSource() == null) {
                     continue;
                 }
                 DBHostConfig wHost = pool.getSource().getConfig();

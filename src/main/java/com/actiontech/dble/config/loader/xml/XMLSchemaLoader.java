@@ -18,6 +18,7 @@ import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.SplitUtil;
+import org.apache.commons.lang.StringUtils;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -27,13 +28,8 @@ import java.io.InputStream;
 import java.util.*;
 import java.util.Map.Entry;
 
-
-
-
 import static com.actiontech.dble.backend.datasource.check.GlobalCheckJob.GLOBAL_TABLE_CHECK_DEFAULT;
 import static com.actiontech.dble.backend.datasource.check.GlobalCheckJob.GLOBAL_TABLE_CHECK_DEFAULT_CRON;
-
-import org.apache.commons.lang.StringUtils;
 
 /**
  * @author mycat
@@ -577,24 +573,10 @@ public class XMLSchemaLoader implements SchemaLoader {
             /**
              * balance type for read
              * 1. balance="0", read will be send to all writeHost.
-             * 2. balance="1", read will be send to all readHost and stand by writeHost
+             * 2. balance="1", read will be send to all readHost
              * 3. balance="2", read will be send to all readHost and all writeHost
-             * 4. balance="3", read will be send to all readHost
              */
             final int balance = Integer.parseInt(element.getAttribute("balance"));
-            /**
-             * switchType
-             * -1 No switch
-             * 1 switch automatically
-             * 2 switch according to the second behind of slave ,the heartbeat query is show slave status
-             * 3 switch according to Galera Cluster for MySQL
-             */
-            String switchTypeStr = ConfigUtil.checkAndGetAttribute(element, "switchType", "-1", problemReporter);
-            int switchType = Integer.parseInt(switchTypeStr);
-            if ((switchType < 1 && switchType != -1) || switchType > 3) {
-                problemReporter.warn("dataHost[" + name + "] attribute switchType " + switchTypeStr + " in schema.xml isn't between 1 and 3 or -1, use -1 replaced!");
-                switchType = -1;
-            }
 
             //slave delay threshold
             String slaveThresholdStr = ConfigUtil.checkAndGetAttribute(element, "slaveThreshold", "-1", problemReporter);
@@ -613,50 +595,34 @@ public class XMLSchemaLoader implements SchemaLoader {
             final String strHBErrorRetryCount = ConfigUtil.checkAndGetAttribute(heartbeat, "errorRetryCount", "0", problemReporter);
             final String strHBTimeout = ConfigUtil.checkAndGetAttribute(heartbeat, "timeout", "0", problemReporter);
 
-            NodeList writeNodes = element.getElementsByTagName("writeHost");
-            if (writeNodes.getLength() < 1) {
-                throw new ConfigException("dataHost[" + name + "]'s has no write host");
-            }
+            Element writeNode = (Element) element.getElementsByTagName("writeHost").item(0);
+            DBHostConfig writeDbConf = createDBHostConf(name, writeNode, maxCon, minCon);
+            String writeHostName = writeDbConf.getHostName();
 
-            DBHostConfig[] writeDbConfs = new DBHostConfig[writeNodes.getLength()];
-            Map<Integer, DBHostConfig[]> readHostsMap = new HashMap<>(2);
-            Map<Integer, DBHostConfig[]> standbyReadHostsMap = new HashMap<>(2);
-            for (int w = 0; w < writeDbConfs.length; w++) {
-                Element writeNode = (Element) writeNodes.item(w);
-                writeDbConfs[w] = createDBHostConf(name, writeNode, maxCon, minCon);
-                String writeHostName = writeDbConfs[w].getHostName();
-                if (hostNames.contains(writeHostName)) {
-                    throw new ConfigException("dataHost[" + name + "]'s child write host name \"" + writeHostName + "\"  duplicated!");
-                } else {
-                    hostNames.add(writeHostName);
-                }
-                NodeList readNodes = writeNode.getElementsByTagName("readHost");
-                //for every readHost
-                if (readNodes.getLength() != 0) {
-                    List<DBHostConfig> readDbConfList = new ArrayList<>(readNodes.getLength());
-                    int readHostSize = readNodes.getLength();
-                    for (int r = 0; r < readHostSize; r++) {
-                        Element readNode = (Element) readNodes.item(r);
-                        DBHostConfig tmpDBHostConfig = createDBHostConf(name, readNode, maxCon, minCon);
-                        String readHostName = tmpDBHostConfig.getHostName();
-                        if (hostNames.contains(readHostName)) {
-                            throw new ConfigException("dataHost[" + name + "]'s child host name \"" + readHostName + "\"  duplicated!");
-                        } else {
-                            hostNames.add(readHostName);
-                        }
-                        readDbConfList.add(tmpDBHostConfig);
+            if (hostNames.contains(writeHostName)) {
+                throw new ConfigException("dataHost[" + name + "]'s child write host name \"" + writeHostName + "\"  duplicated!");
+            } else {
+                hostNames.add(writeHostName);
+            }
+            NodeList readNodes = writeNode.getElementsByTagName("readHost");
+            //for every readHost
+            DBHostConfig[] readDbConfList = new DBHostConfig[0];
+            if (readNodes.getLength() != 0) {
+                readDbConfList = new DBHostConfig[readNodes.getLength()];
+                int readHostSize = readNodes.getLength();
+                for (int r = 0; r < readHostSize; r++) {
+                    Element readNode = (Element) readNodes.item(r);
+                    DBHostConfig tmpDBHostConfig = createDBHostConf(name, readNode, maxCon, minCon);
+                    String readHostName = tmpDBHostConfig.getHostName();
+                    if (hostNames.contains(readHostName)) {
+                        throw new ConfigException("dataHost[" + name + "]'s child host name \"" + readHostName + "\"  duplicated!");
+                    } else {
+                        hostNames.add(readHostName);
                     }
-                    if (readDbConfList.size() > 0) {
-                        DBHostConfig[] readDbConfs = readDbConfList.toArray(new DBHostConfig[readDbConfList.size()]);
-                        if (balance != AbstractPhysicalDBPool.BALANCE_NONE) {
-                            readHostsMap.put(w, readDbConfs);
-                        } else {
-                            standbyReadHostsMap.put(w, readDbConfs);
-                        }
-                    }
+                    readDbConfList[r] = tmpDBHostConfig;
                 }
             }
-            DataHostConfig hostConf = new DataHostConfig(name, writeDbConfs, readHostsMap, standbyReadHostsMap, switchType, slaveThreshold, tempReadHostAvailable);
+            DataHostConfig hostConf = new DataHostConfig(name, writeDbConf, readDbConfList, slaveThreshold, tempReadHostAvailable);
 
             hostConf.setMaxCon(maxCon);
             hostConf.setMinCon(minCon);

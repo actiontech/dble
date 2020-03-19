@@ -55,13 +55,12 @@
         <!ATTLIST dataNode dataHost CDATA #REQUIRED>
         <!ATTLIST dataNode database CDATA #REQUIRED>
 
-        <!ELEMENT dataHost (heartbeat,(writeHost)*)>
+        <!ELEMENT dataHost (heartbeat,writeHost)>
         <!ATTLIST dataHost
                 balance CDATA #REQUIRED
                 maxCon CDATA #REQUIRED
                 minCon CDATA #REQUIRED
                 name NMTOKEN #REQUIRED
-                switchType CDATA #IMPLIED
                 slaveThreshold CDATA #IMPLIED
                 tempReadHostAvailable CDATA #IMPLIED
                 keepOrig CDATA #IMPLIED>
@@ -81,7 +80,6 @@
         <!ATTLIST heartbeat errorRetryCount NMTOKEN #IMPLIED>
         <!ATTLIST heartbeat timeout NMTOKEN #IMPLIED>
 
-        <!ELEMENT connectionInitSql (#PCDATA)>
         <!ELEMENT readHost EMPTY >
         <!ATTLIST readHost
                 host NMTOKEN #REQUIRED

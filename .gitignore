@@ -122,7 +122,6 @@ src/main/resources/rule.xml
 src/main/resources/zkconf/server.xml
 src/main/resources/zkconf/schema.xml 
 src/main/resources/zkconf/rule.xml
-conf/dnindex.properties
 version.txt
 dependency-reduced-pom.xml
 checkstyle-result.out

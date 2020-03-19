@@ -72,10 +72,7 @@ public final class ClusterHelper {
     }
 
     public static void changeDataHostByStatus(DataHost dataHost, List<DataSourceStatus> list) {
-        if (dataHost.getWriteHost().size() > 1) {
-            throw new RuntimeException("Multi-WriteHost is not allowed when use OutterHa ");
-        }
-        WriteHost writeHost = dataHost.getWriteHost().get(0);
+        WriteHost writeHost = dataHost.getWriteHost();
         WriteHost newWriteHost = null;
         for (DataSourceStatus status : list) {
             if (status.getName().equals(writeHost.getHost())) {
@@ -104,8 +101,7 @@ public final class ClusterHelper {
             }
         }
         if (newWriteHost != null) {
-            dataHost.getWriteHost().remove(writeHost);
-            dataHost.getWriteHost().add(newWriteHost);
+            dataHost.setWriteHost(newWriteHost);
         }
     }
 

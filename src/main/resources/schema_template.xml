@@ -5,7 +5,7 @@
   -->
 
 <!DOCTYPE dble:schema SYSTEM "schema.dtd">
-<dble:schema xmlns:dble="http://dble.cloud/" version="2.0">
+<dble:schema xmlns:dble="http://dble.cloud/" version="3.0">
 
     <schema name="testdb">
         <table name="tb_enum_sharding" cacheKey="ID" dataNode="dn1,dn2" rule="rule_enum"/>
@@ -65,7 +65,7 @@
     <dataNode name="dn6" dataHost="dataHost2" database="db_6"/>
 
 
-    <dataHost name="dataHost1" maxCon="1000" minCon="10" balance="0" switchType="-1" slaveThreshold="100">
+    <dataHost name="dataHost1" maxCon="1000" minCon="10" balance="0" slaveThreshold="100">
         <heartbeat>show slave status</heartbeat>
         <!-- can have multi write hosts -->
         <writeHost host="hostM1" url="ip1:3306" user="your_user" password="your_psw">
@@ -74,7 +74,7 @@
         </writeHost>
         <!--<writeHost host="hostM3" url="ip3:3306" user="your_user" password="your_psw"/>-->
     </dataHost>
-    <dataHost name="dataHost2" maxCon="1000" minCon="10" balance="0" switchType="-1" slaveThreshold="100">
+    <dataHost name="dataHost2" maxCon="1000" minCon="10" balance="0" slaveThreshold="100">
         <heartbeat>show slave status</heartbeat>
         <!-- can have multi write hosts -->
         <writeHost host="hostM2" url="ip4:3306" user="your_user" password="your_psw">

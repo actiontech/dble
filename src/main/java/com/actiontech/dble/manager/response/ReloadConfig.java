@@ -27,7 +27,6 @@ import com.actiontech.dble.config.model.ERTable;
 import com.actiontech.dble.config.model.FirewallConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.UserConfig;
-import com.actiontech.dble.config.util.DnPropertyUtil;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.ReloadManager;
@@ -622,13 +621,6 @@ public final class ReloadConfig {
             }
             dbPool.setSchemas(dnSchemas.toArray(new String[dnSchemas.size()]));
 
-            // get data host
-            String dnIndex = DnPropertyUtil.loadDnIndexProps().getProperty(dbPool.getHostName(), "0");
-            if (!"0".equals(dnIndex)) {
-                ReloadLogHelper.info("init data host: " + dbPool.getHostName() + " to use datasource index:" + dnIndex, LOGGER);
-            }
-
-            dbPool.reloadInit(Integer.parseInt(dnIndex));
             if (!dbPool.isInitSuccess()) {
                 reasonMsg = "Init DbPool [" + dbPool.getHostName() + "] failed";
                 break;

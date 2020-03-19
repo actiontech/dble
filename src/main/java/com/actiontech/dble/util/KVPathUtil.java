@@ -63,11 +63,6 @@ public final class KVPathUtil {
         return BASE_PATH + "bindata";
     }
 
-    //depth:3,dnindex.properties:base_path/bindata/dnindex.properties
-    public static String getDnIndexNode() {
-        return getBinDataPath() + SEPARATOR + "dnindex.properties";
-    }
-
     //depth:2,bindata path:base_path/binlog_pause
     private static final String BINLOG_PAUSE_PATH = BASE_PATH + "binlog_pause";
 

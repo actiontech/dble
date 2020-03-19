@@ -6,7 +6,7 @@
 package com.actiontech.dble.config;
 
 import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
-import com.actiontech.dble.backend.datasource.PhysicalDBPool;
+import com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
 import com.actiontech.dble.config.loader.SchemaLoader;
@@ -167,35 +167,28 @@ public class ConfigTest {
         Map<String, AbstractPhysicalDBPool> nodes = new HashMap<String, AbstractPhysicalDBPool>(
                 nodeConfs.size());
         for (DataHostConfig conf : nodeConfs.values()) {
-            PhysicalDBPool pool = getPhysicalDBPool(conf);
+            PhysicalDNPoolSingleWH pool = getPhysicalDBPool(conf);
             nodes.put(pool.getHostName(), pool);
         }
         return nodes;
     }
 
-    private PhysicalDatasource[] createDataSource(DataHostConfig conf,
-                                                  String hostName, DBHostConfig[] nodes, boolean isRead) {
-        PhysicalDatasource[] dataSources = new PhysicalDatasource[nodes.length];
-        for (int i = 0; i < nodes.length; i++) {
-            nodes[i].setIdleTimeout(system.getIdleTimeout());
-            MySQLDataSource ds = new MySQLDataSource(nodes[i], conf, isRead);
-            dataSources[i] = ds;
-        }
-        return dataSources;
+    private PhysicalDatasource createDataSource(DataHostConfig conf,
+                                                  String hostName, DBHostConfig node, boolean isRead) {
+        node.setIdleTimeout(system.getIdleTimeout());
+        return new MySQLDataSource(node, conf, isRead);
     }
 
-    private PhysicalDBPool getPhysicalDBPool(DataHostConfig conf) {
+    private PhysicalDNPoolSingleWH getPhysicalDBPool(DataHostConfig conf) {
         String name = conf.getName();
-        PhysicalDatasource[] writeSources = createDataSource(conf, name, conf.getWriteHosts(), false);
-        Map<Integer, DBHostConfig[]> readHostsMap = conf.getReadHosts();
-        Map<Integer, PhysicalDatasource[]> readSourcesMap = new HashMap<Integer, PhysicalDatasource[]>(
-                readHostsMap.size());
-        for (Map.Entry<Integer, DBHostConfig[]> entry : readHostsMap.entrySet()) {
-            PhysicalDatasource[] readSources = createDataSource(conf, name, entry.getValue(), true);
-            readSourcesMap.put(entry.getKey(), readSources);
+        PhysicalDatasource writeSources = createDataSource(conf, name, conf.getWriteHost(), false);
+        PhysicalDatasource[] readSources = new PhysicalDatasource[conf.getReadHosts().length];
+        int i = 0;
+        for (DBHostConfig readHost : conf.getReadHosts()) {
+            readSources[i++] = createDataSource(conf, name, readHost, true);
         }
-        PhysicalDBPool pool = new PhysicalDBPool(conf.getName(), conf, writeSources,
-                readSourcesMap, new HashMap<Integer, PhysicalDatasource[]>(), conf.getBalance());
+        PhysicalDNPoolSingleWH pool = new PhysicalDNPoolSingleWH(conf.getName(), conf, writeSources,
+                readSources, conf.getBalance());
         return pool;
     }
 

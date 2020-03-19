@@ -6,6 +6,7 @@
 package com.actiontech.dble;
 
 
+import com.actiontech.dble.backend.CustomMySQLHa;
 import com.actiontech.dble.cluster.ClusterController;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -30,7 +31,9 @@ public final class DbleStartup {
             Runtime.getRuntime().addShutdownHook(new Thread() {
                 @Override
                 public void run() {
+                    System.out.println("Server execute ShutdownHook.");
                     OnlineStatus.getInstance().shutdownClear();
+                    CustomMySQLHa.getInstance().stop(true);
                 }
             });
             // startup

@@ -9,6 +9,7 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.manager.response.OnOffAlert;
 import com.actiontech.dble.manager.response.OnOffSlowQueryLog;
+import com.actiontech.dble.manager.response.OnOffCustomMySQLHa;
 import com.actiontech.dble.route.parser.ManagerParseOnOff;
 
 public final class DisableHandler {
@@ -23,6 +24,9 @@ public final class DisableHandler {
                 break;
             case ManagerParseOnOff.ALERT:
                 OnOffAlert.execute(c, false);
+                break;
+            case ManagerParseOnOff.CUSTOM_MYSQL_HA:
+                OnOffCustomMySQLHa.execute(c, false);
                 break;
             default:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");

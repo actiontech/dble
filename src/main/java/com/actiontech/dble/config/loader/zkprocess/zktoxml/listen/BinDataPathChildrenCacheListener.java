@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.config.loader.zkprocess.zktoxml.listen;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.google.common.io.Files;
 import org.apache.curator.framework.CuratorFramework;
@@ -42,10 +41,6 @@ public class BinDataPathChildrenCacheListener implements PathChildrenCacheListen
                 SystemConfig.getHomePath() + File.separator + "conf",
                 name);
         Files.write(data, file);
-        //try to reload dnindex
-        if (reload && "dnindex.properties".equals(name)) {
-            DbleServer.getInstance().reloadDnIndex();
-        }
     }
 
 }

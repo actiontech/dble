@@ -59,21 +59,6 @@ public class DataSourceSyncRecorder {
 
     }
 
-    public void setByCluster(Map<String, String> resultResult) {
-        try {
-            long time = TimeUtil.currentTimeMillis();
-            remove(time);
-            if (resultResult != null && !resultResult.isEmpty()) {
-                this.records = resultResult;
-                double wsrepLocalRecQueueAvg = Double.valueOf(resultResult.get("wsrep_local_recv_queue_avg"));
-                this.asyncRecords.add(new Record(time, wsrepLocalRecQueueAvg));
-            }
-        } catch (Exception e) {
-            LOGGER.info("record DataSourceSyncRecorder error " + e.getMessage());
-        }
-
-    }
-
     /**
      * remove the old data
      */

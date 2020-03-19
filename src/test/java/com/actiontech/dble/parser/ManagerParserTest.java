@@ -199,18 +199,6 @@ public class ManagerParserTest {
         Assert.assertEquals(ManagerParseShow.SQL_SLOW, ManagerParseShow.parse("SHOW @@sql.slow", 5));
     }
 
-    @Test
-    public void testSwitchPool() {
-        Assert.assertEquals(ManagerParse.SWITCH, 0xff & ManagerParse.parse("switch @@pool offer2$0-2"));
-        Assert.assertEquals(ManagerParse.SWITCH, 0xff & ManagerParse.parse("SWITCH @@POOL offer2$0-2"));
-        Assert.assertEquals(ManagerParse.SWITCH, 0xff & ManagerParse.parse("switch @@pool offer2$0-2 :2"));
-    }
-
-    @Test
-    public void testComment() {
-        Assert.assertEquals(ManagerParse.SWITCH, 0xff & ManagerParse.parse("/* abc */switch @@pool offer2$0-2"));
-        Assert.assertEquals(ManagerParse.SHOW, 0xff & ManagerParse.parse(" /** 111**/Show @@help"));
-    }
 
     @Test
     public void testStop() {

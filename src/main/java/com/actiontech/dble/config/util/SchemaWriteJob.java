@@ -65,7 +65,7 @@ public class SchemaWriteJob implements Runnable {
         w.setUrl(ws.getConfig().getUrl());
         w.setWeight("" + ws.getConfig().getWeight());
         w.setUser(ws.getConfig().getUser());
-        WriteHost ow = dh.getWriteHost().get(0);
+        WriteHost ow = dh.getWriteHost();
         if (ow.getHost().equals(ws.getConfig().getHostName())) {
             w.setPassword(ow.getPassword());
             w.setUsingDecrypt(ow.getUsingDecrypt());
@@ -88,7 +88,7 @@ public class SchemaWriteJob implements Runnable {
                 r.setUrl(rs.getConfig().getUrl());
                 r.setWeight("" + rs.getConfig().getWeight());
                 r.setUser(rs.getConfig().getUser());
-                WriteHost ow1 = dh.getWriteHost().get(0);
+                WriteHost ow1 = dh.getWriteHost();
                 if (ow1.getHost().equals(rs.getConfig().getHostName())) {
                     r.setPassword(ow1.getPassword());
                     r.setUsingDecrypt(ow1.getUsingDecrypt());
@@ -104,9 +104,7 @@ public class SchemaWriteJob implements Runnable {
             }
         }
         w.setReadHost(newReadList);
-        ArrayList<WriteHost> wl = new ArrayList<WriteHost>();
-        wl.add(w);
-        dh.setWriteHost(wl);
+        dh.setWriteHost(w);
     }
 
 

@@ -20,6 +20,7 @@ public final class ManagerParseShow {
     public static final int DATA_NODE = 4;
     public static final int DATASOURCE = 5;
     public static final int HELP = 6;
+    public static final int CUSTOM_MYSQL_HA = 7;
     public static final int PROCESSOR = 8;
     public static final int SERVER = 10;
     public static final int SQL = 11;
@@ -49,9 +50,7 @@ public final class ManagerParseShow {
     public static final int HEARTBEAT_DETAIL = 39;
     public static final int DATASOURCE_SYNC = 40;
     public static final int DATASOURCE_SYNC_DETAIL = 41;
-    public static final int DATASOURCE_CLUSTER = 42;
     public static final int WHITE_HOST = 43;
-    public static final int WHITE_HOST_SET = 44;
     public static final int DIRECTMEMORY = 45;
     public static final int BINLOG_STATUS = 47;
     public static final int CONNECTION_COUNT = 48;
@@ -101,7 +100,7 @@ public final class ManagerParseShow {
                     return show2DCheck(stmt, i);
                 case 'C':
                 case 'c':
-                    return showCCheck(stmt, i);
+                    return show2COCheck(stmt, i);
                 default:
                     return OTHER;
             }
@@ -110,7 +109,35 @@ public final class ManagerParseShow {
     }
 
 
-    private static int showCCheck(String stmt, int offset) {
+    private static int show2CUCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "stom_mysql_ha".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            char c9 = stmt.charAt(++offset);
+            char c10 = stmt.charAt(++offset);
+            char c11 = stmt.charAt(++offset);
+            char c12 = stmt.charAt(++offset);
+            char c13 = stmt.charAt(++offset);
+            if ((c1 == 'S' || c1 == 's') && (c2 == 't' || c2 == 'T') && (c3 == 'O' || c3 == 'o') &&
+                    (c4 == 'M' || c4 == 'm') && (c5 == '_') && (c6 == 'M' || c6 == 'm') &&
+                    (c7 == 'Y' || c7 == 'y') && (c8 == 'S' || c8 == 's') && (c9 == 'Q' || c9 == 'q') && (c10 == 'L' || c10 == 'l') &&
+                    (c11 == '_') && (c12 == 'H' || c12 == 'h') && (c13 == 'A' || c13 == 'a')) {
+                if (ParseUtil.isErrorTail(++offset, stmt)) {
+                    return OTHER;
+                }
+                return CUSTOM_MYSQL_HA;
+            }
+        }
+        return OTHER;
+    }
+
+    private static int show2COCheck(String stmt, int offset) {
         if (stmt.length() > offset + "OLLATION".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -131,7 +158,6 @@ public final class ManagerParseShow {
         }
         return OTHER;
     }
-
 
     // SHOW @
     private static int show2Check(String stmt, int offset) {
@@ -389,6 +415,9 @@ public final class ManagerParseShow {
                 case 'A':
                 case 'a':
                     return show2CACheck(stmt, offset);
+                case 'U':
+                case 'u':
+                    return show2CUCheck(stmt, offset);
                 default:
                     return OTHER;
             }
@@ -528,24 +557,6 @@ public final class ManagerParseShow {
                                     return OTHER;
                             }
 
-                        } else {
-                            return OTHER;
-                        }
-                    }
-                    return OTHER;
-                case 'C':
-                case 'c':
-                    if (stmt.length() > offset + "luster".length()) {
-                        char c1 = stmt.charAt(++offset);
-                        char c2 = stmt.charAt(++offset);
-                        char c3 = stmt.charAt(++offset);
-                        char c4 = stmt.charAt(++offset);
-                        char c5 = stmt.charAt(++offset);
-                        char c6 = stmt.charAt(++offset);
-                        if ((c1 == 'L' || c1 == 'l') && (c2 == 'U' || c2 == 'u') &&
-                                (c3 == 'S' || c3 == 's') && (c4 == 'T' || c4 == 't') &&
-                                (c5 == 'E' || c5 == 'e') && (c6 == 'R' || c6 == 'r')) {
-                            return DATASOURCE_CLUSTER;
                         } else {
                             return OTHER;
                         }

@@ -66,7 +66,7 @@ public abstract class BaseDMLHandler implements DMLResponseHandler {
     }
 
     @Override
-    public List<DMLResponseHandler> getMerges() {
+    public final List<DMLResponseHandler> getMerges() {
         return this.merges;
     }
 

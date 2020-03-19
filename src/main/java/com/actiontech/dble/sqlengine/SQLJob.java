@@ -7,8 +7,8 @@ package com.actiontech.dble.sqlengine;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ErrorCode;
@@ -37,12 +37,12 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
     private final String schema;
     private BackendConnection connection;
     private final SQLJobHandler jobHandler;
-    private final PhysicalDatasource ds;
+    private final PhysicalDataSource ds;
     private boolean isMustWriteNode = false;
     private AtomicBoolean finished = new AtomicBoolean(false);
     private volatile boolean testXid;
 
-    public SQLJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDatasource ds) {
+    public SQLJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDataSource ds) {
         super();
         this.sql = sql;
         this.jobHandler = jobHandler;
@@ -66,7 +66,7 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
             if (ds == null) {
                 RouteResultsetNode node = new RouteResultsetNode(dataNode, ServerParse.SELECT, sql);
                 // create new connection
-                PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
+                PhysicalDataNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), isMustWriteNode, true, node, this, node);
             } else {
                 ds.getConnection(schema, true, this, null, isMustWriteNode);

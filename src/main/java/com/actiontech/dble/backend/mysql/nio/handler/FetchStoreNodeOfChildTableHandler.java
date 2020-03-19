@@ -7,7 +7,7 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.cache.CachePool;
 import com.actiontech.dble.config.ErrorCode;
@@ -71,7 +71,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
                     return dataNode;
                 }
             }
-            PhysicalDBNode mysqlDN = DbleServer.getInstance().getConfig().getDataNodes().get(dn);
+            PhysicalDataNode mysqlDN = DbleServer.getInstance().getConfig().getDataNodes().get(dn);
             try {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("execute in data_node " + dn);

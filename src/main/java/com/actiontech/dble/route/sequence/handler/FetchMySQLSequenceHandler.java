@@ -7,7 +7,7 @@ package com.actiontech.dble.route.sequence.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ServerConfig;
@@ -29,7 +29,7 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
 
     public void execute(SequenceVal seqVal) {
         ServerConfig conf = DbleServer.getInstance().getConfig();
-        PhysicalDBNode mysqlDN = conf.getDataNodes().get(seqVal.dataNode);
+        PhysicalDataNode mysqlDN = conf.getDataNodes().get(seqVal.dataNode);
         try {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("execute in data node " + seqVal.dataNode +

@@ -34,7 +34,7 @@ import java.io.File;
 import java.lang.reflect.Type;
 import java.util.List;
 
-import static com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH.JSON_LIST;
+import static com.actiontech.dble.backend.datasource.PhysicalDataHost.JSON_LIST;
 
 /**
  * Created by szf on 2018/1/26.

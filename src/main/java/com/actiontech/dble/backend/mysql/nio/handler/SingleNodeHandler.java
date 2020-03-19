@@ -7,7 +7,7 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
 import com.actiontech.dble.backend.mysql.LoadDataUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.cache.LayerCachePool;
@@ -102,7 +102,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         // create new connection
         node.setRunOnSlave(rrs.getRunOnSlave());
         ServerConfig conf = DbleServer.getInstance().getConfig();
-        PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
+        PhysicalDataNode dn = conf.getDataNodes().get(node.getName());
         dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), session.getSource().isAutocommit(), node, this, node);
     }
 

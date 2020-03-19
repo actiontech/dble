@@ -6,7 +6,7 @@
 package com.actiontech.dble.backend.mysql.nio.handler.util;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.MysqlVisitor;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler.HandlerType;
@@ -313,16 +313,16 @@ public final class HandlerTool {
         }
         SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(logicSchema);
         if (schemaConfig.isNoSharding()) {
-            PhysicalDBNode dbNode = DbleServer.getInstance().getConfig().getDataNodes().get(schemaConfig.getDataNode());
+            PhysicalDataNode dbNode = DbleServer.getInstance().getConfig().getDataNodes().get(schemaConfig.getDataNode());
             return dbNode.getDatabase().equals(sourceSchema);
         }
         TableConfig tbConfig = schemaConfig.getTables().get(table);
         if (tbConfig == null) {
-            PhysicalDBNode dbNode = DbleServer.getInstance().getConfig().getDataNodes().get(schemaConfig.getDataNode());
+            PhysicalDataNode dbNode = DbleServer.getInstance().getConfig().getDataNodes().get(schemaConfig.getDataNode());
             return dbNode.getDatabase().equals(sourceSchema);
         } else {
             for (String dataNode : tbConfig.getDataNodes()) {
-                PhysicalDBNode dbNode = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
+                PhysicalDataNode dbNode = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
                 if (dbNode.getDatabase().equals(sourceSchema)) {
                     return true;
                 }

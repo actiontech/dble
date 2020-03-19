@@ -7,7 +7,7 @@ package com.actiontech.dble.backend.mysql.nio;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
-import com.actiontech.dble.config.model.DBHostConfig;
+import com.actiontech.dble.config.model.DataSourceConfig;
 import com.actiontech.dble.net.NIOConnector;
 import com.actiontech.dble.net.factory.BackendConnectionFactory;
 
@@ -25,7 +25,7 @@ public class MySQLConnectionFactory extends BackendConnectionFactory {
     public MySQLConnection make(MySQLDataSource pool, ResponseHandler handler,
                                 String schema) throws IOException {
 
-        DBHostConfig dsc = pool.getConfig();
+        DataSourceConfig dsc = pool.getConfig();
         NetworkChannel channel = openSocketChannel(DbleServer.getInstance().isAIO());
 
         MySQLConnection c = new MySQLConnection(channel, pool.isReadNode(), pool.isAutocommitSynced(), pool.isIsolationSynced());

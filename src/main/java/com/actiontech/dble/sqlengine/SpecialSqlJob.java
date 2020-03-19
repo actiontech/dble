@@ -7,7 +7,7 @@ package com.actiontech.dble.sqlengine;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ErrorInfo;
@@ -28,13 +28,13 @@ public class SpecialSqlJob extends SQLJob {
 
     private final SQLJobHandler jobHandler;
     private final ResponseHandler sqlJob;
-    private final PhysicalDatasource ds;
+    private final PhysicalDataSource ds;
     private final String schema;
     private final String sql;
     private final List<ErrorInfo> list;
     private final AtomicBoolean finished;
 
-    public SpecialSqlJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDatasource ds, List<ErrorInfo> list) {
+    public SpecialSqlJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDataSource ds, List<ErrorInfo> list) {
         super(sql, schema, jobHandler, ds);
         this.jobHandler = jobHandler;
         this.ds = ds;

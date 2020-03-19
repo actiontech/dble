@@ -10,8 +10,8 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
@@ -47,10 +47,10 @@ public abstract class GetNodeTablesHandler {
     }
 
     public void execute() {
-        PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
+        PhysicalDataNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
         String mysqlShowTableCol = "Tables_in_" + dn.getDatabase();
         String[] mysqlShowTableCols = new String[]{mysqlShowTableCol, "Table_type"};
-        PhysicalDatasource ds = dn.getDbPool().getSource();
+        PhysicalDataSource ds = dn.getDataHost().getWriteSource();
         if (ds.isAlive()) {
             MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(mysqlShowTableCols, new MySQLShowTablesListener(mysqlShowTableCol, dn.getDatabase(), ds));
             SQLJob sqlJob = new SQLJob(sql, dn.getDatabase(), resultHandler, ds);
@@ -76,10 +76,10 @@ public abstract class GetNodeTablesHandler {
 
     private class MySQLShowTablesListener implements SQLQueryResultListener<SQLQueryResult<List<Map<String, String>>>> {
         private String mysqlShowTableCol;
-        private PhysicalDatasource ds;
+        private PhysicalDataSource ds;
         private String schema;
 
-        MySQLShowTablesListener(String mysqlShowTableCol, String schema, PhysicalDatasource ds) {
+        MySQLShowTablesListener(String mysqlShowTableCol, String schema, PhysicalDataSource ds) {
             this.mysqlShowTableCol = mysqlShowTableCol;
             this.ds = ds;
             this.schema = schema;

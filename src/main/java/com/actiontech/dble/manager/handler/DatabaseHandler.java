@@ -10,8 +10,8 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -68,11 +68,11 @@ public final class DatabaseHandler {
         }
 
         final List<String> errDataNodes = new CopyOnWriteArrayList<>();
-        final Map<String, PhysicalDBNode> allDataNodes = DbleServer.getInstance().getConfig().getDataNodes();
+        final Map<String, PhysicalDataNode> allDataNodes = DbleServer.getInstance().getConfig().getDataNodes();
         final AtomicInteger numberCount = new AtomicInteger(dataNodes.size());
         for (final String dataNode : dataNodes) {
-            PhysicalDBNode dn = allDataNodes.get(dataNode);
-            final PhysicalDatasource ds = dn.getDbPool().getSource();
+            PhysicalDataNode dn = allDataNodes.get(dataNode);
+            final PhysicalDataSource ds = dn.getDataHost().getWriteSource();
             final String schema = dn.getDatabase();
             OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(new String[0], new SQLQueryResultListener<SQLQueryResult<Map<String, String>>>() {
                 @Override

@@ -10,8 +10,8 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
@@ -56,8 +56,8 @@ public abstract class AbstractTableMetaHandler {
                 this.countdown();
                 return;
             }
-            PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
-            PhysicalDatasource ds = dn.getDbPool().getSource();
+            PhysicalDataNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
+            PhysicalDataSource ds = dn.getDataHost().getWriteSource();
             String sql = SQL_PREFIX + "`" + tableName + "`";
             if (ds.isAlive()) {
                 OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLTableStructureListener(dataNode, System.currentTimeMillis(), ds));
@@ -78,9 +78,9 @@ public abstract class AbstractTableMetaHandler {
     private class MySQLTableStructureListener implements SQLQueryResultListener<SQLQueryResult<Map<String, String>>> {
         private String dataNode;
         private long version;
-        private PhysicalDatasource ds;
+        private PhysicalDataSource ds;
 
-        MySQLTableStructureListener(String dataNode, long version, PhysicalDatasource ds) {
+        MySQLTableStructureListener(String dataNode, long version, PhysicalDataSource ds) {
             this.dataNode = dataNode;
             this.version = version;
             this.ds = ds;

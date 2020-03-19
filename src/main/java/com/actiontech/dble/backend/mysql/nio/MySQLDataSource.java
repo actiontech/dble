@@ -5,11 +5,11 @@
 */
 package com.actiontech.dble.backend.mysql.nio;
 
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.Capabilities;
-import com.actiontech.dble.config.model.DBHostConfig;
+import com.actiontech.dble.config.model.DataSourceConfig;
 import com.actiontech.dble.config.model.DataHostConfig;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.util.PasswordAuthPlugin;
@@ -23,12 +23,12 @@ import java.nio.charset.StandardCharsets;
 /**
  * @author mycat
  */
-public class MySQLDataSource extends PhysicalDatasource {
+public class MySQLDataSource extends PhysicalDataSource {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLDataSource.class);
     private final MySQLConnectionFactory factory;
 
-    public MySQLDataSource(DBHostConfig config, DataHostConfig hostConfig,
+    public MySQLDataSource(DataSourceConfig config, DataHostConfig hostConfig,
                            boolean isReadNode) {
         super(config, hostConfig, isReadNode);
         this.factory = new MySQLConnectionFactory();

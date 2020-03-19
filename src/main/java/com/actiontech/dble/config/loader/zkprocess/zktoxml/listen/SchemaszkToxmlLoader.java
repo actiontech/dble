@@ -39,8 +39,8 @@ import java.io.File;
 import java.lang.reflect.Type;
 import java.util.List;
 
-import static com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH.JSON_LIST;
-import static com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH.JSON_NAME;
+import static com.actiontech.dble.backend.datasource.PhysicalDataHost.JSON_LIST;
+import static com.actiontech.dble.backend.datasource.PhysicalDataHost.JSON_NAME;
 
 /**
  * SchemaszkToxmlLoader

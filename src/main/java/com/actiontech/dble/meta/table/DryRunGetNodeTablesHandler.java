@@ -5,8 +5,8 @@
 
 package com.actiontech.dble.meta.table;
 
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.config.ErrorInfo;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
@@ -25,12 +25,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class DryRunGetNodeTablesHandler extends GetNodeTablesHandler {
 
     private final AtomicInteger counter;
-    private final PhysicalDBNode phyDataNode;
+    private final PhysicalDataNode phyDataNode;
     private final Map<String, Set<String>> returnMap;
     private final boolean isLowerCase;
     private final List<ErrorInfo> list;
 
-    public DryRunGetNodeTablesHandler(AtomicInteger counter, PhysicalDBNode phyDataNode, Map<String, Set<String>> returnMap, boolean isLowerCase, List<ErrorInfo> list) {
+    public DryRunGetNodeTablesHandler(AtomicInteger counter, PhysicalDataNode phyDataNode, Map<String, Set<String>> returnMap, boolean isLowerCase, List<ErrorInfo> list) {
         super(phyDataNode.getName());
         this.counter = counter;
         this.phyDataNode = phyDataNode;
@@ -43,8 +43,8 @@ public class DryRunGetNodeTablesHandler extends GetNodeTablesHandler {
     public void execute() {
         String mysqlShowTableCol = "Tables_in_" + phyDataNode.getDatabase();
         String[] mysqlShowTableCols = new String[]{mysqlShowTableCol};
-        PhysicalDatasource tds = phyDataNode.getDbPool().getSource();
-        PhysicalDatasource ds = null;
+        PhysicalDataSource tds = phyDataNode.getDataHost().getWriteSource();
+        PhysicalDataSource ds = null;
         if (tds != null) {
             if (tds.isTestConnSuccess()) {
                 ds = tds;

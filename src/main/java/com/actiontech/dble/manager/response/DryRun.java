@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.manager.response;
 
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterParamCfg;
@@ -170,7 +170,7 @@ public final class DryRun {
     private static Map<String, Set<String>> showDataNodeTable(ServerConfig serverConfig, boolean isLowerCase, List<ErrorInfo> list) {
         Map<String, Set<String>> result = new ConcurrentHashMap<>();
         AtomicInteger counter = new AtomicInteger(serverConfig.getDataNodes().size());
-        for (PhysicalDBNode dataNode : serverConfig.getDataNodes().values()) {
+        for (PhysicalDataNode dataNode : serverConfig.getDataNodes().values()) {
             DryRunGetNodeTablesHandler showTablesHandler = new DryRunGetNodeTablesHandler(counter, dataNode, result, isLowerCase, list);
             showTablesHandler.execute();
         }

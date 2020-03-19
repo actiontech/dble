@@ -7,7 +7,7 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLTraceInfo;
@@ -72,7 +72,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
             } else {
                 connRrns.add(node);
                 node.setRunOnSlave(rrs.getRunOnSlave());
-                PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
+                PhysicalDataNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), sessionAutocommit, node, this, node);
             }
         }

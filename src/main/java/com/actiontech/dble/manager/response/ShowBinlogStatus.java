@@ -6,8 +6,8 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataHost;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.cluster.*;
 import com.actiontech.dble.config.ErrorCode;
@@ -342,12 +342,12 @@ public final class ShowBinlogStatus {
      * @param charset
      */
     private static void getQueryResult(final String charset) {
-        Collection<AbstractPhysicalDBPool> allPools = DbleServer.getInstance().getConfig().getDataHosts().values();
+        Collection<PhysicalDataHost> allPools = DbleServer.getInstance().getConfig().getDataHosts().values();
         sourceCount = new AtomicInteger(allPools.size());
         rows = new CopyOnWriteArrayList<>();
-        for (AbstractPhysicalDBPool pool : allPools) {
+        for (PhysicalDataHost pool : allPools) {
             //if WRITE_RANDOM_NODE ,may the binlog is not ready.
-            final PhysicalDatasource source = pool.getSource();
+            final PhysicalDataSource source = pool.getWriteSource();
             OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(FIELDS,
                     new SQLQueryResultListener<SQLQueryResult<Map<String, String>>>() {
                         @Override

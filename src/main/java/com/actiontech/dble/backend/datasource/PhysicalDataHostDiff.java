@@ -11,7 +11,7 @@ import java.util.Set;
 /**
  * Created by szf on 2018/7/19.
  */
-public class PhysicalDBPoolDiff {
+public class PhysicalDataHostDiff {
 
     public static final String CHANGE_TYPE_ADD = "ADD";
     public static final String CHANGE_TYPE_DELETE = "DELETE";
@@ -20,15 +20,15 @@ public class PhysicalDBPoolDiff {
 
     private String changeType = null;
 
-    private AbstractPhysicalDBPool orgPool = null;
+    private PhysicalDataHost orgPool = null;
 
-    private AbstractPhysicalDBPool newPool = null;
+    private PhysicalDataHost newPool = null;
 
 
     //private Set<BaseInfoDiff> baseDiff = null;
 
 
-    public PhysicalDBPoolDiff(AbstractPhysicalDBPool newPool, AbstractPhysicalDBPool orgPool) {
+    public PhysicalDataHostDiff(PhysicalDataHost newPool, PhysicalDataHost orgPool) {
         this.orgPool = orgPool;
         this.newPool = newPool;
         if (!newPool.equalsBaseInfo(orgPool)) {
@@ -36,8 +36,8 @@ public class PhysicalDBPoolDiff {
             //this.baseDiff = createBaseDiff(newPool, orgPool);
         }
 
-        Set<PhysicalDatasourceDiff> hostChangeSet = createHostChangeSet(newPool, orgPool);
-        for (PhysicalDatasourceDiff diff : hostChangeSet) {
+        Set<PhysicalDataSourceDiff> hostChangeSet = createHostChangeSet(newPool, orgPool);
+        for (PhysicalDataSourceDiff diff : hostChangeSet) {
             if (!diff.getWriteHostChangeType().equals(CHANGE_TYPE_NO)) {
                 this.changeType = CHANGE_TYPE_CHANGE;
                 break;
@@ -50,15 +50,15 @@ public class PhysicalDBPoolDiff {
     }
 
 
-    private Set<PhysicalDatasourceDiff> createHostChangeSet(AbstractPhysicalDBPool newDbPool, AbstractPhysicalDBPool orgDbPool) {
-        Set<PhysicalDatasourceDiff> hostDiff = new HashSet<>();
+    private Set<PhysicalDataSourceDiff> createHostChangeSet(PhysicalDataHost newDataHost, PhysicalDataHost orgDataHost) {
+        Set<PhysicalDataSourceDiff> hostDiff = new HashSet<>();
 
         //add or not change
-        PhysicalDatasource newWriteHost = newDbPool.getWriteSource();
-        PhysicalDatasource[] newReadHost = newDbPool.getReadSources();
+        PhysicalDataSource newWriteHost = newDataHost.getWriteSource();
+        PhysicalDataSource[] newReadHost = newDataHost.getReadSources();
 
-        PhysicalDatasource oldHost = orgDbPool.getWriteSource();
-        PhysicalDatasource[] oldRHost = orgDbPool.getReadSources();
+        PhysicalDataSource oldHost = orgDataHost.getWriteSource();
+        PhysicalDataSource[] oldRHost = orgDataHost.getReadSources();
 
         boolean sameFlag = false;
         if (oldHost.equals(newWriteHost) &&
@@ -70,17 +70,17 @@ public class PhysicalDBPoolDiff {
         if (sameFlag) {
             oldHost.setTestConnSuccess(newWriteHost.isTestConnSuccess());
             //can find a orgHost ,means their is node all the same
-            hostDiff.add(new PhysicalDatasourceDiff(CHANGE_TYPE_NO, oldHost, oldRHost));
+            hostDiff.add(new PhysicalDataSourceDiff(CHANGE_TYPE_NO, oldHost, oldRHost));
         } else {
-            hostDiff.add(new PhysicalDatasourceDiff(CHANGE_TYPE_ADD, newWriteHost, newReadHost));
-            hostDiff.add(new PhysicalDatasourceDiff(CHANGE_TYPE_DELETE, oldHost, oldRHost));
+            hostDiff.add(new PhysicalDataSourceDiff(CHANGE_TYPE_ADD, newWriteHost, newReadHost));
+            hostDiff.add(new PhysicalDataSourceDiff(CHANGE_TYPE_DELETE, oldHost, oldRHost));
         }
 
         return hostDiff;
     }
 
 
-    private boolean calculateForDataSources(PhysicalDatasource[] olds, PhysicalDatasource[] news) {
+    private boolean calculateForDataSources(PhysicalDataSource[] olds, PhysicalDataSource[] news) {
         if (olds != null) {
             for (int k = 0; k < olds.length; k++) {
                 if (!olds[k].equals(news[k])) {
@@ -98,11 +98,11 @@ public class PhysicalDBPoolDiff {
         return changeType;
     }
 
-    public AbstractPhysicalDBPool getOrgPool() {
+    public PhysicalDataHost getOrgPool() {
         return orgPool;
     }
 
-    public AbstractPhysicalDBPool getNewPool() {
+    public PhysicalDataHost getNewPool() {
         return newPool;
     }
 

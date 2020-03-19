@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.config.helper;
 
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
@@ -26,13 +26,13 @@ public class SyncDataSourceKeyVariables implements Callable<Boolean> {
     private ReentrantLock lock = new ReentrantLock();
     private volatile boolean isFinish = false;
     private Condition finishCond = lock.newCondition();
-    private PhysicalDatasource ds;
+    private PhysicalDataSource ds;
     private KeyVariables keyVariables;
     private volatile BoolPtr success = new BoolPtr(false);
     private final String isolationName;
 
 
-    public SyncDataSourceKeyVariables(KeyVariables keyVariables, PhysicalDatasource ds) {
+    public SyncDataSourceKeyVariables(KeyVariables keyVariables, PhysicalDataSource ds) {
         this.keyVariables = keyVariables;
         this.ds = ds;
         isolationName = VersionUtil.getIsolationNameByVersion(ds.getDsVersion());

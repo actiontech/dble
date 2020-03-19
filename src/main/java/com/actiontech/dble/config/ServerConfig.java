@@ -9,9 +9,9 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.datasource.PhysicalDBPoolDiff;
+import com.actiontech.dble.backend.datasource.PhysicalDataHost;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataHostDiff;
 import com.actiontech.dble.config.model.*;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
@@ -46,10 +46,10 @@ public class ServerConfig {
     private volatile Map<String, UserConfig> users2;
     private volatile Map<String, SchemaConfig> schemas;
     private volatile Map<String, SchemaConfig> schemas2;
-    private volatile Map<String, PhysicalDBNode> dataNodes;
-    private volatile Map<String, PhysicalDBNode> dataNodes2;
-    private volatile Map<String, AbstractPhysicalDBPool> dataHosts;
-    private volatile Map<String, AbstractPhysicalDBPool> dataHosts2;
+    private volatile Map<String, PhysicalDataNode> dataNodes;
+    private volatile Map<String, PhysicalDataNode> dataNodes2;
+    private volatile Map<String, PhysicalDataHost> dataHosts;
+    private volatile Map<String, PhysicalDataHost> dataHosts2;
     private volatile Map<ERTable, Set<ERTable>> erRelations;
     private volatile Map<ERTable, Set<ERTable>> erRelations2;
     private volatile boolean dataHostWithoutWR;
@@ -152,23 +152,23 @@ public class ServerConfig {
         return schemas2;
     }
 
-    public Map<String, PhysicalDBNode> getDataNodes() {
+    public Map<String, PhysicalDataNode> getDataNodes() {
         waitIfChanging();
         return dataNodes;
     }
 
 
-    public Map<String, PhysicalDBNode> getBackupDataNodes() {
+    public Map<String, PhysicalDataNode> getBackupDataNodes() {
         waitIfChanging();
         return dataNodes2;
     }
 
-    public Map<String, AbstractPhysicalDBPool> getDataHosts() {
+    public Map<String, PhysicalDataHost> getDataHosts() {
         waitIfChanging();
         return dataHosts;
     }
 
-    public Map<String, AbstractPhysicalDBPool> getBackupDataHosts() {
+    public Map<String, PhysicalDataHost> getBackupDataHosts() {
         waitIfChanging();
         return dataHosts2;
     }
@@ -213,9 +213,9 @@ public class ServerConfig {
     }
 
     public boolean reload(Map<String, UserConfig> newUsers, Map<String, SchemaConfig> newSchemas,
-                          Map<String, PhysicalDBNode> newDataNodes, Map<String, AbstractPhysicalDBPool> newDataHosts,
-                          Map<String, AbstractPhysicalDBPool> changeOrAddDataHosts,
-                          Map<String, AbstractPhysicalDBPool> recycleDataHosts,
+                          Map<String, PhysicalDataNode> newDataNodes, Map<String, PhysicalDataHost> newDataHosts,
+                          Map<String, PhysicalDataHost> changeOrAddDataHosts,
+                          Map<String, PhysicalDataHost> recycleDataHosts,
                           Map<ERTable, Set<ERTable>> newErRelations, FirewallConfig newFirewall,
                           SystemVariables newSystemVariables, boolean newDataHostWithoutWR,
                           final int loadAllMode) throws SQLNonTransientException {
@@ -227,7 +227,7 @@ public class ServerConfig {
         return result;
     }
 
-    private void calcDiffForMetaData(Map<String, SchemaConfig> newSchemas, Map<String, PhysicalDBNode> newDataNodes, int loadAllMode,
+    private void calcDiffForMetaData(Map<String, SchemaConfig> newSchemas, Map<String, PhysicalDataNode> newDataNodes, int loadAllMode,
                                      List<Pair<String, String>> delTables, List<Pair<String, String>> reloadTables,
                                      List<String> delSchema, List<String> reloadSchema) {
         for (Map.Entry<String, SchemaConfig> schemaEntry : this.schemas.entrySet()) {
@@ -268,7 +268,7 @@ public class ServerConfig {
         }
     }
 
-    private void calcTableDiffForMetaData(Map<String, PhysicalDBNode> newDataNodes, int loadAllMode, List<Pair<String, String>> delTables, List<Pair<String, String>> reloadTables, String oldSchema, SchemaConfig newSchemaConfig, SchemaConfig oldSchemaConfig) {
+    private void calcTableDiffForMetaData(Map<String, PhysicalDataNode> newDataNodes, int loadAllMode, List<Pair<String, String>> delTables, List<Pair<String, String>> reloadTables, String oldSchema, SchemaConfig newSchemaConfig, SchemaConfig oldSchemaConfig) {
         for (Map.Entry<String, TableConfig> tableEntry : oldSchemaConfig.getTables().entrySet()) {
             String oldTable = tableEntry.getKey();
             TableConfig newTableConfig = newSchemaConfig.getTables().get(oldTable);
@@ -300,24 +300,24 @@ public class ServerConfig {
         }
     }
 
-    private boolean isDataNodeChanged(List<String> strDataNodes, Map<String, PhysicalDBNode> newDataNodes) {
+    private boolean isDataNodeChanged(List<String> strDataNodes, Map<String, PhysicalDataNode> newDataNodes) {
         for (String strDataNode : strDataNodes) {
-            PhysicalDBNode newDBNode = newDataNodes.get(strDataNode);
-            PhysicalDBNode oldDBNode = dataNodes.get(strDataNode);
+            PhysicalDataNode newDBNode = newDataNodes.get(strDataNode);
+            PhysicalDataNode oldDBNode = dataNodes.get(strDataNode);
             if (!oldDBNode.getDatabase().equals(newDBNode.getDatabase()) ||
-                    !oldDBNode.getDbPool().getHostName().equals(newDBNode.getDbPool().getHostName())) {
+                    !oldDBNode.getDataHost().getHostName().equals(newDBNode.getDataHost().getHostName())) {
                 return true;
             }
         }
         return false;
     }
 
-    private boolean isDataHostChanged(List<String> strDataNodes, Map<String, PhysicalDBNode> newDataNodes) {
+    private boolean isDataHostChanged(List<String> strDataNodes, Map<String, PhysicalDataNode> newDataNodes) {
         for (String strDataNode : strDataNodes) {
-            AbstractPhysicalDBPool newDBPool = newDataNodes.get(strDataNode).getDbPool();
-            AbstractPhysicalDBPool oldDBPool = dataNodes.get(strDataNode).getDbPool();
-            PhysicalDBPoolDiff diff = new PhysicalDBPoolDiff(oldDBPool, newDBPool);
-            if (!PhysicalDBPoolDiff.CHANGE_TYPE_NO.equals(diff.getChangeType())) {
+            PhysicalDataHost newDBPool = newDataNodes.get(strDataNode).getDataHost();
+            PhysicalDataHost oldDBPool = dataNodes.get(strDataNode).getDataHost();
+            PhysicalDataHostDiff diff = new PhysicalDataHostDiff(oldDBPool, newDBPool);
+            if (!PhysicalDataHostDiff.CHANGE_TYPE_NO.equals(diff.getChangeType())) {
                 return true;
             }
         }
@@ -329,7 +329,7 @@ public class ServerConfig {
     }
 
     public boolean rollback(Map<String, UserConfig> backupUsers, Map<String, SchemaConfig> backupSchemas,
-                            Map<String, PhysicalDBNode> backupDataNodes, Map<String, AbstractPhysicalDBPool> backupDataHosts,
+                            Map<String, PhysicalDataNode> backupDataNodes, Map<String, PhysicalDataHost> backupDataHosts,
                             Map<ERTable, Set<ERTable>> backupErRelations, FirewallConfig backFirewall, boolean backDataHostWithoutWR) throws SQLNonTransientException {
 
         boolean result = apply(backupUsers, backupSchemas, backupDataNodes, backupDataHosts, backupDataHosts, this.dataHosts, backupErRelations, backFirewall,
@@ -341,10 +341,10 @@ public class ServerConfig {
 
     private boolean apply(Map<String, UserConfig> newUsers,
                           Map<String, SchemaConfig> newSchemas,
-                          Map<String, PhysicalDBNode> newDataNodes,
-                          Map<String, AbstractPhysicalDBPool> newDataHosts,
-                          Map<String, AbstractPhysicalDBPool> changeOrAddDataHosts,
-                          Map<String, AbstractPhysicalDBPool> recycleDataHosts,
+                          Map<String, PhysicalDataNode> newDataNodes,
+                          Map<String, PhysicalDataHost> newDataHosts,
+                          Map<String, PhysicalDataHost> changeOrAddDataHosts,
+                          Map<String, PhysicalDataHost> recycleDataHosts,
                           Map<ERTable, Set<ERTable>> newErRelations,
                           FirewallConfig newFirewall, SystemVariables newSystemVariables,
                           boolean newDataHostWithoutWR, final int loadAllMode) throws SQLNonTransientException {
@@ -367,9 +367,9 @@ public class ServerConfig {
             // 2 backup
             //--------------------------------------------
             if (recycleDataHosts != null) {
-                for (AbstractPhysicalDBPool oldDbPool : recycleDataHosts.values()) {
-                    if (oldDbPool != null) {
-                        oldDbPool.stopHeartbeat();
+                for (PhysicalDataHost oldDataHost : recycleDataHosts.values()) {
+                    if (oldDataHost != null) {
+                        oldDataHost.stopHeartbeat();
                     }
                 }
             }
@@ -386,9 +386,9 @@ public class ServerConfig {
             // 2 apply the configure
             //---------------------------------------------------
             if (changeOrAddDataHosts != null) {
-                for (AbstractPhysicalDBPool newDbPool : changeOrAddDataHosts.values()) {
-                    if (newDbPool != null && !newDataHostWithoutWR) {
-                        newDbPool.startHeartbeat();
+                for (PhysicalDataHost newDataHost : changeOrAddDataHosts.values()) {
+                    if (newDataHost != null && !newDataHostWithoutWR) {
+                        newDataHost.startHeartbeat();
                     }
                 }
             }
@@ -489,7 +489,7 @@ public class ServerConfig {
         }
 
         //dataNode
-        for (PhysicalDBNode physicalDBNode : dataNodes.values()) {
+        for (PhysicalDataNode physicalDBNode : dataNodes.values()) {
             physicalDBNode.toLowerCase();
         }
 
@@ -561,7 +561,7 @@ public class ServerConfig {
                 if (this.dataNodes != null && this.dataHosts != null) {
                     Set<String> dataNodeNames = sc.getAllDataNodes();
                     for (String dataNodeName : dataNodeNames) {
-                        PhysicalDBNode node = this.dataNodes.get(dataNodeName);
+                        PhysicalDataNode node = this.dataNodes.get(dataNodeName);
                         if (node == null) {
                             throw new ConfigException("SelfCheck### schema dataNode[" + dataNodeName + "] is empty!");
                         }

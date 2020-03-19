@@ -1,7 +1,7 @@
 package com.actiontech.dble.config.loader.zkprocess.zktoxml.listen;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH;
+import com.actiontech.dble.backend.datasource.PhysicalDataHost;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
@@ -70,7 +70,7 @@ public class DataHostResponseListener implements PathChildrenCacheListener {
         if (!info.getStartId().equals(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID)) &&
                 info.getStatus() == HaInfo.HaStatus.SUCCESS) {
             int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.RESPONSE_NOTIFY, HaInfo.HaStartType.CLUSTER_NOTIFY, HaInfo.HaStage.RESPONSE_NOTIFY.toString());
-            PhysicalDNPoolSingleWH dataHost = (PhysicalDNPoolSingleWH) DbleServer.getInstance().getConfig().getDataHosts().get(info.getDhName());
+            PhysicalDataHost dataHost = (PhysicalDataHost) DbleServer.getInstance().getConfig().getDataHosts().get(info.getDhName());
             String jsonString = new String(zkConn.getData().forPath(KVPathUtil.getHaStatusPath(info.getDhName())), "UTF-8");
             dataHost.changeIntoLatestStatus(jsonString);
             //response to kv

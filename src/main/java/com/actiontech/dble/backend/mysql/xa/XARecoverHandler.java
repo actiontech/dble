@@ -3,7 +3,7 @@ package com.actiontech.dble.backend.mysql.xa;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.manager.handler.ShowProcesslistHandler;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
@@ -34,7 +34,7 @@ public class XARecoverHandler {
         this.done = lock.newCondition();
     }
 
-    public void execute(String sql, String db, PhysicalDatasource ds) {
+    public void execute(String sql, String db, PhysicalDataSource ds) {
         OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(new String[0], new XARecoverCallback(isCommit, logEntry));
         SQLJob sqlJob = new SQLJob(sql, db, resultHandler, ds);
         sqlJob.run();

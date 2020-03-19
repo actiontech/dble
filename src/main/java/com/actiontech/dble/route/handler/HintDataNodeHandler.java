@@ -6,7 +6,7 @@
 package com.actiontech.dble.route.handler;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
@@ -40,7 +40,7 @@ public class HintDataNodeHandler implements HintHandler {
         if (ServerParse.CALL == sqlType) {
             rrs.setCallStatement(true);
         }
-        PhysicalDBNode dataNode = DbleServer.getInstance().getConfig().getDataNodes().get(hintSQLValue);
+        PhysicalDataNode dataNode = DbleServer.getInstance().getConfig().getDataNodes().get(hintSQLValue);
         if (dataNode != null) {
             rrs = RouterUtil.routeToSingleNode(rrs, dataNode.getName());
         } else {

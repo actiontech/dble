@@ -55,7 +55,6 @@ public final class SystemConfig {
     //option
     private int useCompression = 0;
     private int usingAIO = 0;
-    private boolean useZKSwitch = true;
     private int useThreadUsageStat = 0;
     private int usePerformanceMode = 0;
     private int useSerializableMode = 0;
@@ -137,10 +136,6 @@ public final class SystemConfig {
     private int backSocketSoSndbuf = 1024 * 1024;
     private int backSocketNoDelay = 1; // 1=true
 
-    //cluster
-    private String clusterHeartbeatUser = "_HEARTBEAT_USER_";
-    private String clusterHeartbeatPass = "_HEARTBEAT_PASS_";
-
     //view
     private String viewPersistenceConfBaseDir = SystemConfig.getHomePath() + File.separatorChar + "viewConf" + File.separatorChar;
     private String viewPersistenceConfBaseName = "viewJson";
@@ -198,15 +193,6 @@ public final class SystemConfig {
     @SuppressWarnings("unused")
     public void setTransactionLogBaseName(String transactionLogBaseName) {
         this.transactionLogBaseName = transactionLogBaseName;
-    }
-
-    public boolean isUseZKSwitch() {
-        return useZKSwitch;
-    }
-
-    @SuppressWarnings("unused")
-    public void setUseZKSwitch(boolean useZKSwitch) {
-        this.useZKSwitch = useZKSwitch;
     }
 
     public boolean isUseJoinStrategy() {
@@ -523,15 +509,6 @@ public final class SystemConfig {
         }
     }
 
-    public String getClusterHeartbeatUser() {
-        return clusterHeartbeatUser;
-    }
-
-    @SuppressWarnings("unused")
-    public void setClusterHeartbeatUser(String clusterHeartbeatUser) {
-        this.clusterHeartbeatUser = clusterHeartbeatUser;
-    }
-
     public long getSqlExecuteTimeout() {
         return sqlExecuteTimeout;
     }
@@ -557,15 +534,6 @@ public final class SystemConfig {
         } else if (this.problemReporter != null) {
             problemReporter.warn(String.format(WARNING_FORMATE, "showBinlogStatusTimeout", showBinlogStatusTimeout, this.showBinlogStatusTimeout));
         }
-    }
-
-    public String getClusterHeartbeatPass() {
-        return clusterHeartbeatPass;
-    }
-
-    @SuppressWarnings("unused")
-    public void setClusterHeartbeatPass(String clusterHeartbeatPass) {
-        this.clusterHeartbeatPass = clusterHeartbeatPass;
     }
 
 
@@ -1189,6 +1157,7 @@ public final class SystemConfig {
         return useOuterHa;
     }
 
+    @SuppressWarnings("unused")
     public void setUseOuterHa(boolean useOuterHa) {
         this.useOuterHa = useOuterHa;
     }
@@ -1227,7 +1196,6 @@ public final class SystemConfig {
                 ", maxCon=" + maxCon +
                 ", useCompression=" + useCompression +
                 ", usingAIO=" + usingAIO +
-                ", useZKSwitch=" + useZKSwitch +
                 ", useThreadUsageStat=" + useThreadUsageStat +
                 ", usePerformanceMode=" + usePerformanceMode +
                 ", useSerializableMode=" + useSerializableMode +
@@ -1272,8 +1240,6 @@ public final class SystemConfig {
                 ", backSocketSoRcvbuf=" + backSocketSoRcvbuf +
                 ", backSocketSoSndbuf=" + backSocketSoSndbuf +
                 ", backSocketNoDelay=" + backSocketNoDelay +
-                ", clusterHeartbeatUser=" + clusterHeartbeatUser +
-                ", clusterHeartbeatPass=" + clusterHeartbeatPass +
                 ", viewPersistenceConfBaseDir=" + viewPersistenceConfBaseDir +
                 ", viewPersistenceConfBaseName=" + viewPersistenceConfBaseName +
                 ", joinQueueSize=" + joinQueueSize +

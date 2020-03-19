@@ -13,7 +13,7 @@
 	License for the specific language governing permissions and - limitations
 	under the License. -->
 <!DOCTYPE dble:rule SYSTEM "rule.dtd">
-<dble:rule xmlns:dble="http://dble.cloud/" version="2.0">
+<dble:rule xmlns:dble="http://dble.cloud/" version="3.0">
     <tableRule name="rule_enum">
         <rule>
             <columns>code</columns>

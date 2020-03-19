@@ -26,9 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH.JSON_LIST;
-import static com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH.JSON_NAME;
-import static com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH.JSON_WRITE_SOURCE;
+import static com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH.*;
 
 /**
  * Created by szf on 2019/10/23.
@@ -67,7 +65,6 @@ public final class HaConfigManager {
             schemaWriteJob.signalAll();
         }
         waitingSet = new HashSet<>();
-        return;
     }
 
     public void write(Schemas schemas, int reloadId) throws IOException {
@@ -88,13 +85,13 @@ public final class HaConfigManager {
         }
     }
 
-    public void finishAndNext() {
+    private void finishAndNext() {
         isWriting.set(false);
         triggerNext();
     }
 
     public void updateConfDataHost(PhysicalDNPoolSingleWH physicalDNPoolSingleWH, boolean syncWriteConf) {
-        SchemaWriteJob thisTimeJob = null;
+        SchemaWriteJob thisTimeJob;
         HA_LOGGER.info("start to update the local file with sync flag " + syncWriteConf);
         //check if there is one thread is writing
         if (isWriting.compareAndSet(false, true)) {
@@ -120,14 +117,14 @@ public final class HaConfigManager {
             }
             triggerNext();
         }
-        if (syncWriteConf) {
+        if (syncWriteConf && thisTimeJob != null) {
             //waitDone
             thisTimeJob.waitForWritingDone();
         }
     }
 
 
-    public void triggerNext() {
+    private void triggerNext() {
         if (waitingSet.size() != 0 && isWriting.compareAndSet(false, true)) {
             adjustLock.writeLock().lock();
             try {
@@ -146,12 +143,11 @@ public final class HaConfigManager {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put(JSON_NAME, dh.getName());
             List<DataSourceStatus> list = new ArrayList<>();
-            for (WriteHost wh : dh.getWriteHost()) {
-                list.add(new DataSourceStatus(wh.getHost(), "true".equals(wh.getDisabled()), true));
-                jsonObject.put(JSON_WRITE_SOURCE, new DataSourceStatus(wh.getHost(), "true".equals(wh.getDisabled()), true));
-                for (ReadHost rh : wh.getReadHost()) {
-                    list.add(new DataSourceStatus(rh.getHost(), "true".equals(rh.getDisabled()), false));
-                }
+            WriteHost wh = dh.getWriteHost();
+            list.add(new DataSourceStatus(wh.getHost(), "true".equals(wh.getDisabled()), true));
+            jsonObject.put(JSON_WRITE_SOURCE, new DataSourceStatus(wh.getHost(), "true".equals(wh.getDisabled()), true));
+            for (ReadHost rh : wh.getReadHost()) {
+                list.add(new DataSourceStatus(rh.getHost(), "true".equals(rh.getDisabled()), false));
             }
             jsonObject.put(JSON_LIST, list);
             map.put(dh.getName(), jsonObject.toJSONString());
@@ -166,19 +162,17 @@ public final class HaConfigManager {
     public int haStart(HaInfo.HaStage stage, HaInfo.HaStartType type, String command) {
         int id = indexCreater.getAndAdd(1);
         HaChangeStatus newStatus = new HaChangeStatus(id, command, type, System.currentTimeMillis(), stage);
-        INSTANCE.unfinised.put(Integer.valueOf(id), newStatus);
-        HA_LOGGER.info(new StringBuilder().
-                append("[HA] id = ").append(id).
-                append(" start of Ha event type =").append(type.toString()).
-                append(" command = ").append(command).
-                append(" stage = ").append(stage.toString()).
-                toString());
+        INSTANCE.unfinised.put(id, newStatus);
+        HA_LOGGER.info("[HA] id = " + id +
+                " start of Ha event type =" + type.toString() +
+                " command = " + command +
+                " stage = " + stage.toString());
         return id;
     }
 
     public void haFinish(int id, String errorMsg, String result) {
-        HaChangeStatus status = unfinised.get(Integer.valueOf(id));
-        unfinised.remove(Integer.valueOf(id));
+        HaChangeStatus status = unfinised.get(id);
+        unfinised.remove(id);
         StringBuilder resultString = new StringBuilder().
                 append("[HA] id = ").append(id).
                 append(" end of Ha event type =").append(status.getType().toString()).
@@ -196,14 +190,12 @@ public final class HaConfigManager {
     }
 
     public void haWaitingOthers(int id) {
-        HaChangeStatus status = unfinised.get(Integer.valueOf(id));
+        HaChangeStatus status = unfinised.get(id);
         status.setStage(HaInfo.HaStage.WAITING_FOR_OTHERS);
-        HA_LOGGER.info(new StringBuilder().
-                append("[HA] id = ").append(id).
-                append(" ha waiting for others type =").append(status.getType().toString()).
-                append(" command = ").append(status.getCommand()).
-                append(" stage = ").append(status.getStage().toString()).
-                toString());
+        HA_LOGGER.info("[HA] id = " + id +
+                " ha waiting for others type =" + status.getType().toString() +
+                " command = " + status.getCommand() +
+                " stage = " + status.getStage().toString());
     }
 
     public void log(String log, Exception e) {

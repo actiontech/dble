@@ -8,6 +8,7 @@ package com.actiontech.dble;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.CustomMySQLHa;
 import com.actiontech.dble.backend.mysql.xa.*;
 import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.FileSystemRepository;
@@ -21,7 +22,6 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.util.ConfigUtil;
-import com.actiontech.dble.config.util.DnPropertyUtil;
 import com.actiontech.dble.log.transaction.TxnLogProcessor;
 import com.actiontech.dble.manager.ManagerConnectionFactory;
 import com.actiontech.dble.meta.ProxyMetaManager;
@@ -35,18 +35,16 @@ import com.actiontech.dble.server.variables.VarsExtractorHandler;
 import com.actiontech.dble.singleton.*;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import com.actiontech.dble.util.ExecutorUtil;
-import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.TimeUtil;
-import com.actiontech.dble.util.ZKUtils;
-import com.google.common.io.Files;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.IOException;
 import java.nio.channels.AsynchronousChannelGroup;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -64,7 +62,6 @@ public final class DbleServer {
     //used by manager command show @@binlog_status to get a stable GTID
     private final AtomicBoolean backupLocked = new AtomicBoolean(false);
 
-    private Properties dnIndexProperties;
 
     private volatile SystemVariables systemVariables = new SystemVariables();
     private TxnLogProcessor txnLogProcessor;
@@ -95,7 +92,6 @@ public final class DbleServer {
     private ExecutorService writeToBackendExecutor;
     private ExecutorService complexQueryExecutor;
     private ExecutorService timerExecutor;
-    private InterProcessMutex dnIndexLock;
     private Map<String, ThreadWorkUsage> threadUsedMap = new ConcurrentHashMap<>();
     private BlockingQueue<FrontendCommandHandler> frontHandlerQueue;
     private BlockingQueue<List<WriteToBackendTask>> writeToBackendQueue;
@@ -123,12 +119,6 @@ public final class DbleServer {
         }
         AlertManager.getInstance().startAlert();
         LOGGER.info("========================================Alert Manager start finish================================");
-
-        // load data node active index from properties
-        this.dnIndexProperties = DnPropertyUtil.loadDnIndexProps();
-        if (isUseZkSwitch()) {
-            dnIndexLock = new InterProcessMutex(ZKUtils.getConnection(), KVPathUtil.getDnIndexLockPath());
-        }
 
         // server startup
         LOGGER.info("============================================Server start params===================================");
@@ -270,9 +260,8 @@ public final class DbleServer {
 
         CronScheduler.getInstance().init(config.getSchemas());
         LOGGER.info("====================================CronScheduler started=========================================");
-        if (isUseZkSwitch()) {
-            initZkDnindex();
-        }
+
+        CustomMySQLHa.getInstance().start();
         LOGGER.info("======================================ALL START INIT FINISH=======================================");
     }
 
@@ -325,38 +314,8 @@ public final class DbleServer {
         Map<String, AbstractPhysicalDBPool> dataHosts = this.getConfig().getDataHosts();
         LOGGER.info("Initialize dataHost ...");
         for (AbstractPhysicalDBPool node : dataHosts.values()) {
-            String index = dnIndexProperties.getProperty(node.getHostName(), "0");
-            if (!"0".equals(index)) {
-                LOGGER.info("init datahost: " + node.getHostName() + "  to use datasource index:" + index);
-            }
-            node.init(Integer.parseInt(index));
+            node.init();
             node.startHeartbeat();
-        }
-    }
-
-    private void initZkDnindex() {
-        //upload the dnindex data to zk
-        try {
-            if (dnIndexLock.acquire(30, TimeUnit.SECONDS)) {
-                try {
-                    File file = new File(SystemConfig.getHomePath(), "conf" + File.separator + "dnindex.properties");
-                    byte[] data;
-                    if (!file.exists()) {
-                        data = "".getBytes();
-                    } else {
-                        data = Files.toByteArray(file);
-                    }
-                    String path = KVPathUtil.getDnIndexNode();
-                    CuratorFramework zk = ZKUtils.getConnection();
-                    if (zk.checkExists().forPath(path) == null) {
-                        zk.create().creatingParentsIfNeeded().forPath(path, data);
-                    }
-                } finally {
-                    dnIndexLock.release();
-                }
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -364,92 +323,6 @@ public final class DbleServer {
         systemVariables = sys;
     }
 
-    public void reloadDnIndex() {
-        if (DbleServer.getInstance().getFrontProcessors() == null) return;
-        // load datanode active index from properties
-        dnIndexProperties = DnPropertyUtil.loadDnIndexProps();
-        // init datahost
-        Map<String, AbstractPhysicalDBPool> dataHosts = this.getConfig().getDataHosts();
-        LOGGER.info("reInitialize dataHost ...");
-        for (AbstractPhysicalDBPool node : dataHosts.values()) {
-            String index = dnIndexProperties.getProperty(node.getHostName(), "0");
-            if (!"0".equals(index)) {
-                LOGGER.info("reinit datahost: " + node.getHostName() + "  to use datasource index:" + index);
-            }
-            node.switchSource(Integer.parseInt(index), "reload dnindex");
-        }
-    }
-
-
-    /**
-     * save cur data node index to properties file
-     *
-     * @param dataHost dataHost
-     * @param curIndex curIndex
-     */
-    public synchronized void saveDataHostIndex(String dataHost, int curIndex, boolean useZkSwitch) {
-        File file = new File(SystemConfig.getHomePath(), "conf" + File.separator + "dnindex.properties");
-        FileOutputStream fileOut = null;
-        try {
-            String oldIndex = dnIndexProperties.getProperty(dataHost);
-            String newIndex = String.valueOf(curIndex);
-            if (newIndex.equals(oldIndex)) {
-                return;
-            }
-
-            dnIndexProperties.setProperty(dataHost, newIndex);
-            LOGGER.info("save DataHost index  " + dataHost + " cur index " + curIndex);
-
-            File parent = file.getParentFile();
-            if (parent != null && !parent.exists()) {
-                if (!parent.mkdirs()) {
-                    throw new IOException("mkdir " + parent.getAbsolutePath() + " error");
-                }
-            }
-
-            fileOut = new FileOutputStream(file);
-            dnIndexProperties.store(fileOut, "update");
-
-            if (useZkSwitch || isUseZkSwitch()) {
-                // save to  zk
-                if (dnIndexLock.acquire(30, TimeUnit.SECONDS)) {
-                    try {
-                        String path = KVPathUtil.getDnIndexNode();
-                        CuratorFramework zk = ZKUtils.getConnection();
-                        if (zk.checkExists().forPath(path) == null) {
-                            zk.create().creatingParentsIfNeeded().forPath(path, Files.toByteArray(file));
-                        } else {
-                            byte[] data = zk.getData().forPath(path);
-                            ByteArrayOutputStream out = new ByteArrayOutputStream();
-                            Properties properties = new Properties();
-                            properties.load(new ByteArrayInputStream(data));
-                            if (!String.valueOf(curIndex).equals(properties.getProperty(dataHost))) {
-                                properties.setProperty(dataHost, String.valueOf(curIndex));
-                                properties.store(out, "update");
-                                zk.setData().forPath(path, out.toByteArray());
-                            }
-                        }
-                    } finally {
-                        dnIndexLock.release();
-                    }
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.warn("saveDataNodeIndex err:", e);
-        } finally {
-            if (fileOut != null) {
-                try {
-                    fileOut.close();
-                } catch (IOException e) {
-                    //ignore error
-                }
-            }
-        }
-    }
-
-    private boolean isUseZkSwitch() {
-        return ClusterGeneralConfig.isUseZK() && this.config.getSystem().isUseZKSwitch();
-    }
 
     public boolean isUseOuterHa() {
         return config.getSystem().isUseOuterHa();

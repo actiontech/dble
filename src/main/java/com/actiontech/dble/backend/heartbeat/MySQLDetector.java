@@ -53,10 +53,6 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
     private static final String[] MYSQL_READ_ONLY_COLS = new String[]{
             "@@read_only"};
 
-    private static final String[] MYSQL_CLUSTER_STATUS_COLS = new String[]{
-            "Variable_name",
-            "Value"};
-
     public MySQLDetector(MySQLHeartbeat heartbeat) {
         this.heartbeat = heartbeat;
         this.isQuit = new AtomicBoolean(false);
@@ -90,8 +86,6 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         String[] fetchCols = {};
         if (heartbeat.getSource().getHostConfig().isShowSlaveSql()) {
             fetchCols = MYSQL_SLAVE_STATUS_COLS;
-        } else if (heartbeat.getSource().getHostConfig().isShowClusterSql()) {
-            fetchCols = MYSQL_CLUSTER_STATUS_COLS;
         } else if (heartbeat.getSource().getHostConfig().isSelectReadOnlySql()) {
             fetchCols = MYSQL_READ_ONLY_COLS;
         }
@@ -124,8 +118,6 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             Map<String, String> resultResult = result.getResult();
             if (source.getHostConfig().isShowSlaveSql()) {
                 setStatusBySlave(source, resultResult);
-            } else if (source.getHostConfig().isShowClusterSql()) {
-                setStatusByCluster(resultResult);
             } else if (source.getHostConfig().isSelectReadOnlySql()) {
                 setStatusByReadOnly(source, resultResult);
             } else {
@@ -185,25 +177,6 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             }
         }
         heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
-    }
-
-    private void setStatusByCluster(Map<String, String> resultResult) {
-        //String Variable_name = resultResult != null ? resultResult.get("Variable_name") : null;
-        String wsrepClusterStatus = resultResult != null ? resultResult.get("wsrep_cluster_status") : null; // Primary
-        String wsrepConnected = resultResult != null ? resultResult.get("wsrep_connected") : null; // ON
-        String wsrepReady = resultResult != null ? resultResult.get("wsrep_ready") : null; // ON
-        if ("ON".equals(wsrepConnected) && "ON".equals(wsrepReady) && "Primary".equals(wsrepClusterStatus)) {
-            heartbeat.setDbSynStatus(MySQLHeartbeat.DB_SYN_NORMAL);
-            heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
-        } else {
-            MySQLHeartbeat.LOGGER.warn("found MySQL  cluster status err !!! " +
-                    heartbeat.getSource().getConfig() + " wsrep_cluster_status: " + wsrepClusterStatus +
-                    " wsrep_connected: " + wsrepConnected + " wsrep_ready: " + wsrepReady
-            );
-            heartbeat.setDbSynStatus(MySQLHeartbeat.DB_SYN_ERROR);
-            heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS);
-        }
-        heartbeat.getAsyncRecorder().setByCluster(resultResult);
     }
 
     private void setStatusBySlave(PhysicalDatasource source, Map<String, String> resultResult) {

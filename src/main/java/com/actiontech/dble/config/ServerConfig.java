@@ -388,8 +388,6 @@ public class ServerConfig {
             if (changeOrAddDataHosts != null) {
                 for (AbstractPhysicalDBPool newDbPool : changeOrAddDataHosts.values()) {
                     if (newDbPool != null && !newDataHostWithoutWR) {
-                        DbleServer.getInstance().saveDataHostIndex(newDbPool.getHostName(), newDbPool.getActiveIndex(),
-                                this.system.isUseZKSwitch() && ClusterGeneralConfig.isUseZK());
                         newDbPool.startHeartbeat();
                     }
                 }

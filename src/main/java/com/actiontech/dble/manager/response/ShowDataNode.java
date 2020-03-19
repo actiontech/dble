@@ -38,7 +38,7 @@ import java.util.*;
  */
 public final class ShowDataNode {
     private static final NumberFormat NF = DecimalFormat.getInstance();
-    private static final int FIELD_COUNT = 9;
+    private static final int FIELD_COUNT = 8;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
@@ -57,9 +57,6 @@ public final class ShowDataNode {
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("SCHEMA_EXISTS", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].setPacketId(++packetId);
-
-        FIELDS[i] = PacketUtil.getField("INDEX", Fields.FIELD_TYPE_LONG);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("ACTIVE", Fields.FIELD_TYPE_LONG);
@@ -151,7 +148,6 @@ public final class ShowDataNode {
             row.add(StringUtil.encode(node.isSchemaExists() ? "true" : "false", charset));
             int active = ds.getActiveCountForSchema(node.getDatabase());
             int idle = ds.getIdleCountForSchema(node.getDatabase());
-            row.add(IntegerUtil.toBytes(pool.getActiveIndex()));
             row.add(IntegerUtil.toBytes(active));
             row.add(IntegerUtil.toBytes(idle));
             row.add(IntegerUtil.toBytes(ds.getSize()));

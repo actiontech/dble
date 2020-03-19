@@ -51,9 +51,6 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
             case ManagerParse.SHOW:
                 ShowHandler.handle(sql, c, rs >>> SHIFT);
                 break;
-            case ManagerParse.SWITCH:
-                SwitchHandler.handler(sql, c, rs >>> SHIFT);
-                break;
             case ManagerParse.KILL_CONN:
                 KillConnection.response(sql, rs >>> SHIFT, c);
                 break;

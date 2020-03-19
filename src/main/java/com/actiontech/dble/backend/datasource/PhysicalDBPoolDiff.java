@@ -54,66 +54,26 @@ public class PhysicalDBPoolDiff {
         Set<PhysicalDatasourceDiff> hostDiff = new HashSet<>();
 
         //add or not change
-        for (int i = 0; i < newDbPool.getWriteSources().length; i++) {
-            PhysicalDatasource writeHost = newDbPool.getWriteSources()[i];
-            PhysicalDatasource[] readHost = newDbPool.getReadSources().get(i);
-            PhysicalDatasource[] standByHost = newDbPool.getStandbyReadSourcesMap().get(i);
+        PhysicalDatasource newWriteHost = newDbPool.getWriteSource();
+        PhysicalDatasource[] newReadHost = newDbPool.getReadSources();
 
-            PhysicalDatasource orgHost = null;
-            PhysicalDatasource[] relatedHost = null;
-            for (int j = 0; j < orgDbPool.getWriteSources().length; j++) {
-                PhysicalDatasource oldHost = orgDbPool.getWriteSources()[j];
-                PhysicalDatasource[] oldRHost = orgDbPool.getReadSources().get(j);
-                PhysicalDatasource[] oldStandByHost = orgDbPool.getStandbyReadSourcesMap().get(j);
+        PhysicalDatasource oldHost = orgDbPool.getWriteSource();
+        PhysicalDatasource[] oldRHost = orgDbPool.getReadSources();
 
-
-                if (oldHost.equals(writeHost) &&
-                        ((oldRHost == null && readHost == null) || ((oldRHost != null && readHost != null) && oldRHost.length == readHost.length)) &&
-                        ((oldStandByHost == null && standByHost == null) || ((oldStandByHost != null && standByHost != null) && oldStandByHost.length == standByHost.length))) {
-                    boolean sameFlag = true;
-
-                    //compare the readHost is the same
-                    sameFlag = calculateForDataSources(oldRHost, readHost);
-                    //compare the sandByHost is the same
-                    if (sameFlag) {
-                        sameFlag = calculateForDataSources(oldStandByHost, standByHost);
-                    }
-
-                    //only when the writeHost is the same && readHost list is the same && standByHost is the same
-                    // that means the two dataHost is the same
-                    if (sameFlag) {
-                        //update connection test result
-                        oldHost.setTestConnSuccess(writeHost.isTestConnSuccess());
-                        orgHost = oldHost;
-                        relatedHost = oldRHost;
-                        break;
-                    }
-                }
-
-            }
-
-            if (orgHost != null) {
-                //can find a orgHost ,mings their is node all the same
-                hostDiff.add(new PhysicalDatasourceDiff(CHANGE_TYPE_NO, orgHost, relatedHost));
-            } else {
-                hostDiff.add(new PhysicalDatasourceDiff(CHANGE_TYPE_ADD, writeHost, readHost));
-            }
+        boolean sameFlag = false;
+        if (oldHost.equals(newWriteHost) &&
+                ((oldRHost == null && newReadHost == null) || ((oldRHost != null && newReadHost != null) && oldRHost.length == newReadHost.length))) {
+            //compare the newReadHost is the same
+            sameFlag = calculateForDataSources(oldRHost, newReadHost);
         }
 
-        //add delete info into hostDiff & from hostDiff
-        for (int i = 0; i < orgDbPool.getWriteSources().length; i++) {
-            PhysicalDatasource writeHost = orgDbPool.getWriteSources()[i];
-            PhysicalDatasource[] readHost = orgDbPool.getReadSources().get(i);
-            boolean findFlag = false;
-            for (PhysicalDatasourceDiff diff : hostDiff) {
-                if (diff.getSelfHost().equals(writeHost) && diff.getWriteHostChangeType().equals(CHANGE_TYPE_NO)) {
-                    findFlag = true;
-                    break;
-                }
-            }
-            if (!findFlag) {
-                hostDiff.add(new PhysicalDatasourceDiff(CHANGE_TYPE_DELETE, writeHost, readHost));
-            }
+        if (sameFlag) {
+            oldHost.setTestConnSuccess(newWriteHost.isTestConnSuccess());
+            //can find a orgHost ,means their is node all the same
+            hostDiff.add(new PhysicalDatasourceDiff(CHANGE_TYPE_NO, oldHost, oldRHost));
+        } else {
+            hostDiff.add(new PhysicalDatasourceDiff(CHANGE_TYPE_ADD, newWriteHost, newReadHost));
+            hostDiff.add(new PhysicalDatasourceDiff(CHANGE_TYPE_DELETE, oldHost, oldRHost));
         }
 
         return hostDiff;
@@ -133,41 +93,6 @@ public class PhysicalDBPoolDiff {
         return true;
     }
 
-    //    private Set<BaseInfoDiff> createBaseDiff(PhysicalDBPool newDbPool, PhysicalDBPool orgDbPool) {
-    //        Set<BaseInfoDiff> baseDiffSet = new HashSet<BaseInfoDiff>();
-    //        if (newDbPool.getDataHostConfig().getBalance() != orgDbPool.getDataHostConfig().getBalance()) {
-    //            baseDiffSet.add(new BaseInfoDiff("balance", newDbPool.getDataHostConfig().getBalance(), orgDbPool.getDataHostConfig().getBalance()));
-    //        }
-    //
-    //        if (newDbPool.getDataHostConfig().getSwitchType() != orgDbPool.getDataHostConfig().getSwitchType()) {
-    //            baseDiffSet.add(new BaseInfoDiff("switchType", newDbPool.getDataHostConfig().getSwitchType(), orgDbPool.getDataHostConfig().getSwitchType()));
-    //        }
-    //
-    //        if (newDbPool.getDataHostConfig().getMaxCon() != orgDbPool.getDataHostConfig().getMaxCon()) {
-    //            baseDiffSet.add(new BaseInfoDiff("maxCon", newDbPool.getDataHostConfig().getMaxCon(), orgDbPool.getDataHostConfig().getMaxCon()));
-    //        }
-    //
-    //        if (newDbPool.getDataHostConfig().getMinCon() != orgDbPool.getDataHostConfig().getMinCon()) {
-    //            baseDiffSet.add(new BaseInfoDiff("minCon", newDbPool.getDataHostConfig().getMinCon(), orgDbPool.getDataHostConfig().getMinCon()));
-    //        }
-    //
-    //
-    //        if (newDbPool.getDataHostConfig().getSlaveThreshold() != orgDbPool.getDataHostConfig().getSlaveThreshold()) {
-    //            baseDiffSet.add(new BaseInfoDiff("slaveThreshold", newDbPool.getDataHostConfig().getSlaveThreshold(), orgDbPool.getDataHostConfig().getSlaveThreshold()));
-    //        }
-    //
-    //
-    //        if (!newDbPool.getDataHostConfig().getHearbeatSQL().equals(orgDbPool.getDataHostConfig().getHearbeatSQL())) {
-    //            baseDiffSet.add(new BaseInfoDiff("minCon", newDbPool.getDataHostConfig().getHearbeatSQL(), orgDbPool.getDataHostConfig().getHearbeatSQL()));
-    //        }
-    //
-    //        if (newDbPool.getDataHostConfig().isTempReadHostAvailable() != orgDbPool.getDataHostConfig().isTempReadHostAvailable()) {
-    //            baseDiffSet.add(new BaseInfoDiff("slaveThreshold", newDbPool.getDataHostConfig().isTempReadHostAvailable() ? 1 : 0,
-    //                    orgDbPool.getDataHostConfig().isTempReadHostAvailable() ? 1 : 0));
-    //        }
-    //
-    //        return baseDiffSet;
-    //    }
 
     public String getChangeType() {
         return changeType;

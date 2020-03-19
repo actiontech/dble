@@ -119,7 +119,8 @@ public class ItemField extends ItemIdent {
             return false;
         ItemField other = (ItemField) obj;
         return StringUtils.equals(getTableName(), other.getTableName()) &&
-                StringUtils.equalsIgnoreCase(getItemName(), other.getItemName());
+                StringUtils.equalsIgnoreCase(getItemName(), other.getItemName()) &&
+                StringUtils.equals(getAlias(), other.getAlias());
     }
 
     @Override

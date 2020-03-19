@@ -1,8 +1,8 @@
 package com.actiontech.dble.manager.handler;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
@@ -40,8 +40,8 @@ public class ShowProcesslistHandler {
 
     public void execute() {
         String sbSql = SQL.replace("{0}", StringUtils.join(threadIds, ','));
-        PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
-        PhysicalDatasource ds = dn.getDbPool().getSource();
+        PhysicalDataNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
+        PhysicalDataSource ds = dn.getDataHost().getWriteSource();
         if (ds.isAlive()) {
             MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_PROCESSLIST_COLS, new MySQLShowProcesslistListener());
             SQLJob sqlJob = new SQLJob(sbSql, dn.getDatabase(), resultHandler, ds);

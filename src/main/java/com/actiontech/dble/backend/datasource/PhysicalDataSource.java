@@ -14,13 +14,12 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.ConMap;
 import com.actiontech.dble.backend.ConQueue;
 import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ConnectionHeartBeatHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.DelegateResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.NewConnectionRespHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
-import com.actiontech.dble.config.model.DBHostConfig;
 import com.actiontech.dble.config.model.DataHostConfig;
+import com.actiontech.dble.config.model.DataSourceConfig;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
@@ -35,19 +34,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-public abstract class PhysicalDatasource {
+public abstract class PhysicalDataSource {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PhysicalDatasource.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PhysicalDataSource.class);
 
     private final String name;
     private int size;
-    private final DBHostConfig config;
+    private final DataSourceConfig config;
     private final ConMap conMap = new ConMap();
     private MySQLHeartbeat heartbeat;
     private volatile boolean readNode;
     private volatile long heartbeatRecoveryTime;
     private final DataHostConfig hostConfig;
-    private AbstractPhysicalDBPool dbPool;
+    private PhysicalDataHost dataHost;
     private final AtomicInteger connectionCount;
     private volatile AtomicBoolean disabled;
     private volatile boolean autocommitSynced = false;
@@ -58,7 +57,7 @@ public abstract class PhysicalDatasource {
     private AtomicLong writeCount = new AtomicLong(0);
     private String dsVersion;
 
-    public PhysicalDatasource(DBHostConfig config, DataHostConfig hostConfig, boolean isReadNode) {
+    public PhysicalDataSource(DataSourceConfig config, DataHostConfig hostConfig, boolean isReadNode) {
         this.size = config.getMaxCon();
         this.config = config;
         this.name = config.getHostName();
@@ -69,7 +68,7 @@ public abstract class PhysicalDatasource {
         this.disabled = new AtomicBoolean(config.isDisabled());
     }
 
-    public PhysicalDatasource(PhysicalDatasource org) {
+    public PhysicalDataSource(PhysicalDataSource org) {
         this.size = org.size;
         this.config = org.config;
         this.name = org.name;
@@ -77,14 +76,6 @@ public abstract class PhysicalDatasource {
         this.readNode = org.readNode;
         this.connectionCount = org.connectionCount;
         this.disabled = new AtomicBoolean(org.disabled.get());
-    }
-
-    public boolean isMyConnection(BackendConnection con) {
-        if (con instanceof MySQLConnection) {
-            return ((MySQLConnection) con).getPool() == this;
-        } else {
-            return false;
-        }
     }
 
     public void setTestConnSuccess(boolean testConnSuccess) {
@@ -107,7 +98,7 @@ public abstract class PhysicalDatasource {
         return readCount.get();
     }
 
-    public void setReadCount() {
+    void setReadCount() {
         readCount.addAndGet(1);
     }
 
@@ -115,7 +106,7 @@ public abstract class PhysicalDatasource {
         return writeCount.get();
     }
 
-    public void setWriteCount() {
+    void setWriteCount() {
         writeCount.addAndGet(1);
     }
 
@@ -127,7 +118,7 @@ public abstract class PhysicalDatasource {
         return readNode;
     }
 
-    public void setReadNode(boolean value) {
+    void setReadNode(boolean value) {
         this.readNode = value;
     }
 
@@ -135,12 +126,12 @@ public abstract class PhysicalDatasource {
         return size;
     }
 
-    public void setDbPool(AbstractPhysicalDBPool dbPool) {
-        this.dbPool = dbPool;
+    public void setDataHost(PhysicalDataHost dataHost) {
+        this.dataHost = dataHost;
     }
 
-    public AbstractPhysicalDBPool getDbPool() {
-        return dbPool;
+    public PhysicalDataHost getDataHost() {
+        return dataHost;
     }
 
     public abstract MySQLHeartbeat createHeartBeat();
@@ -169,7 +160,7 @@ public abstract class PhysicalDatasource {
         return dsVersion;
     }
 
-    public void setDsVersion(String dsVersion) {
+    protected void setDsVersion(String dsVersion) {
         this.dsVersion = dsVersion;
     }
 
@@ -218,14 +209,14 @@ public abstract class PhysicalDatasource {
     }
 
     public boolean isSalveOrRead() {
-        if (dbPool != null) {
-            return dbPool.isSlave(this) || this.readNode;
+        if (dataHost != null) {
+            return dataHost.isSlave(this) || this.readNode;
         } else {
             return this.readNode;
         }
     }
 
-    public void connectionHeatBeatCheck(long conHeartBeatPeriod) {
+    void connectionHeatBeatCheck(long conHeartBeatPeriod) {
 
         long hearBeatTime = TimeUtil.currentTimeMillis() - conHeartBeatPeriod;
 
@@ -293,7 +284,7 @@ public abstract class PhysicalDatasource {
         LOGGER.info("create connections ,because idle connection not enough ,cur is " +
                 idleCons + ", minCon is " + hostConfig.getMinCon() + " for " + name);
 
-        final String[] schemas = dbPool.getSchemas();
+        final String[] schemas = dataHost.getSchemas();
         for (int i = 0; i < createCount; i++) {
             NewConnectionRespHandler simpleHandler = new NewConnectionRespHandler();
             try {
@@ -323,7 +314,7 @@ public abstract class PhysicalDatasource {
         return this.connectionCount.get();
     }
 
-    public boolean createNewCount() {
+    private boolean createNewCount() {
         int result = this.connectionCount.incrementAndGet();
         if (result > size) {
             this.connectionCount.decrementAndGet();
@@ -337,18 +328,18 @@ public abstract class PhysicalDatasource {
     }
 
 
-    public void startHeartbeat() {
+    void startHeartbeat() {
         if (!this.isDisabled()) {
             heartbeat.start();
             heartbeat.heartbeat();
         }
     }
 
-    public void stopHeartbeat() {
+    void stopHeartbeat() {
         heartbeat.stop();
     }
 
-    public void doHeartbeat() {
+    void doHeartbeat() {
         if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
             return;
         }
@@ -532,8 +523,8 @@ public abstract class PhysicalDatasource {
         return con;
     }
 
-    public void initMinConnection(String schema, boolean autocommit, final ResponseHandler handler,
-                                  final Object attachment) throws IOException {
+    void initMinConnection(String schema, boolean autocommit, final ResponseHandler handler,
+                           final Object attachment) throws IOException {
         LOGGER.info("create new connection for " +
                 this.name + " of schema " + schema);
         if (this.createNewCount()) {
@@ -598,7 +589,7 @@ public abstract class PhysicalDatasource {
         this.heartbeatRecoveryTime = heartbeatRecoveryTime;
     }
 
-    public DBHostConfig getConfig() {
+    public DataSourceConfig getConfig() {
         return config;
     }
 
@@ -607,7 +598,7 @@ public abstract class PhysicalDatasource {
     }
 
 
-    public boolean equals(PhysicalDatasource dataSource) {
+    public boolean equals(PhysicalDataSource dataSource) {
         return dataSource.getConfig().getUser().equals(this.getConfig().getUser()) && dataSource.getConfig().getUrl().equals(this.getConfig().getUrl()) &&
                 dataSource.getConfig().getPassword().equals(this.getConfig().getPassword()) && dataSource.getConfig().getHostName().equals(this.getConfig().getHostName()) &&
                 dataSource.isDisabled() == this.isDisabled() && dataSource.getConfig().getWeight() == this.getConfig().getWeight();
@@ -625,7 +616,7 @@ public abstract class PhysicalDatasource {
         return disabled.get();
     }
 
-    public boolean setDisabled(boolean value) {
+    boolean setDisabled(boolean value) {
         if (value) {
             return disabled.compareAndSet(false, true);
         } else {
@@ -635,11 +626,10 @@ public abstract class PhysicalDatasource {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder("");
-        return sb.append("dataSource[name=").append(name).
-                append(",disabled=").
-                append(disabled.toString()).append(",maxCon=").
-                append(size).append("]").toString();
+        return "dataSource[name=" + name +
+                ",disabled=" +
+                disabled.toString() + ",maxCon=" +
+                size + "]";
     }
 
 }

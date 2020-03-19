@@ -6,9 +6,9 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataHost;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.ServerConfig;
@@ -97,7 +97,7 @@ public final class ShowDataNode {
         // write rows
         byte packetId = EOF.getPacketId();
         ServerConfig conf = DbleServer.getInstance().getConfig();
-        Map<String, PhysicalDBNode> dataNodes = conf.getDataNodes();
+        Map<String, PhysicalDataNode> dataNodes = conf.getDataNodes();
         List<String> keys = new ArrayList<>();
         if (StringUtil.isEmpty(name)) {
             keys.addAll(dataNodes.keySet());
@@ -136,14 +136,14 @@ public final class ShowDataNode {
         c.write(buffer);
     }
 
-    private static RowDataPacket getRow(PhysicalDBNode node, String charset) {
-        AbstractPhysicalDBPool pool = node.getDbPool();
-        PhysicalDatasource ds = pool.getSource();
+    private static RowDataPacket getRow(PhysicalDataNode node, String charset) {
+        PhysicalDataHost pool = node.getDataHost();
+        PhysicalDataSource ds = pool.getWriteSource();
         if (ds != null) {
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
             row.add(StringUtil.encode(node.getName(), charset));
             row.add(StringUtil.encode(
-                    node.getDbPool().getHostName() + '/' + node.getDatabase(),
+                    node.getDataHost().getHostName() + '/' + node.getDatabase(),
                     charset));
             row.add(StringUtil.encode(node.isSchemaExists() ? "true" : "false", charset));
             int active = ds.getActiveCountForSchema(node.getDatabase());
@@ -152,7 +152,7 @@ public final class ShowDataNode {
             row.add(IntegerUtil.toBytes(idle));
             row.add(IntegerUtil.toBytes(ds.getSize()));
             row.add(LongUtil.toBytes(ds.getExecuteCountForSchema(node.getDatabase())));
-            long recoveryTime = pool.getSource().getHeartbeatRecoveryTime() - TimeUtil.currentTimeMillis();
+            long recoveryTime = pool.getWriteSource().getHeartbeatRecoveryTime() - TimeUtil.currentTimeMillis();
             row.add(LongUtil.toBytes(recoveryTime > 0 ? recoveryTime / 1000L : -1L));
             return row;
         } else {

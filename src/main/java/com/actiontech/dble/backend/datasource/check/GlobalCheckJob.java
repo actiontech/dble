@@ -1,7 +1,7 @@
 package com.actiontech.dble.backend.datasource.check;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.manager.response.CheckGlobalConsistency;
@@ -66,8 +66,8 @@ public class GlobalCheckJob implements Job {
             checker.setTableName(tc.getName());
             checker.setHandler(handler);
             for (String nodeName : tc.getDataNodes()) {
-                Map<String, PhysicalDBNode> map = config.getDataNodes();
-                for (PhysicalDBNode dbNode : map.values()) {
+                Map<String, PhysicalDataNode> map = config.getDataNodes();
+                for (PhysicalDataNode dbNode : map.values()) {
                     if (nodeName.equals(dbNode.getName())) {
                         checker.addCheckNode(dbNode.getDatabase(), dbNode);
                     }

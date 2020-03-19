@@ -1,7 +1,7 @@
 package com.actiontech.dble.cluster.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH;
+import com.actiontech.dble.backend.datasource.PhysicalDataHost;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.ClusterPathUtil;
@@ -43,7 +43,7 @@ public class DataHostHaResponse implements ClusterXmlLoader {
             }
             String[] path = configValue.getKey().split("/");
             String dhName = path[path.length - 1];
-            PhysicalDNPoolSingleWH dataHost = (PhysicalDNPoolSingleWH) DbleServer.getInstance().getConfig().getDataHosts().get(dhName);
+            PhysicalDataHost dataHost = (PhysicalDataHost) DbleServer.getInstance().getConfig().getDataHosts().get(dhName);
             dataHost.changeIntoLatestStatus(configValue.getValue());
             HaConfigManager.getInstance().haFinish(id, null, configValue.getValue());
         } else {
@@ -58,7 +58,7 @@ public class DataHostHaResponse implements ClusterXmlLoader {
                     //try to get the lastest status of the dataHost
                     KvBean lastestStatus = ClusterHelper.getKV(ClusterPathUtil.getHaStatusPath(info.getDhName()));
                     //find out the target dataHost and change it into latest status
-                    PhysicalDNPoolSingleWH dataHost = (PhysicalDNPoolSingleWH) DbleServer.getInstance().getConfig().getDataHosts().get(info.getDhName());
+                    PhysicalDataHost dataHost = (PhysicalDataHost) DbleServer.getInstance().getConfig().getDataHosts().get(info.getDhName());
                     dataHost.changeIntoLatestStatus(lastestStatus.getValue());
                     //response the event ,only disable event has response
                     ClusterHelper.setKV(ClusterPathUtil.getSelfResponsePath(configValue.getKey()), ClusterPathUtil.SUCCESS);

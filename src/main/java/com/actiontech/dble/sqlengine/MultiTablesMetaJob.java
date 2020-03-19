@@ -7,8 +7,8 @@ package com.actiontech.dble.sqlengine;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.meta.ReloadLogHelper;
@@ -33,11 +33,11 @@ public class MultiTablesMetaJob implements ResponseHandler, Runnable {
     private final String schema;
     private BackendConnection connection;
     private final SQLJobHandler jobHandler;
-    private final PhysicalDatasource ds;
+    private final PhysicalDataSource ds;
     private boolean isMustWriteNode;
     private AtomicBoolean finished = new AtomicBoolean(false);
 
-    public MultiTablesMetaJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDatasource ds, boolean isReload) {
+    public MultiTablesMetaJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDataSource ds, boolean isReload) {
         super();
         this.logger = new ReloadLogHelper(isReload);
         this.sql = sql;
@@ -63,7 +63,7 @@ public class MultiTablesMetaJob implements ResponseHandler, Runnable {
             if (ds == null) {
                 RouteResultsetNode node = new RouteResultsetNode(dataNode, ServerParse.SELECT, sql);
                 // create new connection
-                PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
+                PhysicalDataNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), isMustWriteNode, true, node, this, node);
             } else {
                 ds.getConnection(schema, true, this, null, false);

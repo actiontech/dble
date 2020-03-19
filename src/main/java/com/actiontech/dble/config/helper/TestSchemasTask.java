@@ -10,7 +10,7 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
@@ -29,7 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class TestSchemasTask extends Thread {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestSchemasTask.class);
-    private PhysicalDatasource ds;
+    private PhysicalDataSource ds;
     private BoolPtr boolPtr;
     private Set<String> errKeys;
     private Map<String, String> nodes = new HashMap<>();
@@ -38,7 +38,7 @@ public class TestSchemasTask extends Thread {
     private volatile boolean isFinish = false;
     private Condition finishCond = lock.newCondition();
 
-    public TestSchemasTask(PhysicalDatasource ds, List<Pair<String, String>> nodeList, Set<String> errKeys, BoolPtr boolPtr, boolean needAlert) {
+    public TestSchemasTask(PhysicalDataSource ds, List<Pair<String, String>> nodeList, Set<String> errKeys, BoolPtr boolPtr, boolean needAlert) {
         this.ds = ds;
         this.errKeys = errKeys;
         this.boolPtr = boolPtr;

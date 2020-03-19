@@ -6,8 +6,8 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataHost;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.*;
 import com.actiontech.dble.config.ErrorCode;
@@ -244,17 +244,17 @@ public final class RollbackConfig {
             throw new Exception("Reload status error ,other client or cluster may in reload");
         }
         ServerConfig conf = DbleServer.getInstance().getConfig();
-        Map<String, AbstractPhysicalDBPool> dataHosts = conf.getBackupDataHosts();
+        Map<String, PhysicalDataHost> dataHosts = conf.getBackupDataHosts();
         Map<String, UserConfig> users = conf.getBackupUsers();
         Map<String, SchemaConfig> schemas = conf.getBackupSchemas();
-        Map<String, PhysicalDBNode> dataNodes = conf.getBackupDataNodes();
+        Map<String, PhysicalDataNode> dataNodes = conf.getBackupDataNodes();
         FirewallConfig firewall = conf.getBackupFirewall();
         Map<ERTable, Set<ERTable>> erRelations = conf.getBackupErRelations();
         boolean backDataHostWithoutWR = conf.backDataHostWithoutWR();
         if (conf.canRollbackAll()) {
             boolean rollbackStatus = true;
             String errorMsg = null;
-            for (AbstractPhysicalDBPool dn : dataHosts.values()) {
+            for (PhysicalDataHost dn : dataHosts.values()) {
                 dn.init();
                 if (!dn.isInitSuccess()) {
                     rollbackStatus = false;
@@ -264,17 +264,17 @@ public final class RollbackConfig {
             }
             // INIT FAILED
             if (!rollbackStatus) {
-                for (AbstractPhysicalDBPool dn : dataHosts.values()) {
+                for (PhysicalDataHost dn : dataHosts.values()) {
                     dn.clearDataSources("rollbackup config");
                     dn.stopHeartbeat();
                 }
                 throw new Exception(errorMsg);
             }
-            final Map<String, AbstractPhysicalDBPool> cNodes = conf.getDataHosts();
+            final Map<String, PhysicalDataHost> cNodes = conf.getDataHosts();
             // apply
             boolean result = conf.rollback(users, schemas, dataNodes, dataHosts, erRelations, firewall, backDataHostWithoutWR);
             // stop old resource heartbeat
-            for (AbstractPhysicalDBPool dn : cNodes.values()) {
+            for (PhysicalDataHost dn : cNodes.values()) {
                 dn.clearDataSources("clear old config ");
                 dn.stopHeartbeat();
             }

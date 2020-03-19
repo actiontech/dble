@@ -1,6 +1,6 @@
 package com.actiontech.dble.backend.mysql.nio.handler.transaction.xa;
 
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.sqlengine.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +18,7 @@ public final class XACheckHandler {
     private final String xid;
     private final String schema;
     private final String dataNode;
-    private final PhysicalDatasource ds;
+    private final PhysicalDataSource ds;
     private Lock lock;
     private Condition done;
     private boolean finished = false;
@@ -27,7 +27,7 @@ public final class XACheckHandler {
     private boolean isExistXid = false;
     private boolean isSuccess = true;
 
-    public XACheckHandler(String xid, String schema, String dataNode, PhysicalDatasource ds) {
+    public XACheckHandler(String xid, String schema, String dataNode, PhysicalDataSource ds) {
         this.xid = xid;
         this.ds = ds;
         this.schema = schema;
@@ -102,7 +102,7 @@ public final class XACheckHandler {
         public void onResult(SQLQueryResult<List<Map<String, String>>> result) {
             if (!result.isSuccess()) {
                 // error
-                LOGGER.warn("execute 'XA RECOVER' in " + ds.getDbPool().getHostName() + " error!");
+                LOGGER.warn("execute 'XA RECOVER' in " + ds.getDataHost().getHostName() + " error!");
                 isSuccess = false;
             } else if (!result.getResult().isEmpty()) {
                 List<Map<String, String>> xaRows = result.getResult();

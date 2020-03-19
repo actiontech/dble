@@ -6,13 +6,13 @@
 package com.actiontech.dble.config.util;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataHost;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.helper.GetAndSyncDataSourceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
-import com.actiontech.dble.config.model.DBHostConfig;
+import com.actiontech.dble.config.model.DataSourceConfig;
 import com.actiontech.dble.util.StringUtil;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.util.Strings;
@@ -149,16 +149,16 @@ public final class ConfigUtil {
         return map;
     }
 
-    public static void setSchemasForPool(Map<String, AbstractPhysicalDBPool> dataHostMap, Map<String, PhysicalDBNode> dataNodeMap) {
-        for (AbstractPhysicalDBPool dbPool : dataHostMap.values()) {
-            dbPool.setSchemas(getDataNodeSchemasOfDataHost(dbPool.getHostName(), dataNodeMap));
+    public static void setSchemasForPool(Map<String, PhysicalDataHost> dataHostMap, Map<String, PhysicalDataNode> dataNodeMap) {
+        for (PhysicalDataHost dataHost : dataHostMap.values()) {
+            dataHost.setSchemas(getDataNodeSchemasOfDataHost(dataHost.getHostName(), dataNodeMap));
         }
     }
 
-    private static String[] getDataNodeSchemasOfDataHost(String dataHost, Map<String, PhysicalDBNode> dataNodeMap) {
+    private static String[] getDataNodeSchemasOfDataHost(String dataHost, Map<String, PhysicalDataNode> dataNodeMap) {
         ArrayList<String> schemaList = new ArrayList<>(30);
-        for (PhysicalDBNode dn : dataNodeMap.values()) {
-            if (dn.getDbPool().getHostName().equals(dataHost)) {
+        for (PhysicalDataNode dn : dataNodeMap.values()) {
+            if (dn.getDataHost().getHostName().equals(dataHost)) {
                 schemaList.add(dn.getDatabase());
             }
         }
@@ -206,7 +206,7 @@ public final class ConfigUtil {
     }
 
 
-    public static void getAndSyncKeyVariables(boolean isStart, Map<String, AbstractPhysicalDBPool> dataHosts) throws Exception {
+    public static void getAndSyncKeyVariables(boolean isStart, Map<String, PhysicalDataHost> dataHosts) throws Exception {
         Map<String, Future<KeyVariables>> keyVariablesTaskMap = new HashMap<>(dataHosts.size());
         getAndSyncKeyVariablesForDataSources(isStart, dataHosts, keyVariablesTaskMap);
 
@@ -253,28 +253,28 @@ public final class ConfigUtil {
 
 
 
-    private static void getAndSyncKeyVariablesForDataSources(boolean isStart, Map<String, AbstractPhysicalDBPool> dataHosts, Map<String, Future<KeyVariables>> keyVariablesTaskMap) throws InterruptedException {
+    private static void getAndSyncKeyVariablesForDataSources(boolean isStart, Map<String, PhysicalDataHost> dataHosts, Map<String, Future<KeyVariables>> keyVariablesTaskMap) throws InterruptedException {
         if (dataHosts.size() == 0) {
             return;
         }
         ExecutorService service = Executors.newFixedThreadPool(dataHosts.size());
-        for (Map.Entry<String, AbstractPhysicalDBPool> entry : dataHosts.entrySet()) {
+        for (Map.Entry<String, PhysicalDataHost> entry : dataHosts.entrySet()) {
             String hostName = entry.getKey();
-            AbstractPhysicalDBPool pool = entry.getValue();
+            PhysicalDataHost pool = entry.getValue();
 
             if (isStart) {
                 // start for first time, 1.you can set write host as empty
-                if (pool.getSource() == null) {
+                if (pool.getWriteSource() == null) {
                     continue;
                 }
-                DBHostConfig wHost = pool.getSource().getConfig();
+                DataSourceConfig wHost = pool.getWriteSource().getConfig();
                 // start for first time, 2.you can set write host as yourself
                 if (("localhost".equalsIgnoreCase(wHost.getIp()) || "127.0.0.1".equalsIgnoreCase(wHost.getIp())) &&
                         wHost.getPort() == DbleServer.getInstance().getConfig().getSystem().getServerPort()) {
                     continue;
                 }
             }
-            for (PhysicalDatasource ds : pool.getAllDataSources()) {
+            for (PhysicalDataSource ds : pool.getAllDataSources()) {
                 if (ds.isDisabled() || !ds.isTestConnSuccess()) {
                     continue;
                 }
@@ -296,7 +296,7 @@ public final class ConfigUtil {
         }
     }
 
-    private static void getKeyVariablesForDataSource(ExecutorService service, PhysicalDatasource ds, String hostName, Map<String, Future<KeyVariables>> keyVariablesTaskMap) {
+    private static void getKeyVariablesForDataSource(ExecutorService service, PhysicalDataSource ds, String hostName, Map<String, Future<KeyVariables>> keyVariablesTaskMap) {
         String dataSourceName = genDataSourceKey(hostName, ds.getName());
         GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(ds);
         Future<KeyVariables> future = service.submit(task);

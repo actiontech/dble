@@ -5,7 +5,7 @@
 */
 package com.actiontech.dble.config.model;
 
-import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
+import com.actiontech.dble.backend.datasource.PhysicalDataHost;
 import com.actiontech.dble.config.util.ConfigException;
 
 import java.util.regex.Matcher;
@@ -22,9 +22,9 @@ public class DataHostConfig {
     private String name;
     private int maxCon = 128;
     private int minCon = 10;
-    private int balance = AbstractPhysicalDBPool.BALANCE_NONE;
-    private final DBHostConfig writeHost;
-    private final DBHostConfig[] readHosts;
+    private int balance = PhysicalDataHost.BALANCE_NONE;
+    private final DataSourceConfig writeHost;
+    private final DataSourceConfig[] readHosts;
     private String hearbeatSQL;
     private boolean isShowSlaveSql = false;
     private boolean isSelectReadOnlySql = false;
@@ -35,7 +35,7 @@ public class DataHostConfig {
     private int errorRetryCount = 0;
 
     public DataHostConfig(String name,
-                          DBHostConfig writeHost, DBHostConfig[] readHosts, int slaveThreshold, int tempReadHostAvailable) {
+                          DataSourceConfig writeHost, DataSourceConfig[] readHosts, int slaveThreshold, int tempReadHostAvailable) {
         super();
         this.name = name;
         this.writeHost = writeHost;
@@ -88,11 +88,11 @@ public class DataHostConfig {
         }
     }
 
-    public DBHostConfig getWriteHost() {
+    public DataSourceConfig getWriteHost() {
         return writeHost;
     }
 
-    public DBHostConfig[] getReadHosts() {
+    public DataSourceConfig[] getReadHosts() {
         return readHosts;
     }
 

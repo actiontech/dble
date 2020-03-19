@@ -1,7 +1,7 @@
 package com.actiontech.dble.config.util;
 
-import com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataHost;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.config.loader.zkprocess.entity.Schemas;
 import com.actiontech.dble.config.loader.zkprocess.entity.schema.datahost.DataHost;
 import com.actiontech.dble.config.loader.zkprocess.entity.schema.datahost.ReadHost;
@@ -19,8 +19,8 @@ import java.util.concurrent.locks.ReentrantLock;
  * Created by szf on 2019/10/23.
  */
 public class SchemaWriteJob implements Runnable {
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(PhysicalDNPoolSingleWH.class);
-    private final Set<PhysicalDNPoolSingleWH> changeSet;
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(PhysicalDataHost.class);
+    private final Set<PhysicalDataHost> changeSet;
     private final Schemas schemas;
     private volatile boolean finish = false;
     private volatile String errorMessage = null;
@@ -28,7 +28,7 @@ public class SchemaWriteJob implements Runnable {
     private Condition condition = lock.newCondition();
     private final int reloadIndex;
 
-    public SchemaWriteJob(Set<PhysicalDNPoolSingleWH> changeSet, Schemas schemas, int reloadIndex) {
+    public SchemaWriteJob(Set<PhysicalDataHost> changeSet, Schemas schemas, int reloadIndex) {
         this.changeSet = changeSet;
         this.schemas = schemas;
         this.reloadIndex = reloadIndex;
@@ -39,9 +39,9 @@ public class SchemaWriteJob implements Runnable {
         try {
             List<DataHost> dhlist = schemas.getDataHost();
             for (DataHost dh : dhlist) {
-                for (PhysicalDNPoolSingleWH physicalDNPoolSingleWH : changeSet) {
-                    if (dh.getName().equals(physicalDNPoolSingleWH.getHostName())) {
-                        changeHostInfo(dh, physicalDNPoolSingleWH);
+                for (PhysicalDataHost dataHost : changeSet) {
+                    if (dh.getName().equals(dataHost.getHostName())) {
+                        changeHostInfo(dh, dataHost);
                     }
                 }
             }
@@ -56,9 +56,9 @@ public class SchemaWriteJob implements Runnable {
     }
 
 
-    private void changeHostInfo(DataHost dh, PhysicalDNPoolSingleWH physicalDNPoolSingleWH) {
+    private void changeHostInfo(DataHost dh, PhysicalDataHost dataHost) {
         WriteHost w = new WriteHost();
-        PhysicalDatasource ws = physicalDNPoolSingleWH.getSource();
+        PhysicalDataSource ws = dataHost.getWriteSource();
         w.setDisabled("" + ws.isDisabled());
         w.setHost(ws.getConfig().getHostName());
         w.setId(ws.getConfig().getId());
@@ -79,8 +79,8 @@ public class SchemaWriteJob implements Runnable {
         }
 
         List<ReadHost> newReadList = new ArrayList<ReadHost>();
-        if (physicalDNPoolSingleWH.getReadSourceAll().size() > 0) {
-            for (PhysicalDatasource rs : physicalDNPoolSingleWH.getReadSourceAll().get(0)) {
+        if (dataHost.getReadSourceAll().size() > 0) {
+            for (PhysicalDataSource rs : dataHost.getReadSourceAll().get(0)) {
                 ReadHost r = new ReadHost();
                 r.setDisabled("" + rs.isDisabled());
                 r.setHost(rs.getConfig().getHostName());

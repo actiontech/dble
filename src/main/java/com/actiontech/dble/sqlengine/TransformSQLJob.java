@@ -7,8 +7,8 @@ package com.actiontech.dble.sqlengine;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ErrorCode;
@@ -29,11 +29,11 @@ public class TransformSQLJob implements ResponseHandler, Runnable {
     public static final Logger LOGGER = LoggerFactory.getLogger(TransformSQLJob.class);
     private final String sql;
     private final String databaseName;
-    private final PhysicalDatasource ds;
+    private final PhysicalDataSource ds;
     private final ManagerConnection mc;
     private BackendConnection connection;
 
-    public TransformSQLJob(String sql, String databaseName, PhysicalDatasource ds, ManagerConnection mc) {
+    public TransformSQLJob(String sql, String databaseName, PhysicalDataSource ds, ManagerConnection mc) {
         this.sql = sql;
         this.databaseName = databaseName;
         this.ds = ds;
@@ -46,7 +46,7 @@ public class TransformSQLJob implements ResponseHandler, Runnable {
             if (ds == null) {
                 RouteResultsetNode node = new RouteResultsetNode(databaseName, ServerParse.SELECT, sql);
                 // create new connection
-                PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
+                PhysicalDataNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), false, true, node, this, node);
             } else {
                 ds.getConnection(databaseName, true, this, null, false);

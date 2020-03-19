@@ -7,7 +7,7 @@ package com.actiontech.dble.sqlengine;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
+import com.actiontech.dble.backend.datasource.PhysicalDataHost;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResetConnHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
@@ -44,10 +44,10 @@ public class SetTestJob implements ResponseHandler, Runnable {
     public void run() {
         boolean sendTest = false;
         try {
-            Map<String, AbstractPhysicalDBPool> dataHosts = DbleServer.getInstance().getConfig().getDataHosts();
-            for (AbstractPhysicalDBPool dn : dataHosts.values()) {
-                if (dn.getSource().isAlive()) {
-                    dn.getSource().getConnection(databaseName, true, this, null, false);
+            Map<String, PhysicalDataHost> dataHosts = DbleServer.getInstance().getConfig().getDataHosts();
+            for (PhysicalDataHost dn : dataHosts.values()) {
+                if (dn.getWriteSource().isAlive()) {
+                    dn.getWriteSource().getConnection(databaseName, true, this, null, false);
                     sendTest = true;
                     break;
                 }

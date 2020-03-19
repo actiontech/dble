@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2016-2020 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
 package com.actiontech.dble.backend.datasource;
 
 import com.actiontech.dble.DbleServer;
@@ -26,38 +31,55 @@ import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-/**
- * Created by szf on 2019/10/17.
- */
-public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(PhysicalDNPoolSingleWH.class);
+public class PhysicalDataHost {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PhysicalDataHost.class);
     public static final String JSON_NAME = "dataHost";
     public static final String JSON_LIST = "dataSources";
     public static final String JSON_WRITE_SOURCE = "writeSource";
 
-    private volatile PhysicalDatasource writeSource;
-    private Map<String, PhysicalDatasource> allSourceMap = new ConcurrentHashMap<>();
+    private volatile PhysicalDataSource writeSource;
+    private Map<String, PhysicalDataSource> allSourceMap = new ConcurrentHashMap<>();
+    public static final int BALANCE_NONE = 0;
+    protected static final int BALANCE_ALL_BACK = 1;
+    protected static final int BALANCE_ALL = 2;
+
+    public static final int WEIGHT = 0;
+
+    private final String hostName;
+    private final int balance;
+    private final DataHostConfig dataHostConfig;
+    private final ThreadLocalRandom random = ThreadLocalRandom.current();
+    private volatile boolean initSuccess = false;
+    protected String[] schemas;
+
+    private PhysicalDataSource[] readSources;
+
+    private final ReentrantReadWriteLock adjustLock = new ReentrantReadWriteLock();
 
 
-    public PhysicalDNPoolSingleWH(String name, DataHostConfig conf, PhysicalDatasource writeSource, PhysicalDatasource[] readSources, int balance) {
-        super(name, balance, conf);
+    public PhysicalDataHost(String name, DataHostConfig config, PhysicalDataSource writeSource, PhysicalDataSource[] readSources, int balance) {
+        this.hostName = name;
+        this.balance = balance;
+        this.dataHostConfig = config;
         this.writeSource = writeSource;
         this.readSources = readSources;
         allSourceMap.put(writeSource.getName(), writeSource);
 
-        for (PhysicalDatasource s : readSources) {
+        for (PhysicalDataSource s : readSources) {
             allSourceMap.put(s.getName(), s);
         }
         setDataSourceProps();
     }
 
-    public PhysicalDNPoolSingleWH(PhysicalDNPoolSingleWH org) {
-        super(org.hostName, org.balance, org.dataHostConfig);
+    public PhysicalDataHost(PhysicalDataHost org) {
+        this.hostName = org.hostName;
+        this.balance = org.balance;
+        this.dataHostConfig = org.dataHostConfig;
         allSourceMap = new ConcurrentHashMap<>();
-        for (Map.Entry<String, PhysicalDatasource> entry : org.allSourceMap.entrySet()) {
+        for (Map.Entry<String, PhysicalDataSource> entry : org.allSourceMap.entrySet()) {
             MySQLDataSource newSource = new MySQLDataSource((MySQLDataSource) entry.getValue());
             allSourceMap.put(entry.getKey(), newSource);
             if (entry.getValue() == org.writeSource) {
@@ -66,10 +88,29 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         }
     }
 
-    @Override
-    PhysicalDatasource findDatasource(BackendConnection exitsCon) {
+
+    public boolean isInitSuccess() {
+        return initSuccess;
+    }
+
+
+
+    public String[] getSchemas() {
+        return schemas;
+    }
+
+    public void setSchemas(String[] mySchemas) {
+        this.schemas = mySchemas;
+    }
+
+    public DataHostConfig getDataHostConfig() {
+        return dataHostConfig;
+    }
+
+
+    PhysicalDataSource findDatasource(BackendConnection exitsCon) {
         MySQLConnection con = (MySQLConnection) exitsCon;
-        PhysicalDatasource source = allSourceMap.get(con.getPool().getName());
+        PhysicalDataSource source = allSourceMap.get(con.getPool().getName());
         if (source != null && source == con.getPool()) {
             return source;
         }
@@ -77,21 +118,18 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         return null;
     }
 
-    @Override
-    boolean isSlave(PhysicalDatasource ds) {
+    boolean isSlave(PhysicalDataSource ds) {
         return !(writeSource == ds);
     }
 
 
-    @Override
-    public PhysicalDatasource getSource() {
+    public PhysicalDataSource getWriteSource() {
         return writeSource;
     }
 
-    @Override
     public boolean init() {
         if (balance != 0) {
-            for (Map.Entry<String, PhysicalDatasource> entry : allSourceMap.entrySet()) {
+            for (Map.Entry<String, PhysicalDataSource> entry : allSourceMap.entrySet()) {
                 if (initSource(entry.getValue())) {
                     initSuccess = true;
                     LOGGER.info(hostName + " " + entry.getKey() + " init success");
@@ -109,9 +147,8 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         return initSuccess;
     }
 
-    @Override
     public void doHeartbeat() {
-        for (PhysicalDatasource source : allSourceMap.values()) {
+        for (PhysicalDataSource source : allSourceMap.values()) {
             if (source != null) {
                 source.doHeartbeat();
             } else {
@@ -120,43 +157,38 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         }
     }
 
-    @Override
     public void heartbeatCheck(long ildCheckPeriod) {
-        for (PhysicalDatasource ds : allSourceMap.values()) {
+        for (PhysicalDataSource ds : allSourceMap.values()) {
             // only read node or all write node
             // and current write node will check
             if (ds != null && (ds.getHeartbeat().getStatus() == MySQLHeartbeat.OK_STATUS) &&
-                    (ds.isReadNode() || ds == this.getSource())) {
+                    (ds.isReadNode() || ds == this.getWriteSource())) {
                 ds.connectionHeatBeatCheck(ildCheckPeriod);
             }
         }
     }
 
-    @Override
     public void startHeartbeat() {
-        for (PhysicalDatasource source : allSourceMap.values()) {
+        for (PhysicalDataSource source : allSourceMap.values()) {
             source.startHeartbeat();
         }
     }
 
-    @Override
     public void stopHeartbeat() {
-        for (PhysicalDatasource source : allSourceMap.values()) {
+        for (PhysicalDataSource source : allSourceMap.values()) {
             source.stopHeartbeat();
         }
     }
 
-    @Override
     public void clearDataSources(String reason) {
-        for (PhysicalDatasource source : allSourceMap.values()) {
+        for (PhysicalDataSource source : allSourceMap.values()) {
             LOGGER.info("clear datasource of pool  " + this.hostName + " ds:" + source.getConfig());
             source.clearCons(reason);
             source.stopHeartbeat();
         }
     }
 
-    @Override
-    public Collection<PhysicalDatasource> getAllActiveDataSources() {
+    public Collection<PhysicalDataSource> getAllActiveDataSources() {
         if (this.dataHostConfig.getBalance() != BALANCE_NONE) {
             return allSourceMap.values();
         } else {
@@ -165,14 +197,12 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
     }
 
 
-    @Override
-    public Collection<PhysicalDatasource> getAllDataSources() {
+    public Collection<PhysicalDataSource> getAllDataSources() {
         return new LinkedList<>(allSourceMap.values());
     }
 
-    @Override
     void getRWBalanceCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
-        PhysicalDatasource theNode = getRWBalanceNode();
+        PhysicalDataSource theNode = getRWBalanceNode();
         if (theNode.isDisabled()) {
             if (this.getReadSources().length > 0) {
                 theNode = this.getReadSources()[0];
@@ -194,10 +224,9 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         theNode.getConnection(schema, autocommit, handler, attachment, false);
     }
 
-    @Override
-    PhysicalDatasource getRWBalanceNode() {
-        PhysicalDatasource theNode;
-        ArrayList<PhysicalDatasource> okSources;
+    PhysicalDataSource getRWBalanceNode() {
+        PhysicalDataSource theNode;
+        ArrayList<PhysicalDataSource> okSources;
         switch (balance) {
             case BALANCE_ALL: {
                 okSources = getAllActiveRWSources(true, checkSlaveSynStatus());
@@ -212,7 +241,7 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
             case BALANCE_NONE:
             default:
                 // return default write data source
-                theNode = this.getSource();
+                theNode = this.getWriteSource();
         }
 
         if (LOGGER.isDebugEnabled()) {
@@ -222,11 +251,10 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         return theNode;
     }
 
-    @Override
-    PhysicalDatasource getReadNode() throws Exception {
+    PhysicalDataSource getReadNode() throws Exception {
         for (int i = 0; i < allSourceMap.size(); i++) {
             int index = Math.abs(random.nextInt(Integer.MAX_VALUE)) % allSourceMap.size();
-            PhysicalDatasource ds = (PhysicalDatasource) allSourceMap.values().toArray()[index];
+            PhysicalDataSource ds = (PhysicalDataSource) allSourceMap.values().toArray()[index];
             if (ds != writeSource && ds.isAlive()) {
                 if (checkSlaveSynStatus() && canSelectAsReadNode(ds)) {
                     return ds;
@@ -238,12 +266,11 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         return null;
     }
 
-    @Override
     boolean getReadCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws
             Exception {
         LOGGER.debug("!readSources.isEmpty() " + (allSourceMap.values().size() > 1));
         if (allSourceMap.values().size() > 1) {
-            PhysicalDatasource theNode = getReadNode();
+            PhysicalDataSource theNode = getReadNode();
             if (theNode != null) {
                 theNode.setReadCount();
                 theNode.getConnection(schema, autocommit, handler, attachment, false);
@@ -258,49 +285,38 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         }
     }
 
-
-    @Override
-    PhysicalDatasource getWriteSource() {
-        return writeSource;
-    }
-
-    public PhysicalDatasource[] getReadSources() {
+    public PhysicalDataSource[] getReadSources() {
         if (this.dataHostConfig.getBalance() != BALANCE_NONE) {
             return readSources;
         } else {
-            return new PhysicalDatasource[0];
+            return new PhysicalDataSource[0];
         }
     }
 
-    public Map<Integer, PhysicalDatasource[]> getReadSourceAll() {
-        PhysicalDatasource[] list = new PhysicalDatasource[allSourceMap.size() - 1];
+    public Map<Integer, PhysicalDataSource[]> getReadSourceAll() {
+        PhysicalDataSource[] list = new PhysicalDataSource[allSourceMap.size() - 1];
         int i = 0;
-        for (PhysicalDatasource ds : allSourceMap.values()) {
+        for (PhysicalDataSource ds : allSourceMap.values()) {
             if (ds != writeSource) {
                 list[i++] = ds;
             }
         }
 
-        Map<Integer, PhysicalDatasource[]> result = new HashMap<Integer, PhysicalDatasource[]>();
+        Map<Integer, PhysicalDataSource[]> result = new HashMap<Integer, PhysicalDataSource[]>();
         if (list.length > 0) {
             result.put(0, list);
         }
         return result;
     }
 
-    @Override
-    public int next(int i) {
-        return 0;
-    }
-
     private void setDataSourceProps() {
-        for (PhysicalDatasource ds : this.allSourceMap.values()) {
-            ds.setDbPool(this);
+        for (PhysicalDataSource ds : this.allSourceMap.values()) {
+            ds.setDataHost(this);
         }
     }
 
 
-    private boolean initSource(PhysicalDatasource ds) {
+    private boolean initSource(PhysicalDataSource ds) {
         if (ds.getConfig().isDisabled()) {
             LOGGER.info(ds.getConfig().getHostName() + " is disabled, skipped");
             return true;
@@ -365,10 +381,10 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
     }
 
 
-    private ArrayList<PhysicalDatasource> getAllActiveRWSources(boolean includeWriteNode, boolean filterWithSlaveThreshold) {
-        ArrayList<PhysicalDatasource> okSources = new ArrayList<>(allSourceMap.values().size());
+    private ArrayList<PhysicalDataSource> getAllActiveRWSources(boolean includeWriteNode, boolean filterWithSlaveThreshold) {
+        ArrayList<PhysicalDataSource> okSources = new ArrayList<>(allSourceMap.values().size());
 
-        for (PhysicalDatasource ds : allSourceMap.values()) {
+        for (PhysicalDataSource ds : allSourceMap.values()) {
             if (!includeWriteNode && ds == writeSource) {
                 continue;
             } else {
@@ -394,7 +410,7 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
             HaConfigManager.getInstance().updateConfDataHost(createDisableSnapshot(this, nameList), syncWriteConf);
 
             for (String dsName : nameList) {
-                PhysicalDatasource datasource = allSourceMap.get(dsName);
+                PhysicalDataSource datasource = allSourceMap.get(dsName);
                 if (datasource.setDisabled(true)) {
                     //clear old resource
                     datasource.clearCons("ha command disable datasource");
@@ -411,10 +427,10 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         }
     }
 
-    public PhysicalDNPoolSingleWH createDisableSnapshot(PhysicalDNPoolSingleWH org, String[] nameList) {
-        PhysicalDNPoolSingleWH snapshot = new PhysicalDNPoolSingleWH(org);
+    public PhysicalDataHost createDisableSnapshot(PhysicalDataHost org, String[] nameList) {
+        PhysicalDataHost snapshot = new PhysicalDataHost(org);
         for (String dsName : nameList) {
-            PhysicalDatasource datasource = snapshot.allSourceMap.get(dsName);
+            PhysicalDataSource datasource = snapshot.allSourceMap.get(dsName);
             datasource.setDisabled(true);
         }
         return snapshot;
@@ -431,7 +447,7 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
             HaConfigManager.getInstance().updateConfDataHost(createEnableSnapshot(this, nameList), syncWriteConf);
 
             for (String dsName : nameList) {
-                PhysicalDatasource datasource = allSourceMap.get(dsName);
+                PhysicalDataSource datasource = allSourceMap.get(dsName);
                 if (datasource.setDisabled(false)) {
                     datasource.startHeartbeat();
                 }
@@ -445,10 +461,10 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         }
     }
 
-    public PhysicalDNPoolSingleWH createEnableSnapshot(PhysicalDNPoolSingleWH org, String[] nameList) {
-        PhysicalDNPoolSingleWH snapshot = new PhysicalDNPoolSingleWH(org);
+    public PhysicalDataHost createEnableSnapshot(PhysicalDataHost org, String[] nameList) {
+        PhysicalDataHost snapshot = new PhysicalDataHost(org);
         for (String dsName : nameList) {
-            PhysicalDatasource datasource = allSourceMap.get(dsName);
+            PhysicalDataSource datasource = allSourceMap.get(dsName);
             datasource.setDisabled(false);
         }
         return snapshot;
@@ -461,7 +477,7 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         try {
             HaConfigManager.getInstance().updateConfDataHost(createSwitchSnapshot(writeHost), syncWriteConf);
 
-            PhysicalDatasource newWriteHost = allSourceMap.get(writeHost);
+            PhysicalDataSource newWriteHost = allSourceMap.get(writeHost);
             writeSource.setReadNode(true);
             //close all old master connection ,so that new write query would not put into the old writeHost
             writeSource.clearCons("ha command switch datasource");
@@ -486,9 +502,9 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         }
     }
 
-    public PhysicalDNPoolSingleWH createSwitchSnapshot(String writeHost) {
-        PhysicalDNPoolSingleWH snapshot = new PhysicalDNPoolSingleWH(this);
-        PhysicalDatasource newWriteHost = snapshot.allSourceMap.get(writeHost);
+    public PhysicalDataHost createSwitchSnapshot(String writeHost) {
+        PhysicalDataHost snapshot = new PhysicalDataHost(this);
+        PhysicalDataSource newWriteHost = snapshot.allSourceMap.get(writeHost);
         snapshot.writeSource.setReadNode(true);
         newWriteHost.setReadNode(false);
         snapshot.writeSource = newWriteHost;
@@ -507,7 +523,7 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
             }.getType();
             List<DataSourceStatus> list = base.toBeanformJson(jsonObj.getJSONArray(JSON_LIST).toJSONString(), parseType);
             for (DataSourceStatus status : list) {
-                PhysicalDatasource phys = allSourceMap.get(status.getName());
+                PhysicalDataSource phys = allSourceMap.get(status.getName());
                 if (phys != null) {
                     if (phys.setDisabled(status.isDisable())) {
                         if (status.isDisable()) {
@@ -543,7 +559,7 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         JSONObject jsonObject = new JSONObject();
         jsonObject.put(JSON_NAME, this.getHostName());
         List<DataSourceStatus> list = new ArrayList<>();
-        for (PhysicalDatasource phys : allSourceMap.values()) {
+        for (PhysicalDataSource phys : allSourceMap.values()) {
             list.add(new DataSourceStatus(phys.getName(), phys.isDisabled(), !phys.isReadNode()));
         }
         jsonObject.put(JSON_LIST, list);
@@ -556,7 +572,7 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         if (subHostName != null) {
             for (String dn : subHostName.split(",")) {
                 boolean find = false;
-                for (PhysicalDatasource pds : this.getAllDataSources()) {
+                for (PhysicalDataSource pds : this.getAllDataSources()) {
                     if (pds.getName().equals(dn)) {
                         find = true;
                         break;
@@ -568,5 +584,66 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
             }
         }
         return true;
+    }
+    public String getHostName() {
+        return hostName;
+    }
+
+    public PhysicalDataSource randomSelect(ArrayList<PhysicalDataSource> okSources) {
+        if (okSources.isEmpty()) {
+            return this.getWriteSource();
+        } else {
+            int length = okSources.size();
+            int totalWeight = 0;
+            boolean sameWeight = true;
+            for (int i = 0; i < length; i++) {
+                int weight = okSources.get(i).getConfig().getWeight();
+                totalWeight += weight;
+                if (sameWeight && i > 0 && weight != okSources.get(i - 1).getConfig().getWeight()) {
+                    sameWeight = false;
+                }
+            }
+
+            if (totalWeight > 0 && !sameWeight) {
+                // random by different weight
+                int offset = random.nextInt(totalWeight);
+                for (PhysicalDataSource okSource : okSources) {
+                    offset -= okSource.getConfig().getWeight();
+                    if (offset < 0) {
+                        return okSource;
+                    }
+                }
+            }
+            return okSources.get(random.nextInt(length));
+        }
+    }
+
+
+    protected boolean checkSlaveSynStatus() {
+        return (dataHostConfig.getSlaveThreshold() != -1) &&
+                (dataHostConfig.isShowSlaveSql());
+    }
+
+    protected boolean canSelectAsReadNode(PhysicalDataSource theSource) {
+        Integer slaveBehindMaster = theSource.getHeartbeat().getSlaveBehindMaster();
+        int dbSynStatus = theSource.getHeartbeat().getDbSynStatus();
+        if (slaveBehindMaster == null || dbSynStatus == MySQLHeartbeat.DB_SYN_ERROR) {
+            return false;
+        }
+        boolean isSync = dbSynStatus == MySQLHeartbeat.DB_SYN_NORMAL;
+        boolean isNotDelay = slaveBehindMaster < this.dataHostConfig.getSlaveThreshold();
+        return isSync && isNotDelay;
+    }
+
+
+    boolean equalsBaseInfo(PhysicalDataHost pool) {
+        return pool.getDataHostConfig().getName().equals(this.dataHostConfig.getName()) &&
+                pool.getDataHostConfig().getHearbeatSQL().equals(this.dataHostConfig.getHearbeatSQL()) &&
+                pool.getDataHostConfig().getHeartbeatTimeout() == this.dataHostConfig.getHeartbeatTimeout() &&
+                pool.getDataHostConfig().getErrorRetryCount() == this.dataHostConfig.getErrorRetryCount() &&
+                pool.getDataHostConfig().getBalance() == this.dataHostConfig.getBalance() &&
+                pool.getDataHostConfig().getMaxCon() == this.dataHostConfig.getMaxCon() &&
+                pool.getDataHostConfig().getMinCon() == this.dataHostConfig.getMinCon() &&
+                pool.getHostName().equals(this.hostName);
     }
 }

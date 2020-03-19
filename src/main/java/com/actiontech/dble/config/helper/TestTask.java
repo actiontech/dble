@@ -5,16 +5,16 @@
 
 package com.actiontech.dble.config.helper;
 
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
 
 import java.io.IOException;
 
 public class TestTask extends Thread {
-    private PhysicalDatasource ds;
+    private PhysicalDataSource ds;
     private BoolPtr boolPtr;
 
-    public TestTask(PhysicalDatasource ds, BoolPtr boolPtr) {
+    public TestTask(PhysicalDataSource ds, BoolPtr boolPtr) {
         this.ds = ds;
         this.boolPtr = boolPtr;
     }

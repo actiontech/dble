@@ -2,7 +2,7 @@ package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.HaChangeStatus;
-import com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH;
+import com.actiontech.dble.backend.datasource.PhysicalDataHost;
 import com.actiontech.dble.config.loader.console.ZookeeperPath;
 import com.actiontech.dble.config.loader.zkprocess.entity.Schemas;
 import com.actiontech.dble.config.loader.zkprocess.entity.schema.datahost.DataHost;
@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH.*;
+import static com.actiontech.dble.backend.datasource.PhysicalDataHost.*;
 
 /**
  * Created by szf on 2019/10/23.
@@ -42,7 +42,7 @@ public final class HaConfigManager {
     private final AtomicBoolean isWriting = new AtomicBoolean(false);
     private final ReentrantReadWriteLock adjustLock = new ReentrantReadWriteLock();
     private volatile SchemaWriteJob schemaWriteJob;
-    private volatile Set<PhysicalDNPoolSingleWH> waitingSet = new HashSet<>();
+    private volatile Set<PhysicalDataHost> waitingSet = new HashSet<>();
     private final Map<Integer, HaChangeStatus> unfinised = new ConcurrentHashMap<>();
     private final AtomicInteger reloadIndex = new AtomicInteger();
 
@@ -85,12 +85,12 @@ public final class HaConfigManager {
         }
     }
 
-    private void finishAndNext() {
+    public void finishAndNext() {
         isWriting.set(false);
         triggerNext();
     }
 
-    public void updateConfDataHost(PhysicalDNPoolSingleWH physicalDNPoolSingleWH, boolean syncWriteConf) {
+    public void updateConfDataHost(PhysicalDataHost dataHost, boolean syncWriteConf) {
         SchemaWriteJob thisTimeJob;
         HA_LOGGER.info("start to update the local file with sync flag " + syncWriteConf);
         //check if there is one thread is writing
@@ -98,7 +98,7 @@ public final class HaConfigManager {
             adjustLock.writeLock().lock();
             try {
                 HA_LOGGER.info("get into write process");
-                waitingSet.add(physicalDNPoolSingleWH);
+                waitingSet.add(dataHost);
                 schemaWriteJob = new SchemaWriteJob(waitingSet, schema, reloadIndex.get());
                 thisTimeJob = schemaWriteJob;
                 waitingSet = new HashSet<>();
@@ -111,7 +111,7 @@ public final class HaConfigManager {
             try {
                 HA_LOGGER.info("get into merge process");
                 thisTimeJob = schemaWriteJob;
-                waitingSet.add(physicalDNPoolSingleWH);
+                waitingSet.add(dataHost);
             } finally {
                 adjustLock.readLock().unlock();
             }

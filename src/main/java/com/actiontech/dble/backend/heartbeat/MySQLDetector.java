@@ -11,7 +11,7 @@ import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
 import com.actiontech.dble.config.helper.GetAndSyncDataSourceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
@@ -114,7 +114,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         lastReceivedQryTime = System.currentTimeMillis();
         heartbeat.getRecorder().set((lastReceivedQryTime - lastSendQryTime));
         if (result.isSuccess()) {
-            PhysicalDatasource source = heartbeat.getSource();
+            PhysicalDataSource source = heartbeat.getSource();
             Map<String, String> resultResult = result.getResult();
             if (source.getHostConfig().isShowSlaveSql()) {
                 setStatusBySlave(source, resultResult);
@@ -128,7 +128,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         }
     }
 
-    private void setStatusForNormalHeartbeat(PhysicalDatasource source) {
+    private void setStatusForNormalHeartbeat(PhysicalDataSource source) {
         if (!heartbeat.isStop()) {
             if (heartbeat.getStatus() == MySQLHeartbeat.OK_STATUS) { // ok->ok
                 if (!heartbeat.getSource().isSalveOrRead() && source.isReadOnly()) { // writehost check read only status is back?
@@ -179,7 +179,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
     }
 
-    private void setStatusBySlave(PhysicalDatasource source, Map<String, String> resultResult) {
+    private void setStatusBySlave(PhysicalDataSource source, Map<String, String> resultResult) {
         String slaveIoRunning = resultResult != null ? resultResult.get("Slave_IO_Running") : null;
         String slaveSqlRunning = resultResult != null ? resultResult.get("Slave_SQL_Running") : null;
         if (slaveIoRunning != null && slaveIoRunning.equals(slaveSqlRunning) && slaveSqlRunning.equals("Yes")) {
@@ -205,7 +205,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
     }
 
-    private void setStatusByReadOnly(PhysicalDatasource source, Map<String, String> resultResult) {
+    private void setStatusByReadOnly(PhysicalDataSource source, Map<String, String> resultResult) {
         String readonly = resultResult != null ? resultResult.get("@@read_only") : null;
         if (readonly == null) {
             heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS);

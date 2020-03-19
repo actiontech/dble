@@ -17,18 +17,18 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Map;
 
-public class PhysicalDBNode {
-    protected static final Logger LOGGER = LoggerFactory.getLogger(PhysicalDBNode.class);
+public class PhysicalDataNode {
+    protected static final Logger LOGGER = LoggerFactory.getLogger(PhysicalDataNode.class);
 
     protected final String name;
     protected String database;
-    protected volatile AbstractPhysicalDBPool dbPool;
+    protected volatile PhysicalDataHost dataHost;
     private volatile boolean isSchemaExists = true;
 
-    public PhysicalDBNode(String hostName, String database, AbstractPhysicalDBPool dbPool) {
+    public PhysicalDataNode(String hostName, String database, PhysicalDataHost dataHost) {
         this.name = hostName;
         this.database = database;
-        this.dbPool = dbPool;
+        this.dataHost = dataHost;
     }
 
     public boolean isSchemaExists() {
@@ -43,12 +43,12 @@ public class PhysicalDBNode {
         return name;
     }
 
-    public AbstractPhysicalDBPool getDbPool() {
-        return dbPool;
+    public PhysicalDataHost getDataHost() {
+        return dataHost;
     }
 
-    public void setDbPool(AbstractPhysicalDBPool dbPool) {
-        this.dbPool = dbPool;
+    public void setDataHost(PhysicalDataHost dataHostPool) {
+        this.dataHost = dataHostPool;
     }
 
     public String getDatabase() {
@@ -69,7 +69,7 @@ public class PhysicalDBNode {
                                             BackendConnection exitsCon, ResponseHandler handler,
                                             Object attachment) throws Exception {
 
-        PhysicalDatasource ds = this.dbPool.findDatasource(exitsCon);
+        PhysicalDataSource ds = this.dataHost.findDatasource(exitsCon);
         if (ds == null) {
             throw new RuntimeException("can't find exits connection, maybe finished " + exitsCon);
         } else {
@@ -82,9 +82,9 @@ public class PhysicalDBNode {
             throw new RuntimeException("invalid param ,connection request db is :" + schema +
                     " and datanode db is " + this.database);
         }
-        if (!dbPool.isInitSuccess() && !dbPool.init()) {
-            throw new RuntimeException("DataNode[" + dbPool.getHostName() + "]'s init error, please check it can be connected. " +
-                    "The current Node is {DataHost[" + dbPool.getSource().getConfig().getUrl() + ",Schema[" + schema + "]}");
+        if (!dataHost.isInitSuccess() && !dataHost.init()) {
+            throw new RuntimeException("DataNode[" + dataHost.getHostName() + "]'s init error, please check it can be connected. " +
+                    "The current Node is {DataHost[" + dataHost.getWriteSource().getConfig().getUrl() + ",Schema[" + schema + "]}");
         }
     }
 
@@ -96,13 +96,13 @@ public class PhysicalDBNode {
         }
         if (rrs.getRunOnSlave() == null) {
             if (rrs.canRunINReadDB(autoCommit)) {
-                dbPool.getRWBalanceCon(schema, autoCommit, handler, attachment);
+                dataHost.getRWBalanceCon(schema, autoCommit, handler, attachment);
             } else {
                 getWriteNodeConnection(schema, autoCommit, handler, attachment, false);
             }
         } else {
             if (rrs.getRunOnSlave()) {
-                if (!dbPool.getReadCon(schema, autoCommit, handler, attachment)) {
+                if (!dataHost.getReadCon(schema, autoCommit, handler, attachment)) {
                     LOGGER.info("Do not have slave connection to use, use master connection instead.");
                     rrs.setRunOnSlave(false);
                     rrs.setCanRunInReadDB(false);
@@ -117,10 +117,10 @@ public class PhysicalDBNode {
 
     public BackendConnection getConnection(String schema, boolean autoCommit, Boolean runOnSlave, Object attachment) throws Exception {
         if (runOnSlave == null) {
-            PhysicalDatasource readSource = dbPool.getRWBalanceNode();
+            PhysicalDataSource readSource = dataHost.getRWBalanceNode();
             if (!readSource.isAlive()) {
                 String heartbeatError = "the data source[" + readSource.getConfig().getUrl() + "] can't reach. Please check the dataHost status";
-                if (dbPool.getDataHostConfig().isShowSlaveSql()) {
+                if (dataHost.getDataHostConfig().isShowSlaveSql()) {
                     heartbeatError += ",Tip:heartbeat[show slave status] need the SUPER or REPLICATION CLIENT privilege(s)";
                 }
                 LOGGER.warn(heartbeatError);
@@ -130,27 +130,27 @@ public class PhysicalDBNode {
             }
             return readSource.getConnection(schema, autoCommit, attachment);
         } else if (runOnSlave) {
-            PhysicalDatasource source = dbPool.getReadNode();
+            PhysicalDataSource source = dataHost.getReadNode();
             return source.getConnection(schema, autoCommit, attachment);
         } else {
             checkRequest(schema);
-            if (dbPool.isInitSuccess()) {
-                PhysicalDatasource writeSource = dbPool.getSource();
+            if (dataHost.isInitSuccess()) {
+                PhysicalDataSource writeSource = dataHost.getWriteSource();
                 if (writeSource.isReadOnly()) {
                     throw new IllegalArgumentException("The Data Source[" + writeSource.getConfig().getUrl() + "] is running with the --read-only option so it cannot execute this statement");
                 }
                 writeSource.setWriteCount();
                 return writeSource.getConnection(schema, autoCommit, attachment);
             } else {
-                throw new IllegalArgumentException("Invalid DataSource:" + dbPool.hostName);
+                throw new IllegalArgumentException("Invalid DataSource:" + dataHost.getHostName());
             }
         }
     }
 
     private void getWriteNodeConnection(String schema, boolean autoCommit, ResponseHandler handler, Object attachment, boolean fakeRead) throws IOException {
         checkRequest(schema);
-        if (dbPool.isInitSuccess()) {
-            PhysicalDatasource writeSource = dbPool.getSource();
+        if (dataHost.isInitSuccess()) {
+            PhysicalDataSource writeSource = dataHost.getWriteSource();
             if (writeSource.isDisabled()) {
                 throw new IllegalArgumentException("[" + writeSource.getHostConfig().getName() + "." + writeSource.getConfig().getHostName() + "] is disabled");
             }
@@ -160,7 +160,7 @@ public class PhysicalDBNode {
             writeSource.setWriteCount();
             writeSource.getConnection(schema, autoCommit, handler, attachment, true);
         } else {
-            throw new IllegalArgumentException("Invalid DataSource:" + dbPool.hostName);
+            throw new IllegalArgumentException("Invalid DataSource:" + dataHost.getHostName());
         }
     }
 }

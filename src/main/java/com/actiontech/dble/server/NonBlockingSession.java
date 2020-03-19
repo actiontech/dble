@@ -7,7 +7,7 @@ package com.actiontech.dble.server;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.*;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
@@ -923,7 +923,7 @@ public class NonBlockingSession implements Session {
             KillConnectionHandler kill = new KillConnectionHandler(
                     en.getValue(), this);
             ServerConfig conf = DbleServer.getInstance().getConfig();
-            PhysicalDBNode dn = conf.getDataNodes().get(
+            PhysicalDataNode dn = conf.getDataNodes().get(
                     en.getKey().getName());
             try {
                 dn.getConnectionFromSameSource(en.getValue().getSchema(), true, en.getValue(),
@@ -975,7 +975,7 @@ public class NonBlockingSession implements Session {
             final MySQLConnection mysqlCon = (MySQLConnection) this.getTarget(node);
             if (errConn.equals(mysqlCon)) {
                 ServerConfig conf = DbleServer.getInstance().getConfig();
-                PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
+                PhysicalDataNode dn = conf.getDataNodes().get(node.getName());
                 try {
                     MySQLConnection newConn = (MySQLConnection) dn.getConnection(dn.getDatabase(), errConn.isAutocommit(), false, errConn.getAttachment());
                     newConn.setXaStatus(errConn.getXaStatus());

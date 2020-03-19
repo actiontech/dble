@@ -5,7 +5,7 @@
 */
 package com.actiontech.dble.config.loader.xml;
 
-import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
+import com.actiontech.dble.backend.datasource.PhysicalDataHost;
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.loader.SchemaLoader;
@@ -516,7 +516,7 @@ public class XMLSchemaLoader implements SchemaLoader {
         return dnName == null || dnName.length() == 0;
     }
 
-    private DBHostConfig createDBHostConf(String dataHost, Element node, int maxCon, int minCon) {
+    private DataSourceConfig createDataSourceConf(String dataHost, Element node, int maxCon, int minCon) {
 
         String nodeHost = node.getAttribute("host");
         String nodeUrl = node.getAttribute("url");
@@ -542,10 +542,10 @@ public class XMLSchemaLoader implements SchemaLoader {
         String passwordEncryty = DecryptUtil.dbHostDecrypt(usingDecrypt, nodeHost, user, password);
         String disabledStr = ConfigUtil.checkAndGetAttribute(node, "disabled", "false", problemReporter);
         boolean disabled = Boolean.parseBoolean(disabledStr);
-        String weightStr = ConfigUtil.checkAndGetAttribute(node, "weight", String.valueOf(AbstractPhysicalDBPool.WEIGHT), problemReporter);
+        String weightStr = ConfigUtil.checkAndGetAttribute(node, "weight", String.valueOf(PhysicalDataHost.WEIGHT), problemReporter);
         int weight = Integer.parseInt(weightStr);
 
-        DBHostConfig conf = new DBHostConfig(nodeHost, ip, port, nodeUrl, user, passwordEncryty, disabled);
+        DataSourceConfig conf = new DataSourceConfig(nodeHost, ip, port, nodeUrl, user, passwordEncryty, disabled);
         conf.setMaxCon(maxCon);
         conf.setMinCon(minCon);
         conf.setWeight(weight);
@@ -596,7 +596,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             final String strHBTimeout = ConfigUtil.checkAndGetAttribute(heartbeat, "timeout", "0", problemReporter);
 
             Element writeNode = (Element) element.getElementsByTagName("writeHost").item(0);
-            DBHostConfig writeDbConf = createDBHostConf(name, writeNode, maxCon, minCon);
+            DataSourceConfig writeDbConf = createDataSourceConf(name, writeNode, maxCon, minCon);
             String writeHostName = writeDbConf.getHostName();
 
             if (hostNames.contains(writeHostName)) {
@@ -606,20 +606,20 @@ public class XMLSchemaLoader implements SchemaLoader {
             }
             NodeList readNodes = writeNode.getElementsByTagName("readHost");
             //for every readHost
-            DBHostConfig[] readDbConfList = new DBHostConfig[0];
+            DataSourceConfig[] readDbConfList = new DataSourceConfig[0];
             if (readNodes.getLength() != 0) {
-                readDbConfList = new DBHostConfig[readNodes.getLength()];
+                readDbConfList = new DataSourceConfig[readNodes.getLength()];
                 int readHostSize = readNodes.getLength();
                 for (int r = 0; r < readHostSize; r++) {
                     Element readNode = (Element) readNodes.item(r);
-                    DBHostConfig tmpDBHostConfig = createDBHostConf(name, readNode, maxCon, minCon);
-                    String readHostName = tmpDBHostConfig.getHostName();
+                    DataSourceConfig tmpDataSourceConfig = createDataSourceConf(name, readNode, maxCon, minCon);
+                    String readHostName = tmpDataSourceConfig.getHostName();
                     if (hostNames.contains(readHostName)) {
                         throw new ConfigException("dataHost[" + name + "]'s child host name \"" + readHostName + "\"  duplicated!");
                     } else {
                         hostNames.add(readHostName);
                     }
-                    readDbConfList[r] = tmpDBHostConfig;
+                    readDbConfList[r] = tmpDataSourceConfig;
                 }
             }
             DataHostConfig hostConf = new DataHostConfig(name, writeDbConf, readDbConfList, slaveThreshold, tempReadHostAvailable);

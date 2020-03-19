@@ -6,11 +6,11 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.config.model.DBHostConfig;
+import com.actiontech.dble.config.model.DataSourceConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.manager.ManagerConnection;
@@ -139,8 +139,8 @@ public final class ShowTableDataNode {
         List<RowDataPacket> list = new ArrayList<>();
         int sequence = 0;
         for (String dataNode : dataNodes) {
-            PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
-            DBHostConfig dbConfig = dn.getDbPool().getSource().getConfig();
+            PhysicalDataNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
+            DataSourceConfig dbConfig = dn.getDataHost().getWriteSource().getConfig();
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
             row.add(StringUtil.encode(dn.getName(), charset));
             row.add(LongUtil.toBytes(sequence));

@@ -1,8 +1,7 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
-import com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH;
+import com.actiontech.dble.backend.datasource.PhysicalDataHost;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.ClusterPathUtil;
@@ -44,54 +43,49 @@ public final class DataHostSwitch {
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
         try {
-            AbstractPhysicalDBPool dataHost = DbleServer.getInstance().getConfig().getDataHosts().get(dhName);
-            if (dataHost == null) {
+            PhysicalDataHost dh = DbleServer.getInstance().getConfig().getDataHosts().get(dhName);
+            if (dh == null) {
                 mc.writeErrMessage(ErrorCode.ER_YES, "dataHost " + dhName + " do not exists");
                 return;
             }
 
             int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.LOCAL_CHANGE, HaInfo.HaStartType.LOCAL_COMMAND, switcher.group(0));
-            if (dataHost instanceof PhysicalDNPoolSingleWH) {
-                PhysicalDNPoolSingleWH dh = (PhysicalDNPoolSingleWH) dataHost;
-                if (!dh.checkDataSourceExist(masterName)) {
-                    mc.writeErrMessage(ErrorCode.ER_YES, "Some of the dataSource in command in " + dh.getHostName() + " do not exists");
+            if (!dh.checkDataSourceExist(masterName)) {
+                mc.writeErrMessage(ErrorCode.ER_YES, "Some of the dataSource in command in " + dh.getHostName() + " do not exists");
+                return;
+            }
+
+            if (ClusterGeneralConfig.isUseGeneralCluster() && useCluster) {
+                if (!switchWithCluster(id, dh, masterName, mc)) {
                     return;
                 }
-
-                if (ClusterGeneralConfig.isUseGeneralCluster() && useCluster) {
-                    if (!switchWithCluster(id, dh, masterName, mc)) {
-                        return;
-                    }
-                } else if (ClusterGeneralConfig.isUseZK() && useCluster) {
-                    if (!switchWithZK(id, dh, masterName, mc)) {
-                        return;
-                    }
-                } else {
-                    try {
-                        //dble start in single mode
-                        String result = dh.switchMaster(masterName, true);
-                        HaConfigManager.getInstance().haFinish(id, null, result);
-                    } catch (Exception e) {
-                        HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
-                        mc.writeErrMessage(ErrorCode.ER_YES, "swtich dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
-                        return;
-                    }
+            } else if (ClusterGeneralConfig.isUseZK() && useCluster) {
+                if (!switchWithZK(id, dh, masterName, mc)) {
+                    return;
                 }
-
-                OkPacket packet = new OkPacket();
-                packet.setPacketId(1);
-                packet.setAffectedRows(0);
-                packet.setServerStatus(2);
-                packet.write(mc);
             } else {
-                mc.writeErrMessage(ErrorCode.ER_YES, "dble server not in useOuterHa mode");
+                try {
+                    //dble start in single mode
+                    String result = dh.switchMaster(masterName, true);
+                    HaConfigManager.getInstance().haFinish(id, null, result);
+                } catch (Exception e) {
+                    HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
+                    mc.writeErrMessage(ErrorCode.ER_YES, "swtich dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
+                    return;
+                }
             }
+
+            OkPacket packet = new OkPacket();
+            packet.setPacketId(1);
+            packet.setAffectedRows(0);
+            packet.setServerStatus(2);
+            packet.write(mc);
         } finally {
             lock.readLock().unlock();
         }
     }
 
-    public static boolean switchWithCluster(int id, PhysicalDNPoolSingleWH dh, String subHostName, ManagerConnection mc) {
+    public static boolean switchWithCluster(int id, PhysicalDataHost dh, String subHostName, ManagerConnection mc) {
         //get the lock from ucore
         DistributeLock distributeLock = new DistributeLock(ClusterPathUtil.getHaLockPath(dh.getHostName()),
                 new HaInfo(dh.getHostName(),
@@ -123,7 +117,7 @@ public final class DataHostSwitch {
     }
 
 
-    public static boolean switchWithZK(int id, PhysicalDNPoolSingleWH dh, String subHostName, ManagerConnection mc) {
+    public static boolean switchWithZK(int id, PhysicalDataHost dh, String subHostName, ManagerConnection mc) {
         CuratorFramework zkConn = ZKUtils.getConnection();
         InterProcessMutex distributeLock = new InterProcessMutex(zkConn, KVPathUtil.getHaLockPath(dh.getHostName()));
         try {

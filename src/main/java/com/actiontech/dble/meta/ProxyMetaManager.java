@@ -10,8 +10,8 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
-import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataHost;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
 import com.actiontech.dble.backend.mysql.view.CKVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.view.KVStoreRepository;
@@ -27,7 +27,7 @@ import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.zktoxml.listen.DataHostResponseListener;
 import com.actiontech.dble.config.loader.zkprocess.zktoxml.listen.DataHostStatusListener;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
-import com.actiontech.dble.config.model.DBHostConfig;
+import com.actiontech.dble.config.model.DataSourceConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
@@ -286,12 +286,12 @@ public class ProxyMetaManager {
 
     private Set<String> getSelfNodes(ServerConfig config) {
         Set<String> selfNode = null;
-        for (Map.Entry<String, AbstractPhysicalDBPool> entry : config.getDataHosts().entrySet()) {
-            AbstractPhysicalDBPool host = entry.getValue();
-            DBHostConfig wHost = host.getSource().getConfig();
+        for (Map.Entry<String, PhysicalDataHost> entry : config.getDataHosts().entrySet()) {
+            PhysicalDataHost host = entry.getValue();
+            DataSourceConfig wHost = host.getWriteSource().getConfig();
             if (("localhost".equalsIgnoreCase(wHost.getIp()) || "127.0.0.1".equalsIgnoreCase(wHost.getIp())) && wHost.getPort() == config.getSystem().getServerPort()) {
-                for (Map.Entry<String, PhysicalDBNode> nodeEntry : config.getDataNodes().entrySet()) {
-                    if (nodeEntry.getValue().getDbPool().getHostName().equals(host.getHostName())) {
+                for (Map.Entry<String, PhysicalDataNode> nodeEntry : config.getDataNodes().entrySet()) {
+                    if (nodeEntry.getValue().getDataHost().getHostName().equals(host.getHostName())) {
                         if (selfNode == null) {
                             selfNode = new HashSet<>(2);
                         }

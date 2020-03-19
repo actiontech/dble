@@ -5,7 +5,7 @@
 */
 package com.actiontech.dble.config.model;
 
-public class DBHostConfig {
+public class DataSourceConfig {
 
     private long idleTimeout = SystemConfig.DEFAULT_IDLE_TIMEOUT;
     private final String hostName;
@@ -21,9 +21,8 @@ public class DBHostConfig {
 
     private boolean disabled = false;
 
-    public DBHostConfig(String hostName, String ip, int port, String url,
-                        String user, String password, boolean disabled) {
-        super();
+    public DataSourceConfig(String hostName, String ip, int port, String url,
+                            String user, String password, boolean disabled) {
         this.hostName = hostName;
         this.ip = ip;
         this.port = port;
@@ -103,7 +102,7 @@ public class DBHostConfig {
 
     @Override
     public String toString() {
-        return "DBHostConfig [hostName=" + hostName + ", url=" + url + "]";
+        return "DataSourceConfig [hostName=" + hostName + ", url=" + url + "]";
     }
 
 }

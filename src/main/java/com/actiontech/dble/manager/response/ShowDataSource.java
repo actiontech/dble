@@ -6,9 +6,9 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataHost;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.ServerConfig;
@@ -102,8 +102,8 @@ public final class ShowDataSource {
         ServerConfig conf = DbleServer.getInstance().getConfig();
 
         if (null != name) {
-            PhysicalDBNode dn = conf.getDataNodes().get(name);
-            for (PhysicalDatasource w : dn.getDbPool().getAllDataSources()) {
+            PhysicalDataNode dn = conf.getDataNodes().get(name);
+            for (PhysicalDataSource w : dn.getDataHost().getAllDataSources()) {
                 RowDataPacket row = getRow(w.getHostConfig().getName(), w, c.getCharset().getResults());
                 row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
@@ -111,10 +111,10 @@ public final class ShowDataSource {
 
         } else {
             // add all
-            for (Map.Entry<String, AbstractPhysicalDBPool> entry : conf.getDataHosts().entrySet()) {
-                AbstractPhysicalDBPool dataHost = entry.getValue();
+            for (Map.Entry<String, PhysicalDataHost> entry : conf.getDataHosts().entrySet()) {
+                PhysicalDataHost dataHost = entry.getValue();
                 String datahost = entry.getKey();
-                for (PhysicalDatasource source : dataHost.getAllDataSources()) {
+                for (PhysicalDataSource source : dataHost.getAllDataSources()) {
                     RowDataPacket sRow = getRow(datahost, source, c.getCharset().getResults());
                     sRow.setPacketId(++packetId);
                     buffer = sRow.write(buffer, c, true);
@@ -130,7 +130,7 @@ public final class ShowDataSource {
         c.write(buffer);
     }
 
-    private static RowDataPacket getRow(String dataHost, PhysicalDatasource ds,
+    private static RowDataPacket getRow(String dataHost, PhysicalDataSource ds,
                                         String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         //row.add(StringUtil.encode(dataNode, charset));

@@ -8,15 +8,15 @@ package com.actiontech.dble.backend.datasource;
 /**
  * Created by szf on 2018/7/23.
  */
-public class PhysicalDatasourceDiff {
+public class PhysicalDataSourceDiff {
     private String writeHostChangeType = null;
 
 
-    private PhysicalDatasource selfHost;
+    private PhysicalDataSource selfHost;
 
-    private PhysicalDatasource[] relatedHost;
+    private PhysicalDataSource[] relatedHost;
 
-    PhysicalDatasourceDiff(String writeHostChangeType, PhysicalDatasource selfHost, PhysicalDatasource[] relatedHost) {
+    PhysicalDataSourceDiff(String writeHostChangeType, PhysicalDataSource selfHost, PhysicalDataSource[] relatedHost) {
         this.writeHostChangeType = writeHostChangeType;
         this.selfHost = selfHost;
         this.relatedHost = relatedHost;
@@ -31,19 +31,19 @@ public class PhysicalDatasourceDiff {
         this.writeHostChangeType = writeHostChangeType;
     }
 
-    public PhysicalDatasource getSelfHost() {
+    public PhysicalDataSource getSelfHost() {
         return selfHost;
     }
 
-    public void setSelfHost(PhysicalDatasource selfHost) {
+    public void setSelfHost(PhysicalDataSource selfHost) {
         this.selfHost = selfHost;
     }
 
-    public PhysicalDatasource[] getRelatedHost() {
+    public PhysicalDataSource[] getRelatedHost() {
         return relatedHost;
     }
 
-    public void setRelatedHost(PhysicalDatasource[] relatedHost) {
+    public void setRelatedHost(PhysicalDataSource[] relatedHost) {
         this.relatedHost = relatedHost;
     }
 

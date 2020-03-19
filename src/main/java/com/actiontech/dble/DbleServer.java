@@ -6,9 +6,9 @@
 package com.actiontech.dble;
 
 import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.CustomMySQLHa;
+import com.actiontech.dble.backend.datasource.PhysicalDataHost;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
 import com.actiontech.dble.backend.mysql.xa.*;
 import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.FileSystemRepository;
@@ -311,9 +311,9 @@ public final class DbleServer {
 
     private void initDataHost() {
         // init datahost
-        Map<String, AbstractPhysicalDBPool> dataHosts = this.getConfig().getDataHosts();
+        Map<String, PhysicalDataHost> dataHosts = this.getConfig().getDataHosts();
         LOGGER.info("Initialize dataHost ...");
-        for (AbstractPhysicalDBPool node : dataHosts.values()) {
+        for (PhysicalDataHost node : dataHosts.values()) {
             node.init();
             node.startHeartbeat();
         }
@@ -487,8 +487,8 @@ public final class DbleServer {
             for (SchemaConfig schema : DbleServer.getInstance().getConfig().getSchemas().values()) {
                 for (TableConfig table : schema.getTables().values()) {
                     for (String dataNode : table.getDataNodes()) {
-                        PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
-                        if (participantLogEntry.compareAddress(dn.getDbPool().getSource().getConfig().getIp(), dn.getDbPool().getSource().getConfig().getPort(), dn.getDatabase())) {
+                        PhysicalDataNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
+                        if (participantLogEntry.compareAddress(dn.getDataHost().getWriteSource().getConfig().getIp(), dn.getDataHost().getWriteSource().getConfig().getPort(), dn.getDatabase())) {
                             xaCmd.append(coordinatorLogEntry.getId().substring(0, coordinatorLogEntry.getId().length() - 1));
                             xaCmd.append(".");
                             xaCmd.append(dn.getDatabase());
@@ -498,7 +498,7 @@ public final class DbleServer {
                             }
                             xaCmd.append("'");
                             XARecoverHandler handler = new XARecoverHandler(needCommit, participantLogEntry);
-                            handler.execute(xaCmd.toString(), dn.getDatabase(), dn.getDbPool().getSource());
+                            handler.execute(xaCmd.toString(), dn.getDatabase(), dn.getDataHost().getWriteSource());
                             if (!handler.isSuccess()) {
                                 throw new RuntimeException("Fail to recover xa when dble start, please check backend mysql.");
                             }

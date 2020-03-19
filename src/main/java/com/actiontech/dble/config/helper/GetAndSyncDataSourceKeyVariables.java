@@ -6,7 +6,7 @@
 package com.actiontech.dble.config.helper;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
@@ -32,10 +32,10 @@ public class GetAndSyncDataSourceKeyVariables implements Callable<KeyVariables> 
     private Condition finishCond = lock.newCondition();
     private volatile KeyVariables keyVariables;
     private volatile boolean needSync = false;
-    private PhysicalDatasource ds;
+    private PhysicalDataSource ds;
     private final String columnIsolation;
 
-    public GetAndSyncDataSourceKeyVariables(PhysicalDatasource ds) {
+    public GetAndSyncDataSourceKeyVariables(PhysicalDataSource ds) {
         this.ds = ds;
         String isolationName = VersionUtil.getIsolationNameByVersion(ds.getDsVersion());
         if (isolationName != null) {

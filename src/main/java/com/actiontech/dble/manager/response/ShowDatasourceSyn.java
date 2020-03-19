@@ -6,8 +6,8 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataHost;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
@@ -122,11 +122,11 @@ public final class ShowDatasourceSyn {
         List<RowDataPacket> list = new LinkedList<>();
         ServerConfig conf = DbleServer.getInstance().getConfig();
         // host nodes
-        Map<String, AbstractPhysicalDBPool> dataHosts = conf.getDataHosts();
-        for (Map.Entry<String, AbstractPhysicalDBPool> entry : dataHosts.entrySet()) {
+        Map<String, PhysicalDataHost> dataHosts = conf.getDataHosts();
+        for (Map.Entry<String, PhysicalDataHost> entry : dataHosts.entrySet()) {
             String datahost = entry.getKey();
-            AbstractPhysicalDBPool pool = entry.getValue();
-            for (PhysicalDatasource ds : pool.getAllActiveDataSources()) {
+            PhysicalDataHost pool = entry.getValue();
+            for (PhysicalDataSource ds : pool.getAllActiveDataSources()) {
                 if (ds.isDisabled()) {
                     continue;
                 }

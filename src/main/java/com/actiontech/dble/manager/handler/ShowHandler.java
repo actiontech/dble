@@ -7,9 +7,9 @@ package com.actiontech.dble.manager.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.backend.CustomMySQLHa;
+import com.actiontech.dble.backend.datasource.PhysicalDataHost;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.manager.response.*;
@@ -250,10 +250,10 @@ public final class ShowHandler {
                 break;
             default:
                 if (isSupportShow(stmt)) {
-                    Iterator<AbstractPhysicalDBPool> iterator = DbleServer.getInstance().getConfig().getDataHosts().values().iterator();
+                    Iterator<PhysicalDataHost> iterator = DbleServer.getInstance().getConfig().getDataHosts().values().iterator();
                     if (iterator.hasNext()) {
-                        AbstractPhysicalDBPool pool = iterator.next();
-                        final PhysicalDatasource source = pool.getSource();
+                        PhysicalDataHost pool = iterator.next();
+                        final PhysicalDataSource source = pool.getWriteSource();
                         TransformSQLJob sqlJob = new TransformSQLJob(stmt, null, source, c);
                         sqlJob.run();
                     } else {

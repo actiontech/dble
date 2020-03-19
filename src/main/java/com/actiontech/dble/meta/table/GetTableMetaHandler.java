@@ -10,8 +10,8 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.MultiTablesMetaJob;
@@ -48,8 +48,8 @@ public abstract class GetTableMetaHandler {
         for (String table : tables) {
             sbSql.append(SQL_SHOW_CREATE_TABLE.replace("{0}", table));
         }
-        PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
-        PhysicalDatasource ds = dn.getDbPool().getSource();
+        PhysicalDataNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
+        PhysicalDataSource ds = dn.getDataHost().getWriteSource();
         if (ds.isAlive()) {
             logger.info("Datasource is alive start sqljob for dataNode:" + dataNode);
             MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new TableStructureListener(dataNode, tables, ds));
@@ -69,10 +69,10 @@ public abstract class GetTableMetaHandler {
 
     private class TableStructureListener implements SQLQueryResultListener<SQLQueryResult<List<Map<String, String>>>> {
         private String dataNode;
-        private PhysicalDatasource ds;
+        private PhysicalDataSource ds;
         private Set<String> expectedTables;
 
-        TableStructureListener(String dataNode, Set<String> expectedTables, PhysicalDatasource ds) {
+        TableStructureListener(String dataNode, Set<String> expectedTables, PhysicalDataSource ds) {
             this.dataNode = dataNode;
             this.expectedTables = expectedTables;
             this.ds = ds;

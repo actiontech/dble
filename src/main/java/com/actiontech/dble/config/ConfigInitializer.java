@@ -5,10 +5,9 @@
 */
 package com.actiontech.dble.config;
 
-import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.datasource.PhysicalDNPoolSingleWH;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataHost;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
 import com.actiontech.dble.config.helper.TestSchemasTask;
 import com.actiontech.dble.config.helper.TestTask;
@@ -36,8 +35,8 @@ public class ConfigInitializer implements ProblemReporter {
     private volatile FirewallConfig firewall;
     private volatile Map<String, UserConfig> users;
     private volatile Map<String, SchemaConfig> schemas;
-    private volatile Map<String, PhysicalDBNode> dataNodes;
-    private volatile Map<String, AbstractPhysicalDBPool> dataHosts;
+    private volatile Map<String, PhysicalDataNode> dataNodes;
+    private volatile Map<String, PhysicalDataHost> dataHosts;
     private volatile Map<ERTable, Set<ERTable>> erRelations;
     private volatile boolean dataHostWithoutWH = true;
 
@@ -79,12 +78,12 @@ public class ConfigInitializer implements ProblemReporter {
     }
 
     private void checkWriteHost() {
-        for (Map.Entry<String, AbstractPhysicalDBPool> pool : this.dataHosts.entrySet()) {
-            PhysicalDatasource writeSource = pool.getValue().getSource();
+        for (Map.Entry<String, PhysicalDataHost> pool : this.dataHosts.entrySet()) {
+            PhysicalDataSource writeSource = pool.getValue().getWriteSource();
             if (writeSource != null) {
                 if (writeSource.getConfig().isDisabled()) {
                     boolean hasEnableNode = false;
-                    for (PhysicalDatasource readSource : pool.getValue().getReadSources()) {
+                    for (PhysicalDataSource readSource : pool.getValue().getReadSources()) {
                         if (!readSource.isDisabled()) {
                             hasEnableNode = true;
                             break;
@@ -125,12 +124,12 @@ public class ConfigInitializer implements ProblemReporter {
 
         Set<String> allUseHost = new HashSet<>();
         //delete redundancy dataNode
-        Iterator<Map.Entry<String, PhysicalDBNode>> iterator = this.dataNodes.entrySet().iterator();
+        Iterator<Map.Entry<String, PhysicalDataNode>> iterator = this.dataNodes.entrySet().iterator();
         while (iterator.hasNext()) {
-            Map.Entry<String, PhysicalDBNode> entry = iterator.next();
+            Map.Entry<String, PhysicalDataNode> entry = iterator.next();
             String dataNodeName = entry.getKey();
             if (allUseDataNode.contains(dataNodeName)) {
-                allUseHost.add(entry.getValue().getDbPool().getHostName());
+                allUseHost.add(entry.getValue().getDataHost().getHostName());
             } else {
                 LOGGER.info("dataNode " + dataNodeName + " is useless,server will ignore it");
                 errorInfos.add(new ErrorInfo("Xml", "WARNING", "dataNode " + dataNodeName + " is useless"));
@@ -162,23 +161,23 @@ public class ConfigInitializer implements ProblemReporter {
         for (Map.Entry<String, List<Pair<String, String>>> entry : hostSchemaMap.entrySet()) {
             String hostName = entry.getKey();
             List<Pair<String, String>> nodeList = entry.getValue();
-            AbstractPhysicalDBPool pool = dataHosts.get(hostName);
+            PhysicalDataHost pool = dataHosts.get(hostName);
 
             checkMaxCon(pool);
 
             if (isStart) {
                 // start for first time, 1.you can set write host as empty
-                if (pool.getSource() == null) {
+                if (pool.getWriteSource() == null) {
                     continue;
                 }
-                DBHostConfig wHost = pool.getSource().getConfig();
+                DataSourceConfig wHost = pool.getWriteSource().getConfig();
                 // start for first time, 2.you can set write host as yourself
                 if (("localhost".equalsIgnoreCase(wHost.getIp()) || "127.0.0.1".equalsIgnoreCase(wHost.getIp())) &&
                         wHost.getPort() == this.system.getServerPort()) {
                     continue;
                 }
             }
-            for (PhysicalDatasource ds : pool.getAllDataSources()) {
+            for (PhysicalDataSource ds : pool.getAllDataSources()) {
                 if (ds.getConfig().isDisabled()) {
                     errorInfos.add(new ErrorInfo("Backend", "WARNING", "DataHost[" + pool.getHostName() + "," + ds.getName() + "] is disabled"));
                     LOGGER.info("DataHost[" + ds.getHostConfig().getName() + "] is disabled,just mark testing failed and skip it");
@@ -211,10 +210,10 @@ public class ConfigInitializer implements ProblemReporter {
     }
 
 
-    private void checkMaxCon(AbstractPhysicalDBPool pool) {
+    private void checkMaxCon(PhysicalDataHost pool) {
         int schemasCount = 0;
-        for (PhysicalDBNode dn : dataNodes.values()) {
-            if (dn.getDbPool() == pool) {
+        for (PhysicalDataNode dn : dataNodes.values()) {
+            if (dn.getDataHost() == pool) {
                 schemasCount++;
             }
         }
@@ -230,8 +229,8 @@ public class ConfigInitializer implements ProblemReporter {
     }
 
     private void testDataSource(Set<String> errNodeKeys, Set<String> errSourceKeys, BoolPtr isConnectivity,
-                                BoolPtr isAllDataSourceConnected, List<Pair<String, String>> nodeList, AbstractPhysicalDBPool pool, PhysicalDatasource ds) {
-        boolean isMaster = ds == pool.getSource();
+                                BoolPtr isAllDataSourceConnected, List<Pair<String, String>> nodeList, PhysicalDataHost pool, PhysicalDataSource ds) {
+        boolean isMaster = ds == pool.getWriteSource();
         String dataSourceName = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getName() + "]";
         try {
             BoolPtr isDSConnectedPtr = new BoolPtr(false);
@@ -279,11 +278,11 @@ public class ConfigInitializer implements ProblemReporter {
     private Map<String, List<Pair<String, String>>> genHostSchemaMap() {
         Map<String, List<Pair<String, String>>> hostSchemaMap = new HashMap<>();
         if (this.dataNodes != null && this.dataHosts != null) {
-            for (Map.Entry<String, AbstractPhysicalDBPool> entry : dataHosts.entrySet()) {
+            for (Map.Entry<String, PhysicalDataHost> entry : dataHosts.entrySet()) {
                 String hostName = entry.getKey();
-                AbstractPhysicalDBPool pool = entry.getValue();
-                for (PhysicalDBNode dataNode : dataNodes.values()) {
-                    if (pool.equals(dataNode.getDbPool())) {
+                PhysicalDataHost pool = entry.getValue();
+                for (PhysicalDataNode dataNode : dataNodes.values()) {
+                    if (pool.equals(dataNode.getDataHost())) {
                         List<Pair<String, String>> nodes = hostSchemaMap.computeIfAbsent(hostName, k -> new ArrayList<>());
                         nodes.add(new Pair<>(dataNode.getName(), dataNode.getDatabase()));
                     }
@@ -310,11 +309,11 @@ public class ConfigInitializer implements ProblemReporter {
         return schemas;
     }
 
-    public Map<String, PhysicalDBNode> getDataNodes() {
+    public Map<String, PhysicalDataNode> getDataNodes() {
         return dataNodes;
     }
 
-    public Map<String, AbstractPhysicalDBPool> getDataHosts() {
+    public Map<String, PhysicalDataHost> getDataHosts() {
         return this.dataHosts;
     }
 
@@ -322,44 +321,44 @@ public class ConfigInitializer implements ProblemReporter {
         return erRelations;
     }
 
-    private Map<String, AbstractPhysicalDBPool> initDataHosts(SchemaLoader schemaLoader) {
+    private Map<String, PhysicalDataHost> initDataHosts(SchemaLoader schemaLoader) {
         Map<String, DataHostConfig> nodeConf = schemaLoader.getDataHosts();
         //create PhysicalDBPool according to DataHost
-        Map<String, AbstractPhysicalDBPool> nodes = new HashMap<>(nodeConf.size());
+        Map<String, PhysicalDataHost> nodes = new HashMap<>(nodeConf.size());
         for (DataHostConfig conf : nodeConf.values()) {
-            AbstractPhysicalDBPool pool = getPhysicalDBPoolSingleWH(conf);
+            PhysicalDataHost pool = getPhysicalDBPoolSingleWH(conf);
             nodes.put(pool.getHostName(), pool);
         }
         return nodes;
     }
 
-    private PhysicalDatasource createDataSource(DataHostConfig conf, DBHostConfig node,
-                                                  boolean isRead) {
+    private PhysicalDataSource createDataSource(DataHostConfig conf, DataSourceConfig node,
+                                                boolean isRead) {
         node.setIdleTimeout(system.getIdleTimeout());
         return new MySQLDataSource(node, conf, isRead);
     }
 
-    private PhysicalDNPoolSingleWH getPhysicalDBPoolSingleWH(DataHostConfig conf) {
+    private PhysicalDataHost getPhysicalDBPoolSingleWH(DataHostConfig conf) {
         //create PhysicalDatasource for write host
-        PhysicalDatasource writeSource = createDataSource(conf, conf.getWriteHost(), false);
-        PhysicalDatasource[] readSources = new PhysicalDatasource[conf.getReadHosts().length];
+        PhysicalDataSource writeSource = createDataSource(conf, conf.getWriteHost(), false);
+        PhysicalDataSource[] readSources = new PhysicalDataSource[conf.getReadHosts().length];
         int i = 0;
-        for (DBHostConfig readNode : conf.getReadHosts()) {
+        for (DataSourceConfig readNode : conf.getReadHosts()) {
             readSources[i++] = createDataSource(conf, readNode, true);
         }
 
-        return new PhysicalDNPoolSingleWH(conf.getName(), conf, writeSource, readSources, conf.getBalance());
+        return new PhysicalDataHost(conf.getName(), conf, writeSource, readSources, conf.getBalance());
     }
 
-    private Map<String, PhysicalDBNode> initDataNodes(SchemaLoader schemaLoader) {
+    private Map<String, PhysicalDataNode> initDataNodes(SchemaLoader schemaLoader) {
         Map<String, DataNodeConfig> nodeConf = schemaLoader.getDataNodes();
-        Map<String, PhysicalDBNode> nodes = new HashMap<>(nodeConf.size());
+        Map<String, PhysicalDataNode> nodes = new HashMap<>(nodeConf.size());
         for (DataNodeConfig conf : nodeConf.values()) {
-            AbstractPhysicalDBPool pool = this.dataHosts.get(conf.getDataHost());
+            PhysicalDataHost pool = this.dataHosts.get(conf.getDataHost());
             if (pool == null) {
                 throw new ConfigException("dataHost not exists " + conf.getDataHost());
             }
-            PhysicalDBNode dataNode = new PhysicalDBNode(conf.getName(), conf.getDatabase(), pool);
+            PhysicalDataNode dataNode = new PhysicalDataNode(conf.getName(), conf.getDatabase(), pool);
             nodes.put(dataNode.getName(), dataNode);
         }
         return nodes;

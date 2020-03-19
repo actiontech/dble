@@ -1,6 +1,6 @@
 package com.actiontech.dble.backend.datasource.check;
 
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
 import com.actiontech.dble.manager.response.CheckGlobalConsistency;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
@@ -26,7 +26,7 @@ public abstract class AbstractConsistencyChecker implements SQLQueryResultListen
     private List<SQLQueryResult<List<Map<String, String>>>> results = Collections.synchronizedList(new ArrayList<>());
     private List<SQLQueryResult<List<Map<String, String>>>> errorList = Collections.synchronizedList(new ArrayList<>());
 
-    void addCheckNode(String dbName, PhysicalDBNode dataNode) {
+    void addCheckNode(String dbName, PhysicalDataNode dataNode) {
         MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(this.getFetchCols(), this);
         SQLJob sqlJob = new SQLJob(this.getCountSQL(dbName, tableName), dataNode.getName(), resultHandler, true);
         sqlJobs.add(sqlJob);

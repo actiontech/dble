@@ -6,7 +6,7 @@
 package com.actiontech.dble.backend;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.util.StringUtil;
@@ -74,7 +74,7 @@ public class ConMap {
         return items.values();
     }
 
-    public int getActiveCountForSchema(String schema, PhysicalDatasource dataSource) {
+    public int getActiveCountForSchema(String schema, PhysicalDataSource dataSource) {
         int total = 0;
         for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
             for (BackendConnection con : processor.getBackends().values()) {
@@ -93,7 +93,7 @@ public class ConMap {
     }
 
 
-    public void clearConnections(String reason, PhysicalDatasource dataSource) {
+    public void clearConnections(String reason, PhysicalDataSource dataSource) {
         for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
             ConcurrentMap<Long, BackendConnection> map = processor.getBackends();
             Iterator<Entry<Long, BackendConnection>> iterator = map.entrySet().iterator();

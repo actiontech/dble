@@ -6,8 +6,8 @@
 package com.actiontech.dble.route.util;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDBNode;
-import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SchemaConfig;
@@ -388,9 +388,9 @@ public final class RouterUtil {
     public static String getRandomDataNode(ArrayList<String> dataNodes) {
         int index = Math.abs(rand.nextInt(Integer.MAX_VALUE)) % dataNodes.size();
         ArrayList<String> x = new ArrayList<>(dataNodes);
-        Map<String, PhysicalDBNode> dataNodeMap = DbleServer.getInstance().getConfig().getDataNodes();
+        Map<String, PhysicalDataNode> dataNodeMap = DbleServer.getInstance().getConfig().getDataNodes();
         while (x.size() > 1) {
-            for (PhysicalDatasource ds : dataNodeMap.get(x.get(index)).getDbPool().getAllActiveDataSources()) {
+            for (PhysicalDataSource ds : dataNodeMap.get(x.get(index)).getDataHost().getAllActiveDataSources()) {
                 if (ds.isAlive()) {
                     return x.get(index);
                 } else {

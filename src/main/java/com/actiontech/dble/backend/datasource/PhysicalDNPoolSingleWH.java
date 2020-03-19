@@ -39,20 +39,18 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
     public static final String JSON_WRITE_SOURCE = "writeSource";
 
     private volatile PhysicalDatasource writeSource;
-    private Map<String, PhysicalDatasource> allActiveSourceMap = new ConcurrentHashMap<>();
     private Map<String, PhysicalDatasource> allSourceMap = new ConcurrentHashMap<>();
 
 
-    public PhysicalDNPoolSingleWH(String name, DataHostConfig conf, PhysicalDatasource[] writeSources, Map<Integer, PhysicalDatasource[]> readSources, Map<Integer, PhysicalDatasource[]> standbyReadSourcesMap, int balance) {
+    public PhysicalDNPoolSingleWH(String name, DataHostConfig conf, PhysicalDatasource writeSource, PhysicalDatasource[] readSources, int balance) {
         super(name, balance, conf);
-        this.writeSource = writeSources[0];
+        this.writeSource = writeSource;
         this.readSources = readSources;
-        this.standbyReadSourcesMap = standbyReadSourcesMap;
-        allActiveSourceMap.put(writeSource.getName(), writeSource);
-        PhysicalDatasource[] read = readSources.get(0);
-        putAllIntoMap(allActiveSourceMap, read);
-        allSourceMap.putAll(allActiveSourceMap);
-        putAllIntoMap(allSourceMap, standbyReadSourcesMap.get(0));
+        allSourceMap.put(writeSource.getName(), writeSource);
+
+        for (PhysicalDatasource s : readSources) {
+            allSourceMap.put(s.getName(), s);
+        }
         setDataSourceProps();
     }
 
@@ -84,12 +82,6 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         return !(writeSource == ds);
     }
 
-    @Override
-    public PhysicalDatasource[] getSources() {
-        PhysicalDatasource[] list = new PhysicalDatasource[1];
-        list[0] = writeSource;
-        return list;
-    }
 
     @Override
     public PhysicalDatasource getSource() {
@@ -97,18 +89,7 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
     }
 
     @Override
-    public boolean switchSource(int newIndex, String reason) {
-        //not allowed when use the outter ha
-        throw new RuntimeException("not allow in this");
-    }
-
-    @Override
-    public int init(int index) {
-        init();
-        return 0;
-    }
-
-    public void init() {
+    public boolean init() {
         if (balance != 0) {
             for (Map.Entry<String, PhysicalDatasource> entry : allSourceMap.entrySet()) {
                 if (initSource(entry.getValue())) {
@@ -125,15 +106,7 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         if (!initSuccess) {
             LOGGER.warn(hostName + " init failure");
         }
-    }
-
-    @Override
-    public void reloadInit(int index) {
-        if (initSuccess) {
-            LOGGER.info(hostName + "dataHost already inited doing nothing");
-            return;
-        }
-        init();
+        return initSuccess;
     }
 
     @Override
@@ -184,7 +157,11 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
 
     @Override
     public Collection<PhysicalDatasource> getAllActiveDataSources() {
-        return new LinkedList<>(allActiveSourceMap.values());
+        if (this.dataHostConfig.getBalance() != BALANCE_NONE) {
+            return allSourceMap.values();
+        } else {
+            return Collections.singletonList(writeSource);
+        }
     }
 
 
@@ -197,8 +174,8 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
     void getRWBalanceCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
         PhysicalDatasource theNode = getRWBalanceNode();
         if (theNode.isDisabled()) {
-            if (this.getReadSources().values().size() > 0) {
-                theNode = this.getReadSources().values().iterator().next()[0];
+            if (this.getReadSources().length > 0) {
+                theNode = this.getReadSources()[0];
             } else {
                 String errorMsg = "the dataHost[" + theNode.getHostConfig().getName() + "] is disabled, please check it";
                 throw new IOException(errorMsg);
@@ -227,8 +204,7 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
                 theNode = randomSelect(okSources);
                 break;
             }
-            case BALANCE_ALL_BACK:
-            case BALANCE_ALL_READ: {
+            case BALANCE_ALL_BACK: {
                 okSources = getAllActiveRWSources(false, checkSlaveSynStatus());
                 theNode = randomSelect(okSources);
                 break;
@@ -284,33 +260,17 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
 
 
     @Override
-    PhysicalDatasource[] getWriteSources() {
-        return this.getSources();
+    PhysicalDatasource getWriteSource() {
+        return writeSource;
     }
 
-    @Override
-    public int getActiveIndex() {
-        return 0;
-    }
-
-
-    public Map<Integer, PhysicalDatasource[]> getReadSources() {
+    public PhysicalDatasource[] getReadSources() {
         if (this.dataHostConfig.getBalance() != BALANCE_NONE) {
-            return getReadSourceAll();
+            return readSources;
         } else {
-            return Collections.emptyMap();
+            return new PhysicalDatasource[0];
         }
     }
-
-
-    public Map<Integer, PhysicalDatasource[]> getStandbyReadSourcesMap() {
-        if (this.dataHostConfig.getBalance() == BALANCE_NONE) {
-            return getReadSourceAll();
-        } else {
-            return Collections.emptyMap();
-        }
-    }
-
 
     public Map<Integer, PhysicalDatasource[]> getReadSourceAll() {
         PhysicalDatasource[] list = new PhysicalDatasource[allSourceMap.size() - 1];
@@ -329,12 +289,6 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
     }
 
     @Override
-    public void switchSourceIfNeed(PhysicalDatasource ds, String reason) {
-        throw new RuntimeException("not allowed here");
-    }
-
-
-    @Override
     public int next(int i) {
         return 0;
     }
@@ -342,15 +296,6 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
     private void setDataSourceProps() {
         for (PhysicalDatasource ds : this.allSourceMap.values()) {
             ds.setDbPool(this);
-        }
-    }
-
-
-    private void putAllIntoMap(Map<String, PhysicalDatasource> map, PhysicalDatasource[] source) {
-        if (source != null && source.length > 0) {
-            for (PhysicalDatasource s : source) {
-                map.put(s.getName(), s);
-            }
         }
     }
 

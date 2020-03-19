@@ -54,11 +54,9 @@ public class VarsExtractorHandler {
     private PhysicalDatasource getPhysicalDatasource() {
         PhysicalDatasource ds = null;
         for (AbstractPhysicalDBPool dbPool : dataHosts.values()) {
-            for (PhysicalDatasource dsTest : dbPool.getSources()) {
-                if (dsTest.isTestConnSuccess()) {
-                    ds = dsTest;
-                    break;
-                }
+            PhysicalDatasource dsTest = dbPool.getSource();
+            if (dsTest.isTestConnSuccess()) {
+                ds = dsTest;
             }
             if (ds != null) {
                 break;
@@ -66,12 +64,10 @@ public class VarsExtractorHandler {
         }
         if (ds == null) {
             for (AbstractPhysicalDBPool dbPool : dataHosts.values()) {
-                for (PhysicalDatasource[] dsTests : dbPool.getReadSources().values()) {
-                    for (PhysicalDatasource dsTest : dsTests) {
-                        if (dsTest.isTestConnSuccess()) {
-                            ds = dsTest;
-                            break;
-                        }
+                for (PhysicalDatasource dsTest : dbPool.getReadSources()) {
+                    if (dsTest.isTestConnSuccess()) {
+                        ds = dsTest;
+                        break;
                     }
                 }
                 if (ds != null) {

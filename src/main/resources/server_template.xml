@@ -13,7 +13,7 @@
 	License for the specific language governing permissions and - limitations 
 	under the License. -->
 <!DOCTYPE dble:server SYSTEM "server.dtd">
-<dble:server xmlns:dble="http://dble.cloud/" version="2.0">
+<dble:server xmlns:dble="http://dble.cloud/" version="3.0">
     <system>
         <!-- base config -->
         <!--<property name="bindIp">0.0.0.0</property>-->
@@ -37,7 +37,6 @@
         <!--option-->
         <!--<property name="useCompression">1</property>-->
         <!--<property name="usingAIO">0</property>-->
-        <!--<property name="useZKSwitch">true</property>-->
         <!--<property name="useThreadUsageStat">0</property>-->
         <!--<property name="usePerformanceMode">0</property>-->
 

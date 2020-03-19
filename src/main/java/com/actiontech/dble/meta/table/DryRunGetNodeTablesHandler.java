@@ -43,14 +43,11 @@ public class DryRunGetNodeTablesHandler extends GetNodeTablesHandler {
     public void execute() {
         String mysqlShowTableCol = "Tables_in_" + phyDataNode.getDatabase();
         String[] mysqlShowTableCols = new String[]{mysqlShowTableCol};
-        PhysicalDatasource[] dsList = phyDataNode.getDbPool().getSources();
+        PhysicalDatasource tds = phyDataNode.getDbPool().getSource();
         PhysicalDatasource ds = null;
-        if (dsList != null) {
-            for (PhysicalDatasource tds : dsList) {
-                if (tds.isTestConnSuccess()) {
-                    ds = tds;
-                    break;
-                }
+        if (tds != null) {
+            if (tds.isTestConnSuccess()) {
+                ds = tds;
             }
         }
         if (ds != null) {

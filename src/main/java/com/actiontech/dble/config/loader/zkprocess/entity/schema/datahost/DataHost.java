@@ -11,8 +11,6 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlType;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * <dataHost name="localhost1" maxCon="1000" minCon="10" balance="0"
@@ -36,8 +34,6 @@ public class DataHost implements Named {
     @XmlAttribute(required = true)
     protected String name;
     @XmlAttribute
-    protected Integer switchType;
-    @XmlAttribute
     protected Integer slaveThreshold;
     @XmlAttribute
     protected Integer tempReadHostAvailable;
@@ -46,7 +42,7 @@ public class DataHost implements Named {
 
     protected HeartBeat heartbeat;
 
-    protected List<WriteHost> writeHost;
+    protected WriteHost writeHost;
     protected ReadHost readHost;
 
     public HeartBeat getHeartbeat() {
@@ -57,14 +53,11 @@ public class DataHost implements Named {
         this.heartbeat = heartbeat;
     }
 
-    public List<WriteHost> getWriteHost() {
-        if (this.writeHost == null) {
-            writeHost = new ArrayList<>();
-        }
+    public WriteHost getWriteHost() {
         return writeHost;
     }
 
-    public void setWriteHost(List<WriteHost> writeHost) {
+    public void setWriteHost(WriteHost writeHost) {
         this.writeHost = writeHost;
     }
 
@@ -100,14 +93,6 @@ public class DataHost implements Named {
         this.balance = balance;
     }
 
-
-    public Integer getSwitchType() {
-        return switchType;
-    }
-
-    public void setSwitchType(Integer switchType) {
-        this.switchType = switchType;
-    }
 
     public Integer getSlaveThreshold() {
         return slaveThreshold;
@@ -154,8 +139,6 @@ public class DataHost implements Named {
                 minCon +
                 ", name=" +
                 name +
-                ", switchType=" +
-                switchType +
                 ", slaveThreshold=" +
                 slaveThreshold +
                 ", tempReadHostAvailable=" +
@@ -164,7 +147,7 @@ public class DataHost implements Named {
                 keepOrig +
                 ", heartbeat=" +
                 heartbeat.toString() +
-                ", writeHost=" +
+                ", writeHost=[" +
                 writeHost +
                 "]";
         return builder;

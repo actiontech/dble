@@ -48,15 +48,11 @@ public class ServerPrivileges implements FrontendPrivileges {
     @Override
     public String getPassword(String user) {
         ServerConfig conf = DbleServer.getInstance().getConfig();
-        if (user != null && user.equals(conf.getSystem().getClusterHeartbeatUser())) {
-            return conf.getSystem().getClusterHeartbeatPass();
+        UserConfig uc = conf.getUsers().get(user);
+        if (uc != null) {
+            return uc.getPassword();
         } else {
-            UserConfig uc = conf.getUsers().get(user);
-            if (uc != null) {
-                return uc.getPassword();
-            } else {
-                return null;
-            }
+            return null;
         }
     }
 

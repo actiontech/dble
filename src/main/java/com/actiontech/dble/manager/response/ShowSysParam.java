@@ -88,7 +88,6 @@ public final class ShowSysParam {
         paramValues.add(sysConfig.getMaxCon() + "");
         paramValues.add(sysConfig.getUseCompression() + "");
         paramValues.add(sysConfig.getUsingAIO() + "");
-        paramValues.add(sysConfig.isUseZKSwitch() + "");
         paramValues.add(sysConfig.getUseThreadUsageStat() + "");
         paramValues.add(sysConfig.getUsePerformanceMode() + "");
         paramValues.add(sysConfig.getUseCostTimeStat() + "");
@@ -135,8 +134,6 @@ public final class ShowSysParam {
         paramValues.add(sysConfig.getBackSocketSoRcvbuf() + "B");
         paramValues.add(sysConfig.getBackSocketSoSndbuf() + "B");
         paramValues.add(sysConfig.getBackSocketNoDelay() + "");
-        paramValues.add(sysConfig.getClusterHeartbeatUser() + "");
-        paramValues.add(sysConfig.getClusterHeartbeatPass() + "");
         paramValues.add(sysConfig.getViewPersistenceConfBaseDir());
         paramValues.add(sysConfig.getViewPersistenceConfBaseName());
         paramValues.add(sysConfig.getJoinQueueSize() + "");
@@ -189,7 +186,6 @@ public final class ShowSysParam {
             "maxCon",
             "useCompression",
             "usingAIO",
-            "useZKSwitch",
             "useThreadUsageStat",
             "usePerformanceMode",
             "useCostTimeStat",
@@ -236,8 +232,6 @@ public final class ShowSysParam {
             "backSocketSoRcvbuf",
             "backSocketSoSndbuf",
             "backSocketNoDelay",
-            "clusterHeartbeatUser",
-            "clusterHeartbeatPass",
             "viewPersistenceConfBaseDir",
             "viewPersistenceConfBaseName",
             "joinQueueSize",
@@ -272,7 +266,6 @@ public final class ShowSysParam {
             "The number of max connections the server allowed ",
             "Whether the Compression is enable,The default number is 0 ",
             "Whether the AIO is enable, The default number is 0(use NIO instead)",
-            "Use ZK to switch the writeNode ,The default is true,but only affective when zk is enable",
             "Whether the thread usage statistics function is enabled.The default value is 0",
             "Whether use the performance mode is enabled.The default value is 0",
             "Whether the cost time of query can be track by Btrace.The default value is 0",
@@ -319,8 +312,6 @@ public final class ShowSysParam {
             "The buffer size of backend receive socket.The default value is 1024*1024*4",
             "The buffer size of backend send socket.The default value is 1024*1024",
             "The backend nagle is disabled.The default value is 1",
-            "clusterHeartbeatUser",
-            "clusterHeartbeatPass",
             "The directory of the view record file,The default value is ./viewConf",
             "The name of the view record file.The default value is viewJson",
             "Size of join queue,Avoid using too much memory",

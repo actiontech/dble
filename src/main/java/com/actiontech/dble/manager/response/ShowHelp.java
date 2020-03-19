@@ -105,7 +105,6 @@ public final class ShowHelp {
         HELPS.put("show @@datasource [where dataNode = ?]", "Report dataSources");
         HELPS.put("show @@datasource.synstatus", "Report datasource data synchronous");
         HELPS.put("show @@datasource.syndetail where name=?", "Report datasource data synchronous detail");
-        HELPS.put("show @@datasource.cluster", "Report datasource galary cluster variables");
         HELPS.put("show @@processor", "Report processor status");
         HELPS.put("show @@command", "Report commands status");
         HELPS.put("show @@connection where processor=? and front_id=? and host=? and user=?", "Report connection status");
@@ -150,8 +149,6 @@ public final class ShowHelp {
         HELPS.put("show @@questions", "Report the questions & transactions have been executed in server port");
         HELPS.put("show @@data_distribution where table ='schema.table'", "Report the data distribution in different data node");
 
-        // switch
-        HELPS.put("switch @@datasource name:index", "Switch dataSource");
 
         // kill
         HELPS.put("kill @@connection id1,id2,...", "Kill the specified connections");

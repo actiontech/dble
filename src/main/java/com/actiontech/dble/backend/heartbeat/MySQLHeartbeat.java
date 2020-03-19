@@ -8,9 +8,7 @@ package com.actiontech.dble.backend.heartbeat;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
 import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
-import com.actiontech.dble.config.model.DataHostConfig;
 import com.actiontech.dble.statistic.DataSourceSyncRecorder;
 import com.actiontech.dble.statistic.HeartbeatRecorder;
 import org.slf4j.Logger;
@@ -147,7 +145,6 @@ public class MySQLHeartbeat {
         if (this.status != OK_STATUS) {
             Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getHostConfig().getName() + "-" + this.source.getConfig().getHostName());
             AlertUtil.alert(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "heartbeat status:" + this.status, "mysql", this.source.getConfig().getId(), labels);
-            switchSourceIfNeed("heartbeat error");
         }
     }
 
@@ -269,67 +266,5 @@ public class MySQLHeartbeat {
 
     public DataSourceSyncRecorder getAsyncRecorder() {
         return this.asyncRecorder;
-    }
-
-
-    /**
-     * switch data source
-     */
-    private void switchSourceIfNeed(String reason) {
-        int switchType = source.getHostConfig().getSwitchType();
-        if (switchType == DataHostConfig.NOT_SWITCH_DS) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("not switch datasource, for switchType is " + DataHostConfig.NOT_SWITCH_DS);
-                return;
-            }
-            return;
-        }
-
-        AbstractPhysicalDBPool pool = this.source.getDbPool();
-        pool.switchSourceIfNeed(this.source, reason);
-        /*
-        int curDatasourceHB = pool.getSource().getHeartbeat().getStatus();
-        // read node can't switch, only write node can switch
-        if (pool.getWriteType() == PhysicalDBPool.WRITE_ONLYONE_NODE && !source.isReadNode()
-            && curDatasourceHB != MySQLHeartbeat.OK_STATUS && pool.getSources().length > 1) {
-            synchronized (pool) {
-                // try to see if need switch datasource
-                curDatasourceHB = pool.getSource().getHeartbeat().getStatus();
-                if (curDatasourceHB != MySQLHeartbeat.INIT_STATUS
-                    && curDatasourceHB != MySQLHeartbeat.OK_STATUS) {
-                    int curIndex = pool.getActiveIndex();
-                    int nextId = pool.next(curIndex);
-                    PhysicalDatasource[] allWriteNodes = pool.getSources();
-                    while (true) {
-                        if (nextId == curIndex) {
-                            break;
-                        }
-
-                        PhysicalDatasource theSource = allWriteNodes[nextId];
-                        MySQLHeartbeat theSourceHB = theSource.getHeartbeat();
-                        int theSourceHBStatus = theSourceHB.getStatus();
-                        if (theSourceHBStatus == MySQLHeartbeat.OK_STATUS) {
-                            if (switchType == DataHostConfig.SYN_STATUS_SWITCH_DS) {
-                                if (Integer.valueOf(0).equals(theSourceHB.getSlaveBehindMaster())) {
-                                    logger.info("try to switch datasource, slave is synchronized to master " + theSource.getConfig());
-                                    pool.switchSource(nextId, true, reason);
-                                    break;
-                                } else {
-                                    logger.warn("ignored  datasource ,slave is not  synchronized to master , slave behind master :"
-                                            + theSourceHB.getSlaveBehindMaster()
-                                            + " " + theSource.getConfig());
-                                }
-                            } else {
-                                // normal switch
-                                logger.info("try to switch datasource ,not checked slave synchronize status " + theSource.getConfig());
-                                pool.switchSource(nextId, true, reason);
-                                break;
-                            }
-                        }
-                        nextId = pool.next(nextId);
-                    }
-                }
-            }
-            } */
     }
 }

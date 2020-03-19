@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.CustomMySQLHa;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.manager.response.*;
@@ -175,9 +176,6 @@ public final class ShowHandler {
             case ManagerParseShow.DATASOURCE_SYNC_DETAIL://by songwie
                 ShowDatasourceSynDetail.response(c, stmt);
                 break;
-            case ManagerParseShow.DATASOURCE_CLUSTER://by songwie
-                ShowDatasourceCluster.response(c);
-                break;
             case ManagerParseShow.DIRECTMEMORY:
                 ShowDirectMemory.execute(c);
                 break;
@@ -215,6 +213,9 @@ public final class ShowHandler {
                 break;
             case ManagerParseShow.ALERT:
                 ShowSingleValue.execute(c, "@@alert", AlertUtil.isEnable() ? 1L : 0L);
+                break;
+            case ManagerParseShow.CUSTOM_MYSQL_HA:
+                ShowSingleValue.execute(c, "@@custom_mysql_ha", CustomMySQLHa.getInstance().isProcessAlive() ? 1L : 0L);
                 break;
             case ManagerParseShow.COLLATION:
                 ShowCollatin.execute(c);

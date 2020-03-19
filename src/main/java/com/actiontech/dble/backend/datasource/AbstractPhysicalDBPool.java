@@ -7,7 +7,6 @@ import com.actiontech.dble.config.model.DataHostConfig;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -18,7 +17,6 @@ public abstract class AbstractPhysicalDBPool {
     public static final int BALANCE_NONE = 0;
     protected static final int BALANCE_ALL_BACK = 1;
     protected static final int BALANCE_ALL = 2;
-    protected static final int BALANCE_ALL_READ = 3;
 
     public static final int WEIGHT = 0;
 
@@ -29,8 +27,7 @@ public abstract class AbstractPhysicalDBPool {
     protected volatile boolean initSuccess = false;
     protected String[] schemas;
 
-    protected Map<Integer, PhysicalDatasource[]> readSources;
-    protected Map<Integer, PhysicalDatasource[]> standbyReadSourcesMap;
+    protected PhysicalDatasource[] readSources;
 
     protected final ReentrantReadWriteLock adjustLock = new ReentrantReadWriteLock();
 
@@ -51,19 +48,13 @@ public abstract class AbstractPhysicalDBPool {
 
     abstract boolean isSlave(PhysicalDatasource ds);
 
-    public abstract PhysicalDatasource[] getSources();
-
     public abstract PhysicalDatasource getSource();
 
     public boolean isInitSuccess() {
         return initSuccess;
     }
 
-    public abstract boolean switchSource(int newIndex, String reason);
-
-    public abstract int init(int index);
-
-    public abstract void reloadInit(int index);
+    public abstract boolean init();
 
     public abstract void doHeartbeat();
 
@@ -110,15 +101,11 @@ public abstract class AbstractPhysicalDBPool {
         return dataHostConfig;
     }
 
-    abstract PhysicalDatasource[] getWriteSources();
+    abstract PhysicalDatasource getWriteSource();
 
     public String getHostName() {
         return hostName;
     }
-
-    public abstract int getActiveIndex();
-
-    public abstract void switchSourceIfNeed(PhysicalDatasource ds, String reason);
 
     public PhysicalDatasource randomSelect(ArrayList<PhysicalDatasource> okSources) {
         if (okSources.isEmpty()) {
@@ -167,13 +154,8 @@ public abstract class AbstractPhysicalDBPool {
         return isSync && isNotDelay;
     }
 
-    public Map<Integer, PhysicalDatasource[]> getReadSources() {
+    public PhysicalDatasource[] getReadSources() {
         return this.readSources;
-    }
-
-
-    public Map<Integer, PhysicalDatasource[]> getStandbyReadSourcesMap() {
-        return standbyReadSourcesMap;
     }
 
 }

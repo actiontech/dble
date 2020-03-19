@@ -10,10 +10,7 @@ import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.LoadDataResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.net.handler.BackendAsyncHandler;
-import com.actiontech.dble.net.mysql.EOFPacket;
-import com.actiontech.dble.net.mysql.ErrorPacket;
-import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.net.mysql.RequestFilePacket;
+import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.server.NonBlockingSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +35,6 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
     private volatile int resultStatus;
     private volatile byte[] header;
     private volatile List<byte[]> fields;
-    private int rowLength = 0;
 
     /**
      * life cycle: one SQL execution
@@ -127,7 +123,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
                         handleErrorPacket(data);
                         break;
                     case EOFPacket.FIELD_COUNT:
-                        if (data.length > 9) {
+                        if (data.length > MySQLPacket.MAX_EOF_SIZE) {
                             handleRowPacket(data);
                         } else {
                             resultStatus = RESULT_STATUS_INIT;

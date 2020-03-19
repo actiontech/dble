@@ -156,10 +156,6 @@ public class MySQLConnection extends AbstractConnection implements
         this.sysVariables.clear();
     }
 
-    public NonBlockingSession getSession() {
-        return session;
-    }
-
     public void setHost(String host) {
         this.host = host;
     }
@@ -318,7 +314,13 @@ public class MySQLConnection extends AbstractConnection implements
         }
         isExecuting = true;
         lastTime = TimeUtil.currentTimeMillis();
-        packet.write(this);
+        int size = packet.calcPacketSize();
+        if (size >= MySQLPacket.MAX_PACKET_SIZE){
+            packet.writeBigPackage(this, size);
+        } else {
+            packet.write(this);
+        }
+
     }
 
     private WriteToBackendTask sendQueryCmdTask(String query, CharsetNames clientCharset) {

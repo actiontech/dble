@@ -11,7 +11,6 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.plan.common.ptr.BytePtr;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
@@ -149,10 +148,10 @@ public class OutputHandler extends BaseDMLHandler {
                 } else {
                     row = rowNull;
                     this.netOutBytes += row.length;
-                    if (row.length >= MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
-                        BytePtr bytePtr = new BytePtr(packetId);
-                        buffer = session.getSource().writeBigPackageToBuffer(row, buffer, bytePtr);
-                        this.packetId = bytePtr.get();
+                    if (row.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
+                        session.getSource().setPacketId(packetId);
+                        buffer = session.getSource().writeBigPackageToBuffer(row, buffer);
+                        this.packetId = session.getSource().getPacketId();
                     } else {
                         row[3] = ++packetId;
                         buffer = session.getSource().writeToBuffer(row, buffer);

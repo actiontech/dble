@@ -14,9 +14,7 @@ import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
-import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.plan.common.ptr.BytePtr;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -289,6 +287,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         if (!rrs.isCallStatement()) {
             session.releaseConnectionIfSafe(conn, false);
         }
+
         eof[3] = ++packetId;
         session.multiStatementPacket(eof, packetId);
         ServerConnection source = session.getSource();
@@ -398,7 +397,8 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
         RowDataPacket rowDataPk = null;
         // cache cacheKey-> dataNode
-        if (cacheKeyIndex != -1) {
+        boolean isBigPackage = row.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE;
+        if (cacheKeyIndex != -1 && !isBigPackage) {
             rowDataPk = new RowDataPacket(fieldCount);
             rowDataPk.read(row);
             byte[] key = rowDataPk.fieldValues.get(cacheKeyIndex);
@@ -425,10 +425,10 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                     binRowDataPk.setPacketId(rowDataPk.getPacketId());
                     buffer = binRowDataPk.write(buffer, session.getSource(), true);
                 } else {
-                    if (row.length >= MySQLPacket.MAX_SQL_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
-                        BytePtr bytePtr = new BytePtr(packetId);
-                        buffer = session.getSource().writeBigPackageToBuffer(row, buffer, bytePtr);
-                        this.packetId = bytePtr.get();
+                    if (isBigPackage) {
+                        session.getSource().setPacketId(packetId);
+                        buffer = session.getSource().writeBigPackageToBuffer(row, buffer);
+                        this.packetId = session.getSource().getPacketId();
                     } else {
                         row[3] = ++packetId;
                         buffer = session.getSource().writeToBuffer(row, buffer);

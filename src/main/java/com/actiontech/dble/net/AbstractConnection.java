@@ -73,16 +73,6 @@ public abstract class AbstractConnection implements NIOConnection {
 
     private byte[] rowData;
 
-    public void setPacketId(byte packetId) {
-        this.packetId = packetId;
-    }
-
-    private volatile byte packetId;
-
-    public byte getPacketId() {
-        return packetId;
-    }
-
     public AbstractConnection(NetworkChannel channel) {
         this.channel = channel;
         boolean isAIO = (channel instanceof AsynchronousChannel);
@@ -514,7 +504,7 @@ public abstract class AbstractConnection implements NIOConnection {
         return buffer;
     }
 
-    public ByteBuffer writeBigPackageToBuffer(byte[] row, ByteBuffer buffer) {
+    public ByteBuffer writeBigPackageToBuffer(byte[] row, ByteBuffer buffer, byte packetId) {
         int length = row.length;
         int srcPos = 0;
         boolean isFirst = true;
@@ -543,6 +533,7 @@ public abstract class AbstractConnection implements NIOConnection {
         b[3] = ++packetId;
         System.arraycopy(row, srcPos, b, MySQLPacket.PACKET_HEADER_SIZE, length);
         buffer = writeToBuffer(b, buffer);
+        ((ServerConnection) this).getSession2().getPacketId().set(packetId);
         return buffer;
     }
 

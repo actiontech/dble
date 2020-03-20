@@ -75,7 +75,6 @@ public class CommandPacket extends MySQLPacket {
 
     private byte command;
     private byte[] arg;
-    private int remain;
 
     public void read(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data);
@@ -115,6 +114,7 @@ public class CommandPacket extends MySQLPacket {
 
     public void writeBigPackage(MySQLConnection c, int size) {
         ByteBuffer buffer = null;
+        int remain = 0;
         try {
             boolean isFirst = true;
             while (size >= MySQLPacket.MAX_PACKET_SIZE) {
@@ -122,14 +122,14 @@ public class CommandPacket extends MySQLPacket {
                 size -= MySQLPacket.MAX_PACKET_SIZE;
                 BufferUtil.writeUB3(buffer, MySQLPacket.MAX_PACKET_SIZE);
                 buffer.put(packetId++);
-                writeBody(buffer, isFirst);
+                remain = writeBody(buffer, isFirst, remain);
                 c.write(buffer);
                 isFirst = false;
             }
             buffer = c.allocate(size + MySQLPacket.PACKET_HEADER_SIZE);
             BufferUtil.writeUB3(buffer, size);
             buffer.put(packetId);
-            writeBody(buffer, isFirst);
+            writeBody(buffer, isFirst, remain);
             c.write(buffer);
         } catch (java.nio.BufferOverflowException e1) {
             //fixed issues #98 #1072
@@ -142,7 +142,7 @@ public class CommandPacket extends MySQLPacket {
         }
     }
 
-    private void writeBody(ByteBuffer buffer, boolean isFirst) {
+    private int writeBody(ByteBuffer buffer, boolean isFirst, int remain) {
         if (isFirst) {
             remain = arg.length + 1;
             buffer.put(command);
@@ -156,6 +156,7 @@ public class CommandPacket extends MySQLPacket {
             buffer.put(arg, start, available);
             remain -= available;
         }
+        return remain;
     }
 
 

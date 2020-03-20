@@ -426,6 +426,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             boolean isBigPackage = row.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE;
             if (cacheKeyIndex != -1 && !isBigPackage) {
                 rowDataPkg = new RowDataPacket(fieldCount);
+                row[3] = ++packetId;
                 rowDataPkg.read(row);
                 byte[] key = rowDataPkg.fieldValues.get(cacheKeyIndex);
                 if (key != null) {
@@ -440,6 +441,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (prepared) {
                     if (rowDataPkg == null) {
                         rowDataPkg = new RowDataPacket(fieldCount);
+                        row[3] = ++packetId;
                         rowDataPkg.read(row);
                     }
                     BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
@@ -448,9 +450,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     byteBuffer = binRowDataPk.write(byteBuffer, session.getSource(), true);
                 } else {
                     if (isBigPackage) {
-                        session.getSource().setPacketId(packetId);
-                        byteBuffer = session.getSource().writeBigPackageToBuffer(row, byteBuffer);
-                        this.packetId = session.getSource().getPacketId();
+                        byteBuffer = session.getSource().writeBigPackageToBuffer(row, byteBuffer, packetId);
+                        this.packetId = (byte) session.getPacketId().get();
                     } else {
                         row[3] = ++packetId;
                         byteBuffer = session.getSource().writeToBuffer(row, byteBuffer);

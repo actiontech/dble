@@ -149,9 +149,8 @@ public class OutputHandler extends BaseDMLHandler {
                     row = rowNull;
                     this.netOutBytes += row.length;
                     if (row.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
-                        session.getSource().setPacketId(packetId);
-                        buffer = session.getSource().writeBigPackageToBuffer(row, buffer);
-                        this.packetId = session.getSource().getPacketId();
+                        buffer = session.getSource().writeBigPackageToBuffer(row, buffer, packetId);
+                        this.packetId = (byte) session.getPacketId().get();
                     } else {
                         row[3] = ++packetId;
                         buffer = session.getSource().writeToBuffer(row, buffer);

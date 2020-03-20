@@ -397,6 +397,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         boolean isBigPackage = row.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE;
         if (cacheKeyIndex != -1 && !isBigPackage) {
             rowDataPk = new RowDataPacket(fieldCount);
+            row[3] = ++packetId;
             rowDataPk.read(row);
             byte[] key = rowDataPk.fieldValues.get(cacheKeyIndex);
             if (key != null) {
@@ -415,6 +416,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                 if (prepared) {
                     if (rowDataPk == null) {
                         rowDataPk = new RowDataPacket(fieldCount);
+                        row[3] = ++packetId;
                         rowDataPk.read(row);
                     }
                     BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
@@ -423,9 +425,8 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                     buffer = binRowDataPk.write(buffer, session.getSource(), true);
                 } else {
                     if (isBigPackage) {
-                        session.getSource().setPacketId(packetId);
-                        buffer = session.getSource().writeBigPackageToBuffer(row, buffer);
-                        this.packetId = session.getSource().getPacketId();
+                        buffer = session.getSource().writeBigPackageToBuffer(row, buffer, packetId);
+                        this.packetId = (byte) session.getPacketId().get();
                     } else {
                         row[3] = ++packetId;
                         buffer = session.getSource().writeToBuffer(row, buffer);

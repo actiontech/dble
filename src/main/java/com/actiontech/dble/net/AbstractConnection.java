@@ -12,6 +12,8 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.CharsetNames;
 import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.google.common.base.Strings;
@@ -725,7 +727,12 @@ public abstract class AbstractConnection implements NIOConnection {
             return null;
         } else {
             if (rowData != null) {
-                this.setPacketId(data[3]);
+                if (this instanceof ServerConnection) {
+                    NonBlockingSession session = ((ServerConnection) this).getSession2();
+                    if (session != null) {
+                        session.getPacketId().set(data[3]);
+                    }
+                }
                 byte[] nextData = new byte[data.length - MySQLPacket.PACKET_HEADER_SIZE];
                 System.arraycopy(data, MySQLPacket.PACKET_HEADER_SIZE, nextData, 0, data.length - MySQLPacket.PACKET_HEADER_SIZE);
                 rowData = dataMerge(nextData);

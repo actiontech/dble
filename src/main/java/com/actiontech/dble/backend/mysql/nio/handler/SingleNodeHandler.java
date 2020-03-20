@@ -58,8 +58,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     private List<FieldPacket> fieldPackets = new ArrayList<>();
     private volatile boolean connClosed = false;
     protected AtomicBoolean writeToClient = new AtomicBoolean(false);
-    private byte[] rowData;
-    private int rowPacketNum;
 
     public SingleNodeHandler(RouteResultset rrs, NonBlockingSession session) {
         this.rrs = rrs;
@@ -106,7 +104,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         ServerConfig conf = DbleServer.getInstance().getConfig();
         PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
         dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), session.getSource().isAutocommit(), node, this, node);
-        packetId = session.getSource().getPacketId();
     }
     protected void execute(BackendConnection conn) {
         if (session.closed()) {

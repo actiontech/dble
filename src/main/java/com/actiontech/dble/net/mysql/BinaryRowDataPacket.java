@@ -278,7 +278,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
         int totalSize = size + PACKET_HEADER_SIZE;
         bb = c.checkWriteBuffer(bb, totalSize, writeSocketIfFull);
         BufferUtil.writeUB3(bb, size);
-        bb.put(packetId);
+        bb.put(++packetId);
         bb.put(packetHeader); // packet header [00]
         bb.put(nullBitMap); // NULL-Bitmap
         for (int i = 0; i < fieldCount; i++) { // values

@@ -441,13 +441,18 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (prepared) {
                     if (rowDataPkg == null) {
                         rowDataPkg = new RowDataPacket(fieldCount);
-                        row[3] = ++packetId;
+                        row[3] = packetId;
                         rowDataPkg.read(row);
                     }
                     BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
                     binRowDataPk.read(fieldPackets, rowDataPkg);
                     binRowDataPk.setPacketId(rowDataPkg.getPacketId());
                     byteBuffer = binRowDataPk.write(byteBuffer, session.getSource(), true);
+                    if (isBigPackage) {
+                        ByteBuffer newBuffer=session.getSource().allocate(byteBuffer.array().length);
+                        byteBuffer = session.getSource().writeBigPackageToBuffer(byteBuffer.array(), newBuffer, packetId);
+                        this.packetId = (byte) session.getPacketId().get();
+                    }
                 } else {
                     if (isBigPackage) {
                         byteBuffer = session.getSource().writeBigPackageToBuffer(row, byteBuffer, packetId);

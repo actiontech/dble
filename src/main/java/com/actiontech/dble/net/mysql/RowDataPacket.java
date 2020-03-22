@@ -87,7 +87,9 @@ public class RowDataPacket extends MySQLPacket {
     @Override
     public ByteBuffer write(ByteBuffer bb, FrontendConnection c,
                             boolean writeSocketIfFull) {
-        bb = c.checkWriteBuffer(bb, PACKET_HEADER_SIZE, writeSocketIfFull);
+        int size = calcPacketSize();
+        int totalSize = size + PACKET_HEADER_SIZE;
+        bb = c.checkWriteBuffer(bb, totalSize, writeSocketIfFull);
         BufferUtil.writeUB3(bb, calcPacketSize());
         bb.put(packetId);
         for (int i = 0; i < fieldCount; i++) {

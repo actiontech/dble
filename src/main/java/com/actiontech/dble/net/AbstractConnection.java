@@ -515,6 +515,7 @@ public abstract class AbstractConnection implements NIOConnection {
                 System.arraycopy(row, 0, b, 0, MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
                 srcPos = MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE;
                 length -= (MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
+                RowDataPacket.writeRowLength(b, MySQLPacket.MAX_PACKET_SIZE);
                 b[3] = ++packetId;
                 isFirst = false;
                 buffer = writeToBuffer(b, buffer);

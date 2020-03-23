@@ -8,6 +8,7 @@ package com.actiontech.dble.net.mysql;
 import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
+import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.singleton.BufferPoolManager;
@@ -93,13 +94,18 @@ public class RowDataPacket extends MySQLPacket {
         boolean isBigPackage = size >= MySQLPacket.MAX_PACKET_SIZE;
         if (isBigPackage) {
             c.writePart(bb);
-            bb = c.getProcessor().getBufferPool().allocate(totalSize);
+            BufferPool bufferPool = c.getProcessor().getBufferPool();
+            bb = bufferPool.allocate(totalSize);
+            BufferUtil.writeUB3(bb, calcPacketSize());
             bb.put(packetId);
             writeBody(bb, c, writeSocketIfFull);
-            ByteBuffer newBuffer = c.getProcessor().getBufferPool().allocate(bb.array().length);
-            return c.writeBigPackageToBuffer(bb.array(), newBuffer, packetId);
+            byte[] array = bb.array();
+            bufferPool.recycle(bb);
+            ByteBuffer newBuffer = bufferPool.allocate(array.length);
+            return c.writeBigPackageToBuffer(array, newBuffer, packetId);
         } else {
             bb = c.checkWriteBuffer(bb, totalSize, writeSocketIfFull);
+            BufferUtil.writeUB3(bb, calcPacketSize());
             bb.put(++packetId);
             writeBody(bb, c, writeSocketIfFull);
             ((ServerConnection) c).getSession2().getPacketId().set(packetId);
@@ -109,7 +115,6 @@ public class RowDataPacket extends MySQLPacket {
 
     private void writeBody(ByteBuffer bb, FrontendConnection c,
                            boolean writeSocketIfFull) {
-        BufferUtil.writeUB3(bb, calcPacketSize());
         for (int i = 0; i < fieldCount; i++) {
             byte[] fv = fieldValues.get(i);
             if (fv == null) {

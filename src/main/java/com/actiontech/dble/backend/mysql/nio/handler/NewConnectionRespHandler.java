@@ -27,7 +27,7 @@ public class NewConnectionRespHandler implements ResponseHandler {
     public BackendConnection getBackConn() throws IOException {
         lock.lock();
         try {
-            if (backConn == null) {
+            if (errMsg == null && backConn == null) {
                 initiated.await();
             }
             if (backConn == null) {
@@ -48,9 +48,9 @@ public class NewConnectionRespHandler implements ResponseHandler {
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
         LOGGER.info(conn + " connectionError " + e);
-        errMsg = "Backend connect Error, Connection{DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
         lock.lock();
         try {
+            errMsg = "Backend connect Error, Connection{DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
             initiated.signal();
         } finally {
             lock.unlock();
@@ -66,9 +66,9 @@ public class NewConnectionRespHandler implements ResponseHandler {
         } finally {
             lock.unlock();
         }
-        LOGGER.info("connectionAcquired " + conn);
-
-
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("connectionAcquired " + conn);
+        }
     }
 
     @Override
@@ -109,8 +109,14 @@ public class NewConnectionRespHandler implements ResponseHandler {
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
-
-
+        lock.lock();
+        try {
+            errMsg = "Backend connect connectionClose, Connection{DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]}";
+            initiated.signal();
+        } finally {
+            lock.unlock();
+        }
+        LOGGER.info("connectionClose " + conn);
     }
 
 }

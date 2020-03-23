@@ -21,7 +21,6 @@ import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author mycat
@@ -43,7 +42,7 @@ public class MySQLHeartbeat {
     private volatile int errorCount = 0;
     private AtomicLong startErrorTime = new AtomicLong(-1L);
 
-    private final AtomicBoolean isStop = new AtomicBoolean(true);
+    private volatile boolean isStop = true;
     private final AtomicBoolean isChecking = new AtomicBoolean(false);
     protected volatile int status;
 
@@ -53,13 +52,10 @@ public class MySQLHeartbeat {
 
     private volatile Integer slaveBehindMaster;
     private final MySQLDataSource source;
-
-    private final ReentrantLock lock;
     private MySQLDetector detector;
 
     public MySQLHeartbeat(MySQLDataSource source) {
         this.source = source;
-        this.lock = new ReentrantLock(false);
         this.status = INIT_STATUS;
         this.errorRetryCount = source.getHostConfig().getErrorRetryCount();
         this.heartbeatTimeout = source.getHostConfig().getHeartbeatTimeout();
@@ -81,63 +77,45 @@ public class MySQLHeartbeat {
     }
 
     public void start() {
-        final ReentrantLock reentrantLock = this.lock;
-        reentrantLock.lock();
-        try {
-            isStop.compareAndSet(true, false);
-            this.status = OK_STATUS;
-        } finally {
-            reentrantLock.unlock();
-        }
+        isStop = false;
     }
 
     public void stop() {
-        final ReentrantLock reentrantLock = this.lock;
-        reentrantLock.lock();
-        try {
-            if (isStop.compareAndSet(false, true)) {
-                if (!isChecking.get()) {
-                    if (detector != null) {
-                        detector.quit();
-                        isChecking.set(false);
-                    }
-                }
-            }
-        } finally {
-            reentrantLock.unlock();
-        }
+        isStop = true;
     }
 
     /**
      * execute heart beat
      */
     public void heartbeat() {
-        final ReentrantLock reentrantLock = this.lock;
-        reentrantLock.lock();
-        try {
-            if (isChecking.compareAndSet(false, true)) {
-                if (detector == null || detector.isQuit()) {
-                    try {
-                        detector = new MySQLDetector(this);
-                        detector.heartbeat();
-                    } catch (Exception e) {
-                        LOGGER.info(source.getConfig().toString(), e);
-                        setResult(ERROR_STATUS);
-                    }
-                } else {
+        if (isStop) {
+            this.status = INIT_STATUS;
+            if (detector != null && !detector.isQuit()) {
+                detector.quit();
+                isChecking.set(false);
+            }
+            return;
+        }
+        if (isChecking.compareAndSet(false, true)) {
+            if (detector == null || detector.isQuit()) {
+                try {
+                    detector = new MySQLDetector(this);
                     detector.heartbeat();
+                } catch (Exception e) {
+                    LOGGER.info(source.getConfig().toString(), e);
+                    setResult(ERROR_STATUS);
                 }
             } else {
-                if (detector != null) {
-                    if (detector.isQuit()) {
-                        isChecking.compareAndSet(true, false);
-                    } else if (detector.isHeartbeatTimeout()) {
-                        setResult(TIMEOUT_STATUS);
-                    }
+                detector.heartbeat();
+            }
+        } else {
+            if (detector != null) {
+                if (detector.isQuit()) {
+                    isChecking.set(false);
+                } else if (detector.isHeartbeatTimeout()) {
+                    setResult(TIMEOUT_STATUS);
                 }
             }
-        } finally {
-            reentrantLock.unlock();
         }
     }
 
@@ -176,7 +154,7 @@ public class MySQLHeartbeat {
                 this.status = INIT_STATUS;
                 this.errorCount = 0;
                 this.startErrorTime.set(-1);
-                if (isStop.get()) {
+                if (isStop) {
                     detector.quit();
                 } else {
                     heartbeat(); // timeout, heart beat again
@@ -189,7 +167,7 @@ public class MySQLHeartbeat {
                 this.errorCount = 0;
                 this.startErrorTime.set(-1);
         }
-        if (isStop.get()) {
+        if (isStop) {
             detector.quit();
         }
     }
@@ -211,6 +189,7 @@ public class MySQLHeartbeat {
         LOGGER.info("heartbeat failed, retry for the " + errorCount + " times");
         heartbeat();
     }
+
     private void setTimeout() {
         LOGGER.warn("heartbeat setTimeout");
         this.isChecking.set(false);
@@ -242,7 +221,7 @@ public class MySQLHeartbeat {
     }
 
     public boolean isStop() {
-        return isStop.get();
+        return isStop;
     }
 
     public int getErrorCount() {

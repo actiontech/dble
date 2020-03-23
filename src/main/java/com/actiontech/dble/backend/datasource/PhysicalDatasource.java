@@ -342,9 +342,7 @@ public abstract class PhysicalDatasource {
         if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
             return;
         }
-        if (!heartbeat.isStop()) {
-            heartbeat.heartbeat();
-        }
+        heartbeat.heartbeat();
     }
 
     private BackendConnection takeCon(BackendConnection conn, String schema) {

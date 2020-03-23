@@ -83,7 +83,6 @@ public final class HaConfigManager {
             } else {
                 HA_LOGGER.info("reloadId changes when try to write the local file,just skip " + reloadIndex.get());
             }
-            finishAndNext();
         } finally {
             lock.readLock().unlock();
         }

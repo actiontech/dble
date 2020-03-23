@@ -5,9 +5,12 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.transaction;
 
-public interface RollbackNodesHandler {
+public interface TransactionHandler {
+    void commit();
+
+    void implicitCommit(ImplicitCommitHandler handler);
 
     void rollback();
 
-    void clearResources();
+    void turnOnAutoCommit(byte[] previousSendData);
 }

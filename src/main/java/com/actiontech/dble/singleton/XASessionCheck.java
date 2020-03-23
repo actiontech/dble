@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.singleton;
 
-import com.actiontech.dble.backend.mysql.xa.TxState;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.stage.XAStage;
 import com.actiontech.dble.server.NonBlockingSession;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,8 +42,10 @@ public final class XASessionCheck {
     }
 
     private void checkCommitSession() {
+        String xaStage;
         for (NonBlockingSession session : commitSession.values()) {
-            if (session.getXaState() == TxState.TX_COMMIT_FAILED_STATE) {
+            xaStage = session.getTransactionManager().getXAStage();
+            if (XAStage.COMMIT_FAIL_STAGE.equals(xaStage)) {
                 this.commitSession.remove(session.getSource().getId());
                 session.commit();
             }

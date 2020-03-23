@@ -10,11 +10,9 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.LoadDataUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoCommitHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoTxOperation;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.NormalAutoCommitNodesHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.NormalAutoRollbackNodesHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XAAutoCommitNodesHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XAAutoRollbackNodesHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionHandler;
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
@@ -607,24 +605,13 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         ServerConnection source = session.getSource();
         if (source.isAutocommit() && !source.isTxStart() && this.modifiedSQL && !this.session.isKilled()) {
             //Implicit Distributed Transaction,send commit or rollback automatically
+            TransactionHandler handler = new AutoCommitHandler(session, data, rrs.getNodes(), errConnection);
             if (txOperation == AutoTxOperation.COMMIT) {
                 session.checkBackupStatus();
                 session.setBeginCommitTime();
-                if (session.getXaState() == null) {
-                    NormalAutoCommitNodesHandler autoHandler = new NormalAutoCommitNodesHandler(session, data);
-                    autoHandler.commit();
-                } else {
-                    XAAutoCommitNodesHandler autoHandler = new XAAutoCommitNodesHandler(session, data, rrs.getNodes());
-                    autoHandler.commit();
-                }
+                handler.commit();
             } else {
-                if (session.getXaState() == null) {
-                    NormalAutoRollbackNodesHandler autoHandler = new NormalAutoRollbackNodesHandler(session, data, rrs.getNodes(), errConnection);
-                    autoHandler.rollback();
-                } else {
-                    XAAutoRollbackNodesHandler autoHandler = new XAAutoRollbackNodesHandler(session, data, rrs.getNodes(), errConnection);
-                    autoHandler.rollback();
-                }
+                handler.rollback();
             }
         } else {
             boolean inTransaction = !source.isAutocommit() || source.isTxStart();

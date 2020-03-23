@@ -6,7 +6,6 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.backend.mysql.PacketUtil;
-import com.actiontech.dble.singleton.XASessionCheck;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
@@ -15,6 +14,7 @@ import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
+import com.actiontech.dble.singleton.XASessionCheck;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
@@ -94,10 +94,10 @@ public final class ShowXASession {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(StringUtil.encode(session.getSource().getId() + "", charset));
         row.add(StringUtil.encode(session.getSessionXaID() + "", charset));
-        row.add(StringUtil.encode(session.getXaState().getState(), charset));
+        row.add(StringUtil.encode(session.getTransactionManager().getXAStage(), charset));
         StringBuilder sb = new StringBuilder();
         for (RouteResultsetNode node : session.getTargetKeys()) {
-            sb.append(node.getName() + " ");
+            sb.append(node.getName()).append(" ");
         }
         row.add(StringUtil.encode(sb.toString(), charset));
         return row;

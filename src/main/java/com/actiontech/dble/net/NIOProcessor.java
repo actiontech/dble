@@ -1,13 +1,14 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.net;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.stage.XAStage;
 import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.server.ServerConnection;
@@ -145,9 +146,9 @@ public final class NIOProcessor {
                 checkConSendQueue(c);
                 if (c instanceof ServerConnection && c.isIdleTimeout()) {
                     ServerConnection s = (ServerConnection) c;
-                    TxState state = s.getSession2().getXaState();
-                    if (state != null && state != TxState.TX_INITIALIZE_STATE) {
-                        if (state != TxState.TX_COMMIT_FAILED_STATE && state != TxState.TX_ROLLBACK_FAILED_STATE) {
+                    String xaStage = s.getSession2().getTransactionManager().getXAStage();
+                    if (xaStage != null) {
+                        if (!xaStage.equals(XAStage.COMMIT_FAIL_STAGE) && !xaStage.equals(XAStage.ROLLBACK_FAIL_STAGE)) {
                             // Active/IDLE/PREPARED XA FrontendS will be rollbacked
                             s.close("Idle Timeout");
                             XASessionCheck.getInstance().addRollbackSession(s.getSession2());

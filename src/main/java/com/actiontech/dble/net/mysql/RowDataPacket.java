@@ -9,6 +9,7 @@ import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
 import com.actiontech.dble.net.FrontendConnection;
+import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.singleton.BufferPoolManager;
 
 import java.nio.ByteBuffer;
@@ -101,6 +102,7 @@ public class RowDataPacket extends MySQLPacket {
             bb = c.checkWriteBuffer(bb, totalSize, writeSocketIfFull);
             bb.put(++packetId);
             writeBody(bb, c, writeSocketIfFull);
+            ((ServerConnection) c).getSession2().getPacketId().set(packetId);
             return bb;
         }
     }

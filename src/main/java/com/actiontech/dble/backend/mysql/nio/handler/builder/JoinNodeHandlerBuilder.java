@@ -119,7 +119,7 @@ class JoinNodeHandlerBuilder extends BaseHandlerBuilder {
                     buildNestFilters(tnBig, keyToPass, valueSet, tempHandler.getMaxPartSize());
                     DMLResponseHandler bigLh = buildJoinChild(tnBig, !isLeftSmall);
                     synchronized (tempHandler) {
-                        bigLh.setNextHandler(tempHandler.getNextHandler());
+                        bigLh.setNextHandlerOnly(tempHandler.getNextHandler());
                     }
                     tempHandler.setCreatedHandler(bigLh);
                     HandlerBuilder.startHandler(bigLh);

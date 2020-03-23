@@ -144,7 +144,7 @@ public class OutputHandler extends BaseDMLHandler {
                 int length = buffer.capacity();
                 isBigPackage = length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE;
                 if (isBigPackage) {
-                    ByteBuffer newBuffer=session.getSource().allocate(buffer.array().length);
+                    ByteBuffer newBuffer = session.getSource().allocate(buffer.array().length);
                     buffer = session.getSource().writeBigPackageToBuffer(buffer.array(), newBuffer, packetId);
                     this.packetId = (byte) session.getPacketId().get();
                 }

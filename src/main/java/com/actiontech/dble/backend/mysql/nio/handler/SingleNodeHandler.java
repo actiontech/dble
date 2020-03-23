@@ -424,7 +424,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                     binRowDataPk.setPacketId(rowDataPk.getPacketId());
                     buffer = binRowDataPk.write(buffer, session.getSource(), true);
                     if (isBigPackage) {
-                        ByteBuffer newBuffer=session.getSource().allocate(buffer.array().length);
+                        ByteBuffer newBuffer = session.getSource().allocate(buffer.array().length);
                         buffer = session.getSource().writeBigPackageToBuffer(buffer.array(), newBuffer, packetId);
                         this.packetId = (byte) session.getPacketId().get();
                     }

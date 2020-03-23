@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.DbleServer;
@@ -592,7 +592,7 @@ public final class SetHandler {
                 c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "you can't set xa cmd on when there are unfinished operation in the session.");
                 return false;
             }
-            c.getSession2().setXaTxEnabled(true);
+            c.getSession2().getTransactionManager().setXaTxEnabled(true, c);
             boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
             c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
             c.getSession2().multiStatementNextSql(multiStatementFlag);
@@ -602,7 +602,7 @@ public final class SetHandler {
                 c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "you can't set xa cmd off when a transaction is in progress.");
                 return false;
             }
-            c.getSession2().setXaTxEnabled(false);
+            c.getSession2().getTransactionManager().setXaTxEnabled(false, c);
             boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
             c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
             c.getSession2().multiStatementNextSql(multiStatementFlag);

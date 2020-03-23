@@ -89,9 +89,25 @@ public class RowDataPacket extends MySQLPacket {
                             boolean writeSocketIfFull) {
         int size = calcPacketSize();
         int totalSize = size + PACKET_HEADER_SIZE;
-        bb = c.checkWriteBuffer(bb, totalSize, writeSocketIfFull);
+        boolean isBigPackage = size >= MySQLPacket.MAX_PACKET_SIZE;
+        if (isBigPackage) {
+            c.writePart(bb);
+            bb = c.getProcessor().getBufferPool().allocate(totalSize);
+            bb.put(packetId);
+            writeBody(bb, c, writeSocketIfFull);
+            ByteBuffer newBuffer = c.getProcessor().getBufferPool().allocate(bb.array().length);
+            return c.writeBigPackageToBuffer(bb.array(), newBuffer, packetId);
+        } else {
+            bb = c.checkWriteBuffer(bb, totalSize, writeSocketIfFull);
+            bb.put(++packetId);
+            writeBody(bb, c, writeSocketIfFull);
+            return bb;
+        }
+    }
+
+    private void writeBody(ByteBuffer bb, FrontendConnection c,
+                           boolean writeSocketIfFull) {
         BufferUtil.writeUB3(bb, calcPacketSize());
-        bb.put(packetId);
         for (int i = 0; i < fieldCount; i++) {
             byte[] fv = fieldValues.get(i);
             if (fv == null) {
@@ -107,7 +123,6 @@ public class RowDataPacket extends MySQLPacket {
                 bb = c.writeToBuffer(fv, bb);
             }
         }
-        return bb;
     }
 
     @Override

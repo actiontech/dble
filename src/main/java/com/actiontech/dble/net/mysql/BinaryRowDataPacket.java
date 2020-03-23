@@ -9,6 +9,7 @@ package com.actiontech.dble.net.mysql;
 import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.net.FrontendConnection;
+import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.ByteUtil;
 import com.actiontech.dble.util.DateUtil;
 import org.slf4j.Logger;
@@ -230,45 +231,11 @@ public class BinaryRowDataPacket extends MySQLPacket {
         int size = calcPacketSize();
         int totalSize = size + PACKET_HEADER_SIZE;
         ByteBuffer bb = null;
-
         bb = conn.getProcessor().getBufferPool().allocate(totalSize);
-
         BufferUtil.writeUB3(bb, size);
         bb.put(packetId);
-        bb.put(packetHeader); // packet header [00]
-        bb.put(nullBitMap); // NULL-Bitmap
-        for (int i = 0; i < fieldCount; i++) { // values
-            byte[] fv = fieldValues.get(i);
-            if (fv != null) {
-                FieldPacket fieldPk = this.fieldPackets.get(i);
-                int fieldType = fieldPk.getType();
-                switch (fieldType) {
-                    case Fields.FIELD_TYPE_STRING:
-                    case Fields.FIELD_TYPE_VARCHAR:
-                    case Fields.FIELD_TYPE_VAR_STRING:
-                    case Fields.FIELD_TYPE_ENUM:
-                    case Fields.FIELD_TYPE_SET:
-                    case Fields.FIELD_TYPE_LONG_BLOB:
-                    case Fields.FIELD_TYPE_MEDIUM_BLOB:
-                    case Fields.FIELD_TYPE_BLOB:
-                    case Fields.FIELD_TYPE_TINY_BLOB:
-                    case Fields.FIELD_TYPE_GEOMETRY:
-                    case Fields.FIELD_TYPE_BIT:
-                    case Fields.FIELD_TYPE_DECIMAL:
-                    case Fields.FIELD_TYPE_NEW_DECIMAL:
-                        // a byte for length (0 means empty)
-                        BufferUtil.writeLength(bb, fv.length);
-                        break;
-                    default:
-                        break;
-                }
-                if (fv.length > 0) {
-                    bb.put(fv);
-                }
-            }
-        }
+        writeBody(bb);
         conn.write(bb);
-
     }
 
     @Override
@@ -276,9 +243,26 @@ public class BinaryRowDataPacket extends MySQLPacket {
                             boolean writeSocketIfFull) {
         int size = calcPacketSize();
         int totalSize = size + PACKET_HEADER_SIZE;
-        bb = c.checkWriteBuffer(bb, totalSize, writeSocketIfFull);
-        BufferUtil.writeUB3(bb, size);
-        bb.put(++packetId);
+        boolean isBigPackage = size >= MySQLPacket.MAX_PACKET_SIZE;
+        if (isBigPackage) {
+            c.writePart(bb);
+            bb = c.getProcessor().getBufferPool().allocate(totalSize);
+            BufferUtil.writeUB3(bb, size);
+            bb.put(packetId);
+            writeBody(bb);
+            ByteBuffer newBuffer = c.getProcessor().getBufferPool().allocate(bb.array().length);
+            return c.writeBigPackageToBuffer(bb.array(), newBuffer, packetId);
+        } else {
+            bb = c.checkWriteBuffer(bb, totalSize, writeSocketIfFull);
+            BufferUtil.writeUB3(bb, size);
+            bb.put(++packetId);
+            writeBody(bb);
+            ((ServerConnection) c).getSession2().getPacketId().set(packetId);
+            return bb;
+        }
+    }
+
+    private void writeBody(ByteBuffer bb) {
         bb.put(packetHeader); // packet header [00]
         bb.put(nullBitMap); // NULL-Bitmap
         for (int i = 0; i < fieldCount; i++) { // values
@@ -311,7 +295,6 @@ public class BinaryRowDataPacket extends MySQLPacket {
                 }
             }
         }
-        return bb;
     }
 
     @Override

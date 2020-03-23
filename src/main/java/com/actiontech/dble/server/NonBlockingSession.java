@@ -14,16 +14,10 @@ import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.HandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.OutputHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.CommitNodesHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitCommitHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.RollbackNodesHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.NormalCommitNodesHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.NormalRollbackNodesHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionHandlerManager;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XACommitNodesHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XARollbackNodesHandler;
 import com.actiontech.dble.backend.mysql.store.memalloc.MemSizeController;
-import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.btrace.provider.ComplexQueryProvider;
 import com.actiontech.dble.btrace.provider.CostTimeProvider;
 import com.actiontech.dble.config.ErrorCode;
@@ -55,7 +49,6 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
 import java.sql.SQLSyntaxErrorException;
 import java.util.*;
 import java.util.Map.Entry;
@@ -86,16 +79,14 @@ public class NonBlockingSession implements Session {
     private final ConcurrentMap<RouteResultsetNode, BackendConnection> target;
     private final AtomicLong queriesCounter = new AtomicLong(0);
     private final AtomicLong transactionsCounter = new AtomicLong(0);
-    private RollbackNodesHandler rollbackHandler;
-    private CommitNodesHandler commitHandler;
+
     private SavePointHandler savePointHandler;
-    private volatile boolean retryXa = true;
-    private volatile String xaTxId;
-    private volatile TxState xaState;
-    private boolean prepared;
-    private volatile boolean needWaitFinished = false;
     // cancel status  0 - CANCEL_STATUS_INIT 1 - CANCEL_STATUS_COMMITTING  2 - CANCEL_STATUS_CANCELING
     private int cancelStatus = 0;
+    private TransactionHandlerManager transactionManager;
+
+    private boolean prepared;
+    private volatile boolean needWaitFinished = false;
 
     // kill query
     private volatile boolean killed = false;
@@ -131,8 +122,9 @@ public class NonBlockingSession implements Session {
         this.joinBufferMC = new MemSizeController(1024L * 1024L * DbleServer.getInstance().getConfig().getSystem().getJoinMemSize());
         this.orderBufferMC = new MemSizeController(1024L * 1024L * DbleServer.getInstance().getConfig().getSystem().getOrderMemSize());
         this.otherBufferMC = new MemSizeController(1024L * 1024L * DbleServer.getInstance().getConfig().getSystem().getOtherMemSize());
+        this.transactionManager = new TransactionHandlerManager(this);
         if (DbleServer.getInstance().getConfig().getSystem().getUseSerializableMode() == 1) {
-            this.setXaTxEnabled(true);
+            transactionManager.setXaTxEnabled(true, source);
         }
     }
 
@@ -436,14 +428,6 @@ public class NonBlockingSession implements Session {
         return this.target;
     }
 
-    public TxState getXaState() {
-        return xaState;
-    }
-
-    public void setXaState(TxState xaState) {
-        this.xaState = xaState;
-    }
-
     public boolean isNeedWaitFinished() {
         return needWaitFinished;
     }
@@ -471,8 +455,6 @@ public class NonBlockingSession implements Session {
             return;
         }
 
-        // clear prev execute resources
-        clearHandlesResources();
         if (LOGGER.isDebugEnabled()) {
             StringBuilder s = new StringBuilder();
             LOGGER.debug(s.append(source).append(rrs).toString() + " rrs ");
@@ -489,16 +471,10 @@ public class NonBlockingSession implements Session {
         RouteResultsetNode[] nodes = rrs.getNodes();
         if (nodes == null || nodes.length == 0 || nodes[0].getName() == null || nodes[0].getName().equals("")) {
             if (rrs.isNeedOptimizer()) {
-                if (this.getSessionXaID() != null && this.xaState == TxState.TX_INITIALIZE_STATE) {
-                    this.xaState = TxState.TX_STARTED_STATE;
-                }
                 try {
                     this.complexRrs = rrs;
                     executeMultiSelect(rrs);
                 } catch (MySQLOutPutException e) {
-                    if (this.getSessionXaID() != null) {
-                        this.xaState = TxState.TX_INITIALIZE_STATE;
-                    }
                     source.writeErrMessage(e.getSqlState(), e.getMessage(), e.getErrorCode());
                 }
             } else {
@@ -509,9 +485,6 @@ public class NonBlockingSession implements Session {
         }
 
         setRouteResultToTrace(rrs.getNodes());
-        if (this.getSessionXaID() != null && this.xaState == TxState.TX_INITIALIZE_STATE) {
-            this.xaState = TxState.TX_STARTED_STATE;
-        }
         if (nodes.length == 1) {
             executeForSingleNode(rrs);
         } else {
@@ -541,9 +514,6 @@ public class NonBlockingSession implements Session {
             singleNodeHandler.recycleBuffer();
             handleSpecial(rrs, false);
             LOGGER.info(String.valueOf(source) + rrs, e);
-            if (this.getSessionXaID() != null) {
-                this.xaState = TxState.TX_INITIALIZE_STATE;
-            }
             source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.getMessage() == null ? e.toString() : e.getMessage());
         }
         if (this.isPrepared()) {
@@ -563,9 +533,6 @@ public class NonBlockingSession implements Session {
                 multiNodeDdlHandler.execute();
                 discard = true;
             } catch (Exception e) {
-                if (this.getSessionXaID() != null) {
-                    this.xaState = TxState.TX_INITIALIZE_STATE;
-                }
                 LOGGER.info(String.valueOf(source) + rrs, e);
                 try {
                     ProxyMeta.getInstance().getTmManager().notifyResponseClusterDDL(rrs.getSchema(), rrs.getTable(), rrs.getSrcStatement(), DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.UNKNOWN, true);
@@ -709,33 +676,17 @@ public class NonBlockingSession implements Session {
         }
     }
 
-    private void resetCommitNodesHandler() {
-        if (commitHandler == null) {
-            if (this.getSessionXaID() == null) {
-                commitHandler = new NormalCommitNodesHandler(this);
-            } else {
-                commitHandler = new XACommitNodesHandler(this);
-            }
-        } else {
-            if (this.getSessionXaID() == null && (commitHandler instanceof XACommitNodesHandler)) {
-                commitHandler = new NormalCommitNodesHandler(this);
-            }
-            if (this.getSessionXaID() != null && (commitHandler instanceof NormalCommitNodesHandler)) {
-                commitHandler = new XACommitNodesHandler(this);
-            }
-        }
+    public TransactionHandlerManager getTransactionManager() {
+        return transactionManager;
     }
 
     public void commit() {
         checkBackupStatus();
-        resetCommitNodesHandler();
-        commitHandler.commit();
+        transactionManager.commit();
     }
 
     public void implictCommit(ImplicitCommitHandler handler) {
-        resetCommitNodesHandler();
-        commitHandler.setImplicitCommitHandler(handler);
-        commit();
+        transactionManager.implicitCommit(handler);
     }
 
     public void performSavePoint(String spName, SavePointHandler.Type type) {
@@ -758,37 +709,8 @@ public class NonBlockingSession implements Session {
         needWaitFinished = true;
     }
 
-    private void resetRollbackNodesHandler() {
-        if (rollbackHandler == null) {
-            if (this.getSessionXaID() == null) {
-                rollbackHandler = new NormalRollbackNodesHandler(this);
-            } else {
-                rollbackHandler = new XARollbackNodesHandler(this);
-            }
-        } else {
-            if (this.getSessionXaID() == null && (rollbackHandler instanceof XARollbackNodesHandler)) {
-                rollbackHandler = new NormalRollbackNodesHandler(this);
-            }
-            if (this.getSessionXaID() != null && (rollbackHandler instanceof NormalRollbackNodesHandler)) {
-                rollbackHandler = new XARollbackNodesHandler(this);
-            }
-        }
-    }
-
     public void rollback() {
-        final int initCount = target.size();
-        if (initCount <= 0) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("no session bound connections found ,no need send rollback cmd ");
-            }
-            clearResources(false);
-            ByteBuffer buffer = source.allocate();
-            buffer = source.writeToBuffer(OkPacket.OK, buffer);
-            source.write(buffer);
-            return;
-        }
-        resetRollbackNodesHandler();
-        rollbackHandler.rollback();
+        transactionManager.rollback();
     }
 
     /**
@@ -835,7 +757,7 @@ public class NonBlockingSession implements Session {
      */
     public void terminate() {
         // XA MUST BE FINISHED
-        if ((source.isTxStart() && this.getXaState() != null && this.getXaState() != TxState.TX_INITIALIZE_STATE) ||
+        if ((source.isTxStart() && transactionManager.getXAStage() != null) ||
                 needWaitFinished) {
             return;
         }
@@ -843,31 +765,27 @@ public class NonBlockingSession implements Session {
             node.close("client closed or timeout killed");
         }
         target.clear();
-        clearHandlesResources();
     }
 
     /**
      * Only used when kill @@connection is Issued
      */
     void initiativeTerminate() {
-
         for (BackendConnection node : target.values()) {
             node.closeWithoutRsp("client closed ");
         }
         target.clear();
-        clearHandlesResources();
     }
 
     public void closeAndClearResources(String reason) {
         // XA MUST BE FINISHED
-        if (source.isTxStart() && this.getXaState() != null && this.getXaState() != TxState.TX_INITIALIZE_STATE) {
+        if (source.isTxStart() && transactionManager.getXAStage() != null) {
             return;
         }
         for (BackendConnection node : target.values()) {
             node.closeWithoutRsp(reason);
         }
         target.clear();
-        clearHandlesResources();
     }
 
     public void forceClose(String reason) {
@@ -875,7 +793,6 @@ public class NonBlockingSession implements Session {
             node.closeWithoutRsp(reason);
         }
         target.clear();
-        clearHandlesResources();
     }
 
     public void releaseConnectionIfSafe(BackendConnection conn, boolean needClosed) {
@@ -1018,15 +935,6 @@ public class NonBlockingSession implements Session {
         }
     }
 
-    private void clearHandlesResources() {
-        if (rollbackHandler != null) {
-            rollbackHandler.clearResources();
-        }
-        if (commitHandler != null) {
-            commitHandler.clearResources();
-        }
-    }
-
     public void clearResources(final boolean needClosed) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("clear session resources " + this);
@@ -1035,8 +943,6 @@ public class NonBlockingSession implements Session {
             this.releaseConnections(needClosed);
         }
         needWaitFinished = false;
-        retryXa = true;
-        clearHandlesResources();
         source.setTxStart(false);
         source.getAndIncrementXid();
     }
@@ -1052,21 +958,8 @@ public class NonBlockingSession implements Session {
         return source.isClosed();
     }
 
-
-    public void setXaTxEnabled(boolean xaTXEnabled) {
-        if (xaTXEnabled && this.xaTxId == null) {
-            LOGGER.info("XA Transaction enabled ,con " + this.getSource());
-            xaTxId = DbleServer.getInstance().genXaTxId();
-            xaState = TxState.TX_INITIALIZE_STATE;
-        } else if (!xaTXEnabled && this.xaTxId != null) {
-            LOGGER.info("XA Transaction disabled ,con " + this.getSource());
-            xaTxId = null;
-            xaState = null;
-        }
-    }
-
     public String getSessionXaID() {
-        return xaTxId;
+        return transactionManager.getSessionXaID();
     }
 
     public boolean isPrepared() {
@@ -1097,19 +990,6 @@ public class NonBlockingSession implements Session {
                 } catch (Exception e) {
                     return errConn;
                 }
-            }
-        }
-        return errConn;
-    }
-
-    public MySQLConnection releaseExcept(TxState state) {
-        MySQLConnection errConn = null;
-        for (final RouteResultsetNode node : this.getTargetKeys()) {
-            final MySQLConnection mysqlCon = (MySQLConnection) this.getTarget(node);
-            if (mysqlCon.getXaStatus() != state) {
-                this.releaseConnection(node, true, false);
-            } else {
-                errConn = mysqlCon;
             }
         }
         return errConn;
@@ -1292,13 +1172,12 @@ public class NonBlockingSession implements Session {
     }
 
     public void setRetryXa(boolean retryXa) {
-        this.retryXa = retryXa;
+        transactionManager.setRetryXa(retryXa);
     }
 
     public boolean isRetryXa() {
-        return retryXa;
+        return transactionManager.isRetryXa();
     }
-
 
     public long getQueriesCounter() {
         return queriesCounter.get();

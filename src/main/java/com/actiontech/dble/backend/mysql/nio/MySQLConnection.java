@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.backend.mysql.nio;
 
 import com.actiontech.dble.DbleServer;
@@ -130,7 +130,7 @@ public class MySQLConnection extends AbstractConnection implements
             this.txIsolation = DbleServer.getInstance().getConfig().getSystem().getTxIsolation();
         } else {
             /* if the txIsolation in server.xml is different from the isolation level in MySQL node,
-            *  it need to sync the status firstly for new idle connection*/
+             * it need to sync the status firstly for new idle connection*/
             this.txIsolation = -1;
         }
         this.complexQuery = false;
@@ -276,7 +276,7 @@ public class MySQLConnection extends AbstractConnection implements
 
     private long getClientFlagSha() {
         int flag = 0;
-        flag |= initClientFlags() ;
+        flag |= initClientFlags();
         flag |= Capabilities.CLIENT_PLUGIN_AUTH;
         return flag;
     }
@@ -378,7 +378,7 @@ public class MySQLConnection extends AbstractConnection implements
         if (rrn.getSqlType() == ServerParse.DDL) {
             isDDL = true;
         }
-        String xaTxId = getConnXID(session, rrn.getMultiplexNum().longValue());
+        String xaTxId = getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
         if (!sc.isAutocommit() && !sc.isTxStart() && rrn.isModifySQL()) {
             sc.setTxStart(true);
         }
@@ -463,20 +463,19 @@ public class MySQLConnection extends AbstractConnection implements
         if (rrn.getSqlType() == ServerParse.DDL) {
             isDDL = true;
         }
-        String xaTxId = getConnXID(session, rrn.getMultiplexNum().longValue());
+        String xaTxId = getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
         if (!sc.isAutocommit() && !sc.isTxStart() && rrn.isModifySQL()) {
             sc.setTxStart(true);
         }
         synAndDoExecute(xaTxId, rrn, sc.getCharset(), sc.getTxIsolation(), isAutoCommit, sc.getUsrVariables(), sc.getSysVariables());
     }
 
-    public String getConnXID(NonBlockingSession nonBlockingSession, long multiplexNum) {
-        if (nonBlockingSession.getSessionXaID() == null)
+    public String getConnXID(String sessionXaId, long multiplexNum) {
+        if (sessionXaId == null)
             return null;
         else {
-            String sessionXaID = nonBlockingSession.getSessionXaID();
             String strMultiplexNum = multiplexNum == 0 ? "" : "." + multiplexNum;
-            return sessionXaID.substring(0, sessionXaID.length() - 1) + "." + this.schema + strMultiplexNum + "'";
+            return sessionXaId.substring(0, sessionXaId.length() - 1) + "." + this.schema + strMultiplexNum + "'";
         }
     }
 

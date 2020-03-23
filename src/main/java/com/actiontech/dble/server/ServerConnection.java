@@ -8,7 +8,6 @@ package com.actiontech.dble.server;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
-import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLTraceInfo;
@@ -488,9 +487,7 @@ public class ServerConnection extends FrontendConnection {
         txChainBegin = false;
         txStarted = false;
         txInterrupted = false;
-        if (session.getXaState() != null) {
-            session.setXaState(TxState.TX_INITIALIZE_STATE);
-        }
+
         this.getSysVariables().clear();
         this.getUsrVariables().clear();
         autocommit = DbleServer.getInstance().getConfig().getSystem().getAutocommit() == 1;
@@ -510,11 +507,11 @@ public class ServerConnection extends FrontendConnection {
         TsQueriesCounter.getInstance().addToHistory(session);
         //XA transaction in this phase,close it
         if (session.getSource().isTxStart() && session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_CANCELING) &&
-                session.getXaState() != null && session.getXaState() != TxState.TX_INITIALIZE_STATE) {
+                session.getTransactionManager().getXAStage() != null) {
             super.close(reason);
             session.initiativeTerminate();
         } else if (session.getSource().isTxStart() &&
-                session.getXaState() != null && session.getXaState() != TxState.TX_INITIALIZE_STATE) {
+                session.getTransactionManager().getXAStage() != null) {
             //XA transaction in this phase(commit/rollback) close the front end and wait for the backend finished
             super.close(reason);
         } else {
@@ -532,7 +529,7 @@ public class ServerConnection extends FrontendConnection {
     @Override
     public void killAndClose(String reason) {
         if (session.getSource().isTxStart() && !session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_CANCELING) &&
-                session.getXaState() != null && session.getXaState() != TxState.TX_INITIALIZE_STATE) {
+                session.getTransactionManager().getXAStage() != null) {
             //XA transaction in this phase(commit/rollback) close the front end and wait for the backend finished
             super.close(reason);
         } else {
@@ -593,6 +590,7 @@ public class ServerConnection extends FrontendConnection {
 
     @Override
     public void write(byte[] data) {
+        SerializableLock.getInstance().unLock(this.id);
         markFinished();
         super.write(data);
         if (session.isDiscard() || session.isKilled()) {

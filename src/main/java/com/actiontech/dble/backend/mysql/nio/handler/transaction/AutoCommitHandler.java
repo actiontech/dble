@@ -1,9 +1,4 @@
-/*
- * Copyright (C) 2016-2020 ActionTech.
- * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
- */
-
-package com.actiontech.dble.backend.mysql.nio.handler.transaction.normal;
+package com.actiontech.dble.backend.mysql.nio.handler.transaction;
 
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -11,15 +6,30 @@ import com.actiontech.dble.server.NonBlockingSession;
 
 import java.util.List;
 
-public class NormalAutoRollbackNodesHandler extends NormalRollbackNodesHandler {
-    private RouteResultsetNode[] nodes;
-    private List<BackendConnection> errConnection;
+public class AutoCommitHandler implements TransactionHandler {
 
-    public NormalAutoRollbackNodesHandler(NonBlockingSession session, byte[] packet, RouteResultsetNode[] nodes, List<BackendConnection> errConnection) {
-        super(session);
+    private final NonBlockingSession session;
+    private TransactionHandler realHandler;
+    private final byte[] sendData;
+    private final RouteResultsetNode[] nodes;
+    private final List<BackendConnection> errConnection;
+
+    public AutoCommitHandler(NonBlockingSession session, byte[] packet, RouteResultsetNode[] nodes, List<BackendConnection> errConnection) {
+        this.session = session;
         this.sendData = packet;
         this.nodes = nodes;
         this.errConnection = errConnection;
+        this.realHandler = session.getTransactionManager().getTransactionHandler();
+        this.realHandler.turnOnAutoCommit(packet);
+    }
+
+    @Override
+    public void commit() {
+        realHandler.commit();
+    }
+
+    @Override
+    public void implicitCommit(ImplicitCommitHandler implicitCommitHandler) {
     }
 
     @Override
@@ -43,11 +53,11 @@ public class NormalAutoRollbackNodesHandler extends NormalRollbackNodesHandler {
             }
             errConnection.clear();
         }
-        super.rollback();
+        realHandler.rollback();
     }
 
     @Override
-    protected void setResponseTime(boolean isSuccess) {
-        session.setResponseTime(isSuccess);
+    public void turnOnAutoCommit(byte[] previousSendData) {
+        // no need
     }
 }

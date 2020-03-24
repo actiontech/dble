@@ -137,13 +137,13 @@ public class OutputHandler extends BaseDMLHandler {
             if (this.isBinary) {
                 BinaryRowDataPacket binRowPacket = new BinaryRowDataPacket();
                 binRowPacket.read(this.fieldPackets, rowPacket);
-                binRowPacket.setPacketId(packetId);
+                binRowPacket.setPacketId(++packetId);
                 this.netOutBytes += binRowPacket.calcPacketSize();
                 buffer = binRowPacket.write(buffer, session.getSource(), true);
                 this.packetId = (byte) session.getPacketId().get();
             } else {
                 if (rowPacket != null) {
-                    rowPacket.setPacketId(packetId);
+                    rowPacket.setPacketId(++packetId);
                     this.netOutBytes += rowPacket.calcPacketSize();
                     buffer = rowPacket.write(buffer, session.getSource(), true);
                     this.packetId = (byte) session.getPacketId().get();

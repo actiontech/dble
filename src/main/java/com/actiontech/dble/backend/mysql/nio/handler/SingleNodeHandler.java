@@ -416,7 +416,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                 if (prepared) {
                     if (rowDataPk == null) {
                         rowDataPk = new RowDataPacket(fieldCount);
-                        row[3] = packetId;
+                        row[3] = ++packetId;
                         rowDataPk.read(row);
                     }
                     BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();

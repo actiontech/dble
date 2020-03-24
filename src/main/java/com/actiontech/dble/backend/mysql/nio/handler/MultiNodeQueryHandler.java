@@ -441,7 +441,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (prepared) {
                     if (rowDataPkg == null) {
                         rowDataPkg = new RowDataPacket(fieldCount);
-                        row[3] = packetId;
+                        row[3] = ++packetId;
                         rowDataPkg.read(row);
                     }
                     BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();

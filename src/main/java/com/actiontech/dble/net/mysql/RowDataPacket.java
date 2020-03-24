@@ -97,7 +97,7 @@ public class RowDataPacket extends MySQLPacket {
             BufferPool bufferPool = c.getProcessor().getBufferPool();
             bb = bufferPool.allocate(totalSize);
             BufferUtil.writeUB3(bb, calcPacketSize());
-            bb.put(packetId);
+            bb.put(packetId--);
             writeBody(bb, c, writeSocketIfFull);
             byte[] array = bb.array();
             bufferPool.recycle(bb);
@@ -106,7 +106,7 @@ public class RowDataPacket extends MySQLPacket {
         } else {
             bb = c.checkWriteBuffer(bb, totalSize, writeSocketIfFull);
             BufferUtil.writeUB3(bb, calcPacketSize());
-            bb.put(++packetId);
+            bb.put(packetId);
             writeBody(bb, c, writeSocketIfFull);
             ((ServerConnection) c).getSession2().getPacketId().set(packetId);
             return bb;

@@ -250,7 +250,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
             BufferPool bufferPool = c.getProcessor().getBufferPool();
             bb = bufferPool.allocate(totalSize);
             BufferUtil.writeUB3(bb, size);
-            bb.put(packetId);
+            bb.put(packetId--);
             writeBody(bb);
             byte[] array = bb.array();
             bufferPool.recycle(bb);
@@ -259,14 +259,14 @@ public class BinaryRowDataPacket extends MySQLPacket {
         } else {
             bb = c.checkWriteBuffer(bb, totalSize, writeSocketIfFull);
             BufferUtil.writeUB3(bb, size);
-            bb.put(++packetId);
+            bb.put(packetId);
             writeBody(bb);
             ((ServerConnection) c).getSession2().getPacketId().set(packetId);
             return bb;
         }
     }
 
-    private void writeBody(ByteBuffer bb) {
+    private void  writeBody(ByteBuffer bb) {
         bb.put(packetHeader); // packet header [00]
         bb.put(nullBitMap); // NULL-Bitmap
         for (int i = 0; i < fieldCount; i++) { // values

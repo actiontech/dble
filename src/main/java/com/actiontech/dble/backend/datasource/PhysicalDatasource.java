@@ -352,9 +352,7 @@ public abstract class PhysicalDatasource {
         if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
             return;
         }
-        if (!heartbeat.isStop()) {
-            heartbeat.heartbeat();
-        }
+        heartbeat.heartbeat();
     }
 
     private BackendConnection takeCon(BackendConnection conn, String schema) {
@@ -422,32 +420,42 @@ public abstract class PhysicalDatasource {
 
     protected abstract void createNewConnection(ResponseHandler handler, String schema) throws IOException;
 
-    public void getConnection(String schema, boolean autocommit, final ResponseHandler handler,
-                              final Object attachment, boolean mustWrite) throws IOException {
-
-        BackendConnection con = this.conMap.tryTakeCon(schema, autocommit);
-        if (con != null) {
-            takeCon(con, handler, attachment, schema);
-        } else {
-            if (disabled.get()) {
-                throw new IOException("the dataSource is disabled [" + this.name + "]");
-            } else if (!this.createNewCount()) {
+    public void getNewConnection(String schema, final ResponseHandler handler,
+                                 final Object attachment, boolean mustWrite, boolean forceCreate) throws IOException {
+        if (disabled.get()) {
+            throw new IOException("the dataSource is disabled [" + this.name + "]");
+        } else if (!this.createNewCount()) {
+            if (forceCreate) {
+                this.connectionCount.incrementAndGet();
+                LOGGER.warn("connection pool [" + hostConfig.getName() + "." + this.name + "] has reached maxCon, but we still try to create new connection for important task");
+                createNewConnection(handler, attachment, schema, mustWrite);
+            } else {
                 String maxConError = "the max active Connections size can not be max than maxCon for data host[" + this.getHostConfig().getName() + "." + this.getName() + "]";
                 LOGGER.warn(maxConError);
                 Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
                 AlertUtil.alert(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, maxConError, "dble", this.getConfig().getId(), labels);
                 ToResolveContainer.REACH_MAX_CON.add(this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
                 throw new IOException(maxConError);
-            } else { // create connection
-                if (ToResolveContainer.REACH_MAX_CON.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {
-                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-                    AlertUtil.alertResolve(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, "dble", this.getConfig().getId(), labels,
-                            ToResolveContainer.REACH_MAX_CON, this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
-
-                }
-                LOGGER.info("no idle connection in pool,create new connection for " + this.name + " of schema " + schema);
-                createNewConnection(handler, attachment, schema, mustWrite);
             }
+        } else { // create connection
+            if (ToResolveContainer.REACH_MAX_CON.contains(this.getHostConfig().getName() + "-" + this.getConfig().getHostName())) {
+                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+                AlertUtil.alertResolve(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, "dble", this.getConfig().getId(), labels,
+                        ToResolveContainer.REACH_MAX_CON, this.getHostConfig().getName() + "-" + this.getConfig().getHostName());
+
+            }
+            LOGGER.info("no idle connection in pool [" + hostConfig.getName() + "." + this.name + "],create new connection for  schema: " + schema);
+            createNewConnection(handler, attachment, schema, mustWrite);
+        }
+    }
+
+    public void getConnection(String schema, boolean autocommit, final ResponseHandler handler,
+                              final Object attachment, boolean mustWrite) throws IOException {
+        BackendConnection con = this.conMap.tryTakeCon(schema, autocommit);
+        if (con != null) {
+            takeCon(con, handler, attachment, schema);
+        } else {
+            getNewConnection(schema, handler, attachment, mustWrite, false);
         }
     }
 

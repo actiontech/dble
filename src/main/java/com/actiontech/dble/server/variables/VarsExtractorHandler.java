@@ -8,7 +8,7 @@ package com.actiontech.dble.server.variables;
 import com.actiontech.dble.backend.datasource.AbstractPhysicalDBPool;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
-import com.actiontech.dble.sqlengine.SQLJob;
+import com.actiontech.dble.sqlengine.OneTimeConnJob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +42,7 @@ public class VarsExtractorHandler {
         PhysicalDatasource ds = getPhysicalDatasource();
         this.usedDataource = ds;
         if (ds != null) {
-            SQLJob sqlJob = new SQLJob(MYSQL_SHOW_VARIABLES, null, resultHandler, ds);
+            OneTimeConnJob sqlJob = new OneTimeConnJob(MYSQL_SHOW_VARIABLES, null, resultHandler, ds);
             sqlJob.run();
             waitDone();
         } else {

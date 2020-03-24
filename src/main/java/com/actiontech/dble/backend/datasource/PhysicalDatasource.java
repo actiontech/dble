@@ -57,6 +57,7 @@ public abstract class PhysicalDatasource {
     private AtomicLong readCount = new AtomicLong(0);
     private AtomicLong writeCount = new AtomicLong(0);
     private String dsVersion;
+
     public PhysicalDatasource(DBHostConfig config, DataHostConfig hostConfig, boolean isReadNode) {
         this.size = config.getMaxCon();
         this.config = config;
@@ -68,6 +69,15 @@ public abstract class PhysicalDatasource {
         this.disabled = new AtomicBoolean(config.isDisabled());
     }
 
+    public PhysicalDatasource(PhysicalDatasource org) {
+        this.size = org.size;
+        this.config = org.config;
+        this.name = org.name;
+        this.hostConfig = org.hostConfig;
+        this.readNode = org.readNode;
+        this.connectionCount = org.connectionCount;
+        this.disabled = new AtomicBoolean(org.disabled.get());
+    }
 
     public boolean isMyConnection(BackendConnection con) {
         if (con instanceof MySQLConnection) {

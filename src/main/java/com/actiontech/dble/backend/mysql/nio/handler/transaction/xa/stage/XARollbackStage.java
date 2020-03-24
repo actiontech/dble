@@ -64,11 +64,11 @@ public class XARollbackStage extends XAStage {
         if (state == TxState.TX_PREPARE_UNCONNECT_STATE || state == TxState.TX_ROLLBACK_FAILED_STATE ||
                 (!lastStageIsXAEnd && conn.isClosed())) {
             MySQLConnection newConn = session.freshConn(conn, xaHandler);
+            xaOldThreadIds.putIfAbsent(conn.getAttachment(), conn.getThreadId());
             if (newConn.equals(conn)) {
-                xaHandler.fakedResponse(conn, "can't fresh conn");
+                xaHandler.fakedResponse(conn, "fail to fresh connection to rollback failed xa transaction");
                 return;
             }
-            xaOldThreadIds.putIfAbsent(rrn, conn.getThreadId());
             conn = newConn;
         }
         String xaTxId = conn.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());

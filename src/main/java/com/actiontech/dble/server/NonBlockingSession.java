@@ -122,6 +122,9 @@ public class NonBlockingSession implements Session {
     private volatile RouteResultset complexRrs = null;
     private volatile SessionStage sessionStage = SessionStage.Init;
 
+    private volatile long rowCountCurrentSQL = -1;
+    private volatile long rowCountLastSQL = -1;
+
     public NonBlockingSession(ServerConnection source) {
         this.source = source;
         this.target = new ConcurrentHashMap<>(2, 1f);
@@ -240,6 +243,10 @@ public class NonBlockingSession implements Session {
             traceResult.clearConnReceivedMap();
             traceResult.clearConnFlagMap();
         }
+    }
+
+    public long getRowCount() {
+        return rowCountLastSQL;
     }
 
     public void setSubQuery() {
@@ -1197,6 +1204,15 @@ public class NonBlockingSession implements Session {
         if (!source.isTxStart()) {
             transactionsCounter.incrementAndGet();
         }
+    }
+
+    public void rowCountRolling() {
+        rowCountLastSQL = rowCountCurrentSQL;
+        rowCountCurrentSQL = -1;
+    }
+
+    public void setRowCount(long rowCount) {
+        this.rowCountCurrentSQL = rowCount;
     }
 
     /**

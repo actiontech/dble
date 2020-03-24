@@ -282,6 +282,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
 
                 ok.setAffectedRows(affectedRows);
+                session.setRowCount(affectedRows);
                 ok.setServerStatus(source.isAutocommit() ? 2 : 1);
                 if (insertId > 0) {
                     ok.setInsertId(insertId);

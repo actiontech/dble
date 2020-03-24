@@ -121,7 +121,8 @@ public final class ShowHeartbeat {
                 if (hb != null) {
                     row.add(ds.getConfig().getIp().getBytes());
                     row.add(IntegerUtil.toBytes(ds.getConfig().getPort()));
-                    row.add(getRdCode(hb.getStatus()).getBytes());
+                    String code = getRdCode(hb.getStatus());
+                    row.add(code == null ? null : code.getBytes());
                     row.add(IntegerUtil.toBytes(hb.getErrorCount()));
                     row.add(hb.isChecking() ? "checking".getBytes() : "idle".getBytes());
                     row.add(LongUtil.toBytes(hb.getHeartbeatTimeout()));
@@ -151,7 +152,8 @@ public final class ShowHeartbeat {
                     if (hb != null) {
                         row.add(ds.getConfig().getIp().getBytes());
                         row.add(IntegerUtil.toBytes(ds.getConfig().getPort()));
-                        row.add(getRdCode(hb.getStatus()).getBytes());
+                        String code = getRdCode(hb.getStatus());
+                        row.add(code == null ? null : code.getBytes());
                         row.add(IntegerUtil.toBytes(hb.getErrorCount()));
                         row.add(hb.isChecking() ? "checking".getBytes() : "idle".getBytes());
                         row.add(LongUtil.toBytes(hb.getHeartbeatTimeout()));

@@ -14,13 +14,15 @@ import com.actiontech.dble.singleton.XASessionCheck;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 public class XARollbackFailStage extends XARollbackStage {
 
     private static Logger logger = LoggerFactory.getLogger(XARollbackFailStage.class);
     private static final int AUTO_RETRY_TIMES = 5;
 
-    private int retryTimes = 0;
-    private int backgroundRetryTimes = 1;
+    private AtomicInteger retryTimes = new AtomicInteger(0);
+    private AtomicInteger backgroundRetryTimes = new AtomicInteger(1);
 
     public XARollbackFailStage(NonBlockingSession session, AbstractXAHandler handler, boolean isFromEndStage) {
         super(session, handler, isFromEndStage);
@@ -28,41 +30,52 @@ public class XARollbackFailStage extends XARollbackStage {
 
     @Override
     public TransactionStage next(boolean isFail, String errMsg, byte[] errPacket) {
+        String xaId = session.getSessionXaID();
         if (isFail && !xaOldThreadIds.isEmpty()) {
-            XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_ROLLBACKED_STATE);
+            XAStateLog.saveXARecoveryLog(xaId, TxState.TX_ROLLBACKED_STATE);
+            // remove session in background
+            XASessionCheck.getInstance().getRollbackingSession().remove(session.getSource().getId());
+            // resolve alert
+            AlertUtil.alertSelfResolve(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("XA_ID", xaId));
+            feedback(false);
             return null;
         }
 
-        if (retryTimes <= AUTO_RETRY_TIMES) {
+        if (retryTimes.get() <= AUTO_RETRY_TIMES) {
             // try commit several times
             logger.warn("fail to ROLLBACK xa transaction " + session.getSessionXaID() + " at the " + retryTimes + "th time!");
+            XaDelayProvider.beforeInnerRetry(retryTimes.get(), xaId);
             return this;
         }
 
-        // close this session ,add to schedule job
-        session.getSource().close("ROLLBACK FAILED but it will try to ROLLBACK repeatedly in background until it is success!");
+        StringBuilder closeReason = new StringBuilder("ROLLBACK FAILED but it will try to ROLLBACK repeatedly in background until it is success!");
+        if (errMsg != null) {
+            closeReason.append(", the ERROR is ");
+            closeReason.append(errMsg);
+        }
+        // close the session ,add to schedule job
+        session.getSource().close(closeReason.toString());
         // kill xa or retry to commit xa in background
         final int count = DbleServer.getInstance().getConfig().getSystem().getXaRetryCount();
         if (!session.isRetryXa()) {
             String warnStr = "kill xa session by manager cmd!";
             logger.warn(warnStr);
             session.forceClose(warnStr);
-        } else if (count == 0 || backgroundRetryTimes <= count) {
-            backgroundRetryTimes++;
+        } else if (count == 0 || backgroundRetryTimes.incrementAndGet() <= count) {
             String warnStr = "fail to ROLLBACK xa transaction " + session.getSessionXaID() + " at the " + backgroundRetryTimes + "th time in background!";
             logger.warn(warnStr);
-            AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, warnStr, AlertUtil.genSingleLabel("XA_ID", session.getSessionXaID()));
+            AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, warnStr, AlertUtil.genSingleLabel("XA_ID", xaId));
 
-            XaDelayProvider.beforeAddXaToQueue(count, session.getSessionXaID());
+            XaDelayProvider.beforeAddXaToQueue(count, xaId);
             XASessionCheck.getInstance().addCommitSession(session);
-            XaDelayProvider.afterAddXaToQueue(count, session.getSessionXaID());
+            XaDelayProvider.afterAddXaToQueue(count, xaId);
         }
         return null;
     }
 
     @Override
     public void onEnterStage() {
-        retryTimes++;
+        retryTimes.incrementAndGet();
         super.onEnterStage();
     }
 

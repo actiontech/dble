@@ -1,6 +1,10 @@
 package com.actiontech.dble.plan.node;
 
+import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.util.ToStringUtil;
+
+import java.util.List;
 
 /**
  * Created by szf on 2019/5/31.
@@ -77,4 +81,14 @@ public class JoinInnerNode extends PlanNode {
         return children.get(1);
     }
 
+
+    public PlanNode select(List<Item> columnSelected) {
+        for (Item i : columnSelected) {
+            if (i.isWild() && i.getTableName() == null && i instanceof ItemField) {
+                ((ItemField) i).setTableName(getRightNode().getAlias() == null ? getRightNode().getPureName() : getRightNode().getAlias());
+            }
+        }
+        this.columnsSelected = columnSelected;
+        return this;
+    }
 }

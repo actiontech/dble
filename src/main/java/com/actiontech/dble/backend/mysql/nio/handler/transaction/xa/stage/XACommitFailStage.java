@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class XACommitFailStage extends XACommitStage {
 
@@ -26,8 +27,8 @@ public class XACommitFailStage extends XACommitStage {
     private static final int AUTO_RETRY_TIMES = 5;
     private ConcurrentMap<Object, Long> xaOldThreadIds;
 
-    private volatile int retryTimes = 0;
-    private int backgroundRetryTimes = 1;
+    private AtomicInteger retryTimes = new AtomicInteger(0);
+    private AtomicInteger backgroundRetryTimes = new AtomicInteger(1);
 
     public XACommitFailStage(NonBlockingSession session, AbstractXAHandler handler) {
         super(session, handler);
@@ -36,15 +37,21 @@ public class XACommitFailStage extends XACommitStage {
 
     @Override
     public XAStage next(boolean isFail, String errMsg, byte[] errPacket) {
+        String xaId = session.getSessionXaID();
         if (!isFail || xaOldThreadIds.isEmpty()) {
-            XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_COMMITTED_STATE);
+            XAStateLog.saveXARecoveryLog(xaId, TxState.TX_COMMITTED_STATE);
+            // remove session in background
+            XASessionCheck.getInstance().getCommittingSession().remove(session.getSource().getId());
+            // resolve alert
+            AlertUtil.alertSelfResolve(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("XA_ID", session.getSessionXaID()));
             feedback(true);
             return null;
         }
 
-        if (DbleServer.getInstance().getConfig().getSystem().getUseSerializableMode() == 1 || retryTimes <= AUTO_RETRY_TIMES) {
+        if (DbleServer.getInstance().getConfig().getSystem().getUseSerializableMode() == 1 || retryTimes.get() <= AUTO_RETRY_TIMES) {
             // try commit several times
-            logger.warn("fail to COMMIT xa transaction " + session.getSessionXaID() + " at the " + retryTimes + "th time!");
+            logger.warn("fail to COMMIT xa transaction " + xaId + " at the " + retryTimes + "th time!");
+            XaDelayProvider.beforeInnerRetry(retryTimes.get(), xaId);
             return this;
         }
 
@@ -56,21 +63,21 @@ public class XACommitFailStage extends XACommitStage {
             String warnStr = "kill xa session by manager cmd!";
             logger.warn(warnStr);
             session.forceClose(warnStr);
-        } else if (count == 0 || ++backgroundRetryTimes <= count) {
-            String warnStr = "fail to COMMIT xa transaction " + session.getSessionXaID() + " at the " + backgroundRetryTimes + "th time in background!";
+        } else if (count == 0 || backgroundRetryTimes.incrementAndGet() <= count) {
+            String warnStr = "fail to COMMIT xa transaction " + xaId + " at the " + backgroundRetryTimes + "th time in background!";
             logger.warn(warnStr);
-            AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, warnStr, AlertUtil.genSingleLabel("XA_ID", session.getSessionXaID()));
+            AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, warnStr, AlertUtil.genSingleLabel("XA_ID", xaId));
 
-            XaDelayProvider.beforeAddXaToQueue(count, session.getSessionXaID());
+            XaDelayProvider.beforeAddXaToQueue(count, xaId);
             XASessionCheck.getInstance().addCommitSession(session);
-            XaDelayProvider.afterAddXaToQueue(count, session.getSessionXaID());
+            XaDelayProvider.afterAddXaToQueue(count, xaId);
         }
         return null;
     }
 
     @Override
     public void onEnterStage() {
-        retryTimes++;
+        retryTimes.incrementAndGet();
         super.onEnterStage();
     }
 
@@ -83,10 +90,10 @@ public class XACommitFailStage extends XACommitStage {
             return;
         }
         MySQLConnection newConn = session.freshConn(conn, xaHandler);
+        xaOldThreadIds.putIfAbsent(conn.getAttachment(), conn.getThreadId());
         if (newConn.equals(conn)) {
-            xaHandler.fakedResponse(conn, "the conn has been closed before executing XA COMMIT");
+            xaHandler.fakedResponse(conn, "fail to fresh connection to commit failed xa transaction");
         } else {
-            xaOldThreadIds.putIfAbsent(conn.getAttachment(), conn.getThreadId());
             String xaTxId = conn.getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
             XaDelayProvider.delayBeforeXaCommit(rrn.getName(), xaTxId);
             newConn.execCmd("XA COMMIT " + xaTxId);

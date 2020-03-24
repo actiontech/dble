@@ -327,12 +327,6 @@ public abstract class AbstractConnection implements NIOConnection {
                 readBuffer.position(offset);
                 byte[] data = new byte[length];
                 readBuffer.get(data, 0, length);
-                if (this instanceof ServerConnection) {
-                    NonBlockingSession session = ((ServerConnection) this).getSession2();
-                    if (session != null) {
-                        session.getPacketId().set(data[3]);
-                    }
-                }
                 data = checkData(data, length);
                 if (data == null) {
                     return;
@@ -511,12 +505,12 @@ public abstract class AbstractConnection implements NIOConnection {
     }
 
     public ByteBuffer writeBigPackageToBuffer(byte[] row, ByteBuffer buffer, byte packetId) {
-        int length = row.length;
         int srcPos = 0;
         byte[] b = null;
         b = new byte[MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE];
         System.arraycopy(row, 0, b, 0, MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
         srcPos = MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE;
+        int length = row.length;
         length -= (MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
         RowDataPacket.writeRowLength(b, MySQLPacket.MAX_PACKET_SIZE);
         b[3] = ++packetId;
@@ -708,6 +702,12 @@ public abstract class AbstractConnection implements NIOConnection {
     }
 
     private byte[] checkData(byte[] data, int length) {
+        if (this instanceof ServerConnection) {
+            NonBlockingSession session = ((ServerConnection) this).getSession2();
+            if (session != null) {
+                session.getPacketId().set(data[3]);
+            }
+        }
         if (length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
             if (rowData == null) {
                 rowData = data;

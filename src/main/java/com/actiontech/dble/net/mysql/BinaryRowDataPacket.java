@@ -266,7 +266,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
         }
     }
 
-    private void  writeBody(ByteBuffer bb) {
+    private void writeBody(ByteBuffer bb) {
         bb.put(packetHeader); // packet header [00]
         bb.put(nullBitMap); // NULL-Bitmap
         for (int i = 0; i < fieldCount; i++) { // values

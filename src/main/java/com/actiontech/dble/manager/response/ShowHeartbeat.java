@@ -32,7 +32,7 @@ public final class ShowHeartbeat {
     private ShowHeartbeat() {
     }
 
-    private static final int FIELD_COUNT = 10;
+    private static final int FIELD_COUNT = 11;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
@@ -51,7 +51,7 @@ public final class ShowHeartbeat {
         FIELDS[i] = PacketUtil.getField("PORT", Fields.FIELD_TYPE_LONG);
         FIELDS[i++].setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("RS_CODE", Fields.FIELD_TYPE_LONG);
+        FIELDS[i] = PacketUtil.getField("RS_CODE", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("RETRY", Fields.FIELD_TYPE_LONG);
@@ -70,6 +70,9 @@ public final class ShowHeartbeat {
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("STOP", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i++].setPacketId(++packetId);
+
+        FIELDS[i] = PacketUtil.getField("RS_MESSAGE ", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
@@ -118,7 +121,7 @@ public final class ShowHeartbeat {
                 if (hb != null) {
                     row.add(ds.getConfig().getIp().getBytes());
                     row.add(IntegerUtil.toBytes(ds.getConfig().getPort()));
-                    row.add(IntegerUtil.toBytes(hb.getStatus()));
+                    row.add(getRdCode(hb.getStatus()).getBytes());
                     row.add(IntegerUtil.toBytes(hb.getErrorCount()));
                     row.add(hb.isChecking() ? "checking".getBytes() : "idle".getBytes());
                     row.add(LongUtil.toBytes(hb.getHeartbeatTimeout()));
@@ -126,7 +129,9 @@ public final class ShowHeartbeat {
                     String lat = hb.getLastActiveTime();
                     row.add(lat == null ? null : lat.getBytes());
                     row.add(hb.isStop() ? "true".getBytes() : "false".getBytes());
+                    row.add(hb.getMessage() == null ? null : hb.getMessage().getBytes());
                 } else {
+                    row.add(null);
                     row.add(null);
                     row.add(null);
                     row.add(null);
@@ -146,7 +151,7 @@ public final class ShowHeartbeat {
                     if (hb != null) {
                         row.add(ds.getConfig().getIp().getBytes());
                         row.add(IntegerUtil.toBytes(ds.getConfig().getPort()));
-                        row.add(IntegerUtil.toBytes(hb.getStatus()));
+                        row.add(getRdCode(hb.getStatus()).getBytes());
                         row.add(IntegerUtil.toBytes(hb.getErrorCount()));
                         row.add(hb.isChecking() ? "checking".getBytes() : "idle".getBytes());
                         row.add(LongUtil.toBytes(hb.getHeartbeatTimeout()));
@@ -154,7 +159,9 @@ public final class ShowHeartbeat {
                         String lat = hb.getLastActiveTime();
                         row.add(lat == null ? null : lat.getBytes());
                         row.add(hb.isStop() ? "true".getBytes() : "false".getBytes());
+                        row.add(hb.getMessage() == null ? null : hb.getMessage().getBytes());
                     } else {
+                        row.add(null);
                         row.add(null);
                         row.add(null);
                         row.add(null);
@@ -169,6 +176,27 @@ public final class ShowHeartbeat {
             }
         }
         return list;
+    }
+
+    private static String getRdCode(int status) {
+        String code = null;
+        switch (status) {
+            case 0:
+                code = "init";
+                break;
+            case 1:
+                code = "ok";
+                break;
+            case -1:
+                code = "error";
+                break;
+            case -2:
+                code = "time_out";
+                break;
+            default:
+                break;
+        }
+        return code;
     }
 
 }

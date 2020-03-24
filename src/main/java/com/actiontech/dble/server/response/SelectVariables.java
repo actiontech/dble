@@ -71,8 +71,20 @@ public final class SelectVariables {
 
         RowDataPacket row = new RowDataPacket(fieldCount);
         for (String s : splitVar) {
-            String value = VARIABLES.get(s) == null ? "" : VARIABLES.get(s);
-            row.add(value.getBytes());
+            switch (s.toLowerCase()) {
+                case "character_set_client":
+                    row.add(c.getCharset().getClient() != null ? c.getCharset().getClient().getBytes() : null);
+                    break;
+                case "character_set_results":
+                    row.add(c.getCharset().getResults() != null ? c.getCharset().getResults().getBytes() : null);
+                    break;
+                case "collation_connection":
+                    row.add(c.getCharset().getCollation() != null ? c.getCharset().getCollation().getBytes() : null);
+                    break;
+                default:
+                    String value = VARIABLES.get(s) == null ? "" : VARIABLES.get(s);
+                    row.add(value.getBytes());
+            }
 
         }
 

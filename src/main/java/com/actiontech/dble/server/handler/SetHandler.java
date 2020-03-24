@@ -11,7 +11,6 @@ import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
-import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.ServerConnection;
@@ -147,7 +146,9 @@ public final class SetHandler {
                 return false;
             } else {
                 c.setNames(charsetInfo.charset, charsetInfo.collation);
-                c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+                boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+                c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+                c.getSession2().multiStatementNextSql(multiStatementFlag);
                 return true;
             }
         } else {
@@ -169,7 +170,9 @@ public final class SetHandler {
                 return false;
             } else {
                 c.setCharacterSet(charset);
-                c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+                boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+                c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+                c.getSession2().multiStatementNextSql(multiStatementFlag);
                 return true;
             }
         } else {
@@ -428,10 +431,14 @@ public final class SetHandler {
             return false;
         } else if (switchStatus) {
             c.setSessionReadOnly(true);
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
         } else {
             c.setSessionReadOnly(false);
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
         }
         return true;
     }
@@ -444,7 +451,9 @@ public final class SetHandler {
             return false;
         }
         c.setTxIsolation(txIsolation);
-        c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+        boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+        c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+        c.getSession2().multiStatementNextSql(multiStatementFlag);
         return true;
     }
 
@@ -467,7 +476,9 @@ public final class SetHandler {
         String collation = parseStringValue(valueExpr);
         if (checkCollation(collation)) {
             c.setCollationConnection(collation);
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
             return true;
         } else {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_COLLATION, "Unknown collation '" + collation + "'");
@@ -479,7 +490,9 @@ public final class SetHandler {
         String charsetResult = parseStringValue(valueExpr);
         if (charsetResult.equalsIgnoreCase("NULL") || checkCharset(charsetResult)) {
             c.setCharacterResults(charsetResult);
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
             return true;
         } else {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set '" + charsetResult + "'");
@@ -496,7 +509,9 @@ public final class SetHandler {
         String collationName = CharsetUtil.getDefaultCollation(charsetConnection);
         if (collationName != null) {
             c.setCharacterConnection(collationName);
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
             return true;
         } else {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set '" + charsetConnection + "'");
@@ -516,7 +531,9 @@ public final class SetHandler {
                 return false;
             } else {
                 c.setCharacterClient(charsetClient);
-                c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+                boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+                c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+                c.getSession2().multiStatementNextSql(multiStatementFlag);
                 return true;
             }
         } else {
@@ -558,7 +575,9 @@ public final class SetHandler {
             return false;
         } else {
             c.getSession2().setTrace(switchStatus);
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
             return true;
         }
     }
@@ -574,7 +593,9 @@ public final class SetHandler {
                 return false;
             }
             c.getSession2().setXaTxEnabled(true);
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
             return true;
         } else {
             if (c.getSession2().getTargetMap().size() > 0 && c.getSession2().getSessionXaID() != null) {
@@ -582,7 +603,9 @@ public final class SetHandler {
                 return false;
             }
             c.getSession2().setXaTxEnabled(false);
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
             return true;
         }
     }
@@ -778,7 +801,9 @@ public final class SetHandler {
             } else {
                 c.setSessionReadOnly(false);
             }
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
             return true;
         } else {
             int txIsolation = Isolations.REPEATABLE_READ;
@@ -800,7 +825,9 @@ public final class SetHandler {
                     break;
             }
             c.setTxIsolation(txIsolation);
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
             return true;
         }
     }

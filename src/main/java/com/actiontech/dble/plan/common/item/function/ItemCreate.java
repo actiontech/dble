@@ -262,6 +262,7 @@ public class ItemCreate {
         innerFuncs.put("VERSION", new SelectVersion());
         innerFuncs.put("DATABASE", new SelectDatabase());
         innerFuncs.put("LAST_INSERT_ID", new SelectLastInsertId());
+        innerFuncs.put("ROW_COUNT", new SelectRowCount());
 
     }
 

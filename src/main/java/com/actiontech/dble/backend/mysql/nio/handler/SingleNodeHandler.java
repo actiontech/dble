@@ -105,6 +105,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
         dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), session.getSource().isAutocommit(), node, this, node);
     }
+
     protected void execute(BackendConnection conn) {
         if (session.closed()) {
             session.clearResources(rrs);
@@ -233,6 +234,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             } else {
                 ok.setPacketId(++packetId); // OK_PACKET
             }
+            session.setRowCount(ok.getAffectedRows());
             ok.setMessage(null);
             ok.setServerStatus(source.isAutocommit() ? 2 : 1);
             source.setLastInsertId(ok.getInsertId());

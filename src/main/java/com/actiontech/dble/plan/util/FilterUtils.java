@@ -72,12 +72,12 @@ public final class FilterUtils {
 
     /**
      * group the or filter into Map<table,List<condition>>
-     *  try to optimize where with 'OR'
-     *
+     * try to optimize where with 'OR'
+     * <p>
      * eg1: tabl1.join(table2).query((table1.id>5 && table1.name = table2.name)or (table2.id<10 && table1.name = table2.name)")
      * after optimized:
      * table1.query("table1.id>5").or(table2.query("table2.id<10").on("table1.name = table2.name")
-     *
+     * <p>
      * eg2: tabl1.join(table2).query(table1.id = table2.id && (table1.name = a or table2.name = b))
      * after optimized:
      * table1.query("table1.name = a").or(table2.query("table2.name = b").on("table1.name = table2.name")
@@ -106,12 +106,14 @@ public final class FilterUtils {
                     for (Item x : singleList) {
                         if (x.getReferTables().size() == 1) {
                             for (PlanNode backTable : x.getReferTables()) {
-                                if (((TableNode) backTable).getTableName().equals(tableName)) {
-                                    hasOutTable = true;
-                                    if (!itemMapForSingle.containsKey(tableName)) {
-                                        itemMapForSingle.put(tableName, new ArrayList<Item>());
+                                if (backTable instanceof TableNode) {
+                                    if (((TableNode) backTable).getTableName().equals(tableName)) {
+                                        hasOutTable = true;
+                                        if (!itemMapForSingle.containsKey(tableName)) {
+                                            itemMapForSingle.put(tableName, new ArrayList<Item>());
+                                        }
+                                        itemMapForSingle.get(tableName).add(x);
                                     }
-                                    itemMapForSingle.get(tableName).add(x);
                                 }
                             }
                         }

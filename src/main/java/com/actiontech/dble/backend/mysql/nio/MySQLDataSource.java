@@ -34,6 +34,11 @@ public class MySQLDataSource extends PhysicalDatasource {
         this.factory = new MySQLConnectionFactory();
     }
 
+    public MySQLDataSource(MySQLDataSource org) {
+        super(org);
+        this.factory = new MySQLConnectionFactory();
+    }
+
     @Override
     public void createNewConnection(ResponseHandler handler, String schema) throws IOException {
         factory.make(this, handler, schema);

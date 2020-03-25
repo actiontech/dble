@@ -53,6 +53,16 @@ public class MySQLHeartbeat {
     private volatile Integer slaveBehindMaster;
     private final MySQLDataSource source;
     private MySQLDetector detector;
+    private String message;
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
 
     public MySQLHeartbeat(MySQLDataSource source) {
         this.source = source;
@@ -253,7 +263,7 @@ public class MySQLHeartbeat {
         }
     }
 
-    String getHeartbeatSQL() {
+    public String getHeartbeatSQL() {
         return heartbeatSQL;
     }
 

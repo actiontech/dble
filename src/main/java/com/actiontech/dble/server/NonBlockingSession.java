@@ -1222,7 +1222,6 @@ public class NonBlockingSession implements Session {
         //clear the record
         this.isMultiStatement.set(false);
         this.remingSql = null;
-        this.packetId.set(0);
     }
 
     boolean generalNextStatement(String sql) {

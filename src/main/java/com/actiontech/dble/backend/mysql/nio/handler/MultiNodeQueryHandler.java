@@ -282,6 +282,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
 
                 ok.setAffectedRows(affectedRows);
+                session.setRowCount(affectedRows);
                 ok.setServerStatus(source.isAutocommit() ? 2 : 1);
                 if (insertId > 0) {
                     ok.setInsertId(insertId);
@@ -420,11 +421,12 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
             }
             this.resultSize += row.length;
-            row[3] = ++packetId;
             RowDataPacket rowDataPkg = null;
             // cache cacheKey-> dataNode
-            if (cacheKeyIndex != -1) {
+            boolean isBigPackage = row.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE;
+            if (cacheKeyIndex != -1 && !isBigPackage) {
                 rowDataPkg = new RowDataPacket(fieldCount);
+                row[3] = ++packetId;
                 rowDataPkg.read(row);
                 byte[] key = rowDataPkg.fieldValues.get(cacheKeyIndex);
                 if (key != null) {
@@ -439,14 +441,22 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (prepared) {
                     if (rowDataPkg == null) {
                         rowDataPkg = new RowDataPacket(fieldCount);
+                        row[3] = ++packetId;
                         rowDataPkg.read(row);
                     }
                     BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
                     binRowDataPk.read(fieldPackets, rowDataPkg);
                     binRowDataPk.setPacketId(rowDataPkg.getPacketId());
                     byteBuffer = binRowDataPk.write(byteBuffer, session.getSource(), true);
+                    this.packetId = (byte) session.getPacketId().get();
                 } else {
-                    byteBuffer = session.getSource().writeToBuffer(row, byteBuffer);
+                    if (isBigPackage) {
+                        byteBuffer = session.getSource().writeBigPackageToBuffer(row, byteBuffer, packetId);
+                        this.packetId = (byte) session.getPacketId().get();
+                    } else {
+                        row[3] = ++packetId;
+                        byteBuffer = session.getSource().writeToBuffer(row, byteBuffer);
+                    }
                 }
             }
         } catch (Exception e) {

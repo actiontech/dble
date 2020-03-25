@@ -7,6 +7,7 @@ import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
 import com.actiontech.dble.backend.mysql.nio.handler.GetConnectionHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.helper.GetAndSyncDataSourceKeyVariables;
@@ -53,6 +54,18 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         allSourceMap.putAll(allActiveSourceMap);
         putAllIntoMap(allSourceMap, standbyReadSourcesMap.get(0));
         setDataSourceProps();
+    }
+
+    public PhysicalDNPoolSingleWH(PhysicalDNPoolSingleWH org) {
+        super(org.hostName, org.balance, org.dataHostConfig);
+        allSourceMap = new ConcurrentHashMap<>();
+        for (Map.Entry<String, PhysicalDatasource> entry : org.allSourceMap.entrySet()) {
+            MySQLDataSource newSource = new MySQLDataSource((MySQLDataSource) entry.getValue());
+            allSourceMap.put(entry.getKey(), newSource);
+            if (entry.getValue() == org.writeSource) {
+                writeSource = newSource;
+            }
+        }
     }
 
     @Override
@@ -432,6 +445,9 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         lock.readLock().lock();
         adjustLock.writeLock().lock();
         try {
+
+            HaConfigManager.getInstance().updateConfDataHost(createDisableSnapshot(this, nameList), syncWriteConf);
+
             for (String dsName : nameList) {
                 PhysicalDatasource datasource = allSourceMap.get(dsName);
                 if (datasource.setDisabled(true)) {
@@ -440,15 +456,23 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
                     datasource.stopHeartbeat();
                 }
             }
-
-            HaConfigManager.getInstance().updateConfDataHost(this, syncWriteConf);
             return this.getClusterHaJson();
         } catch (Exception e) {
+            e.printStackTrace();
             throw e;
         } finally {
             lock.readLock().unlock();
             adjustLock.writeLock().unlock();
         }
+    }
+
+    public PhysicalDNPoolSingleWH createDisableSnapshot(PhysicalDNPoolSingleWH org, String[] nameList) {
+        PhysicalDNPoolSingleWH snapshot = new PhysicalDNPoolSingleWH(org);
+        for (String dsName : nameList) {
+            PhysicalDatasource datasource = snapshot.allSourceMap.get(dsName);
+            datasource.setDisabled(true);
+        }
+        return snapshot;
     }
 
 
@@ -458,14 +482,15 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         lock.readLock().lock();
         adjustLock.writeLock().lock();
         try {
+
+            HaConfigManager.getInstance().updateConfDataHost(createEnableSnapshot(this, nameList), syncWriteConf);
+
             for (String dsName : nameList) {
                 PhysicalDatasource datasource = allSourceMap.get(dsName);
                 if (datasource.setDisabled(false)) {
                     datasource.startHeartbeat();
                 }
             }
-
-            HaConfigManager.getInstance().updateConfDataHost(this, syncWriteConf);
             return this.getClusterHaJson();
         } catch (Exception e) {
             throw e;
@@ -475,11 +500,22 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
         }
     }
 
+    public PhysicalDNPoolSingleWH createEnableSnapshot(PhysicalDNPoolSingleWH org, String[] nameList) {
+        PhysicalDNPoolSingleWH snapshot = new PhysicalDNPoolSingleWH(org);
+        for (String dsName : nameList) {
+            PhysicalDatasource datasource = allSourceMap.get(dsName);
+            datasource.setDisabled(false);
+        }
+        return snapshot;
+    }
+
     public String switchMaster(String writeHost, boolean syncWriteConf) {
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
         adjustLock.writeLock().lock();
         try {
+            HaConfigManager.getInstance().updateConfDataHost(createSwitchSnapshot(writeHost), syncWriteConf);
+
             PhysicalDatasource newWriteHost = allSourceMap.get(writeHost);
             writeSource.setReadNode(true);
             //close all old master connection ,so that new write query would not put into the old writeHost
@@ -496,7 +532,6 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
             }
             newWriteHost.setReadNode(false);
             writeSource = newWriteHost;
-            HaConfigManager.getInstance().updateConfDataHost(this, syncWriteConf);
             return this.getClusterHaJson();
         } catch (Exception e) {
             throw e;
@@ -504,6 +539,15 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
             lock.readLock().unlock();
             adjustLock.writeLock().unlock();
         }
+    }
+
+    public PhysicalDNPoolSingleWH createSwitchSnapshot(String writeHost) {
+        PhysicalDNPoolSingleWH snapshot = new PhysicalDNPoolSingleWH(this);
+        PhysicalDatasource newWriteHost = snapshot.allSourceMap.get(writeHost);
+        snapshot.writeSource.setReadNode(true);
+        newWriteHost.setReadNode(false);
+        snapshot.writeSource = newWriteHost;
+        return snapshot;
     }
 
 

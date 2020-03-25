@@ -99,8 +99,10 @@ public class JoinHandler extends OwnThreadDMLHandler {
             rightFieldPackets = fieldPackets;
             rightComparator = new RowDataComparator(rightFieldPackets, rightOrders, this.isAllPushDown(), this.type());
         }
-        if (!fieldSent.compareAndSet(false, true)) {
+        if (conn != null) {
             this.charset = CharsetUtil.getJavaCharset(conn.getCharset().getResults());
+        }
+        if (!fieldSent.compareAndSet(false, true)) {
             List<FieldPacket> newFieldPacket = new ArrayList<>();
             newFieldPacket.addAll(leftFieldPackets);
             newFieldPacket.addAll(rightFieldPackets);

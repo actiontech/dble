@@ -105,6 +105,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         PhysicalDBNode dn = conf.getDataNodes().get(node.getName());
         dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), session.getSource().isAutocommit(), node, this, node);
     }
+
     protected void execute(BackendConnection conn) {
         if (session.closed()) {
             session.clearResources(rrs);
@@ -233,6 +234,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             } else {
                 ok.setPacketId(++packetId); // OK_PACKET
             }
+            session.setRowCount(ok.getAffectedRows());
             ok.setMessage(null);
             ok.setServerStatus(source.isAutocommit() ? 2 : 1);
             source.setLastInsertId(ok.getInsertId());
@@ -391,12 +393,13 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         this.netOutBytes += row.length;
         this.resultSize += row.length;
         this.selectRows++;
-        row[3] = ++packetId;
 
         RowDataPacket rowDataPk = null;
         // cache cacheKey-> dataNode
-        if (cacheKeyIndex != -1) {
+        boolean isBigPackage = row.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE;
+        if (cacheKeyIndex != -1 && !isBigPackage) {
             rowDataPk = new RowDataPacket(fieldCount);
+            row[3] = ++packetId;
             rowDataPk.read(row);
             byte[] key = rowDataPk.fieldValues.get(cacheKeyIndex);
             if (key != null) {
@@ -415,14 +418,22 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                 if (prepared) {
                     if (rowDataPk == null) {
                         rowDataPk = new RowDataPacket(fieldCount);
+                        row[3] = ++packetId;
                         rowDataPk.read(row);
                     }
                     BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
                     binRowDataPk.read(fieldPackets, rowDataPk);
                     binRowDataPk.setPacketId(rowDataPk.getPacketId());
                     buffer = binRowDataPk.write(buffer, session.getSource(), true);
+                    this.packetId = (byte) session.getPacketId().get();
                 } else {
-                    buffer = session.getSource().writeToBuffer(row, buffer);
+                    if (isBigPackage) {
+                        buffer = session.getSource().writeBigPackageToBuffer(row, buffer, packetId);
+                        this.packetId = (byte) session.getPacketId().get();
+                    } else {
+                        row[3] = ++packetId;
+                        buffer = session.getSource().writeToBuffer(row, buffer);
+                    }
                 }
             }
         } finally {

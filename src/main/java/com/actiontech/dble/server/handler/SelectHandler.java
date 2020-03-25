@@ -104,6 +104,9 @@ public final class SelectHandler {
             case ServerParseSelect.TRACE:
                 SelectTrace.response(c);
                 break;
+            case ServerParseSelect.ROW_COUNT:
+                SelectRowCount.response(c);
+                break;
             default:
                 c.execute(stmt, ServerParse.SELECT);
         }

@@ -106,7 +106,7 @@ public final class DatabaseHandler {
         if (errMsg.size() == 0) {
             OK.write(c);
         } else {
-            String msg = "Occur error in [" + StringUtils.join(errMsg, ',') + "]";
+            String msg = "Unknown error occurs in [" + StringUtils.join(errMsg, ',') + "],please manually confirm result again.";
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, msg);
             errMsg.clear();
         }

@@ -261,7 +261,9 @@ public class BinaryRowDataPacket extends MySQLPacket {
             BufferUtil.writeUB3(bb, size);
             bb.put(packetId);
             writeBody(bb);
-            ((ServerConnection) c).getSession2().getPacketId().set(packetId);
+            if (c instanceof ServerConnection) {
+                ((ServerConnection) c).getSession2().getPacketId().set(packetId);
+            }
             return bb;
         }
     }

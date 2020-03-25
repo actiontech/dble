@@ -90,4 +90,8 @@ public class OneRawSQLQueryResultHandler implements SQLJobHandler {
     protected Map<String, String> getResult() {
         return new HashMap<>(result);
     }
+
+    public SQLQueryResultListener<SQLQueryResult<Map<String, String>>> getCallback() {
+        return callback;
+    }
 }

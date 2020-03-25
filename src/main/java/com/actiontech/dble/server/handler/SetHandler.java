@@ -10,7 +10,11 @@ import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Isolations;
+<<<<<<< HEAD
 import com.actiontech.dble.log.transaction.TxnLogHelper;
+=======
+import com.actiontech.dble.net.mysql.OkPacket;
+>>>>>>> 7975591... #1243 support set mulit-parameters
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.ServerConnection;
@@ -30,7 +34,9 @@ import com.alibaba.druid.sql.parser.SQLStatementParser;
 
 import java.sql.SQLSyntaxErrorException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -42,10 +48,10 @@ import java.util.regex.Pattern;
  * @author zhuam
  */
 public final class SetHandler {
-    private SetHandler() {
-    }
 
-    private static final byte[] AC_OFF = new byte[]{7, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0};
+    private SetHandler() {
+
+    }
 
     public enum KeyType {
         SYNTAX_ERROR,
@@ -71,8 +77,17 @@ public final class SetHandler {
         try {
             String smt = convertCharsetKeyWord(stmt);
             List<Pair<KeyType, Pair<String, String>>> contextTask = new ArrayList<>();
-            if (handleSetStatement(smt, c, contextTask) && contextTask.size() > 0) {
-                setStmtCallback(stmt, c, contextTask);
+            List<Pair<KeyType, Pair<String, String>>> innerSetTask = new ArrayList<>();
+            StringBuilder contextSetSQL = new StringBuilder();
+            if (handleSetStatement(smt, c, contextTask, innerSetTask, contextSetSQL) && contextTask.size() > 0) {
+                setStmtCallback(contextSetSQL.toString(), c, contextTask, innerSetTask);
+            } else if (innerSetTask.size() > 0) {
+                c.setInnerSetTask(innerSetTask);
+                if (!c.executeInnerSetTask()) {
+                    boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+                    c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+                    c.getSession2().multiStatementNextSql(multiStatementFlag);
+                }
             }
         } catch (SQLSyntaxErrorException e) {
             c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, e.toString());
@@ -92,14 +107,17 @@ public final class SetHandler {
         }
     }
 
-    private static boolean handleSetStatement(String stmt, ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask) throws SQLSyntaxErrorException {
+    private static boolean handleSetStatement(String stmt, ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask,
+                                              List<Pair<KeyType, Pair<String, String>>> innerSetTask, StringBuilder contextSetSQL) throws SQLSyntaxErrorException {
         SQLStatement statement = parseSQL(stmt);
         if (statement instanceof SQLSetStatement) {
             List<SQLAssignItem> assignItems = ((SQLSetStatement) statement).getItems();
             if (assignItems.size() == 1) {
                 return handleSingleVariable(stmt, assignItems.get(0), c, contextTask);
             } else {
-                return handleSetMultiStatement(assignItems, c, contextTask);
+                boolean result = handleSetMultiStatement(assignItems, c, contextTask, innerSetTask);
+                contextSetSQL.append(statement.toString());
+                return result;
             }
         } else if (statement instanceof MySqlSetTransactionStatement) {
             return handleTransaction(c, (MySqlSetTransactionStatement) statement);
@@ -158,7 +176,7 @@ public final class SetHandler {
     }
 
     private static boolean handleSingleSetCharset(String stmt, ServerConnection c, SQLExpr valueExpr) {
-        String charsetValue = parseStringValue(valueExpr);
+        String charsetValue = SetInnerHandler.parseStringValue(valueExpr);
         if (charsetValue == null || charsetValue.equalsIgnoreCase("null")) {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set null");
             return false;
@@ -181,24 +199,29 @@ public final class SetHandler {
         }
     }
 
-    private static boolean handleSetMultiStatement(List<SQLAssignItem> assignItems, ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask) {
+    private static boolean handleSetMultiStatement(List<SQLAssignItem> assignItems, ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask, List<Pair<KeyType, Pair<String, String>>> innerSetTask) {
+        Set<SQLAssignItem> objSet = new HashSet<>();
         for (SQLAssignItem assignItem : assignItems) {
-            if (!handleVariableInMultiStmt(assignItem, c, contextTask)) {
+            if (!handleVariableInMultiStmt(assignItem, c, contextTask, innerSetTask, objSet)) {
                 return false;
             }
+        }
+        for (SQLAssignItem assignItem : objSet) {
+            assignItems.remove(assignItem);
         }
         return true;
     }
 
     //execute multiStmt and callback to reset conn
-    private static void setStmtCallback(String multiStmt, ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask) {
+    private static void setStmtCallback(String multiStmt, ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask, List<Pair<KeyType, Pair<String, String>>> innerSetTask) {
         c.setContextTask(contextTask);
+        c.setInnerSetTask(innerSetTask);
         OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(new String[0], new SetCallBack(c));
         SetTestJob sqlJob = new SetTestJob(multiStmt, null, resultHandler, c);
         sqlJob.run();
     }
 
-    private static boolean handleVariableInMultiStmt(SQLAssignItem assignItem, ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask) {
+    private static boolean handleVariableInMultiStmt(SQLAssignItem assignItem, ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask, List<Pair<KeyType, Pair<String, String>>> innerSetTask, Set<SQLAssignItem> objSet) {
         String key = handleSetKey(assignItem, c);
         if (key == null) {
             return false;
@@ -211,23 +234,32 @@ public final class SetHandler {
         }
         switch (keyType) {
             case XA:
-                c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "set xa cmd can't used in multi-set statement");
-                return false;
+                if (!SetInnerHandler.preHandleSingleXA(c, valueExpr, innerSetTask)) {
+                    return false;
+                }
+                objSet.add(assignItem);
+                break;
             case TRACE:
-                c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "set trace cmd can't used in multi-set statement");
-                return false;
+                if (!SetInnerHandler.preHandleSingleTrace(c, valueExpr, innerSetTask)) {
+                    return false;
+                }
+                objSet.add(assignItem);
+                break;
             case AUTOCOMMIT:
-                c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "set autocommit cmd can't used in multi-set statement");
-                return false;
+                if (!SetInnerHandler.preHandleAutocommit(c, valueExpr, innerSetTask)) {
+                    return false;
+                }
+                objSet.add(assignItem);
+                break;
             case NAMES: {
-                String charset = parseStringValue(valueExpr);
+                String charset = SetInnerHandler.parseStringValue(valueExpr);
                 //TODO:druid lost collation info
                 if (!handleSetNamesInMultiStmt(c, "SET NAMES " + charset, charset, null, contextTask))
                     return false;
                 break;
             }
             case CHARSET: {
-                String charset = parseStringValue(valueExpr);
+                String charset = SetInnerHandler.parseStringValue(valueExpr);
                 if (!handleCharsetInMultiStmt(c, charset, contextTask)) return false;
                 break;
             }
@@ -285,7 +317,7 @@ public final class SetHandler {
     }
 
     private static boolean handleTxIsolationInMultiStmt(ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask, SQLExpr valueExpr) {
-        String value = parseStringValue(valueExpr);
+        String value = SetInnerHandler.parseStringValue(valueExpr);
         Integer txIsolation = getIsolationLevel(value);
         if (txIsolation == null) {
             c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "Variable 'tx_isolation|transaction_isolation' can't be set to the value of '" + value + "'");
@@ -296,7 +328,7 @@ public final class SetHandler {
     }
 
     private static boolean handleReadOnlyInMultiStmt(ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask, SQLExpr valueExpr) {
-        Boolean switchStatus = isSwitchOn(valueExpr);
+        Boolean switchStatus = SetInnerHandler.isSwitchOn(valueExpr);
         if (switchStatus == null) {
             c.writeErrMessage(ErrorCode.ER_WRONG_TYPE_FOR_VAR, "Incorrect argument type to variable 'tx_read_only|transaction_read_only'");
             return false;
@@ -309,7 +341,7 @@ public final class SetHandler {
     }
 
     private static boolean handleCollationConnInMultiStmt(ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask, SQLExpr valueExpr) {
-        String collation = parseStringValue(valueExpr);
+        String collation = SetInnerHandler.parseStringValue(valueExpr);
         if (checkCollation(collation)) {
             contextTask.add(new Pair<>(KeyType.COLLATION_CONNECTION, new Pair<String, String>(collation, null)));
             return true;
@@ -320,7 +352,7 @@ public final class SetHandler {
     }
 
     private static boolean handleCharsetResultsInMultiStmt(ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask, SQLExpr valueExpr) {
-        String charsetResult = parseStringValue(valueExpr);
+        String charsetResult = SetInnerHandler.parseStringValue(valueExpr);
         if (charsetResult.equalsIgnoreCase("NULL") || checkCharset(charsetResult)) {
             contextTask.add(new Pair<>(KeyType.CHARACTER_SET_RESULTS, new Pair<String, String>(charsetResult, null)));
             return true;
@@ -331,7 +363,7 @@ public final class SetHandler {
     }
 
     private static boolean handleCharsetConnInMultiStmt(ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask, SQLExpr valueExpr) {
-        String charsetConnection = parseStringValue(valueExpr);
+        String charsetConnection = SetInnerHandler.parseStringValue(valueExpr);
         if (charsetConnection.equals("null")) {
             c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_connection' can't be set to the value of 'NULL'");
             return false;
@@ -347,7 +379,7 @@ public final class SetHandler {
     }
 
     private static boolean handleCharsetClientInMultiStmt(ServerConnection c, List<Pair<KeyType, Pair<String, String>>> contextTask, SQLExpr valueExpr) {
-        String charsetClient = parseStringValue(valueExpr);
+        String charsetClient = SetInnerHandler.parseStringValue(valueExpr);
         if (charsetClient.equalsIgnoreCase("null")) {
             c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of 'NULL'");
             return false;
@@ -380,11 +412,11 @@ public final class SetHandler {
             case CHARSET:
                 return handleSingleSetCharset(stmt, c, valueExpr);
             case XA:
-                return handleSingleXA(c, valueExpr);
+                return SetInnerHandler.handleSingleXA(c, valueExpr);
             case TRACE:
-                return handleSingleTrace(c, valueExpr);
+                return SetInnerHandler.handleSingleTrace(c, valueExpr);
             case AUTOCOMMIT:
-                return handleSingleAutocommit(stmt, c, valueExpr);
+                return SetInnerHandler.handleSingleAutocommit(stmt, c, valueExpr);
             case CHARACTER_SET_CLIENT:
                 return handleSingleCharsetClient(c, valueExpr);
             case CHARACTER_SET_CONNECTION:
@@ -425,7 +457,7 @@ public final class SetHandler {
     }
 
     private static boolean handleTxReadOnly(ServerConnection c, SQLExpr valueExpr) {
-        Boolean switchStatus = isSwitchOn(valueExpr);
+        Boolean switchStatus = SetInnerHandler.isSwitchOn(valueExpr);
         if (switchStatus == null) {
             c.writeErrMessage(ErrorCode.ER_WRONG_TYPE_FOR_VAR, "Incorrect argument type to variable 'tx_read_only|transaction_read_only'");
             return false;
@@ -444,7 +476,7 @@ public final class SetHandler {
     }
 
     private static boolean handleTxIsolation(ServerConnection c, SQLExpr valueExpr) {
-        String value = parseStringValue(valueExpr);
+        String value = SetInnerHandler.parseStringValue(valueExpr);
         Integer txIsolation = getIsolationLevel(value);
         if (txIsolation == null) {
             c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "Variable 'tx_isolation|transaction_isolation' can't be set to the value of '" + value + "'");
@@ -473,7 +505,7 @@ public final class SetHandler {
     }
 
     private static boolean handleCollationConnection(ServerConnection c, SQLExpr valueExpr) {
-        String collation = parseStringValue(valueExpr);
+        String collation = SetInnerHandler.parseStringValue(valueExpr);
         if (checkCollation(collation)) {
             c.setCollationConnection(collation);
             boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
@@ -487,7 +519,7 @@ public final class SetHandler {
     }
 
     private static boolean handleSingleCharsetResults(ServerConnection c, SQLExpr valueExpr) {
-        String charsetResult = parseStringValue(valueExpr);
+        String charsetResult = SetInnerHandler.parseStringValue(valueExpr);
         if (charsetResult.equalsIgnoreCase("NULL") || checkCharset(charsetResult)) {
             c.setCharacterResults(charsetResult);
             boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
@@ -501,7 +533,7 @@ public final class SetHandler {
     }
 
     private static boolean handleSingleCharsetConnection(ServerConnection c, SQLExpr valueExpr) {
-        String charsetConnection = parseStringValue(valueExpr);
+        String charsetConnection = SetInnerHandler.parseStringValue(valueExpr);
         if (charsetConnection.equals("null")) {
             c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_connection' can't be set to the value of 'NULL'");
             return false;
@@ -520,7 +552,7 @@ public final class SetHandler {
     }
 
     private static boolean handleSingleCharsetClient(ServerConnection c, SQLExpr valueExpr) {
-        String charsetClient = parseStringValue(valueExpr);
+        String charsetClient = SetInnerHandler.parseStringValue(valueExpr);
         if (charsetClient.equalsIgnoreCase("null")) {
             c.writeErrMessage(ErrorCode.ER_WRONG_VALUE_FOR_VAR, "Variable 'character_set_client' can't be set to the value of 'NULL'");
             return false;
@@ -542,73 +574,6 @@ public final class SetHandler {
         }
     }
 
-    private static boolean handleSingleAutocommit(String stmt, ServerConnection c, SQLExpr valueExpr) {
-        Boolean switchStatus = isSwitchOn(valueExpr);
-        if (switchStatus == null) {
-            c.writeErrMessage(ErrorCode.ER_WRONG_TYPE_FOR_VAR, "Incorrect argument type to variable 'AUTOCOMMIT'");
-            return false;
-        } else if (switchStatus) {
-            if (c.isAutocommit()) {
-                boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-                c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
-                c.getSession2().multiStatementNextSql(multiStatementFlag);
-            } else {
-                c.commit("commit[because of " + stmt + "]");
-                c.setAutocommit(true);
-            }
-        } else {
-            if (c.isAutocommit()) {
-                c.setAutocommit(false);
-                TxnLogHelper.putTxnLog(c, stmt);
-            }
-            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
-            c.getSession2().multiStatementNextSql(multiStatementFlag);
-        }
-        return true;
-    }
-
-    private static boolean handleSingleTrace(ServerConnection c, SQLExpr valueExpr) {
-        Boolean switchStatus = isSwitchOn(valueExpr);
-        if (switchStatus == null) {
-            c.writeErrMessage(ErrorCode.ER_WRONG_TYPE_FOR_VAR, "Incorrect argument type to variable 'TRACE'");
-            return false;
-        } else {
-            c.getSession2().setTrace(switchStatus);
-            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
-            c.getSession2().multiStatementNextSql(multiStatementFlag);
-            return true;
-        }
-    }
-
-    private static boolean handleSingleXA(ServerConnection c, SQLExpr valueExpr) {
-        Boolean switchStatus = isSwitchOn(valueExpr);
-        if (switchStatus == null) {
-            c.writeErrMessage(ErrorCode.ER_WRONG_TYPE_FOR_VAR, "Incorrect argument type to variable 'XA'");
-            return false;
-        } else if (switchStatus) {
-            if (c.getSession2().getTargetMap().size() > 0 && c.getSession2().getSessionXaID() == null) {
-                c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "you can't set xa cmd on when there are unfinished operation in the session.");
-                return false;
-            }
-            c.getSession2().setXaTxEnabled(true);
-            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
-            c.getSession2().multiStatementNextSql(multiStatementFlag);
-            return true;
-        } else {
-            if (c.getSession2().getTargetMap().size() > 0 && c.getSession2().getSessionXaID() != null) {
-                c.writeErrMessage(ErrorCode.ERR_WRONG_USED, "you can't set xa cmd off when a transaction is in progress.");
-                return false;
-            }
-            c.getSession2().setXaTxEnabled(false);
-            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
-            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
-            c.getSession2().multiStatementNextSql(multiStatementFlag);
-            return true;
-        }
-    }
 
     // druid not support 'set charset' ,change to 'set character set'
     private static String convertCharsetKeyWord(String stmt) {
@@ -711,28 +676,6 @@ public final class SetHandler {
         }
     }
 
-    private static Boolean isSwitchOn(SQLExpr valueExpr) {
-        if (valueExpr instanceof SQLIntegerExpr) {
-            SQLIntegerExpr value = (SQLIntegerExpr) valueExpr;
-            int iValue = value.getNumber().intValue();
-            if (iValue < 0 || iValue > 1) {
-                return null;
-            }
-            return (iValue == 1);
-        } else if (valueExpr instanceof SQLBooleanExpr) {
-            SQLBooleanExpr value = (SQLBooleanExpr) valueExpr;
-            return value.getValue();
-        }
-        String strValue = parseStringValue(valueExpr);
-        switch (strValue) {
-            case "on":
-                return true;
-            case "off":
-                return false;
-            default:
-                return null;
-        }
-    }
 
     private static String parseVariablesValue(SQLExpr valueExpr) {
         String strValue;
@@ -764,26 +707,9 @@ public final class SetHandler {
             MySqlCharExpr value = (MySqlCharExpr) valueExpr;
             return new String[]{value.getText().toLowerCase(), StringUtil.removeBackQuote(value.getCollate()).toLowerCase()};
         } else {
-            String charset = parseStringValue(valueExpr);
+            String charset = SetInnerHandler.parseStringValue(valueExpr);
             return new String[]{charset, null};
         }
-    }
-
-    private static String parseStringValue(SQLExpr valueExpr) {
-        String strValue = "";
-        if (valueExpr instanceof SQLIdentifierExpr) {
-            SQLIdentifierExpr value = (SQLIdentifierExpr) valueExpr;
-            strValue = StringUtil.removeBackQuote(value.getSimpleName().toLowerCase());
-        } else if (valueExpr instanceof SQLCharExpr) {
-            SQLCharExpr value = (SQLCharExpr) valueExpr;
-            strValue = value.getText().toLowerCase();
-        } else if (valueExpr instanceof SQLIntegerExpr) {
-            SQLIntegerExpr value = (SQLIntegerExpr) valueExpr;
-            strValue = value.getNumber().toString();
-        } else if (valueExpr instanceof SQLDefaultExpr || valueExpr instanceof SQLNullExpr) {
-            strValue = valueExpr.toString();
-        }
-        return strValue;
     }
 
 

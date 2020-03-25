@@ -225,7 +225,7 @@
     </Match>
 	<Match>
         <Bug category="BAD_PRACTICE"/>
-        <Class name="com.actiontech.dble.server.handler.SetHandler"/>
+        <Class name="com.actiontech.dble.server.handler.SetInnerHandler"/>
         <Method name="isSwitchOn"/>
         <Bug pattern="NP_BOOLEAN_RETURN_NULL"/>
     </Match>

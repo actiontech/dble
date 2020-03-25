@@ -393,12 +393,13 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         this.netOutBytes += row.length;
         this.resultSize += row.length;
         this.selectRows++;
-        row[3] = ++packetId;
 
         RowDataPacket rowDataPk = null;
         // cache cacheKey-> dataNode
-        if (cacheKeyIndex != -1) {
+        boolean isBigPackage = row.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE;
+        if (cacheKeyIndex != -1 && !isBigPackage) {
             rowDataPk = new RowDataPacket(fieldCount);
+            row[3] = ++packetId;
             rowDataPk.read(row);
             byte[] key = rowDataPk.fieldValues.get(cacheKeyIndex);
             if (key != null) {
@@ -417,14 +418,22 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                 if (prepared) {
                     if (rowDataPk == null) {
                         rowDataPk = new RowDataPacket(fieldCount);
+                        row[3] = ++packetId;
                         rowDataPk.read(row);
                     }
                     BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
                     binRowDataPk.read(fieldPackets, rowDataPk);
                     binRowDataPk.setPacketId(rowDataPk.getPacketId());
                     buffer = binRowDataPk.write(buffer, session.getSource(), true);
+                    this.packetId = (byte) session.getPacketId().get();
                 } else {
-                    buffer = session.getSource().writeToBuffer(row, buffer);
+                    if (isBigPackage) {
+                        buffer = session.getSource().writeBigPackageToBuffer(row, buffer, packetId);
+                        this.packetId = (byte) session.getPacketId().get();
+                    } else {
+                        row[3] = ++packetId;
+                        buffer = session.getSource().writeToBuffer(row, buffer);
+                    }
                 }
             }
         } finally {

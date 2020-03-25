@@ -141,6 +141,7 @@ public final class ShowHeartbeat {
                     row.add(null);
                     row.add(null);
                     row.add(null);
+                    row.add(null);
                 }
                 list.add(row);
             }
@@ -163,6 +164,7 @@ public final class ShowHeartbeat {
                         row.add(hb.isStop() ? "true".getBytes() : "false".getBytes());
                         row.add(hb.getMessage() == null ? null : hb.getMessage().getBytes());
                     } else {
+                        row.add(null);
                         row.add(null);
                         row.add(null);
                         row.add(null);

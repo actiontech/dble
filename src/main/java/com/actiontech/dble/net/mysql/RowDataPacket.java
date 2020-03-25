@@ -108,7 +108,9 @@ public class RowDataPacket extends MySQLPacket {
             BufferUtil.writeUB3(bb, calcPacketSize());
             bb.put(packetId);
             writeBody(bb, c, writeSocketIfFull);
-            ((ServerConnection) c).getSession2().getPacketId().set(packetId);
+            if (c instanceof ServerConnection) {
+                ((ServerConnection) c).getSession2().getPacketId().set(packetId);
+            }
             return bb;
         }
     }

@@ -10,11 +10,6 @@ import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Isolations;
-<<<<<<< HEAD
-import com.actiontech.dble.log.transaction.TxnLogHelper;
-=======
-import com.actiontech.dble.net.mysql.OkPacket;
->>>>>>> 7975591... #1243 support set mulit-parameters
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.ServerConnection;

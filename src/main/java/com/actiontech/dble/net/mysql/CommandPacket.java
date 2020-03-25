@@ -115,31 +115,21 @@ public class CommandPacket extends MySQLPacket {
     public void writeBigPackage(MySQLConnection c, int size) {
         ByteBuffer buffer = null;
         int remain = 0;
-        try {
-            boolean isFirst = true;
-            while (size >= MySQLPacket.MAX_PACKET_SIZE) {
-                buffer = c.allocate(MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
-                size -= MySQLPacket.MAX_PACKET_SIZE;
-                BufferUtil.writeUB3(buffer, MySQLPacket.MAX_PACKET_SIZE);
-                buffer.put(packetId++);
-                remain = writeBody(buffer, isFirst, remain);
-                c.write(buffer);
-                isFirst = false;
-            }
-            buffer = c.allocate(size + MySQLPacket.PACKET_HEADER_SIZE);
-            BufferUtil.writeUB3(buffer, size);
-            buffer.put(packetId);
-            writeBody(buffer, isFirst, remain);
+        boolean isFirst = true;
+        while (size >= MySQLPacket.MAX_PACKET_SIZE) {
+            buffer = c.allocate(MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
+            size -= MySQLPacket.MAX_PACKET_SIZE;
+            BufferUtil.writeUB3(buffer, MySQLPacket.MAX_PACKET_SIZE);
+            buffer.put(packetId++);
+            remain = writeBody(buffer, isFirst, remain);
             c.write(buffer);
-        } catch (java.nio.BufferOverflowException e1) {
-            //fixed issues #98 #1072
-            buffer = c.checkWriteBuffer(buffer, PACKET_HEADER_SIZE + calcPacketSize(), false);
-            BufferUtil.writeUB3(buffer, calcPacketSize());
-            buffer.put(packetId);
-            buffer.put(command);
-            buffer = c.writeToBuffer(arg, buffer);
-            c.write(buffer);
+            isFirst = false;
         }
+        buffer = c.allocate(size + MySQLPacket.PACKET_HEADER_SIZE);
+        BufferUtil.writeUB3(buffer, size);
+        buffer.put(packetId);
+        writeBody(buffer, isFirst, remain);
+        c.write(buffer);
     }
 
     private int writeBody(ByteBuffer buffer, boolean isFirst, int remain) {

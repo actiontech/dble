@@ -7,6 +7,7 @@ package com.actiontech.dble.sqlengine;
 
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDatasource;
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,9 +34,23 @@ public class OneTimeConnJob extends SQLJob {
 
     public void run() {
         try {
-            ds.getConnection(schema, true, this, null, false);
+            ds.getNewConnection(schema, this, null, false, true);
         } catch (Exception e) {
             this.connectionError(e, null);
+        }
+    }
+
+    @Override
+    public void connectionAcquired(final BackendConnection conn) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("con query sql:" + sql + " to con:" + conn);
+        }
+        conn.setResponseHandler(this);
+        ((MySQLConnection) conn).setComplexQuery(true);
+        try {
+            conn.query(sql);
+        } catch (Exception e) { // (UnsupportedEncodingException e) {
+            doFinished(true);
         }
     }
 

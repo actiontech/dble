@@ -545,6 +545,8 @@
                                     <extraArgument>-Xloggc:./logs/gc_%t_%p.log</extraArgument>
                                     <extraArgument>-XX:+PrintGCTimeStamps</extraArgument>
                                     <extraArgument>-XX:+PrintGCDetails</extraArgument>
+                                    <extraArgument>-XX:+HeapDumpOnOutOfMemoryError</extraArgument>
+                                    <extraArgument>-XX:HeapDumpPath=./logs/</extraArgument>
                                 </extraArguments>
                             </jvmSettings>
                             <generatorConfigurations>

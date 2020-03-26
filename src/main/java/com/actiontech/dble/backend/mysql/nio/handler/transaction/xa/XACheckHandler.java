@@ -108,7 +108,13 @@ public final class XACheckHandler {
                 List<Map<String, String>> xaRows = result.getResult();
                 for (Map<String, String> row : xaRows) {
                     String tempXid = row.get("data");
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("check xid is " + xid + " tmp xid is " + tempXid);
+                    }
                     if (tempXid.equalsIgnoreCase(xid.replace("\'", ""))) {
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("find xid!check xid is " + xid + " tmp xid is " + tempXid);
+                        }
                         isExistXid = true;
                         break;
                     }

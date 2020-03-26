@@ -40,8 +40,11 @@ public final class SelectHandler {
             case ServerParseSelect.SESSION_INCREMENT:
                 SessionIncrement.response(c);
                 break;
-            case ServerParseSelect.SESSION_ISOLATION:
-                SessionIsolation.response(c);
+            case ServerParseSelect.SESSION_TX_ISOLATION:
+                SessionIsolation.response(c, stmt.substring(offset).trim());
+                break;
+            case ServerParseSelect.SESSION_TRANSACTION_ISOLATION:
+                SessionIsolation.response(c, stmt.substring(offset).trim());
                 break;
             case ServerParseSelect.LAST_INSERT_ID:
                 // offset = ParseUtil.move(stmt, 0, "select".length());
@@ -93,10 +96,16 @@ public final class SelectHandler {
                 SelectVariables.execute(c, stmt);
                 break;
             case ServerParseSelect.SESSION_TX_READ_ONLY:
-                SelectTxReadOnly.response(c);
+                SelectTxReadOnly.response(c, stmt.substring(offset).trim());
+                break;
+            case ServerParseSelect.SESSION_TRANSACTION_READ_ONLY:
+                SelectTxReadOnly.response(c, stmt.substring(offset).trim());
                 break;
             case ServerParseSelect.TRACE:
                 SelectTrace.response(c);
+                break;
+            case ServerParseSelect.ROW_COUNT:
+                SelectRowCount.response(c);
                 break;
             default:
                 c.execute(stmt, ServerParse.SELECT);

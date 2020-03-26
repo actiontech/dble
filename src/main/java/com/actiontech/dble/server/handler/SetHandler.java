@@ -7,10 +7,10 @@ package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
+import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
-import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.parser.util.ParseUtil;
 import com.actiontech.dble.server.ServerConnection;
@@ -146,7 +146,9 @@ public final class SetHandler {
                 return false;
             } else {
                 c.setNames(charsetInfo.charset, charsetInfo.collation);
-                c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+                boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+                c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+                c.getSession2().multiStatementNextSql(multiStatementFlag);
                 return true;
             }
         } else {
@@ -168,7 +170,9 @@ public final class SetHandler {
                 return false;
             } else {
                 c.setCharacterSet(charset);
-                c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+                boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+                c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+                c.getSession2().multiStatementNextSql(multiStatementFlag);
                 return true;
             }
         } else {
@@ -284,7 +288,7 @@ public final class SetHandler {
         String value = parseStringValue(valueExpr);
         Integer txIsolation = getIsolationLevel(value);
         if (txIsolation == null) {
-            c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "Variable 'tx_isolation' can't be set to the value of '" + value + "'");
+            c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "Variable 'tx_isolation|transaction_isolation' can't be set to the value of '" + value + "'");
             return false;
         }
         contextTask.add(new Pair<>(KeyType.TX_ISOLATION, new Pair<String, String>(String.valueOf(txIsolation), null)));
@@ -427,10 +431,14 @@ public final class SetHandler {
             return false;
         } else if (switchStatus) {
             c.setSessionReadOnly(true);
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
         } else {
             c.setSessionReadOnly(false);
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
         }
         return true;
     }
@@ -439,11 +447,13 @@ public final class SetHandler {
         String value = parseStringValue(valueExpr);
         Integer txIsolation = getIsolationLevel(value);
         if (txIsolation == null) {
-            c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "Variable 'tx_isolation' can't be set to the value of '" + value + "'");
+            c.writeErrMessage(ErrorCode.ERR_NOT_SUPPORTED, "Variable 'tx_isolation|transaction_isolation' can't be set to the value of '" + value + "'");
             return false;
         }
         c.setTxIsolation(txIsolation);
-        c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+        boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+        c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+        c.getSession2().multiStatementNextSql(multiStatementFlag);
         return true;
     }
 
@@ -466,7 +476,9 @@ public final class SetHandler {
         String collation = parseStringValue(valueExpr);
         if (checkCollation(collation)) {
             c.setCollationConnection(collation);
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
             return true;
         } else {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_COLLATION, "Unknown collation '" + collation + "'");
@@ -478,7 +490,9 @@ public final class SetHandler {
         String charsetResult = parseStringValue(valueExpr);
         if (charsetResult.equalsIgnoreCase("NULL") || checkCharset(charsetResult)) {
             c.setCharacterResults(charsetResult);
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
             return true;
         } else {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set '" + charsetResult + "'");
@@ -495,7 +509,9 @@ public final class SetHandler {
         String collationName = CharsetUtil.getDefaultCollation(charsetConnection);
         if (collationName != null) {
             c.setCharacterConnection(collationName);
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
             return true;
         } else {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown character set '" + charsetConnection + "'");
@@ -515,7 +531,9 @@ public final class SetHandler {
                 return false;
             } else {
                 c.setCharacterClient(charsetClient);
-                c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+                boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+                c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+                c.getSession2().multiStatementNextSql(multiStatementFlag);
                 return true;
             }
         } else {
@@ -557,7 +575,9 @@ public final class SetHandler {
             return false;
         } else {
             c.getSession2().setTrace(switchStatus);
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
             return true;
         }
     }
@@ -573,7 +593,9 @@ public final class SetHandler {
                 return false;
             }
             c.getSession2().setXaTxEnabled(true);
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
             return true;
         } else {
             if (c.getSession2().getTargetMap().size() > 0 && c.getSession2().getSessionXaID() != null) {
@@ -581,7 +603,9 @@ public final class SetHandler {
                 return false;
             }
             c.getSession2().setXaTxEnabled(false);
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
             return true;
         }
     }
@@ -664,11 +688,11 @@ public final class SetHandler {
                 return KeyType.CHARACTER_SET_RESULTS;
             case "character_set_connection":
                 return KeyType.CHARACTER_SET_CONNECTION;
-            case "transaction_isolation":
-            case "tx_isolation":
+            case VersionUtil.TRANSACTION_ISOLATION:
+            case VersionUtil.TX_ISOLATION:
                 return KeyType.TX_ISOLATION;
-            case "transaction_read_only":
-            case "tx_read_only":
+            case VersionUtil.TRANSACTION_READ_ONLY:
+            case VersionUtil.TX_READ_ONLY:
                 return KeyType.TX_READ_ONLY;
             case "names":
                 return KeyType.NAMES;
@@ -777,7 +801,9 @@ public final class SetHandler {
             } else {
                 c.setSessionReadOnly(false);
             }
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
             return true;
         } else {
             int txIsolation = Isolations.REPEATABLE_READ;
@@ -799,7 +825,9 @@ public final class SetHandler {
                     break;
             }
             c.setTxIsolation(txIsolation);
-            c.write(c.writeToBuffer(OkPacket.OK, c.allocate()));
+            boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+            c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
+            c.getSession2().multiStatementNextSql(multiStatementFlag);
             return true;
         }
     }

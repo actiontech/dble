@@ -313,7 +313,13 @@ public class MySQLConnection extends AbstractConnection implements
         }
         isExecuting = true;
         lastTime = TimeUtil.currentTimeMillis();
-        packet.write(this);
+        int size = packet.calcPacketSize();
+        if (size >= MySQLPacket.MAX_PACKET_SIZE) {
+            packet.writeBigPackage(this, size);
+        } else {
+            packet.write(this);
+        }
+
     }
 
     private WriteToBackendTask sendQueryCmdTask(String query, CharsetNames clientCharset) {
@@ -888,7 +894,8 @@ public class MySQLConnection extends AbstractConnection implements
         result.append(statusSync);
         result.append(", writeQueue=");
         result.append(this.getWriteQueue().size());
-        result.append(", modifiedSQLExecuted=");
+        result.append(", xaStatus=");
+        result.append(xaStatus);
         if (sysVariables.size() > 0) {
             result.append(", ");
             result.append(getStringOfSysVariables());

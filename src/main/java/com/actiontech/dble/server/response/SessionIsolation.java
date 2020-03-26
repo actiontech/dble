@@ -30,10 +30,10 @@ public final class SessionIsolation {
     private static final EOFPacket EOF = new EOFPacket();
 
 
-    public static void response(ServerConnection c) {
+    public static void response(ServerConnection c, String column) {
         byte packetId = setCurrentPacket(c);
         HEADER.setPacketId(++packetId);
-        FIELDS[0] = PacketUtil.getField("@@session.tx_isolation", Fields.FIELD_TYPE_STRING);
+        FIELDS[0] = PacketUtil.getField(column, Fields.FIELD_TYPE_STRING);
         FIELDS[0].setPacketId(++packetId);
         EOF.setPacketId(++packetId);
 

@@ -282,14 +282,16 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
 
                 ok.setAffectedRows(affectedRows);
+                session.setRowCount(affectedRows);
                 ok.setServerStatus(source.isAutocommit() ? 2 : 1);
                 if (insertId > 0) {
                     ok.setInsertId(insertId);
                     source.setLastInsertId(insertId);
                 }
-                session.multiStatementPacket(ok, packetId);
+                boolean multiStatementFlag = session.multiStatementPacket(ok, packetId);
                 doSqlStat();
                 handleEndPacket(ok.toBytes(), AutoTxOperation.COMMIT, true);
+                session.multiStatementNextSql(multiStatementFlag);
             } finally {
                 lock.unlock();
             }
@@ -381,10 +383,8 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (session.closed()) {
                     cleanBuffer();
                 } else {
-                    boolean multiStatementFlag = session.getIsMultiStatement().get();
+                    boolean multiStatementFlag = session.multiStatementPacket(eof, ++packetId);
                     writeEofResult(eof, source);
-                    //set after writeEof because packetId would increase in that function
-                    session.multiStatementPacket(eof, packetId);
                     session.multiStatementNextSql(multiStatementFlag);
                 }
             }
@@ -421,11 +421,12 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
             }
             this.resultSize += row.length;
-            row[3] = ++packetId;
             RowDataPacket rowDataPkg = null;
             // cache cacheKey-> dataNode
-            if (cacheKeyIndex != -1) {
+            boolean isBigPackage = row.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE;
+            if (cacheKeyIndex != -1 && !isBigPackage) {
                 rowDataPkg = new RowDataPacket(fieldCount);
+                row[3] = ++packetId;
                 rowDataPkg.read(row);
                 byte[] key = rowDataPkg.fieldValues.get(cacheKeyIndex);
                 if (key != null) {
@@ -440,14 +441,22 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (prepared) {
                     if (rowDataPkg == null) {
                         rowDataPkg = new RowDataPacket(fieldCount);
+                        row[3] = ++packetId;
                         rowDataPkg.read(row);
                     }
                     BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
                     binRowDataPk.read(fieldPackets, rowDataPkg);
                     binRowDataPk.setPacketId(rowDataPkg.getPacketId());
                     byteBuffer = binRowDataPk.write(byteBuffer, session.getSource(), true);
+                    this.packetId = (byte) session.getPacketId().get();
                 } else {
-                    byteBuffer = session.getSource().writeToBuffer(row, byteBuffer);
+                    if (isBigPackage) {
+                        byteBuffer = session.getSource().writeBigPackageToBuffer(row, byteBuffer, packetId);
+                        this.packetId = (byte) session.getPacketId().get();
+                    } else {
+                        row[3] = ++packetId;
+                        byteBuffer = session.getSource().writeToBuffer(row, byteBuffer);
+                    }
                 }
             }
         } catch (Exception e) {
@@ -502,7 +511,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
     private void writeEofResult(byte[] eof, ServerConnection source) {
-        eof[3] = ++packetId;
+        eof[3] = packetId;
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("last packet id:" + packetId);
         }
@@ -643,7 +652,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             }
             session.setResponseTime(isSuccess);
             session.getSource().write(data);
-            session.multiStatementNextSql(session.getIsMultiStatement().get());
         }
     }
 

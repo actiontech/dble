@@ -113,7 +113,7 @@ public final class SetInnerHandler {
 
     public static boolean execSetAutoCommit(String stmt, ServerConnection c, boolean setValue) {
         if (setValue) {
-            if (!c.isAutocommit()) {
+            if (!c.isAutocommit() && c.getSession2().getTargetCount() > 0) {
                 c.getSession2().implictCommit(() -> {
                     boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
                     c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
@@ -122,6 +122,7 @@ public final class SetInnerHandler {
                 c.setAutocommit(true);
                 return true;
             }
+            c.setAutocommit(true);
         } else {
             if (c.isAutocommit()) {
                 c.setAutocommit(false);

@@ -11,6 +11,10 @@ public class NormalAutoCommitNodesHandler extends NormalCommitNodesHandler {
     public NormalAutoCommitNodesHandler(NonBlockingSession session, byte[] packet) {
         super(session);
         this.sendData = packet;
+        if (packet != null) {
+            this.packetId = packet[3];
+            packetId--;
+        }
     }
 
     @Override

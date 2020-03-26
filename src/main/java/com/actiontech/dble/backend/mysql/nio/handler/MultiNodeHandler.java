@@ -28,7 +28,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
     protected final NonBlockingSession session;
     protected AtomicBoolean isFailed = new AtomicBoolean(false);
     protected volatile String error;
-    protected byte packetId;
+    protected volatile byte packetId;
     protected final AtomicBoolean errorResponse = new AtomicBoolean(false);
     protected Set<RouteResultsetNode> unResponseRrns = new HashSet<>();
     protected int errorConnsCnt = 0;

@@ -20,6 +20,10 @@ public class NormalAutoRollbackNodesHandler extends NormalRollbackNodesHandler {
         this.sendData = packet;
         this.nodes = nodes;
         this.errConnection = errConnection;
+        if (packet != null) {
+            this.packetId = packet[3];
+            packetId--;
+        }
     }
 
     @Override

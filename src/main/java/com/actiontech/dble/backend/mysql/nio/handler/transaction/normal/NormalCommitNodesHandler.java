@@ -125,14 +125,13 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
 
     private void cleanAndFeedback() {
         byte[] send = sendData;
-
         ImplicitCommitHandler handler = implicitCommitHandler;
         // clear all resources
         session.clearResources(false);
         if (session.closed()) {
             return;
         }
-        boolean multiStatementFlag = session.getIsMultiStatement().get();
+
         if (this.isFail()) {
             createErrPkg(error).write(session.getSource());
             setResponseTime(false);
@@ -140,11 +139,19 @@ public class NormalCommitNodesHandler extends AbstractCommitNodesHandler {
             // continue to execute sql
             handler.next();
         } else {
+
+            if (send != null) {
+                session.getPacketId().set(send[3]);
+            }
             setResponseTime(true);
+            boolean multiStatementFlag = session.getIsMultiStatement().get();
             session.getSource().write(send);
+            session.clearSavepoint();
+            session.multiStatementNextSql(multiStatementFlag);
+            return;
         }
         session.clearSavepoint();
-        session.multiStatementNextSql(multiStatementFlag);
+
     }
 
     protected void setResponseTime(boolean isSuccess) {

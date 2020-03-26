@@ -288,10 +288,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     ok.setInsertId(insertId);
                     source.setLastInsertId(insertId);
                 }
-                boolean multiStatementFlag = session.multiStatementPacket(ok, packetId);
-                doSqlStat();
                 handleEndPacket(ok.toBytes(), AutoTxOperation.COMMIT, true);
-                session.multiStatementNextSql(multiStatementFlag);
             } finally {
                 lock.unlock();
             }
@@ -651,7 +648,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 source.setTxInterrupt("ROLLBACK");
             }
             session.setResponseTime(isSuccess);
+            boolean multiStatementFlag = session.multiStatementPacket(data, packetId);
             session.getSource().write(data);
+            session.multiStatementNextSql(multiStatementFlag);
         }
     }
 

@@ -3,11 +3,10 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.backend;
+package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

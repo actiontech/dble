@@ -6,7 +6,7 @@
 package com.actiontech.dble;
 
 import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.backend.CustomMySQLHa;
+import com.actiontech.dble.singleton.CustomMySQLHa;
 import com.actiontech.dble.backend.datasource.PhysicalDataHost;
 import com.actiontech.dble.backend.datasource.PhysicalDataNode;
 import com.actiontech.dble.backend.mysql.xa.*;

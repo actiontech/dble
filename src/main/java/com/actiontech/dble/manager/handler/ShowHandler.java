@@ -7,7 +7,7 @@ package com.actiontech.dble.manager.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.backend.CustomMySQLHa;
+import com.actiontech.dble.singleton.CustomMySQLHa;
 import com.actiontech.dble.backend.datasource.PhysicalDataHost;
 import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.config.ErrorCode;

@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.manager.response;
 
-import com.actiontech.dble.backend.CustomMySQLHa;
+import com.actiontech.dble.singleton.CustomMySQLHa;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;

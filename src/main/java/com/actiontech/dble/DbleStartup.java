@@ -6,7 +6,7 @@
 package com.actiontech.dble;
 
 
-import com.actiontech.dble.backend.CustomMySQLHa;
+import com.actiontech.dble.singleton.CustomMySQLHa;
 import com.actiontech.dble.cluster.ClusterController;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.model.SystemConfig;

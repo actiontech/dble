@@ -76,7 +76,8 @@ public final class KillHandler {
         }
 
         NonBlockingSession killSession = ((ServerConnection) killConn).getSession2();
-        if (killSession.getSessionStage() == SessionStage.Init || killSession.getSessionStage() == SessionStage.Finished) {
+        if (killSession.getTransactionManager().getXAStage() != null ||
+                killSession.getSessionStage() == SessionStage.Init || killSession.getSessionStage() == SessionStage.Finished) {
             boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
             getOkPacket(c).write(c);
             c.getSession2().multiStatementNextSql(multiStatementFlag);

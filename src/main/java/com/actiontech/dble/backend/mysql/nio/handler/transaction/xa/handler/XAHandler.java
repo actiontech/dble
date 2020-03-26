@@ -45,6 +45,8 @@ public class XAHandler extends AbstractXAHandler implements TransactionHandler {
 
     @Override
     public void implicitCommit(ImplicitCommitHandler handler) {
+        this.implicitCommitHandler = handler;
+        commit();
     }
 
     @Override

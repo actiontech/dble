@@ -19,7 +19,7 @@ import java.lang.reflect.Field;
 public final class CustomMySQLHa {
     private static final Logger LOGGER = LoggerFactory.getLogger(CustomMySQLHa.class);
     private static final CustomMySQLHa INSTANCE = new CustomMySQLHa();
-    private static Process process;
+    private Process process;
 
     private CustomMySQLHa() {
     }

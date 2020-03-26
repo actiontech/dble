@@ -8,6 +8,7 @@ package com.actiontech.dble.backend.mysql.store.diskbuffer;
 import com.actiontech.dble.backend.mysql.store.FileStore;
 import com.actiontech.dble.backend.mysql.store.result.ResultExternal;
 import com.actiontech.dble.buffer.BufferPool;
+import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.util.exception.NotSupportException;
 
@@ -147,7 +148,11 @@ public abstract class ResultDiskBuffer implements ResultExternal {
 
         private byte[] getRow() {
             int offset = readBufferOffset, length = 0, position = readBuffer.position();
-            length = getPacketLength(readBuffer, offset);
+            if (end >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
+                length = (int) end;
+            } else {
+                length = getPacketLength(readBuffer, offset);
+            }
             while (length == -1 || position < offset + length) {
                 if (!readBuffer.hasRemaining()) {
                     checkReadBuffer(offset);

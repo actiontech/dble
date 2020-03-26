@@ -200,6 +200,8 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         if (mysqlCon.isClosed()) {
             mysqlCon.setXaStatus(TxState.TX_CONN_QUIT);
             XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
+            setFail("Connection {DataHost[" + mysqlCon.getHost() + ":" + mysqlCon.getPort() + "],Schema[" + mysqlCon.getSchema() + "],threadID[" +
+                    mysqlCon.getThreadId() + "]} was closed ");
             if (decrementToZero(mysqlCon)) {
                 session.setXaState(TxState.TX_ENDED_STATE);
                 nextParse();
@@ -220,6 +222,8 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             mysqlCon.setXaStatus(TxState.TX_PREPARE_UNCONNECT_STATE);
             XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
             session.setXaState(TxState.TX_PREPARE_UNCONNECT_STATE);
+            setFail("Connection {DataHost[" + mysqlCon.getHost() + ":" + mysqlCon.getPort() + "],Schema[" + mysqlCon.getSchema() + "],threadID[" +
+                    mysqlCon.getThreadId() + "]} was closed ");
             if (decrementToZero(mysqlCon)) {
                 nextParse();
             }
@@ -240,6 +244,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 
     private void commitPhase(MySQLConnection mysqlCon) {
         if (session.getXaState() == TxState.TX_COMMIT_FAILED_STATE || mysqlCon.isClosed()) {
+            mysqlCon.setXaStatus(TxState.TX_COMMIT_FAILED_STATE);
             MySQLConnection newConn = session.freshConn(mysqlCon, this);
             checkClosedConn(mysqlCon);
             if (!newConn.equals(mysqlCon)) {

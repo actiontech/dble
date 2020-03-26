@@ -7,7 +7,6 @@ package com.actiontech.dble.config;
 
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
-
 /**
  * @author
  */
@@ -15,7 +14,7 @@ public abstract class Versions {
 
     public static final byte PROTOCOL_VERSION = 10;
 
-    private static byte[] serverVersion = "5.6.29-dble-9.9.9.9-6da82267a951206cb36528f2fa92494f3d508a9d-20190802172514".getBytes();
+    private static byte[] serverVersion = "5.6.29-dble-9.9.9.9-5928c792291ec75f063a281337f3c5fc9403bb52-20200326140317".getBytes();
     public static final byte[] VERSION_COMMENT = "dble Server (ActionTech)".getBytes();
     public static final String ANNOTATION_NAME = "dble:";
     public static final String ROOT_PREFIX = "dble";

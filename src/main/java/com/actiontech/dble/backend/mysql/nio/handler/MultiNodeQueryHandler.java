@@ -426,7 +426,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             boolean isBigPackage = row.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE;
             if (cacheKeyIndex != -1 && !isBigPackage) {
                 rowDataPkg = new RowDataPacket(fieldCount);
-                row[3] = ++packetId;
+                row[3] = packetId;
                 rowDataPkg.read(row);
                 byte[] key = rowDataPkg.fieldValues.get(cacheKeyIndex);
                 if (key != null) {

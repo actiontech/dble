@@ -37,7 +37,7 @@ public final class CustomMySQLHa {
         if (process != null && process.isAlive()) {
             return "python process exists";
         }
-        String exe = "python";
+        String exe = "python3";
         String file = SystemConfig.getHomePath() + File.separatorChar + "bin" + File.separatorChar + "custom_mysql_ha.py";
         String[] cmdArr = new String[]{exe, file};
         if (LOGGER.isDebugEnabled()) {

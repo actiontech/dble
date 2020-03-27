@@ -399,7 +399,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         boolean isBigPackage = row.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE;
         if (cacheKeyIndex != -1 && !isBigPackage) {
             rowDataPk = new RowDataPacket(fieldCount);
-            row[3] = ++packetId;
+            row[3] = packetId;
             rowDataPk.read(row);
             byte[] key = rowDataPk.fieldValues.get(cacheKeyIndex);
             if (key != null) {

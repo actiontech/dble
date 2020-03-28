@@ -6,7 +6,6 @@
 package com.actiontech.dble;
 
 import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.singleton.CustomMySQLHa;
 import com.actiontech.dble.backend.datasource.PhysicalDataHost;
 import com.actiontech.dble.backend.datasource.PhysicalDataNode;
 import com.actiontech.dble.backend.mysql.xa.*;
@@ -108,12 +107,12 @@ public final class DbleServer {
         this.startupTime = TimeUtil.currentTimeMillis();
         LOGGER.info("=========================================Config file read finish==================================");
         SystemConfig system = config.getSystem();
-        if (system.isUseOuterHa()) {
-            LOGGER.info("=========================================Init Outter Ha Config==================================");
-            HaConfigManager.getInstance().init();
-        } else if (ClusterHelper.useClusterHa()) {
+        if (!system.isUseOuterHa() && ClusterHelper.useClusterHa()) {
             throw new Exception("useOuterHa can not be false when useClusterHa in myid is true");
         }
+        LOGGER.info("=========================================Init Outter Ha Config==================================");
+        HaConfigManager.getInstance().init();
+
         if (system.getEnableAlert() == 1) {
             AlertUtil.switchAlert(true);
         }

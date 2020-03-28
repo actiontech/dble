@@ -29,7 +29,7 @@ public final class CustomMySQLHa {
 
     // return null if success
     public String start() {
-        if (DbleServer.getInstance().getConfig().getSystem().isUseOuterHa() || ClusterGeneralConfig.getInstance().isUseCluster()) {
+        if (DbleServer.getInstance().getConfig().getSystem().isUseOuterHa()) {
             String msg = "You use OuterHa or Cluster, please use the third party HA Component";
             LOGGER.debug(msg);
             return msg;
@@ -60,7 +60,7 @@ public final class CustomMySQLHa {
 
     // return null if success
     public String stop(boolean byHook) {
-        if (DbleServer.getInstance().getConfig().getSystem().isUseOuterHa() || ClusterGeneralConfig.getInstance().isUseCluster()) {
+        if (DbleServer.getInstance().getConfig().getSystem().isUseOuterHa()) {
             String msg = "You use OuterHa or Cluster, please use the third party HA Component";
             if (byHook) {
                 System.out.println(msg);

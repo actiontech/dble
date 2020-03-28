@@ -9,6 +9,7 @@ import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.memory.unsafe.Platform;
+import com.actiontech.dble.singleton.ClusterGeneralConfig;
 
 import java.io.File;
 import java.io.IOException;
@@ -1159,6 +1160,9 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setUseOuterHa(boolean useOuterHa) {
+        if (!useOuterHa && ClusterGeneralConfig.getInstance().isUseCluster()) {
+            useOuterHa = true;
+        }
         this.useOuterHa = useOuterHa;
     }
 

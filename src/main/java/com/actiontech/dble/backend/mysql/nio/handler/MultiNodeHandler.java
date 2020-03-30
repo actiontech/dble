@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.backend.BackendConnection;
@@ -28,7 +28,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
     protected final NonBlockingSession session;
     protected AtomicBoolean isFailed = new AtomicBoolean(false);
     protected volatile String error;
-    protected byte packetId;
+    protected volatile byte packetId;
     protected final AtomicBoolean errorResponse = new AtomicBoolean(false);
     protected Set<RouteResultsetNode> unResponseRrns = new HashSet<>();
     protected int errorConnsCnt = 0;

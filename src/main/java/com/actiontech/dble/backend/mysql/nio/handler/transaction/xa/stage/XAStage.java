@@ -28,12 +28,10 @@ public abstract class XAStage implements TransactionStage {
 
     @Override
     public void onEnterStage() {
-        session.setDiscard(false);
         xaHandler.setUnResponseRrns();
         for (RouteResultsetNode rrn : session.getTargetKeys()) {
             onEnterStage((MySQLConnection) session.getTarget(rrn));
         }
-        session.setDiscard(true);
     }
 
     protected void feedback(boolean isSuccess) {

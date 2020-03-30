@@ -207,7 +207,7 @@ public class ServerConnection extends FrontendConnection {
         for (Pair<SetHandler.KeyType, Pair<String, String>> task : innerSetTask) {
             switch (task.getKey()) {
                 case XA:
-                    session.setXaTxEnabled(Boolean.valueOf(task.getValue().getKey()));
+                    session.getTransactionManager().setXaTxEnabled(Boolean.valueOf(task.getValue().getKey()), this);
                     break;
                 case AUTOCOMMIT:
                     autoCommitTask = task;

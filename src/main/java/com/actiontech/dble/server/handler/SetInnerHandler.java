@@ -17,7 +17,6 @@ import java.util.List;
 public final class SetInnerHandler {
 
 
-
     private SetInnerHandler() {
 
     }
@@ -26,7 +25,7 @@ public final class SetInnerHandler {
         List<Pair<SetHandler.KeyType, Pair<String, String>>> innerSetTask = new ArrayList<>();
         if (preHandleSingleXA(c, valueExpr, innerSetTask)) {
             String key = innerSetTask.get(0).getValue().getKey();
-            c.getSession2().setXaTxEnabled(Boolean.valueOf(key));
+            c.getSession2().getTransactionManager().setXaTxEnabled(Boolean.valueOf(key), c);
             boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
             c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), c.allocate()));
             c.getSession2().multiStatementNextSql(multiStatementFlag);

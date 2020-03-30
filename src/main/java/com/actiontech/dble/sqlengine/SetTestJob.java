@@ -17,6 +17,7 @@ import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResetConnectionPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.server.handler.SetCallBack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,9 +117,11 @@ public class SetTestJob implements ResponseHandler, Runnable {
     public void okResponse(byte[] ok, BackendConnection conn) {
         if (hasReturn.compareAndSet(false, true)) {
             doFinished(false);
-            boolean multiStatementFlag = sc.getSession2().getIsMultiStatement().get();
-            sc.write(sc.writeToBuffer(sc.getSession2().getOkByteArray(), sc.allocate()));
-            sc.getSession2().multiStatementNextSql(multiStatementFlag);
+            if (!((SetCallBack) ((OneRawSQLQueryResultHandler) jobHandler).getCallback()).isBackToOtherThread()) {
+                boolean multiStatementFlag = sc.getSession2().getIsMultiStatement().get();
+                sc.write(sc.writeToBuffer(sc.getSession2().getOkByteArray(), sc.allocate()));
+                sc.getSession2().multiStatementNextSql(multiStatementFlag);
+            }
             ResetConnHandler handler = new ResetConnHandler();
             conn.setResponseHandler(handler);
             ((MySQLConnection) conn).setComplexQuery(true);

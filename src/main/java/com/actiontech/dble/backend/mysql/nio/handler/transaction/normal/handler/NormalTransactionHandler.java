@@ -81,6 +81,8 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
     @Override
     public void turnOnAutoCommit(byte[] previousSendData) {
         this.sendData = previousSendData;
+        this.packetId = previousSendData[3];
+        this.packetId--;
     }
 
     private void changeStageTo(TransactionStage newStage) {

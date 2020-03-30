@@ -76,8 +76,10 @@ public class XAHandler extends AbstractXAHandler implements TransactionHandler {
 
     @Override
     public void turnOnAutoCommit(byte[] previousSendData) {
-        packetIfSuccess = previousSendData;
-        interruptTx = false;
+        this.packetIfSuccess = previousSendData;
+        this.packetId = previousSendData[3];
+        this.packetId--;
+        this.interruptTx = false;
     }
 
     private void initXALogEntry() {

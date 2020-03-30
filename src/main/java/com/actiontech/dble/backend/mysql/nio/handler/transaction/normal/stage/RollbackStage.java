@@ -36,6 +36,9 @@ public class RollbackStage implements TransactionStage {
         if (isFail) {
             session.getSource().write(sendData);
         } else {
+            if (sendData != null) {
+                session.getPacketId().set(sendData[3]);
+            }
             boolean multiStatementFlag = session.getIsMultiStatement().get();
             session.getSource().write(sendData);
             session.multiStatementNextSql(multiStatementFlag);

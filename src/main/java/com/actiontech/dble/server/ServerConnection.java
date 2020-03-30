@@ -20,6 +20,7 @@ import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.handler.SetHandler;
+import com.actiontech.dble.server.handler.SetInnerHandler;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.response.Heartbeat;
 import com.actiontech.dble.server.response.InformationSchemaProfiling;
@@ -64,6 +65,7 @@ public class ServerConnection extends FrontendConnection {
     private volatile boolean isLocked = false;
     private AtomicLong txID;
     private List<Pair<SetHandler.KeyType, Pair<String, String>>> contextTask = new ArrayList<>();
+    private List<Pair<SetHandler.KeyType, Pair<String, String>>> innerSetTask = new ArrayList<>();
 
     public ServerConnection(NetworkChannel channel)
             throws IOException {
@@ -175,6 +177,15 @@ public class ServerConnection extends FrontendConnection {
         this.contextTask = contextTask;
     }
 
+
+    public List<Pair<SetHandler.KeyType, Pair<String, String>>> getInnerSetTask() {
+        return innerSetTask;
+    }
+
+    public void setInnerSetTask(List<Pair<SetHandler.KeyType, Pair<String, String>>> innerSetTask) {
+        this.innerSetTask = innerSetTask;
+    }
+
     @Override
     protected void setRequestTime() {
         session.setRequestTime();
@@ -191,7 +202,30 @@ public class ServerConnection extends FrontendConnection {
         session.setStageFinished();
     }
 
-    public void executeTask() {
+    public boolean executeInnerSetTask() {
+        Pair<SetHandler.KeyType, Pair<String, String>> autoCommitTask = null;
+        for (Pair<SetHandler.KeyType, Pair<String, String>> task : innerSetTask) {
+            switch (task.getKey()) {
+                case XA:
+                    session.getTransactionManager().setXaTxEnabled(Boolean.valueOf(task.getValue().getKey()), this);
+                    break;
+                case AUTOCOMMIT:
+                    autoCommitTask = task;
+                    break;
+                case TRACE:
+                    session.setTrace(Boolean.valueOf(task.getValue().getKey()));
+                    break;
+                default:
+            }
+        }
+
+        if (autoCommitTask != null) {
+            return SetInnerHandler.execSetAutoCommit(executeSql, this, Boolean.valueOf(autoCommitTask.getValue().getKey()));
+        }
+        return false;
+    }
+
+    public void executeContextSetTask() {
         for (Pair<SetHandler.KeyType, Pair<String, String>> task : contextTask) {
             switch (task.getKey()) {
                 case CHARACTER_SET_CLIENT:

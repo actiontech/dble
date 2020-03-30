@@ -406,6 +406,11 @@ public class PhysicalDBPool extends AbstractPhysicalDBPool {
         for (PhysicalDatasource source : all) {
             source.stopHeartbeat();
         }
+        for (PhysicalDatasource[] dataSource : standbyReadSourcesMap.values()) {
+            for (PhysicalDatasource ds : dataSource) {
+                ds.stopHeartbeat();
+            }
+        }
     }
 
     /**
@@ -427,6 +432,12 @@ public class PhysicalDBPool extends AbstractPhysicalDBPool {
             LOGGER.info("clear datasource of pool  " + this.hostName + " ds:" + source.getConfig());
             source.clearCons(reason);
             source.stopHeartbeat();
+        }
+        for (PhysicalDatasource[] dataSource : standbyReadSourcesMap.values()) {
+            for (PhysicalDatasource ds : dataSource) {
+                LOGGER.info("clear datasource of pool  " + this.hostName + " ds:" + ds.getConfig());
+                ds.stopHeartbeat();
+            }
         }
     }
 

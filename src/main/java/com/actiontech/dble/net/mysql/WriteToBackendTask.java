@@ -20,6 +20,15 @@ public class WriteToBackendTask {
     }
 
     public void execute() {
+        int size = packet.calcPacketSize();
+        if (size >= MySQLPacket.MAX_PACKET_SIZE) {
+            packet.writeBigPackage(conn, size);
+        } else {
+            writeCommonPackage(conn);
+        }
+    }
+
+    public void writeCommonPackage(MySQLConnection c) {
         ByteBuffer buffer = conn.allocate();
         try {
             BufferUtil.writeUB3(buffer, packet.calcPacketSize());

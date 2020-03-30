@@ -31,6 +31,7 @@ public final class ServerParseSelect {
     public static final int CURRENT_USER = 12;
     public static final int SESSION_TRANSACTION_ISOLATION = 13;
     public static final int SESSION_TRANSACTION_READ_ONLY = 14;
+    public static final int ROW_COUNT = 15;
 
     private static final char[] TRACE_STR = "TRACE".toCharArray();
     private static final char[] VERSION_COMMENT_STR = "VERSION_COMMENT".toCharArray();
@@ -64,6 +65,9 @@ public final class ServerParseSelect {
                 case 'V':
                 case 'v':
                     return versionCheck(stmt, i);
+                case 'R':
+                case 'r':
+                    return rowCountCheck(stmt, i);
                 default:
                     return OTHER;
             }
@@ -71,6 +75,35 @@ public final class ServerParseSelect {
         return OTHER;
     }
 
+
+    static int rowCountCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "OW_COUNT()".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            char c9 = stmt.charAt(++offset);
+            char c10 = stmt.charAt(++offset);
+            if ((c1 == 'o' || c1 == 'O') &&
+                    (c2 == 'w' || c2 == 'W') &&
+                    c3 == '_' &&
+                    (c4 == 'C' || c4 == 'c') &&
+                    (c5 == 'O' || c5 == 'o') &&
+                    (c6 == 'U' || c6 == 'u') &&
+                    (c7 == 'N' || c7 == 'n') &&
+                    (c8 == 'T' || c8 == 't') &&
+                    c9 == '(' &&
+                    c10 == ')' &&
+                    (stmt.length() == ++offset || ParseUtil.isEOF(stmt, offset))) {
+                return ROW_COUNT;
+            }
+        }
+        return OTHER;
+    }
 
     /**
      * SELECT @@trace

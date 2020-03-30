@@ -10,11 +10,9 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDBNode;
 import com.actiontech.dble.backend.mysql.LoadDataUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoCommitHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoTxOperation;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.NormalAutoCommitNodesHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.normal.NormalAutoRollbackNodesHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XAAutoCommitNodesHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.XAAutoRollbackNodesHandler;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionHandler;
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
@@ -282,6 +280,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
 
                 ok.setAffectedRows(affectedRows);
+                session.setRowCount(affectedRows);
                 ok.setServerStatus(source.isAutocommit() ? 2 : 1);
                 if (insertId > 0) {
                     ok.setInsertId(insertId);
@@ -420,11 +419,12 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
             }
             this.resultSize += row.length;
-            row[3] = ++packetId;
             RowDataPacket rowDataPkg = null;
             // cache cacheKey-> dataNode
-            if (cacheKeyIndex != -1) {
+            boolean isBigPackage = row.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE;
+            if (cacheKeyIndex != -1 && !isBigPackage) {
                 rowDataPkg = new RowDataPacket(fieldCount);
+                row[3] = packetId;
                 rowDataPkg.read(row);
                 byte[] key = rowDataPkg.fieldValues.get(cacheKeyIndex);
                 if (key != null) {
@@ -439,14 +439,22 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 if (prepared) {
                     if (rowDataPkg == null) {
                         rowDataPkg = new RowDataPacket(fieldCount);
+                        row[3] = ++packetId;
                         rowDataPkg.read(row);
                     }
                     BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
                     binRowDataPk.read(fieldPackets, rowDataPkg);
                     binRowDataPk.setPacketId(rowDataPkg.getPacketId());
                     byteBuffer = binRowDataPk.write(byteBuffer, session.getSource(), true);
+                    this.packetId = (byte) session.getPacketId().get();
                 } else {
-                    byteBuffer = session.getSource().writeToBuffer(row, byteBuffer);
+                    if (isBigPackage) {
+                        byteBuffer = session.getSource().writeBigPackageToBuffer(row, byteBuffer, packetId);
+                        this.packetId = (byte) session.getPacketId().get();
+                    } else {
+                        row[3] = ++packetId;
+                        byteBuffer = session.getSource().writeToBuffer(row, byteBuffer);
+                    }
                 }
             }
         } catch (Exception e) {
@@ -607,24 +615,13 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         ServerConnection source = session.getSource();
         if (source.isAutocommit() && !source.isTxStart() && this.modifiedSQL && !this.session.isKilled()) {
             //Implicit Distributed Transaction,send commit or rollback automatically
+            TransactionHandler handler = new AutoCommitHandler(session, data, rrs.getNodes(), errConnection);
             if (txOperation == AutoTxOperation.COMMIT) {
                 session.checkBackupStatus();
                 session.setBeginCommitTime();
-                if (session.getXaState() == null) {
-                    NormalAutoCommitNodesHandler autoHandler = new NormalAutoCommitNodesHandler(session, data);
-                    autoHandler.commit();
-                } else {
-                    XAAutoCommitNodesHandler autoHandler = new XAAutoCommitNodesHandler(session, data, rrs.getNodes());
-                    autoHandler.commit();
-                }
+                handler.commit();
             } else {
-                if (session.getXaState() == null) {
-                    NormalAutoRollbackNodesHandler autoHandler = new NormalAutoRollbackNodesHandler(session, data, rrs.getNodes(), errConnection);
-                    autoHandler.rollback();
-                } else {
-                    XAAutoRollbackNodesHandler autoHandler = new XAAutoRollbackNodesHandler(session, data, rrs.getNodes(), errConnection);
-                    autoHandler.rollback();
-                }
+                handler.rollback();
             }
         } else {
             boolean inTransaction = !source.isAutocommit() || source.isTxStart();

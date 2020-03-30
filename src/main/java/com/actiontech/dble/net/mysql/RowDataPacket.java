@@ -8,7 +8,9 @@ package com.actiontech.dble.net.mysql;
 import com.actiontech.dble.backend.mysql.BufferUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
+import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.net.FrontendConnection;
+import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.singleton.BufferPoolManager;
 
 import java.nio.ByteBuffer;
@@ -87,9 +89,34 @@ public class RowDataPacket extends MySQLPacket {
     @Override
     public ByteBuffer write(ByteBuffer bb, FrontendConnection c,
                             boolean writeSocketIfFull) {
-        bb = c.checkWriteBuffer(bb, PACKET_HEADER_SIZE, writeSocketIfFull);
-        BufferUtil.writeUB3(bb, calcPacketSize());
-        bb.put(packetId);
+        int size = calcPacketSize();
+        int totalSize = size + PACKET_HEADER_SIZE;
+        boolean isBigPackage = size >= MySQLPacket.MAX_PACKET_SIZE;
+        if (isBigPackage) {
+            c.writePart(bb);
+            BufferPool bufferPool = c.getProcessor().getBufferPool();
+            bb = bufferPool.allocate(totalSize);
+            BufferUtil.writeUB3(bb, calcPacketSize());
+            bb.put(packetId--);
+            writeBody(bb, c, writeSocketIfFull);
+            byte[] array = bb.array();
+            bufferPool.recycle(bb);
+            ByteBuffer newBuffer = bufferPool.allocate(array.length);
+            return c.writeBigPackageToBuffer(array, newBuffer, packetId);
+        } else {
+            bb = c.checkWriteBuffer(bb, totalSize, writeSocketIfFull);
+            BufferUtil.writeUB3(bb, calcPacketSize());
+            bb.put(packetId);
+            writeBody(bb, c, writeSocketIfFull);
+            if (c instanceof ServerConnection) {
+                ((ServerConnection) c).getSession2().getPacketId().set(packetId);
+            }
+            return bb;
+        }
+    }
+
+    private void writeBody(ByteBuffer bb, FrontendConnection c,
+                           boolean writeSocketIfFull) {
         for (int i = 0; i < fieldCount; i++) {
             byte[] fv = fieldValues.get(i);
             if (fv == null) {
@@ -105,7 +132,6 @@ public class RowDataPacket extends MySQLPacket {
                 bb = c.writeToBuffer(fv, bb);
             }
         }
-        return bb;
     }
 
     @Override
@@ -165,5 +191,12 @@ public class RowDataPacket extends MySQLPacket {
 
     public List<byte[]> getFieldValues() {
         return fieldValues;
+    }
+
+    public static byte[] writeRowLength(byte[] b, int i) {
+        b[0] = (byte) (i & 0xff);
+        b[1] = (byte) (i >>> 8);
+        b[2] = (byte) (i >>> 16);
+        return b;
     }
 }

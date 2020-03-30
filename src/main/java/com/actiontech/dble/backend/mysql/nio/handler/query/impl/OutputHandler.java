@@ -140,16 +140,24 @@ public class OutputHandler extends BaseDMLHandler {
                 binRowPacket.setPacketId(++packetId);
                 this.netOutBytes += binRowPacket.calcPacketSize();
                 buffer = binRowPacket.write(buffer, session.getSource(), true);
+                this.packetId = (byte) session.getPacketId().get();
             } else {
                 if (rowPacket != null) {
                     rowPacket.setPacketId(++packetId);
                     this.netOutBytes += rowPacket.calcPacketSize();
                     buffer = rowPacket.write(buffer, session.getSource(), true);
+                    this.packetId = (byte) session.getPacketId().get();
                 } else {
                     row = rowNull;
                     this.netOutBytes += row.length;
-                    row[3] = ++packetId;
-                    buffer = session.getSource().writeToBuffer(row, buffer);
+                    boolean isBigPackage = row.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE;
+                    if (isBigPackage) {
+                        buffer = session.getSource().writeBigPackageToBuffer(row, buffer, packetId);
+                        this.packetId = (byte) session.getPacketId().get();
+                    } else {
+                        row[3] = ++packetId;
+                        buffer = session.getSource().writeToBuffer(row, buffer);
+                    }
                 }
             }
         } finally {

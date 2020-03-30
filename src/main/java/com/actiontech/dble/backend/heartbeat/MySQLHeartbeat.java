@@ -53,6 +53,16 @@ public class MySQLHeartbeat {
     private volatile Integer slaveBehindMaster;
     private final MySQLDataSource source;
     private MySQLDetector detector;
+    private String message;
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
 
     public MySQLHeartbeat(MySQLDataSource source) {
         this.source = source;
@@ -143,7 +153,7 @@ public class MySQLHeartbeat {
 
     private void setOk() {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("heartbeat setOK");
+            LOGGER.debug("heartbeat to [" + source.getConfig().getUrl() + "] setOK");
         }
         switch (status) {
             case TIMEOUT_STATUS:
@@ -171,7 +181,7 @@ public class MySQLHeartbeat {
     }
 
     private void setError() {
-        LOGGER.warn("heartbeat setError");
+        LOGGER.warn("heartbeat to [" + source.getConfig().getUrl() + "] setError");
         // should continues check error status
         if (detector != null) {
             detector.quit();
@@ -189,7 +199,7 @@ public class MySQLHeartbeat {
     }
 
     private void setTimeout() {
-        LOGGER.warn("heartbeat setTimeout");
+        LOGGER.warn("heartbeat to [" + source.getConfig().getUrl() + "] setTimeout");
         this.isChecking.set(false);
         status = TIMEOUT_STATUS;
     }
@@ -253,7 +263,7 @@ public class MySQLHeartbeat {
         }
     }
 
-    String getHeartbeatSQL() {
+    public String getHeartbeatSQL() {
         return heartbeatSQL;
     }
 

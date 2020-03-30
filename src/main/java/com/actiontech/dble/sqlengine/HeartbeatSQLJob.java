@@ -6,6 +6,7 @@
 package com.actiontech.dble.sqlengine;
 
 import com.actiontech.dble.backend.BackendConnection;
+import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.net.mysql.ErrorPacket;
@@ -25,16 +26,19 @@ public class HeartbeatSQLJob implements ResponseHandler {
     private BackendConnection connection;
     private final SQLJobHandler jobHandler;
     private AtomicBoolean finished = new AtomicBoolean(false);
+    private MySQLHeartbeat heartbeat;
 
-    public HeartbeatSQLJob(String sql, final BackendConnection conn, SQLJobHandler jobHandler) {
+    public HeartbeatSQLJob(MySQLHeartbeat heartbeat, final BackendConnection conn, SQLJobHandler jobHandler) {
         super();
-        this.sql = sql;
+        this.sql = heartbeat.getHeartbeatSQL();
         this.connection = conn;
         this.jobHandler = jobHandler;
+        this.heartbeat = heartbeat;
     }
 
 
     public void terminate(String reason) {
+        heartbeat.setMessage(reason);
         LOGGER.info("terminate this job reason:" + reason + " con:" + connection + " sql " + this.sql);
         if (connection != null) {
             connection.close(reason);
@@ -64,6 +68,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
+        heartbeat.setMessage("connection Error");
         LOGGER.warn("can't get connection for sql :" + sql, e);
         doFinished(true);
     }
@@ -72,6 +77,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
     public void errorResponse(byte[] err, BackendConnection conn) {
         ErrorPacket errPg = new ErrorPacket();
         errPg.read(err);
+        heartbeat.setMessage(new String(errPg.getMessage()));
 
         String errMsg = "error response errNo:" + errPg.getErrNo() + ", " + new String(errPg.getMessage()) +
                 " from of sql :" + sql + " at con:" + conn;
@@ -87,6 +93,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
 
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
+        heartbeat.setMessage(null);
         if (conn.syncAndExecute()) {
             doFinished(false);
         }
@@ -116,6 +123,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
+        heartbeat.setMessage(reason);
         doFinished(true);
     }
 

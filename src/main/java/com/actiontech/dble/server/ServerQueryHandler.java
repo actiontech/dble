@@ -50,6 +50,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
         }
 
         source.getSession2().queryCount();
+        source.getSession2().rowCountRolling();
 
         if (source.getSession2().getRemingSql() != null) {
             sql = source.getSession2().getRemingSql();

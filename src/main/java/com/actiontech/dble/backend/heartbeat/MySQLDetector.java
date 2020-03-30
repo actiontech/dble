@@ -100,7 +100,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             LOGGER.debug("do heartbeat,conn is " + con);
         }
         OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(fetchCols, this);
-        sqlJob = new HeartbeatSQLJob(heartbeat.getHeartbeatSQL(), con, resultHandler);
+        sqlJob = new HeartbeatSQLJob(heartbeat, con, resultHandler);
         sqlJob.execute();
     }
 

@@ -43,12 +43,16 @@ public class CommitStage implements TransactionStage {
             // continue to execute sql
             handler.next();
         } else {
+            if (sendData != null) {
+                session.getPacketId().set(sendData[3]);
+            }
             session.setFinishedCommitTime();
             session.setResponseTime(true);
+            boolean multiStatementFlag = session.getIsMultiStatement().get();
             session.getSource().write(sendData);
+            session.multiStatementNextSql(multiStatementFlag);
         }
         session.clearSavepoint();
-        session.multiStatementNextSql(session.getIsMultiStatement().get());
         return null;
     }
 }

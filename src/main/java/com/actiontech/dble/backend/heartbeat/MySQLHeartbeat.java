@@ -82,20 +82,17 @@ public class MySQLHeartbeat {
 
     public void stop() {
         isStop = true;
+        this.status = INIT_STATUS;
+        if (detector != null && !detector.isQuit()) {
+            detector.quit();
+            isChecking.set(false);
+        }
     }
 
     /**
      * execute heart beat
      */
     public void heartbeat() {
-        if (isStop) {
-            this.status = INIT_STATUS;
-            if (detector != null && !detector.isQuit()) {
-                detector.quit();
-                isChecking.set(false);
-            }
-            return;
-        }
         if (isChecking.compareAndSet(false, true)) {
             if (detector == null || detector.isQuit()) {
                 try {
@@ -116,6 +113,9 @@ public class MySQLHeartbeat {
                     setResult(TIMEOUT_STATUS);
                 }
             }
+        }
+        if (isStop) {
+            stop();
         }
     }
 

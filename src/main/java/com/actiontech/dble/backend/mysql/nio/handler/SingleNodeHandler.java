@@ -86,8 +86,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                     RouteResultsetNode tmpNode = new RouteResultsetNode(dataNode, rrs.getSqlType(), rrs.getStatement());
                     conn = session.getTarget(tmpNode);
                     if (conn != null) {
-                        session.getTargetMap().remove(tmpNode);
-                        session.bindConnection(node, conn);
                         break;
                     }
                 }

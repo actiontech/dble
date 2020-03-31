@@ -183,6 +183,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
                         DDLTraceManager.getInstance().endDDL(source, "ddl end with meta failure");
                         executeMetaDataFailed();
                     } else {
+                        session.setRowCount(0);
                         DDLTraceManager.getInstance().endDDL(source, null);
                         ok.setPacketId(++packetId); // OK_PACKET
                         ok.setMessage(null);

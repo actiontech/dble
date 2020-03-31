@@ -76,11 +76,11 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
             } else {
                 DDLTraceManager.getInstance().endDDL(session.getSource(), null);
                 ServerConnection source = session.getSource();
+                session.setRowCount(0);
                 OkPacket ok = new OkPacket();
                 ok.read(data);
                 ok.setPacketId(++packetId); // OK_PACKET
                 ok.setMessage(null);
-                session.setRowCount(0);
                 ok.setServerStatus(source.isAutocommit() ? 2 : 1);
                 source.setLastInsertId(ok.getInsertId());
                 session.setBackendResponseEndTime((MySQLConnection) conn);

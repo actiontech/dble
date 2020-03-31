@@ -620,7 +620,7 @@ public final class ReloadConfig {
                 }
             }
             dataHost.setSchemas(dnSchemas.toArray(new String[dnSchemas.size()]));
-
+            dataHost.init();
             if (!dataHost.isInitSuccess()) {
                 reasonMsg = "Init DataHost [" + dataHost.getHostName() + "] failed";
                 break;

@@ -97,4 +97,13 @@ public final class ByteUtil {
         }
     }
 
+    public static void writeUB3(byte[] packet, int length, int offset) {
+        packet[offset] = (byte) (length & 0xff);
+        packet[offset + 1] = (byte) (length >>> 8);
+        packet[offset + 2] = (byte) (length >>> 16);
+    }
+
+    public static void writeUB3(byte[] packet, int length) {
+        writeUB3(packet, length, 0);
+    }
 }

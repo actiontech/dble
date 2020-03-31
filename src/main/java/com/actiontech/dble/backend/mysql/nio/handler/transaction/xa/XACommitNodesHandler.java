@@ -495,7 +495,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 
             // partially committed,must commit again
         } else if (session.getXaState() == TxState.TX_COMMIT_FAILED_STATE) {
-            MySQLConnection errConn = session.releaseExcept(TxState.TX_COMMIT_FAILED_STATE);
+            boolean isAllRelease = session.releaseNormalConns();
             if (session.isKilled()) {
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), session.getXaState());
                 setResponseTime(false);
@@ -504,7 +504,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                 session.clearResources(true);
                 return;
             }
-            if (errConn != null) {
+            if (!isAllRelease) {
                 final String xaId = session.getSessionXaID();
                 XAStateLog.saveXARecoveryLog(xaId, session.getXaState());
                 if (DbleServer.getInstance().getConfig().getSystem().getUseSerializableMode() == 1 || ++tryCommitTimes < COMMIT_TIMES) {

@@ -1095,17 +1095,17 @@ public class NonBlockingSession implements Session {
         return errConn;
     }
 
-    public MySQLConnection releaseExcept(TxState state) {
-        MySQLConnection errConn = null;
+    public boolean releaseNormalConns() {
+        boolean isAllRelease = true;
         for (final RouteResultsetNode node : this.getTargetKeys()) {
             final MySQLConnection mysqlCon = (MySQLConnection) this.getTarget(node);
-            if (mysqlCon.getXaStatus() != state) {
+            if (mysqlCon.getXaStatus() == TxState.TX_INITIALIZE_STATE) {
                 this.releaseConnection(node, true, false);
             } else {
-                errConn = mysqlCon;
+                isAllRelease = false;
             }
         }
-        return errConn;
+        return isAllRelease;
     }
 
     public boolean handleSpecial(RouteResultset rrs, boolean isSuccess) {

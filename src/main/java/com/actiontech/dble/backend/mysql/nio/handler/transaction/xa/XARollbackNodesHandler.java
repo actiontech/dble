@@ -486,8 +486,8 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
                 session.getSource().write(sendData);
                 return;
             }
-            MySQLConnection errConn = session.releaseExcept(session.getXaState());
-            if (errConn != null) {
+            boolean isAllRelease = session.releaseNormalConns();
+            if (!isAllRelease) {
                 final String xaId = session.getSessionXaID();
                 XAStateLog.saveXARecoveryLog(xaId, session.getXaState());
                 if (++tryRollbackTimes < ROLLBACK_TIMES) {

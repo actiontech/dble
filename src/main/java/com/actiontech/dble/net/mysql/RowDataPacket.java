@@ -6,6 +6,7 @@
 package com.actiontech.dble.net.mysql;
 
 import com.actiontech.dble.backend.mysql.BufferUtil;
+import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
 import com.actiontech.dble.buffer.BufferPool;
@@ -95,19 +96,33 @@ public class RowDataPacket extends MySQLPacket {
         if (isBigPackage) {
             c.writePart(bb);
             BufferPool bufferPool = c.getProcessor().getBufferPool();
-            bb = bufferPool.allocate(totalSize);
-            BufferUtil.writeUB3(bb, calcPacketSize());
-            bb.put(packetId--);
-            writeBody(bb, c, writeSocketIfFull);
-            byte[] array = bb.array();
-            bufferPool.recycle(bb);
+            ByteBuffer tmpBuffer = bufferPool.allocate(totalSize);
+            BufferUtil.writeUB3(tmpBuffer, calcPacketSize());
+            tmpBuffer.put(packetId--);
+            writeBody(tmpBuffer);
+            byte[] array = tmpBuffer.array();
+            bufferPool.recycle(tmpBuffer);
             ByteBuffer newBuffer = bufferPool.allocate(array.length);
             return c.writeBigPackageToBuffer(array, newBuffer, packetId);
         } else {
             bb = c.checkWriteBuffer(bb, totalSize, writeSocketIfFull);
             BufferUtil.writeUB3(bb, calcPacketSize());
             bb.put(packetId);
-            writeBody(bb, c, writeSocketIfFull);
+            for (int i = 0; i < fieldCount; i++) {
+                byte[] fv = fieldValues.get(i);
+                if (fv == null) {
+                    bb = c.checkWriteBuffer(bb, 1, writeSocketIfFull);
+                    bb.put(RowDataPacket.NULL_MARK);
+                } else if (fv.length == 0) {
+                    bb = c.checkWriteBuffer(bb, 1, writeSocketIfFull);
+                    bb.put(RowDataPacket.EMPTY_MARK);
+                } else {
+                    bb = c.checkWriteBuffer(bb, BufferUtil.getLength(fv),
+                            writeSocketIfFull);
+                    BufferUtil.writeLength(bb, fv.length);
+                    bb = c.writeToBuffer(fv, bb);
+                }
+            }
             if (c instanceof ServerConnection) {
                 ((ServerConnection) c).getSession2().getPacketId().set(packetId);
             }
@@ -115,21 +130,15 @@ public class RowDataPacket extends MySQLPacket {
         }
     }
 
-    private void writeBody(ByteBuffer bb, FrontendConnection c,
-                           boolean writeSocketIfFull) {
+    private void writeBody(ByteBuffer buffer) {
         for (int i = 0; i < fieldCount; i++) {
             byte[] fv = fieldValues.get(i);
             if (fv == null) {
-                bb = c.checkWriteBuffer(bb, 1, writeSocketIfFull);
-                bb.put(RowDataPacket.NULL_MARK);
+                buffer.put(RowDataPacket.NULL_MARK);
             } else if (fv.length == 0) {
-                bb = c.checkWriteBuffer(bb, 1, writeSocketIfFull);
-                bb.put(RowDataPacket.EMPTY_MARK);
+                buffer.put(RowDataPacket.EMPTY_MARK);
             } else {
-                bb = c.checkWriteBuffer(bb, BufferUtil.getLength(fv),
-                        writeSocketIfFull);
-                BufferUtil.writeLength(bb, fv.length);
-                bb = c.writeToBuffer(fv, bb);
+                BufferUtil.writeWithLength(buffer, fv);
             }
         }
     }
@@ -151,24 +160,38 @@ public class RowDataPacket extends MySQLPacket {
 
     public byte[] toBytes() {
         int size = calcPacketSize();
-        ByteBuffer buffer = BufferPoolManager.getBufferPool().allocate(size + PACKET_HEADER_SIZE);
-        BufferUtil.writeUB3(buffer, size);
-        buffer.put(packetId);
-        for (int i = 0; i < fieldCount; i++) {
-            byte[] fv = fieldValues.get(i);
-            if (fv == null) {
-                buffer.put(RowDataPacket.NULL_MARK);
-            } else if (fv.length == 0) {
-                buffer.put(RowDataPacket.EMPTY_MARK);
-            } else {
-                BufferUtil.writeWithLength(buffer, fv);
+        int packageNum = size / MAX_PACKET_SIZE + 1;
+        if (packageNum > 1) {
+            BufferPool bufferPool = BufferPoolManager.getBufferPool();
+            ByteBuffer tmpBuffer = bufferPool.allocate(size);
+            writeBody(tmpBuffer);
+            byte[] tmpArray = tmpBuffer.array();
+            bufferPool.recycle(tmpBuffer);
+            byte[] packets = new byte[size + PACKET_HEADER_SIZE * packageNum];
+            int length = size;
+            int singlePacketTotalSize = MAX_PACKET_SIZE + PACKET_HEADER_SIZE;
+            for (int i = 0; i < packageNum; i++) {
+                int singlePacketSize = MAX_PACKET_SIZE;
+                if (length < MAX_PACKET_SIZE) {
+                    singlePacketSize = length;
+                }
+                ByteUtil.writeUB3(packets, singlePacketSize, i * singlePacketTotalSize);
+                packets[i * singlePacketTotalSize + 3] = packetId++;
+                System.arraycopy(tmpArray, i * MAX_PACKET_SIZE, packets, i * singlePacketTotalSize + 4, singlePacketSize);
+                length -= MAX_PACKET_SIZE;
             }
+            return packets;
+        } else {
+            ByteBuffer buffer = BufferPoolManager.getBufferPool().allocate(size + PACKET_HEADER_SIZE);
+            BufferUtil.writeUB3(buffer, calcPacketSize());
+            buffer.put(packetId);
+            writeBody(buffer);
+            buffer.flip();
+            byte[] data = new byte[buffer.limit()];
+            buffer.get(data);
+            BufferPoolManager.getBufferPool().recycle(buffer);
+            return data;
         }
-        buffer.flip();
-        byte[] data = new byte[buffer.limit()];
-        buffer.get(data);
-        BufferPoolManager.getBufferPool().recycle(buffer);
-        return data;
     }
 
 
@@ -193,10 +216,4 @@ public class RowDataPacket extends MySQLPacket {
         return fieldValues;
     }
 
-    public static byte[] writeRowLength(byte[] b, int i) {
-        b[0] = (byte) (i & 0xff);
-        b[1] = (byte) (i >>> 8);
-        b[2] = (byte) (i >>> 16);
-        return b;
-    }
 }

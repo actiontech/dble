@@ -6,12 +6,12 @@
 package com.actiontech.dble.net;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.CharsetNames;
 import com.actiontech.dble.net.mysql.MySQLPacket;
-import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.CompressUtil;
@@ -508,30 +508,30 @@ public abstract class AbstractConnection implements NIOConnection {
     }
 
     public ByteBuffer writeBigPackageToBuffer(byte[] row, ByteBuffer buffer, byte packetId) {
-        int srcPos = 0;
-        byte[] b = null;
-        b = new byte[MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE];
-        System.arraycopy(row, 0, b, 0, MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
+        int srcPos;
+        byte[] singlePacket;
+        singlePacket = new byte[MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE];
+        System.arraycopy(row, 0, singlePacket, 0, MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
         srcPos = MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE;
         int length = row.length;
         length -= (MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
-        RowDataPacket.writeRowLength(b, MySQLPacket.MAX_PACKET_SIZE);
-        b[3] = ++packetId;
-        buffer = writeToBuffer(b, buffer);
+        ByteUtil.writeUB3(singlePacket, MySQLPacket.MAX_PACKET_SIZE);
+        singlePacket[3] = ++packetId;
+        buffer = writeToBuffer(singlePacket, buffer);
         while (length >= MySQLPacket.MAX_PACKET_SIZE) {
-            b = new byte[MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE];
-            RowDataPacket.writeRowLength(b, MySQLPacket.MAX_PACKET_SIZE);
-            b[3] = ++packetId;
-            System.arraycopy(row, srcPos, b, MySQLPacket.PACKET_HEADER_SIZE, MySQLPacket.MAX_PACKET_SIZE);
+            singlePacket = new byte[MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE];
+            ByteUtil.writeUB3(singlePacket, MySQLPacket.MAX_PACKET_SIZE);
+            singlePacket[3] = ++packetId;
+            System.arraycopy(row, srcPos, singlePacket, MySQLPacket.PACKET_HEADER_SIZE, MySQLPacket.MAX_PACKET_SIZE);
             srcPos += MySQLPacket.MAX_PACKET_SIZE;
             length -= MySQLPacket.MAX_PACKET_SIZE;
-            buffer = writeToBuffer(b, buffer);
+            buffer = writeToBuffer(singlePacket, buffer);
         }
-        b = new byte[length + MySQLPacket.PACKET_HEADER_SIZE];
-        RowDataPacket.writeRowLength(b, length);
-        b[3] = ++packetId;
-        System.arraycopy(row, srcPos, b, MySQLPacket.PACKET_HEADER_SIZE, length);
-        buffer = writeToBuffer(b, buffer);
+        singlePacket = new byte[length + MySQLPacket.PACKET_HEADER_SIZE];
+        ByteUtil.writeUB3(singlePacket, length);
+        singlePacket[3] = ++packetId;
+        System.arraycopy(row, srcPos, singlePacket, MySQLPacket.PACKET_HEADER_SIZE, length);
+        buffer = writeToBuffer(singlePacket, buffer);
         ((ServerConnection) this).getSession2().getPacketId().set(packetId);
         return buffer;
     }

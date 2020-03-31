@@ -5,13 +5,17 @@
 
 package com.actiontech.dble.backend.mysql.store.diskbuffer;
 
+import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.store.FileStore;
 import com.actiontech.dble.backend.mysql.store.result.ResultExternal;
 import com.actiontech.dble.buffer.BufferPool;
+import com.actiontech.dble.net.mysql.MySQLPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.util.exception.NotSupportException;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * a buffer used to store large amount of data on disk or virtual memory mapped
@@ -130,7 +134,27 @@ public abstract class ResultDiskBuffer implements ResultExternal {
         public RowDataPacket nextRow() {
             if (isReadAll())
                 return null;
-            byte[] row = getRow();
+            byte[] row;
+            byte[] singlePacket = getSinglePacket();
+            if (singlePacket.length == MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
+                List<byte[]> rowParts = new ArrayList<>();
+                rowParts.add(singlePacket);
+                byte[] dataTmp;
+                do {
+                    dataTmp = getSinglePacket();
+                    rowParts.add(dataTmp);
+                } while (dataTmp.length == MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE);
+
+                row = new byte[(rowParts.size() - 1) * MySQLPacket.MAX_PACKET_SIZE + dataTmp.length];
+                ByteUtil.writeUB3(row, MySQLPacket.MAX_PACKET_SIZE);
+                row[3] = rowParts.get(0)[3];
+                for (int i = 0; i < rowParts.size(); i++) {
+                    byte[] rowPart = rowParts.get(i);
+                    System.arraycopy(rowPart, 4, row, 4 + i * MySQLPacket.MAX_PACKET_SIZE, rowPart.length - MySQLPacket.PACKET_HEADER_SIZE);
+                }
+            } else {
+                row = singlePacket;
+            }
             RowDataPacket currentRow = new RowDataPacket(fieldCount);
             currentRow.read(row);
             return currentRow;
@@ -145,7 +169,7 @@ public abstract class ResultDiskBuffer implements ResultExternal {
             filePos += file.read(readBuffer, end);
         }
 
-        private byte[] getRow() {
+        private byte[] getSinglePacket() {
             int offset = readBufferOffset, length = 0, position = readBuffer.position();
             length = getPacketLength(readBuffer, offset);
             while (length == -1 || position < offset + length) {

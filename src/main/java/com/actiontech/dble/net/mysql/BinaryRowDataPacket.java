@@ -231,8 +231,7 @@ public class BinaryRowDataPacket extends MySQLPacket {
 
         int size = calcPacketSize();
         int totalSize = size + PACKET_HEADER_SIZE;
-        ByteBuffer bb = null;
-        bb = conn.getProcessor().getBufferPool().allocate(totalSize);
+        ByteBuffer bb = conn.getProcessor().getBufferPool().allocate(totalSize);
         BufferUtil.writeUB3(bb, size);
         bb.put(packetId);
         writeBody(bb);
@@ -248,14 +247,13 @@ public class BinaryRowDataPacket extends MySQLPacket {
         if (isBigPackage) {
             c.writePart(bb);
             BufferPool bufferPool = c.getProcessor().getBufferPool();
-            bb = bufferPool.allocate(totalSize);
-            BufferUtil.writeUB3(bb, size);
-            bb.put(packetId--);
-            writeBody(bb);
-            byte[] array = bb.array();
-            bufferPool.recycle(bb);
-            ByteBuffer newBuffer = bufferPool.allocate(array.length);
-            return c.writeBigPackageToBuffer(array, newBuffer, packetId);
+            ByteBuffer temp = bufferPool.allocate(totalSize);
+            BufferUtil.writeUB3(temp, size);
+            temp.put(packetId--);
+            writeBody(temp);
+            byte[] array = temp.array();
+            bufferPool.recycle(temp);
+            return c.writeBigPackageToBuffer(array, bufferPool.allocate(array.length), packetId);
         } else {
             bb = c.checkWriteBuffer(bb, totalSize, writeSocketIfFull);
             BufferUtil.writeUB3(bb, size);

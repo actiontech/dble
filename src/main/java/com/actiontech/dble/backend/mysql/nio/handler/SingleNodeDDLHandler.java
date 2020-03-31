@@ -75,8 +75,8 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
                 return;
             } else {
                 DDLTraceManager.getInstance().endDDL(session.getSource(), null);
-                ServerConnection source = session.getSource();
                 session.setRowCount(0);
+                ServerConnection source = session.getSource();
                 OkPacket ok = new OkPacket();
                 ok.read(data);
                 ok.setPacketId(++packetId); // OK_PACKET

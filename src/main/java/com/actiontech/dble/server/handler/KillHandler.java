@@ -8,6 +8,7 @@ package com.actiontech.dble.server.handler;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOProcessor;
@@ -76,7 +77,8 @@ public final class KillHandler {
         }
 
         NonBlockingSession killSession = ((ServerConnection) killConn).getSession2();
-        if (killSession.getSessionStage() == SessionStage.Init || killSession.getSessionStage() == SessionStage.Finished) {
+        if ((killSession.getXaState() != null && killSession.getXaState() != TxState.TX_INITIALIZE_STATE) ||
+                killSession.getSessionStage() == SessionStage.Init || killSession.getSessionStage() == SessionStage.Finished) {
             getOkPacket(c).write(c);
             c.getSession2().multiStatementNextSql(c.getSession2().getIsMultiStatement().get());
             return;

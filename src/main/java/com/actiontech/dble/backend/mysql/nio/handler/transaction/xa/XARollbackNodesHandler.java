@@ -143,11 +143,17 @@ public class XARollbackNodesHandler extends AbstractRollbackNodesHandler {
             }
             if (mysqlCon.isClosed()) {
                 mysqlCon.setXaStatus(TxState.TX_ROLLBACK_FAILED_STATE);
+                session.setXaState(TxState.TX_ROLLBACK_FAILED_STATE);
+                setFail("Connection {DataHost[" + mysqlCon.getHost() + ":" + mysqlCon.getPort() + "],Schema[" + mysqlCon.getSchema() + "],threadID[" +
+                        mysqlCon.getThreadId() + "]} was closed ");
             }
             rollbackPhase(mysqlCon);
         } else if (session.getXaState() == TxState.TX_ROLLBACK_FAILED_STATE || session.getXaState() == TxState.TX_PREPARE_UNCONNECT_STATE) {
             if (mysqlCon.isClosed()) {
                 mysqlCon.setXaStatus(TxState.TX_ROLLBACK_FAILED_STATE);
+                session.setXaState(TxState.TX_ROLLBACK_FAILED_STATE);
+                setFail("Connection {DataHost[" + mysqlCon.getHost() + ":" + mysqlCon.getPort() + "],Schema[" + mysqlCon.getSchema() + "],threadID[" +
+                        mysqlCon.getThreadId() + "]} was closed ");
             }
             rollbackPhase(mysqlCon);
         } else if (session.getXaState() == TxState.TX_ENDED_STATE) {

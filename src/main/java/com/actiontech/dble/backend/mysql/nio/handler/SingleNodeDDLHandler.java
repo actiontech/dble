@@ -80,6 +80,7 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
                 ok.read(data);
                 ok.setPacketId(++packetId); // OK_PACKET
                 ok.setMessage(null);
+                session.setRowCount(0);
                 ok.setServerStatus(source.isAutocommit() ? 2 : 1);
                 source.setLastInsertId(ok.getInsertId());
                 session.setBackendResponseEndTime((MySQLConnection) conn);

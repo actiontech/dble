@@ -73,6 +73,8 @@ public abstract class AbstractConnection implements NIOConnection {
 
     private byte[] rowData;
 
+    private volatile boolean flowControlled;
+
     public AbstractConnection(NetworkChannel channel) {
         this.channel = channel;
         boolean isAIO = (channel instanceof AsynchronousChannel);
@@ -738,5 +740,13 @@ public abstract class AbstractConnection implements NIOConnection {
         System.arraycopy(rowData, 0, newData, 0, rowData.length);
         System.arraycopy(data, 0, newData, rowData.length, data.length);
         return newData;
+    }
+
+    public boolean isFlowControlled() {
+        return flowControlled;
+    }
+
+    public void setFlowControlled(boolean flowControlled) {
+        this.flowControlled = flowControlled;
     }
 }

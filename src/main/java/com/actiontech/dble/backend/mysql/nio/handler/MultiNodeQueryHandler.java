@@ -434,6 +434,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
             }
             if (!errorResponse.get()) {
+                if (DbleServer.getInstance().getConfig().getSystem().isEnableFlowControl() &&
+                        session.getSource().getWriteQueue().size() > DbleServer.getInstance().getConfig().getSystem().getFlowControlStartThreshold()) {
+                    session.getSource().startFlowControl(conn);
+                }
                 if (prepared) {
                     if (rowDataPkg == null) {
                         rowDataPkg = new RowDataPacket(fieldCount);

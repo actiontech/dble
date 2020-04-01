@@ -88,9 +88,6 @@ public class ConfigInitializer implements ProblemReporter {
                             hasEnableNode = true;
                             break;
                         }
-                        if (hasEnableNode) {
-                            break;
-                        }
                     }
                     if (!hasEnableNode) {
                         continue;

@@ -204,8 +204,8 @@ public class PhysicalDataHost {
     void getRWBalanceCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
         PhysicalDataSource theNode = getRWBalanceNode();
         if (theNode.isDisabled()) {
-            if (this.getReadSources().length > 0) {
-                theNode = this.getReadSources()[0];
+            if (this.getAllActiveDataSources().size() > 0) {
+                theNode = this.getAllActiveDataSources().iterator().next();
             } else {
                 String errorMsg = "the dataHost[" + theNode.getHostConfig().getName() + "] is disabled, please check it";
                 throw new IOException(errorMsg);
@@ -286,11 +286,7 @@ public class PhysicalDataHost {
     }
 
     public PhysicalDataSource[] getReadSources() {
-        if (this.dataHostConfig.getBalance() != BALANCE_NONE) {
-            return readSources;
-        } else {
-            return new PhysicalDataSource[0];
-        }
+        return readSources;
     }
 
     public Map<Integer, PhysicalDataSource[]> getReadSourceAll() {

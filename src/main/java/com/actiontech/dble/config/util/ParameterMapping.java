@@ -31,7 +31,14 @@ public final class ParameterMapping {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ParameterMapping.class);
     private static final Map<Class<?>, PropertyDescriptor[]> DESCRIPTORS = new HashMap<>();
-
+    private static final Map<String, String> COMPATIBLE_PROPERTY = new HashMap<>();
+    static {
+        COMPATIBLE_PROPERTY.put("clearBigSqLResultSetMapMs", "clearBigResultIntervalTime");
+        COMPATIBLE_PROPERTY.put("sequnceHandlerType", "sequenceHandlerType");
+        COMPATIBLE_PROPERTY.put("transactionRatateSize", "transactionLogEachFileSize");
+        COMPATIBLE_PROPERTY.put("usingDecrypt", "usingEncryption");
+        COMPATIBLE_PROPERTY.put("selelctAllow", "selectAllow");
+    }
     /**
      * @param object
      * @param parameter property
@@ -43,6 +50,13 @@ public final class ParameterMapping {
         PropertyDescriptor[] pds = getDescriptors(object.getClass());
         for (PropertyDescriptor pd : pds) {
             Object obj = parameter.get(pd.getName());
+            boolean isCompatible = false;
+            if (obj == null) {
+                obj = parameter.get(COMPATIBLE_PROPERTY.get(pd.getName()));
+                if (obj != null) {
+                    isCompatible = true;
+                }
+            }
             Object value = obj;
             Class<?> cls = pd.getPropertyType();
             if (cls == null) {
@@ -64,7 +78,11 @@ public final class ParameterMapping {
                         if (problemReporter != null) {
                             problemReporter.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + ", skip");
                         }
-                        parameter.remove(pd.getName());
+                        if (isCompatible) {
+                            parameter.remove(COMPATIBLE_PROPERTY.get(pd.getName()));
+                        } else {
+                            parameter.remove(pd.getName());
+                        }
                         continue;
                     }
                 }
@@ -73,7 +91,11 @@ public final class ParameterMapping {
                 Method method = pd.getWriteMethod();
                 if (method != null) {
                     method.invoke(object, value);
-                    parameter.remove(pd.getName());
+                    if (isCompatible) {
+                        parameter.remove(COMPATIBLE_PROPERTY.get(pd.getName()));
+                    } else {
+                        parameter.remove(pd.getName());
+                    }
                 }
             }
         }

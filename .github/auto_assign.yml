@@ -9,8 +9,7 @@ reviewers:
   - yanhuqing666
   - sunsun314
   - Baofengqi
-  - gaopengpeng123456
 
 # A number of reviewers added to the pull request
 # Set 0 to add all the reviewers (default: 0)
-numberOfReviewers: 2
+numberOfReviewers: 1

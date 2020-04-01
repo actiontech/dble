@@ -161,9 +161,9 @@ public final class SystemConfig {
     private ProblemReporter problemReporter;
     private boolean useOuterHa = false;
 
-    private boolean enableFlowControl;
-    private int flowControlStartThreshold;
-    private int flowControlStopThreshold;
+    private boolean enableFlowControl = true;
+    private int flowControlStartThreshold = 4096;
+    private int flowControlStopThreshold = 256;
 
 
     public SystemConfig(ProblemReporter problemReporter) {

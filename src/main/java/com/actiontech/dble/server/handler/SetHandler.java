@@ -108,6 +108,7 @@ public final class SetHandler {
         if (statement instanceof SQLSetStatement) {
             List<SQLAssignItem> assignItems = ((SQLSetStatement) statement).getItems();
             if (assignItems.size() == 1) {
+                contextSetSQL.append(statement.toString());
                 return handleSingleVariable(stmt, assignItems.get(0), c, contextTask);
             } else {
                 boolean result = handleSetMultiStatement(assignItems, c, contextTask, innerSetTask);

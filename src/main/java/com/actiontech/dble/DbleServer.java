@@ -218,7 +218,7 @@ public final class DbleServer {
             txnLogProcessor.start();
         }
 
-        SequenceManager.init(config.getSystem().getSequnceHandlerType());
+        SequenceManager.init(config.getSystem().getSequenceHandlerType());
         LOGGER.info("===================================Sequence manager init finish===================================");
 
 

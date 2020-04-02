@@ -61,8 +61,7 @@ public class PhysicalDataHostDiff {
         PhysicalDataSource[] oldRHost = orgDataHost.getReadSources();
 
         boolean sameFlag = false;
-        if (oldHost.equals(newWriteHost) &&
-                ((oldRHost == null && newReadHost == null) || ((oldRHost != null && newReadHost != null) && oldRHost.length == newReadHost.length))) {
+        if (oldHost.equals(newWriteHost) && oldRHost.length == newReadHost.length) {
             //compare the newReadHost is the same
             sameFlag = calculateForDataSources(oldRHost, newReadHost);
         }

@@ -64,7 +64,7 @@ public class VarsExtractorHandler {
         }
         if (ds == null) {
             for (PhysicalDataHost dataHost : dataHosts.values()) {
-                for (PhysicalDataSource dsTest : dataHost.getReadSources()) {
+                for (PhysicalDataSource dsTest : dataHost.getAllActiveDataSources()) {
                     if (dsTest.isTestConnSuccess()) {
                         ds = dsTest;
                         break;

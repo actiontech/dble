@@ -113,7 +113,7 @@ public class ConfigInitializer implements ProblemReporter {
         }
 
         // add global sequence node when it is some dedicated servers */
-        if (system.getSequnceHandlerType() == SystemConfig.SEQUENCE_HANDLER_MYSQL) {
+        if (system.getSequenceHandlerType() == SystemConfig.SEQUENCE_HANDLER_MYSQL) {
             IncrSequenceMySQLHandler redundancy = new IncrSequenceMySQLHandler();
             redundancy.load(false);
             allUseDataNode.addAll(redundancy.getDataNodes());

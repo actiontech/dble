@@ -93,13 +93,11 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
     }
 
     private TransactionStage next() {
-        byte[] data;
+        byte[] data = null;
         if (isFail()) {
             data = createErrPkg(error).toBytes();
         } else if (sendData != null) {
             data = sendData;
-        } else {
-            data = session.getOkByteArray();
         }
         return this.currentStage.next(isFail(), null, data);
     }

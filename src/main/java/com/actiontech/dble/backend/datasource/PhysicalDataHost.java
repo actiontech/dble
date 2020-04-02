@@ -43,8 +43,8 @@ public class PhysicalDataHost {
     private volatile PhysicalDataSource writeSource;
     private Map<String, PhysicalDataSource> allSourceMap = new ConcurrentHashMap<>();
     public static final int BALANCE_NONE = 0;
-    protected static final int BALANCE_ALL_BACK = 1;
-    protected static final int BALANCE_ALL = 2;
+    private static final int BALANCE_ALL_BACK = 1;
+    private static final int BALANCE_ALL = 2;
 
     public static final int WEIGHT = 0;
 
@@ -55,8 +55,6 @@ public class PhysicalDataHost {
     private volatile boolean initSuccess = false;
     protected String[] schemas;
 
-    private PhysicalDataSource[] readSources;
-
     private final ReentrantReadWriteLock adjustLock = new ReentrantReadWriteLock();
 
 
@@ -65,7 +63,6 @@ public class PhysicalDataHost {
         this.balance = balance;
         this.dataHostConfig = config;
         this.writeSource = writeSource;
-        this.readSources = readSources;
         allSourceMap.put(writeSource.getName(), writeSource);
 
         for (PhysicalDataSource s : readSources) {
@@ -286,6 +283,14 @@ public class PhysicalDataHost {
     }
 
     public PhysicalDataSource[] getReadSources() {
+        PhysicalDataSource[] readSources = new PhysicalDataSource[allSourceMap.size() - 1];
+        int i = 0;
+        for (PhysicalDataSource source : allSourceMap.values()) {
+            if (source.getName().equals(writeSource.getName())) {
+                continue;
+            }
+            readSources[i++] = source;
+        }
         return readSources;
     }
 
@@ -298,7 +303,7 @@ public class PhysicalDataHost {
             }
         }
 
-        Map<Integer, PhysicalDataSource[]> result = new HashMap<Integer, PhysicalDataSource[]>();
+        Map<Integer, PhysicalDataSource[]> result = new HashMap<>();
         if (list.length > 0) {
             result.put(0, list);
         }
@@ -383,11 +388,10 @@ public class PhysicalDataHost {
         for (PhysicalDataSource ds : allSourceMap.values()) {
             if (!includeWriteNode && ds == writeSource) {
                 continue;
-            } else {
-                if (ds.isAlive()) {
-                    if (writeSource == ds || (!filterWithSlaveThreshold || canSelectAsReadNode(ds))) {
-                        okSources.add(ds);
-                    }
+            }
+            if (ds.isAlive()) {
+                if (writeSource == ds || (!filterWithSlaveThreshold || canSelectAsReadNode(ds))) {
+                    okSources.add(ds);
                 }
             }
         }
@@ -423,7 +427,7 @@ public class PhysicalDataHost {
         }
     }
 
-    public PhysicalDataHost createDisableSnapshot(PhysicalDataHost org, String[] nameList) {
+    private PhysicalDataHost createDisableSnapshot(PhysicalDataHost org, String[] nameList) {
         PhysicalDataHost snapshot = new PhysicalDataHost(org);
         for (String dsName : nameList) {
             PhysicalDataSource datasource = snapshot.allSourceMap.get(dsName);
@@ -450,6 +454,7 @@ public class PhysicalDataHost {
             }
             return this.getClusterHaJson();
         } catch (Exception e) {
+            LOGGER.warn("enableHosts Exception ", e);
             throw e;
         } finally {
             lock.readLock().unlock();
@@ -457,7 +462,7 @@ public class PhysicalDataHost {
         }
     }
 
-    public PhysicalDataHost createEnableSnapshot(PhysicalDataHost org, String[] nameList) {
+    private PhysicalDataHost createEnableSnapshot(PhysicalDataHost org, String[] nameList) {
         PhysicalDataHost snapshot = new PhysicalDataHost(org);
         for (String dsName : nameList) {
             PhysicalDataSource datasource = allSourceMap.get(dsName);
@@ -491,6 +496,7 @@ public class PhysicalDataHost {
             writeSource = newWriteHost;
             return this.getClusterHaJson();
         } catch (Exception e) {
+            LOGGER.warn("switchMaster Exception ", e);
             throw e;
         } finally {
             lock.readLock().unlock();
@@ -498,7 +504,7 @@ public class PhysicalDataHost {
         }
     }
 
-    public PhysicalDataHost createSwitchSnapshot(String writeHost) {
+    private PhysicalDataHost createSwitchSnapshot(String writeHost) {
         PhysicalDataHost snapshot = new PhysicalDataHost(this);
         PhysicalDataSource newWriteHost = snapshot.allSourceMap.get(writeHost);
         snapshot.writeSource.setReadNode(true);
@@ -544,6 +550,7 @@ public class PhysicalDataHost {
             }
             HaConfigManager.getInstance().updateConfDataHost(this, false);
         } catch (Exception e) {
+            LOGGER.warn("changeIntoLatestStatus Exception ", e);
             throw e;
         } finally {
             lock.readLock().unlock();
@@ -615,12 +622,12 @@ public class PhysicalDataHost {
     }
 
 
-    protected boolean checkSlaveSynStatus() {
+    private boolean checkSlaveSynStatus() {
         return (dataHostConfig.getSlaveThreshold() != -1) &&
                 (dataHostConfig.isShowSlaveSql());
     }
 
-    protected boolean canSelectAsReadNode(PhysicalDataSource theSource) {
+    private boolean canSelectAsReadNode(PhysicalDataSource theSource) {
         Integer slaveBehindMaster = theSource.getHeartbeat().getSlaveBehindMaster();
         int dbSynStatus = theSource.getHeartbeat().getDbSynStatus();
         if (slaveBehindMaster == null || dbSynStatus == MySQLHeartbeat.DB_SYN_ERROR) {

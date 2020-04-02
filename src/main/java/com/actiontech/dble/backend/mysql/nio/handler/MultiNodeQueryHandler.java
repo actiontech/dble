@@ -287,7 +287,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     source.setLastInsertId(insertId);
                 }
                 doSqlStat();
-                handleEndPacket(ok.toBytes(), AutoTxOperation.COMMIT, true);
+                byte[] sentData = ok.toBytes();
+                session.multiStatementPacket(sentData, ok.getPacketId());
+                handleEndPacket(sentData, AutoTxOperation.COMMIT, true);
             } finally {
                 lock.unlock();
             }

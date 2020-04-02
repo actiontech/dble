@@ -438,7 +438,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         if (conn instanceof MySQLConnection) {
             MySQLConnection mysqlCon = (MySQLConnection) conn;
             LOGGER.info(reason + mysqlCon);
-            if (mysqlCon.getXaStatus() == TxState.TX_STARTED_STATE) {
+            if (mysqlCon.getXaStatus() == TxState.TX_STARTED_STATE || mysqlCon.getXaStatus() == TxState.TX_ENDED_STATE) {
                 mysqlCon.close();
                 mysqlCon.setXaStatus(TxState.TX_CONN_QUIT);
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
@@ -446,16 +446,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                     session.setXaState(TxState.TX_ENDED_STATE);
                     nextParse();
                 }
-            } else if (mysqlCon.getXaStatus() == TxState.TX_ENDED_STATE) {
-                mysqlCon.close();
-                mysqlCon.setXaStatus(TxState.TX_CONN_QUIT);
-                XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
-                if (finished) {
-                    session.setXaState(TxState.TX_PREPARING_STATE);
-                    nextParse();
-                }
-                //  'xa prepare' connectionClose,conn has quit
-            } else if (mysqlCon.getXaStatus() == TxState.TX_PREPARING_STATE) {
+            } else if (mysqlCon.getXaStatus() == TxState.TX_PREPARING_STATE) { //  'xa prepare' connectionClose,conn has quit
                 mysqlCon.setXaStatus(TxState.TX_PREPARE_UNCONNECT_STATE);
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
                 session.setXaState(TxState.TX_PREPARE_UNCONNECT_STATE);
@@ -491,6 +482,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
 
     private void cleanAndFeedback(boolean isSuccess) {
         if (session.getXaState() == TxState.TX_INITIALIZE_STATE) { // clear all resources
+            LOGGER.debug("normal cleanAndFeedback");
             XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_COMMITTED_STATE);
             session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_INIT);
             session.clearResources(false);
@@ -505,6 +497,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
         } else if (session.getXaState() == TxState.TX_COMMIT_FAILED_STATE) {
             boolean isAllRelease = session.releaseNormalConns();
             if (session.isKilled()) {
+                LOGGER.debug("session killed cleanAndFeedback");
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), session.getXaState());
                 setResponseTime(false);
                 session.clearSavepoint();
@@ -540,6 +533,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
                     }
                 }
             } else {
+                LOGGER.debug("session connections all released");
                 XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_COMMITTED_STATE);
                 session.setXaState(TxState.TX_INITIALIZE_STATE);
                 session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_INIT);

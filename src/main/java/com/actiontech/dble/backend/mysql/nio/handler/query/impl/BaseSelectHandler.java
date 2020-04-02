@@ -51,6 +51,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
         MySQLConnection exeConn = (MySQLConnection) session.getTarget(rrss);
         if (session.tryExistsCon(exeConn, rrss)) {
             exeConn.setRowDataFlowing(true);
+            exeConn.setResponseHandler(this);
             return exeConn;
         } else {
             PhysicalDBNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(rrss.getName());

@@ -475,6 +475,21 @@ public final class StringUtil {
         return str;
     }
 
+    public static String removeBackAndDoubleQuote(String str) {
+        if (str.length() > 1) {
+            char firstValue = str.charAt(0);
+            if ((firstValue == '`') && (firstValue == str.charAt(str.length() - 1))) {
+                return str.substring(1, str.length() - 1);
+            } else if ((firstValue == '"') && (firstValue == str.charAt(str.length() - 1))) {
+                return str.substring(1, str.length() - 1);
+            } else {
+                return str;
+            }
+        }
+        return str;
+    }
+
+
     /**
      * remove ' from 'value'
      *

@@ -29,14 +29,14 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-public final class MetaHelper {
-    public static final String PRIMARY = "PRIMARY";
+final class MetaHelper {
+    private static final String PRIMARY = "PRIMARY";
     private static final Logger LOGGER = LoggerFactory.getLogger(MetaHelper.class);
 
     private MetaHelper() {
     }
 
-    public static ViewMeta initViewMeta(String schema, String sql, long timeStamp, ProxyMetaManager tmManager) {
+    static ViewMeta initViewMeta(String schema, String sql, long timeStamp, ProxyMetaManager tmManager) {
         if (sql == null) {
             return null;
         }
@@ -54,7 +54,7 @@ public final class MetaHelper {
         return meta;
     }
 
-    public static StructureMeta.TableMeta initTableMeta(String table, String sql, long timeStamp) {
+    static StructureMeta.TableMeta initTableMeta(String table, String sql, long timeStamp) {
         if (sql == null) {
             return null;
         }
@@ -69,7 +69,7 @@ public final class MetaHelper {
         }
     }
 
-    public static StructureMeta.TableMeta initTableMeta(String table, SQLCreateTableStatement createStatement, long timeStamp) {
+    private static StructureMeta.TableMeta initTableMeta(String table, SQLCreateTableStatement createStatement, long timeStamp) {
         StructureMeta.TableMeta.Builder tmBuilder = StructureMeta.TableMeta.newBuilder();
         tmBuilder.setTableName(table);
         tmBuilder.setVersion(timeStamp);
@@ -105,17 +105,17 @@ public final class MetaHelper {
         return tmBuilder.build();
     }
 
-    public static String genIndexName(SQLName srcIndexName, List<SQLSelectOrderByItem> selectOrderByItemList, Set<String> indexNames) {
+    private static String genIndexName(SQLName srcIndexName, List<SQLSelectOrderByItem> selectOrderByItemList, Set<String> indexNames) {
         String indexName;
         if (srcIndexName != null) {
-            indexName = StringUtil.removeBackQuote(srcIndexName.getSimpleName());
+            indexName = StringUtil.removeBackAndDoubleQuote(srcIndexName.getSimpleName());
         } else {
             SQLExpr firstColumn = selectOrderByItemList.get(0).getExpr();
             String columnName = firstColumn.toString();
             if (firstColumn instanceof SQLIdentifierExpr) {
-                columnName = StringUtil.removeBackQuote(((SQLIdentifierExpr) firstColumn).getName());
+                columnName = StringUtil.removeBackAndDoubleQuote(((SQLIdentifierExpr) firstColumn).getName());
             } else if (firstColumn instanceof SQLMethodInvokeExpr) {
-                columnName = StringUtil.removeBackQuote(((SQLMethodInvokeExpr) firstColumn).getMethodName());
+                columnName = StringUtil.removeBackAndDoubleQuote(((SQLMethodInvokeExpr) firstColumn).getMethodName());
             }
             indexName = columnName;
             int indexNum = 1;
@@ -131,35 +131,35 @@ public final class MetaHelper {
     /**
      * the "`" will be removed
      *
-     * @param indexName
-     * @param indexType
-     * @param selectOrderByItemList
-     * @return
+     * @param indexName String
+     * @param indexType IndexType
+     * @param selectOrderByItemList List<SQLSelectOrderByItem>
+     * @return StructureMeta.IndexMeta
      */
-    public static StructureMeta.IndexMeta makeIndexMeta(String indexName, IndexType indexType, List<SQLSelectOrderByItem> selectOrderByItemList) {
+    private static StructureMeta.IndexMeta makeIndexMeta(String indexName, IndexType indexType, List<SQLSelectOrderByItem> selectOrderByItemList) {
         StructureMeta.IndexMeta.Builder indexBuilder = StructureMeta.IndexMeta.newBuilder();
-        indexBuilder.setName(StringUtil.removeBackQuote(indexName));
+        indexBuilder.setName(StringUtil.removeBackAndDoubleQuote(indexName));
         indexBuilder.setType(indexType.toString());
         for (SQLSelectOrderByItem selectOrderByItem : selectOrderByItemList) {
             SQLExpr columnExpr = selectOrderByItem.getExpr();
             if (columnExpr instanceof SQLIdentifierExpr) {
                 SQLIdentifierExpr column = (SQLIdentifierExpr) columnExpr;
-                indexBuilder.addColumns(StringUtil.removeBackQuote(column.getName()));
+                indexBuilder.addColumns(StringUtil.removeBackAndDoubleQuote(column.getName()));
             } else if (columnExpr instanceof MySqlOrderingExpr) {
                 MySqlOrderingExpr column = (MySqlOrderingExpr) columnExpr;
                 if (column.getExpr() instanceof SQLIdentifierExpr) {
-                    indexBuilder.addColumns(StringUtil.removeBackQuote(((SQLIdentifierExpr) column.getExpr()).getName()));
+                    indexBuilder.addColumns(StringUtil.removeBackAndDoubleQuote(((SQLIdentifierExpr) column.getExpr()).getName()));
                 } else if (column.getExpr() instanceof SQLMethodInvokeExpr) {
-                    indexBuilder.addColumns(StringUtil.removeBackQuote(((SQLMethodInvokeExpr) column.getExpr()).getMethodName()));
+                    indexBuilder.addColumns(StringUtil.removeBackAndDoubleQuote(((SQLMethodInvokeExpr) column.getExpr()).getMethodName()));
                 }
             }
         }
         return indexBuilder.build();
     }
 
-    public static StructureMeta.ColumnMeta.Builder makeColumnMeta(StructureMeta.TableMeta.Builder tmBuilder, SQLColumnDefinition column, Set<String> indexNames) {
+    private static StructureMeta.ColumnMeta.Builder makeColumnMeta(StructureMeta.TableMeta.Builder tmBuilder, SQLColumnDefinition column, Set<String> indexNames) {
         StructureMeta.ColumnMeta.Builder cmBuilder = StructureMeta.ColumnMeta.newBuilder().setCanNull(true);
-        cmBuilder.setName(StringUtil.removeBackQuote(column.getName().getSimpleName()));
+        cmBuilder.setName(StringUtil.removeBackAndDoubleQuote(column.getName().getSimpleName()));
         cmBuilder.setDataType(column.getDataType().getName());
         for (SQLColumnConstraint constraint : column.getConstraints()) {
             if (constraint instanceof SQLNotNullConstraint) {
@@ -169,9 +169,9 @@ public final class MetaHelper {
             } else if (constraint instanceof SQLColumnPrimaryKey) {
                 tmBuilder.setPrimary(makeIndexMeta(PRIMARY, IndexType.PRI, new ArrayList<>(Collections.singletonList(new SQLSelectOrderByItem(column.getName())))));
             } else if (constraint instanceof SQLColumnUniqueKey) {
-                List<SQLSelectOrderByItem> columnExprs = new ArrayList<>(Collections.singletonList(new SQLSelectOrderByItem(column.getName())));
-                String indexName = genIndexName(null, columnExprs, indexNames);
-                tmBuilder.addUniIndex(makeIndexMeta(indexName, IndexType.UNI, columnExprs));
+                List<SQLSelectOrderByItem> columnItems = new ArrayList<>(Collections.singletonList(new SQLSelectOrderByItem(column.getName())));
+                String indexName = genIndexName(null, columnItems, indexNames);
+                tmBuilder.addUniIndex(makeIndexMeta(indexName, IndexType.UNI, columnItems));
             }
         }
         if (column.getDefaultExpr() != null) {

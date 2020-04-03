@@ -205,7 +205,7 @@ public final class SystemVariables {
         sessionVariables.put("warning_count", "0");
     }
 
-    public void setDefaultValue(String variable, String value) {
+    void setDefaultValue(String variable, String value) {
         if (StringUtil.isEmpty(variable))
             return;
 

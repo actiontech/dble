@@ -114,8 +114,8 @@ public class MySQLConnection extends AbstractConnection implements
     private String user;
     private String password;
     private Object attachment;
-    private boolean autocommitSynced = false;
-    private boolean isolationSynced = false;
+    private boolean autocommitSynced;
+    private boolean isolationSynced;
     private volatile ResponseHandler respHandler;
 
     public MySQLConnection(NetworkChannel channel, boolean fromSlaveDB, boolean autocommitSynced, boolean isolationSynced) {
@@ -163,12 +163,12 @@ public class MySQLConnection extends AbstractConnection implements
         this.port = port;
     }
 
-    public void setRowDataFlowing(boolean rowDataFlowing) {
-        isRowDataFlowing = rowDataFlowing;
-    }
-
     public boolean isRowDataFlowing() {
         return isRowDataFlowing;
+    }
+
+    public void setRowDataFlowing(boolean rowDataFlowing) {
+        isRowDataFlowing = rowDataFlowing;
     }
 
     public TxState getXaStatus() {
@@ -212,10 +212,6 @@ public class MySQLConnection extends AbstractConnection implements
         this.user = user;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
     public HandshakeV10Packet getHandshake() {
         return handshake;
     }
@@ -238,6 +234,10 @@ public class MySQLConnection extends AbstractConnection implements
 
     public String getPassword() {
         return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public boolean finishConnect() throws IOException {
@@ -300,7 +300,6 @@ public class MySQLConnection extends AbstractConnection implements
     public void setAttachment(Object attachment) {
         this.attachment = attachment;
     }
-
 
     public void sendQueryCmd(String query, CharsetNames clientCharset) {
         CommandPacket packet = new CommandPacket();
@@ -375,49 +374,42 @@ public class MySQLConnection extends AbstractConnection implements
 
     public void executeMultiNode(RouteResultsetNode rrn, ServerConnection sc,
                                  boolean isAutoCommit) {
-        if (rrn.getSqlType() == ServerParse.DDL) {
-            isDDL = true;
-        }
         String xaTxId = getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
         if (!sc.isAutocommit() && !sc.isTxStart() && rrn.isModifySQL()) {
             sc.setTxStart(true);
         }
-        synAndDoExecuteMultiNode(xaTxId, rrn, sc.getCharset(), sc.getTxIsolation(), isAutoCommit, sc.getUsrVariables(), sc.getSysVariables());
+        StringBuilder synSQL = getSynSql(xaTxId, rrn, sc.getCharset(), sc.getTxIsolation(), isAutoCommit, sc.getUsrVariables(), sc.getSysVariables());
+        synAndDoExecuteMultiNode(synSQL, rrn, sc.getCharset());
     }
 
-    private void synAndDoExecuteMultiNode(String xaTxID, RouteResultsetNode rrn,
-                                          CharsetNames clientCharset, int clientTxIsolation,
-                                          boolean expectAutocommit, Map<String, String> usrVariables, Map<String, String> sysVariables) {
-        String xaCmd = null;
-        boolean conAutoCommit = this.autocommit;
-        String conSchema = this.schema;
+    private StringBuilder getSynSql(String xaTxID, RouteResultsetNode rrn,
+                                    CharsetNames clientCharset, int clientTxIsolation,
+                                    boolean expectAutocommit, Map<String, String> usrVariables, Map<String, String> sysVariables) {
+        if (rrn.getSqlType() == ServerParse.DDL) {
+            isDDL = true;
+        }
+
         int xaSyn = 0;
         if (!expectAutocommit && xaTxID != null && xaStatus == TxState.TX_INITIALIZE_STATE && !isDDL) {
             // clientTxIsolation = Isolation.SERIALIZABLE;TODO:NEEDED?
-            xaCmd = "XA START " + xaTxID + ';';
-            this.xaStatus = TxState.TX_STARTED_STATE;
             xaSyn = 1;
         }
+
         Set<String> toResetSys = new HashSet<>();
         String setSql = getSetSQL(usrVariables, sysVariables, toResetSys);
         int setSqlFlag = setSql == null ? 0 : 1;
-        int schemaSyn = conSchema.equals(oldSchema) ? 0 : 1;
-        int charsetSyn = (charsetName.equals(clientCharset)) ? 0 : 1;
-        int txIsolationSyn = (txIsolation == clientTxIsolation) ? 0 : 1;
-        int autoCommitSyn = (conAutoCommit == expectAutocommit) ? 0 : 1;
+        int schemaSyn = StringUtil.equals(this.schema, this.oldSchema) ? 0 : 1;
+        int charsetSyn = (this.charsetName.equals(clientCharset)) ? 0 : 1;
+        int txIsolationSyn = (this.txIsolation == clientTxIsolation) ? 0 : 1;
+        int autoCommitSyn = (this.autocommit == expectAutocommit) ? 0 : 1;
         int synCount = schemaSyn + charsetSyn + txIsolationSyn + autoCommitSyn + xaSyn + setSqlFlag;
         if (synCount == 0) {
-            // not need syn connection
-            if (session != null) {
-                session.setBackendRequestTime(this.id);
-            }
-            DbleServer.getInstance().getWriteToBackendQueue().add(Collections.singletonList(sendQueryCmdTask(rrn.getStatement(), clientCharset)));
-            return;
+            return null;
         }
 
         StringBuilder sb = new StringBuilder();
         if (schemaSyn == 1) {
-            getChangeSchemaCommand(sb, conSchema);
+            getChangeSchemaCommand(sb, this.schema);
         }
         if (charsetSyn == 1) {
             getCharsetCommand(sb, clientCharset);
@@ -431,28 +423,41 @@ public class MySQLConnection extends AbstractConnection implements
         if (setSqlFlag == 1) {
             sb.append(setSql);
         }
-        if (xaCmd != null) {
+        if (xaSyn == 1) {
             XaDelayProvider.delayBeforeXaStart(rrn.getName(), xaTxID);
-            sb.append(xaCmd);
+            sb.append("XA START ").append(xaTxID).append(";");
+            this.xaStatus = TxState.TX_STARTED_STATE;
         }
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("con need syn ,total syn cmd " + synCount +
-                    " commands " + sb.toString() + "schema change:" +
-                    (schemaSyn == 1) + " con:" + this);
+            LOGGER.debug("con need syn, total syn cmd " + synCount +
+                    " commands " + sb.toString() + ",schema change:" +
+                    (schemaSyn == 1) + ", con:" + this);
         }
         metaDataSynced = false;
-        statusSync = new StatusSync(conSchema,
+        statusSync = new StatusSync(this.schema,
                 clientCharset, clientTxIsolation, expectAutocommit,
                 synCount, usrVariables, sysVariables, toResetSys);
+        return sb;
+    }
+
+    private void synAndDoExecuteMultiNode(StringBuilder synSQL, RouteResultsetNode rrn, CharsetNames clientCharset) {
+        if (synSQL == null) {
+            // not need syn connection
+            if (session != null) {
+                session.setBackendRequestTime(this.id);
+            }
+            DbleServer.getInstance().getWriteToBackendQueue().add(Collections.singletonList(sendQueryCmdTask(rrn.getStatement(), clientCharset)));
+            return;
+        }
         // syn schema
         List<WriteToBackendTask> taskList = new ArrayList<>(1);
         // and our query sql to multi command at last
-        sb.append(rrn.getStatement()).append(";");
+        synSQL.append(rrn.getStatement()).append(";");
         // syn and execute others
         if (session != null) {
             session.setBackendRequestTime(this.id);
         }
-        taskList.add(sendQueryCmdTask(sb.toString(), clientCharset));
+        taskList.add(sendQueryCmdTask(synSQL.toString(), clientCharset));
         DbleServer.getInstance().getWriteToBackendQueue().add(taskList);
         // waiting syn result...
 
@@ -460,14 +465,12 @@ public class MySQLConnection extends AbstractConnection implements
 
     public void execute(RouteResultsetNode rrn, ServerConnection sc,
                         boolean isAutoCommit) {
-        if (rrn.getSqlType() == ServerParse.DDL) {
-            isDDL = true;
-        }
         String xaTxId = getConnXID(session.getSessionXaID(), rrn.getMultiplexNum().longValue());
         if (!sc.isAutocommit() && !sc.isTxStart() && rrn.isModifySQL()) {
             sc.setTxStart(true);
         }
-        synAndDoExecute(xaTxId, rrn, sc.getCharset(), sc.getTxIsolation(), isAutoCommit, sc.getUsrVariables(), sc.getSysVariables());
+        StringBuilder synSQL = getSynSql(xaTxId, rrn, sc.getCharset(), sc.getTxIsolation(), isAutoCommit, sc.getUsrVariables(), sc.getSysVariables());
+        synAndDoExecute(synSQL, rrn, sc.getCharset());
     }
 
     public String getConnXID(String sessionXaId, long multiplexNum) {
@@ -479,28 +482,8 @@ public class MySQLConnection extends AbstractConnection implements
         }
     }
 
-    private void synAndDoExecute(String xaTxID, RouteResultsetNode rrn,
-                                 CharsetNames clientCharset, int clientTxIsolation,
-                                 boolean expectAutocommit, Map<String, String> usrVariables, Map<String, String> sysVariables) {
-        String xaCmd = null;
-        boolean conAutoCommit = this.autocommit;
-        String conSchema = this.schema;
-        int xaSyn = 0;
-        if (!expectAutocommit && xaTxID != null && xaStatus == TxState.TX_INITIALIZE_STATE && !isDDL) {
-            // clientTxIsolation = Isolation.SERIALIZABLE;TODO:NEEDED?
-            xaCmd = "XA START " + xaTxID + ';';
-            this.xaStatus = TxState.TX_STARTED_STATE;
-            xaSyn = 1;
-        }
-        Set<String> toResetSys = new HashSet<>();
-        String setSql = getSetSQL(usrVariables, sysVariables, toResetSys);
-        int setSqlFlag = setSql == null ? 0 : 1;
-        int schemaSyn = StringUtil.equals(conSchema, oldSchema) ? 0 : 1;
-        int charsetSyn = (charsetName.equals(clientCharset)) ? 0 : 1;
-        int txIsolationSyn = (txIsolation == clientTxIsolation) ? 0 : 1;
-        int autoCommitSyn = (conAutoCommit == expectAutocommit) ? 0 : 1;
-        int synCount = schemaSyn + charsetSyn + txIsolationSyn + autoCommitSyn + xaSyn + setSqlFlag;
-        if (synCount == 0) {
+    private void synAndDoExecute(StringBuilder synSQL, RouteResultsetNode rrn, CharsetNames clientCharset) {
+        if (synSQL == null) {
             // not need syn connection
             if (session != null) {
                 session.setBackendRequestTime(this.id);
@@ -509,43 +492,13 @@ public class MySQLConnection extends AbstractConnection implements
             return;
         }
 
-        StringBuilder sb = new StringBuilder();
-        if (schemaSyn == 1) {
-            getChangeSchemaCommand(sb, conSchema);
-        }
-        if (charsetSyn == 1) {
-            getCharsetCommand(sb, clientCharset);
-        }
-        if (txIsolationSyn == 1) {
-            getTxIsolationCommand(sb, clientTxIsolation);
-        }
-        if (autoCommitSyn == 1) {
-            getAutocommitCommand(sb, expectAutocommit);
-        }
-        if (setSqlFlag == 1) {
-            sb.append(setSql);
-        }
-        if (xaCmd != null) {
-            XaDelayProvider.delayBeforeXaStart(rrn.getName(), xaTxID);
-            sb.append(xaCmd);
-        }
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("con need syn ,total syn cmd " + synCount +
-                    " commands " + sb.toString() + "schema change:" +
-                    (schemaSyn == 1) + " con:" + this);
-        }
-        metaDataSynced = false;
-        statusSync = new StatusSync(conSchema,
-                clientCharset, clientTxIsolation, expectAutocommit,
-                synCount, usrVariables, sysVariables, toResetSys);
-
         // and our query sql to multi command at last
-        sb.append(rrn.getStatement()).append(";");
+        synSQL.append(rrn.getStatement()).append(";");
         // syn and execute others
         if (session != null) {
             session.setBackendRequestTime(this.id);
         }
-        this.sendQueryCmd(sb.toString(), clientCharset);
+        this.sendQueryCmd(synSQL.toString(), clientCharset);
         // waiting syn result...
 
     }
@@ -563,9 +516,8 @@ public class MySQLConnection extends AbstractConnection implements
     private String getSetSQL(Map<String, String> usrVars, Map<String, String> sysVars, Set<String> toResetSys) {
         //new final var
         List<Pair<String, String>> setVars = new ArrayList<>();
-        Map<String, String> tmpSysVars = new HashMap<>();
         //tmp add all backend sysVariables
-        tmpSysVars.putAll(sysVariables);
+        Map<String, String> tmpSysVars = new HashMap<>(sysVariables);
         //for all front end sysVariables
         for (Map.Entry<String, String> entry : sysVars.entrySet()) {
             if (!tmpSysVars.containsKey(entry.getKey())) {
@@ -630,10 +582,10 @@ public class MySQLConnection extends AbstractConnection implements
         query(query, this.autocommit);
     }
 
-    public void query(String query, boolean isAutocommit) {
-        RouteResultsetNode rrn = new RouteResultsetNode("default",
-                ServerParse.SELECT, query);
-        synAndDoExecute(null, rrn, this.charsetName, this.txIsolation, isAutocommit, this.getUsrVariables(), this.getSysVariables());
+    public void query(String query, boolean isAutoCommit) {
+        RouteResultsetNode rrn = new RouteResultsetNode("default", ServerParse.SELECT, query);
+        StringBuilder synSQL = getSynSql(null, rrn, this.charsetName, this.txIsolation, isAutoCommit, this.getUsrVariables(), this.getSysVariables());
+        synAndDoExecute(synSQL, rrn, this.charsetName);
 
     }
 

@@ -730,6 +730,7 @@ public class NonBlockingSession implements Session {
         }
         LockTablesHandler handler = new LockTablesHandler(this, rrs);
         source.setLocked(true);
+        transactionManager.setXaTxEnabled(false, source);
         try {
             handler.execute();
         } catch (Exception e) {

@@ -136,6 +136,9 @@
         <property name="flushSlowLogSize">1000</property>
         <!-- the threshold for judging if the query is slow , unit is millisecond -->
         <property name="sqlSlowTime">100</property>
+        <property name="enableFlowControl">true</property>
+        <property name="flowControlStartThreshold">4096</property>
+        <property name="flowControlStopThreshold">256</property>
 
         <!-- used for load data,maxCharsPerColumn means max chars length for per column when load data  -->
         <!--<property name="maxCharsPerColumn">65535</property>-->

@@ -148,6 +148,9 @@ public final class ShowSysParam {
         paramValues.add(sysConfig.getMaxCharsPerColumn() + "");
         paramValues.add(sysConfig.getMaxRowSizeToFile() + "");
         paramValues.add(sysConfig.isUseOuterHa() + "");
+        paramValues.add(sysConfig.isEnableFlowControl() + "");
+        paramValues.add(sysConfig.getFlowControlStartThreshold() + "");
+        paramValues.add(sysConfig.getFlowControlStopThreshold() + "");
 
 
         for (int i = 0; i < PARAM_NAMES.length; i++) {

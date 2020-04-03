@@ -18,6 +18,7 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.transform.stream.StreamSource;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -183,15 +184,7 @@ public class XmlProcessBase {
     }
 
 
-    /**
-     * baseParseAndWriteToXml
-     *
-     * @param user
-     * @param inputPath
-     * @param name
-     * @Created 2016/9/15
-     */
-    public void baseParseWriteToXml(Object user, String inputPath, String name) throws IOException {
+    public void safeParseWriteToXml(Object user, String inputPath, String name) throws IOException {
         OutputStream out = null;
         try {
             Marshaller marshaller = this.jaxContext.createMarshaller();
@@ -203,12 +196,23 @@ public class XmlProcessBase {
                         String.format("<!DOCTYPE " + Versions.ROOT_PREFIX + ":%1$s SYSTEM \"%1$s.dtd\">", name));
             }
 
-            Path path = Paths.get(inputPath);
+            Path path = Paths.get(inputPath + ".dble.safe");
 
             out = Files.newOutputStream(path, StandardOpenOption.CREATE,
                     StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
 
             marshaller.marshal(user, out);
+
+            //write out xml.dble.safe file finish
+            // rename it into schema.xml
+            File fromFile = new File(inputPath + ".dble.safe");
+            File toFile = new File(inputPath);
+            if (toFile.exists()) {
+                toFile.delete();
+            }
+            if (!fromFile.renameTo(toFile)) {
+                throw new IOException("rename file error for " + path.getFileName());
+            }
 
         } catch (JAXBException | IOException e) {
             LOGGER.error("ZookeeperProcessListen parseToXml  error:Exception info:", e);

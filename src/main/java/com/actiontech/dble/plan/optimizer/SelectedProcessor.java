@@ -100,7 +100,7 @@ public final class SelectedProcessor {
                         referList = new ArrayList<>();
                     }
                     Collection<Item> pdRefers = getPushDownSel(qtn, referList);
-                    Set<Item> pushList = addExprOrderByToSelect(child, pdRefers);
+                    List<Item> pushList = addExprOrderByToSelect(child, pdRefers);
                     pushSelected(child, pushList);
                 }
                 return qtn;
@@ -109,21 +109,42 @@ public final class SelectedProcessor {
     }
 
     // if order by item is not FIELD_ITEM, we need to add back to select list and push down
-    private static Set<Item> addExprOrderByToSelect(PlanNode child, Collection<Item> pdRefers) {
-        Set<Item> pushList = new LinkedHashSet<Item>();
+    private static List<Item> addExprOrderByToSelect(PlanNode child, Collection<Item> pdRefers) {
+        List<Item> pushList = new LinkedList<Item>();
         pushList.addAll(pdRefers);
         for (Order order : child.getOrderBys()) {
             if (order.getItem().type() != Item.ItemType.FIELD_ITEM) {
-                pushList.add(order.getItem());
+                addToListWithoutDuplicate(pushList, order.getItem());
             }
         }
         for (Order order : child.getGroupBys()) {
             if (order.getItem().type() != Item.ItemType.FIELD_ITEM) {
-                pushList.add(order.getItem());
+                addToListWithoutDuplicate(pushList, order.getItem());
             }
         }
         return pushList;
     }
+
+    private static void addToListWithoutDuplicate(List<Item> pushDownList, Item i) {
+        boolean hasFoudSameName = false;
+        for (Item pushi : pushDownList) {
+            if (pushi.getAlias() == null && i.getAlias() == null) {
+                if (pushi.getItemName().equals(i.getItemName())) {
+                    hasFoudSameName = true;
+                    break;
+                }
+            } else if (pushi.getAlias() != null && i.getAlias() != null) {
+                if (pushi.getAlias().equals(i.getAlias())) {
+                    hasFoudSameName = true;
+                    break;
+                }
+            }
+        }
+        if (!hasFoudSameName) {
+            pushDownList.add(i);
+        }
+    }
+
 
     private static Collection<Item> getPushDownSel(PlanNode parent, List<Item> selList) {
         // oldselectable->newselectbable

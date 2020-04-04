@@ -132,7 +132,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         if (!heartbeat.isStop()) {
             if (heartbeat.getStatus() == MySQLHeartbeat.OK_STATUS) { // ok->ok
                 if (!heartbeat.getSource().isSalveOrRead() && source.isReadOnly()) { // writehost check read only status is back?
-                    GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(source);
+                    GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(source, true);
                     KeyVariables variables = task.call();
                     if (variables != null) {
                         source.setReadOnly(variables.isReadOnly());
@@ -150,12 +150,21 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                     heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS);
                     return;
                 }
-                GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(source);
+                GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(source, true);
                 KeyVariables variables = task.call();
-                if (variables == null || variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+                if (variables == null ||
+                        variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames() ||
+                        variables.getMaxPacketSize() < DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize()) {
                     String url = con.getHost() + ":" + con.getPort();
                     Map<String, String> labels = AlertUtil.genSingleLabel("data_host", url);
-                    String errMsg = variables == null ? "GetAndSyncDataSourceKeyVariables failed" : "this dataHost[=" + url + "]'s lower_case is wrong";
+                    String errMsg;
+                    if (variables == null) {
+                        errMsg = "GetAndSyncDataSourceKeyVariables failed";
+                    } else if (variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+                        errMsg = "this dataHost[=" + url + "]'s lower_case is wrong";
+                    } else {
+                        errMsg = "this dataHost[=" + url + "]'s max_allowed_packet is " + variables.getMaxPacketSize() + ", but dble's is " + DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize();
+                    }
                     LOGGER.warn(errMsg + ", set heartbeat Error");
                     if (variables != null) {
                         AlertUtil.alert(AlarmCode.DATA_HOST_LOWER_CASE_ERROR, Alert.AlertLevel.WARN, errMsg, "mysql", this.heartbeat.getSource().getConfig().getId(), labels);

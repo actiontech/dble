@@ -353,7 +353,7 @@ public final class ReloadConfig {
             ReloadLogHelper.info("reload config: data host's lowerCaseTableNames=1, lower the config properties end", LOGGER);
         }
         checkTestConnIfNeed(loadAllMode, loader);
-        ConfigUtil.getAndSyncKeyVariables(false, addOrChangeHosts);
+        ConfigUtil.getAndSyncKeyVariables(false, addOrChangeHosts, true);
 
         Map<String, UserConfig> newUsers = serverConfig.getUsers();
         Map<String, SchemaConfig> newSchemas = serverConfig.getSchemas();
@@ -425,7 +425,7 @@ public final class ReloadConfig {
             ReloadLogHelper.info("reload config: data host's lowerCaseTableNames=1, lower the config properties end", LOGGER);
         }
         checkTestConnIfNeed(loadAllMode, loader);
-        ConfigUtil.getAndSyncKeyVariables(false, loader.getDataHosts());
+        ConfigUtil.getAndSyncKeyVariables(false, loader.getDataHosts(), true);
 
         Map<String, UserConfig> newUsers = serverConfig.getUsers();
         Map<String, SchemaConfig> newSchemas = serverConfig.getSchemas();

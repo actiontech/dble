@@ -35,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 
 public final class ConfigUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigUtil.class);
+
     private ConfigUtil() {
     }
 
@@ -175,6 +176,7 @@ public final class ConfigUtil {
 
     /**
      * check element illegal value and return val
+     *
      * @param element
      * @param attrName
      * @param defaultValue
@@ -206,14 +208,16 @@ public final class ConfigUtil {
     }
 
 
-    public static void getAndSyncKeyVariables(boolean isStart, Map<String, PhysicalDataHost> dataHosts) throws Exception {
+    public static String getAndSyncKeyVariables(boolean isStart, Map<String, PhysicalDataHost> dataHosts, boolean needSync) throws Exception {
+        String msg = null;
         Map<String, Future<KeyVariables>> keyVariablesTaskMap = new HashMap<>(dataHosts.size());
-        getAndSyncKeyVariablesForDataSources(isStart, dataHosts, keyVariablesTaskMap);
+        getAndSyncKeyVariablesForDataSources(isStart, dataHosts, keyVariablesTaskMap, needSync);
 
         boolean lowerCase = false;
         boolean isFirst = true;
         Set<String> firstGroup = new HashSet<>();
         Set<String> secondGroup = new HashSet<>();
+        int minNodePacketSize = Integer.MAX_VALUE;
         for (Map.Entry<String, Future<KeyVariables>> entry : keyVariablesTaskMap.entrySet()) {
             String dataSourceName = entry.getKey();
             Future<KeyVariables> future = entry.getValue();
@@ -226,7 +230,13 @@ public final class ConfigUtil {
                 } else if (keyVariables.isLowerCase() != lowerCase) {
                     secondGroup.add(dataSourceName);
                 }
+                minNodePacketSize = minNodePacketSize < keyVariables.getMaxPacketSize() ? minNodePacketSize : keyVariables.getMaxPacketSize();
             }
+        }
+        if (minNodePacketSize < DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize()) {
+            DbleServer.getInstance().getConfig().getSystem().setMaxPacketSize(minNodePacketSize);
+            msg = "dble's maxPacketSize will be set to the min  of all datahost's max_allowed_packet:" + minNodePacketSize;
+            LOGGER.warn(msg);
         }
         if (secondGroup.size() != 0) {
             // if all datasoure's lower case are not equal, throw exception
@@ -249,11 +259,11 @@ public final class ConfigUtil {
             sb.append(".");
             throw new IOException(sb.toString());
         }
+        return msg;
     }
 
 
-
-    private static void getAndSyncKeyVariablesForDataSources(boolean isStart, Map<String, PhysicalDataHost> dataHosts, Map<String, Future<KeyVariables>> keyVariablesTaskMap) throws InterruptedException {
+    private static void getAndSyncKeyVariablesForDataSources(boolean isStart, Map<String, PhysicalDataHost> dataHosts, Map<String, Future<KeyVariables>> keyVariablesTaskMap, boolean needSync) throws InterruptedException {
         if (dataHosts.size() == 0) {
             return;
         }
@@ -278,7 +288,7 @@ public final class ConfigUtil {
                 if (ds.isDisabled() || !ds.isTestConnSuccess()) {
                     continue;
                 }
-                getKeyVariablesForDataSource(service, ds, hostName, keyVariablesTaskMap);
+                getKeyVariablesForDataSource(service, ds, hostName, keyVariablesTaskMap, needSync);
             }
         }
         service.shutdown();
@@ -296,9 +306,9 @@ public final class ConfigUtil {
         }
     }
 
-    private static void getKeyVariablesForDataSource(ExecutorService service, PhysicalDataSource ds, String hostName, Map<String, Future<KeyVariables>> keyVariablesTaskMap) {
+    private static void getKeyVariablesForDataSource(ExecutorService service, PhysicalDataSource ds, String hostName, Map<String, Future<KeyVariables>> keyVariablesTaskMap, boolean needSync) {
         String dataSourceName = genDataSourceKey(hostName, ds.getName());
-        GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(ds);
+        GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(ds, needSync);
         Future<KeyVariables> future = service.submit(task);
         keyVariablesTaskMap.put(dataSourceName, future);
     }

@@ -26,17 +26,18 @@ public class GetAndSyncDataSourceKeyVariables implements Callable<KeyVariables> 
     private static final String COLUMN_LOWER_CASE = "@@lower_case_table_names";
     private static final String COLUMN_AUTOCOMMIT = "@@autocommit";
     private static final String COLUMN_READONLY = "@@read_only";
-    private static final String SQL = "select @@lower_case_table_names,@@autocommit, @@read_only,";
+    private static final String COLUMN_MAX_PACKET = "@@max_allowed_packet";
     private ReentrantLock lock = new ReentrantLock();
     private volatile boolean isFinish = false;
     private Condition finishCond = lock.newCondition();
     private volatile KeyVariables keyVariables;
-    private volatile boolean needSync = false;
     private PhysicalDataSource ds;
     private final String columnIsolation;
+    private final boolean needSync;
 
-    public GetAndSyncDataSourceKeyVariables(PhysicalDataSource ds) {
+    public GetAndSyncDataSourceKeyVariables(PhysicalDataSource ds, boolean needSync) {
         this.ds = ds;
+        this.needSync = needSync;
         String isolationName = VersionUtil.getIsolationNameByVersion(ds.getDsVersion());
         if (isolationName != null) {
             columnIsolation = "@@" + isolationName;
@@ -50,9 +51,16 @@ public class GetAndSyncDataSourceKeyVariables implements Callable<KeyVariables> 
         if (columnIsolation == null) {
             return keyVariables;
         }
-        String[] columns = new String[]{COLUMN_LOWER_CASE, COLUMN_AUTOCOMMIT, COLUMN_READONLY, columnIsolation};
+        String[] columns = new String[]{COLUMN_LOWER_CASE, COLUMN_AUTOCOMMIT, COLUMN_READONLY, COLUMN_MAX_PACKET, columnIsolation};
+        StringBuilder sql = new StringBuilder("select ");
+        for (int i = 0; i < columns.length; i++) {
+            if (i != 0) {
+                sql.append(",");
+            }
+            sql.append(columns[i]);
+        }
         OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(columns, new GetDataSourceKeyVariablesListener());
-        OneTimeConnJob sqlJob = new OneTimeConnJob(SQL + columnIsolation, null, resultHandler, ds);
+        OneTimeConnJob sqlJob = new OneTimeConnJob(sql.toString(), null, resultHandler, ds);
         sqlJob.run();
         lock.lock();
         try {
@@ -92,33 +100,48 @@ public class GetAndSyncDataSourceKeyVariables implements Callable<KeyVariables> 
                     default:
                         break;
                 }
+                keyVariables.setMaxPacketSize(Integer.parseInt(result.getResult().get(COLUMN_MAX_PACKET)));
+                int sysMaxPacketSize = DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize();
+                keyVariables.setTargetMaxPacketSize(sysMaxPacketSize);
+
+
                 boolean sysAutocommit = DbleServer.getInstance().getConfig().getSystem().getAutocommit() == 1;
                 keyVariables.setTargetAutocommit(sysAutocommit);
-                if (sysAutocommit != keyVariables.isAutocommit()) {
-                    needSync = true;
-                } else {
-                    ds.setAutocommitSynced(true);
-                }
+
                 int sysTxIsolation = DbleServer.getInstance().getConfig().getSystem().getTxIsolation();
                 keyVariables.setTargetIsolation(sysTxIsolation);
-                if (sysTxIsolation != keyVariables.getIsolation()) {
-                    needSync = true;
-                } else {
-                    ds.setIsolationSynced(true);
-                }
+
                 keyVariables.setReadOnly(result.getResult().get(COLUMN_READONLY).equals("1"));
 
                 if (needSync) {
-                    SyncDataSourceKeyVariables task = new SyncDataSourceKeyVariables(keyVariables, ds);
-                    boolean synced = false;
-                    try {
-                        synced = task.call();
-                    } catch (Exception e) {
-                        LOGGER.warn("SyncDataSourceKeyVariables error", e);
+                    boolean checkNeedSync = false;
+                    if (sysMaxPacketSize > keyVariables.getMaxPacketSize()) {
+                        checkNeedSync = true;
                     }
-                    if (synced) {
+                    if (sysAutocommit != keyVariables.isAutocommit()) {
+                        checkNeedSync = true;
+                    } else {
                         ds.setAutocommitSynced(true);
+                    }
+                    if (sysTxIsolation != keyVariables.getIsolation()) {
+                        checkNeedSync = true;
+                    } else {
                         ds.setIsolationSynced(true);
+                    }
+
+                    if (checkNeedSync) {
+                        SyncDataSourceKeyVariables task = new SyncDataSourceKeyVariables(keyVariables, ds);
+                        boolean synced = false;
+                        try {
+                            synced = task.call();
+                        } catch (Exception e) {
+                            LOGGER.warn("SyncDataSourceKeyVariables error", e);
+                        }
+                        if (synced) {
+                            ds.setAutocommitSynced(true);
+                            ds.setIsolationSynced(true);
+                            keyVariables.setMaxPacketSize(keyVariables.getTargetMaxPacketSize());
+                        }
                     }
                 }
             } else {

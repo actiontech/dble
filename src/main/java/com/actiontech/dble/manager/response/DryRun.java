@@ -86,7 +86,10 @@ public final class DryRun {
             }
         }
         try {
-            ConfigUtil.getAndSyncKeyVariables(false, loader.getDataHosts());
+            String msg = ConfigUtil.getAndSyncKeyVariables(false, loader.getDataHosts(), false);
+            if (msg != null) {
+                list.add(new ErrorInfo("Backend", "WARNING", msg));
+            }
         } catch (Exception e) {
             list.add(new ErrorInfo("Backend", "ERROR", e.getMessage()));
         }

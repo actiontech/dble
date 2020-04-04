@@ -483,7 +483,7 @@ public class PhysicalDataHost {
             //close all old master connection ,so that new write query would not put into the old writeHost
             writeSource.clearCons("ha command switch datasource");
             if (!newWriteHost.isDisabled()) {
-                GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(newWriteHost);
+                GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(newWriteHost, true);
                 KeyVariables variables = task.call();
                 if (variables != null) {
                     newWriteHost.setReadOnly(variables.isReadOnly());

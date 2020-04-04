@@ -124,7 +124,7 @@ public class ServerConfig {
     }
 
     public void getAndSyncKeyVariables() throws Exception {
-        ConfigUtil.getAndSyncKeyVariables(true, confInitNew.getDataHosts());
+        ConfigUtil.getAndSyncKeyVariables(true, confInitNew.getDataHosts(), true);
     }
 
     public boolean isDataHostWithoutWR() {

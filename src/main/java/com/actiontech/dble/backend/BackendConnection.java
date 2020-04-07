@@ -71,4 +71,8 @@ public interface BackendConnection extends ClosableConnection {
     void setExecuting(boolean executing);
 
     boolean isExecuting();
+
+    void disableRead();
+
+    void enableRead();
 }

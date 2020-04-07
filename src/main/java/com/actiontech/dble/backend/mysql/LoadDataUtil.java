@@ -70,6 +70,17 @@ public final class LoadDataUtil {
             int len = -1;
 
             while ((len = inputStream.read(buffer)) != -1) {
+                if (DbleServer.getInstance().getConfig().getSystem().isEnableFlowControl() &&
+                        c.getWriteQueue().size() > DbleServer.getInstance().getConfig().getSystem().getFlowControlStartThreshold()) {
+                    c.startFlowControl();
+                }
+                while (c.isFlowControlled()) {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        //ignore error
+                    }
+                }
                 byte[] temp = null;
                 if (len == packSize) {
                     temp = buffer;

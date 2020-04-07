@@ -40,6 +40,7 @@ import java.nio.channels.NetworkChannel;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -66,6 +67,7 @@ public class ServerConnection extends FrontendConnection {
     private AtomicLong txID;
     private List<Pair<SetHandler.KeyType, Pair<String, String>>> contextTask = new ArrayList<>();
     private List<Pair<SetHandler.KeyType, Pair<String, String>>> innerSetTask = new ArrayList<>();
+    private final HashSet<BackendConnection> flowControlledBackendConnections = new HashSet<>();
 
     public ServerConnection(NetworkChannel channel)
             throws IOException {
@@ -647,5 +649,23 @@ public class ServerConnection extends FrontendConnection {
     @Override
     public void writePart(ByteBuffer buffer) {
         super.write(buffer);
+    }
+
+    public void startFlowControl(BackendConnection backendConnection) {
+        synchronized (flowControlledBackendConnections) {
+            this.setFlowControlled(true);
+            backendConnection.disableRead();
+            flowControlledBackendConnections.add(backendConnection);
+        }
+    }
+
+    public void stopFlowControl() {
+        synchronized (flowControlledBackendConnections) {
+            this.setFlowControlled(false);
+            for (BackendConnection entry :flowControlledBackendConnections) {
+                entry.enableRead();
+            }
+            flowControlledBackendConnections.clear();
+        }
     }
 }

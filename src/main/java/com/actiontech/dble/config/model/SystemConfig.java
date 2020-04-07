@@ -161,6 +161,11 @@ public final class SystemConfig {
     private ProblemReporter problemReporter;
     private boolean useOuterHa = false;
 
+    private boolean enableFlowControl = true;
+    private int flowControlStartThreshold = 4096;
+    private int flowControlStopThreshold = 256;
+
+
     public SystemConfig(ProblemReporter problemReporter) {
         this.problemReporter = problemReporter;
     }
@@ -1191,6 +1196,29 @@ public final class SystemConfig {
         }
     }
 
+    public boolean isEnableFlowControl() {
+        return enableFlowControl;
+    }
+
+    public void setEnableFlowControl(boolean enableFlowControl) {
+        this.enableFlowControl = enableFlowControl;
+    }
+
+    public int getFlowControlStartThreshold() {
+        return flowControlStartThreshold;
+    }
+
+    public void setFlowControlStartThreshold(int flowControlStartThreshold) {
+        this.flowControlStartThreshold = flowControlStartThreshold;
+    }
+
+    public int getFlowControlStopThreshold() {
+        return flowControlStopThreshold;
+    }
+
+    public void setFlowControlStopThreshold(int flowControlStopThreshold) {
+        this.flowControlStopThreshold = flowControlStopThreshold;
+    }
 
     @Override
     public String toString() {
@@ -1271,6 +1299,9 @@ public final class SystemConfig {
                 ", maxCharsPerColumn=" + maxCharsPerColumn +
                 ", maxRowSizeToFile=" + maxRowSizeToFile +
                 ", xaRetryCount=" + xaRetryCount +
+                ", enableFlowControl=" + enableFlowControl +
+                ", flowControlStartThreshold=" + flowControlStartThreshold +
+                ", flowControlStopThreshold=" + flowControlStopThreshold +
                 "]";
     }
 

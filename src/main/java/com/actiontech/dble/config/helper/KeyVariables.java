@@ -6,12 +6,15 @@
 package com.actiontech.dble.config.helper;
 
 public class KeyVariables {
-    private boolean lowerCase = true;
     private boolean autocommit = true;
     private int isolation = -1;
+    private volatile int maxPacketSize = -1;
     private boolean targetAutocommit = true;
     private int targetIsolation = -1;
+    private int targetMaxPacketSize = -1;
+
     private boolean readOnly = false;
+    private boolean lowerCase = true;
 
     public boolean isLowerCase() {
         return lowerCase;
@@ -59,6 +62,22 @@ public class KeyVariables {
 
     public void setReadOnly(boolean readOnly) {
         this.readOnly = readOnly;
+    }
+
+    public int getMaxPacketSize() {
+        return maxPacketSize;
+    }
+
+    public void setMaxPacketSize(int maxPacketSize) {
+        this.maxPacketSize = maxPacketSize;
+    }
+
+    public int getTargetMaxPacketSize() {
+        return targetMaxPacketSize;
+    }
+
+    public void setTargetMaxPacketSize(int targetMaxPacketSize) {
+        this.targetMaxPacketSize = targetMaxPacketSize;
     }
 
 }

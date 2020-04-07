@@ -45,6 +45,8 @@ public class CommitStage implements TransactionStage {
         } else {
             if (sendData != null) {
                 session.getPacketId().set(sendData[3]);
+            } else {
+                sendData = session.getOkByteArray();
             }
             session.setFinishedCommitTime();
             session.setResponseTime(true);

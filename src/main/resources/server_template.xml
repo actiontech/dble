@@ -28,7 +28,7 @@
         <!--<property name="writeToBackendExecutor">4</property> -->
 
         <!--<property name="fakeMySQLVersion">5.6.20</property>-->
-        <property name="sequnceHandlerType">2</property>
+        <property name="sequenceHandlerType">2</property>
         <!-- serverBacklog size,default 2048-->
         <property name="serverBacklog">2048</property>
         <!--<property name="serverNodeId">1</property>-->
@@ -66,11 +66,11 @@
         <property name="idleTimeout">1800000</property><!-- unit millisecond -->
 
         <!-- transaction log -->
-        <!-- 1 enable record the transaction log, 0 disable ,the unit of transactionRatateSize is M -->
+        <!-- 1 enable record the transaction log, 0 disable ,the unit of transactionRotateSize is M -->
         <property name="recordTxn">0</property>
         <!--<property name="transactionLogBaseDir">/txlogs</property>-->
         <!--<property name="transactionLogBaseName">server-tx</property>-->
-        <!--<property name="transactionRatateSize">16</property>-->
+        <!--<property name="transactionRotateSize">16</property>-->
 
         <!-- XA transaction -->
         <!-- use XA transaction ,if the mysql service crash,the unfinished XA commit/rollback will retry for several times

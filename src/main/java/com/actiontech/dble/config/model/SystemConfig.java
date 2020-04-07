@@ -27,7 +27,7 @@ public final class SystemConfig {
     public static final int SEQUENCE_HANDLER_LOCAL_TIME = 2;
     public static final int SEQUENCE_HANDLER_ZK_DISTRIBUTED = 3;
     public static final int SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT = 4;
-    private static final String WARNING_FORMATE = "Property [ %s ] '%d' in server.xml is illegal, use %d replaced";
+    private static final String WARNING_FORMAT = "Property [ %s ] '%d' in server.xml is illegal, use %d replaced";
     /*
      * the supported  protocol version of MySQL
      * For Other MySQL branch ,like MariaDB 10.1.x,
@@ -48,7 +48,7 @@ public final class SystemConfig {
     private int complexExecutor = processorExecutor > 8 ? 8 : processorExecutor;
     private int writeToBackendExecutor = (DEFAULT_PROCESSORS != 1) ? DEFAULT_PROCESSORS : 2;
     private String fakeMySQLVersion = null;
-    private int sequnceHandlerType = SEQUENCE_HANDLER_LOCAL_TIME;
+    private int sequenceHandlerType = SEQUENCE_HANDLER_LOCAL_TIME;
     private int serverBacklog = 2048;
     private int serverNodeId = 1;
     private long showBinlogStatusTimeout = 60 * 1000;
@@ -88,7 +88,7 @@ public final class SystemConfig {
     private int recordTxn = 0;
     private String transactionLogBaseDir = SystemConfig.getHomePath() + File.separatorChar + "txlogs" + File.separatorChar;
     private String transactionLogBaseName = "server-tx";
-    private int transactionRatateSize = 16; // M
+    private int transactionRotateSize = 16; // M
 
     //XA transaction
     private long xaSessionCheckPeriod = 1000L;
@@ -170,17 +170,23 @@ public final class SystemConfig {
         this.problemReporter = problemReporter;
     }
 
-    public int getTransactionRatateSize() {
-        return transactionRatateSize;
+    public int getTransactionRotateSize() {
+        return transactionRotateSize;
     }
 
     @SuppressWarnings("unused")
-    public void setTransactionRatateSize(int transactionRatateSize) {
-        if (transactionRatateSize > 0) {
-            this.transactionRatateSize = transactionRatateSize;
+    public void setTransactionRotateSize(int transactionRotateSize) {
+        if (transactionRotateSize > 0) {
+            this.transactionRotateSize = transactionRotateSize;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "transactionRatateSize", transactionRatateSize, this.transactionRatateSize));
+            problemReporter.warn(String.format(WARNING_FORMAT, "transactionRotateSize", transactionRotateSize, this.transactionRotateSize));
         }
+    }
+
+    //only for compatibility
+    @SuppressWarnings("unused")
+    public void setTransactionRatateSize(int transactionRatateSize) {
+        setTransactionRotateSize(transactionRatateSize);
     }
 
     public String getTransactionLogBaseDir() {
@@ -229,17 +235,23 @@ public final class SystemConfig {
     }
 
 
-    public int getSequnceHandlerType() {
-        return sequnceHandlerType;
+    public int getSequenceHandlerType() {
+        return sequenceHandlerType;
     }
 
     @SuppressWarnings("unused")
-    public void setSequnceHandlerType(int sequnceHandlerType) {
-        if (sequnceHandlerType >= 1 && sequnceHandlerType <= 4) {
-            this.sequnceHandlerType = sequnceHandlerType;
+    public void setSequenceHandlerType(int sequenceHandlerType) {
+        if (sequenceHandlerType >= 1 && sequenceHandlerType <= 4) {
+            this.sequenceHandlerType = sequenceHandlerType;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "sequnceHandlerType", sequnceHandlerType, this.sequnceHandlerType));
+            problemReporter.warn(String.format(WARNING_FORMAT, "sequenceHandlerType", sequenceHandlerType, this.sequenceHandlerType));
         }
+    }
+
+    //only for compatibility
+    @SuppressWarnings("unused")
+    public void setSequnceHandlerType(int sequnceHandlerType) {
+        setSequenceHandlerType(sequnceHandlerType);
     }
 
     public int getMaxPacketSize() {
@@ -251,7 +263,7 @@ public final class SystemConfig {
         if (maxPacketSize >= 1024 && maxPacketSize <= 1073741824) {
             this.maxPacketSize = maxPacketSize;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "maxPacketSize", maxPacketSize, this.maxPacketSize));
+            problemReporter.warn(String.format(WARNING_FORMAT, "maxPacketSize", maxPacketSize, this.maxPacketSize));
         }
     }
 
@@ -306,7 +318,7 @@ public final class SystemConfig {
         if (useSqlStat >= 0 && useSqlStat <= 1) {
             this.useSqlStat = useSqlStat;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "useSqlStat", useSqlStat, this.useSqlStat));
+            problemReporter.warn(String.format(WARNING_FORMAT, "useSqlStat", useSqlStat, this.useSqlStat));
         }
     }
 
@@ -319,7 +331,7 @@ public final class SystemConfig {
         if (useCompression >= 0 && useCompression <= 1) {
             this.useCompression = useCompression;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "useCompression", useCompression, this.useCompression));
+            problemReporter.warn(String.format(WARNING_FORMAT, "useCompression", useCompression, this.useCompression));
         }
     }
 
@@ -381,7 +393,7 @@ public final class SystemConfig {
         if (processors > 0) {
             this.processors = processors;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "processors", processors, this.processors));
+            problemReporter.warn(String.format(WARNING_FORMAT, "processors", processors, this.processors));
         }
     }
 
@@ -394,7 +406,7 @@ public final class SystemConfig {
         if (backendProcessors > 0) {
             this.backendProcessors = backendProcessors;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "backendProcessors", backendProcessors, this.backendProcessors));
+            problemReporter.warn(String.format(WARNING_FORMAT, "backendProcessors", backendProcessors, this.backendProcessors));
         }
     }
 
@@ -407,7 +419,7 @@ public final class SystemConfig {
         if (processorExecutor > 0) {
             this.processorExecutor = processorExecutor;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "processorExecutor", processorExecutor, this.processorExecutor));
+            problemReporter.warn(String.format(WARNING_FORMAT, "processorExecutor", processorExecutor, this.processorExecutor));
         }
     }
 
@@ -420,7 +432,7 @@ public final class SystemConfig {
         if (backendProcessorExecutor > 0) {
             this.backendProcessorExecutor = backendProcessorExecutor;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "backendProcessorExecutor", backendProcessorExecutor, this.backendProcessorExecutor));
+            problemReporter.warn(String.format(WARNING_FORMAT, "backendProcessorExecutor", backendProcessorExecutor, this.backendProcessorExecutor));
         }
     }
 
@@ -433,7 +445,7 @@ public final class SystemConfig {
         if (complexExecutor > 0) {
             this.complexExecutor = complexExecutor;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "complexExecutor", complexExecutor, this.complexExecutor));
+            problemReporter.warn(String.format(WARNING_FORMAT, "complexExecutor", complexExecutor, this.complexExecutor));
         }
     }
 
@@ -446,7 +458,7 @@ public final class SystemConfig {
         if (idleTimeout > 0) {
             this.idleTimeout = idleTimeout;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "idleTimeout", idleTimeout, this.idleTimeout));
+            problemReporter.warn(String.format(WARNING_FORMAT, "idleTimeout", idleTimeout, this.idleTimeout));
         }
     }
 
@@ -459,7 +471,7 @@ public final class SystemConfig {
         if (processorCheckPeriod > 0) {
             this.processorCheckPeriod = processorCheckPeriod;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "processorCheckPeriod", processorCheckPeriod, this.processorCheckPeriod));
+            problemReporter.warn(String.format(WARNING_FORMAT, "processorCheckPeriod", processorCheckPeriod, this.processorCheckPeriod));
         }
     }
 
@@ -472,7 +484,7 @@ public final class SystemConfig {
         if (xaSessionCheckPeriod > 0) {
             this.xaSessionCheckPeriod = xaSessionCheckPeriod;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "xaSessionCheckPeriod", xaSessionCheckPeriod, this.xaSessionCheckPeriod));
+            problemReporter.warn(String.format(WARNING_FORMAT, "xaSessionCheckPeriod", xaSessionCheckPeriod, this.xaSessionCheckPeriod));
         }
     }
 
@@ -485,7 +497,7 @@ public final class SystemConfig {
         if (xaLogCleanPeriod > 0) {
             this.xaLogCleanPeriod = xaLogCleanPeriod;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "xaLogCleanPeriod", xaLogCleanPeriod, this.xaLogCleanPeriod));
+            problemReporter.warn(String.format(WARNING_FORMAT, "xaLogCleanPeriod", xaLogCleanPeriod, this.xaLogCleanPeriod));
         }
     }
 
@@ -498,7 +510,7 @@ public final class SystemConfig {
         if (dataNodeIdleCheckPeriod > 0) {
             this.dataNodeIdleCheckPeriod = dataNodeIdleCheckPeriod;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "dataNodeIdleCheckPeriod", dataNodeIdleCheckPeriod, this.dataNodeIdleCheckPeriod));
+            problemReporter.warn(String.format(WARNING_FORMAT, "dataNodeIdleCheckPeriod", dataNodeIdleCheckPeriod, this.dataNodeIdleCheckPeriod));
         }
     }
 
@@ -511,7 +523,7 @@ public final class SystemConfig {
         if (dataNodeHeartbeatPeriod > 0) {
             this.dataNodeHeartbeatPeriod = dataNodeHeartbeatPeriod;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "dataNodeHeartbeatPeriod", dataNodeHeartbeatPeriod, this.dataNodeHeartbeatPeriod));
+            problemReporter.warn(String.format(WARNING_FORMAT, "dataNodeHeartbeatPeriod", dataNodeHeartbeatPeriod, this.dataNodeHeartbeatPeriod));
         }
     }
 
@@ -524,7 +536,7 @@ public final class SystemConfig {
         if (sqlExecuteTimeout > 0) {
             this.sqlExecuteTimeout = sqlExecuteTimeout;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "sqlExecuteTimeout", sqlExecuteTimeout, this.sqlExecuteTimeout));
+            problemReporter.warn(String.format(WARNING_FORMAT, "sqlExecuteTimeout", sqlExecuteTimeout, this.sqlExecuteTimeout));
         }
     }
 
@@ -538,7 +550,7 @@ public final class SystemConfig {
         if (showBinlogStatusTimeout > 0) {
             this.showBinlogStatusTimeout = sqlExecuteTimeout;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "showBinlogStatusTimeout", showBinlogStatusTimeout, this.showBinlogStatusTimeout));
+            problemReporter.warn(String.format(WARNING_FORMAT, "showBinlogStatusTimeout", showBinlogStatusTimeout, this.showBinlogStatusTimeout));
         }
     }
 
@@ -552,7 +564,7 @@ public final class SystemConfig {
         if (txIsolation >= 1 && txIsolation <= 4) {
             this.txIsolation = txIsolation;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "txIsolation", txIsolation, this.txIsolation));
+            problemReporter.warn(String.format(WARNING_FORMAT, "txIsolation", txIsolation, this.txIsolation));
         }
     }
 
@@ -565,7 +577,7 @@ public final class SystemConfig {
         if (autocommit >= 0 && autocommit <= 1) {
             this.autocommit = autocommit;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "autocommit", autocommit, this.autocommit));
+            problemReporter.warn(String.format(WARNING_FORMAT, "autocommit", autocommit, this.autocommit));
         }
     }
 
@@ -579,7 +591,7 @@ public final class SystemConfig {
         if (sqlRecordCount > 0) {
             this.sqlRecordCount = sqlRecordCount;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "sqlRecordCount", sqlRecordCount, this.sqlRecordCount));
+            problemReporter.warn(String.format(WARNING_FORMAT, "sqlRecordCount", sqlRecordCount, this.sqlRecordCount));
         }
     }
 
@@ -592,7 +604,7 @@ public final class SystemConfig {
         if (recordTxn >= 0 && recordTxn <= 1) {
             this.recordTxn = recordTxn;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "recordTxn", recordTxn, this.recordTxn));
+            problemReporter.warn(String.format(WARNING_FORMAT, "recordTxn", recordTxn, this.recordTxn));
         }
     }
 
@@ -605,7 +617,7 @@ public final class SystemConfig {
         if (bufferPoolChunkSize > 0) {
             this.bufferPoolChunkSize = bufferPoolChunkSize;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "bufferPoolChunkSize", bufferPoolChunkSize, this.bufferPoolChunkSize));
+            problemReporter.warn(String.format(WARNING_FORMAT, "bufferPoolChunkSize", bufferPoolChunkSize, this.bufferPoolChunkSize));
         }
     }
 
@@ -618,7 +630,7 @@ public final class SystemConfig {
         if (maxResultSet > 0) {
             this.maxResultSet = maxResultSet;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "maxResultSet", maxResultSet, this.maxResultSet));
+            problemReporter.warn(String.format(WARNING_FORMAT, "maxResultSet", maxResultSet, this.maxResultSet));
         }
     }
 
@@ -631,7 +643,7 @@ public final class SystemConfig {
         if (bufferUsagePercent >= 0 && bufferUsagePercent <= 100) {
             this.bufferUsagePercent = bufferUsagePercent;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "bufferUsagePercent", bufferUsagePercent, this.bufferUsagePercent));
+            problemReporter.warn(String.format(WARNING_FORMAT, "bufferUsagePercent", bufferUsagePercent, this.bufferUsagePercent));
         }
     }
 
@@ -644,7 +656,7 @@ public final class SystemConfig {
         if (clearBigSqLResultSetMapMs > 0) {
             this.clearBigSqLResultSetMapMs = clearBigSqLResultSetMapMs;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "clearBigSqLResultSetMapMs", clearBigSqLResultSetMapMs, this.clearBigSqLResultSetMapMs));
+            problemReporter.warn(String.format(WARNING_FORMAT, "clearBigSqLResultSetMapMs", clearBigSqLResultSetMapMs, this.clearBigSqLResultSetMapMs));
         }
     }
 
@@ -657,7 +669,7 @@ public final class SystemConfig {
         if (bufferPoolPageSize > 0) {
             this.bufferPoolPageSize = bufferPoolPageSize;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "bufferPoolPageSize", bufferPoolPageSize, this.bufferPoolPageSize));
+            problemReporter.warn(String.format(WARNING_FORMAT, "bufferPoolPageSize", bufferPoolPageSize, this.bufferPoolPageSize));
         }
     }
 
@@ -671,7 +683,7 @@ public final class SystemConfig {
             this.bufferPoolPageNumber = bufferPoolPageNumber;
             useDefaultPageNumber = false;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "bufferPoolPageNumber", bufferPoolPageNumber, this.bufferPoolPageNumber));
+            problemReporter.warn(String.format(WARNING_FORMAT, "bufferPoolPageNumber", bufferPoolPageNumber, this.bufferPoolPageNumber));
         }
     }
 
@@ -691,7 +703,7 @@ public final class SystemConfig {
         if (frontSocketSoRcvbuf > 0) {
             this.frontSocketSoRcvbuf = frontSocketSoRcvbuf;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "frontSocketSoRcvbuf", frontSocketSoRcvbuf, this.frontSocketSoRcvbuf));
+            problemReporter.warn(String.format(WARNING_FORMAT, "frontSocketSoRcvbuf", frontSocketSoRcvbuf, this.frontSocketSoRcvbuf));
         }
     }
 
@@ -704,7 +716,7 @@ public final class SystemConfig {
         if (frontSocketSoSndbuf > 0) {
             this.frontSocketSoSndbuf = frontSocketSoSndbuf;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "frontSocketSoSndbuf", frontSocketSoSndbuf, this.frontSocketSoSndbuf));
+            problemReporter.warn(String.format(WARNING_FORMAT, "frontSocketSoSndbuf", frontSocketSoSndbuf, this.frontSocketSoSndbuf));
         }
     }
 
@@ -717,7 +729,7 @@ public final class SystemConfig {
         if (backSocketSoRcvbuf > 0) {
             this.backSocketSoRcvbuf = backSocketSoRcvbuf;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "backSocketSoRcvbuf", backSocketSoRcvbuf, this.backSocketSoRcvbuf));
+            problemReporter.warn(String.format(WARNING_FORMAT, "backSocketSoRcvbuf", backSocketSoRcvbuf, this.backSocketSoRcvbuf));
         }
     }
 
@@ -730,7 +742,7 @@ public final class SystemConfig {
         if (backSocketSoSndbuf > 0) {
             this.backSocketSoSndbuf = backSocketSoSndbuf;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "backSocketSoSndbuf", backSocketSoSndbuf, this.backSocketSoSndbuf));
+            problemReporter.warn(String.format(WARNING_FORMAT, "backSocketSoSndbuf", backSocketSoSndbuf, this.backSocketSoSndbuf));
         }
     }
 
@@ -743,7 +755,7 @@ public final class SystemConfig {
         if (frontSocketNoDelay >= 0 && frontSocketNoDelay <= 1) {
             this.frontSocketNoDelay = frontSocketNoDelay;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "frontSocketNoDelay", frontSocketNoDelay, this.frontSocketNoDelay));
+            problemReporter.warn(String.format(WARNING_FORMAT, "frontSocketNoDelay", frontSocketNoDelay, this.frontSocketNoDelay));
         }
     }
 
@@ -756,7 +768,7 @@ public final class SystemConfig {
         if (backSocketNoDelay >= 0 && backSocketNoDelay <= 1) {
             this.backSocketNoDelay = backSocketNoDelay;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "backSocketNoDelay", backSocketNoDelay, this.backSocketNoDelay));
+            problemReporter.warn(String.format(WARNING_FORMAT, "backSocketNoDelay", backSocketNoDelay, this.backSocketNoDelay));
         }
     }
 
@@ -769,7 +781,7 @@ public final class SystemConfig {
         if (usingAIO >= 0 && usingAIO <= 1) {
             this.usingAIO = usingAIO;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "usingAIO", usingAIO, this.usingAIO));
+            problemReporter.warn(String.format(WARNING_FORMAT, "usingAIO", usingAIO, this.usingAIO));
         }
     }
 
@@ -782,7 +794,7 @@ public final class SystemConfig {
         if (serverNodeId > 0) {
             this.serverNodeId = serverNodeId;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "serverNodeId", serverNodeId, this.serverNodeId));
+            problemReporter.warn(String.format(WARNING_FORMAT, "serverNodeId", serverNodeId, this.serverNodeId));
         }
     }
 
@@ -795,7 +807,7 @@ public final class SystemConfig {
         if (checkTableConsistency >= 0 && checkTableConsistency <= 1) {
             this.checkTableConsistency = checkTableConsistency;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "checkTableConsistency", checkTableConsistency, this.checkTableConsistency));
+            problemReporter.warn(String.format(WARNING_FORMAT, "checkTableConsistency", checkTableConsistency, this.checkTableConsistency));
         }
     }
 
@@ -808,7 +820,7 @@ public final class SystemConfig {
         if (checkTableConsistencyPeriod > 0) {
             this.checkTableConsistencyPeriod = checkTableConsistencyPeriod;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "checkTableConsistencyPeriod", checkTableConsistencyPeriod, this.checkTableConsistencyPeriod));
+            problemReporter.warn(String.format(WARNING_FORMAT, "checkTableConsistencyPeriod", checkTableConsistencyPeriod, this.checkTableConsistencyPeriod));
         }
     }
 
@@ -821,7 +833,7 @@ public final class SystemConfig {
         if (nestLoopRowsSize > 0) {
             this.nestLoopRowsSize = nestLoopRowsSize;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "nestLoopRowsSize", nestLoopRowsSize, this.nestLoopRowsSize));
+            problemReporter.warn(String.format(WARNING_FORMAT, "nestLoopRowsSize", nestLoopRowsSize, this.nestLoopRowsSize));
         }
     }
 
@@ -834,7 +846,7 @@ public final class SystemConfig {
         if (joinQueueSize > 0) {
             this.joinQueueSize = joinQueueSize;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "joinQueueSize", joinQueueSize, this.joinQueueSize));
+            problemReporter.warn(String.format(WARNING_FORMAT, "joinQueueSize", joinQueueSize, this.joinQueueSize));
         }
     }
 
@@ -847,7 +859,7 @@ public final class SystemConfig {
         if (mergeQueueSize > 0) {
             this.mergeQueueSize = mergeQueueSize;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "mergeQueueSize", mergeQueueSize, this.mergeQueueSize));
+            problemReporter.warn(String.format(WARNING_FORMAT, "mergeQueueSize", mergeQueueSize, this.mergeQueueSize));
         }
     }
 
@@ -860,7 +872,7 @@ public final class SystemConfig {
         if (otherMemSize > 0) {
             this.otherMemSize = otherMemSize;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "otherMemSize", otherMemSize, this.otherMemSize));
+            problemReporter.warn(String.format(WARNING_FORMAT, "otherMemSize", otherMemSize, this.otherMemSize));
         }
     }
 
@@ -873,7 +885,7 @@ public final class SystemConfig {
         if (orderMemSize > 0) {
             this.orderMemSize = orderMemSize;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "orderMemSize", orderMemSize, this.orderMemSize));
+            problemReporter.warn(String.format(WARNING_FORMAT, "orderMemSize", orderMemSize, this.orderMemSize));
         }
     }
 
@@ -886,7 +898,7 @@ public final class SystemConfig {
         if (joinMemSize > 0) {
             this.joinMemSize = joinMemSize;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "joinMemSize", joinMemSize, this.joinMemSize));
+            problemReporter.warn(String.format(WARNING_FORMAT, "joinMemSize", joinMemSize, this.joinMemSize));
         }
     }
 
@@ -899,7 +911,7 @@ public final class SystemConfig {
         if (mappedFileSize > 0) {
             this.mappedFileSize = mappedFileSize;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "mappedFileSize", mappedFileSize, this.mappedFileSize));
+            problemReporter.warn(String.format(WARNING_FORMAT, "mappedFileSize", mappedFileSize, this.mappedFileSize));
         }
     }
 
@@ -912,7 +924,7 @@ public final class SystemConfig {
         if (nestLoopConnSize > 0) {
             this.nestLoopConnSize = nestLoopConnSize;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "nestLoopConnSize", nestLoopConnSize, this.nestLoopConnSize));
+            problemReporter.warn(String.format(WARNING_FORMAT, "nestLoopConnSize", nestLoopConnSize, this.nestLoopConnSize));
         }
     }
 
@@ -925,7 +937,7 @@ public final class SystemConfig {
         if (orderByQueueSize > 0) {
             this.orderByQueueSize = orderByQueueSize;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "orderByQueueSize", orderByQueueSize, this.orderByQueueSize));
+            problemReporter.warn(String.format(WARNING_FORMAT, "orderByQueueSize", orderByQueueSize, this.orderByQueueSize));
         }
     }
 
@@ -957,7 +969,7 @@ public final class SystemConfig {
         if (useCostTimeStat >= 0 && useCostTimeStat <= 1) {
             this.useCostTimeStat = useCostTimeStat;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "useCostTimeStat", useCostTimeStat, this.useCostTimeStat));
+            problemReporter.warn(String.format(WARNING_FORMAT, "useCostTimeStat", useCostTimeStat, this.useCostTimeStat));
         }
     }
 
@@ -970,7 +982,7 @@ public final class SystemConfig {
         if (maxCostStatSize > 0) {
             this.maxCostStatSize = maxCostStatSize;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "maxCostStatSize", maxCostStatSize, this.maxCostStatSize));
+            problemReporter.warn(String.format(WARNING_FORMAT, "maxCostStatSize", maxCostStatSize, this.maxCostStatSize));
         }
     }
 
@@ -983,7 +995,7 @@ public final class SystemConfig {
         if (costSamplePercent >= 0 && costSamplePercent <= 100) {
             this.costSamplePercent = costSamplePercent;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "costSamplePercent", costSamplePercent, this.costSamplePercent));
+            problemReporter.warn(String.format(WARNING_FORMAT, "costSamplePercent", costSamplePercent, this.costSamplePercent));
         }
     }
 
@@ -996,7 +1008,7 @@ public final class SystemConfig {
         if (useThreadUsageStat >= 0 && useThreadUsageStat <= 1) {
             this.useThreadUsageStat = useThreadUsageStat;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "useThreadUsageStat", useThreadUsageStat, this.useThreadUsageStat));
+            problemReporter.warn(String.format(WARNING_FORMAT, "useThreadUsageStat", useThreadUsageStat, this.useThreadUsageStat));
         }
     }
 
@@ -1010,7 +1022,7 @@ public final class SystemConfig {
         if (usePerformanceMode >= 0 && usePerformanceMode <= 1) {
             this.usePerformanceMode = usePerformanceMode;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "usePerformanceMode", usePerformanceMode, this.usePerformanceMode));
+            problemReporter.warn(String.format(WARNING_FORMAT, "usePerformanceMode", usePerformanceMode, this.usePerformanceMode));
         }
     }
 
@@ -1023,7 +1035,7 @@ public final class SystemConfig {
         if (useSerializableMode >= 0 && useSerializableMode <= 1) {
             this.useSerializableMode = useSerializableMode;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "useSerializableMode", useSerializableMode, this.useSerializableMode));
+            problemReporter.warn(String.format(WARNING_FORMAT, "useSerializableMode", useSerializableMode, this.useSerializableMode));
         }
     }
 
@@ -1046,7 +1058,7 @@ public final class SystemConfig {
         if (enableSlowLog >= 0 && enableSlowLog <= 1) {
             this.enableSlowLog = enableSlowLog;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "enableSlowLog", enableSlowLog, this.enableSlowLog));
+            problemReporter.warn(String.format(WARNING_FORMAT, "enableSlowLog", enableSlowLog, this.enableSlowLog));
         }
     }
 
@@ -1077,7 +1089,7 @@ public final class SystemConfig {
         if (flushSlowLogPeriod > 0) {
             this.flushSlowLogPeriod = flushSlowLogPeriod;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "flushSlowLogPeriod", flushSlowLogPeriod, this.flushSlowLogPeriod));
+            problemReporter.warn(String.format(WARNING_FORMAT, "flushSlowLogPeriod", flushSlowLogPeriod, this.flushSlowLogPeriod));
         }
     }
 
@@ -1090,7 +1102,7 @@ public final class SystemConfig {
         if (flushSlowLogSize > 0) {
             this.flushSlowLogSize = flushSlowLogSize;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "flushSlowLogSize", flushSlowLogSize, this.flushSlowLogSize));
+            problemReporter.warn(String.format(WARNING_FORMAT, "flushSlowLogSize", flushSlowLogSize, this.flushSlowLogSize));
         }
     }
 
@@ -1103,7 +1115,7 @@ public final class SystemConfig {
         if (sqlSlowTime > 0) {
             this.sqlSlowTime = sqlSlowTime;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "sqlSlowTime", sqlSlowTime, this.sqlSlowTime));
+            problemReporter.warn(String.format(WARNING_FORMAT, "sqlSlowTime", sqlSlowTime, this.sqlSlowTime));
         }
     }
 
@@ -1116,7 +1128,7 @@ public final class SystemConfig {
         if (enableAlert >= 0 && enableAlert <= 1) {
             this.enableAlert = enableAlert;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "enableAlert", enableAlert, this.enableAlert));
+            problemReporter.warn(String.format(WARNING_FORMAT, "enableAlert", enableAlert, this.enableAlert));
         }
     }
 
@@ -1128,7 +1140,7 @@ public final class SystemConfig {
         if (maxCon >= 0) {
             this.maxCon = maxCon;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "maxCon", maxCon, this.maxCon));
+            problemReporter.warn(String.format(WARNING_FORMAT, "maxCon", maxCon, this.maxCon));
         }
     }
 
@@ -1141,7 +1153,7 @@ public final class SystemConfig {
         if (maxCharsPerColumn > 0 && maxCharsPerColumn <= 7 * 1024 * 256) {
             this.maxCharsPerColumn = maxCharsPerColumn;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "maxCharsPerColumn", maxCharsPerColumn, this.maxCharsPerColumn));
+            problemReporter.warn(String.format(WARNING_FORMAT, "maxCharsPerColumn", maxCharsPerColumn, this.maxCharsPerColumn));
         }
     }
 
@@ -1154,7 +1166,7 @@ public final class SystemConfig {
         if (maxRowSizeToFile > 0) {
             this.maxRowSizeToFile = maxRowSizeToFile;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "maxRowSizeToFile", maxRowSizeToFile, this.maxRowSizeToFile));
+            problemReporter.warn(String.format(WARNING_FORMAT, "maxRowSizeToFile", maxRowSizeToFile, this.maxRowSizeToFile));
         }
     }
 
@@ -1180,7 +1192,7 @@ public final class SystemConfig {
         if (xaRetryCount >= 0) {
             this.xaRetryCount = xaRetryCount;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMATE, "xaRetryCount", xaRetryCount, this.xaRetryCount));
+            problemReporter.warn(String.format(WARNING_FORMAT, "xaRetryCount", xaRetryCount, this.xaRetryCount));
         }
     }
 
@@ -1221,7 +1233,7 @@ public final class SystemConfig {
                 ", complexExecutor=" + complexExecutor +
                 ", writeToBackendExecutor=" + writeToBackendExecutor +
                 ", fakeMySQLVersion=" + fakeMySQLVersion +
-                ", sequnceHandlerType=" + sequnceHandlerType +
+                ", sequenceHandlerType=" + sequenceHandlerType +
                 ", serverBacklog=" + serverBacklog +
                 ", serverNodeId=" + serverNodeId +
                 ", showBinlogStatusTimeout=" + showBinlogStatusTimeout +

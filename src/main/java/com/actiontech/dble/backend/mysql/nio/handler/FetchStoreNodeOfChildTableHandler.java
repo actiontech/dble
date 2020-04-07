@@ -22,7 +22,10 @@ import com.actiontech.dble.singleton.CacheService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
@@ -39,8 +42,8 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
     private final String sql;
     private AtomicBoolean hadResult = new AtomicBoolean(false);
     private volatile String dataNode;
-    private Map<String, BackendConnection> receiveMap = Collections.synchronizedMap(new HashMap<>());
-    private Set<RouteResultsetNode> fatalRRSSet = Collections.synchronizedSet(new HashSet<RouteResultsetNode>());
+    private Map<String, BackendConnection> receiveMap = new ConcurrentHashMap<>();
+    private Map<String, String> nodesErrorReason = new ConcurrentHashMap<>();
     protected final ReentrantLock lock = new ReentrantLock();
     private Condition result = lock.newCondition();
     private final NonBlockingSession session;
@@ -108,12 +111,14 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
             lock.unlock();
         }
 
-        if (fatalRRSSet.size() != 0) {
-            StringBuffer fatalErrorMsg = new StringBuffer("Set status error for Connection to dataNode ");
-            for (RouteResultsetNode node : fatalRRSSet) {
-                fatalErrorMsg.append(node.getName() + ",");
+        if (nodesErrorReason.size() != 0) {
+            StringBuilder fatalErrorMsg = new StringBuilder("Find (root) parent sharding node occur error: {");
+            for (Map.Entry<String, String> nodeErrorReason : nodesErrorReason.entrySet()) {
+                String node = nodeErrorReason.getKey();
+                String reason = nodeErrorReason.getValue();
+                fatalErrorMsg.append("[").append(node).append(":").append(reason).append("],");
             }
-            fatalErrorMsg.setLength(fatalErrorMsg.length() - 1);
+            fatalErrorMsg.append("}");
             throw new ConnectionException(ErrorCode.ER_UNKNOWN_ERROR, fatalErrorMsg.toString());
         }
 
@@ -133,7 +138,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
      * from target and close it
      * So wo just think about one question?Is this connection need release
      *
-     * @param con
+     * @param con BackendConnection
      */
     private void releaseConnIfSafe(BackendConnection con) {
         RouteResultsetNode node = (RouteResultsetNode) con.getAttachment();
@@ -155,7 +160,8 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        coutResult((MySQLConnection) conn);
+        nodesErrorReason.put(((RouteResultsetNode) conn.getAttachment()).getName(), "connectionError");
+        countResult((MySQLConnection) conn);
         LOGGER.info("connectionError " + e);
     }
 
@@ -163,19 +169,21 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
     public void errorResponse(byte[] data, BackendConnection conn) {
         ErrorPacket err = new ErrorPacket();
         err.read(data);
-        LOGGER.info("errorResponse " + err.getErrNo() + " " + new String(err.getMessage()));
+        String msg = new String(err.getMessage());
+        LOGGER.info("errorResponse " + err.getErrNo() + " " + msg);
         boolean executeResponse = conn.syncAndExecute();
         if (executeResponse) {
+            nodesErrorReason.put(((RouteResultsetNode) conn.getAttachment()).getName(), msg);
             releaseConnIfSafe(conn);
         } else {
+            nodesErrorReason.put(((RouteResultsetNode) conn.getAttachment()).getName(), "sync context error:" + msg);
             RouteResultsetNode node = (RouteResultsetNode) conn.getAttachment();
             if (session.getTarget(node) == conn) {
-                fatalRRSSet.add(((RouteResultsetNode) conn.getAttachment()));
                 session.getTargetMap().remove(node);
             }
             conn.closeWithoutRsp("unfinished sync");
         }
-        coutResult((MySQLConnection) conn);
+        countResult((MySQLConnection) conn);
     }
 
     @Override
@@ -185,7 +193,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
         }
         boolean executeResponse = conn.syncAndExecute();
         if (executeResponse) {
-            coutResult((MySQLConnection) conn);
+            countResult((MySQLConnection) conn);
             releaseConnIfSafe(conn);
         }
     }
@@ -215,12 +223,13 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("rowEofResponse" + conn);
         }
-        coutResult((MySQLConnection) conn);
+        countResult((MySQLConnection) conn);
         releaseConnIfSafe(conn);
     }
 
     private void executeException(BackendConnection c, Throwable e) {
-        coutResult((MySQLConnection) c);
+        nodesErrorReason.put(((RouteResultsetNode) c.getAttachment()).getName(), e.getMessage());
+        countResult((MySQLConnection) c);
         LOGGER.info("executeException   " + e);
         releaseConnIfSafe(c);
     }
@@ -233,7 +242,8 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
         LOGGER.info("connection closed " + conn + " reason:" + reason);
-        coutResult((MySQLConnection) conn);
+        nodesErrorReason.put(((RouteResultsetNode) conn.getAttachment()).getName(), "connection closed ,mysql id:" + ((MySQLConnection) conn).getThreadId());
+        countResult((MySQLConnection) conn);
     }
 
     @Override
@@ -242,7 +252,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
     }
 
 
-    private void coutResult(MySQLConnection con) {
+    private void countResult(MySQLConnection con) {
         receiveMap.put(((RouteResultsetNode) con.getAttachment()).getName(), con);
     }
 }

@@ -81,7 +81,7 @@ public final class ShowSysParam {
         paramValues.add(sysConfig.getComplexExecutor() + "");
         paramValues.add(sysConfig.getWriteToBackendExecutor() + "");
         paramValues.add(sysConfig.getFakeMySQLVersion());
-        paramValues.add(sysConfig.getSequnceHandlerType() > 4 || sysConfig.getSequnceHandlerType() < 1 ? "Incorrect Sequence Type" : SEQUENCES[sysConfig.getSequnceHandlerType()]);
+        paramValues.add(sysConfig.getSequenceHandlerType() > 4 || sysConfig.getSequenceHandlerType() < 1 ? "Incorrect Sequence Type" : SEQUENCES[sysConfig.getSequenceHandlerType()]);
         paramValues.add(sysConfig.getServerBacklog() + "");
         paramValues.add(sysConfig.getServerNodeId() + "");
         paramValues.add(sysConfig.getShowBinlogStatusTimeout() + "ms");
@@ -107,7 +107,7 @@ public final class ShowSysParam {
         paramValues.add(sysConfig.getRecordTxn() + "");
         paramValues.add(sysConfig.getTransactionLogBaseDir());
         paramValues.add(sysConfig.getTransactionLogBaseName());
-        paramValues.add(sysConfig.getTransactionRatateSize() + "M");
+        paramValues.add(sysConfig.getTransactionRotateSize() + "M");
         paramValues.add(sysConfig.getXaRecoveryLogBaseDir());
         paramValues.add(sysConfig.getXaRecoveryLogBaseName());
         paramValues.add(sysConfig.getXaSessionCheckPeriod() + "ms");
@@ -182,7 +182,7 @@ public final class ShowSysParam {
             "complexExecutor",
             "writeToBackendExecutor",
             "fakeMySQLVersion",
-            "sequnceHandlerType",
+            "sequenceHandlerType",
             "serverBacklog",
             "serverNodeId",
             "showBinlogStatusTimeout",
@@ -208,7 +208,7 @@ public final class ShowSysParam {
             "recordTxn",
             "transactionLogBaseDir",
             "transactionLogBaseName",
-            "transactionRatateSize",
+            "transactionRotateSize",
             "xaRecoveryLogBaseDir",
             "xaRecoveryLogBaseName",
             "xaSessionCheckPeriod",
@@ -306,7 +306,7 @@ public final class ShowSysParam {
             "The chunk size of memory bufferPool. The min direct memory used for allocating",
             "The page size of memory bufferPool. The max direct memory used for allocating",
             "The page number of memory bufferPool. The All bufferPool size is PageNumber * PageSize",
-            "The Memory linked file size,whan complex query resultSet is too large the Memory will be turned to file temporary",
+            "The Memory linked file size,when complex query resultSet is too large the Memory will be turned to file temporary",
             "Whether the SQL statistics function is enable or not.The default value is 1",
             "The slow SQL statistics limit,if the slow SQL record is large than the size,the record will be clear.The default value is 10",
             "The large resultSet SQL standard.The default value is 512*1024B",

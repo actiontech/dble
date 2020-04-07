@@ -73,8 +73,6 @@ public class SyncDataSourceKeyVariables implements Callable<Boolean> {
         if (keyVariables.getTargetIsolation() != keyVariables.getIsolation()) {
             if (needAddComma) {
                 sql.append(",");
-                //} else {
-                //    needAddComma = true; // may use in feature
             }
             sql.append(isolationName).append("='");
             switch (keyVariables.getTargetIsolation()) {
@@ -93,7 +91,16 @@ public class SyncDataSourceKeyVariables implements Callable<Boolean> {
                 default:
                     //will not happen
             }
+            needAddComma = true;
             sql.append("'");
+        }
+        if (keyVariables.getTargetMaxPacketSize() > keyVariables.getMaxPacketSize()) {
+            if (needAddComma) {
+                sql.append(",");
+            }
+            sql.append("max_allowed_packet=");
+            sql.append(keyVariables.getTargetMaxPacketSize());
+            needAddComma = true; // used for feature
         }
         return sql.toString();
     }

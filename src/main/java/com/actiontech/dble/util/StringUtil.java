@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.util;
 
 import com.actiontech.dble.backend.mysql.CharsetUtil;
@@ -475,6 +475,21 @@ public final class StringUtil {
         return str;
     }
 
+    public static String removeBackAndDoubleQuote(String str) {
+        if (str.length() > 1) {
+            char firstValue = str.charAt(0);
+            if ((firstValue == '`') && (firstValue == str.charAt(str.length() - 1))) {
+                return str.substring(1, str.length() - 1);
+            } else if ((firstValue == '"') && (firstValue == str.charAt(str.length() - 1))) {
+                return str.substring(1, str.length() - 1);
+            } else {
+                return str;
+            }
+        }
+        return str;
+    }
+
+
     /**
      * remove ' from 'value'
      *
@@ -493,12 +508,9 @@ public final class StringUtil {
         return str;
     }
 
-    public static boolean isAlias(String aliasName) {
-        if (aliasName.contains("`.") || aliasName.contains(".`") || aliasName.contains(".")) {
-            return false;
-        }
-        char firstValue = aliasName.charAt(0);
-        return (firstValue == '`') && (firstValue == aliasName.charAt(aliasName.length() - 1));
+    public static boolean containsApostrophe(String tableName) {
+        char firstValue = tableName.charAt(0);
+        return (firstValue == '`') && (firstValue == tableName.charAt(tableName.length() - 1));
     }
 
     public static String removeAllApostrophe(String str) {

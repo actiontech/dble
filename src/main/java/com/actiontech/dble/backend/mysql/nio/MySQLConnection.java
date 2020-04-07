@@ -800,6 +800,16 @@ public class MySQLConnection extends AbstractConnection implements
         return isExecuting;
     }
 
+    @Override
+    public void disableRead() {
+        this.getSocketWR().disableRead();
+    }
+
+    @Override
+    public void enableRead() {
+        this.getSocketWR().enableRead();
+    }
+
     public void setExecuting(boolean executing) {
         isExecuting = executing;
     }
@@ -949,6 +959,14 @@ public class MySQLConnection extends AbstractConnection implements
 
     public AtomicBoolean getLogResponse() {
         return logResponse;
+    }
+
+    public void startFlowControl() {
+        this.setFlowControlled(true);
+    }
+
+    public void stopFlowControl() {
+        this.setFlowControlled(false);
     }
 
     private static class StatusSync {

@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class NIOSocketWR extends SocketWR {
     private SelectionKey processKey;
+    private static final int OP_NOT_READ = ~SelectionKey.OP_READ;
     private static final int OP_NOT_WRITE = ~SelectionKey.OP_WRITE;
     private final AbstractConnection con;
     private final SocketChannel channel;
@@ -98,6 +99,19 @@ public class NIOSocketWR extends SocketWR {
             return false;
         }
         return true;
+    }
+
+    @Override
+    public void disableRead() {
+        SelectionKey key = this.processKey;
+        key.interestOps(key.interestOps() & OP_NOT_READ);
+    }
+
+    @Override
+    public void enableRead() {
+        SelectionKey key = this.processKey;
+        key.interestOps(key.interestOps() | SelectionKey.OP_READ);
+        processKey.selector().wakeup();
     }
 
     private boolean write0() throws IOException {

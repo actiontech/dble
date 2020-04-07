@@ -413,6 +413,10 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         lock.lock();
         try {
             if (!writeToClient.get()) {
+                if (DbleServer.getInstance().getConfig().getSystem().isEnableFlowControl() &&
+                        session.getSource().getWriteQueue().size() > DbleServer.getInstance().getConfig().getSystem().getFlowControlStartThreshold()) {
+                    session.getSource().startFlowControl(conn);
+                }
                 if (prepared) {
                     if (rowDataPk == null) {
                         rowDataPk = new RowDataPacket(fieldCount);

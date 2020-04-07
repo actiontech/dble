@@ -15,4 +15,8 @@ public abstract class SocketWR {
     public abstract void doNextWriteCheck();
 
     public abstract boolean registerWrite(ByteBuffer buffer);
+
+    public abstract void disableRead();
+
+    public abstract void enableRead();
 }

@@ -130,6 +130,16 @@ public class AIOSocketWR extends SocketWR {
         }
         return true;
     }
+
+    @Override
+    public void disableRead() {
+
+    }
+
+    @Override
+    public void enableRead() {
+
+    }
 }
 
 

@@ -297,7 +297,7 @@ public class XACommitNodesHandler extends AbstractCommitNodesHandler {
             XAStateLog.saveXARecoveryLog(session.getSessionXaID(), mysqlCon);
             mysqlCon.setXaStatus(TxState.TX_INITIALIZE_STATE);
             if (decrementToZero(mysqlCon)) {
-                if (session.getXaState() == TxState.TX_PREPARED_STATE) {
+                if (session.getXaState() == TxState.TX_PREPARED_STATE && !isFail()) {
                     session.setXaState(TxState.TX_INITIALIZE_STATE);
                 }
                 cleanAndFeedback(true);

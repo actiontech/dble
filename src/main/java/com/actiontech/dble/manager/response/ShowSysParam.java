@@ -249,6 +249,9 @@ public final class ShowSysParam {
             "maxCharsPerColumn",
             "maxRowSizeToFile",
             "useOuterHa",
+            "enableFlowControl",
+            "flowControlStartThreshold",
+            "flowControlStopThreshold",
     };
 
     private static final String[] PARAM_DESCRIPTION = {
@@ -329,6 +332,9 @@ public final class ShowSysParam {
             "The maximum number of characters allowed for per column when load data.The default value is 65535",
             "The maximum row size,if over this value,row data will be saved to file when load data.The default value is 10000",
             "Whether use outer ha component ",
+            "Whether use flow control feature",
+            "The start threshold of write queue to start the flow control",
+            "The recover threshold of write queue to stop the flow control",
     };
 
     private static final String[] ISOLATION_LEVELS = {"", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ", "SERIALIZABLE"};

@@ -127,7 +127,7 @@ public final class ShowSysParam {
         paramValues.add(sysConfig.getSqlRecordCount() + "");
         paramValues.add(sysConfig.getMaxResultSet() + "B");
         paramValues.add(sysConfig.getBufferUsagePercent() + "%");
-        paramValues.add(sysConfig.getClearBigSqLResultSetMapMs() + "ms");
+        paramValues.add(sysConfig.getClearBigSQLResultSetMapMs() + "ms");
         paramValues.add(sysConfig.getFrontSocketSoRcvbuf() + "B");
         paramValues.add(sysConfig.getFrontSocketSoSndbuf() + "B");
         paramValues.add(sysConfig.getFrontSocketNoDelay() + "");
@@ -228,7 +228,7 @@ public final class ShowSysParam {
             "sqlRecordCount",
             "maxResultSet",
             "bufferUsagePercent",
-            "clearBigSqLResultSetMapMs",
+            "clearBigSQLResultSetMapMs",
             "frontSocketSoRcvbuf",
             "frontSocketSoSndbuf",
             "frontSocketNoDelay",

@@ -125,7 +125,7 @@ public final class SystemConfig {
     //Threshold of Usage Percent of buffer pool,if reached the Threshold,big result will be clean up,default 80%
     private int bufferUsagePercent = 80;
     //period of clear the big result
-    private long clearBigSqLResultSetMapMs = 10 * 60 * 1000;
+    private long clearBigSQLResultSetMapMs = 10 * 60 * 1000;
 
     //frontSocket unit:bytes
     private int frontSocketSoRcvbuf = 1024 * 1024;
@@ -647,17 +647,23 @@ public final class SystemConfig {
         }
     }
 
-    public long getClearBigSqLResultSetMapMs() {
-        return clearBigSqLResultSetMapMs;
+    public long getClearBigSQLResultSetMapMs() {
+        return clearBigSQLResultSetMapMs;
     }
 
     @SuppressWarnings("unused")
-    public void setClearBigSqLResultSetMapMs(long clearBigSqLResultSetMapMs) {
-        if (clearBigSqLResultSetMapMs > 0) {
-            this.clearBigSqLResultSetMapMs = clearBigSqLResultSetMapMs;
+    public void setClearBigSQLResultSetMapMs(long clearBigSQLResultSetMapMs) {
+        if (clearBigSQLResultSetMapMs > 0) {
+            this.clearBigSQLResultSetMapMs = clearBigSQLResultSetMapMs;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMAT, "clearBigSqLResultSetMapMs", clearBigSqLResultSetMapMs, this.clearBigSqLResultSetMapMs));
+            problemReporter.warn(String.format(WARNING_FORMAT, "clearBigSQLResultSetMapMs", clearBigSQLResultSetMapMs, this.clearBigSQLResultSetMapMs));
         }
+    }
+
+    //only for compatibility
+    @SuppressWarnings("unused")
+    public void setClearBigSqLResultSetMapMs(long clearBigSqLResultSetMapMs) {
+        setClearBigSQLResultSetMapMs(clearBigSqLResultSetMapMs);
     }
 
     public int getBufferPoolPageSize() {
@@ -1200,6 +1206,7 @@ public final class SystemConfig {
         return enableFlowControl;
     }
 
+    @SuppressWarnings("unused")
     public void setEnableFlowControl(boolean enableFlowControl) {
         this.enableFlowControl = enableFlowControl;
     }
@@ -1208,6 +1215,7 @@ public final class SystemConfig {
         return flowControlStartThreshold;
     }
 
+    @SuppressWarnings("unused")
     public void setFlowControlStartThreshold(int flowControlStartThreshold) {
         this.flowControlStartThreshold = flowControlStartThreshold;
     }
@@ -1216,6 +1224,7 @@ public final class SystemConfig {
         return flowControlStopThreshold;
     }
 
+    @SuppressWarnings("unused")
     public void setFlowControlStopThreshold(int flowControlStopThreshold) {
         this.flowControlStopThreshold = flowControlStopThreshold;
     }
@@ -1277,7 +1286,7 @@ public final class SystemConfig {
                 ", sqlRecordCount=" + sqlRecordCount +
                 ", maxResultSet=" + maxResultSet +
                 ", bufferUsagePercent=" + bufferUsagePercent +
-                ", clearBigSqLResultSetMapMs=" + clearBigSqLResultSetMapMs +
+                ", clearBigSQLResultSetMapMs=" + clearBigSQLResultSetMapMs +
                 "  frontSocketSoRcvbuf=" + frontSocketSoRcvbuf +
                 ", frontSocketSoSndbuf=" + frontSocketSoSndbuf +
                 ", frontSocketNoDelay=" + frontSocketNoDelay +

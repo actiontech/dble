@@ -46,7 +46,7 @@ public class FrontendCommandHandler implements NIOHandler {
 
     @Override
     public void handle(byte[] data) {
-        if (data.length > DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize()) {
+        if (data.length - MySQLPacket.PACKET_HEADER_SIZE >= DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize()) {
             MySQLMessage mm = new MySQLMessage(data);
             mm.readUB3();
             byte packetId = 0;

@@ -7,17 +7,19 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.*;
+import com.actiontech.dble.backend.datasource.PhysicalDataHost;
+import com.actiontech.dble.backend.datasource.PhysicalDataHostDiff;
+import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.*;
+import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.ClusterParamCfg;
+import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.xmltoKv.XmltoCluster;
 import com.actiontech.dble.config.ConfigInitializer;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.util.ConfigUtil;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
-import com.actiontech.dble.singleton.CronScheduler;
-import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.xmltozk.XmltoZkMain;
@@ -27,6 +29,7 @@ import com.actiontech.dble.config.model.ERTable;
 import com.actiontech.dble.config.model.FirewallConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.UserConfig;
+import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.ReloadManager;
@@ -38,6 +41,9 @@ import com.actiontech.dble.route.parser.ManagerParseConfig;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.variables.VarsExtractorHandler;
+import com.actiontech.dble.singleton.ClusterGeneralConfig;
+import com.actiontech.dble.singleton.CronScheduler;
+import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -620,10 +626,14 @@ public final class ReloadConfig {
                 }
             }
             dataHost.setSchemas(dnSchemas.toArray(new String[dnSchemas.size()]));
-            dataHost.init();
             if (!dataHost.isInitSuccess()) {
-                reasonMsg = "Init DataHost [" + dataHost.getHostName() + "] failed";
-                break;
+                dataHost.init();
+                if (!dataHost.isInitSuccess()) {
+                    reasonMsg = "Init DataHost [" + dataHost.getHostName() + "] failed";
+                    break;
+                }
+            } else {
+                LOGGER.info("dataHost[" + hostName + "] already initiated, so doing nothing");
             }
         }
         return reasonMsg;

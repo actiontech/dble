@@ -106,7 +106,7 @@
         <!-- 1 means use SQL statistics, 0 means not -->
         <property name="useSqlStat">0</property>
         <!--<property name="bufferUsagePercent">80</property>-->
-        <!--<property name="clearBigSqLResultSetMapMs">600000</property>-->
+        <!--<property name="clearBigSQLResultSetMapMs">600000</property>-->
         <!--<property name="sqlRecordCount">10</property>-->
         <!--<property name="maxResultSet">524288</property>-->
 

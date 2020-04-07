@@ -468,8 +468,7 @@ public class ServerConnection extends FrontendConnection {
     }
 
     void lockTable(String sql) {
-        // except xa transaction
-        if ((!isAutocommit() || isTxStart()) && session.getSessionXaID() == null) {
+        if ((!isAutocommit() || isTxStart())) {
             session.implictCommit(() -> doLockTable(sql));
             return;
         }

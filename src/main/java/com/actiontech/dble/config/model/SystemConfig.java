@@ -165,6 +165,10 @@ public final class SystemConfig {
     private int flowControlStartThreshold = 4096;
     private int flowControlStopThreshold = 256;
 
+    //only for compatibility
+    private boolean useNewSpellRotate = false;
+    private boolean useNewSpellSequence = false;
+    private boolean useNewSpellSQL = false;
 
     public SystemConfig(ProblemReporter problemReporter) {
         this.problemReporter = problemReporter;
@@ -176,6 +180,7 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setTransactionRotateSize(int transactionRotateSize) {
+        useNewSpellRotate = true;
         if (transactionRotateSize > 0) {
             this.transactionRotateSize = transactionRotateSize;
         } else if (this.problemReporter != null) {
@@ -186,7 +191,10 @@ public final class SystemConfig {
     //only for compatibility
     @SuppressWarnings("unused")
     public void setTransactionRatateSize(int transactionRatateSize) {
-        setTransactionRotateSize(transactionRatateSize);
+        problemReporter.notice("There is a typo error for transactionRatateSize, please use transactionRotateSize");
+        if (!useNewSpellRotate) {
+            setTransactionRotateSize(transactionRatateSize);
+        }
     }
 
     public String getTransactionLogBaseDir() {
@@ -241,6 +249,7 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setSequenceHandlerType(int sequenceHandlerType) {
+        useNewSpellSequence = true;
         if (sequenceHandlerType >= 1 && sequenceHandlerType <= 4) {
             this.sequenceHandlerType = sequenceHandlerType;
         } else if (this.problemReporter != null) {
@@ -251,7 +260,10 @@ public final class SystemConfig {
     //only for compatibility
     @SuppressWarnings("unused")
     public void setSequnceHandlerType(int sequnceHandlerType) {
-        setSequenceHandlerType(sequnceHandlerType);
+        problemReporter.notice("There is a typo error for sequnceHandlerType, please use sequenceHandlerType");
+        if (!useNewSpellSequence) {
+            setSequenceHandlerType(sequnceHandlerType);
+        }
     }
 
     public int getMaxPacketSize() {
@@ -653,6 +665,7 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setClearBigSQLResultSetMapMs(long clearBigSQLResultSetMapMs) {
+        useNewSpellSQL = true;
         if (clearBigSQLResultSetMapMs > 0) {
             this.clearBigSQLResultSetMapMs = clearBigSQLResultSetMapMs;
         } else if (this.problemReporter != null) {
@@ -663,7 +676,10 @@ public final class SystemConfig {
     //only for compatibility
     @SuppressWarnings("unused")
     public void setClearBigSqLResultSetMapMs(long clearBigSqLResultSetMapMs) {
-        setClearBigSQLResultSetMapMs(clearBigSqLResultSetMapMs);
+        problemReporter.notice("There is a typo error for clearBigSqLResultSetMapMs, please use clearBigSQLResultSetMapMs");
+        if (!useNewSpellSQL) {
+            setClearBigSQLResultSetMapMs(clearBigSqLResultSetMapMs);
+        }
     }
 
     public int getBufferPoolPageSize() {

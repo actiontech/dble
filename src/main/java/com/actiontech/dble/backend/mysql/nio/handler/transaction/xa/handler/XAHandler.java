@@ -26,6 +26,10 @@ public class XAHandler extends AbstractXAHandler implements TransactionHandler {
     @Override
     public void commit() {
         if (session.getTargetCount() <= 0) {
+            if (implicitCommitHandler != null) {
+                implicitCommitHandler.next();
+                return;
+            }
             boolean multiStatementFlag = session.getIsMultiStatement().get();
             session.getSource().write(session.getOkByteArray());
             session.multiStatementNextSql(multiStatementFlag);
@@ -34,10 +38,9 @@ public class XAHandler extends AbstractXAHandler implements TransactionHandler {
 
         // get session's lock before sending commit(in fact, after ended)
         // then the XA transaction will be not killed, if killed ,then we will not commit
-        if (currentStage instanceof XAEndStage) {
-            if (!session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_COMMITTING)) {
-                return;
-            }
+        if (currentStage instanceof XAEndStage &&
+                !session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_COMMITTING)) {
+            return;
         }
         initXALogEntry();
         changeStageTo(new XAEndStage(session, this, false));

@@ -20,6 +20,7 @@ import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.singleton.CacheService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.sqlengine.mpp.IsValue;
@@ -213,11 +214,17 @@ public class DefaultDruidParser implements DruidParser {
         for (String realSchema : schemas) {
             statement = RouterUtil.removeSchema(statement, realSchema);
         }
-        statement = RouterUtil.removeSchema(statement, schema.getName());
+        if (schema != null) {
+            statement = RouterUtil.removeSchema(statement, schema.getName());
+        }
         rrs.setStatement(statement);
         String dataNodeTarget = dataNode.get();
         if (dataNodeTarget == null) {
             //no_name node
+            if (schema == null) {
+                String db = SchemaUtil.getRandomDb();
+                schema = DbleServer.getInstance().getConfig().getSchemas().get(db);
+            }
             dataNodeTarget = schema.getRandomDataNode();
         }
         RouterUtil.routeToSingleNode(rrs, dataNodeTarget);

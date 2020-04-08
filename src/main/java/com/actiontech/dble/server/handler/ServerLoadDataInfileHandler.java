@@ -190,6 +190,12 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             }
         }
 
+        if (tableConfig != null && tableConfig.getPartitionColumn() != null && partitionColumnIndex == -1) {
+            serverConnection.writeErrMessage(ErrorCode.ER_KEY_COLUMN_DOES_NOT_EXITS, "can't find partition column.");
+            clear();
+            return;
+        }
+
         parseLoadDataPram();
         if (statement.isLocal()) {
             isStartLoadData = true;
@@ -275,12 +281,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                         return false;
                     }
                 }
-            }
-
-            if (pColumn != null && partitionColumnIndex == -1) {
-                serverConnection.writeErrMessage(ErrorCode.ER_KEY_COLUMN_DOES_NOT_EXITS, "can't find partition column.");
-                clear();
-                return false;
             }
         }
         return true;

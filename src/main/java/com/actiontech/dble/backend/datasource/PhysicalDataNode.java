@@ -103,10 +103,7 @@ public class PhysicalDataNode {
         } else {
             if (rrs.getRunOnSlave()) {
                 if (!dataHost.getReadCon(schema, autoCommit, handler, attachment)) {
-                    LOGGER.info("Do not have slave connection to use, use master connection instead.");
-                    rrs.setRunOnSlave(false);
-                    rrs.setCanRunInReadDB(false);
-                    getWriteNodeConnection(schema, autoCommit, handler, attachment, true);
+                    throw new IllegalArgumentException("no valid readHost in DataHost:" + dataHost.getHostName());
                 }
             } else {
                 rrs.setCanRunInReadDB(false);
@@ -131,6 +128,9 @@ public class PhysicalDataNode {
             return readSource.getConnection(schema, autoCommit, attachment);
         } else if (runOnSlave) {
             PhysicalDataSource source = dataHost.getReadNode();
+            if (source == null) {
+                throw new IllegalArgumentException("no valid readHost in DataHost:" + dataHost.getHostName());
+            }
             return source.getConnection(schema, autoCommit, attachment);
         } else {
             checkRequest(schema);

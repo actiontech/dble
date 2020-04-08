@@ -265,7 +265,9 @@ public class PhysicalDataHost {
 
     boolean getReadCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws
             Exception {
-        LOGGER.debug("!readSources.isEmpty() " + (allSourceMap.values().size() > 1));
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("!readSources.isEmpty() " + (allSourceMap.values().size() > 1));
+        }
         if (allSourceMap.values().size() > 1) {
             PhysicalDataSource theNode = getReadNode();
             if (theNode != null) {

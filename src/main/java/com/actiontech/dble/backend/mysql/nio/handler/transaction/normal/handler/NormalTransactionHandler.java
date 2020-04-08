@@ -42,6 +42,12 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
 
     @Override
     public void implicitCommit(ImplicitCommitHandler implicitCommitHandler) {
+        if (session.getTargetCount() <= 0) {
+            CommitStage commitStage = new CommitStage(session, null, implicitCommitHandler);
+            commitStage.next(false, null, null);
+            return;
+        }
+
         unResponseRrns.addAll(session.getTargetKeys());
         List<MySQLConnection> conns = new ArrayList<>(session.getTargetCount());
         BackendConnection conn;
@@ -56,6 +62,13 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
 
     @Override
     public void rollback() {
+        RollbackStage rollbackStage;
+        if (session.getTargetCount() <= 0) {
+            rollbackStage = new RollbackStage(session, null);
+            rollbackStage.next(false, null, null);
+            return;
+        }
+
         List<MySQLConnection> conns = new ArrayList<>(session.getTargetCount());
         BackendConnection conn;
         for (RouteResultsetNode node : session.getTargetKeys()) {
@@ -67,7 +80,6 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
             }
         }
 
-        RollbackStage rollbackStage;
         if (conns.isEmpty()) {
             rollbackStage = new RollbackStage(session, null);
             rollbackStage.next(false, null, null);

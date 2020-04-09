@@ -6,6 +6,7 @@
 package com.actiontech.dble.config.helper;
 
 public class KeyVariables {
+    public static final int MARGIN_PACKET_SIZE = 1024;
     private boolean autocommit = true;
     private int isolation = -1;
     private volatile int maxPacketSize = -1;

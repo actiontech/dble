@@ -82,7 +82,10 @@ public class GetAndSyncDataSourceKeyVariables implements Callable<KeyVariables> 
             if (result.isSuccess()) {
                 keyVariables = new KeyVariables();
                 keyVariables.setLowerCase(!result.getResult().get(COLUMN_LOWER_CASE).equals("0"));
+
                 keyVariables.setAutocommit(result.getResult().get(COLUMN_AUTOCOMMIT).equals("1"));
+                keyVariables.setTargetAutocommit(DbleServer.getInstance().getConfig().getSystem().getAutocommit() == 1);
+
                 String isolation = result.getResult().get(columnIsolation);
                 switch (isolation) {
                     case "READ-COMMITTED":
@@ -100,30 +103,26 @@ public class GetAndSyncDataSourceKeyVariables implements Callable<KeyVariables> 
                     default:
                         break;
                 }
+                keyVariables.setTargetIsolation(DbleServer.getInstance().getConfig().getSystem().getTxIsolation());
+
                 keyVariables.setMaxPacketSize(Integer.parseInt(result.getResult().get(COLUMN_MAX_PACKET)));
-                int sysMaxPacketSize = DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize();
-                keyVariables.setTargetMaxPacketSize(sysMaxPacketSize);
+                keyVariables.setTargetMaxPacketSize(DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize() + KeyVariables.MARGIN_PACKET_SIZE);
 
 
-                boolean sysAutocommit = DbleServer.getInstance().getConfig().getSystem().getAutocommit() == 1;
-                keyVariables.setTargetAutocommit(sysAutocommit);
-
-                int sysTxIsolation = DbleServer.getInstance().getConfig().getSystem().getTxIsolation();
-                keyVariables.setTargetIsolation(sysTxIsolation);
 
                 keyVariables.setReadOnly(result.getResult().get(COLUMN_READONLY).equals("1"));
 
                 if (needSync) {
                     boolean checkNeedSync = false;
-                    if (sysMaxPacketSize > keyVariables.getMaxPacketSize()) {
+                    if (keyVariables.getTargetMaxPacketSize() > keyVariables.getMaxPacketSize()) {
                         checkNeedSync = true;
                     }
-                    if (sysAutocommit != keyVariables.isAutocommit()) {
+                    if (keyVariables.isTargetAutocommit() != keyVariables.isAutocommit()) {
                         checkNeedSync = true;
                     } else {
                         ds.setAutocommitSynced(true);
                     }
-                    if (sysTxIsolation != keyVariables.getIsolation()) {
+                    if (keyVariables.getTargetIsolation() != keyVariables.getIsolation()) {
                         checkNeedSync = true;
                     } else {
                         ds.setIsolationSynced(true);

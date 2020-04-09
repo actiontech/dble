@@ -233,9 +233,9 @@ public final class ConfigUtil {
                 minNodePacketSize = minNodePacketSize < keyVariables.getMaxPacketSize() ? minNodePacketSize : keyVariables.getMaxPacketSize();
             }
         }
-        if (minNodePacketSize < DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize()) {
-            DbleServer.getInstance().getConfig().getSystem().setMaxPacketSize(minNodePacketSize);
-            msg = "dble's maxPacketSize will be set to the min  of all datahost's max_allowed_packet:" + minNodePacketSize;
+        if (minNodePacketSize < DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize() + KeyVariables.MARGIN_PACKET_SIZE) {
+            DbleServer.getInstance().getConfig().getSystem().setMaxPacketSize(minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
+            msg = "dble's maxPacketSize will be set to (the min of all dataHost's max_allowed_packet) - " + KeyVariables.MARGIN_PACKET_SIZE + ":" + (minNodePacketSize - KeyVariables.MARGIN_PACKET_SIZE);
             LOGGER.warn(msg);
         }
         if (secondGroup.size() != 0) {

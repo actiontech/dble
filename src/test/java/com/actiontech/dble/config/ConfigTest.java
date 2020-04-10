@@ -156,7 +156,7 @@ public class ConfigTest {
 
         PhysicalDataHost pool = this.dataHosts.get("localhost2");
         okSources.addAll(pool.getAllActiveDataSources());
-        PhysicalDataSource source = pool.randomSelect(okSources);
+        PhysicalDataSource source = pool.randomSelect(okSources, true);
 
         Assert.assertTrue(source != null);
     }

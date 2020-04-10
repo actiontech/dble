@@ -127,7 +127,7 @@ public class PhysicalDataNode {
             }
             return readSource.getConnection(schema, autoCommit, attachment);
         } else if (runOnSlave) {
-            PhysicalDataSource source = dataHost.getReadNode();
+            PhysicalDataSource source = dataHost.getRandomAliveReadNode();
             if (source == null) {
                 throw new IllegalArgumentException("no valid readHost in DataHost:" + dataHost.getHostName());
             }

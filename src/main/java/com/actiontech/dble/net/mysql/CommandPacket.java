@@ -125,6 +125,7 @@ public class CommandPacket extends MySQLPacket {
             c.write(buffer);
             isFirst = false;
         }
+
         buffer = c.allocate(size + MySQLPacket.PACKET_HEADER_SIZE);
         BufferUtil.writeUB3(buffer, size);
         buffer.put(packetId);
@@ -134,12 +135,12 @@ public class CommandPacket extends MySQLPacket {
 
     private int writeBody(ByteBuffer buffer, boolean isFirst, int remain) {
         if (isFirst) {
-            remain = arg.length + 1;
             buffer.put(command);
-            remain--;
+            remain = arg.length;
         }
         if (remain < MySQLPacket.MAX_PACKET_SIZE) {
             buffer.put(arg, arg.length - remain, remain);
+            remain = 0;
         } else {
             int start = arg.length - remain;
             int available = buffer.limit() - buffer.position();
@@ -147,14 +148,6 @@ public class CommandPacket extends MySQLPacket {
             remain -= available;
         }
         return remain;
-    }
-
-
-
-    public void writeGetKey(OutputStream out) throws IOException {
-        StreamUtil.writeUB3(out, 1);
-        StreamUtil.write(out, packetId);
-        StreamUtil.write(out, command);
     }
 
     @Override
@@ -166,7 +159,6 @@ public class CommandPacket extends MySQLPacket {
     protected String getPacketInfo() {
         return "MySQL Command Packet";
     }
-
 
     public byte getCommand() {
         return command;

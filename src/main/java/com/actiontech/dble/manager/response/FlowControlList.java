@@ -93,7 +93,7 @@ public final class FlowControlList {
                     RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                     row.add(StringUtil.encode("ServerConnection", c.getCharset().getResults()));
                     row.add(LongUtil.toBytes(fc.getId()));
-                    row.add(StringUtil.encode(fc.getHost() + ":" + fc.getPort(), c.getCharset().getResults()));
+                    row.add(StringUtil.encode(fc.getHost() + ":" + fc.getLocalPort() + "/" + fc.getSchema() + " user = " + fc.getUser(), c.getCharset().getResults()));
                     row.add(LongUtil.toBytes(fc.getWriteQueue().size()));
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);

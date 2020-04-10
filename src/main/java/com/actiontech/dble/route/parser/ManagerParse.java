@@ -40,6 +40,7 @@ public final class ManagerParse {
     public static final int DATAHOST = 23;
     public static final int SPLIT = 24;
     public static final int DROP_DB = 25;
+    public static final int FLOW_CONTROL = 26;
 
     public static int parse(String stmt) {
         for (int i = 0; i < stmt.length(); i++) {
@@ -193,6 +194,31 @@ public final class ManagerParse {
         String thePart = stmt.substring(offset).toUpperCase();
         if (thePart.startsWith("FILE @@")) {
             return CONFIGFILE;
+        } else if (stmt.length() > offset + "LOW_CONTROL".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            char c9 = stmt.charAt(++offset);
+            char c10 = stmt.charAt(++offset);
+            char c11 = stmt.charAt(++offset);
+            if ((c1 == 'L' || c1 == 'l') &&
+                    (c2 == 'O' || c2 == 'o') &&
+                    (c3 == 'W' || c3 == 'w') &&
+                    (c4 == '_') &&
+                    (c5 == 'C' || c5 == 'c') &&
+                    (c6 == 'O' || c6 == 'o') &&
+                    (c7 == 'N' || c7 == 'n') &&
+                    (c8 == 'T' || c8 == 't') &&
+                    (c9 == 'R' || c9 == 'r') &&
+                    (c10 == 'O' || c10 == 'o') &&
+                    (c11 == 'L' || c11 == 'l')) {
+                return FLOW_CONTROL;
+            }
         }
         return OTHER;
     }

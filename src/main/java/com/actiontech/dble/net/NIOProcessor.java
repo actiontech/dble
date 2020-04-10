@@ -137,11 +137,6 @@ public final class NIOProcessor {
                 continue;
             }
 
-            if (c instanceof ServerConnection && c.isFlowControlled() &&
-                    c.writeQueue.size() < DbleServer.getInstance().getConfig().getSystem().getFlowControlStopThreshold()) {
-                ((ServerConnection) c).stopFlowControl();
-            }
-
             // clean closed conn or check timeout
             if (c.isClosed()) {
                 c.cleanup();
@@ -185,11 +180,7 @@ public final class NIOProcessor {
                 it.remove();
                 continue;
             }
-            //For load data flow controlling
-            if (c instanceof MySQLConnection && ((MySQLConnection) c).isFlowControlled() &&
-                    ((MySQLConnection) c).writeQueue.size() < DbleServer.getInstance().getConfig().getSystem().getFlowControlStopThreshold()) {
-                ((MySQLConnection) c).stopFlowControl();
-            }
+
             //Active/IDLE/PREPARED XA backends will not be checked
             if (c instanceof MySQLConnection) {
                 MySQLConnection m = (MySQLConnection) c;

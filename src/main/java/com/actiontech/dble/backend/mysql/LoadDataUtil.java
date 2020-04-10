@@ -10,6 +10,7 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.net.mysql.BinaryPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.singleton.WriteQueueFlowController;
 import com.actiontech.dble.sqlengine.mpp.LoadData;
 
 import java.io.*;
@@ -70,9 +71,9 @@ public final class LoadDataUtil {
             int len = -1;
 
             while ((len = inputStream.read(buffer)) != -1) {
-                if (DbleServer.getInstance().getConfig().getSystem().isEnableFlowControl() &&
-                        c.getWriteQueue().size() > DbleServer.getInstance().getConfig().getSystem().getFlowControlStartThreshold()) {
-                    c.startFlowControl();
+                if (WriteQueueFlowController.isEnableFlowControl() &&
+                        c.getWriteQueue().size() > WriteQueueFlowController.getFlowStart()) {
+                    c.startFlowControl(c);
                 }
                 while (c.isFlowControlled()) {
                     try {

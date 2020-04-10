@@ -5,6 +5,7 @@
 */
 package com.actiontech.dble.manager;
 
+import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.util.TimeUtil;
 
@@ -52,6 +53,16 @@ public class ManagerConnection extends FrontendConnection {
     @Override
     public void handle(final byte[] data) {
         handler.handle(data);
+    }
+
+    @Override
+    public void startFlowControl(BackendConnection bcon) {
+
+    }
+
+    @Override
+    public void stopFlowControl() {
+
     }
 
     @Override

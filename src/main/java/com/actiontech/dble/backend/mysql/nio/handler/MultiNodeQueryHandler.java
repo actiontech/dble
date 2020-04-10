@@ -15,6 +15,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoTxOperation
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionHandler;
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.FlowCotrollerConfig;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.RouteResultset;
@@ -23,6 +24,7 @@ import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.singleton.CacheService;
+import com.actiontech.dble.singleton.WriteQueueFlowController;
 import com.actiontech.dble.statistic.stat.QueryResult;
 import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
 import com.actiontech.dble.util.DebugPauseUtil;
@@ -436,8 +438,9 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
             }
             if (!errorResponse.get()) {
-                if (DbleServer.getInstance().getConfig().getSystem().isEnableFlowControl() &&
-                        session.getSource().getWriteQueue().size() > DbleServer.getInstance().getConfig().getSystem().getFlowControlStartThreshold()) {
+                FlowCotrollerConfig fconfig = WriteQueueFlowController.getFlowCotrollerConfig();
+                if (fconfig.isEnableFlowControl() &&
+                        session.getSource().getWriteQueue().size() > fconfig.getStart()) {
                     session.getSource().startFlowControl(conn);
                 }
                 if (prepared) {

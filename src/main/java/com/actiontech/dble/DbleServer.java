@@ -222,6 +222,9 @@ public final class DbleServer {
         LOGGER.info("===================================Sequence manager init finish===================================");
 
 
+        WriteQueueFlowController.init();
+        LOGGER.info("===================================flow controller finish===================================");
+
         LOGGER.info("==============================Pull metaData from MySQL start======================================");
         pullVarAndMeta();
         LOGGER.info("==============================Pull metaData from MySQL finish=====================================");

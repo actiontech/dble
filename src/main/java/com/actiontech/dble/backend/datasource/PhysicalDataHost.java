@@ -227,12 +227,12 @@ public class PhysicalDataHost {
         switch (balance) {
             case BALANCE_ALL: {
                 okSources = getAllActiveRWSources(true, checkSlaveSynStatus());
-                theNode = randomSelect(okSources);
+                theNode = randomSelect(okSources, true);
                 break;
             }
             case BALANCE_ALL_BACK: {
                 okSources = getAllActiveRWSources(false, checkSlaveSynStatus());
-                theNode = randomSelect(okSources);
+                theNode = randomSelect(okSources, true);
                 break;
             }
             case BALANCE_NONE:
@@ -248,19 +248,12 @@ public class PhysicalDataHost {
         return theNode;
     }
 
-    PhysicalDataSource getReadNode() throws Exception {
-        for (int i = 0; i < allSourceMap.size(); i++) {
-            int index = Math.abs(random.nextInt(Integer.MAX_VALUE)) % allSourceMap.size();
-            PhysicalDataSource ds = (PhysicalDataSource) allSourceMap.values().toArray()[index];
-            if (ds != writeSource && ds.isAlive()) {
-                if (checkSlaveSynStatus() && canSelectAsReadNode(ds)) {
-                    return ds;
-                } else if (!checkSlaveSynStatus()) {
-                    return ds;
-                }
-            }
+    PhysicalDataSource getRandomAliveReadNode() throws Exception {
+        if (balance == BALANCE_NONE) {
+            return null;
+        } else {
+            return randomSelect(getAllActiveRWSources(false, checkSlaveSynStatus()), false);
         }
-        return null;
     }
 
     boolean getReadCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws
@@ -269,7 +262,7 @@ public class PhysicalDataHost {
             LOGGER.debug("!readSources.isEmpty() " + (allSourceMap.values().size() > 1));
         }
         if (allSourceMap.values().size() > 1) {
-            PhysicalDataSource theNode = getReadNode();
+            PhysicalDataSource theNode = getRandomAliveReadNode();
             if (theNode != null) {
                 theNode.setReadCount();
                 theNode.getConnection(schema, autocommit, handler, attachment, false);
@@ -597,9 +590,11 @@ public class PhysicalDataHost {
         return hostName;
     }
 
-    public PhysicalDataSource randomSelect(ArrayList<PhysicalDataSource> okSources) {
-        if (okSources.isEmpty()) {
+    public PhysicalDataSource randomSelect(ArrayList<PhysicalDataSource> okSources, boolean useWriteWhenEmpty) {
+        if (okSources.isEmpty() && useWriteWhenEmpty) {
             return this.getWriteSource();
+        } else if (okSources.isEmpty() && !useWriteWhenEmpty) {
+            return null;
         } else {
             int length = okSources.size();
             int totalWeight = 0;

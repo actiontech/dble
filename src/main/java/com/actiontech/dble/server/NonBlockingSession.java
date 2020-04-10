@@ -116,6 +116,8 @@ public class NonBlockingSession implements Session {
     private volatile long rowCountCurrentSQL = -1;
     private volatile long rowCountLastSQL = -1;
 
+    private final HashSet<BackendConnection> flowControlledBackendConnections = new HashSet<>();
+
     public NonBlockingSession(ServerConnection source) {
         this.source = source;
         this.target = new ConcurrentHashMap<>(2, 1f);
@@ -813,6 +815,9 @@ public class NonBlockingSession implements Session {
                     LOGGER.debug("release connection " + c);
                 }
                 if (!c.isClosed()) {
+                    if (source.isFlowControlled()) {
+                        releaseConnectionFromFlowCntrolled(c);
+                    }
                     if (c.isAutocommit()) {
                         c.release();
                     } else if (needClose) {
@@ -1207,6 +1212,38 @@ public class NonBlockingSession implements Session {
 
     public void setDiscard(boolean discard) {
         this.discard = discard;
+    }
+
+    public void stopFlowControl() {
+        LOGGER.info("Session stop flow control " + this.getSource());
+        synchronized (flowControlledBackendConnections) {
+            source.setFlowControlled(false);
+            for (BackendConnection entry : flowControlledBackendConnections) {
+                entry.enableRead();
+            }
+            flowControlledBackendConnections.clear();
+        }
+    }
+
+    public void startFlowControl(BackendConnection backendConnection) {
+        LOGGER.info("Session start flow control " + this.getSource());
+        synchronized (flowControlledBackendConnections) {
+            source.setFlowControlled(true);
+            backendConnection.disableRead();
+            flowControlledBackendConnections.add(backendConnection);
+        }
+    }
+
+
+    public void releaseConnectionFromFlowCntrolled(BackendConnection con) {
+        synchronized (flowControlledBackendConnections) {
+            if (flowControlledBackendConnections.remove(con)) {
+                con.enableRead();
+                if (flowControlledBackendConnections.size() == 0) {
+                    source.setFlowControlled(false);
+                }
+            }
+        }
     }
 
 }

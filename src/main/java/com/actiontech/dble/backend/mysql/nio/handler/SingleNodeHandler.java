@@ -12,6 +12,7 @@ import com.actiontech.dble.backend.mysql.LoadDataUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.FlowCotrollerConfig;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.mysql.*;
@@ -20,6 +21,7 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.singleton.CacheService;
+import com.actiontech.dble.singleton.WriteQueueFlowController;
 import com.actiontech.dble.statistic.stat.QueryResult;
 import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
 import com.actiontech.dble.util.StringUtil;
@@ -58,6 +60,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     private List<FieldPacket> fieldPackets = new ArrayList<>();
     private volatile boolean connClosed = false;
     protected AtomicBoolean writeToClient = new AtomicBoolean(false);
+
 
     public SingleNodeHandler(RouteResultset rrs, NonBlockingSession session) {
         this.rrs = rrs;
@@ -413,8 +416,9 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         lock.lock();
         try {
             if (!writeToClient.get()) {
-                if (DbleServer.getInstance().getConfig().getSystem().isEnableFlowControl() &&
-                        session.getSource().getWriteQueue().size() > DbleServer.getInstance().getConfig().getSystem().getFlowControlStartThreshold()) {
+                FlowCotrollerConfig fconfig = WriteQueueFlowController.getFlowCotrollerConfig();
+                if (fconfig.isEnableFlowControl() &&
+                        session.getSource().getWriteQueue().size() > fconfig.getStart()) {
                     session.getSource().startFlowControl(conn);
                 }
                 if (prepared) {

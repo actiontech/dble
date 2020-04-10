@@ -8,6 +8,7 @@ package com.actiontech.dble.manager.response;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
+import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
@@ -94,7 +95,7 @@ public final class ShowSysParam {
         paramValues.add(sysConfig.getMaxCostStatSize() + "");
         paramValues.add(sysConfig.getCostSamplePercent() + "");
         paramValues.add(sysConfig.getCharset() + "");
-        paramValues.add(sysConfig.getMaxPacketSize() / 1024 / 1024 + "M");
+        paramValues.add(sysConfig.getMaxPacketSize() + "");
         paramValues.add(sysConfig.getTxIsolation() > 4 || sysConfig.getTxIsolation() < 1 ? "Incorrect isolation" : ISOLATION_LEVELS[sysConfig.getTxIsolation()]);
         paramValues.add(sysConfig.getAutocommit() + "");
         paramValues.add(sysConfig.getCheckTableConsistency() + "");
@@ -278,7 +279,7 @@ public final class ShowSysParam {
             "The max cost total percentage.The default value is 100",
             "The percentage of cost sample.The default value is 1",
             "The initially charset of connection. The default is utf8mb4",
-            "The maximum size of one packet. The default is 4MB.",
+            "The maximum size of one packet. The default is 4MB or (the Minimum value of all data source - " + KeyVariables.MARGIN_PACKET_SIZE + ").",
             "The initially isolation level of the front end connection. The default is REPEATABLE_READ",
             "The initially autocommit value.The default value is 1",
             "Whether the consistency tableStructure check is enabled.The default value is 0",

@@ -633,6 +633,18 @@ public class MySQLConnection extends AbstractConnection implements
         }
     }
 
+    @Override
+    public void startFlowControl(BackendConnection bcon) {
+        LOGGER.info("Session start flow control " + this);
+        this.setFlowControlled(true);
+    }
+
+    @Override
+    public void stopFlowControl() {
+        LOGGER.info("Session stop flow control " + this);
+        this.setFlowControlled(false);
+    }
+
     public long getOldTimestamp() {
         return oldTimestamp;
     }
@@ -759,7 +771,9 @@ public class MySQLConnection extends AbstractConnection implements
 
     @Override
     public void enableRead() {
-        this.getSocketWR().enableRead();
+        if (!isClosed()) {
+            this.getSocketWR().enableRead();
+        }
     }
 
     public void setExecuting(boolean executing) {
@@ -913,13 +927,6 @@ public class MySQLConnection extends AbstractConnection implements
         return logResponse;
     }
 
-    public void startFlowControl() {
-        this.setFlowControlled(true);
-    }
-
-    public void stopFlowControl() {
-        this.setFlowControlled(false);
-    }
 
     private static class StatusSync {
         private final String schema;

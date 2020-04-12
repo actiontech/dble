@@ -31,8 +31,8 @@ public final class FlowControlSet {
         //create a new FlowCotrollerConfig
         FlowCotrollerConfig config =
                 new FlowCotrollerConfig(enable == null ? oldConfig.isEnableFlowControl() : Boolean.valueOf(enable),
-                        flowControlStart == null ? oldConfig.getStart() : Integer.valueOf(flowControlStart),
-                        flowControlEnd == null ? oldConfig.getEnd() : Integer.valueOf(flowControlEnd));
+                        flowControlStart == null ? oldConfig.getStart() : Integer.parseInt(flowControlStart),
+                        flowControlEnd == null ? oldConfig.getEnd() : Integer.parseInt(flowControlEnd));
 
         //check if the config is legal
         if (config.getEnd() < 0 || config.getStart() <= 0) {

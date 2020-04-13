@@ -409,19 +409,20 @@ public class PhysicalDNPoolSingleWH extends AbstractPhysicalDBPool {
 
     private ArrayList<PhysicalDatasource> getAllActiveRWSources(boolean includeWriteNode, boolean filterWithSlaveThreshold) {
         ArrayList<PhysicalDatasource> okSources = new ArrayList<>(allSourceMap.values().size());
-
+        if (!writeSource.isAlive() && !dataHostConfig.isTempReadHostAvailable()) {
+            return okSources;
+        }
+        if (writeSource.isAlive() && includeWriteNode) {
+            okSources.add(writeSource);
+        }
         for (PhysicalDatasource ds : allSourceMap.values()) {
-            if (!includeWriteNode && ds == writeSource) {
+            if (ds == writeSource) {
                 continue;
-            } else {
-                if (ds.isAlive()) {
-                    if (writeSource == ds || (!filterWithSlaveThreshold || canSelectAsReadNode(ds))) {
-                        okSources.add(ds);
-                    }
-                }
+            }
+            if (ds.isAlive() && (!filterWithSlaveThreshold || canSelectAsReadNode(ds))) {
+                okSources.add(ds);
             }
         }
-
         return okSources;
     }
 

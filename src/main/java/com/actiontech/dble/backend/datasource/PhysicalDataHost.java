@@ -91,7 +91,6 @@ public class PhysicalDataHost {
     }
 
 
-
     public String[] getSchemas() {
         return schemas;
     }
@@ -463,7 +462,7 @@ public class PhysicalDataHost {
     private PhysicalDataHost createEnableSnapshot(PhysicalDataHost org, String[] nameList) {
         PhysicalDataHost snapshot = new PhysicalDataHost(org);
         for (String dsName : nameList) {
-            PhysicalDataSource datasource = allSourceMap.get(dsName);
+            PhysicalDataSource datasource = snapshot.allSourceMap.get(dsName);
             datasource.setDisabled(false);
         }
         return snapshot;
@@ -586,6 +585,7 @@ public class PhysicalDataHost {
         }
         return true;
     }
+
     public String getHostName() {
         return hostName;
     }

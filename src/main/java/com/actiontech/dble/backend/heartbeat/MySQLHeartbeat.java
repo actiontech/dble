@@ -110,7 +110,7 @@ public class MySQLHeartbeat {
         }
     }
 
-    void setErrorResult(String errMsg) {
+    public void setErrorResult(String errMsg) {
         this.isChecking.set(false);
         this.message = errMsg;
         setError();

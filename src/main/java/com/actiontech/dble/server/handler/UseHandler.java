@@ -52,6 +52,7 @@ public final class UseHandler {
             c.setSchema(schema);
             ByteBuffer buffer = c.allocate();
             boolean multiStatementFlag = c.getSession2().getIsMultiStatement().get();
+            c.getSession2().setRowCount(0);
             c.write(c.writeToBuffer(c.getSession2().getOkByteArray(), buffer));
             c.getSession2().multiStatementNextSql(multiStatementFlag);
         } else {

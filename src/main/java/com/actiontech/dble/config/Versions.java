@@ -7,7 +7,6 @@ package com.actiontech.dble.config;
 
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
-
 /**
  * @author
  */
@@ -15,12 +14,12 @@ public abstract class Versions {
 
     public static final byte PROTOCOL_VERSION = 10;
 
-    private static byte[] serverVersion = "5.6.29-dble-9.9.9.9-6da82267a951206cb36528f2fa92494f3d508a9d-20190802172514".getBytes();
+    private static byte[] serverVersion = "5.6.29-dble-9.9.9.9-xxxxxx-yyyyMMddHHmmss".getBytes();
     public static final byte[] VERSION_COMMENT = "dble Server (ActionTech)".getBytes();
     public static final String ANNOTATION_NAME = "dble:";
     public static final String ROOT_PREFIX = "dble";
     public static final String DOMAIN = "http://dble.cloud/";
-    public static final String CONFIG_VERSION = "2.0";
+    public static final String CONFIG_VERSION = "@config_version@";
     private static final Pattern VERSION_PATTERN = Pattern.compile("^(\\d{1,})\\.(\\d{1,})$", Pattern.CASE_INSENSITIVE);
 
     public static void setServerVersion(String version) {

@@ -263,6 +263,9 @@ public abstract class FrontendConnection extends AbstractConnection {
         Set<String> schemas = privileges.getUserSchemas(user);
         if (schemas == null || schemas.size() == 0 || schemas.contains(db)) {
             this.schema = db;
+            if (this instanceof ServerConnection) {
+                ((ServerConnection) this).getSession2().setRowCount(0);
+            }
             write(writeToBuffer(OkPacket.OK, allocate()));
         } else {
             String s = "Access denied for user '" + user + "' to database '" + db + "'";

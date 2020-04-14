@@ -68,7 +68,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
         LOGGER.warn("can't get connection for sql :" + sql, e);
-        heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, "connection Error");
+        heartbeat.setErrorResult("connection Error");
         doFinished(true);
     }
 
@@ -76,7 +76,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
     public void errorResponse(byte[] err, BackendConnection conn) {
         ErrorPacket errPg = new ErrorPacket();
         errPg.read(err);
-        heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, new String(errPg.getMessage()));
+        heartbeat.setErrorResult(new String(errPg.getMessage()));
         String errMsg = "error response errNo:" + errPg.getErrNo() + ", " + new String(errPg.getMessage()) +
                 " from of sql :" + sql + " at con:" + conn;
 
@@ -121,7 +121,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
         LOGGER.warn("heartbeat conn for sql[" + sql + "] is closed, due to " + reason);
-        heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, "heartbeat conn is closed, due to " + reason);
+        heartbeat.setErrorResult("heartbeat conn is closed, due to " + reason);
         doFinished(true);
     }
 

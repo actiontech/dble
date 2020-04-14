@@ -71,10 +71,10 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
 
     public void heartbeat() {
         if (con == null) {
-            heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, "can't create conn for heartbeat");
+            heartbeat.setErrorResult("can't create conn for heartbeat");
             return;
         } else if (con.isClosed()) {
-            heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, "conn for heartbeat is closed");
+            heartbeat.setErrorResult("conn for heartbeat is closed");
             return;
         }
 
@@ -131,7 +131,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                         source.setReadOnly(variables.isReadOnly());
                     } else {
                         LOGGER.warn("GetAndSyncDataSourceKeyVariables failed, set heartbeat Error");
-                        heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, "GetAndSyncDataSourceKeyVariables failed");
+                        heartbeat.setErrorResult("GetAndSyncDataSourceKeyVariables failed");
                         return;
                     }
                 }
@@ -140,7 +140,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                     source.testConnection();
                 } catch (Exception e) {
                     LOGGER.warn("testConnection failed, set heartbeat Error");
-                    heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, "testConnection failed");
+                    heartbeat.setErrorResult("testConnection failed");
                     return;
                 }
                 GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(source, true);
@@ -163,7 +163,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                         AlertUtil.alert(AlarmCode.DATA_HOST_LOWER_CASE_ERROR, Alert.AlertLevel.WARN, errMsg, "mysql", this.heartbeat.getSource().getConfig().getId(), labels);
                         ToResolveContainer.DATA_HOST_LOWER_CASE_ERROR.add(con.getHost() + ":" + con.getPort());
                     }
-                    heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, errMsg);
+                    heartbeat.setErrorResult(errMsg);
                     return;
                 } else {
                     String url = con.getHost() + ":" + con.getPort();
@@ -178,7 +178,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                 }
             }
         }
-        heartbeat.setResult(MySQLHeartbeat.OK_STATUS, null);
+        heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
     }
 
     private void setStatusBySlave(PhysicalDataSource source, Map<String, String> resultResult) {
@@ -204,20 +204,20 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             heartbeat.setSlaveBehindMaster(null);
         }
         heartbeat.getAsyncRecorder().setBySlaveStatus(resultResult);
-        heartbeat.setResult(MySQLHeartbeat.OK_STATUS, null);
+        heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
     }
 
     private void setStatusByReadOnly(PhysicalDataSource source, Map<String, String> resultResult) {
         String readonly = resultResult != null ? resultResult.get("@@read_only") : null;
         if (readonly == null) {
-            heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS, "result of select @@read_only is null");
+            heartbeat.setErrorResult("result of select @@read_only is null");
             return;
         } else if (readonly.equals("0")) {
             source.setReadOnly(false);
         } else {
             source.setReadOnly(true);
         }
-        heartbeat.setResult(MySQLHeartbeat.OK_STATUS, null);
+        heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
     }
 
 

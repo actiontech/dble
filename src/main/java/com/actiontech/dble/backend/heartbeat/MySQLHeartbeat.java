@@ -101,7 +101,7 @@ public class MySQLHeartbeat {
                 if (detector.isQuit()) {
                     isChecking.set(false);
                 } else if (detector.isHeartbeatTimeout()) {
-                    setResult(TIMEOUT_STATUS, null);
+                    setResult(TIMEOUT_STATUS);
                 }
             }
         }
@@ -110,15 +110,19 @@ public class MySQLHeartbeat {
         }
     }
 
-    void setResult(int result, String errMsg) {
+    void setErrorResult(String errMsg) {
         this.isChecking.set(false);
         this.message = errMsg;
+        setError();
+        Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getHostConfig().getName() + "-" + this.source.getConfig().getHostName());
+        AlertUtil.alert(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "heartbeat status:" + this.status, "mysql", this.source.getConfig().getId(), labels);
+    }
+
+    void setResult(int result) {
+        this.isChecking.set(false);
         switch (result) {
             case OK_STATUS:
                 setOk();
-                break;
-            case ERROR_STATUS:
-                setError();
                 break;
             case TIMEOUT_STATUS:
                 setTimeout();

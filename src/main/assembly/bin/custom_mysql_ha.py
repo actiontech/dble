@@ -8,7 +8,7 @@ def log_init(logfile,loggername):
   log=logging.getLogger(name=loggername)
   return log
 
-logfile='./logging.conf'
+logfile='./custom_mysql_ha_logging.conf'
 loggername='DBLEDatahostCheck'
 log=log_init(logfile,loggername)
 log.info("Logger initialization is complete.")

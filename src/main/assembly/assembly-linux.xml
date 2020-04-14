@@ -62,6 +62,8 @@
             <fileMode>0755</fileMode>
             <includes>
                 <include>*.sh</include>
+                <include>*.py</include>
+                <include>custom_mysql_ha_logging.conf</include>
             </includes>
         </fileSet>
         <fileSet>

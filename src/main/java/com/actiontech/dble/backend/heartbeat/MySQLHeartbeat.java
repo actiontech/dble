@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.backend.heartbeat;
 
 import com.actiontech.dble.alarm.AlarmCode;
@@ -33,34 +33,21 @@ public class MySQLHeartbeat {
     public static final int OK_STATUS = 1;
     static final int ERROR_STATUS = -1;
     static final int TIMEOUT_STATUS = -2;
-
-    private String heartbeatSQL;
     private final int errorRetryCount;
+    private final AtomicBoolean isChecking = new AtomicBoolean(false);
+    private final HeartbeatRecorder recorder = new HeartbeatRecorder();
+    private final DataSourceSyncRecorder asyncRecorder = new DataSourceSyncRecorder();
+    private final MySQLDataSource source;
+    protected volatile int status;
+    private String heartbeatSQL;
     private long heartbeatTimeout; // during the time, heart failed will ignore
     private volatile int errorCount = 0;
     private AtomicLong startErrorTime = new AtomicLong(-1L);
-
     private volatile boolean isStop = true;
-    private final AtomicBoolean isChecking = new AtomicBoolean(false);
-    protected volatile int status;
-
-    private final HeartbeatRecorder recorder = new HeartbeatRecorder();
-    private final DataSourceSyncRecorder asyncRecorder = new DataSourceSyncRecorder();
     private volatile int dbSynStatus = DB_SYN_NORMAL;
-
     private volatile Integer slaveBehindMaster;
-    private final MySQLDataSource source;
     private MySQLDetector detector;
-    private String message;
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
+    private volatile String message;
 
     public MySQLHeartbeat(MySQLDataSource source) {
         this.source = source;
@@ -70,10 +57,13 @@ public class MySQLHeartbeat {
         this.heartbeatSQL = source.getHostConfig().getHearbeatSQL();
     }
 
+    public String getMessage() {
+        return message;
+    }
+
     public MySQLDataSource getSource() {
         return source;
     }
-
 
     public String getLastActiveTime() {
         if (detector == null) {
@@ -103,22 +93,15 @@ public class MySQLHeartbeat {
     public void heartbeat() {
         if (isChecking.compareAndSet(false, true)) {
             if (detector == null || detector.isQuit()) {
-                try {
-                    detector = new MySQLDetector(this);
-                    detector.heartbeat();
-                } catch (Exception e) {
-                    LOGGER.info(source.getConfig().toString(), e);
-                    setResult(ERROR_STATUS);
-                }
-            } else {
-                detector.heartbeat();
+                detector = new MySQLDetector(this);
             }
+            detector.heartbeat();
         } else {
             if (detector != null) {
                 if (detector.isQuit()) {
                     isChecking.set(false);
                 } else if (detector.isHeartbeatTimeout()) {
-                    setResult(TIMEOUT_STATUS);
+                    setResult(TIMEOUT_STATUS, null);
                 }
             }
         }
@@ -127,8 +110,9 @@ public class MySQLHeartbeat {
         }
     }
 
-    void setResult(int result) {
+    void setResult(int result, String errMsg) {
         this.isChecking.set(false);
+        this.message = errMsg;
         switch (result) {
             case OK_STATUS:
                 setOk();
@@ -179,7 +163,7 @@ public class MySQLHeartbeat {
 
     private void setError() {
         LOGGER.warn("heartbeat to [" + source.getConfig().getUrl() + "] setError");
-        // should continues check error status
+        // should continue checking error status
         if (detector != null) {
             detector.quit();
         }
@@ -205,16 +189,16 @@ public class MySQLHeartbeat {
         return slaveBehindMaster;
     }
 
+    void setSlaveBehindMaster(Integer slaveBehindMaster) {
+        this.slaveBehindMaster = slaveBehindMaster;
+    }
+
     public int getDbSynStatus() {
         return dbSynStatus;
     }
 
     void setDbSynStatus(int dbSynStatus) {
         this.dbSynStatus = dbSynStatus;
-    }
-
-    void setSlaveBehindMaster(Integer slaveBehindMaster) {
-        this.slaveBehindMaster = slaveBehindMaster;
     }
 
     public int getStatus() {

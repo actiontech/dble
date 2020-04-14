@@ -19,7 +19,7 @@ import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
-import com.actiontech.dble.backend.heartbeat.HeartbeatSQLJob;
+import com.actiontech.dble.sqlengine.HeartbeatSQLJob;
 import com.actiontech.dble.util.*;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;

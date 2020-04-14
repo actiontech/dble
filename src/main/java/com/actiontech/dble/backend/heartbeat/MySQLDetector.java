@@ -15,6 +15,7 @@ import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
 import com.actiontech.dble.config.helper.GetAndSyncDataSourceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
+import com.actiontech.dble.sqlengine.HeartbeatSQLJob;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.sqlengine.SQLQueryResultListener;

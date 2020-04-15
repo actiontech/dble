@@ -12,6 +12,7 @@ import com.actiontech.dble.config.util.AuthUtil;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOHandler;
 import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.server.ServerConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,6 +88,9 @@ public class FrontendAuthenticator implements NIOHandler {
         // check mysql client user
         String errMsg = AuthUtil.authority(source, authPacket.getUser(), authPacket.getPassword(), authPacket.getDatabase(), this instanceof ManagerAuthenticator);
         if (errMsg == null) {
+            if (source instanceof ServerConnection) {
+                ((ServerConnection) source).getSession2().setRowCount(0);
+            }
             success(authPacket);
         } else {
             failure(ErrorCode.ER_ACCESS_DENIED_ERROR, errMsg);

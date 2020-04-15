@@ -120,6 +120,7 @@ public class MySQLHeartbeat {
 
     void setResult(int result) {
         this.isChecking.set(false);
+        this.message = null;
         switch (result) {
             case OK_STATUS:
                 setOk();

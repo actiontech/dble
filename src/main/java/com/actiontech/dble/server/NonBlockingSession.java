@@ -114,7 +114,7 @@ public class NonBlockingSession implements Session {
     private volatile SessionStage sessionStage = SessionStage.Init;
 
     private volatile long rowCountCurrentSQL = -1;
-    private volatile long rowCountLastSQL = -1;
+    private volatile long rowCountLastSQL = 0;
 
     private final HashSet<BackendConnection> flowControlledBackendConnections = new HashSet<>();
 

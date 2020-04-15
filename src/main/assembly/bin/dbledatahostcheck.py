@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 from xml.dom.minidom import parse
 import xml.dom.minidom
+import pymysql
+pymysql.install_as_MySQLdb()
 import MySQLdb
 import MySQLdb.cursors
 from optparse import OptionParser

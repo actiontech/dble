@@ -100,7 +100,7 @@ def switchDatahost(manageruser,towritehost):
 
 if __name__ == "__main__":
 #logfile initialization
-    logfile='./logging.conf'
+    logfile='./bin/custom_mysql_ha_logging.conf'
     loggername='DBLEDatahostCheck'
     log=log_init(logfile,loggername)
 ##    log.info("Logger initialization is complete.")

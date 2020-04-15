@@ -8,13 +8,13 @@ def log_init(logfile,loggername):
   log=logging.getLogger(name=loggername)
   return log
 
-logfile='./custom_mysql_ha_logging.conf'
+logfile='./bin/custom_mysql_ha_logging.conf'
 loggername='DBLEDatahostCheck'
 log=log_init(logfile,loggername)
 log.info("Logger initialization is complete.")
 while "true":
     log.info("DBLE datahsots check begin...")
-    subprocess.run(['python3', 'dbledatahostcheck.py'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+    subprocess.run(['python3', './bin/dbledatahostcheck.py'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
     log.info("DBLE datahsots check end.")
     time.sleep(5)
 

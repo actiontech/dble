@@ -348,10 +348,10 @@ public final class ReloadConfig {
         mergedDataHosts.putAll(addOrChangeHosts);
         mergedDataHosts.putAll(noChangeHosts);
 
+        ConfigUtil.getAndSyncKeyVariables(false, mergedDataHosts, true);
+
         SystemVariables newSystemVariables = getSystemVariablesFromDataHost(loader, mergedDataHosts);
         ReloadLogHelper.info("reload config: get variables from random node end", LOGGER);
-
-
         ServerConfig serverConfig = new ServerConfig(loader);
         if (newSystemVariables.isLowerCaseTableNames()) {
             ReloadLogHelper.info("reload config: data host's lowerCaseTableNames=1, lower the config properties start", LOGGER);
@@ -359,7 +359,6 @@ public final class ReloadConfig {
             ReloadLogHelper.info("reload config: data host's lowerCaseTableNames=1, lower the config properties end", LOGGER);
         }
         checkTestConnIfNeed(loadAllMode, loader);
-        ConfigUtil.getAndSyncKeyVariables(false, addOrChangeHosts, true);
 
         Map<String, UserConfig> newUsers = serverConfig.getUsers();
         Map<String, SchemaConfig> newSchemas = serverConfig.getSchemas();
@@ -422,6 +421,8 @@ public final class ReloadConfig {
         ServerConfig serverConfig = new ServerConfig(loader);
         Map<String, PhysicalDataHost> newDataHosts = serverConfig.getDataHosts();
 
+        ConfigUtil.getAndSyncKeyVariables(false, newDataHosts, true);
+
         SystemVariables newSystemVariables = getSystemVariablesFromDataHost(loader, newDataHosts);
         ReloadLogHelper.info("reload config: get variables from random node end", LOGGER);
 
@@ -431,7 +432,6 @@ public final class ReloadConfig {
             ReloadLogHelper.info("reload config: data host's lowerCaseTableNames=1, lower the config properties end", LOGGER);
         }
         checkTestConnIfNeed(loadAllMode, loader);
-        ConfigUtil.getAndSyncKeyVariables(false, loader.getDataHosts(), true);
 
         Map<String, UserConfig> newUsers = serverConfig.getUsers();
         Map<String, SchemaConfig> newSchemas = serverConfig.getSchemas();

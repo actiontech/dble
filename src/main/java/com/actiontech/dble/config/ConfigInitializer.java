@@ -103,7 +103,8 @@ public class ConfigInitializer implements ProblemReporter {
     }
 
     private boolean checkSourceFake(PhysicalDataSource source) {
-        if (("localhost".equalsIgnoreCase(source.getConfig().getIp()) || "127.0.0.1".equalsIgnoreCase(source.getConfig().getIp())) &&
+        if (("localhost".equalsIgnoreCase(source.getConfig().getIp()) || "127.0.0.1".equals(source.getConfig().getIp()) ||
+                "0:0:0:0:0:0:0:1".equals(source.getConfig().getIp()) || "::1".equals(source.getConfig().getIp())) &&
                 (source.getConfig().getPort() == this.system.getServerPort() || source.getConfig().getPort() == this.system.getManagerPort())) {
             return true;
         }
@@ -162,7 +163,7 @@ public class ConfigInitializer implements ProblemReporter {
         allUseHost.clear();
     }
 
-    public void testConnection(boolean isStart) {
+    public void testConnection() {
         Map<String, List<Pair<String, String>>> hostSchemaMap = genHostSchemaMap();
         Set<String> errNodeKeys = new HashSet<>();
         Set<String> errSourceKeys = new HashSet<>();

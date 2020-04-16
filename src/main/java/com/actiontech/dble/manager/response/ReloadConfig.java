@@ -315,7 +315,7 @@ public final class ReloadConfig {
         ReloadLogHelper.info("reload config: get variables from random alive data host start", LOGGER);
 
         try {
-            loader.testConnection(false);
+            loader.testConnection();
         } catch (Exception e) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("just test ,not stop reload, catch exception", e);
@@ -478,7 +478,7 @@ public final class ReloadConfig {
         if ((loadAllMode & ManagerParseConfig.OPTS_MODE) == 0) {
             try {
                 ReloadLogHelper.info("reload config: test all data Nodes start", LOGGER);
-                loader.testConnection(false);
+                loader.testConnection();
                 ReloadLogHelper.info("reload config: test all data Nodes end", LOGGER);
             } catch (Exception e) {
                 throw new Exception(e);

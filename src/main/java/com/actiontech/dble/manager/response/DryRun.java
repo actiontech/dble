@@ -79,7 +79,7 @@ public final class DryRun {
         //check all the config is legal
         List<ErrorInfo> list = new ArrayList<>();
         try {
-            loader.testConnection(false);
+            loader.testConnection();
         } catch (Exception e) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("just test ,not stop reload, catch exception", e);

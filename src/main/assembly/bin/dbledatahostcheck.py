@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 from xml.dom.minidom import parse
 import xml.dom.minidom
+import pymysql
+pymysql.install_as_MySQLdb()
 import MySQLdb
 import MySQLdb.cursors
 from optparse import OptionParser
@@ -100,7 +102,7 @@ def switchDatahost(manageruser,towritehost):
 
 if __name__ == "__main__":
 #logfile initialization
-    logfile='./logging.conf'
+    logfile='./bin/custom_mysql_ha_logging.conf'
     loggername='DBLEDatahostCheck'
     log=log_init(logfile,loggername)
 ##    log.info("Logger initialization is complete.")

@@ -5,6 +5,8 @@
 
 package com.actiontech.dble.net;
 
+import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+
 import java.io.IOException;
 import java.nio.channels.CompletionHandler;
 
@@ -21,8 +23,12 @@ class AIOReadHandler implements CompletionHandler<Integer, AIOSocketWR> {
                 wr.con.close("handle err:" + e);
             }
         } else if (i == -1) {
-            // System.out.println("read -1 xxxxxxxxx "+con);
-            wr.con.close("client closed");
+            if (wr.con instanceof MySQLConnection) {
+                ((MySQLConnection) wr.con).closeInner("stream closed");
+            } else {
+                wr.con.close("client closed");
+            }
+
         }
         // }
         // });

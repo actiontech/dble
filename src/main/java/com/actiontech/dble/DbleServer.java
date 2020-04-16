@@ -124,7 +124,6 @@ public final class DbleServer {
         LOGGER.info(NAME + "Server is ready to startup ...");
 
         LOGGER.info("system config params:" + system.toString());
-        aio = (system.getUsingAIO() == 1);
 
         LOGGER.info("===========================================Init bufferPool start==================================");
         String inf = "Buffer pool info:[The count of pages is:" +
@@ -170,6 +169,8 @@ public final class DbleServer {
         // startup manager
         SocketAcceptor manager;
         SocketAcceptor server;
+
+        aio = (system.getUsingAIO() == 1);
         if (aio) {
             int processorCount = frontProcessorCount + backendProcessorCount;
             LOGGER.info("using aio network handler ");

@@ -38,7 +38,7 @@ public class ConfigInitializer implements ProblemReporter {
     private volatile Map<String, PhysicalDataNode> dataNodes;
     private volatile Map<String, PhysicalDataHost> dataHosts;
     private volatile Map<ERTable, Set<ERTable>> erRelations;
-    private volatile boolean dataHostWithoutWH = true;
+    private volatile boolean fullyConfigured = false;
 
     private List<ErrorInfo> errorInfos = new ArrayList<>();
 
@@ -78,25 +78,36 @@ public class ConfigInitializer implements ProblemReporter {
     }
 
     private void checkWriteHost() {
-        for (Map.Entry<String, PhysicalDataHost> pool : this.dataHosts.entrySet()) {
-            PhysicalDataSource writeSource = pool.getValue().getWriteSource();
-            if (writeSource != null) {
-                if (writeSource.getConfig().isDisabled()) {
-                    boolean hasEnableNode = false;
-                    for (PhysicalDataSource readSource : pool.getValue().getReadSources()) {
-                        if (!readSource.isDisabled()) {
-                            hasEnableNode = true;
-                            break;
-                        }
-                    }
-                    if (!hasEnableNode) {
-                        continue;
+        if (this.dataHosts.isEmpty()) {
+            return;
+        } else {
+            //Mark all dataSource whether they are fake or not
+            for (PhysicalDataHost dataHost : this.dataHosts.values()) {
+                for (PhysicalDataSource source : dataHost.getAllDataSources()) {
+                    if (checkSourceFake(source)) {
+                        source.setFakeNode(true);
+                    } else if (!source.isDisabled()) {
+                        this.fullyConfigured = true;
                     }
                 }
-                this.dataHostWithoutWH = false;
-                break;
+            }
+            if (fullyConfigured) {
+                // if there are dataHosts exists. no empty dataNodes allowed
+                for (PhysicalDataNode dataNode : this.dataNodes.values()) {
+                    if (dataNode.getDataHost() == null) {
+                        throw new ConfigException("dataHost not exists " + dataNode.getDataHostName());
+                    }
+                }
             }
         }
+    }
+
+    private boolean checkSourceFake(PhysicalDataSource source) {
+        if (("localhost".equalsIgnoreCase(source.getConfig().getIp()) || "127.0.0.1".equalsIgnoreCase(source.getConfig().getIp())) &&
+                (source.getConfig().getPort() == this.system.getServerPort() || source.getConfig().getPort() == this.system.getManagerPort())) {
+            return true;
+        }
+        return false;
     }
 
     private void deleteRedundancyConf() {
@@ -126,7 +137,9 @@ public class ConfigInitializer implements ProblemReporter {
             Map.Entry<String, PhysicalDataNode> entry = iterator.next();
             String dataNodeName = entry.getKey();
             if (allUseDataNode.contains(dataNodeName)) {
-                allUseHost.add(entry.getValue().getDataHost().getHostName());
+                if (entry.getValue().getDataHost() != null) {
+                    allUseHost.add(entry.getValue().getDataHost().getHostName());
+                }
             } else {
                 LOGGER.info("dataNode " + dataNodeName + " is useless,server will ignore it");
                 errorInfos.add(new ErrorInfo("Xml", "WARNING", "dataNode " + dataNodeName + " is useless"));
@@ -161,22 +174,14 @@ public class ConfigInitializer implements ProblemReporter {
             PhysicalDataHost pool = dataHosts.get(hostName);
 
             checkMaxCon(pool);
-
-            if (isStart) {
-                // start for first time, 1.you can set write host as empty
-                if (pool.getWriteSource() == null) {
-                    continue;
-                }
-                DataSourceConfig wHost = pool.getWriteSource().getConfig();
-                // start for first time, 2.you can set write host as yourself
-                if (("localhost".equalsIgnoreCase(wHost.getIp()) || "127.0.0.1".equalsIgnoreCase(wHost.getIp())) &&
-                        wHost.getPort() == this.system.getServerPort()) {
-                    continue;
-                }
-            }
             for (PhysicalDataSource ds : pool.getAllDataSources()) {
                 if (ds.getConfig().isDisabled()) {
                     errorInfos.add(new ErrorInfo("Backend", "WARNING", "DataHost[" + pool.getHostName() + "," + ds.getName() + "] is disabled"));
+                    LOGGER.info("DataHost[" + ds.getHostConfig().getName() + "] is disabled,just mark testing failed and skip it");
+                    ds.setTestConnSuccess(false);
+                    continue;
+                } else if (ds.isFakeNode()) {
+                    errorInfos.add(new ErrorInfo("Backend", "WARNING", "DataHost[" + pool.getHostName() + "," + ds.getName() + "] is fake Node"));
                     LOGGER.info("DataHost[" + ds.getHostConfig().getName() + "] is disabled,just mark testing failed and skip it");
                     ds.setTestConnSuccess(false);
                     continue;
@@ -352,18 +357,15 @@ public class ConfigInitializer implements ProblemReporter {
         Map<String, PhysicalDataNode> nodes = new HashMap<>(nodeConf.size());
         for (DataNodeConfig conf : nodeConf.values()) {
             PhysicalDataHost pool = this.dataHosts.get(conf.getDataHost());
-            if (pool == null) {
-                throw new ConfigException("dataHost not exists " + conf.getDataHost());
-            }
-            PhysicalDataNode dataNode = new PhysicalDataNode(conf.getName(), conf.getDatabase(), pool);
+            PhysicalDataNode dataNode = new PhysicalDataNode(conf.getDataHost(), conf.getName(), conf.getDatabase(), pool);
             nodes.put(dataNode.getName(), dataNode);
         }
         return nodes;
     }
 
 
-    public boolean isDataHostWithoutWH() {
-        return dataHostWithoutWH;
+    public boolean isFullyConfigured() {
+        return fullyConfigured;
     }
 
     public List<ErrorInfo> getErrorInfos() {

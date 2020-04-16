@@ -65,7 +65,7 @@ public final class ReloadMetaData {
                 return;
             }
             try {
-                if (!DbleServer.getInstance().getConfig().isDataHostWithoutWR()) {
+                if (DbleServer.getInstance().getConfig().isFullyConfigured()) {
                     final ReentrantReadWriteLock confLock = DbleServer.getInstance().getConfig().getLock();
                     confLock.readLock().lock();
                     try {

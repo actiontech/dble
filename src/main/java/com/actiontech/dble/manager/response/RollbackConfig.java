@@ -23,7 +23,10 @@ import com.actiontech.dble.config.model.UserConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.ReloadManager;
+import com.actiontech.dble.net.FrontendConnection;
+import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
@@ -250,33 +253,45 @@ public final class RollbackConfig {
         Map<String, PhysicalDataNode> dataNodes = conf.getBackupDataNodes();
         FirewallConfig firewall = conf.getBackupFirewall();
         Map<ERTable, Set<ERTable>> erRelations = conf.getBackupErRelations();
-        boolean backDataHostWithoutWR = conf.backDataHostWithoutWR();
+        boolean backIsFullyConfiged = conf.backIsFullyConfiged();
         if (conf.canRollbackAll()) {
             boolean rollbackStatus = true;
             String errorMsg = null;
-            for (PhysicalDataHost dn : dataHosts.values()) {
-                dn.init();
-                if (!dn.isInitSuccess()) {
-                    rollbackStatus = false;
-                    errorMsg = "dataHost[" + dn.getHostName() + "] inited failure";
-                    break;
-                }
-            }
-            // INIT FAILED
-            if (!rollbackStatus) {
+            if (conf.isFullyConfigured()) {
                 for (PhysicalDataHost dn : dataHosts.values()) {
-                    dn.clearDataSources("rollbackup config");
-                    dn.stopHeartbeat();
+                    dn.init();
+                    if (!dn.isInitSuccess()) {
+                        rollbackStatus = false;
+                        errorMsg = "dataHost[" + dn.getHostName() + "] inited failure";
+                        break;
+                    }
                 }
-                throw new Exception(errorMsg);
+                // INIT FAILED
+                if (!rollbackStatus) {
+                    for (PhysicalDataHost dn : dataHosts.values()) {
+                        dn.clearDataSources("rollbackup config");
+                        dn.stopHeartbeat();
+                    }
+                    throw new Exception(errorMsg);
+                }
             }
             final Map<String, PhysicalDataHost> cNodes = conf.getDataHosts();
             // apply
-            boolean result = conf.rollback(users, schemas, dataNodes, dataHosts, erRelations, firewall, backDataHostWithoutWR);
+            boolean result = conf.rollback(users, schemas, dataNodes, dataHosts, erRelations, firewall, backIsFullyConfiged);
             // stop old resource heartbeat
             for (PhysicalDataHost dn : cNodes.values()) {
                 dn.clearDataSources("clear old config ");
                 dn.stopHeartbeat();
+            }
+            if (!backIsFullyConfiged) {
+                for (NIOProcessor processor : DbleServer.getInstance().getFrontProcessors()) {
+                    for (FrontendConnection fcon : processor.getFrontends().values()) {
+                        if (fcon instanceof ServerConnection) {
+                            ServerConnection scon = (ServerConnection) fcon;
+                            scon.close("Reload causes the service to stop");
+                        }
+                    }
+                }
             }
             return result;
         } else {

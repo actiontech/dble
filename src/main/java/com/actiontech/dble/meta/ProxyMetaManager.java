@@ -27,7 +27,6 @@ import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.zktoxml.listen.DataHostResponseListener;
 import com.actiontech.dble.config.loader.zkprocess.zktoxml.listen.DataHostStatusListener;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
-import com.actiontech.dble.config.model.DataSourceConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
@@ -288,8 +287,7 @@ public class ProxyMetaManager {
         Set<String> selfNode = null;
         for (Map.Entry<String, PhysicalDataHost> entry : config.getDataHosts().entrySet()) {
             PhysicalDataHost host = entry.getValue();
-            DataSourceConfig wHost = host.getWriteSource().getConfig();
-            if (("localhost".equalsIgnoreCase(wHost.getIp()) || "127.0.0.1".equalsIgnoreCase(wHost.getIp())) && wHost.getPort() == config.getSystem().getServerPort()) {
+            if (host.isAllFakeNode()) {
                 for (Map.Entry<String, PhysicalDataNode> nodeEntry : config.getDataNodes().entrySet()) {
                     if (nodeEntry.getValue().getDataHost().getHostName().equals(host.getHostName())) {
                         if (selfNode == null) {
@@ -298,7 +296,6 @@ public class ProxyMetaManager {
                         selfNode.add(nodeEntry.getKey());
                     }
                 }
-                break;
             }
         }
         return selfNode;

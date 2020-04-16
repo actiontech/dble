@@ -12,7 +12,6 @@ import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.helper.GetAndSyncDataSourceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
-import com.actiontech.dble.config.model.DataSourceConfig;
 import com.actiontech.dble.util.StringUtil;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.util.Strings;
@@ -208,10 +207,14 @@ public final class ConfigUtil {
     }
 
 
-    public static String getAndSyncKeyVariables(boolean isStart, Map<String, PhysicalDataHost> dataHosts, boolean needSync) throws Exception {
+    public static String getAndSyncKeyVariables(Map<String, PhysicalDataHost> dataHosts, boolean needSync) throws Exception {
         String msg = null;
+        if (dataHosts.size() == 0) {
+            //with no dataHosts, do not check the variables
+            return null;
+        }
         Map<String, Future<KeyVariables>> keyVariablesTaskMap = new HashMap<>(dataHosts.size());
-        getAndSyncKeyVariablesForDataSources(isStart, dataHosts, keyVariablesTaskMap, needSync);
+        getAndSyncKeyVariablesForDataSources(dataHosts, keyVariablesTaskMap, needSync);
 
         boolean lowerCase = false;
         boolean isFirst = true;
@@ -263,29 +266,14 @@ public final class ConfigUtil {
     }
 
 
-    private static void getAndSyncKeyVariablesForDataSources(boolean isStart, Map<String, PhysicalDataHost> dataHosts, Map<String, Future<KeyVariables>> keyVariablesTaskMap, boolean needSync) throws InterruptedException {
-        if (dataHosts.size() == 0) {
-            return;
-        }
+    private static void getAndSyncKeyVariablesForDataSources(Map<String, PhysicalDataHost> dataHosts, Map<String, Future<KeyVariables>> keyVariablesTaskMap, boolean needSync) throws InterruptedException {
         ExecutorService service = Executors.newFixedThreadPool(dataHosts.size());
         for (Map.Entry<String, PhysicalDataHost> entry : dataHosts.entrySet()) {
             String hostName = entry.getKey();
             PhysicalDataHost pool = entry.getValue();
 
-            if (isStart) {
-                // start for first time, 1.you can set write host as empty
-                if (pool.getWriteSource() == null) {
-                    continue;
-                }
-                DataSourceConfig wHost = pool.getWriteSource().getConfig();
-                // start for first time, 2.you can set write host as yourself
-                if (("localhost".equalsIgnoreCase(wHost.getIp()) || "127.0.0.1".equalsIgnoreCase(wHost.getIp())) &&
-                        wHost.getPort() == DbleServer.getInstance().getConfig().getSystem().getServerPort()) {
-                    continue;
-                }
-            }
             for (PhysicalDataSource ds : pool.getAllDataSources()) {
-                if (ds.isDisabled() || !ds.isTestConnSuccess()) {
+                if (ds.isDisabled() || !ds.isTestConnSuccess() || ds.isFakeNode()) {
                     continue;
                 }
                 getKeyVariablesForDataSource(service, ds, hostName, keyVariablesTaskMap, needSync);

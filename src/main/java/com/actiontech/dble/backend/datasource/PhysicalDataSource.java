@@ -53,6 +53,7 @@ public abstract class PhysicalDataSource {
     private volatile boolean isolationSynced = false;
     private volatile boolean testConnSuccess = false;
     private volatile boolean readOnly = false;
+    private volatile boolean fakeNode = false;
     private AtomicLong readCount = new AtomicLong(0);
     private AtomicLong writeCount = new AtomicLong(0);
     private String dsVersion;
@@ -112,6 +113,15 @@ public abstract class PhysicalDataSource {
 
     public DataHostConfig getHostConfig() {
         return hostConfig;
+    }
+
+
+    public boolean isFakeNode() {
+        return fakeNode;
+    }
+
+    public void setFakeNode(boolean fakeNode) {
+        this.fakeNode = fakeNode;
     }
 
     public boolean isReadNode() {
@@ -329,7 +339,7 @@ public abstract class PhysicalDataSource {
 
 
     void startHeartbeat() {
-        if (!this.isDisabled()) {
+        if (!this.isDisabled() && !this.isFakeNode()) {
             heartbeat.start();
             heartbeat.heartbeat();
         }
@@ -343,7 +353,9 @@ public abstract class PhysicalDataSource {
         if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
             return;
         }
-        heartbeat.heartbeat();
+        if (!this.isDisabled() && !this.isFakeNode()) {
+            heartbeat.heartbeat();
+        }
     }
 
     private BackendConnection takeCon(BackendConnection conn, String schema) {
@@ -594,7 +606,7 @@ public abstract class PhysicalDataSource {
     }
 
     public boolean isAlive() {
-        return !disabled.get() && ((heartbeat.getStatus() == MySQLHeartbeat.INIT_STATUS && testConnSuccess) || heartbeat.isHeartBeatOK());
+        return !disabled.get() && !isFakeNode() && ((heartbeat.getStatus() == MySQLHeartbeat.INIT_STATUS && testConnSuccess) || heartbeat.isHeartBeatOK());
     }
 
 

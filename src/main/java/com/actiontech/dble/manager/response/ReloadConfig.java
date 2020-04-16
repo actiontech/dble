@@ -359,7 +359,7 @@ public final class ReloadConfig {
             ReloadLogHelper.info("reload config: data host's lowerCaseTableNames=1, lower the config properties end", LOGGER);
         }
         checkTestConnIfNeed(loadAllMode, loader);
-        ConfigUtil.getAndSyncKeyVariables(false, addOrChangeHosts, true);
+        ConfigUtil.getAndSyncKeyVariables(addOrChangeHosts, true);
 
         Map<String, UserConfig> newUsers = serverConfig.getUsers();
         Map<String, SchemaConfig> newSchemas = serverConfig.getSchemas();
@@ -381,7 +381,7 @@ public final class ReloadConfig {
 
         /* 2.2 init the dataSource with diff*/
         ReloadLogHelper.info("reload config: init new data host  start", LOGGER);
-        String reasonMsg = initDataHostByMap(mergedDataHosts, newDataNodes);
+        String reasonMsg = initDataHostByMap(mergedDataHosts, newDataNodes, loader.isFullyConfigured());
         ReloadLogHelper.info("reload config: init new data host end", LOGGER);
         if (reasonMsg == null) {
             /* 2.3 apply new conf */
@@ -389,7 +389,7 @@ public final class ReloadConfig {
             boolean result;
             try {
                 result = config.reload(newUsers, newSchemas, newDataNodes, mergedDataHosts, addOrChangeHosts, recycleHosts, newErRelations, newFirewall,
-                        newSystemVariables, loader.isDataHostWithoutWH(), loadAllMode);
+                        newSystemVariables, loader.isFullyConfigured(), loadAllMode);
                 CronScheduler.getInstance().init(config.getSchemas());
                 if (!result) {
                     initFailed(newDataHosts);
@@ -397,6 +397,9 @@ public final class ReloadConfig {
                 FrontendUserManager.getInstance().initForLatest(newUsers, loader.getSystem().getMaxCon());
                 ReloadLogHelper.info("reload config: apply new config end", LOGGER);
                 recycleOldBackendConnections(recycleHosts, ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
+                if (!loader.isFullyConfigured()) {
+                    recycleServerConnections();
+                }
                 return result;
             } catch (Exception e) {
                 initFailed(newDataHosts);
@@ -431,7 +434,7 @@ public final class ReloadConfig {
             ReloadLogHelper.info("reload config: data host's lowerCaseTableNames=1, lower the config properties end", LOGGER);
         }
         checkTestConnIfNeed(loadAllMode, loader);
-        ConfigUtil.getAndSyncKeyVariables(false, loader.getDataHosts(), true);
+        ConfigUtil.getAndSyncKeyVariables(loader.getDataHosts(), true);
 
         Map<String, UserConfig> newUsers = serverConfig.getUsers();
         Map<String, SchemaConfig> newSchemas = serverConfig.getSchemas();
@@ -441,7 +444,7 @@ public final class ReloadConfig {
 
 
         ReloadLogHelper.info("reload config: init new data host  start", LOGGER);
-        String reasonMsg = initDataHostByMap(newDataHosts, newDataNodes);
+        String reasonMsg = initDataHostByMap(newDataHosts, newDataNodes, loader.isFullyConfigured());
         ReloadLogHelper.info("reload config: init new data host end", LOGGER);
         if (reasonMsg == null) {
             /* 2.3 apply new conf */
@@ -449,7 +452,7 @@ public final class ReloadConfig {
             boolean result;
             try {
                 result = config.reload(newUsers, newSchemas, newDataNodes, newDataHosts, newDataHosts, config.getDataHosts(), newErRelations, newFirewall,
-                        newSystemVariables, loader.isDataHostWithoutWH(), loadAllMode);
+                        newSystemVariables, loader.isFullyConfigured(), loadAllMode);
                 CronScheduler.getInstance().init(config.getSchemas());
                 if (!result) {
                     initFailed(newDataHosts);
@@ -457,6 +460,9 @@ public final class ReloadConfig {
                 FrontendUserManager.getInstance().initForLatest(newUsers, loader.getSystem().getMaxCon());
                 ReloadLogHelper.info("reload config: apply new config end", LOGGER);
                 recycleOldBackendConnections(config.getBackupDataHosts(), ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
+                if (!loader.isFullyConfigured()) {
+                    recycleServerConnections();
+                }
                 return result;
             } catch (Exception e) {
                 initFailed(newDataHosts);
@@ -485,7 +491,7 @@ public final class ReloadConfig {
         SystemVariables newSystemVariables;
         newSystemVariables = handler.execute();
         if (newSystemVariables == null) {
-            if (!loader.isDataHostWithoutWH()) {
+            if (loader.isFullyConfigured()) {
                 throw new Exception("Can't get variables from any data host, because all of data host can't connect to MySQL correctly");
             } else {
                 ReloadLogHelper.info("reload config: no valid data host ,keep variables as old", LOGGER);
@@ -514,6 +520,17 @@ public final class ReloadConfig {
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+
+    private static void recycleServerConnections() {
+        for (NIOProcessor processor : DbleServer.getInstance().getFrontProcessors()) {
+            for (FrontendConnection fcon : processor.getFrontends().values()) {
+                if (fcon instanceof ServerConnection) {
+                    ServerConnection scon = (ServerConnection) fcon;
+                    scon.close("Reload causes the service to stop");
                 }
             }
         }
@@ -612,7 +629,7 @@ public final class ReloadConfig {
     }
 
 
-    private static String initDataHostByMap(Map<String, PhysicalDataHost> newDataHosts, Map<String, PhysicalDataNode> newDataNodes) {
+    private static String initDataHostByMap(Map<String, PhysicalDataHost> newDataHosts, Map<String, PhysicalDataNode> newDataNodes, boolean fullyConfigured) {
         String reasonMsg = null;
         for (PhysicalDataHost dataHost : newDataHosts.values()) {
             ReloadLogHelper.info("try to init dataSouce : " + dataHost.toString(), LOGGER);
@@ -626,7 +643,7 @@ public final class ReloadConfig {
                 }
             }
             dataHost.setSchemas(dnSchemas.toArray(new String[dnSchemas.size()]));
-            if (!dataHost.isInitSuccess()) {
+            if (!dataHost.isInitSuccess() && fullyConfigured) {
                 dataHost.init();
                 if (!dataHost.isInitSuccess()) {
                     reasonMsg = "Init DataHost [" + dataHost.getHostName() + "] failed";

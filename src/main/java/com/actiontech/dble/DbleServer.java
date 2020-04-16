@@ -406,7 +406,7 @@ public final class DbleServer {
     private void pullVarAndMeta() throws IOException {
         ProxyMetaManager tmManager = new ProxyMetaManager();
         ProxyMeta.getInstance().setTmManager(tmManager);
-        if (!this.getConfig().isDataHostWithoutWR()) {
+        if (this.getConfig().isFullyConfigured()) {
             LOGGER.info("get variables Data start");
             //init for sys VAR
             VarsExtractorHandler handler = new VarsExtractorHandler(config.getDataHosts());
@@ -425,6 +425,8 @@ public final class DbleServer {
             } catch (Exception e) {
                 throw new IOException(e);
             }
+        } else {
+            reviseSchemas();
         }
     }
 

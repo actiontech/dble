@@ -101,7 +101,7 @@ public final class Scheduler {
                 timerExecutor.execute(new Runnable() {
                     @Override
                     public void run() {
-                        if (!DbleServer.getInstance().getConfig().isDataHostWithoutWR()) {
+                        if (DbleServer.getInstance().getConfig().isFullyConfigured()) {
                             Map<String, PhysicalDataHost> hosts = DbleServer.getInstance().getConfig().getDataHosts();
                             for (PhysicalDataHost host : hosts.values()) {
                                 host.doHeartbeat();

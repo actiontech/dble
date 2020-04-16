@@ -86,7 +86,7 @@ public final class DryRun {
             }
         }
         try {
-            String msg = ConfigUtil.getAndSyncKeyVariables(false, loader.getDataHosts(), false);
+            String msg = ConfigUtil.getAndSyncKeyVariables(loader.getDataHosts(), false);
             if (msg != null) {
                 list.add(new ErrorInfo("Backend", "WARNING", msg));
             }
@@ -102,7 +102,7 @@ public final class DryRun {
         VarsExtractorHandler handler = new VarsExtractorHandler(loader.getDataHosts());
         newSystemVariables = handler.execute();
         if (newSystemVariables == null) {
-            if (!loader.isDataHostWithoutWH()) {
+            if (!loader.isFullyConfigured()) {
                 list.add(new ErrorInfo("Backend", "ERROR", "Get Vars from backend failed,Maybe all backend MySQL can't connected"));
             } else {
                 list.add(new ErrorInfo("Backend", "WARNING", "No dataHost available"));

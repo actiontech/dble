@@ -21,11 +21,13 @@ public class PhysicalDataNode {
     protected static final Logger LOGGER = LoggerFactory.getLogger(PhysicalDataNode.class);
 
     protected final String name;
+    protected final String dataHostName;
     protected String database;
     protected volatile PhysicalDataHost dataHost;
     private volatile boolean isSchemaExists = true;
 
-    public PhysicalDataNode(String hostName, String database, PhysicalDataHost dataHost) {
+    public PhysicalDataNode(String dataHostName, String hostName, String database, PhysicalDataHost dataHost) {
+        this.dataHostName = dataHostName;
         this.name = hostName;
         this.database = database;
         this.dataHost = dataHost;
@@ -41,6 +43,10 @@ public class PhysicalDataNode {
 
     public String getName() {
         return name;
+    }
+
+    public String getDataHostName() {
+        return dataHostName;
     }
 
     public PhysicalDataHost getDataHost() {
@@ -153,6 +159,8 @@ public class PhysicalDataNode {
             PhysicalDataSource writeSource = dataHost.getWriteSource();
             if (writeSource.isDisabled()) {
                 throw new IllegalArgumentException("[" + writeSource.getHostConfig().getName() + "." + writeSource.getConfig().getHostName() + "] is disabled");
+            } else if (writeSource.isFakeNode()) {
+                throw new IllegalArgumentException("[" + writeSource.getHostConfig().getName() + "." + writeSource.getConfig().getHostName() + "] is fake node");
             }
             if (!fakeRead && writeSource.isReadOnly()) {
                 throw new IllegalArgumentException("The Data Source[" + writeSource.getConfig().getUrl() + "] is running with the --read-only option so it cannot execute this statement");

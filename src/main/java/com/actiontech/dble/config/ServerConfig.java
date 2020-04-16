@@ -52,8 +52,8 @@ public class ServerConfig {
     private volatile Map<String, PhysicalDataHost> dataHosts2;
     private volatile Map<ERTable, Set<ERTable>> erRelations;
     private volatile Map<ERTable, Set<ERTable>> erRelations2;
-    private volatile boolean dataHostWithoutWR;
-    private volatile boolean dataHostWithoutWR2;
+    private volatile boolean fullyConfigured;
+    private volatile boolean fullyConfigured2;
     private volatile long reloadTime;
     private volatile long rollbackTime;
     private volatile int status;
@@ -70,7 +70,7 @@ public class ServerConfig {
         this.dataHosts = confInitNew.getDataHosts();
         this.dataNodes = confInitNew.getDataNodes();
         this.erRelations = confInitNew.getErRelations();
-        this.dataHostWithoutWR = confInitNew.isDataHostWithoutWH();
+        this.fullyConfigured = confInitNew.isFullyConfigured();
         ConfigUtil.setSchemasForPool(dataHosts, dataNodes);
 
         this.firewall = confInitNew.getFirewall();
@@ -92,7 +92,7 @@ public class ServerConfig {
         this.dataHosts = confInit.getDataHosts();
         this.dataNodes = confInit.getDataNodes();
         this.erRelations = confInit.getErRelations();
-        this.dataHostWithoutWR = confInit.isDataHostWithoutWH();
+        this.fullyConfigured = confInit.isFullyConfigured();
         ConfigUtil.setSchemasForPool(dataHosts, dataNodes);
 
         this.firewall = confInit.getFirewall();
@@ -124,12 +124,12 @@ public class ServerConfig {
     }
 
     public void getAndSyncKeyVariables() throws Exception {
-        ConfigUtil.getAndSyncKeyVariables(true, confInitNew.getDataHosts(), true);
+        ConfigUtil.getAndSyncKeyVariables(confInitNew.getDataHosts(), true);
     }
 
-    public boolean isDataHostWithoutWR() {
+    public boolean isFullyConfigured() {
         waitIfChanging();
-        return dataHostWithoutWR;
+        return fullyConfigured;
     }
 
     public Map<String, UserConfig> getUsers() {
@@ -207,9 +207,9 @@ public class ServerConfig {
         return rollbackTime;
     }
 
-    public boolean backDataHostWithoutWR() {
+    public boolean backIsFullyConfiged() {
         waitIfChanging();
-        return dataHostWithoutWR2;
+        return fullyConfigured2;
     }
 
     public boolean reload(Map<String, UserConfig> newUsers, Map<String, SchemaConfig> newSchemas,
@@ -217,11 +217,11 @@ public class ServerConfig {
                           Map<String, PhysicalDataHost> changeOrAddDataHosts,
                           Map<String, PhysicalDataHost> recycleDataHosts,
                           Map<ERTable, Set<ERTable>> newErRelations, FirewallConfig newFirewall,
-                          SystemVariables newSystemVariables, boolean newDataHostWithoutWR,
+                          SystemVariables newSystemVariables, boolean isFullyConfigured,
                           final int loadAllMode) throws SQLNonTransientException {
 
         boolean result = apply(newUsers, newSchemas, newDataNodes, newDataHosts, changeOrAddDataHosts, recycleDataHosts, newErRelations, newFirewall,
-                newSystemVariables, newDataHostWithoutWR, loadAllMode);
+                newSystemVariables, isFullyConfigured, loadAllMode);
         this.reloadTime = TimeUtil.currentTimeMillis();
         this.status = RELOAD_ALL;
         return result;
@@ -305,6 +305,7 @@ public class ServerConfig {
             PhysicalDataNode newDBNode = newDataNodes.get(strDataNode);
             PhysicalDataNode oldDBNode = dataNodes.get(strDataNode);
             if (!oldDBNode.getDatabase().equals(newDBNode.getDatabase()) ||
+                    oldDBNode.getDataHost() == null ||
                     !oldDBNode.getDataHost().getHostName().equals(newDBNode.getDataHost().getHostName())) {
                 return true;
             }
@@ -347,12 +348,14 @@ public class ServerConfig {
                           Map<String, PhysicalDataHost> recycleDataHosts,
                           Map<ERTable, Set<ERTable>> newErRelations,
                           FirewallConfig newFirewall, SystemVariables newSystemVariables,
-                          boolean newDataHostWithoutWR, final int loadAllMode) throws SQLNonTransientException {
+                          boolean isFullyConfigured, final int loadAllMode) throws SQLNonTransientException {
         List<Pair<String, String>> delTables = new ArrayList<>();
         List<Pair<String, String>> reloadTables = new ArrayList<>();
         List<String> delSchema = new ArrayList<>();
         List<String> reloadSchema = new ArrayList<>();
-        calcDiffForMetaData(newSchemas, newDataNodes, loadAllMode, delTables, reloadTables, delSchema, reloadSchema);
+        if (isFullyConfigured) {
+            calcDiffForMetaData(newSchemas, newDataNodes, loadAllMode, delTables, reloadTables, delSchema, reloadSchema);
+        }
         final ReentrantLock metaLock = ProxyMeta.getInstance().getTmManager().getMetaLock();
         metaLock.lock();
         this.changing = true;
@@ -379,22 +382,21 @@ public class ServerConfig {
             this.schemas2 = this.schemas;
             this.firewall2 = this.firewall;
             this.erRelations2 = this.erRelations;
-            this.dataHostWithoutWR2 = this.dataHostWithoutWR;
-
+            this.fullyConfigured2 = this.fullyConfigured;
             // new data host
             // 1 start heartbeat
             // 2 apply the configure
             //---------------------------------------------------
             if (changeOrAddDataHosts != null) {
                 for (PhysicalDataHost newDataHost : changeOrAddDataHosts.values()) {
-                    if (newDataHost != null && !newDataHostWithoutWR) {
+                    if (newDataHost != null && !isFullyConfigured) {
                         newDataHost.startHeartbeat();
                     }
                 }
             }
             this.dataNodes = newDataNodes;
             this.dataHosts = newDataHosts;
-            this.dataHostWithoutWR = newDataHostWithoutWR;
+            this.fullyConfigured = isFullyConfigured;
             DbleServer.getInstance().reloadSystemVariables(newSystemVariables);
             CacheService.getInstance().reloadCache(newSystemVariables.isLowerCaseTableNames());
             this.users = newUsers;
@@ -404,7 +406,7 @@ public class ServerConfig {
             CacheService.getInstance().clearCache();
             HaConfigManager.getInstance().init();
             this.changing = false;
-            if (!newDataHostWithoutWR) {
+            if (isFullyConfigured) {
                 return reloadMetaData(delTables, reloadTables, delSchema, reloadSchema);
             }
         } finally {

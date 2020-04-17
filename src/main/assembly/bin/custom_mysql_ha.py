@@ -1,20 +1,50 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import time
-import subprocess
 import logging.config
+import dble_datahosts_check as Dhcheck
 
-def log_init(logfile,loggername):
-  logging.config.fileConfig(logfile)
-  log=logging.getLogger(name=loggername)
-  return log
+# Need to update.
 
-logfile='./bin/custom_mysql_ha_logging.conf'
-loggername='DBLEDatahostCheck'
-log=log_init(logfile,loggername)
-log.info("Logger initialization is complete.")
-while "true":
-    log.info("DBLE datahsots check begin...")
-    subprocess.run(['python3', './bin/dbledatahostcheck.py'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
-    log.info("DBLE datahsots check end.")
-    time.sleep(5)
+def init():
+
+    # logfile for initialization
+
+    global logfile
+    logfile = './bin/custom_mysql_ha_logging.conf'
+    global loggername
+    loggername = 'DBLEDatahostCheck'
+
+    # dble schema.xml.
+
+    global schemaxml
+    schemaxml = './conf/schema.xml'
+
+    # dble manage user.
+
+    global serverxml
+    serverxml = './conf/server.xml'
+
+# Log file initialization.
+
+def logInit(logfile,loggername):
+    logging.config.fileConfig(logfile)
+    log = logging.getLogger(name=loggername)
+    return log
+
+if __name__ == "__main__":
+
+    # Parameters initialization.
+
+    init()
+
+    log = logInit(logfile,loggername)
+    log.info("Logger initialization is complete.")
+    while "true":
+        log.info("DBLE datahsots check begin...")
+        Dhcheck.main(log,schemaxml,serverxml)
+        log.info("DBLE datahsots check end.")
+        time.sleep(5)
+
 

@@ -505,10 +505,6 @@ public class XMLSchemaLoader implements SchemaLoader {
         if (dataNodes.containsKey(conf.getName())) {
             throw new ConfigException("dataNode " + conf.getName() + " duplicated!");
         }
-
-        if (!dataHosts.containsKey(host)) {
-            throw new ConfigException("dataNode " + dnName + " reference dataHost:" + host + " not exists!");
-        }
         dataNodes.put(conf.getName(), conf);
     }
 

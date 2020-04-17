@@ -28,7 +28,7 @@ public class WriteToBackendTask {
         }
     }
 
-    public void writeCommonPackage(MySQLConnection c) {
+    private void writeCommonPackage(MySQLConnection c) {
         ByteBuffer buffer = conn.allocate();
         try {
             BufferUtil.writeUB3(buffer, packet.calcPacketSize());

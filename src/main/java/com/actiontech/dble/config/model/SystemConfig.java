@@ -159,9 +159,9 @@ public final class SystemConfig {
     private int maxCharsPerColumn = 65535; // 128k,65535 chars
     //errors
     private ProblemReporter problemReporter;
-    private boolean useOuterHa = false;
+    private boolean useOuterHa = true;
 
-    private boolean enableFlowControl = true;
+    private boolean enableFlowControl = false;
     private int flowControlStartThreshold = 4096;
     private int flowControlStopThreshold = 256;
 

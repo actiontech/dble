@@ -110,7 +110,7 @@ public final class DbleServer {
         if (!system.isUseOuterHa() && ClusterHelper.useClusterHa()) {
             throw new Exception("useOuterHa can not be false when useClusterHa in myid is true");
         }
-        LOGGER.info("=========================================Init Outter Ha Config==================================");
+        LOGGER.info("=========================================Init Outer Ha Config==================================");
         HaConfigManager.getInstance().init();
 
         if (system.getEnableAlert() == 1) {
@@ -122,22 +122,17 @@ public final class DbleServer {
         // server startup
         LOGGER.info("============================================Server start params===================================");
         LOGGER.info(NAME + "Server is ready to startup ...");
-        String inf = "Startup processors ...,total processors:" +
-                system.getProcessors() + ",aio thread pool size:" +
-                system.getProcessorExecutor() +
-                "    \r\n each process allocated socket buffer pool " +
-                " bytes ,a page size:" +
-                system.getBufferPoolPageSize() +
-                "  a page's chunk number(PageSize/ChunkSize) is:" +
-                (system.getBufferPoolPageSize() / system.getBufferPoolChunkSize()) +
-                "  buffer page's number is:" +
-                system.getBufferPoolPageNumber();
-        LOGGER.info(inf);
-        LOGGER.info("sysconfig params:" + system.toString());
 
-        aio = (system.getUsingAIO() == 1);
+        LOGGER.info("system config params:" + system.toString());
 
         LOGGER.info("===========================================Init bufferPool start==================================");
+        String inf = "Buffer pool info:[The count of pages is:" +
+                system.getBufferPoolPageNumber() + ",every page size:" +
+                system.getBufferPoolPageSize() +
+                ", every page's chunk number(PageSize/ChunkSize) is:" +
+                (system.getBufferPoolPageSize() / system.getBufferPoolChunkSize()) +
+                "]";
+        LOGGER.info(inf);
         BufferPoolManager.getInstance().init(system);
         LOGGER.info("===========================================Init bufferPool finish=================================");
 
@@ -174,11 +169,13 @@ public final class DbleServer {
         // startup manager
         SocketAcceptor manager;
         SocketAcceptor server;
+
+        aio = (system.getUsingAIO() == 1);
         if (aio) {
             int processorCount = frontProcessorCount + backendProcessorCount;
             LOGGER.info("using aio network handler ");
             asyncChannelGroups = new AsynchronousChannelGroup[processorCount];
-            initAioProecssor(processorCount);
+            initAioProcessor(processorCount);
 
             connector = new AIOConnector();
             manager = new AIOAcceptor(NAME + "Manager", system.getBindIp(),
@@ -222,6 +219,9 @@ public final class DbleServer {
         LOGGER.info("===================================Sequence manager init finish===================================");
 
 
+        WriteQueueFlowController.init();
+        LOGGER.info("===================================flow controller finish===================================");
+
         LOGGER.info("==============================Pull metaData from MySQL start======================================");
         pullVarAndMeta();
         LOGGER.info("==============================Pull metaData from MySQL finish=====================================");
@@ -264,7 +264,7 @@ public final class DbleServer {
         LOGGER.info("======================================ALL START INIT FINISH=======================================");
     }
 
-    private void initAioProecssor(int processorCount) throws IOException {
+    private void initAioProcessor(int processorCount) throws IOException {
         for (int i = 0; i < processorCount; i++) {
             asyncChannelGroups[i] = AsynchronousChannelGroup.withFixedThreadPool(processorCount,
                     new ThreadFactory() {

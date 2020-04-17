@@ -116,6 +116,9 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
                 c.skipIdleCheck(true);
                 SplitDumpHandler.handle(sql, c, rs >>> SHIFT);
                 break;
+            case ManagerParse.FLOW_CONTROL:
+                FlowControlHandler.handle(sql, c);
+                break;
             default:
                 c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
         }

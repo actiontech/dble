@@ -6,6 +6,7 @@
 package com.actiontech.dble.net;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
@@ -749,4 +750,12 @@ public abstract class AbstractConnection implements NIOConnection {
     public void setFlowControlled(boolean flowControlled) {
         this.flowControlled = flowControlled;
     }
+
+    /*
+    start flow control because of the write queue in this connection to long
+
+     */
+    public abstract void startFlowControl(BackendConnection bcon);
+
+    public abstract void stopFlowControl();
 }

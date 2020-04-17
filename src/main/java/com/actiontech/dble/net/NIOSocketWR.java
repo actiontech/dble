@@ -6,7 +6,11 @@
 package com.actiontech.dble.net;
 
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+import com.actiontech.dble.config.FlowCotrollerConfig;
+import com.actiontech.dble.singleton.WriteQueueFlowController;
 import com.actiontech.dble.util.TimeUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -17,6 +21,7 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class NIOSocketWR extends SocketWR {
+    private static final Logger LOGGER = LoggerFactory.getLogger(NIOSocketWR.class);
     private SelectionKey processKey;
     private static final int OP_NOT_READ = ~SelectionKey.OP_READ;
     private static final int OP_NOT_WRITE = ~SelectionKey.OP_WRITE;
@@ -116,6 +121,7 @@ public class NIOSocketWR extends SocketWR {
 
     private boolean write0() throws IOException {
 
+        int flowControlCount = -1;
         boolean quitFlag = false;
         int written = 0;
         ByteBuffer buffer = con.writeBuffer;
@@ -146,6 +152,8 @@ public class NIOSocketWR extends SocketWR {
                     }
                 }
             }
+
+            flowControlCount = checkFlowControl(flowControlCount);
 
             if (quitFlag) {
                 con.recycle(buffer);
@@ -193,6 +201,8 @@ public class NIOSocketWR extends SocketWR {
                 }
             }
 
+            flowControlCount = checkFlowControl(flowControlCount);
+
             if (quitFlag) {
                 con.recycle(buffer);
                 startClearCon();
@@ -207,6 +217,37 @@ public class NIOSocketWR extends SocketWR {
             }
         }
         return true;
+    }
+
+    private int checkFlowControl(int flowControlCount) {
+        FlowCotrollerConfig config = WriteQueueFlowController.getFlowCotrollerConfig();
+        if (con.isFlowControlled()) {
+            if (!config.isEnableFlowControl()) {
+                con.stopFlowControl();
+                return -1;
+            } else if ((flowControlCount != -1) &&
+                    (flowControlCount <= config.getEnd())) {
+                int currentSize = this.con.writeQueue.size();
+                if (currentSize <= config.getEnd()) {
+                    con.stopFlowControl();
+                    return -1;
+                } else {
+                    return currentSize;
+                }
+            } else if (flowControlCount == -1) {
+                int currentSize = this.con.writeQueue.size();
+                if (currentSize <= config.getEnd()) {
+                    con.stopFlowControl();
+                    return -1;
+                } else {
+                    return currentSize;
+                }
+            } else {
+                return --flowControlCount;
+            }
+        } else {
+            return -1;
+        }
     }
 
 

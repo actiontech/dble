@@ -23,8 +23,8 @@ public class HeartbeatSQLJob implements ResponseHandler {
     public static final Logger LOGGER = LoggerFactory.getLogger(HeartbeatSQLJob.class);
 
     private final String sql;
-    private BackendConnection connection;
     private final SQLJobHandler jobHandler;
+    private BackendConnection connection;
     private AtomicBoolean finished = new AtomicBoolean(false);
     private MySQLHeartbeat heartbeat;
 
@@ -36,12 +36,11 @@ public class HeartbeatSQLJob implements ResponseHandler {
         this.heartbeat = heartbeat;
     }
 
-
-    public void terminate(String reason) {
-        heartbeat.setMessage(reason);
-        LOGGER.info("terminate this job reason:" + reason + " con:" + connection + " sql " + this.sql);
+    public void terminate() {
+        String errMsg = heartbeat.getMessage() == null ? "heart beat quit" : heartbeat.getMessage();
+        LOGGER.info("terminate this job reason:" + errMsg + " con:" + connection + " sql " + this.sql);
         if (connection != null) {
-            connection.close(reason);
+            connection.closeWithoutRsp("heartbeat quit");
         }
     }
 
@@ -68,8 +67,8 @@ public class HeartbeatSQLJob implements ResponseHandler {
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        heartbeat.setMessage("connection Error");
         LOGGER.warn("can't get connection for sql :" + sql, e);
+        heartbeat.setErrorResult("connection Error");
         doFinished(true);
     }
 
@@ -77,8 +76,7 @@ public class HeartbeatSQLJob implements ResponseHandler {
     public void errorResponse(byte[] err, BackendConnection conn) {
         ErrorPacket errPg = new ErrorPacket();
         errPg.read(err);
-        heartbeat.setMessage(new String(errPg.getMessage()));
-
+        heartbeat.setErrorResult(new String(errPg.getMessage()));
         String errMsg = "error response errNo:" + errPg.getErrNo() + ", " + new String(errPg.getMessage()) +
                 " from of sql :" + sql + " at con:" + conn;
 
@@ -93,7 +91,6 @@ public class HeartbeatSQLJob implements ResponseHandler {
 
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
-        heartbeat.setMessage(null);
         if (conn.syncAndExecute()) {
             doFinished(false);
         }
@@ -123,7 +120,8 @@ public class HeartbeatSQLJob implements ResponseHandler {
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
-        heartbeat.setMessage(reason);
+        LOGGER.warn("heartbeat conn for sql[" + sql + "] is closed, due to " + reason);
+        heartbeat.setErrorResult("heartbeat conn is closed, due to " + reason);
         doFinished(true);
     }
 

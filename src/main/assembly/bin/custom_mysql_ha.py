@@ -12,7 +12,7 @@ def init():
     # logfile for initialization
 
     global logfile
-    logfile = './logging.conf'
+    logfile = './log/log_custom_mysql_ha.log'
     global loggername
     loggername = 'DBLEDatahostCheck'
 

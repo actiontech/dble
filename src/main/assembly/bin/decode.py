@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# reference from https://segmentfault.com/a/1190000017792696 and support length of 94
 
 # 系统库
 import six

@@ -19,7 +19,7 @@ def init():
     # dble schema.xml.
 
     global schemaxml
-    schemaxml = '/opt/dble/conf/schema.xml'
+    schemaxml = './conf/schema.xml'
 
     # dble manage user.
 

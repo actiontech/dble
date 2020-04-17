@@ -66,8 +66,8 @@ def getHosts(schemaxml):
                 writehost_conn["port"] = wh_url[1]
                 writehost_conn["user"] = writehost.getAttribute("user")
                 writehost_conn["password"] = writehost.getAttribute("password")
-                usingdecrypt = int(writehost.getAttribute("usingDecrypt"))
-                if usingdecrypt == 1:
+                usingdecrypt = writehost.getAttribute("usingDecrypt")
+                if usingdecrypt and int(usingdecrypt) == 1:
                     writehost_conn["password"] = \
                     decode.DecryptByPublicKey(writehost_conn["password"]).decrypt().split(':')[3]
                 writehost_conn["iswritehost"] = 1
@@ -83,8 +83,8 @@ def getHosts(schemaxml):
                 readhost_conn["port"] = rh_url[1]
                 readhost_conn["user"] = readhost.getAttribute("user")
                 readhost_conn["password"] = readhost.getAttribute("password")
-                usingdecrypt = int(readhost.getAttribute("usingDecrypt"))
-                if usingdecrypt == 1:
+                usingdecrypt = readhost.getAttribute("usingDecrypt")
+                if usingdecrypt and int(usingdecrypt) == 1:
                     readhost_conn["password"] = \
                     decode.DecryptByPublicKey(readhost_conn["password"]).decrypt().split(':')[3]
                 readhost_conn["iswritehost"] = 0
@@ -221,3 +221,4 @@ def main(log1,schemaxml,serverxml):
                 log.info("Switch success!")
             else:
                 log.info("Switch failed!")
+

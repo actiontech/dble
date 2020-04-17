@@ -48,6 +48,7 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
             return;
         }
 
+        reset();
         unResponseRrns.addAll(session.getTargetKeys());
         List<MySQLConnection> conns = new ArrayList<>(session.getTargetCount());
         BackendConnection conn;
@@ -56,7 +57,6 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
             conn.setResponseHandler(this);
             conns.add((MySQLConnection) conn);
         }
-        reset();
         changeStageTo(new CommitStage(session, conns, implicitCommitHandler));
     }
 
@@ -69,6 +69,7 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
             return;
         }
 
+        reset();
         List<MySQLConnection> conns = new ArrayList<>(session.getTargetCount());
         BackendConnection conn;
         for (RouteResultsetNode node : session.getTargetKeys()) {
@@ -84,7 +85,6 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
             rollbackStage = new RollbackStage(session, null);
             rollbackStage.next(false, null, null);
         } else {
-            reset();
             rollbackStage = new RollbackStage(session, conns);
             changeStageTo(rollbackStage);
         }

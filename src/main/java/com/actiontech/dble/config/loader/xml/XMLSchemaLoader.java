@@ -168,8 +168,7 @@ public class XMLSchemaLoader implements SchemaLoader {
                 throw new ConfigException(
                         "schema " + name + " didn't config tables,so you must set dataNode property!");
             }
-            SchemaConfig schemaConfig = new SchemaConfig(name, dataNode,
-                    tables, sqlMaxLimit);
+            SchemaConfig schemaConfig = new SchemaConfig(name, dataNode, tables, sqlMaxLimit);
             mergeFuncNodeERMap(schemaConfig);
             mergeFkERMap(schemaConfig);
             schemas.put(name, schemaConfig);
@@ -234,7 +233,6 @@ public class XMLSchemaLoader implements SchemaLoader {
     }
 
     private Map<String, TableConfig> loadTables(Element node, boolean isLowerCaseNames) {
-        // supprot [`] BEN GONG in table name
         Map<String, TableConfig> tables = new TableConfigMap();
         NodeList nodeList = node.getElementsByTagName("table");
         for (int i = 0; i < nodeList.getLength(); i++) {
@@ -335,7 +333,7 @@ public class XMLSchemaLoader implements SchemaLoader {
      * eg :dn1 (host1),dn2(host1),dn100(host2),dn101(host2),dn300(host3),dn101(host2),dn301(host3)...etc
      * result: 0->dn1 (host1),1->dn100(host2),2->dn300(host3),3->dn2(host1),4->dn101(host2),5->dn301(host3)
      *
-     * @param theDataNodes
+     * @param theDataNodes ArrayList<String>
      */
     private void distributeDataNodes(ArrayList<String> theDataNodes) {
         Map<String, ArrayList<String>> newDataNodeMap = new HashMap<>(dataHosts.size());
@@ -343,7 +341,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             DataNodeConfig dnConf = dataNodes.get(dn);
             String host = dnConf.getDataHost();
             ArrayList<String> hostDns = newDataNodeMap.get(host);
-            hostDns = (hostDns == null) ? new ArrayList<String>() : hostDns;
+            hostDns = (hostDns == null) ? new ArrayList<>() : hostDns;
             hostDns.add(dn);
             newDataNodeMap.put(host, hostDns);
         }
@@ -436,7 +434,6 @@ public class XMLSchemaLoader implements SchemaLoader {
         for (int i = 0, n = list.getLength(); i < n; i++) {
             Element element = (Element) list.item(i);
             String dnNamePre = element.getAttribute("name");
-
             String databaseStr = element.getAttribute("database");
             if (lowerCaseNames) {
                 databaseStr = databaseStr.toLowerCase();
@@ -448,8 +445,8 @@ public class XMLSchemaLoader implements SchemaLoader {
             //dnNamePre(name),databaseStr(database),host(dataHost) can use ',', '$', '-' to configure multi nodes
             // but the database size *dataHost size must equal the size of name
             // every dataHost has all database in its tag
-            //eg:<dataNode name="dn1$0-75" dataHost="localhost$1-10" database="db$0-75" />
-            //means:localhost1 has database of dn1$0-75,localhost2has database of dn1$0-75(name is db$76-151)
+            //eg:<dataNode name="dn$0-759" dataHost="localhost$1-10" database="db$0-75" />
+            //means:localhost1 has database of db$0-75,localhost2 has database of db$0-75(name is dn$76-151)
             String[] dnNames = SplitUtil.split(dnNamePre, ',', '$', '-');
             String[] databases = SplitUtil.split(databaseStr, ',', '$', '-');
             String[] hostStrings = SplitUtil.split(host, ',', '$', '-');
@@ -459,7 +456,6 @@ public class XMLSchemaLoader implements SchemaLoader {
                         " define error ,Number of dataNode name must be = Number of database * Number of dataHost");
             }
             if (dnNames.length > 1) {
-
                 List<String[]> mhdList = mergerHostDatabase(hostStrings, databases);
                 for (int k = 0; k < dnNames.length; k++) {
                     String[] hd = mhdList.get(k);
@@ -468,19 +464,12 @@ public class XMLSchemaLoader implements SchemaLoader {
                     String hostName = hd[0];
                     createDataNode(dnName, databaseName, hostName, checkSet);
                 }
-
             } else {
                 createDataNode(dnNamePre, databaseStr, host, checkSet);
             }
-
         }
     }
 
-    /**
-     * @param hostStrings
-     * @param databases
-     * @return
-     */
     private List<String[]> mergerHostDatabase(String[] hostStrings, String[] databases) {
         List<String[]> mhdList = new ArrayList<>();
         for (String hostString : hostStrings) {
@@ -566,7 +555,7 @@ public class XMLSchemaLoader implements SchemaLoader {
             }
             int maxCon = Integer.parseInt(element.getAttribute("maxCon"));
             int minCon = Integer.parseInt(element.getAttribute("minCon"));
-            /**
+            /*
              * balance type for read
              * 1. balance="0", read will be send to all writeHost.
              * 2. balance="1", read will be send to all readHost

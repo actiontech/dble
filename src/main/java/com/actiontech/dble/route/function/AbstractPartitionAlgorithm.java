@@ -43,19 +43,24 @@ public abstract class AbstractPartitionAlgorithm implements RuleAlgorithm, Seria
     @Override
     public void init() {
     }
-
     /**
-     * return the index of node
-     * retrun an empty array means router to all node
-     * return null if no node matches
+     * getPartitionNum
+     * @return   return -1 means no limit
      */
+    public int getPartitionNum() {
+        return -1; // no limit
+    }
+
     @Override
-    public abstract Integer[] calculateRange(String beginValue, String endValue);
+    public Map<String, String> getAllProperties() {
+        return propertiesMap;
+    }
+
 
     /**
      * valid the consistency between table's node size and rule's node size
      *
-     * @param dnSize
+     * @param dnSize int
      * @return -1 if table datanode size < rule function partition size
      * 0 if table datanode size == rule function partition size
      * 1 if table datanode size > rule function partition size
@@ -70,20 +75,6 @@ public abstract class AbstractPartitionAlgorithm implements RuleAlgorithm, Seria
             }
         }
         return 0;
-    }
-
-    /**
-     * getPartitionNum, return -1 means no limit
-     *
-     * @return
-     */
-    public int getPartitionNum() {
-        return -1; // no limit
-    }
-
-    @Override
-    public Map<String, String> getAllProperties() {
-        return propertiesMap;
     }
 
 }

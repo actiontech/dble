@@ -12,19 +12,19 @@ import java.util.Map;
  */
 public interface RuleAlgorithm {
 
-    /**
-     * init
-     */
     void init();
 
     /**
-     * return sharding nodes's id
-     * columnValue is column's value
-     *
+     * return sharding nodes's index
      * @return never null
      */
     Integer calculate(String columnValue);
 
+    /**
+     * return the index of node
+     * return an empty array means router to all node
+     * return null if no node matches
+     */
     Integer[] calculateRange(String beginValue, String endValue);
 
     Map<String, String> getAllProperties();

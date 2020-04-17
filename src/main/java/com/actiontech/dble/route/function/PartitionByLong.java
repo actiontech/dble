@@ -14,17 +14,8 @@ public final class PartitionByLong extends AbstractPartitionAlgorithm implements
     private static final long serialVersionUID = -4712399083043025898L;
     protected int[] count;
     protected int[] length;
-    protected PartitionUtil partitionUtil;
+    private PartitionUtil partitionUtil;
     private int hashCode = 1;
-
-    private static int[] toIntArray(String string) {
-        String[] strs = SplitUtil.split(string, ',', true);
-        int[] ints = new int[strs.length];
-        for (int i = 0; i < strs.length; ++i) {
-            ints[i] = Integer.parseInt(strs[i]);
-        }
-        return ints;
-    }
 
     public void setPartitionCount(String partitionCount) {
         this.count = toIntArray(partitionCount);
@@ -39,16 +30,11 @@ public final class PartitionByLong extends AbstractPartitionAlgorithm implements
     @Override
     public void init() {
         partitionUtil = new PartitionUtil(count, length);
-
         initHashCode();
     }
 
     @Override
     public void selfCheck() {
-    }
-
-    private Integer calculate(long key) {
-        return partitionUtil.partition(key);
     }
 
     @Override
@@ -64,10 +50,14 @@ public final class PartitionByLong extends AbstractPartitionAlgorithm implements
         }
     }
 
+    private Integer calculate(long key) {
+        return partitionUtil.partition(key);
+    }
+
     @Override
     public Integer[] calculateRange(String beginValue, String endValue) {
-        long begin = 0;
-        long end = 0;
+        long begin;
+        long end;
         try {
             begin = Long.parseLong(beginValue);
             end = Long.parseLong(endValue);
@@ -107,11 +97,6 @@ public final class PartitionByLong extends AbstractPartitionAlgorithm implements
         }
     }
 
-    /**
-     * getPartitionNum, return -1 means no limit
-     *
-     * @return partitionNum
-     */
     @Override
     public int getPartitionNum() {
         return partitionUtil.getSegmentLength();
@@ -156,4 +141,12 @@ public final class PartitionByLong extends AbstractPartitionAlgorithm implements
         }
     }
 
+    private int[] toIntArray(String string) {
+        String[] strNumbers = SplitUtil.split(string, ',', true);
+        int[] numbers = new int[strNumbers.length];
+        for (int i = 0; i < strNumbers.length; ++i) {
+            numbers[i] = Integer.parseInt(strNumbers[i]);
+        }
+        return numbers;
+    }
 }

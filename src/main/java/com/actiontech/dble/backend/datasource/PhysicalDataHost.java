@@ -103,6 +103,14 @@ public class PhysicalDataHost {
         return dataHostConfig;
     }
 
+    public boolean isAllFakeNode() {
+        for (PhysicalDataSource source : allSourceMap.values()) {
+            if (!source.isFakeNode()) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     PhysicalDataSource findDatasource(BackendConnection exitsCon) {
         MySQLConnection con = (MySQLConnection) exitsCon;
@@ -199,12 +207,17 @@ public class PhysicalDataHost {
 
     void getRWBalanceCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
         PhysicalDataSource theNode = getRWBalanceNode();
-        if (theNode.isDisabled()) {
+        if (theNode.isDisabled() || theNode.isFakeNode()) {
             if (this.getAllActiveDataSources().size() > 0) {
                 theNode = this.getAllActiveDataSources().iterator().next();
             } else {
-                String errorMsg = "the dataHost[" + theNode.getHostConfig().getName() + "] is disabled, please check it";
-                throw new IOException(errorMsg);
+                if (theNode.isDisabled()) {
+                    String errorMsg = "the dataHost[" + theNode.getHostConfig().getName() + "] is disabled, please check it";
+                    throw new IOException(errorMsg);
+                } else {
+                    String errorMsg = "the dataHost[" + theNode.getHostConfig().getName() + "] is a fake node, please check it";
+                    throw new IOException(errorMsg);
+                }
             }
         }
         if (!theNode.isAlive()) {
@@ -312,8 +325,8 @@ public class PhysicalDataHost {
 
 
     private boolean initSource(PhysicalDataSource ds) {
-        if (ds.getConfig().isDisabled()) {
-            LOGGER.info(ds.getConfig().getHostName() + " is disabled, skipped");
+        if (ds.getConfig().isDisabled() || ds.isFakeNode()) {
+            LOGGER.info(ds.getConfig().getHostName() + " is disabled or fakeNode, skipped");
             return true;
         }
         int initSize = ds.getConfig().getMinCon();

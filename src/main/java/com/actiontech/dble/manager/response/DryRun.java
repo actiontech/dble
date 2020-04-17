@@ -79,14 +79,14 @@ public final class DryRun {
         //check all the config is legal
         List<ErrorInfo> list = new ArrayList<>();
         try {
-            loader.testConnection(false);
+            loader.testConnection();
         } catch (Exception e) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("just test ,not stop reload, catch exception", e);
             }
         }
         try {
-            String msg = ConfigUtil.getAndSyncKeyVariables(false, loader.getDataHosts(), false);
+            String msg = ConfigUtil.getAndSyncKeyVariables(loader.getDataHosts(), false);
             if (msg != null) {
                 list.add(new ErrorInfo("Backend", "WARNING", msg));
             }
@@ -102,7 +102,7 @@ public final class DryRun {
         VarsExtractorHandler handler = new VarsExtractorHandler(loader.getDataHosts());
         newSystemVariables = handler.execute();
         if (newSystemVariables == null) {
-            if (!loader.isDataHostWithoutWH()) {
+            if (!loader.isFullyConfigured()) {
                 list.add(new ErrorInfo("Backend", "ERROR", "Get Vars from backend failed,Maybe all backend MySQL can't connected"));
             } else {
                 list.add(new ErrorInfo("Backend", "WARNING", "No dataHost available"));

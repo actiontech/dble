@@ -40,8 +40,8 @@ public final class AuthUtil {
         }
 
         // check dataHost without writeHost flag
-        if (DbleServer.getInstance().getConfig().isDataHostWithoutWR() && !isManager) {
-            return "Access denied for user '" + user + "', because there are some empty dataHosts";
+        if (!DbleServer.getInstance().getConfig().isFullyConfigured() && !isManager) {
+            return "Access denied for user '" + user + "', because there are some empty dataHosts/fake dataSources";
         }
 
         // check schema

@@ -15,7 +15,7 @@ public final class SystemVariables {
 
     private Map<String, String> globalVariables;
     private Map<String, String> sessionVariables;
-    private volatile boolean lowerCase = false;
+    private volatile boolean lowerCase = true;
 
     public SystemVariables() {
         globalVariables = new HashMap<>();

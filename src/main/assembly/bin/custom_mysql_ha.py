@@ -24,7 +24,7 @@ def init():
     # dble manage user.
 
     global serverxml
-    serverxml = '/opt/dble/conf/server.xml'
+    serverxml = './conf/server.xml'
 
 # Log file initialization.
 

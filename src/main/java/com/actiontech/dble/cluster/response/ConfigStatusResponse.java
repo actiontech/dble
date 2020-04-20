@@ -39,7 +39,6 @@ public class ConfigStatusResponse implements ClusterXmlLoader {
 
     @Override
     public void notifyProcess(KvBean pathValue) throws Exception {
-
         ClusterDelayProvider.delayAfterGetNotice();
         if (DbleServer.getInstance().getFrontProcessors() != null) {
             //step 1 check if the change is from itself

@@ -85,7 +85,6 @@ public final class ReloadConfig {
     }
 
     private static void execute(ManagerConnection c, final int loadAllMode) {
-
         if (ClusterGeneralConfig.isUseZK()) {
             CuratorFramework zkConn = ZKUtils.getConnection();
             InterProcessMutex distributeLock = new InterProcessMutex(zkConn, KVPathUtil.getConfChangeLockPath());

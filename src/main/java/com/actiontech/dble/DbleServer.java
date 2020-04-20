@@ -427,7 +427,8 @@ public final class DbleServer {
                 throw new IOException(e);
             }
         } else {
-            reviseSchemas();
+            //TODO Self check should be execute when the dataHost not exists
+            // reviseSchemas();
         }
     }
 

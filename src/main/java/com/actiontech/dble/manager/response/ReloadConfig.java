@@ -352,7 +352,8 @@ public final class ReloadConfig {
         SystemVariables newSystemVariables = getSystemVariablesFromDataHost(loader, mergedDataHosts);
         ReloadLogHelper.info("reload config: get variables from random node end", LOGGER);
         ServerConfig serverConfig = new ServerConfig(loader);
-        if (newSystemVariables.isLowerCaseTableNames()) {
+
+        if (newSystemVariables.isLowerCaseTableNames() && loader.isFullyConfigured()) {
             ReloadLogHelper.info("reload config: data host's lowerCaseTableNames=1, lower the config properties start", LOGGER);
             serverConfig.reviseLowerCase();
             ReloadLogHelper.info("reload config: data host's lowerCaseTableNames=1, lower the config properties end", LOGGER);
@@ -428,7 +429,7 @@ public final class ReloadConfig {
         SystemVariables newSystemVariables = getSystemVariablesFromDataHost(loader, newDataHosts);
         ReloadLogHelper.info("reload config: get variables from random node end", LOGGER);
 
-        if (newSystemVariables.isLowerCaseTableNames()) {
+        if (newSystemVariables.isLowerCaseTableNames() && loader.isFullyConfigured()) {
             ReloadLogHelper.info("reload config: data host's lowerCaseTableNames=1, lower the config properties start", LOGGER);
             serverConfig.reviseLowerCase();
             ReloadLogHelper.info("reload config: data host's lowerCaseTableNames=1, lower the config properties end", LOGGER);
@@ -474,7 +475,7 @@ public final class ReloadConfig {
     }
 
     private static void checkTestConnIfNeed(int loadAllMode, ConfigInitializer loader) throws Exception {
-        if ((loadAllMode & ManagerParseConfig.OPTS_MODE) == 0) {
+        if ((loadAllMode & ManagerParseConfig.OPTS_MODE) == 0 && loader.isFullyConfigured()) {
             try {
                 ReloadLogHelper.info("reload config: test all data Nodes start", LOGGER);
                 loader.testConnection();

@@ -41,6 +41,11 @@ public class XARollbackStage extends XAStage {
 
     @Override
     public void onEnterStage() {
+        if (lastStageIsXAEnd && session.closed()) {
+            session.forceClose("front conn is closed when xa stage is in xa end");
+            return;
+        }
+
         if (XAStateLog.saveXARecoveryLog(session.getSessionXaID(), getSaveLogTxState())) {
             super.onEnterStage();
         } else {

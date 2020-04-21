@@ -467,7 +467,7 @@ public class ServerConnection extends FrontendConnection {
 
     void lockTable(String sql) {
         if ((!isAutocommit() || isTxStart())) {
-            session.implictCommit(() -> doLockTable(sql));
+            session.implicitCommit(() -> doLockTable(sql));
             return;
         }
         doLockTable(sql);
@@ -536,22 +536,9 @@ public class ServerConnection extends FrontendConnection {
 
     @Override
     public synchronized void close(String reason) {
-
         TsQueriesCounter.getInstance().addToHistory(session);
-        //XA transaction in this phase,close it
-        if (session.getSource().isTxStart() && session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_CANCELING) &&
-                session.getTransactionManager().getXAStage() != null) {
-            super.close(reason);
-            session.initiativeTerminate();
-        } else if (session.getSource().isTxStart() &&
-                session.getTransactionManager().getXAStage() != null) {
-            //XA transaction in this phase(commit/rollback) close the front end and wait for the backend finished
-            super.close(reason);
-        } else {
-            //not a xa transaction ,close it
-            super.close(reason);
-            session.terminate();
-        }
+        super.close(reason);
+        session.terminate();
 
         if (getLoadDataInfileHandler() != null) {
             getLoadDataInfileHandler().clear();
@@ -560,13 +547,9 @@ public class ServerConnection extends FrontendConnection {
 
     @Override
     public void killAndClose(String reason) {
-        if (session.getSource().isTxStart() && !session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_CANCELING) &&
-                session.getTransactionManager().getXAStage() != null) {
-            //XA transaction in this phase(commit/rollback) close the front end and wait for the backend finished
-            super.close(reason);
-        } else {
+        super.close(reason);
+        if (!session.getSource().isTxStart() || session.getTransactionManager().getXAStage() == null) {
             //not a xa transaction ,close it
-            super.close(reason);
             session.kill();
         }
     }

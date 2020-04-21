@@ -389,7 +389,7 @@ public class ServerConfig {
             //---------------------------------------------------
             if (changeOrAddDataHosts != null) {
                 for (PhysicalDataHost newDataHost : changeOrAddDataHosts.values()) {
-                    if (newDataHost != null && !isFullyConfigured) {
+                    if (newDataHost != null && isFullyConfigured) {
                         newDataHost.startHeartbeat();
                     }
                 }

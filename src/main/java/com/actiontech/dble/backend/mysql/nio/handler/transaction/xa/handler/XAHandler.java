@@ -10,6 +10,8 @@ import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.ImplicitCommitHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.stage.XAEndStage;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.stage.XARollbackFailStage;
+import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.stage.XARollbackStage;
 import com.actiontech.dble.backend.mysql.xa.CoordinatorLogEntry;
 import com.actiontech.dble.backend.mysql.xa.ParticipantLogEntry;
 import com.actiontech.dble.backend.mysql.xa.TxState;
@@ -36,14 +38,14 @@ public class XAHandler extends AbstractXAHandler implements TransactionHandler {
             return;
         }
 
-        // get session's lock before sending commit(in fact, after ended)
-        // then the XA transaction will be not killed, if killed ,then we will not commit
-        if (currentStage instanceof XAEndStage &&
-                !session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_COMMITTING)) {
-            return;
+        if (currentStage == null) {
+            initXALogEntry();
+            changeStageTo(new XAEndStage(session, this, false));
+        } else {
+            // only for background retry
+            changeStageTo(currentStage);
         }
-        initXALogEntry();
-        changeStageTo(new XAEndStage(session, this, false));
+
     }
 
     @Override
@@ -61,20 +63,24 @@ public class XAHandler extends AbstractXAHandler implements TransactionHandler {
             return;
         }
 
-        // get session's lock before sending rollback(in fact, after ended)
-        // then the XA transaction will be not killed. if killed ,then we will not rollbacks
         if (currentStage == null) {
             initXALogEntry();
             changeStageTo(new XAEndStage(session, this, true));
-        } else {
-            if (currentStage instanceof XAEndStage &&
-                    !session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_COMMITTING)) {
-                return;
-            }
-            interruptTx = false;
-            ((XAEndStage) currentStage).setRollback(true);
-            changeStageTo(next());
+            return;
         }
+
+        // only for background retry
+        if (currentStage instanceof XARollbackFailStage) {
+            changeStageTo(currentStage);
+            return;
+        }
+
+        if (currentStage instanceof XAEndStage) {
+            changeStageTo(new XARollbackStage(session, this, true));
+            return;
+        }
+        interruptTx = false;
+        changeStageTo(next());
     }
 
     @Override
@@ -99,5 +105,4 @@ public class XAHandler extends AbstractXAHandler implements TransactionHandler {
             position++;
         }
     }
-
 }

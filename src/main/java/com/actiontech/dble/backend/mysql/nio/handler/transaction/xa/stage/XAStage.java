@@ -35,7 +35,6 @@ public abstract class XAStage implements TransactionStage {
     }
 
     protected void feedback(boolean isSuccess) {
-        session.cancelableStatusSet(NonBlockingSession.CANCEL_STATUS_INIT);
         session.clearResources(false);
         if (session.closed()) {
             return;

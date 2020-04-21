@@ -38,6 +38,11 @@ public class XAPrepareStage extends XAStage {
 
     @Override
     public void onEnterStage() {
+        if (session.closed()) {
+            session.forceClose("front conn is closed when xa stage is in xa end");
+            return;
+        }
+
         if (XAStateLog.saveXARecoveryLog(session.getSessionXaID(), TxState.TX_PREPARING_STATE)) {
             super.onEnterStage();
         } else {

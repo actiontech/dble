@@ -44,6 +44,7 @@ public class XARollbackFailStage extends XARollbackStage {
         if (retryTimes.get() <= AUTO_RETRY_TIMES) {
             // try commit several times
             logger.warn("fail to ROLLBACK xa transaction " + session.getSessionXaID() + " at the " + retryTimes + "th time!");
+            retryTimes.incrementAndGet();
             XaDelayProvider.beforeInnerRetry(retryTimes.get(), xaId);
             return this;
         }
@@ -61,22 +62,17 @@ public class XARollbackFailStage extends XARollbackStage {
             String warnStr = "kill xa session by manager cmd!";
             logger.warn(warnStr);
             session.forceClose(warnStr);
-        } else if (count == 0 || backgroundRetryTimes.incrementAndGet() <= count) {
+        } else if (count == 0 || backgroundRetryTimes.get() <= count) {
             String warnStr = "fail to ROLLBACK xa transaction " + session.getSessionXaID() + " at the " + backgroundRetryTimes + "th time in background!";
             logger.warn(warnStr);
             AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, warnStr, AlertUtil.genSingleLabel("XA_ID", xaId));
 
             XaDelayProvider.beforeAddXaToQueue(count, xaId);
+            backgroundRetryTimes.incrementAndGet();
             XASessionCheck.getInstance().addCommitSession(session);
             XaDelayProvider.afterAddXaToQueue(count, xaId);
         }
         return null;
-    }
-
-    @Override
-    public void onEnterStage() {
-        retryTimes.incrementAndGet();
-        super.onEnterStage();
     }
 
     @Override

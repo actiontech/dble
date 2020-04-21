@@ -71,9 +71,7 @@ import static com.actiontech.dble.server.parser.ServerParse.DDL;
 public class NonBlockingSession implements Session {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(NonBlockingSession.class);
-    public static final int CANCEL_STATUS_INIT = 0;
-    public static final int CANCEL_STATUS_COMMITTING = 1;
-    static final int CANCEL_STATUS_CANCELING = 2;
+
     private long queryStartTime = 0;
     private final ServerConnection source;
     private final ConcurrentMap<RouteResultsetNode, BackendConnection> target;
@@ -81,8 +79,6 @@ public class NonBlockingSession implements Session {
     private final AtomicLong transactionsCounter = new AtomicLong(0);
 
     private SavePointHandler savePointHandler;
-    // cancel status  0 - CANCEL_STATUS_INIT 1 - CANCEL_STATUS_COMMITTING  2 - CANCEL_STATUS_CANCELING
-    private int cancelStatus = 0;
     private TransactionHandlerManager transactionManager;
 
     private boolean prepared;
@@ -438,18 +434,6 @@ public class NonBlockingSession implements Session {
         return sessionStage;
     }
 
-    /**
-     * SET CANCELABLE STATUS
-     */
-    public synchronized boolean cancelableStatusSet(int value) {
-        // in fact ,only CANCEL_STATUS_COMMITTING(1) or CANCEL_STATUS_CANCELING(2) need to judge
-        if ((value | this.cancelStatus) > 2) {
-            return false;
-        }
-        this.cancelStatus = value;
-        return true;
-    }
-
     @Override
     public void execute(RouteResultset rrs) {
         if (killed) {
@@ -687,7 +671,7 @@ public class NonBlockingSession implements Session {
         transactionManager.commit();
     }
 
-    public void implictCommit(ImplicitCommitHandler handler) {
+    public void implicitCommit(ImplicitCommitHandler handler) {
         transactionManager.implicitCommit(handler);
     }
 
@@ -766,16 +750,6 @@ public class NonBlockingSession implements Session {
         }
         for (BackendConnection node : target.values()) {
             node.close("client closed or timeout killed");
-        }
-        target.clear();
-    }
-
-    /**
-     * Only used when kill @@connection is Issued
-     */
-    void initiativeTerminate() {
-        for (BackendConnection node : target.values()) {
-            node.closeWithoutRsp("client closed ");
         }
         target.clear();
     }
@@ -1233,7 +1207,6 @@ public class NonBlockingSession implements Session {
             flowControlledBackendConnections.add(backendConnection);
         }
     }
-
 
     public void releaseConnectionFromFlowCntrolled(BackendConnection con) {
         synchronized (flowControlledBackendConnections) {

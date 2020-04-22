@@ -32,7 +32,7 @@ public class XARollbackFailStage extends XARollbackStage {
     @Override
     public TransactionStage next(boolean isFail, String errMsg, byte[] errPacket) {
         String xaId = session.getSessionXaID();
-        if (isFail && !xaOldThreadIds.isEmpty()) {
+        if (!isFail || xaOldThreadIds.isEmpty()) {
             XAStateLog.saveXARecoveryLog(xaId, TxState.TX_ROLLBACKED_STATE);
             // remove session in background
             XASessionCheck.getInstance().getRollbackingSession().remove(session.getSource().getId());
@@ -72,7 +72,7 @@ public class XARollbackFailStage extends XARollbackStage {
         AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, warnStr, AlertUtil.genSingleLabel("XA_ID", xaId));
         if (backgroundRetryCount == 0 || backgroundRetryTimes.get() <= backgroundRetryCount) {
             XaDelayProvider.beforeAddXaToQueue(backgroundRetryTimes.get(), xaId);
-            XASessionCheck.getInstance().addCommitSession(session);
+            XASessionCheck.getInstance().addRollbackSession(session);
             XaDelayProvider.afterAddXaToQueue(backgroundRetryTimes.get(), xaId);
             backgroundRetryTimes.incrementAndGet();
         }

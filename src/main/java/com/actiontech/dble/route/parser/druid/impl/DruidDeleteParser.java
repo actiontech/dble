@@ -24,7 +24,8 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * see http://dev.mysql.com/doc/refman/5.7/en/delete.html

@@ -6,7 +6,7 @@
 package com.actiontech.dble.buffer;
 
 import jdk.nashorn.internal.ir.annotations.Ignore;
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Test;
 import sun.nio.ch.DirectBuffer;
 

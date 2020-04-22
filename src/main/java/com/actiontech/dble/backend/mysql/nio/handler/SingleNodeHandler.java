@@ -78,6 +78,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         } else {
             packetId = (byte) session.getPacketId().get();
         }
+        RouteResultsetNode finalNode = null;
         if (session.getTargetCount() > 0) {
             BackendConnection conn = session.getTarget(node);
             if (conn == null && rrs.isGlobalTable() && rrs.getGlobalBackupNodes() != null) {
@@ -86,12 +87,13 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                     RouteResultsetNode tmpNode = new RouteResultsetNode(dataNode, rrs.getSqlType(), rrs.getStatement());
                     conn = session.getTarget(tmpNode);
                     if (conn != null) {
+                        finalNode = tmpNode;
                         break;
                     }
                 }
             }
             node.setRunOnSlave(rrs.getRunOnSlave());
-            if (session.tryExistsCon(conn, node)) {
+            if (session.tryExistsCon(conn, finalNode == null ? node : finalNode)) {
                 execute(conn);
                 return;
             }

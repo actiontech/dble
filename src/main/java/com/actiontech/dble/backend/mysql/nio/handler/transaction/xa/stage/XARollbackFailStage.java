@@ -21,8 +21,9 @@ public class XARollbackFailStage extends XARollbackStage {
     private static Logger logger = LoggerFactory.getLogger(XARollbackFailStage.class);
     private static final int AUTO_RETRY_TIMES = 5;
 
-    private AtomicInteger retryTimes = new AtomicInteger(0);
+    private AtomicInteger retryTimes = new AtomicInteger(1);
     private AtomicInteger backgroundRetryTimes = new AtomicInteger(1);
+    private int backgroundRetryCount = DbleServer.getInstance().getConfig().getSystem().getXaRetryCount();
 
     public XARollbackFailStage(NonBlockingSession session, AbstractXAHandler handler, boolean isFromEndStage) {
         super(session, handler, isFromEndStage);
@@ -41,36 +42,39 @@ public class XARollbackFailStage extends XARollbackStage {
             return null;
         }
 
-        if (retryTimes.get() <= AUTO_RETRY_TIMES) {
+        if (retryTimes.get() < AUTO_RETRY_TIMES) {
             // try commit several times
             logger.warn("fail to ROLLBACK xa transaction " + session.getSessionXaID() + " at the " + retryTimes + "th time!");
-            retryTimes.incrementAndGet();
-            XaDelayProvider.beforeInnerRetry(retryTimes.get(), xaId);
+            XaDelayProvider.beforeInnerRetry(retryTimes.incrementAndGet(), xaId);
             return this;
         }
 
-        StringBuilder closeReason = new StringBuilder("ROLLBACK FAILED but it will try to ROLLBACK repeatedly in background until it is success!");
-        if (errMsg != null) {
-            closeReason.append(", the ERROR is ");
-            closeReason.append(errMsg);
-        }
         // close the session ,add to schedule job
-        session.getSource().close(closeReason.toString());
+        if (!session.closed()) {
+            StringBuilder closeReason = new StringBuilder("ROLLBACK FAILED but it will try to ROLLBACK repeatedly in background until it is success");
+            if (errMsg != null) {
+                closeReason.append(", the ERROR is ");
+                closeReason.append(errMsg);
+            }
+            session.getSource().close(closeReason.toString());
+        }
+
         // kill xa or retry to commit xa in background
-        final int count = DbleServer.getInstance().getConfig().getSystem().getXaRetryCount();
         if (!session.isRetryXa()) {
             String warnStr = "kill xa session by manager cmd!";
             logger.warn(warnStr);
             session.forceClose(warnStr);
-        } else if (count == 0 || backgroundRetryTimes.get() <= count) {
-            String warnStr = "fail to ROLLBACK xa transaction " + session.getSessionXaID() + " at the " + backgroundRetryTimes + "th time in background!";
-            logger.warn(warnStr);
-            AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, warnStr, AlertUtil.genSingleLabel("XA_ID", xaId));
+            return null;
+        }
 
-            XaDelayProvider.beforeAddXaToQueue(count, xaId);
-            backgroundRetryTimes.incrementAndGet();
+        String warnStr = "fail to ROLLBACK xa transaction " + session.getSessionXaID() + " at the " + backgroundRetryTimes + "th time in background!";
+        logger.warn(warnStr);
+        AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, warnStr, AlertUtil.genSingleLabel("XA_ID", xaId));
+        if (backgroundRetryCount == 0 || backgroundRetryTimes.get() <= backgroundRetryCount) {
+            XaDelayProvider.beforeAddXaToQueue(backgroundRetryTimes.get(), xaId);
             XASessionCheck.getInstance().addCommitSession(session);
-            XaDelayProvider.afterAddXaToQueue(count, xaId);
+            XaDelayProvider.afterAddXaToQueue(backgroundRetryTimes.get(), xaId);
+            backgroundRetryTimes.incrementAndGet();
         }
         return null;
     }

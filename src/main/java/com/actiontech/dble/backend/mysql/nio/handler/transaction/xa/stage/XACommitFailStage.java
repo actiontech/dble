@@ -27,8 +27,9 @@ public class XACommitFailStage extends XACommitStage {
     private static final int AUTO_RETRY_TIMES = 5;
     private ConcurrentMap<Object, Long> xaOldThreadIds;
 
-    private AtomicInteger retryTimes = new AtomicInteger(0);
+    private AtomicInteger retryTimes = new AtomicInteger(1);
     private AtomicInteger backgroundRetryTimes = new AtomicInteger(1);
+    private int backgroundRetryCount = DbleServer.getInstance().getConfig().getSystem().getXaRetryCount();
 
     public XACommitFailStage(NonBlockingSession session, AbstractXAHandler handler) {
         super(session, handler);
@@ -48,31 +49,33 @@ public class XACommitFailStage extends XACommitStage {
             return null;
         }
 
-        if (DbleServer.getInstance().getConfig().getSystem().getUseSerializableMode() == 1 || retryTimes.get() <= AUTO_RETRY_TIMES) {
+        if (DbleServer.getInstance().getConfig().getSystem().getUseSerializableMode() == 1 || retryTimes.get() < AUTO_RETRY_TIMES) {
             // try commit several times
             logger.warn("fail to COMMIT xa transaction " + xaId + " at the " + retryTimes + "th time!");
-            retryTimes.incrementAndGet();
-            XaDelayProvider.beforeInnerRetry(retryTimes.get(), xaId);
+            XaDelayProvider.beforeInnerRetry(retryTimes.incrementAndGet(), xaId);
             return this;
         }
 
         // close this session ,add to schedule job
-        session.getSource().close("COMMIT FAILED but it will try to COMMIT repeatedly in background until it is success!");
+        if (!session.closed()) {
+            session.getSource().close("COMMIT FAILED but it will try to COMMIT repeatedly in background until it is success!");
+        }
         // kill xa or retry to commit xa in background
-        final int count = DbleServer.getInstance().getConfig().getSystem().getXaRetryCount();
         if (!session.isRetryXa()) {
             String warnStr = "kill xa session by manager cmd!";
             logger.warn(warnStr);
             session.forceClose(warnStr);
-        } else if (count == 0 || backgroundRetryTimes.get() <= count) {
-            String warnStr = "fail to COMMIT xa transaction " + xaId + " at the " + backgroundRetryTimes + "th time in background!";
-            logger.warn(warnStr);
-            AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, warnStr, AlertUtil.genSingleLabel("XA_ID", xaId));
+            return null;
+        }
 
-            XaDelayProvider.beforeAddXaToQueue(count, xaId);
-            backgroundRetryTimes.incrementAndGet();
+        String warnStr = "fail to COMMIT xa transaction " + xaId + " at the " + backgroundRetryTimes + "th time in background!";
+        logger.warn(warnStr);
+        AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, warnStr, AlertUtil.genSingleLabel("XA_ID", xaId));
+        if (backgroundRetryCount == 0 || backgroundRetryTimes.get() <= backgroundRetryCount) {
+            XaDelayProvider.beforeAddXaToQueue(backgroundRetryTimes.get(), xaId);
             XASessionCheck.getInstance().addCommitSession(session);
-            XaDelayProvider.afterAddXaToQueue(count, xaId);
+            XaDelayProvider.afterAddXaToQueue(backgroundRetryTimes.get(), xaId);
+            backgroundRetryTimes.incrementAndGet();
         }
         return null;
     }

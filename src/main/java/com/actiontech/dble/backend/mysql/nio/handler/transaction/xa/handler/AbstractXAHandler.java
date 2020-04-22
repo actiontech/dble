@@ -106,7 +106,7 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        logger.warn("connection Error in savePointHandler, err:", e);
+        logger.warn("connection Error in xa transaction, err:", e);
         boolean finished;
         lock.lock();
         try {

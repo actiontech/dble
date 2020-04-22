@@ -166,7 +166,7 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
     // should be not happen
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
-        logger.warn("connection Error in savePointHandler, err:", e);
+        logger.warn("connection Error in normal transaction handler, err:", e);
         boolean finished;
         lock.lock();
         try {

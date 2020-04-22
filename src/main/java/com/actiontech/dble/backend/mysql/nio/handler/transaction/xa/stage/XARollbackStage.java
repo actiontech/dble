@@ -57,9 +57,9 @@ public class XARollbackStage extends XAStage {
     public void onEnterStage(MySQLConnection conn) {
         TxState state = conn.getXaStatus();
         RouteResultsetNode rrn = (RouteResultsetNode) conn.getAttachment();
-        // if conn is closed or has been rollbacked, release conn
-        if (state == TxState.TX_CONN_QUIT || state == TxState.TX_ROLLBACKED_STATE ||
-                (lastStageIsXAEnd && conn.isClosed())) {
+        // if conn is closed or has been rollback, release conn
+        if (state == TxState.TX_INITIALIZE_STATE || state == TxState.TX_CONN_QUIT ||
+                state == TxState.TX_ROLLBACKED_STATE || (lastStageIsXAEnd && conn.isClosed())) {
             xaHandler.fakedResponse(conn, null);
             session.releaseConnection(rrn, logger.isDebugEnabled(), false);
             return;
@@ -111,6 +111,7 @@ public class XARollbackStage extends XAStage {
                 conn.setXaStatus(TxState.TX_INITIALIZE_STATE);
             }
         } else if (lastStageIsXAEnd) {
+            conn.closeWithoutRsp("rollback error");
             conn.setXaStatus(TxState.TX_ROLLBACKED_STATE);
             XAStateLog.saveXARecoveryLog(session.getSessionXaID(), conn);
         } else {
@@ -122,6 +123,7 @@ public class XARollbackStage extends XAStage {
     @Override
     public void onConnectionClose(MySQLConnection conn) {
         if (lastStageIsXAEnd) {
+            conn.closeWithoutRsp("conn has been closed");
             conn.setXaStatus(TxState.TX_ROLLBACKED_STATE);
         } else {
             conn.setXaStatus(TxState.TX_ROLLBACK_FAILED_STATE);
@@ -132,6 +134,7 @@ public class XARollbackStage extends XAStage {
     @Override
     public void onConnectError(MySQLConnection conn) {
         if (lastStageIsXAEnd) {
+            conn.closeWithoutRsp("conn connect error");
             conn.setXaStatus(TxState.TX_ROLLBACKED_STATE);
         } else {
             conn.setXaStatus(TxState.TX_ROLLBACK_FAILED_STATE);

@@ -297,6 +297,8 @@ public class PushDownVisitor extends MysqlVisitor {
                     }
                     sqlBuilder.deleteCharAt(sqlBuilder.length() - 1);
                 }
+            } else {
+                pushDownOrderBy.addAll(query.getGroupBys());
             }
             if (pushDownOrderBy.size() > 0) {
                 sqlBuilder.append(" ORDER BY ");

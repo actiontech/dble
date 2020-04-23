@@ -22,7 +22,7 @@ public class XARollbackFailStage extends XARollbackStage {
     private static final int AUTO_RETRY_TIMES = 5;
 
     private AtomicInteger retryTimes = new AtomicInteger(1);
-    private AtomicInteger backgroundRetryTimes = new AtomicInteger(1);
+    private AtomicInteger backgroundRetryTimes = new AtomicInteger(0);
     private int backgroundRetryCount = DbleServer.getInstance().getConfig().getSystem().getXaRetryCount();
 
     public XARollbackFailStage(NonBlockingSession session, AbstractXAHandler handler, boolean isFromEndStage) {
@@ -67,14 +67,14 @@ public class XARollbackFailStage extends XARollbackStage {
             return null;
         }
 
-        String warnStr = "fail to ROLLBACK xa transaction " + session.getSessionXaID() + " at the " + backgroundRetryTimes + "th time in background!";
-        logger.warn(warnStr);
-        AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, warnStr, AlertUtil.genSingleLabel("XA_ID", xaId));
-        if (backgroundRetryCount == 0 || backgroundRetryTimes.get() <= backgroundRetryCount) {
+        if (backgroundRetryCount == 0 || backgroundRetryTimes.incrementAndGet() <= backgroundRetryCount) {
+            String warnStr = "fail to ROLLBACK xa transaction " + session.getSessionXaID() + " at the " + backgroundRetryTimes + "th time in background!";
+            logger.warn(warnStr);
+            AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, warnStr, AlertUtil.genSingleLabel("XA_ID", xaId));
+
             XaDelayProvider.beforeAddXaToQueue(backgroundRetryTimes.get(), xaId);
             XASessionCheck.getInstance().addRollbackSession(session);
             XaDelayProvider.afterAddXaToQueue(backgroundRetryTimes.get(), xaId);
-            backgroundRetryTimes.incrementAndGet();
         }
         return null;
     }

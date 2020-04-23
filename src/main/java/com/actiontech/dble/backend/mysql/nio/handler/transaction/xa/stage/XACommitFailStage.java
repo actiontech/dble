@@ -28,7 +28,7 @@ public class XACommitFailStage extends XACommitStage {
     private ConcurrentMap<Object, Long> xaOldThreadIds;
 
     private AtomicInteger retryTimes = new AtomicInteger(1);
-    private AtomicInteger backgroundRetryTimes = new AtomicInteger(1);
+    private AtomicInteger backgroundRetryTimes = new AtomicInteger(0);
     private int backgroundRetryCount = DbleServer.getInstance().getConfig().getSystem().getXaRetryCount();
 
     public XACommitFailStage(NonBlockingSession session, AbstractXAHandler handler) {
@@ -68,14 +68,14 @@ public class XACommitFailStage extends XACommitStage {
             return null;
         }
 
-        String warnStr = "fail to COMMIT xa transaction " + xaId + " at the " + backgroundRetryTimes + "th time in background!";
-        logger.warn(warnStr);
-        AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, warnStr, AlertUtil.genSingleLabel("XA_ID", xaId));
-        if (backgroundRetryCount == 0 || backgroundRetryTimes.get() <= backgroundRetryCount) {
+        if (backgroundRetryCount == 0 || backgroundRetryTimes.incrementAndGet() <= backgroundRetryCount) {
+            String warnStr = "fail to COMMIT xa transaction " + xaId + " at the " + backgroundRetryTimes + "th time in background!";
+            logger.warn(warnStr);
+            AlertUtil.alertSelf(AlarmCode.XA_BACKGROUND_RETRY_FAIL, Alert.AlertLevel.WARN, warnStr, AlertUtil.genSingleLabel("XA_ID", xaId));
+
             XaDelayProvider.beforeAddXaToQueue(backgroundRetryTimes.get(), xaId);
             XASessionCheck.getInstance().addCommitSession(session);
             XaDelayProvider.afterAddXaToQueue(backgroundRetryTimes.get(), xaId);
-            backgroundRetryTimes.incrementAndGet();
         }
         return null;
     }

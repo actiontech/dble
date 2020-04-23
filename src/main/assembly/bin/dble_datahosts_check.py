@@ -16,7 +16,7 @@ def getManageruser(serverxml):
     collection = DOMTree.documentElement
     if collection.hasAttribute("shelf"):
         print ("Root element : %s" % collection.getAttribute("shelf"))
-    manageruser = {"host":"127.0.0.1"}
+    manageruser = {"host":"127.0.0.1","port":"9066"}
     system = collection.getElementsByTagName('system')
     propertys = system[0].getElementsByTagName("property")
     for property in propertys:
@@ -67,28 +67,28 @@ def getHosts(schemaxml):
                 writehost_conn["user"] = writehost.getAttribute("user")
                 writehost_conn["password"] = writehost.getAttribute("password")
                 usingdecrypt = writehost.getAttribute("usingDecrypt")
-                if usingdecrypt and int(usingdecrypt) == 1:
+                if usingdecrypt and usingdecrypt == "1":
                     writehost_conn["password"] = \
                     decode.DecryptByPublicKey(writehost_conn["password"]).decrypt().split(':')[3]
                 writehost_conn["iswritehost"] = 1
                 hosts_list.append(writehost_conn)
-        readhosts = writehost.getElementsByTagName('readHost')
-        if readhosts:
-            for readhost in readhosts:
-                readhost_conn = {}
-                readhost_conn["dhname"] = dh_name
-                readhost_conn["name"] = readhost.getAttribute("host")
-                rh_url = readhost.getAttribute("url").split(':')
-                readhost_conn["host"] = rh_url[0]
-                readhost_conn["port"] = rh_url[1]
-                readhost_conn["user"] = readhost.getAttribute("user")
-                readhost_conn["password"] = readhost.getAttribute("password")
-                usingdecrypt = readhost.getAttribute("usingDecrypt")
-                if usingdecrypt and int(usingdecrypt) == 1:
-                    readhost_conn["password"] = \
-                    decode.DecryptByPublicKey(readhost_conn["password"]).decrypt().split(':')[3]
-                readhost_conn["iswritehost"] = 0
-                hosts_list.append(readhost_conn)
+                readhosts = writehost.getElementsByTagName('readHost')
+                if readhosts:
+                    for readhost in readhosts:
+                        readhost_conn = {}
+                        readhost_conn["dhname"] = dh_name
+                        readhost_conn["name"] = readhost.getAttribute("host")
+                        rh_url = readhost.getAttribute("url").split(':')
+                        readhost_conn["host"] = rh_url[0]
+                        readhost_conn["port"] = rh_url[1]
+                        readhost_conn["user"] = readhost.getAttribute("user")
+                        readhost_conn["password"] = readhost.getAttribute("password")
+                        usingdecrypt = readhost.getAttribute("usingDecrypt")
+                        if usingdecrypt and usingdecrypt == "1":
+                            readhost_conn["password"] = \
+                            decode.DecryptByPublicKey(readhost_conn["password"]).decrypt().split(':')[3]
+                        readhost_conn["iswritehost"] = 0
+                        hosts_list.append(readhost_conn)
         datahost_dict[dh_name] = hosts_list
     return datahost_dict
 

@@ -137,54 +137,60 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
     }
 
     private void setStatusForNormalHeartbeat(PhysicalDatasource source) {
+        if (checkRecoverFail(source)) return;
+        heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
+    }
+
+    private boolean checkRecoverFail(PhysicalDatasource source) {
         if (!heartbeat.isStop()) {
-            if (heartbeat.getStatus() == MySQLHeartbeat.OK_STATUS) { // ok->ok
-                if (!heartbeat.getSource().isSalveOrRead() && source.isReadOnly()) { // writehost check read only status is back?
-                    GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(source);
-                    KeyVariables variables = task.call();
-                    if (variables != null) {
-                        source.setReadOnly(variables.isReadOnly());
-                    } else {
-                        LOGGER.warn("GetAndSyncDataSourceKeyVariables failed, set heartbeat Error");
-                        heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS);
-                        return;
-                    }
-                }
-            } else if (heartbeat.getStatus() != MySQLHeartbeat.TIMEOUT_STATUS) { //error/init ->ok
-                try {
-                    source.testConnection();
-                } catch (Exception e) {
-                    LOGGER.warn("testConnection failed, set heartbeat Error");
-                    heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS);
-                    return;
-                }
+            return true;
+        }
+        if (heartbeat.getStatus() == MySQLHeartbeat.OK_STATUS) { // ok->ok
+            if (!heartbeat.getSource().isSalveOrRead() && source.isReadOnly()) { // writehost check read only status is back?
                 GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(source);
                 KeyVariables variables = task.call();
-                if (variables == null || variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
-                    String url = con.getHost() + ":" + con.getPort();
-                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", url);
-                    String errMsg = variables == null ? "GetAndSyncDataSourceKeyVariables failed" : "this dataHost[=" + url + "]'s lower_case is wrong";
-                    LOGGER.warn(errMsg + ", set heartbeat Error");
-                    if (variables != null) {
-                        AlertUtil.alert(AlarmCode.DATA_HOST_LOWER_CASE_ERROR, Alert.AlertLevel.WARN, errMsg, "mysql", this.heartbeat.getSource().getConfig().getId(), labels);
-                        ToResolveContainer.DATA_HOST_LOWER_CASE_ERROR.add(con.getHost() + ":" + con.getPort());
-                    }
-                    heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS);
-                    return;
+                if (variables != null) {
+                    source.setReadOnly(variables.isReadOnly());
                 } else {
-                    String url = con.getHost() + ":" + con.getPort();
-                    if (ToResolveContainer.DATA_HOST_LOWER_CASE_ERROR.contains(url)) {
-                        Map<String, String> labels = AlertUtil.genSingleLabel("data_host", url);
-                        AlertUtil.alertResolve(AlarmCode.DATA_HOST_LOWER_CASE_ERROR, Alert.AlertLevel.WARN, "mysql", this.heartbeat.getSource().getConfig().getId(), labels,
-                                ToResolveContainer.DATA_HOST_LOWER_CASE_ERROR, url);
-                    }
-                    if (!source.isSalveOrRead()) { // writehost check read only
-                        source.setReadOnly(variables.isReadOnly());
-                    }
+                    LOGGER.warn("GetAndSyncDataSourceKeyVariables failed, set heartbeat Error");
+                    heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS);
+                    return true;
+                }
+            }
+        } else if (heartbeat.getStatus() != MySQLHeartbeat.TIMEOUT_STATUS) { //error/init ->ok
+            try {
+                source.testConnection();
+            } catch (Exception e) {
+                LOGGER.warn("testConnection failed, set heartbeat Error");
+                heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS);
+                return true;
+            }
+            GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(source);
+            KeyVariables variables = task.call();
+            if (variables == null || variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+                String url = con.getHost() + ":" + con.getPort();
+                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", url);
+                String errMsg = variables == null ? "GetAndSyncDataSourceKeyVariables failed" : "this dataHost[=" + url + "]'s lower_case is wrong";
+                LOGGER.warn(errMsg + ", set heartbeat Error");
+                if (variables != null) {
+                    AlertUtil.alert(AlarmCode.DATA_HOST_LOWER_CASE_ERROR, Alert.AlertLevel.WARN, errMsg, "mysql", this.heartbeat.getSource().getConfig().getId(), labels);
+                    ToResolveContainer.DATA_HOST_LOWER_CASE_ERROR.add(con.getHost() + ":" + con.getPort());
+                }
+                heartbeat.setResult(MySQLHeartbeat.ERROR_STATUS);
+                return true;
+            } else {
+                String url = con.getHost() + ":" + con.getPort();
+                if (ToResolveContainer.DATA_HOST_LOWER_CASE_ERROR.contains(url)) {
+                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", url);
+                    AlertUtil.alertResolve(AlarmCode.DATA_HOST_LOWER_CASE_ERROR, Alert.AlertLevel.WARN, "mysql", this.heartbeat.getSource().getConfig().getId(), labels,
+                            ToResolveContainer.DATA_HOST_LOWER_CASE_ERROR, url);
+                }
+                if (!source.isSalveOrRead()) { // writehost check read only
+                    source.setReadOnly(variables.isReadOnly());
                 }
             }
         }
-        heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
+        return false;
     }
 
     private void setStatusByCluster(Map<String, String> resultResult) {
@@ -229,6 +235,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             heartbeat.setSlaveBehindMaster(null);
         }
         heartbeat.getAsyncRecorder().setBySlaveStatus(resultResult);
+        if (checkRecoverFail(source)) return;
         heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
     }
 
@@ -242,6 +249,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         } else {
             source.setReadOnly(true);
         }
+        if (checkRecoverFail(source)) return;
         heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
     }
 

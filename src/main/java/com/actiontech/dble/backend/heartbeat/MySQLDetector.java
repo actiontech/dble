@@ -123,63 +123,70 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
     }
 
     private void setStatusForNormalHeartbeat(PhysicalDataSource source) {
-        if (!heartbeat.isStop()) {
-            if (heartbeat.getStatus() == MySQLHeartbeat.OK_STATUS) { // ok->ok
-                if (!heartbeat.getSource().isSalveOrRead() && source.isReadOnly()) { // writehost check read only status is back?
-                    GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(source, true);
-                    KeyVariables variables = task.call();
-                    if (variables != null) {
-                        source.setReadOnly(variables.isReadOnly());
-                    } else {
-                        LOGGER.warn("GetAndSyncDataSourceKeyVariables failed, set heartbeat Error");
-                        heartbeat.setErrorResult("GetAndSyncDataSourceKeyVariables failed");
-                        return;
-                    }
-                }
-            } else if (heartbeat.getStatus() != MySQLHeartbeat.TIMEOUT_STATUS) { //error/init ->ok
-                try {
-                    source.testConnection();
-                } catch (Exception e) {
-                    LOGGER.warn("testConnection failed, set heartbeat Error");
-                    heartbeat.setErrorResult("testConnection failed");
-                    return;
-                }
+        if (checkRecoverFail(source)) return;
+        heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
+    }
+
+    /** if recover failed, return true*/
+    private boolean checkRecoverFail(PhysicalDataSource source) {
+        if (heartbeat.isStop()) {
+            return true;
+        }
+        if (heartbeat.getStatus() == MySQLHeartbeat.OK_STATUS) { // ok->ok
+            if (!heartbeat.getSource().isSalveOrRead() && source.isReadOnly()) { // writehost checkRecoverFail read only status is back?
                 GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(source, true);
                 KeyVariables variables = task.call();
-                if (variables == null ||
-                        variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames() ||
-                        variables.getMaxPacketSize() < DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize()) {
-                    String url = con.getHost() + ":" + con.getPort();
-                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", url);
-                    String errMsg;
-                    if (variables == null) {
-                        errMsg = "GetAndSyncDataSourceKeyVariables failed";
-                    } else if (variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
-                        errMsg = "this dataHost[=" + url + "]'s lower_case is wrong";
-                    } else {
-                        errMsg = "this dataHost[=" + url + "]'s max_allowed_packet is " + variables.getMaxPacketSize() + ", but dble's is " + DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize();
-                    }
-                    LOGGER.warn(errMsg + ", set heartbeat Error");
-                    if (variables != null) {
-                        AlertUtil.alert(AlarmCode.DATA_HOST_LOWER_CASE_ERROR, Alert.AlertLevel.WARN, errMsg, "mysql", this.heartbeat.getSource().getConfig().getId(), labels);
-                        ToResolveContainer.DATA_HOST_LOWER_CASE_ERROR.add(con.getHost() + ":" + con.getPort());
-                    }
-                    heartbeat.setErrorResult(errMsg);
-                    return;
+                if (variables != null) {
+                    source.setReadOnly(variables.isReadOnly());
                 } else {
-                    String url = con.getHost() + ":" + con.getPort();
-                    if (ToResolveContainer.DATA_HOST_LOWER_CASE_ERROR.contains(url)) {
-                        Map<String, String> labels = AlertUtil.genSingleLabel("data_host", url);
-                        AlertUtil.alertResolve(AlarmCode.DATA_HOST_LOWER_CASE_ERROR, Alert.AlertLevel.WARN, "mysql", this.heartbeat.getSource().getConfig().getId(), labels,
-                                ToResolveContainer.DATA_HOST_LOWER_CASE_ERROR, url);
-                    }
-                    if (!source.isSalveOrRead()) { // writehost check read only
-                        source.setReadOnly(variables.isReadOnly());
-                    }
+                    LOGGER.warn("GetAndSyncDataSourceKeyVariables failed, set heartbeat Error");
+                    heartbeat.setErrorResult("GetAndSyncDataSourceKeyVariables failed");
+                    return true;
+                }
+            }
+        } else if (heartbeat.getStatus() != MySQLHeartbeat.TIMEOUT_STATUS) { //error/init ->ok
+            try {
+                source.testConnection();
+            } catch (Exception e) {
+                LOGGER.warn("testConnection failed, set heartbeat Error");
+                heartbeat.setErrorResult("testConnection failed");
+                return true;
+            }
+            GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(source, true);
+            KeyVariables variables = task.call();
+            if (variables == null ||
+                    variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames() ||
+                    variables.getMaxPacketSize() < DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize()) {
+                String url = con.getHost() + ":" + con.getPort();
+                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", url);
+                String errMsg;
+                if (variables == null) {
+                    errMsg = "GetAndSyncDataSourceKeyVariables failed";
+                } else if (variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+                    errMsg = "this dataHost[=" + url + "]'s lower_case is wrong";
+                } else {
+                    errMsg = "this dataHost[=" + url + "]'s max_allowed_packet is " + variables.getMaxPacketSize() + ", but dble's is " + DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize();
+                }
+                LOGGER.warn(errMsg + ", set heartbeat Error");
+                if (variables != null) {
+                    AlertUtil.alert(AlarmCode.DATA_HOST_LOWER_CASE_ERROR, Alert.AlertLevel.WARN, errMsg, "mysql", this.heartbeat.getSource().getConfig().getId(), labels);
+                    ToResolveContainer.DATA_HOST_LOWER_CASE_ERROR.add(con.getHost() + ":" + con.getPort());
+                }
+                heartbeat.setErrorResult(errMsg);
+                return true;
+            } else {
+                String url = con.getHost() + ":" + con.getPort();
+                if (ToResolveContainer.DATA_HOST_LOWER_CASE_ERROR.contains(url)) {
+                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", url);
+                    AlertUtil.alertResolve(AlarmCode.DATA_HOST_LOWER_CASE_ERROR, Alert.AlertLevel.WARN, "mysql", this.heartbeat.getSource().getConfig().getId(), labels,
+                            ToResolveContainer.DATA_HOST_LOWER_CASE_ERROR, url);
+                }
+                if (!source.isSalveOrRead()) { // writehost checkRecoverFail read only
+                    source.setReadOnly(variables.isReadOnly());
                 }
             }
         }
-        heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
+        return false;
     }
 
     private void setStatusBySlave(PhysicalDataSource source, Map<String, String> resultResult) {
@@ -205,6 +212,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             heartbeat.setSlaveBehindMaster(null);
         }
         heartbeat.getAsyncRecorder().setBySlaveStatus(resultResult);
+        if (checkRecoverFail(source)) return;
         heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
     }
 
@@ -218,6 +226,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         } else {
             source.setReadOnly(true);
         }
+        if (checkRecoverFail(source)) return;
         heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
     }
 

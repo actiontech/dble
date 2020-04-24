@@ -604,10 +604,12 @@ public class PhysicalDataHost {
     }
 
     public PhysicalDataSource randomSelect(ArrayList<PhysicalDataSource> okSources, boolean useWriteWhenEmpty) {
-        if (okSources.isEmpty() && useWriteWhenEmpty) {
-            return this.getWriteSource();
-        } else if (okSources.isEmpty() && !useWriteWhenEmpty) {
-            return null;
+        if (okSources.isEmpty()) {
+            if (useWriteWhenEmpty) {
+                return this.getWriteSource();
+            } else {
+                return null;
+            }
         } else {
             int length = okSources.size();
             int totalWeight = 0;

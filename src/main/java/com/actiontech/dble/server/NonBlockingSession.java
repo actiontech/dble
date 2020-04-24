@@ -1200,8 +1200,10 @@ public class NonBlockingSession implements Session {
     }
 
     public void startFlowControl(BackendConnection backendConnection) {
-        LOGGER.info("Session start flow control " + this.getSource());
         synchronized (flowControlledBackendConnections) {
+            if (!source.isFlowControlled()) {
+                LOGGER.info("Session start flow control " + this.getSource());
+            }
             source.setFlowControlled(true);
             backendConnection.disableRead();
             flowControlledBackendConnections.add(backendConnection);

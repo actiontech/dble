@@ -48,6 +48,11 @@ public final class PauseEnd {
         if (ClusterGeneralConfig.isUseGeneralCluster()) {
             try {
                 KvBean value = ClusterHelper.getKV(ClusterPathUtil.getPauseDataNodePath());
+                if (value.getValue() == null || "".equals(value.getValue())) {
+                    c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "No dataNode paused");
+                    return;
+                }
+
                 PauseInfo pauseInfo = new PauseInfo(value.getValue());
                 if (!pauseInfo.getFrom().equals(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) {
                     c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "This node is not the node which start pause");

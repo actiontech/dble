@@ -31,7 +31,7 @@ public class MySQLHeartbeat {
 
     public static final int INIT_STATUS = 0;
     public static final int OK_STATUS = 1;
-    static final int ERROR_STATUS = -1;
+    private static final int ERROR_STATUS = -1;
     static final int TIMEOUT_STATUS = -2;
     private final int errorRetryCount;
     private final AtomicBoolean isChecking = new AtomicBoolean(false);

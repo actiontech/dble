@@ -91,12 +91,10 @@ public class ConfigInitializer implements ProblemReporter {
                     }
                 }
             }
-            if (fullyConfigured) {
-                // if there are dataHosts exists. no empty dataNodes allowed
-                for (PhysicalDataNode dataNode : this.dataNodes.values()) {
-                    if (dataNode.getDataHost() == null) {
-                        throw new ConfigException("dataHost not exists " + dataNode.getDataHostName());
-                    }
+            // if there are dataHosts exists. no empty dataNodes allowed
+            for (PhysicalDataNode dataNode : this.dataNodes.values()) {
+                if (dataNode.getDataHost() == null) {
+                    throw new ConfigException("dataHost not exists " + dataNode.getDataHostName());
                 }
             }
         }

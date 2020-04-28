@@ -190,7 +190,7 @@ public final class ShowHelp {
         HELPS.put("dryrun", "Dry run to check config before reload xml");
 
         //pause
-        HELPS.put("pause @@DataNode", "Block query requests witch specified dataNodes involved ");
+        HELPS.put("pause @@DataNode = 'dn1,dn2,....' and timeout = ? [,queue = ?,wait_limit = ?]", "Block query requests witch specified dataNodes involved ");
         HELPS.put("RESUME", "Resume the query requests of the paused dataNodes");
         HELPS.put("show @@pause", "Show which dataNodes have bean pause");
 

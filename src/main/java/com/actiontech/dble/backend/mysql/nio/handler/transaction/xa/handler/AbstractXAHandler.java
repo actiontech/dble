@@ -96,10 +96,17 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
         if (justRemoved) {
             String closeReason = "Connection {DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
                     ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
+            if (logger.isDebugEnabled()) {
+                logger.debug(closeReason);
+            }
             this.setFail(closeReason);
             currentStage.onConnectionClose((MySQLConnection) conn);
             if (finished) {
                 changeStageTo(next());
+            }
+        } else {
+            if (logger.isDebugEnabled()) {
+                logger.debug("conn[backendId=" + conn.getId() + "] was closed in gap of two stage");
             }
         }
     }

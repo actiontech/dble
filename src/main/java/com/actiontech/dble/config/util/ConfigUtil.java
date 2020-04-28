@@ -158,7 +158,7 @@ public final class ConfigUtil {
     private static String[] getDataNodeSchemasOfDataHost(String dataHost, Map<String, PhysicalDataNode> dataNodeMap) {
         ArrayList<String> schemaList = new ArrayList<>(30);
         for (PhysicalDataNode dn : dataNodeMap.values()) {
-            if (dn.getDataHost().getHostName().equals(dataHost)) {
+            if (dn.getDataHost() != null && dn.getDataHost().getHostName().equals(dataHost)) {
                 schemaList.add(dn.getDatabase());
             }
         }

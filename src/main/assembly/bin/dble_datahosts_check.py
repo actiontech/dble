@@ -124,8 +124,7 @@ def isAlive(datahost):
                         if primary_member == server_uuid:
                             conclusion["canbemaster"] = 1                     
                 else:
-                    conclusion["canbemaster"] = 1
-                    
+                    conclusion["canbemaster"] = 1                   
             elif '8.0' in mysql_version:
                 log.debug("Server {0}:{1} version is {2}." \
                     .format(datahost["host"],datahost["port"],mysql_version))

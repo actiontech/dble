@@ -26,10 +26,10 @@ public abstract class MultiNodeHandler implements ResponseHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeHandler.class);
     protected final ReentrantLock lock = new ReentrantLock();
     protected final NonBlockingSession session;
+    protected final AtomicBoolean errorResponse = new AtomicBoolean(false);
     protected AtomicBoolean isFailed = new AtomicBoolean(false);
     protected volatile String error;
     protected volatile byte packetId;
-    protected final AtomicBoolean errorResponse = new AtomicBoolean(false);
     protected Set<RouteResultsetNode> unResponseRrns = new HashSet<>();
     protected int errorConnsCnt = 0;
     protected boolean firstResponsed = false;
@@ -41,17 +41,16 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         this.session = session;
     }
 
+    public boolean isFail() {
+        return isFailed.get();
+    }
+
     public void setFail(String errMsg) {
         if (isFailed.compareAndSet(false, true)) {
             error = errMsg;
         } else {
             error = error + "\n" + errMsg;
         }
-
-    }
-
-    public boolean isFail() {
-        return isFailed.get();
     }
 
     public void connectionError(Throwable e, BackendConnection conn) {
@@ -74,24 +73,24 @@ public abstract class MultiNodeHandler implements ResponseHandler {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("session closed ,clear resources " + nonBlockingSession);
             }
-
             nonBlockingSession.clearResources(true);
             this.clearResources();
             return true;
         } else {
             return false;
         }
-
     }
 
     protected boolean[] decrementToZeroAndCheckNode(BackendConnection conn) {
-        boolean zeroReached;
+        boolean zeroReached = false;
         boolean justRemoved;
         lock.lock();
         try {
             RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
             justRemoved = unResponseRrns.remove(rNode);
-            zeroReached = canResponse();
+            if (justRemoved) {
+                zeroReached = canResponse();
+            }
         } finally {
             lock.unlock();
         }
@@ -157,7 +156,7 @@ public abstract class MultiNodeHandler implements ResponseHandler {
         }
     }
 
-    protected void clearSessionResources() {
+    private void clearSessionResources() {
         if (session.getSource().isAutocommit()) {
             session.closeAndClearResources(error);
         } else {

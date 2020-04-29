@@ -19,7 +19,7 @@ public final class KVPathUtil {
     public static final String SEPARATOR = "/";
     private static final String ROOT_PATH = Versions.ROOT_PREFIX;
     //depth:1, base_path" /root_name/cluster_name/
-    public static final String BASE_PATH = SEPARATOR + ROOT_PATH + SEPARATOR + ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_CLUSTERID) + SEPARATOR;
+    private static final String BASE_PATH = SEPARATOR + ROOT_PATH + SEPARATOR + ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_CLUSTERID) + SEPARATOR;
 
     //depth:2,child node of base_path
     public static final String CACHE = "cache";
@@ -58,12 +58,7 @@ public final class KVPathUtil {
     //depth:4,grandson node of base_path/ddl/
     public static final String DDL_INSTANCE = "instance";
 
-    //depth:2,bindata path:base_path/bindata
-    public static String getBinDataPath() {
-        return BASE_PATH + "bindata";
-    }
-
-    //depth:2,bindata path:base_path/binlog_pause
+    //depth:2,binlog_pause path:base_path/binlog_pause
     private static final String BINLOG_PAUSE_PATH = BASE_PATH + "binlog_pause";
 
     //depth:3,child node of binlog_pause:base_path/binlog_pause/
@@ -86,7 +81,7 @@ public final class KVPathUtil {
     }
 
     //depth:3,child node of conf_base_path
-    public static final String CONF_STATUS = "status";
+    private static final String CONF_STATUS = "status";
     public static final String SCHEMA = "schema";
     public static final String SERVER = "server";
     public static final String RULES = "rules";
@@ -129,10 +124,10 @@ public final class KVPathUtil {
     //depth:2,sequences path:base_path/sequences
     public static final String SEQUENCES = "sequences";
 
-    public static final String DATA_HOSTS = "data_hosts";
-    public static final String DATA_HOST_RESPONSE = "data_host_response";
-    public static final String DATA_HOST_STATUS = "data_host_status";
-    public static final String DATA_HOST_LOCKS = "data_host_locks";
+    private static final String DATA_HOSTS = "data_hosts";
+    private static final String DATA_HOST_RESPONSE = "data_host_response";
+    private static final String DATA_HOST_STATUS = "data_host_status";
+    private static final String DATA_HOST_LOCKS = "data_host_locks";
 
     public static String getSequencesPath() {
         return BASE_PATH + SEQUENCES;
@@ -173,10 +168,6 @@ public final class KVPathUtil {
         return LOCK_BASE_PATH + SEPARATOR + "syncMeta.lock";
     }
 
-    public static String getDnIndexLockPath() {
-        return LOCK_BASE_PATH + SEPARATOR + "dnindex.lock";
-    }
-
     public static String getConfInitLockPath() {
         return LOCK_BASE_PATH + SEPARATOR + "confInit.lock";
     }
@@ -191,10 +182,6 @@ public final class KVPathUtil {
 
     //depth:2,child node of base_path
     public static final String XALOG = BASE_PATH + "xalog" + SEPARATOR;
-
-    public static String getHaBasePath() {
-        return BASE_PATH + DATA_HOSTS + SEPARATOR;
-    }
 
     public static String getHaStatusPath() {
         return BASE_PATH + DATA_HOSTS + SEPARATOR + DATA_HOST_STATUS;
@@ -212,12 +199,8 @@ public final class KVPathUtil {
         return BASE_PATH + DATA_HOSTS + SEPARATOR + DATA_HOST_RESPONSE + SEPARATOR + dhName;
     }
 
-    public static String getHaLockPath() {
-        return BASE_PATH + DATA_HOSTS + SEPARATOR + DATA_HOST_LOCKS + SEPARATOR;
-    }
-
     public static String getHaLockPath(String dhName) {
-        return getHaLockPath() + dhName;
+        return BASE_PATH + DATA_HOSTS + SEPARATOR + DATA_HOST_LOCKS + SEPARATOR + dhName;
     }
 
 }

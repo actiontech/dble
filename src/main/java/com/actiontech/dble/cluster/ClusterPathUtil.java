@@ -26,10 +26,10 @@ public final class ClusterPathUtil {
     public static final String SUCCESS = "success";
 
     //depth:3,child node of conf_base_path
-    public static final String CONF_STATUS = "status";
-    public static final String SCHEMA = "schema";
-    public static final String SERVER = "server";
-    public static final String RULES = "rules";
+    private static final String CONF_STATUS = "status";
+    private static final String SCHEMA = "schema";
+    private static final String SERVER = "server";
+    private static final String RULES = "rules";
 
     //depth:3,child node of conf_base_path
     public static String getConfSchemaPath() {
@@ -53,7 +53,7 @@ public final class ClusterPathUtil {
     public static final String DEFAULT = "default";
     public static final String USER = "user";
     public static final String FIREWALL = "firewall";
-    public static final String ALARM = "alarm";
+    //public static final String ALARM = "alarm";
 
     public static String getConfServerPath() {
         return CONF_BASE_PATH + SERVER;
@@ -63,11 +63,11 @@ public final class ClusterPathUtil {
     public static final String CONF_BASE_PATH = BASE_PATH + "conf" + SEPARATOR;
 
     //depth:2,child node of base_path
-    public static final String CACHE = "cache";
-    public static final String DATA_HOSTS = "data_hosts";
+    private static final String CACHE = "cache";
+    private static final String DATA_HOSTS = "data_hosts";
     public static final String DATA_HOST_STATUS = "data_host_status";
-    public static final String DATA_HOST_LOCKS = "data_host_locks";
-    public static final String EHCACHE_NAME = "ehcache.xml";
+    private static final String DATA_HOST_LOCKS = "data_host_locks";
+    private static final String EHCACHE_NAME = "ehcache.xml";
     public static final String EHCACHE = "ehcache";
 
     private ClusterPathUtil() {
@@ -94,12 +94,8 @@ public final class ClusterPathUtil {
         return getHaStatusPath() + dhName;
     }
 
-    public static String getHaLockPath() {
-        return BASE_PATH + DATA_HOSTS + SEPARATOR + DATA_HOST_LOCKS + SEPARATOR;
-    }
-
     public static String getHaLockPath(String dhName) {
-        return getHaLockPath() + dhName;
+        return BASE_PATH + DATA_HOSTS + SEPARATOR + DATA_HOST_LOCKS + SEPARATOR + dhName;
     }
 
     public static String getSelfResponsePath(String notifyPath) {
@@ -107,12 +103,12 @@ public final class ClusterPathUtil {
     }
 
     //cache path base_path/cache
-    public static String getCachePath() {
+    private static String getCachePath() {
         return BASE_PATH + CACHE;
     }
 
     //depth:2,sequences path:base_path/sequences
-    public static final String SEQUENCES = "sequences";
+    private static final String SEQUENCES = "sequences";
 
     public static String getSequencesPath() {
         return CONF_BASE_PATH + SEQUENCES;
@@ -147,9 +143,9 @@ public final class ClusterPathUtil {
         return LOCK_BASE_PATH + SEPARATOR + "binlogStatus.lock";
     }
 
-    //depth:2,bindata path:base_path/binlog_pause
+    //depth:2,binlog_pause path:base_path/binlog_pause
     private static final String BINLOG_PAUSE_PATH = BASE_PATH + "conf" + SEPARATOR + "binlog_pause";
-    public static final String BINLOG_PAUSE_STATUS = "status";
+    private static final String BINLOG_PAUSE_STATUS = "status";
 
     public static String getBinlogPauseStatus() {
         return BINLOG_PAUSE_PATH + SEPARATOR + BINLOG_PAUSE_STATUS;

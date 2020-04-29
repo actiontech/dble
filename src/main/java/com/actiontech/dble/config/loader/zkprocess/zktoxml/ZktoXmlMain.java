@@ -35,10 +35,6 @@ public final class ZktoXmlMain {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ZktoXmlMain.class);
 
-    /**
-     * @throws Exception
-     * @Created 2016/9/21
-     */
     public static void loadZktoFile() throws Exception {
         // get zk conn
         CuratorFramework zkConn = ZKUtils.getConnection();
@@ -73,8 +69,6 @@ public final class ZktoXmlMain {
         new EcacheszkToxmlLoader(zkListen, zkConn, xmlProcess);
 
         ZKUtils.addChildPathCache(KVPathUtil.getOnlinePath(), new OfflineStatusListener());
-        // transform bindata data to local file
-        ZKUtils.addChildPathCache(KVPathUtil.getBinDataPath(), new BinDataPathChildrenCacheListener());
 
         new BinlogPauseStatusListener(zkListen, zkConn);
 
@@ -130,12 +124,6 @@ public final class ZktoXmlMain {
         }
     }
 
-    /**
-     * @param cache    NodeCache
-     * @param zkListen
-     * @throws Exception
-     * @Created 2016/9/20
-     */
     private static void runWatch(final NodeCache cache, final ZookeeperProcessListen zkListen)
             throws Exception {
         cache.getListenable().addListener(new NodeCacheListener() {

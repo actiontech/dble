@@ -142,7 +142,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
     }
 
     private boolean checkRecoverFail(PhysicalDatasource source) {
-        if (!heartbeat.isStop()) {
+        if (heartbeat.isStop()) {
             return true;
         }
         if (heartbeat.getStatus() == MySQLHeartbeat.OK_STATUS) { // ok->ok

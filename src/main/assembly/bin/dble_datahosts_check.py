@@ -103,22 +103,51 @@ def isAlive(datahost):
                              passwd = datahost["password"],
                              cursorclass = MySQLdb.cursors.DictCursor)
         cursor = db.cursor()
-        cursor.execute("select * from performance_schema.replication_group_members;")
-        result = cursor.fetchall()
-        if result:
+        cursor.execute("select @@version as version;")
+        mysql_version = cursor.fetchone()["version"]
+        if mysql_version:
             conclusion["isalive"] = 1
             conclusion["canbemaster"] = 0
-            for row in result:
-                if datahost["host"] == row.get("MEMBER_HOST").lower() \
-                    and  int(datahost["port"]) == int(row.get("MEMBER_PORT")) \
-                    and  row.get("MEMBER_ROLE").lower() == "primary":
-                    conclusion["canbemaster"] = 1     
-        else:
-            conclusion["isalive"] = 1
-            conclusion["canbemaster"] = 1
-        return conclusion
+            if '5.7' in mysql_version:
+                log.debug("Server {0}:{1} version is {2}." \
+                    .format(datahost["host"],datahost["port"],mysql_version))
+                cursor.execute("select * from performance_schema.replication_group_members;")
+                members = cursor.fetchall()
+                if members:
+                    cursor.execute("select @@group_replication_single_primary_mode as single_primary_mode;")
+                    single_primary_mode = cursor.fetchone()["single_primary_mode"]
+                    if single_primary_mode == 1:
+                        cursor.execute("show status like 'group_replication_primary_member';")
+                        primary_member = cursor.fetchone()["Value"]
+                        cursor.execute("select @@server_uuid as server_uuid;")
+                        server_uuid = cursor.fetchone()["server_uuid"]
+                        if primary_member == server_uuid:
+                            conclusion["canbemaster"] = 1                     
+                else:
+                    conclusion["canbemaster"] = 1
+                    
+            elif '8.0' in mysql_version:
+                log.debug("Server {0}:{1} version is {2}." \
+                    .format(datahost["host"],datahost["port"],mysql_version))
+                cursor.execute("select * from performance_schema.replication_group_members;")
+                members = cursor.fetchall()
+                if members:
+                    for row in members:
+                        if datahost["host"] == row.get("MEMBER_HOST").lower() \
+                            and  int(datahost["port"]) == int(row.get("MEMBER_PORT")) \
+                            and  row.get("MEMBER_ROLE").lower() == "primary":
+                            conclusion["canbemaster"] = 1                         
+                else:
+                    conclusion["canbemaster"] = 1
+            else:
+                conclusion["canbemaster"] = 1
+                log.Warn("The server {0}:{1} version is not in list '5.7 or 8.0'。" \
+                    .format(datahost["host"],datahost["port"]))
+            log.debug("Server {0}:{1} check done." \
+                .format(datahost["host"],datahost["port"]))
+            return conclusion
     except Exception as e:
-        log.error("Server {0}:{1}(Null) is dead!" \
+        log.error("Server {0}:{1} is dead!" \
             .format(datahost["host"],datahost["port"]))
         log.error("Reason:{0}".format(str(e)))
         conclusion["isalive"] = 0

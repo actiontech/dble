@@ -91,7 +91,7 @@ public class OfflineStatusListener implements PathChildrenCacheListener {
         CuratorFramework zkConn = ZKUtils.getConnection();
         try {
             byte[] binlogStatusData = zkConn.getData().forPath(binlogStatusPath);
-            if (binlogStatusData == null) {
+            if (binlogStatusData == null || binlogStatusData.length == 0) {
                 return;
             }
             String data = new String(binlogStatusData, StandardCharsets.UTF_8);

@@ -9,13 +9,13 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
-import com.alibaba.druid.sql.ast.statement.SQLUnionQuery;
 
 import java.sql.SQLException;
 import java.util.HashSet;
@@ -24,7 +24,7 @@ import java.util.Set;
 
 public class DruidSingleUnitSelectParser extends DefaultDruidParser {
 
-    private Map<String, SchemaConfig> schemaMap = null;
+    private Map<Pair<String, String>, SchemaConfig> schemaMap = null;
 
     @Override
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,
@@ -57,9 +57,9 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
                 }
             }
 
-            super.visitorParse(null, rrs, stmt, visitor, sc, isExplain);
+            super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
             if (visitor.getSubQueryList().size() > 0) {
-                this.getCtx().getRouteCalculateUnits().clear();
+                this.getCtx().clearRouteCalculateUnit();
             }
             // change canRunInReadDB
             if ((mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode()) && !sc.isAutocommit()) {
@@ -79,11 +79,11 @@ public class DruidSingleUnitSelectParser extends DefaultDruidParser {
     }
 
 
-    public Map<String, SchemaConfig> getSchemaMap() {
+    public Map<Pair<String, String>, SchemaConfig> getSchemaMap() {
         return schemaMap;
     }
 
-    public void setSchemaMap(Map<String, SchemaConfig> schemaMap) {
+    public void setSchemaMap(Map<Pair<String, String>, SchemaConfig> schemaMap) {
         this.schemaMap = schemaMap;
     }
 }

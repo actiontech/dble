@@ -5,35 +5,27 @@
 
 package com.actiontech.dble.route.parser.druid.impl;
 
-import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.mysql.nio.handler.FetchStoreNodeOfChildTableHandler;
-import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.meta.protocol.StructureMeta;
-import com.actiontech.dble.net.ConnectionException;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.server.handler.ExplainHandler;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.singleton.SequenceManager;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
-import com.alibaba.druid.sql.ast.statement.SQLSelect;
-import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
-import com.alibaba.druid.sql.ast.statement.SQLReplaceStatement;
+import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 
@@ -82,7 +74,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         if (tc.isGlobalTable()) {
             String sql = rrs.getStatement();
             if (tc.isAutoIncrement()) {
-                sql = convertReplaceSQL(schemaInfo, replace, sql, tc, sc);
+                sql = convertReplaceSQL(schemaInfo, replace, sql, tc);
             } else {
                 sql = RouterUtil.removeSchema(sql, schemaInfo.getSchema());
             }
@@ -93,7 +85,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         }
 
         if (tc.isAutoIncrement()) {
-            String sql = convertReplaceSQL(schemaInfo, replace, rrs.getStatement(), tc, sc);
+            String sql = convertReplaceSQL(schemaInfo, replace, rrs.getStatement(), tc);
             rrs.setStatement(sql);
             SQLStatementParser parser = new MySqlStatementParser(sql);
             stmt = parser.parseStatement();
@@ -115,7 +107,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             }
         } else {
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
-            ctx.addTable(tableName);
+            ctx.addTable(new Pair<>(schema.getName(), tableName));
         }
 
         return schema;
@@ -125,13 +117,6 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     /**
      * check if the nosharding tables are Involved
      *
-     * @param sc
-     * @param contextSchema
-     * @param schemaInfo
-     * @param rrs
-     * @param replace
-     * @return
-     * @throws SQLException
      */
     private boolean parserNoSharding(ServerConnection sc, String contextSchema, SchemaInfo schemaInfo, RouteResultset rrs, SQLReplaceStatement replace) throws SQLException {
         String noShardingNode = RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable());
@@ -158,7 +143,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     }
 
 
-    private String convertReplaceSQL(SchemaInfo schemaInfo, SQLReplaceStatement replace, String originSql, TableConfig tc, ServerConnection sc) throws SQLNonTransientException {
+    private String convertReplaceSQL(SchemaInfo schemaInfo, SQLReplaceStatement replace, String originSql, TableConfig tc) throws SQLNonTransientException {
         StructureMeta.TableMeta orgTbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
                 schemaInfo.getTable());
         if (orgTbMeta == null)
@@ -182,7 +167,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             }
             colSize = orgTbMeta.getColumnsList().size();
         } else { // replace sql with  column names
-            boolean hasIncrementInSql = concatColumns(replace, tc, isAutoIncrement, sb, columns);
+            boolean hasIncrementInSql = concatColumns(tc, isAutoIncrement, sb, columns);
             colSize = columns.size();
             if (isAutoIncrement && !hasIncrementInSql) {
                 getIncrementKeyIndex(schemaInfo, tc.getIncrementColumn());
@@ -211,7 +196,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         return RouterUtil.removeSchema(sb.toString(), schemaInfo.getSchema());
     }
 
-    private boolean concatColumns(SQLReplaceStatement replace, TableConfig tc, boolean isAutoIncrement, StringBuilder sb, List<SQLExpr> columns) throws SQLNonTransientException {
+    private boolean concatColumns(TableConfig tc, boolean isAutoIncrement, StringBuilder sb, List<SQLExpr> columns) throws SQLNonTransientException {
         sb.append("(");
         boolean hasIncrementInSql = false;
         for (int i = 0; i < columns.size(); i++) {
@@ -227,18 +212,6 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     }
 
 
-    /**
-     * because of the replace can use a
-     *
-     * @param tableKey
-     * @param values
-     * @param sb
-     * @param autoIncrement
-     * @param idxGlobal
-     * @param colSize
-     * @return
-     * @throws SQLNonTransientException
-     */
     private static StringBuilder appendValues(String tableKey, List<SQLExpr> values, StringBuilder sb,
                                               int autoIncrement, int idxGlobal, int colSize) throws SQLNonTransientException {
         // check the value number & the column number is all right
@@ -304,40 +277,9 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             rrs.setFinishedRoute(true);
         } else {
             rrs.setFinishedExecute(true);
-            DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
-                //get child result will be blocked, so use ComplexQueryExecutor
-                @Override
-                public void run() {
-                    // route by sql query root parent's data node
-                    String findRootTBSql = tc.getLocateRTableKeySql() + joinKeyVal;
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("to find root parent's node sql :" + findRootTBSql);
-                    }
-                    FetchStoreNodeOfChildTableHandler fetchHandler = new FetchStoreNodeOfChildTableHandler(findRootTBSql, sc.getSession2());
-                    try {
-                        String dn = fetchHandler.execute(schema.getName(), tc.getRootParent().getDataNodes());
-                        if (dn == null) {
-                            sc.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "can't find (root) parent sharding node for sql:" + sql);
-                            return;
-                        }
-                        if (LOGGER.isDebugEnabled()) {
-                            LOGGER.debug("found partition node for child table to insert " + dn + " sql :" + sql);
-                        }
-                        RouterUtil.routeToSingleNode(rrs, dn);
-                        if (isExplain) {
-                            ExplainHandler.writeOutHeadAndEof(sc, rrs);
-                        } else {
-                            sc.getSession2().execute(rrs);
-                        }
-                    } catch (ConnectionException e) {
-                        sc.setTxInterrupt(e.toString());
-                        sc.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.toString());
-                    }
-                }
-            });
+            fetchChildTableToRoute(tc, joinKeyVal, sc, schema, sql, rrs, isExplain);
         }
     }
-
     private boolean isMultiReplace(SQLReplaceStatement insertStmt) {
         return (insertStmt.getValuesList() != null && insertStmt.getValuesList().size() > 1);
     }
@@ -407,9 +349,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
                 LOGGER.info(msg);
                 throw new SQLNonTransientException(msg);
             }
-            if (nodeValuesMap.get(nodeIndex) == null) {
-                nodeValuesMap.put(nodeIndex, new ArrayList<SQLInsertStatement.ValuesClause>());
-            }
+            nodeValuesMap.computeIfAbsent(nodeIndex, k -> new ArrayList<>());
             nodeValuesMap.get(nodeIndex).add(valueClause);
         }
 

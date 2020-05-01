@@ -5,23 +5,19 @@
 
 package com.actiontech.dble.route.parser.druid.impl;
 
-import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.mysql.nio.handler.FetchStoreNodeOfChildTableHandler;
-import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.ServerPrivileges.CheckType;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.protocol.StructureMeta;
-import com.actiontech.dble.net.ConnectionException;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.function.AbstractPartitionAlgorithm;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.server.handler.ExplainHandler;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 import com.actiontech.dble.singleton.ProxyMeta;
@@ -110,7 +106,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             }
         } else {
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
-            ctx.addTable(tableName);
+            ctx.addTable(new Pair<>(schema.getName(), tableName));
         }
         return schema;
     }
@@ -171,38 +167,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             rrs.setFinishedRoute(true);
         } else {
             rrs.setFinishedExecute(true);
-            DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
-                //get child result will be blocked, so use ComplexQueryExecutor
-                @Override
-                public void run() {
-                    // route by sql query root parent's data node
-                    String findRootTBSql = tc.getLocateRTableKeySql() + joinKeyVal;
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("to find root parent's node sql :" + findRootTBSql);
-                    }
-                    FetchStoreNodeOfChildTableHandler fetchHandler = new FetchStoreNodeOfChildTableHandler(findRootTBSql, sc.getSession2());
-                    try {
-                        String dn = fetchHandler.execute(schema.getName(), tc.getRootParent().getDataNodes());
-                        if (dn == null) {
-                            sc.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "can't find (root) parent sharding node for sql:" + sql);
-                            return;
-                        }
-                        if (LOGGER.isDebugEnabled()) {
-                            LOGGER.debug("found partition node for child table to insert " + dn + " sql :" + sql);
-                        }
-                        RouterUtil.routeToSingleNode(rrs, dn);
-                        if (isExplain) {
-                            ExplainHandler.writeOutHeadAndEof(sc, rrs);
-                        } else {
-                            sc.getSession2().execute(rrs);
-                        }
-                    } catch (ConnectionException e) {
-                        sc.setTxInterrupt(e.toString());
-                        sc.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.toString());
-                    }
-
-                }
-            });
+            fetchChildTableToRoute(tc, joinKeyVal, sc, schema, sql, rrs, isExplain);
         }
     }
 
@@ -290,7 +255,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
                 LOGGER.info(msg);
                 throw new SQLNonTransientException(msg);
             }
-            nodeValuesMap.putIfAbsent(nodeIndex, new ArrayList<ValuesClause>());
+            nodeValuesMap.putIfAbsent(nodeIndex, new ArrayList<>());
             nodeValuesMap.get(nodeIndex).add(valueClause);
         }
 
@@ -422,7 +387,6 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
     }
 
     private void genDuplicate(StringBuilder sb, List<SQLExpr> dku) throws SQLNonTransientException {
-        boolean flag = false;
         sb.append(" on duplicate key update ");
         for (int i = 0; i < dku.size(); i++) {
             SQLExpr exp = dku.get(i);

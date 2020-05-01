@@ -17,7 +17,7 @@ import com.actiontech.dble.singleton.RouteService;
 import com.alibaba.druid.sql.ast.statement.SQLCreateTableStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -367,7 +367,7 @@ public class DDLRouteTest {
         String sql = "desc offer";
         RouteResultset rrs = routeStrategy.route(schema, ServerParse.DESCRIBE, sql, null,
                 cachePool);
-        Assert.assertEquals(false, rrs.isCacheAble());
+        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
         Assert.assertEquals(-1L, rrs.getLimitSize());
         Assert.assertEquals(1, rrs.getNodes().length);
         // random return one node
@@ -376,7 +376,7 @@ public class DDLRouteTest {
 
         sql = " desc cndb.offer";
         rrs = routeStrategy.route(schema, ServerParse.DESCRIBE, sql, null, cachePool);
-        Assert.assertEquals(false, rrs.isCacheAble());
+        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
         Assert.assertEquals(-1L, rrs.getLimitSize());
         Assert.assertEquals(1, rrs.getNodes().length);
         // random return one node
@@ -385,7 +385,7 @@ public class DDLRouteTest {
 
         sql = " desc cndb.offer col1";
         rrs = routeStrategy.route(schema, ServerParse.DESCRIBE, sql, null, cachePool);
-        Assert.assertEquals(false, rrs.isCacheAble());
+        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
         Assert.assertEquals(-1L, rrs.getLimitSize());
         Assert.assertEquals(1, rrs.getNodes().length);
         // random return one node
@@ -395,7 +395,7 @@ public class DDLRouteTest {
         sql = "SHOW FULL COLUMNS FROM  offer  IN db_name WHERE true";
         rrs = routeStrategy.route(schema, ServerParse.SHOW, sql, null,
                 cachePool);
-        Assert.assertEquals(false, rrs.isCacheAble());
+        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
         Assert.assertEquals(-1L, rrs.getLimitSize());
         Assert.assertEquals(1, rrs.getNodes().length);
         // random return one node
@@ -407,7 +407,7 @@ public class DDLRouteTest {
         rrs = routeStrategy.route(schema, ServerParse.SHOW, sql, null,
                 cachePool);
         Assert.assertEquals(-1L, rrs.getLimitSize());
-        Assert.assertEquals(false, rrs.isCacheAble());
+        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
         Assert.assertEquals(1, rrs.getNodes().length);
         // random return one node
         // Assert.assertEquals("offer_dn[0]", rrs.getNodes()[0].getName());
@@ -419,13 +419,13 @@ public class DDLRouteTest {
         rrs = routeStrategy.route(schema, ServerParse.SHOW, sql, null,
                 cachePool);
         Assert.assertEquals(-1L, rrs.getLimitSize());
-        Assert.assertEquals(false, rrs.isCacheAble());
+        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
         Assert.assertEquals("SHOW FULL TABLES WHERE Table_type != 'VIEW'", rrs.getNodes()[0].getStatement());
 
         sql = "SHOW INDEX  IN offer FROM  db_name";
         rrs = routeStrategy.route(schema, ServerParse.SHOW, sql, null,
                 cachePool);
-        Assert.assertEquals(false, rrs.isCacheAble());
+        Assert.assertEquals(false, rrs.isSqlRouteCacheAble());
         Assert.assertEquals(-1L, rrs.getLimitSize());
         Assert.assertEquals(1, rrs.getNodes().length);
         // random return one node

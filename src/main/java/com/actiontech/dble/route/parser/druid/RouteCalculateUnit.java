@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.route.parser.druid;
 
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.sqlengine.mpp.ColumnRoutePair;
 import com.actiontech.dble.sqlengine.mpp.IsValue;
 import com.actiontech.dble.sqlengine.mpp.RangeValue;
@@ -23,14 +24,14 @@ import java.util.Set;
  * @copyright wonhigh.cn
  */
 public class RouteCalculateUnit {
-    private Map<String, Map<String, Set<ColumnRoutePair>>> tablesAndConditions = new LinkedHashMap<>();
+    private Map<Pair<String, String>, Map<String, Set<ColumnRoutePair>>> tablesAndConditions = new LinkedHashMap<>();
 
-    public Map<String, Map<String, Set<ColumnRoutePair>>> getTablesAndConditions() {
+    public Map<Pair<String, String>, Map<String, Set<ColumnRoutePair>>> getTablesAndConditions() {
         return tablesAndConditions;
     }
 
-    public void addShardingExpr(String tableName, String columnName, Object value) {
-        Map<String, Set<ColumnRoutePair>> tableColumnsMap = tablesAndConditions.get(tableName);
+    public void addShardingExpr(Pair<String, String> table, String columnName, Object value) {
+        Map<String, Set<ColumnRoutePair>> tableColumnsMap = tablesAndConditions.get(table);
 
         if (value == null) {
             // where a=null
@@ -39,7 +40,7 @@ public class RouteCalculateUnit {
 
         if (tableColumnsMap == null) {
             tableColumnsMap = new LinkedHashMap<>();
-            tablesAndConditions.put(tableName, tableColumnsMap);
+            tablesAndConditions.put(table, tableColumnsMap);
         }
 
         String upperColName = columnName.toUpperCase();
@@ -47,7 +48,7 @@ public class RouteCalculateUnit {
 
         if (columnValues == null) {
             columnValues = new LinkedHashSet<>();
-            tablesAndConditions.get(tableName).put(upperColName, columnValues);
+            tablesAndConditions.get(table).put(upperColName, columnValues);
         }
 
         if (value instanceof Object[]) {

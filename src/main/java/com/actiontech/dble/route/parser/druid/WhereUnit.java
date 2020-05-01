@@ -52,11 +52,11 @@ public class WhereUnit {
 
     private List<SQLExpr> splitedExprList = new ArrayList<>();
 
-    private List<List<Condition>> conditionList = new ArrayList<>();
+    private List<List<Condition>> orConditionList = new ArrayList<>();
     /**
      * whereExpris not contains all where condition,consider outConditions
      */
-    private List<Condition> outConditions = new ArrayList<>();
+    private List<Condition> outAndConditions = new ArrayList<>();
 
     private Set<Relationship> outRelationships = new HashSet<>();
 
@@ -65,12 +65,12 @@ public class WhereUnit {
 
     private boolean finishedParse = false;
 
-    public List<Condition> getOutConditions() {
-        return outConditions;
+    public List<Condition> getOutAndConditions() {
+        return outAndConditions;
     }
 
     public void addOutConditions(List<Condition> conditions) {
-        this.outConditions.addAll(conditions);
+        this.outAndConditions.addAll(conditions);
     }
 
     public Set<Relationship> getOutRelationships() {
@@ -113,12 +113,12 @@ public class WhereUnit {
         this.splitedExprList.add(splitedExpr);
     }
 
-    public List<List<Condition>> getConditionList() {
-        return conditionList;
+    public List<List<Condition>> getOrConditionList() {
+        return orConditionList;
     }
 
-    public void setConditionList(List<List<Condition>> conditionList) {
-        this.conditionList = conditionList;
+    public void setOrConditionList(List<List<Condition>> orConditionList) {
+        this.orConditionList = orConditionList;
     }
 
     public void addSubWhereUnit(WhereUnit whereUnit) {

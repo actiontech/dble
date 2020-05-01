@@ -104,7 +104,7 @@ public final class RouteService {
             rrs = RouteStrategyFactory.getRouteStrategy().route(schema, sqlType, stmt, sc, CacheService.getTableId2DataNodeCache(), isExplain);
         }
 
-        if (rrs != null && sqlType == ServerParse.SELECT && rrs.isCacheAble() && !LOGGER.isDebugEnabled() && CacheService.getSqlRouteCache() != null &&
+        if (rrs != null && sqlType == ServerParse.SELECT && rrs.isSqlRouteCacheAble() && !LOGGER.isDebugEnabled() && CacheService.getSqlRouteCache() != null &&
                 sc.getSession2().getRemingSql() == null) {
             CacheService.getSqlRouteCache().putIfAbsent(cacheKey, rrs);
         }

@@ -31,22 +31,26 @@ import java.util.Map;
  */
 public abstract class MysqlVisitor {
     // the max column size of mysql
-    protected static final int MAX_COL_LENGTH = 255;
+    static final int MAX_COL_LENGTH = 255;
     // map :sel name->push name
-    protected Map<String, String> pushNameMap = new HashMap<>();
-    protected boolean isTopQuery = false;
+    Map<String, String> pushNameMap = new HashMap<>();
+    boolean isTopQuery = false;
     protected PlanNode query;
-    protected long randomIndex = 0L;
+    private long randomIndex = 0L;
+
     /* is all function can be push down?if not,it need to calc by middle-ware */
-    protected boolean existUnPushDownGroup = false;
-    protected boolean visited = false;
+    boolean existUnPushDownGroup = false;
+    boolean visited = false;
     // -- start replaceable string builder
-    protected ReplaceableStringBuilder replaceableSqlBuilder = new ReplaceableStringBuilder();
+    ReplaceableStringBuilder replaceableSqlBuilder = new ReplaceableStringBuilder();
     // tmp sql
-    protected StringBuilder sqlBuilder;
-    protected StringPtr replaceableWhere = new StringPtr("");
-    protected Item whereFilter = null;
-    public MysqlVisitor(PlanNode query, boolean isTopQuery) {
+    StringBuilder sqlBuilder;
+    StringPtr replaceableWhere = new StringPtr("");
+    Item whereFilter = null;
+
+    Map<String, String> mapTableToSimple = new HashMap<>();
+
+    MysqlVisitor(PlanNode query, boolean isTopQuery) {
         this.query = query;
         this.isTopQuery = isTopQuery;
     }
@@ -55,11 +59,18 @@ public abstract class MysqlVisitor {
         return replaceableSqlBuilder;
     }
 
+    public Map<String, String> getMapTableToSimple() {
+        return mapTableToSimple;
+    }
+
     public abstract void visit();
 
 
-    protected void buildTableName(TableNode tableNode, StringBuilder sb) {
-        sb.append(" `").append(tableNode.getPureName()).append("`");
+    void buildTableName(TableNode tableNode, StringBuilder sb) {
+        String tableName = "`" + tableNode.getPureName() + "`";
+        String fullName = "`" + tableNode.getPureSchema() + "`." + tableName;
+        mapTableToSimple.put(fullName, tableName);
+        sb.append(" ").append(fullName);
         String alias = tableNode.getAlias();
         if (alias != null) {
             sb.append(" `").append(alias).append("`");
@@ -81,7 +92,7 @@ public abstract class MysqlVisitor {
     }
 
     /* change where to replaceable */
-    protected void buildWhere(PlanNode planNode) {
+    void buildWhere(PlanNode planNode) {
         if (!visited)
             replaceableSqlBuilder.getCurrentElement().setRepString(replaceableWhere);
         StringBuilder whereBuilder = new StringBuilder();
@@ -101,7 +112,7 @@ public abstract class MysqlVisitor {
         return "_$" + aggFuncName + "$_";
     }
 
-    protected String getRandomAliasName() {
+    String getRandomAliasName() {
         return "rpda_" + randomIndex++;
     }
 
@@ -159,7 +170,21 @@ public abstract class MysqlVisitor {
             Item b = item.arguments().get(1);
             return getItemName(a) + " " + ((ItemBoolFunc2) item).funcName() + " " + getItemName(b);
         } else if (item.type().equals(ItemType.FIELD_ITEM)) {
-            return "`" + item.getTableName() + "`.`" + item.getItemName() + "`";
+            String tableName = "`" + item.getTableName() + "`.`" + item.getItemName() + "`";
+            if (item.getDbName() == null) {
+                return tableName;
+            }
+            if (item.getReferTables().size() == 0) {
+                return tableName;
+            }
+            PlanNode tbNode = item.getReferTables().iterator().next();
+            if (!(tbNode instanceof TableNode)) {
+                return tableName;
+            }
+            if (!((TableNode) tbNode).getTableName().equals(item.getTableName())) {
+                return tableName;
+            }
+            return "`" + item.getDbName() + "`." + tableName;
         } else {
             return item.getItemName();
         }

@@ -6,7 +6,7 @@
 package com.actiontech.dble.cache;
 
 import com.actiontech.dble.cache.impl.EnchachePooFactory;
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class DefaultLayedCachePoolTest {

@@ -54,21 +54,21 @@ public abstract class BaseHandlerBuilder {
     private static final Logger LOGGER = LoggerFactory.getLogger(BaseHandlerBuilder.class);
     private static AtomicLong sequenceId = new AtomicLong(0);
     protected NonBlockingSession session;
-    protected HandlerBuilder hBuilder;
+    HandlerBuilder hBuilder;
     protected DMLResponseHandler start;
     /* the current last handler */
-    protected DMLResponseHandler currentLast;
+    private DMLResponseHandler currentLast;
     private PlanNode node;
-    protected Map<String, SchemaConfig> schemaConfigMap = new HashMap<>();
+    Map<String, SchemaConfig> schemaConfigMap = new HashMap<>();
     /* the children can be push down */
-    protected boolean canPushDown = false;
+    boolean canPushDown = false;
     /* need common handler? like group by,order by,limit and so on */
-    protected boolean needCommon = true;
+    boolean needCommon = true;
     /* has where handler */
-    protected boolean needWhereHandler = true;
+    boolean needWhereHandler = true;
 
     protected boolean isExplain = false;
-    protected List<BaseHandlerBuilder> subQueryBuilderList = new CopyOnWriteArrayList<>();
+    private List<BaseHandlerBuilder> subQueryBuilderList = new CopyOnWriteArrayList<>();
 
     protected BaseHandlerBuilder(NonBlockingSession session, PlanNode node, HandlerBuilder hBuilder, boolean isExplain) {
         this.session = session;
@@ -165,6 +165,10 @@ public abstract class BaseHandlerBuilder {
         GlobalVisitor visitor = new GlobalVisitor(node, true);
         visitor.visit();
         String sql = visitor.getSql().toString();
+        Map<String, String> mapTableToSimple = visitor.getMapTableToSimple();
+        for (Map.Entry<String, String> tableToSimple : mapTableToSimple.entrySet()) {
+            sql = sql.replace(tableToSimple.getKey(), tableToSimple.getValue());
+        }
         String randomDataNode = getRandomNode(node.getNoshardNode());
         RouteResultsetNode rrsNode = new RouteResultsetNode(randomDataNode, ServerParse.SELECT, sql);
         RouteResultsetNode[] rrss = new RouteResultsetNode[]{rrsNode};
@@ -194,7 +198,7 @@ public abstract class BaseHandlerBuilder {
     /**
      * build common properties,like where,groupby,having,orderby,limit, and sendMakHandler(rename)
      */
-    protected void buildCommon() {
+    private void buildCommon() {
         if (node.getWhereFilter() != null && needWhereHandler) {
             WhereHandler wh = new WhereHandler(getSequenceId(), session, node.getWhereFilter());
             addHandler(wh);
@@ -277,7 +281,7 @@ public abstract class BaseHandlerBuilder {
     /**
      * add a handler into handler chain
      */
-    protected void addHandler(DMLResponseHandler bh) {
+    void addHandler(DMLResponseHandler bh) {
         if (currentLast == null) {
             start = bh;
             currentLast = bh;
@@ -296,9 +300,6 @@ public abstract class BaseHandlerBuilder {
     /**
      * if the node's parent handler has been ordered,it is no need to order again
      *
-     * @param planNode
-     * @param orderBys
-     * @return
      */
     private boolean isOrderNeeded(PlanNode planNode, List<Order> orderBys) {
         if (planNode instanceof TableNode || PlanUtil.isGlobalOrER(planNode))
@@ -314,9 +315,6 @@ public abstract class BaseHandlerBuilder {
     /**
      * the order way of join node stored in left join on orders and right join on orders
      *
-     * @param jn
-     * @param orderBys
-     * @return
      */
     private boolean isJoinNodeOrderMatch(JoinNode jn, List<Order> orderBys) {
         // onCondition column in orderBys will be saved to onOrders,
@@ -341,11 +339,6 @@ public abstract class BaseHandlerBuilder {
         return false;
     }
 
-    /**
-     * @param qn
-     * @param orderBys
-     * @return
-     */
     private boolean isQueryNodeOrderMatch(QueryNode qn, List<Order> orderBys) {
         List<Order> childOrders = qn.getChild().getOrderBys();
         List<Order> pushedOrders = PlanUtil.getPushDownOrders(qn, orderBys);
@@ -355,9 +348,6 @@ public abstract class BaseHandlerBuilder {
     /**
      * try to merger the order of 'order by' syntax to columnsSelected
      *
-     * @param columnsSelected
-     * @param orderBys
-     * @return
      */
     private List<Order> mergeOrderBy(List<Item> columnsSelected, List<Order> orderBys) {
         List<Integer> orderIndexes = new ArrayList<>();
@@ -381,7 +371,7 @@ public abstract class BaseHandlerBuilder {
         return newOrderByList;
     }
 
-    protected static boolean nodeHasGroupBy(PlanNode arg) {
+    private static boolean nodeHasGroupBy(PlanNode arg) {
         return (arg.getSumFuncs().size() > 0 || arg.getGroupBys().size() > 0);
     }
 
@@ -389,7 +379,7 @@ public abstract class BaseHandlerBuilder {
         return sequenceId.incrementAndGet();
     }
 
-    protected void buildMergeHandler(PlanNode planNode, RouteResultsetNode[] rrssArray) {
+    void buildMergeHandler(PlanNode planNode, RouteResultsetNode[] rrssArray) {
         hBuilder.checkRRSs(rrssArray);
         List<Order> orderBys = planNode.getGroupBys().size() > 0 ? planNode.getGroupBys() : planNode.getOrderBys();
         boolean isEasyMerge = rrssArray.length == 1 || (orderBys == null || orderBys.size() == 0);
@@ -403,7 +393,7 @@ public abstract class BaseHandlerBuilder {
         addHandler(mh);
     }
 
-    protected String getRandomNode(Set<String> dataNodes) {
+    String getRandomNode(Set<String> dataNodes) {
         String randomDatenode = null;
         int index = (int) (System.currentTimeMillis() % dataNodes.size());
         int i = 0;
@@ -417,14 +407,14 @@ public abstract class BaseHandlerBuilder {
         return randomDatenode;
     }
 
-    protected TableConfig getTableConfig(String schema, String table) {
+    TableConfig getTableConfig(String schema, String table) {
         SchemaConfig schemaConfig = schemaConfigMap.get(schema);
         if (schemaConfig == null)
             return null;
         return schemaConfig.getTables().get(table);
     }
 
-    protected void handleBlockingSubQuery() {
+    void handleBlockingSubQuery() {
         if (node.getSubQueries().size() == 0) {
             return;
         }

@@ -13,8 +13,6 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.singleton.RouteService;
-import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
@@ -30,6 +28,8 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil;
+import com.actiontech.dble.singleton.ProxyMeta;
+import com.actiontech.dble.singleton.RouteService;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
@@ -169,7 +169,7 @@ public final class ExplainHandler {
                 return null;
             } else {
                 StringBuilder s = new StringBuilder();
-                LOGGER.info(s.append(c).append(stmt).toString() + " error:" + e);
+                LOGGER.warn(s.append(c).append(stmt).toString() + " error:", e);
                 String msg = e.getMessage();
                 c.writeErrMessage(ErrorCode.ER_PARSE_ERROR, msg == null ? e.getClass().getSimpleName() : msg);
                 return null;

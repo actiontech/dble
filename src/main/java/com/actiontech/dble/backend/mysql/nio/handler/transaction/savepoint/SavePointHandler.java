@@ -72,12 +72,12 @@ public class SavePointHandler extends MultiNodeHandler {
         }
 
         unResponseRrns.addAll(session.getTargetKeys());
+        this.performSp = newSp;
         for (RouteResultsetNode rrn : session.getTargetKeys()) {
             final BackendConnection conn = session.getTarget(rrn);
             conn.setResponseHandler(this);
             ((MySQLConnection) conn).execCmd("savepoint " + spName);
         }
-        this.performSp = newSp;
     }
 
     private void rollbackTo(String spName) {
@@ -102,6 +102,7 @@ public class SavePointHandler extends MultiNodeHandler {
 
         Set lastNodes = sp.getPrev().getRouteNodes();
         unResponseRrns.addAll(session.getTargetKeys());
+        this.performSp = sp;
         for (RouteResultsetNode rrn : session.getTargetKeys()) {
             final BackendConnection conn = session.getTarget(rrn);
             conn.setResponseHandler(this);
@@ -113,7 +114,6 @@ public class SavePointHandler extends MultiNodeHandler {
                 ((MySQLConnection) conn).execCmd("rollback to " + spName);
             }
         }
-        this.performSp = sp;
     }
 
     private void release(String spName) {

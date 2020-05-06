@@ -23,35 +23,29 @@ public final class ConditionUtil {
     }
 
     private static void pruningConditions(List<WhereUnit> whereUnits, Map<String, String> tableAliasMap, String defaultSchema) {
-        for (WhereUnit whereUnit : whereUnits) {
+        Iterator<WhereUnit> whereUnitIterator = whereUnits.listIterator();
+        while (whereUnitIterator.hasNext()) {
+            WhereUnit whereUnit = whereUnitIterator.next();
             pruningConditions(whereUnit.getSubWhereUnit(), tableAliasMap, defaultSchema);
-            boolean containsEmpty = false;
-            Iterator<List<TableStat.Condition>> iteratorConditionsList = whereUnit.getOrConditionList().listIterator(); // ConditionList item operator with OR
-            while (iteratorConditionsList.hasNext()) {
-                List<TableStat.Condition> conditions = iteratorConditionsList.next(); // inner is and
-                TableStat.Condition backUpCondition = null;
-                if (conditions.size() > 0) {
-                    backUpCondition = conditions.get(0);
-                    ListIterator<TableStat.Condition> iteratorConditions = conditions.listIterator();
-                    pruningAndConditions(tableAliasMap, defaultSchema, iteratorConditions);
-
-                }
+            boolean orContainsEmpty = false;
+            for (List<TableStat.Condition> conditions : whereUnit.getOrConditionList()) {
+                pruningAndConditions(tableAliasMap, defaultSchema, conditions.listIterator());
                 if (conditions.size() == 0) {
-                    if (!containsEmpty) {
-                        containsEmpty = true;
-                        if (backUpCondition != null) {
-                            conditions.add(getUsefulCondition(backUpCondition, tableAliasMap, defaultSchema, true)); // for Placeholder
-                        }
-                    } else {
-                        iteratorConditionsList.remove();
-                    }
+                    orContainsEmpty = true;
+                    break;
                 }
+            }
+            if (orContainsEmpty) {
+                whereUnit.getOrConditionList().clear();
             }
 
 
             List<TableStat.Condition> outConditions = whereUnit.getOutAndConditions(); //outConditions item operator with AND
             ListIterator<TableStat.Condition> iteratorOutConditions = outConditions.listIterator();
             pruningAndConditions(tableAliasMap, defaultSchema, iteratorOutConditions);
+            if (outConditions.size() == 0 && (whereUnit.getSubWhereUnit().size() == 0 || whereUnit.getOrConditionList().size() == 0)) {
+                whereUnitIterator.remove();
+            }
         }
 
     }
@@ -169,15 +163,15 @@ public final class ConditionUtil {
             for (WhereUnit sub : whereUnit.getSubWhereUnit()) {
                 mergeSubConditionWithOuterCondition(sub);
             }
-            if (whereUnit.getSubWhereUnit().size() > 0) {
-                List<List<TableStat.Condition>> mergedConditionList = getMergedConditionList(whereUnit.getSubWhereUnit());
-                if (whereUnit.getOutAndConditions().size() > 0) {
-                    for (List<TableStat.Condition> mergedCondition : mergedConditionList) {
-                        mergedCondition.addAll(whereUnit.getOutAndConditions());
-                    }
+            List<List<TableStat.Condition>> mergedConditionList = getMergedConditionList(whereUnit.getSubWhereUnit());
+            if (whereUnit.getOutAndConditions().size() > 0) {
+                for (List<TableStat.Condition> mergedCondition : mergedConditionList) {
+                    mergedCondition.addAll(whereUnit.getOutAndConditions());
                 }
-                whereUnit.getOrConditionList().addAll(mergedConditionList);
             }
+            whereUnit.getOrConditionList().addAll(mergedConditionList);
+        } else if (whereUnit.getOutAndConditions().size() > 0) {
+            whereUnit.getOrConditionList().add(whereUnit.getOutAndConditions());
         }
     }
 
@@ -205,11 +199,10 @@ public final class ConditionUtil {
         List<List<TableStat.Condition>> retList = new ArrayList<>();
         for (List<TableStat.Condition> aList1 : list1) {
             for (List<TableStat.Condition> aList2 : list2) {
-                Set<TableStat.Condition> tmp = new LinkedHashSet<>();
+                List<TableStat.Condition> tmp = new ArrayList<>();
                 tmp.addAll(aList1);
                 tmp.addAll(aList2);
-                retList.add(new ArrayList<>(tmp));
-
+                retList.add(tmp);
             }
         }
         return retList;
@@ -286,6 +279,14 @@ public final class ConditionUtil {
 
     public static List<RouteCalculateUnit> buildRouteCalculateUnits(List<WhereUnit> whereUnits, Map<String, String> tableAliasMap, String defaultSchema) {
         ConditionUtil.pruningConditions(whereUnits, tableAliasMap, defaultSchema);
+        if (whereUnits.size() == 0) {
+            WhereUnit whereUnit = new WhereUnit();
+            whereUnit.setFinishedParse(true);
+            List<List<TableStat.Condition>> retList = new ArrayList<>();
+            retList.add(new ArrayList<>());
+            whereUnit.setOrConditionList(retList);
+            whereUnits.add(whereUnit);
+        }
         List<List<TableStat.Condition>> conditions = ConditionUtil.mergedConditions(whereUnits);
         return ConditionUtil.transformConditionToRouteUnits(conditions);
     }

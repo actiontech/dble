@@ -43,7 +43,7 @@ public final class ConditionUtil {
             List<TableStat.Condition> outConditions = whereUnit.getOutAndConditions(); //outConditions item operator with AND
             ListIterator<TableStat.Condition> iteratorOutConditions = outConditions.listIterator();
             pruningAndConditions(tableAliasMap, defaultSchema, iteratorOutConditions);
-            if (outConditions.size() == 0 && (whereUnit.getSubWhereUnit().size() == 0 || whereUnit.getOrConditionList().size() == 0)) {
+            if (outConditions.size() == 0 && whereUnit.getSubWhereUnit().size() == 0 && whereUnit.getOrConditionList().size() == 0) {
                 whereUnitIterator.remove();
             }
         }
@@ -57,7 +57,7 @@ public final class ConditionUtil {
             if (values.size() == 0 || !checkConditionValues(values)) {
                 iteratorConditions.remove(); //AND CONDITION can be pruned
             } else {
-                TableStat.Condition newCondition = getUsefulCondition(condition, tableAliasMap, defaultSchema, false);
+                TableStat.Condition newCondition = getUsefulCondition(condition, tableAliasMap, defaultSchema);
                 if (newCondition == null) {
                     iteratorConditions.remove(); //AND CONDITION can be pruned
                 } else {
@@ -67,12 +67,12 @@ public final class ConditionUtil {
         }
     }
 
-    private static TableStat.Condition getUsefulCondition(TableStat.Condition condition, Map<String, String> tableAliasMap, String defaultSchema, boolean placeholder) {
+    private static TableStat.Condition getUsefulCondition(TableStat.Condition condition, Map<String, String> tableAliasMap, String defaultSchema) {
         String tableFullName = condition.getColumn().getTable();
         if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             tableFullName = tableFullName.toLowerCase();
         }
-        if (!placeholder && tableAliasMap != null && tableAliasMap.get(tableFullName) == null) {
+        if (tableAliasMap != null && tableAliasMap.get(tableFullName) == null) {
             //ignore subQuery's alias
             return null;
         }
@@ -82,11 +82,6 @@ public final class ConditionUtil {
         String schemaName = table.getKey();
         String tableName = table.getValue();
         tableFullName = schemaName + "." + tableName;
-        String operator = condition.getOperator();
-        String columnName = StringUtil.removeBackQuote(condition.getColumn().getName().toUpperCase());
-        if (placeholder) {
-            return genNewCondition(tableFullName, columnName, operator, condition.getValues());
-        }
         if (SchemaUtil.MYSQL_SYS_SCHEMA.contains(schemaName.toUpperCase())) {
             return null;
         }
@@ -94,11 +89,15 @@ public final class ConditionUtil {
         if (tableConfig == null) {
             return null;
         }
+
+        String operator = condition.getOperator();
         //execute only between ,in and = is
         if (!operator.equals("between") && !operator.equals("=") && !operator.toLowerCase().equals("in") && !operator.equals("IS")) {
             return null;
         }
         String partitionCol = tableConfig.getPartitionColumn();
+
+        String columnName = StringUtil.removeBackQuote(condition.getColumn().getName().toUpperCase());
         if (columnName.equals(partitionCol)) {
             return genNewCondition(tableFullName, columnName, operator, condition.getValues());
         }

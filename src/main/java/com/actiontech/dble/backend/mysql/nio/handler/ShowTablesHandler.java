@@ -36,6 +36,7 @@ public class ShowTablesHandler extends SingleNodeHandler {
     private Item whereItem;
     private List<Field> sourceFields;
     private ShowTablesStmtInfo info;
+
     public ShowTablesHandler(RouteResultset rrs, NonBlockingSession session, ShowTablesStmtInfo info) {
         super(rrs, session);
         buffer = session.getSource().allocate();
@@ -59,9 +60,13 @@ public class ShowTablesHandler extends SingleNodeHandler {
             if (writeToClient.get()) {
                 return;
             }
+            String schemaColumn = showTableSchema;
+            if (info.getLike() != null) {
+                schemaColumn = schemaColumn + " (" + info.getLike() + ")";
+            }
             if (info.isFull()) {
                 List<FieldPacket> fieldPackets = new ArrayList<>(2);
-                bufInf = ShowTables.writeFullTablesHeader(buffer, source, showTableSchema, fieldPackets);
+                bufInf = ShowTables.writeFullTablesHeader(buffer, source, schemaColumn, fieldPackets);
                 packetId = bufInf.getPacketId();
                 buffer = bufInf.getBuffer();
                 if (info.getWhere() != null) {
@@ -78,7 +83,7 @@ public class ShowTablesHandler extends SingleNodeHandler {
                     buffer = bufInf.getBuffer();
                 }
             } else {
-                bufInf = ShowTables.writeTablesHeaderAndRows(buffer, source, shardingTablesMap, showTableSchema);
+                bufInf = ShowTables.writeTablesHeaderAndRows(buffer, source, shardingTablesMap, schemaColumn);
                 packetId = bufInf.getPacketId();
                 buffer = bufInf.getBuffer();
             }

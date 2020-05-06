@@ -116,9 +116,13 @@ public final class ShowTables {
         ByteBuffer buffer = c.allocate();
         Map<String, String> tableMap = getTableSet(cSchema, info);
         PackageBufINf bufInf;
+        String schemaColumn = cSchema;
+        if (info.getLike() != null) {
+            schemaColumn = schemaColumn + " (" + info.getLike() + ")";
+        }
         if (info.isFull()) {
             List<FieldPacket> fieldPackets = new ArrayList<>(2);
-            bufInf = writeFullTablesHeader(buffer, c, cSchema, fieldPackets);
+            bufInf = writeFullTablesHeader(buffer, c, schemaColumn, fieldPackets);
             if (info.getWhere() != null) {
                 MySQLItemVisitor mev = new MySQLItemVisitor(c.getSchema(), c.getCharset().getResultsIndex(), ProxyMeta.getInstance().getTmManager(), c.getUsrVariables());
                 info.getWhereExpr().accept(mev);
@@ -129,7 +133,7 @@ public final class ShowTables {
                 bufInf = writeFullTablesRow(bufInf.getBuffer(), c, tableMap, bufInf.getPacketId(), null, null);
             }
         } else {
-            bufInf = writeTablesHeaderAndRows(buffer, c, tableMap, cSchema);
+            bufInf = writeTablesHeaderAndRows(buffer, c, tableMap, schemaColumn);
         }
 
         writeRowEof(bufInf.getBuffer(), c, bufInf.getPacketId());

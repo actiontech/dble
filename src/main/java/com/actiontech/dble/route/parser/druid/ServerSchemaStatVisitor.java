@@ -847,6 +847,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             for (WhereUnit whereUnit : whereUnits) {
                 splitUntilNoOr(whereUnit);
             }
+            whereUnits.clear();
             loopFindSubOrCondition(storedWhereUnits);
 
             for (WhereUnit whereUnit : storedWhereUnits) {
@@ -854,8 +855,11 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             }
         } else {
             storedWhereUnits.addAll(whereUnits);
+            whereUnits.clear();
             WhereUnit whereUnit = generateWhereUnit();
-            storedWhereUnits.add(whereUnit);
+            if (whereUnit != null) {
+                storedWhereUnits.add(whereUnit);
+            }
         }
 
         for (WhereUnit whereUnit : storedWhereUnits) {
@@ -869,6 +873,9 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         List<Condition> conditionList = new ArrayList<>();
         conditionList.addAll(this.getConditions());
         ConditionUtil.extendConditionsFromRelations(conditionList, this.relationships);
+        if (conditionList.size() == 0 && this.relationships.size() == 0) {
+            return null;
+        }
         WhereUnit whereUnit = new WhereUnit();
         whereUnit.setFinishedParse(true);
         List<List<Condition>> retList = new ArrayList<>();

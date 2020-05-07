@@ -26,8 +26,11 @@ public final class ConditionUtil {
         Iterator<WhereUnit> whereUnitIterator = whereUnits.listIterator();
         while (whereUnitIterator.hasNext()) {
             WhereUnit whereUnit = whereUnitIterator.next();
+            final int subWhereSize = whereUnit.getSubWhereUnit().size();
             pruningConditions(whereUnit.getSubWhereUnit(), tableAliasMap, defaultSchema);
+            final int subWhereSizeAfter = whereUnit.getSubWhereUnit().size();
             boolean orContainsEmpty = false;
+            final int orSize = whereUnit.getOrConditionList().size();
             for (List<TableStat.Condition> conditions : whereUnit.getOrConditionList()) {
                 pruningAndConditions(tableAliasMap, defaultSchema, conditions.listIterator());
                 if (conditions.size() == 0) {
@@ -38,12 +41,11 @@ public final class ConditionUtil {
             if (orContainsEmpty) {
                 whereUnit.getOrConditionList().clear();
             }
-
-
+            final int orSizeAfter = whereUnit.getOrConditionList().size();
             List<TableStat.Condition> outConditions = whereUnit.getOutAndConditions(); //outConditions item operator with AND
             ListIterator<TableStat.Condition> iteratorOutConditions = outConditions.listIterator();
             pruningAndConditions(tableAliasMap, defaultSchema, iteratorOutConditions);
-            if (outConditions.size() == 0 && whereUnit.getSubWhereUnit().size() == 0 && whereUnit.getOrConditionList().size() == 0) {
+            if (outConditions.size() == 0 && (subWhereSize != 0 && subWhereSizeAfter == 0) || (orSize != 0 && orSizeAfter == 0) || (subWhereSize == 0 && orSize == 0)) {
                 whereUnitIterator.remove();
             }
         }

@@ -11,14 +11,18 @@ import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
 import com.actiontech.dble.route.parser.druid.WhereUnit;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.util.SchemaUtil;
+import com.actiontech.dble.sqlengine.mpp.ColumnRoutePair;
 import com.actiontech.dble.sqlengine.mpp.IsValue;
 import com.actiontech.dble.sqlengine.mpp.RangeValue;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.stat.TableStat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
 public final class ConditionUtil {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConditionUtil.class);
     private ConditionUtil() {
     }
 
@@ -26,6 +30,10 @@ public final class ConditionUtil {
         Iterator<WhereUnit> whereUnitIterator = whereUnits.listIterator();
         while (whereUnitIterator.hasNext()) {
             WhereUnit whereUnit = whereUnitIterator.next();
+            String whereUnitContent = "empty";
+            if (LOGGER.isTraceEnabled()) {
+                whereUnitContent = whereUnit.toString();
+            }
             final int subWhereSize = whereUnit.getSubWhereUnit().size();
             pruningConditions(whereUnit.getSubWhereUnit(), tableAliasMap, defaultSchema);
             final int subWhereSizeAfter = whereUnit.getSubWhereUnit().size();
@@ -46,6 +54,9 @@ public final class ConditionUtil {
             ListIterator<TableStat.Condition> iteratorOutConditions = outConditions.listIterator();
             pruningAndConditions(tableAliasMap, defaultSchema, iteratorOutConditions);
             if (outConditions.size() == 0 && (subWhereSize != 0 && subWhereSizeAfter == 0) || (orSize != 0 && orSizeAfter == 0) || (subWhereSize == 0 && orSize == 0)) {
+                if (LOGGER.isTraceEnabled()) {
+                    LOGGER.trace("whereUnit [" + whereUnitContent + "] will be pruned for contains useless or condition");
+                }
                 whereUnitIterator.remove();
             }
         }
@@ -57,6 +68,9 @@ public final class ConditionUtil {
             TableStat.Condition condition = iteratorConditions.next();
             List<Object> values = condition.getValues();
             if (values.size() == 0 || !checkConditionValues(values)) {
+                if (LOGGER.isTraceEnabled()) {
+                    LOGGER.trace("condition [" + condition + "] will be pruned for empty values");
+                }
                 iteratorConditions.remove(); //AND CONDITION can be pruned
             } else {
                 TableStat.Condition newCondition = getUsefulCondition(condition, tableAliasMap, defaultSchema);
@@ -75,6 +89,9 @@ public final class ConditionUtil {
             tableFullName = tableFullName.toLowerCase();
         }
         if (tableAliasMap != null && tableAliasMap.get(tableFullName) == null) {
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("condition [" + condition + "] will be pruned for can't find table " + tableFullName);
+            }
             //ignore subQuery's alias
             return null;
         }
@@ -85,16 +102,25 @@ public final class ConditionUtil {
         String tableName = table.getValue();
         tableFullName = schemaName + "." + tableName;
         if (SchemaUtil.MYSQL_SYS_SCHEMA.contains(schemaName.toUpperCase())) {
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("condition [" + condition + "] will be pruned for schema name " + schemaName.toUpperCase());
+            }
             return null;
         }
         TableConfig tableConfig = DbleServer.getInstance().getConfig().getSchemas().get(schemaName).getTables().get(tableName);
         if (tableConfig == null) {
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("condition [" + condition + "] will be pruned for table is not config " + tableName);
+            }
             return null;
         }
 
         String operator = condition.getOperator();
         //execute only between ,in and = is
-        if (!operator.equals("between") && !operator.equals("=") && !operator.toLowerCase().equals("in") && !operator.equals("IS")) {
+        if (!operator.equalsIgnoreCase("between") && !operator.equals("=") && !operator.equalsIgnoreCase("in") && !operator.equalsIgnoreCase("IS")) {
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("condition [" + condition + "] will be pruned for operator is not [between,=,in,IS]");
+            }
             return null;
         }
         String partitionCol = tableConfig.getPartitionColumn();
@@ -111,6 +137,9 @@ public final class ConditionUtil {
         String catchKey = tableConfig.getCacheKey();
         if (catchKey != null && columnName.equals(catchKey)) {
             return genNewCondition(tableFullName, columnName, operator, condition.getValues());
+        }
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("condition [" + condition + "] will be pruned for columnName is not shardingcolumn/joinkey/cachekey");
         }
         return null;
     }
@@ -253,17 +282,50 @@ public final class ConditionUtil {
                 String[] tableInfo = tableFullName.split("\\.");
                 Pair<String, String> table = new Pair<>(tableInfo[0], tableInfo[1]);
                 //execute only between ,in and =
-                if (operator.equals("between")) {
+                if (operator.equalsIgnoreCase("between")) {
                     RangeValue rv = new RangeValue(values.get(0), values.get(1), RangeValue.EE);
                     routeCalculateUnit.addShardingExpr(table, columnName, rv);
-                } else if (operator.equals("=") || operator.toLowerCase().equals("in")) {
+                } else if (operator.equals("=") || operator.equalsIgnoreCase("in")) {
                     routeCalculateUnit.addShardingExpr(table, columnName, values.toArray());
-                } else if (operator.equals("IS")) {
+                } else if (operator.equalsIgnoreCase("IS")) {
                     IsValue isValue = new IsValue(values.toArray());
                     routeCalculateUnit.addShardingExpr(table, columnName, isValue);
                 }
             }
             retList.add(routeCalculateUnit);
+        }
+        if (LOGGER.isTraceEnabled()) {
+            StringBuilder sb = new StringBuilder();
+            int i = 0;
+            for (RouteCalculateUnit routeUnit : retList) {
+                i++;
+                sb.append("{ RouteCalculateUnit ").append(i).append(" :");
+                Map<Pair<String, String>, Map<String, Set<ColumnRoutePair>>> tablesAndConditions = routeUnit.getTablesAndConditions();
+                if (tablesAndConditions != null) {
+                    for (Map.Entry<Pair<String, String>, Map<String, Set<ColumnRoutePair>>> entry : tablesAndConditions.entrySet()) {
+                        Pair<String, String> table = entry.getKey();
+                        String schemaName = table.getKey();
+                        String tableName = table.getValue();
+                        Map<String, Set<ColumnRoutePair>> columnsMap = entry.getValue();
+                        for (Map.Entry<String, Set<ColumnRoutePair>> columns : columnsMap.entrySet()) {
+                            String columnName = columns.getKey();
+                            Set<ColumnRoutePair> values = columns.getValue();
+                            for (ColumnRoutePair pair : values) {
+                                if (pair.colValue != null) {
+                                    sb.append("{").append("schema:").append(schemaName).append(",table:").append(tableName);
+                                    sb.append("column:").append(columnName).append(",value:").append(pair.colValue).append("},");
+                                } else if (pair.rangeValue != null) {
+                                    sb.append("{").append("schema:").append(schemaName).append(",table:").append(tableName);
+                                    sb.append("column:").append(columnName).append(",value between:").append(pair.rangeValue.getBeginValue());
+                                    sb.append("~").append(pair.rangeValue.getEndValue()).append("},");
+                                }
+                            }
+                        }
+                    }
+                }
+                sb.append("}");
+            }
+            LOGGER.trace(sb.toString());
         }
         return retList;
     }

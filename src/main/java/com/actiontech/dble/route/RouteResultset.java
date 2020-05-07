@@ -9,6 +9,8 @@ import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.util.FormatUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.List;
@@ -17,6 +19,7 @@ import java.util.List;
  * @author mycat
  */
 public final class RouteResultset implements Serializable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RouteResultset.class);
     private static final long serialVersionUID = 3906972758236875720L;
 
     private String srcStatement; // origin statement
@@ -75,6 +78,9 @@ public final class RouteResultset implements Serializable {
 
     public void setNeedOptimizer(boolean needOptimizer) {
         this.needOptimizer = needOptimizer;
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("the sql is need to use complex query Optimizer:" + srcStatement);
+        }
     }
 
     public Boolean getRunOnSlave() {

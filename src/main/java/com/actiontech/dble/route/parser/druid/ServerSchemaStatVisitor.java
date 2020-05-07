@@ -256,7 +256,7 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
         Condition condition = null;
         for (Condition item : this.getConditions()) {
-            if (item.getColumn().equals(column) && item.getOperator().equals("between")) {
+            if (item.getColumn().equals(column) && item.getOperator().equalsIgnoreCase("between")) {
                 condition = item;
                 break;
             }

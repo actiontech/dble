@@ -496,6 +496,9 @@ public final class RouterUtil {
                     return null;
                 }
             }
+            if (resultNodes.size() != 1) {
+                return null;
+            }
             return resultNodes.iterator().next();
         } else {
             if (tmpResultNodes.size() != 1) {

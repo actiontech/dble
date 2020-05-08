@@ -71,5 +71,29 @@ public class RouteCalculateUnit {
         tablesAndConditions.clear();
     }
 
-
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<Pair<String, String>, Map<String, Set<ColumnRoutePair>>> entry : tablesAndConditions.entrySet()) {
+            Pair<String, String> table = entry.getKey();
+            String schemaName = table.getKey();
+            String tableName = table.getValue();
+            Map<String, Set<ColumnRoutePair>> columnsMap = entry.getValue();
+            for (Map.Entry<String, Set<ColumnRoutePair>> columns : columnsMap.entrySet()) {
+                String columnName = columns.getKey();
+                Set<ColumnRoutePair> values = columns.getValue();
+                for (ColumnRoutePair pair : values) {
+                    if (pair.colValue != null) {
+                        sb.append("{").append("schema:").append(schemaName).append(",table:").append(tableName);
+                        sb.append(",column:").append(columnName).append(",value:").append(pair.colValue).append("},");
+                    } else if (pair.rangeValue != null) {
+                        sb.append("{").append("schema:").append(schemaName).append(",table:").append(tableName);
+                        sb.append(",column:").append(columnName).append(",value between:").append(pair.rangeValue.getBeginValue());
+                        sb.append("~").append(pair.rangeValue.getEndValue()).append("},");
+                    }
+                }
+            }
+        }
+        return sb.toString();
+    }
 }

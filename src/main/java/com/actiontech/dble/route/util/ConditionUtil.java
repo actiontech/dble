@@ -11,7 +11,6 @@ import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
 import com.actiontech.dble.route.parser.druid.WhereUnit;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.util.SchemaUtil;
-import com.actiontech.dble.sqlengine.mpp.ColumnRoutePair;
 import com.actiontech.dble.sqlengine.mpp.IsValue;
 import com.actiontech.dble.sqlengine.mpp.RangeValue;
 import com.actiontech.dble.util.StringUtil;
@@ -285,7 +284,9 @@ public final class ConditionUtil {
                 if (operator.equalsIgnoreCase("between")) {
                     RangeValue rv = new RangeValue(values.get(0), values.get(1), RangeValue.EE);
                     routeCalculateUnit.addShardingExpr(table, columnName, rv);
-                } else if (operator.equals("=") || operator.equalsIgnoreCase("in")) {
+                } else if (operator.equals("=")) {
+                    routeCalculateUnit.addShardingExpr(table, columnName, values.get(0));
+                } else if (operator.equalsIgnoreCase("in")) {
                     routeCalculateUnit.addShardingExpr(table, columnName, values.toArray());
                 } else if (operator.equalsIgnoreCase("IS")) {
                     IsValue isValue = new IsValue(values.toArray());
@@ -300,29 +301,7 @@ public final class ConditionUtil {
             for (RouteCalculateUnit routeUnit : retList) {
                 i++;
                 sb.append("{ RouteCalculateUnit ").append(i).append(" :");
-                Map<Pair<String, String>, Map<String, Set<ColumnRoutePair>>> tablesAndConditions = routeUnit.getTablesAndConditions();
-                if (tablesAndConditions != null) {
-                    for (Map.Entry<Pair<String, String>, Map<String, Set<ColumnRoutePair>>> entry : tablesAndConditions.entrySet()) {
-                        Pair<String, String> table = entry.getKey();
-                        String schemaName = table.getKey();
-                        String tableName = table.getValue();
-                        Map<String, Set<ColumnRoutePair>> columnsMap = entry.getValue();
-                        for (Map.Entry<String, Set<ColumnRoutePair>> columns : columnsMap.entrySet()) {
-                            String columnName = columns.getKey();
-                            Set<ColumnRoutePair> values = columns.getValue();
-                            for (ColumnRoutePair pair : values) {
-                                if (pair.colValue != null) {
-                                    sb.append("{").append("schema:").append(schemaName).append(",table:").append(tableName);
-                                    sb.append(",column:").append(columnName).append(",value:").append(pair.colValue).append("},");
-                                } else if (pair.rangeValue != null) {
-                                    sb.append("{").append("schema:").append(schemaName).append(",table:").append(tableName);
-                                    sb.append(",column:").append(columnName).append(",value between:").append(pair.rangeValue.getBeginValue());
-                                    sb.append("~").append(pair.rangeValue.getEndValue()).append("},");
-                                }
-                            }
-                        }
-                    }
-                }
+                sb.append(routeUnit.toString());
                 sb.append("}");
             }
             LOGGER.trace(sb.toString());
@@ -341,6 +320,22 @@ public final class ConditionUtil {
 
 
     public static List<RouteCalculateUnit> buildRouteCalculateUnits(List<WhereUnit> whereUnits, Map<String, String> tableAliasMap, String defaultSchema) {
+        if (LOGGER.isTraceEnabled()) {
+            StringBuilder sb = new StringBuilder("these conditions will try to pruning:");
+            int i = 0;
+            sb.append("{");
+            for (WhereUnit whereUnit : whereUnits) {
+                if (i > 0) {
+                    sb.append(" and ");
+                }
+                sb.append("(");
+                sb.append(whereUnit.toString());
+                sb.append(")");
+                i++;
+            }
+            sb.append("}");
+            LOGGER.trace(sb.toString());
+        }
         ConditionUtil.pruningConditions(whereUnits, tableAliasMap, defaultSchema);
         if (whereUnits.size() == 0) {
             WhereUnit whereUnit = new WhereUnit();

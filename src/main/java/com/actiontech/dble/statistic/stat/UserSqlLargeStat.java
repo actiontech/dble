@@ -71,6 +71,9 @@ public class UserSqlLargeStat {
 
         public SqlLarge(String sql, long sqlRows, long executeTime, long startTime, long endTime) {
             super();
+            if (sql.length() > 1024) {
+                sql = sql.substring(0, 1024) + "...";
+            }
             this.sql = sql;
             this.sqlRows = sqlRows;
             this.executeTime = executeTime;

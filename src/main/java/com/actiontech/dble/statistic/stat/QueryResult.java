@@ -29,9 +29,6 @@ public class QueryResult {
         super();
         this.user = user;
         this.sqlType = sqlType;
-        if (sql.length() > 1024) {
-            sql = sql.substring(0, 1024) + "...";
-        }
         this.sql = RouterUtil.getFixedSql(sql);
         this.sqlRows = sqlRows;
         this.netInBytes = netInBytes;

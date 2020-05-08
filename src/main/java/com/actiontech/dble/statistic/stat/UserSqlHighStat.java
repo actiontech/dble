@@ -5,8 +5,6 @@
 
 package com.actiontech.dble.statistic.stat;
 
-import com.alibaba.druid.sql.visitor.ParameterizedOutputVisitorUtils;
-
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -20,7 +18,7 @@ public class UserSqlHighStat {
     private ReentrantLock lock = new ReentrantLock();
 
 
-    private SqlParser sqlParser = new SqlParser();
+    private StatSqlParser sqlParser = new StatSqlParser();
 
     public void addSql(String sql, long executeTime, long startTime, long endTime) {
         String newSql = this.sqlParser.mergeSql(sql);
@@ -80,22 +78,5 @@ public class UserSqlHighStat {
         }
     }
 
-
-    private static class SqlParser {
-
-        public String fixSql(String sql) {
-            if (sql != null) {
-                return sql.replace("\n", " ");
-            }
-            return sql;
-        }
-
-        public String mergeSql(String sql) {
-
-            String newSql = ParameterizedOutputVisitorUtils.parameterize(sql, "mysql");
-            return fixSql(newSql);
-        }
-
-    }
 
 }

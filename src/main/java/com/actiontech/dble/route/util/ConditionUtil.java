@@ -159,7 +159,7 @@ public final class ConditionUtil {
             schemaName = defaultSchema;
             tableName = tableFullName;
         }
-        return new Pair<String, String>(schemaName, tableName);
+        return new Pair<>(schemaName, tableName);
     }
 
     private static TableStat.Condition genNewCondition(String tableName, String columnName, String operator, List<Object> values) {
@@ -313,10 +313,10 @@ public final class ConditionUtil {
                             for (ColumnRoutePair pair : values) {
                                 if (pair.colValue != null) {
                                     sb.append("{").append("schema:").append(schemaName).append(",table:").append(tableName);
-                                    sb.append("column:").append(columnName).append(",value:").append(pair.colValue).append("},");
+                                    sb.append(",column:").append(columnName).append(",value:").append(pair.colValue).append("},");
                                 } else if (pair.rangeValue != null) {
                                     sb.append("{").append("schema:").append(schemaName).append(",table:").append(tableName);
-                                    sb.append("column:").append(columnName).append(",value between:").append(pair.rangeValue.getBeginValue());
+                                    sb.append(",column:").append(columnName).append(",value between:").append(pair.rangeValue.getBeginValue());
                                     sb.append("~").append(pair.rangeValue.getEndValue()).append("},");
                                 }
                             }

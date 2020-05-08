@@ -69,6 +69,9 @@ public class UserSqlLastStat {
 
         public SqlLast(String sql, long executeTime, long startTime, long endTime) {
             super();
+            if (sql.length() > 1024) {
+                sql = sql.substring(0, 1024) + "...";
+            }
             this.sql = sql;
             this.executeTime = executeTime;
             this.startTime = startTime;

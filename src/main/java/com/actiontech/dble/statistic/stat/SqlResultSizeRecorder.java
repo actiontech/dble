@@ -5,8 +5,6 @@
 
 package com.actiontech.dble.statistic.stat;
 
-import com.alibaba.druid.sql.visitor.ParameterizedOutputVisitorUtils;
-
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -19,7 +17,7 @@ public class SqlResultSizeRecorder {
 
     public void addSql(String sql, long resultSetSize) {
         SqlResultSet sqlResultSet;
-        SqlParser sqlParserHigh = new SqlParser();
+        StatSqlParser sqlParserHigh = new StatSqlParser();
         sql = sqlParserHigh.mergeSql(sql);
         sqlResultSet = this.sqlResultSetMap.putIfAbsent(sql, new SqlResultSet(sql, resultSetSize));
         if (sqlResultSet != null) {
@@ -40,21 +38,4 @@ public class SqlResultSizeRecorder {
     public void clearSqlResultSet() {
         sqlResultSetMap.clear();
     }
-
-    static class SqlParser {
-
-        public String fixSql(String sql) {
-            if (sql != null)
-                return sql.replace("\n", " ");
-            return sql;
-        }
-
-        public String mergeSql(String sql) {
-
-            String newSql = ParameterizedOutputVisitorUtils.parameterize(sql, "mysql");
-            return fixSql(newSql);
-        }
-
-    }
-
 }

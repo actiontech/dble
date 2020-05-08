@@ -147,7 +147,7 @@ public final class RouterUtil {
         SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
         for (RouteCalculateUnit unit : druidParser.getCtx().getRouteCalculateUnits()) {
             RouteResultset rrsTmp = RouterUtil.tryRouteForTablesComplex(schemaMap, druidParser.getCtx(), unit, rrs, cachePool, node);
-            if (rrsTmp != null && rrsTmp.getNodes() != null) {
+            if (rrsTmp != null && (rrsTmp.getNodes() != null || rrsTmp.getNodes().length != 0)) {
                 Collections.addAll(nodeSet, rrsTmp.getNodes());
                 if (rrsTmp.isGlobalTable()) {
                     break;
@@ -201,7 +201,7 @@ public final class RouterUtil {
         SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
         for (RouteCalculateUnit unit : druidParser.getCtx().getRouteCalculateUnits()) {
             RouteResultset rrsTmp = RouterUtil.tryRouteForTables(schema, druidParser.getCtx(), unit, rrs, isSelect(statement), cachePool, node);
-            if (rrsTmp != null && rrsTmp.getNodes() != null) {
+            if (rrsTmp != null && (rrsTmp.getNodes() != null || rrsTmp.getNodes().length != 0)) {
                 Collections.addAll(nodeSet, rrsTmp.getNodes());
                 if (rrsTmp.isGlobalTable()) {
                     break;
@@ -682,8 +682,10 @@ public final class RouterUtil {
             }
         }
 
-        Set<String> retNodesSet = retainRouteMap(rrs.getStatement(), tablesRouteMap);
-        //retNodesSet.size() >0
+        Set<String> retNodesSet = retainRouteMap(tablesRouteMap);
+        if (retNodesSet.size() == 0 && LOGGER.isTraceEnabled()) {
+            LOGGER.trace("this RouteCalculateUnit is always false, so ignore:" + routeUnit);
+        }
         routeToMultiNode(isSelect, rrs, retNodesSet);
         return rrs;
 
@@ -741,14 +743,16 @@ public final class RouterUtil {
             }
         }
 
-        Set<String> retNodesSet = retainRouteMap(rrs.getStatement(), tablesRouteMap);
-        //retNodesSet.size() >0
+        Set<String> retNodesSet = retainRouteMap(tablesRouteMap);
+        if (retNodesSet.size() == 0 && LOGGER.isTraceEnabled()) {
+            LOGGER.trace("this RouteCalculateUnit is always false, so ignore:" + routeUnit);
+        }
         routeToMultiNode(true, rrs, retNodesSet);
         return rrs;
 
     }
 
-    private static Set<String> retainRouteMap(String sql, Map<Pair<String, String>, Set<String>> tablesRouteMap) throws SQLNonTransientException {
+    private static Set<String> retainRouteMap(Map<Pair<String, String>, Set<String>> tablesRouteMap) throws SQLNonTransientException {
         Set<String> retNodesSet = new HashSet<>();
         boolean isFirstAdd = true;
         for (Map.Entry<Pair<String, String>, Set<String>> entry : tablesRouteMap.entrySet()) {
@@ -760,11 +764,8 @@ public final class RouterUtil {
                     isFirstAdd = false;
                 } else {
                     retNodesSet.retainAll(entry.getValue());
-                    if (retNodesSet.size() == 0) { //two tables has no no intersection
-                        String errMsg = "invalid route in sql, multi tables found but datanode has no intersection " +
-                                " sql:" + sql;
-                        LOGGER.info(errMsg);
-                        throw new SQLNonTransientException(errMsg);
+                    if (retNodesSet.size() == 0) {
+                        return retNodesSet;
                     }
                 }
             }

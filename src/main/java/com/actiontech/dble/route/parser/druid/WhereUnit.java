@@ -135,7 +135,9 @@ public class WhereUnit {
             if (sb.length() > 0) {
                 sb.append(" and ");
             }
+            sb.append("(");
             sb.append(cond);
+            sb.append(")");
         }
         if (orConditionList.size() > 0) {
             if (outAndConditions.size() > 0) {

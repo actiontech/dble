@@ -18,7 +18,7 @@ import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.sqlengine.SQLJob;
-import com.actiontech.dble.sqlengine.mpp.ColumnRoutePair;
+import com.actiontech.dble.sqlengine.mpp.ColumnRoute;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
@@ -26,7 +26,6 @@ import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
 
 import java.sql.SQLNonTransientException;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -36,11 +35,9 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
     static RouteResultset routeByERParentKey(RouteResultset rrs, TableConfig tc, String joinKeyVal, SchemaInfo schemaInfo)
             throws SQLNonTransientException {
         if (tc.getDirectRouteTC() != null) {
-            Set<ColumnRoutePair> parentColVal = new HashSet<>(1);
-            ColumnRoutePair pair = new ColumnRoutePair(joinKeyVal);
-            parentColVal.add(pair);
+            ColumnRoute columnRoute = new ColumnRoute(joinKeyVal);
             checkDefaultValues(joinKeyVal, tc, schemaInfo.getSchema(), tc.getJoinKey());
-            Set<String> dataNodeSet = RouterUtil.ruleCalculate(tc.getDirectRouteTC(), parentColVal);
+            Set<String> dataNodeSet = RouterUtil.ruleCalculate(rrs, tc.getDirectRouteTC(), columnRoute, false);
             if (dataNodeSet.isEmpty() || dataNodeSet.size() > 1) {
                 throw new SQLNonTransientException("parent key can't find  valid data node ,expect 1 but found: " + dataNodeSet.size());
             }

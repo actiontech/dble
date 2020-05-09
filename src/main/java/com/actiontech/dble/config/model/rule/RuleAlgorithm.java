@@ -24,6 +24,7 @@ public interface RuleAlgorithm {
      * return the index of node
      * return an empty array means router to all node
      * return null if no node matches
+     * only support long and Date
      */
     Integer[] calculateRange(String beginValue, String endValue);
 

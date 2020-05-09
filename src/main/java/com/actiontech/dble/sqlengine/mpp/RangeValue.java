@@ -6,31 +6,19 @@
 package com.actiontech.dble.sqlengine.mpp;
 
 public class RangeValue {
-    /*
-     * (]
-     */
-    public static final Integer NE = 0;
-    public static final Integer EE = 1;
-    public static final Integer EN = 2;
-    public static final Integer NN = 3;
-
     private Object beginValue;
     private Object endValue;
-    private Integer rangeType;
 
-    public RangeValue(Object beginValue, Object endValue, Integer rangeType) {
+    public RangeValue(Object beginValue, Object endValue) {
         super();
         this.beginValue = beginValue;
         this.endValue = endValue;
-        this.rangeType = rangeType;
     }
 
     @Override
     public int hashCode() {
-        int hash = 0;
-        hash = beginValue.hashCode();
+        int hash = beginValue.hashCode();
         hash = hash * 31 + endValue.hashCode();
-        hash = hash * 31 + rangeType;
         return hash;
     }
 
@@ -63,14 +51,6 @@ public class RangeValue {
             return false;
         }
 
-        if (rangeType == null) {
-            if (other.rangeType != null) {
-                return false;
-            }
-        } else if (!rangeType.equals(other.rangeType)) {
-            return false;
-        }
-
         return true;
     }
 
@@ -78,23 +58,12 @@ public class RangeValue {
         return beginValue;
     }
 
-    public void setBeginValue(Object beginValue) {
-        this.beginValue = beginValue;
-    }
-
     public Object getEndValue() {
         return endValue;
     }
 
-    public void setEndValue(Object endValue) {
-        this.endValue = endValue;
-    }
-
-    public Integer getRangeType() {
-        return rangeType;
-    }
-
-    public void setRangeType(Integer rangeType) {
-        this.rangeType = rangeType;
+    @Override
+    public String toString() {
+        return "beginValue:" + beginValue + ",endValue;" + endValue;
     }
 }

@@ -170,72 +170,114 @@ public final class ConditionUtil {
         return condition;
     }
 
-    private static List<List<TableStat.Condition>> mergedConditions(List<WhereUnit> storedWhereUnits) {
+    private static List<RouteCalculateUnit> mergedConditions(List<WhereUnit> storedWhereUnits) {
         if (storedWhereUnits.size() == 0) {
             return new ArrayList<>();
         }
-
+        List<List<RouteCalculateUnit>> lstUnit = new ArrayList<>();
         for (WhereUnit whereUnit : storedWhereUnits) {
-            mergeSubConditionWithOuterCondition(whereUnit);
+            lstUnit.add(mergeSubConditionWithOuterCondition(whereUnit));
         }
 
-        return getMergedConditionList(storedWhereUnits);
-
+        return getMergedConditionList(lstUnit);
     }
 
     /**
      * mergeSubConditionWithOuterCondition
      * Only subWhereUnit will be deal
      */
-    private static void mergeSubConditionWithOuterCondition(WhereUnit whereUnit) {
+    private static List<RouteCalculateUnit> mergeSubConditionWithOuterCondition(WhereUnit whereUnit) {
+        List<RouteCalculateUnit> routeUnits = new ArrayList<>();
         if (whereUnit.getSubWhereUnit().size() > 0) {
+            List<List<RouteCalculateUnit>> lstSubUnit = new ArrayList<>();
             for (WhereUnit sub : whereUnit.getSubWhereUnit()) {
-                mergeSubConditionWithOuterCondition(sub);
+                lstSubUnit.add(mergeSubConditionWithOuterCondition(sub));
             }
-            List<List<TableStat.Condition>> mergedConditionList = getMergedConditionList(whereUnit.getSubWhereUnit());
-            if (whereUnit.getOutAndConditions().size() > 0) {
-                for (List<TableStat.Condition> mergedCondition : mergedConditionList) {
-                    mergedCondition.addAll(whereUnit.getOutAndConditions());
-                }
+            routeUnits.addAll(getMergedConditionList(lstSubUnit));
+
+        }
+        routeUnits.addAll(conditionsToRouteUnits(whereUnit.getOrConditionList()));
+
+        if (whereUnit.getOutAndConditions().size() > 0) {
+            for (RouteCalculateUnit routeUnit : routeUnits) {
+                conditionToRouteUnit(routeUnit, whereUnit.getOutAndConditions());
             }
-            whereUnit.getOrConditionList().addAll(mergedConditionList);
-        } else if (whereUnit.getOutAndConditions().size() > 0) {
-            whereUnit.getOrConditionList().add(whereUnit.getOutAndConditions());
         }
-    }
-
-    private static List<List<TableStat.Condition>> getMergedConditionList(List<WhereUnit> whereUnitList) {
-        List<List<TableStat.Condition>> mergedConditionList = new ArrayList<>();
-        if (whereUnitList.size() == 0) {
-            return mergedConditionList;
-        }
-        mergedConditionList.addAll(whereUnitList.get(0).getOrConditionList());
-
-        for (int i = 1; i < whereUnitList.size(); i++) {
-            mergedConditionList = merge(mergedConditionList, whereUnitList.get(i).getOrConditionList());
-        }
-        return mergedConditionList;
+        return routeUnits;
     }
 
 
-    private static List<List<TableStat.Condition>> merge(List<List<TableStat.Condition>> list1, List<List<TableStat.Condition>> list2) {
+    private static List<RouteCalculateUnit> getMergedConditionList(List<List<RouteCalculateUnit>> routeUnits) {
+        List<RouteCalculateUnit> mergedRouteUnitList = new ArrayList<>();
+        if (routeUnits.size() == 0) {
+            return mergedRouteUnitList;
+        }
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("changeAndToOr will start ");
+        }
+        for (List<RouteCalculateUnit> routeUnit : routeUnits) {
+            StringBuilder sb = new StringBuilder();
+            if (LOGGER.isTraceEnabled()) {
+                sb.append("changeAndToOr from [").append(mergedRouteUnitList).append("] and [").append(routeUnit).append("] merged to ");
+            }
+            mergedRouteUnitList = changeAndToOr(mergedRouteUnitList, routeUnit);
+            if (LOGGER.isTraceEnabled()) {
+                sb.append(mergedRouteUnitList);
+                LOGGER.trace(sb.toString());
+            }
+        }
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("changeAndToOr end ");
+        }
+        return mergedRouteUnitList;
+    }
+    private static List<RouteCalculateUnit> changeAndToOr(List<RouteCalculateUnit> list1, List<RouteCalculateUnit> list2) {
         if (list1.size() == 0) {
             return list2;
         } else if (list2.size() == 0) {
             return list1;
         }
 
-        List<List<TableStat.Condition>> retList = new ArrayList<>();
-        for (List<TableStat.Condition> aList1 : list1) {
-            for (List<TableStat.Condition> aList2 : list2) {
-                List<TableStat.Condition> tmp = new ArrayList<>();
-                tmp.addAll(aList1);
-                tmp.addAll(aList2);
+        List<RouteCalculateUnit> retList = new ArrayList<>();
+        boolean containsAlwaysFalse = false;
+        for (RouteCalculateUnit item1 : list1) {
+            if (item1.isAlwaysFalse()) {
+                if (LOGGER.isTraceEnabled()) {
+                    LOGGER.trace("this RouteCalculateUnit " + item1 + " is always false, so this Unit will be ignore for changeAndToOr");
+                }
+                containsAlwaysFalse = true;
+                continue;
+            }
+            for (RouteCalculateUnit item2 : list2) {
+                if (item2.isAlwaysFalse()) {
+                    if (LOGGER.isTraceEnabled()) {
+                        LOGGER.trace("this RouteCalculateUnit " + item2 + " is always false, so this Unit will be ignore for changeAndToOr");
+                    }
+                    containsAlwaysFalse = true;
+                    continue;
+                }
+                RouteCalculateUnit tmp = item1.merge(item2);
+                if (tmp.isAlwaysFalse()) {
+                    if (LOGGER.isTraceEnabled()) {
+                        LOGGER.trace("this RouteCalculateUnit " + tmp + " is always false, so this Unit will be ignore for changeAndToOr");
+                    }
+                    containsAlwaysFalse = true;
+                    continue;
+                }
                 retList.add(tmp);
+            }
+        }
+        if (retList.size() == 0 && containsAlwaysFalse) {
+            RouteCalculateUnit routeCalculateUnit = new RouteCalculateUnit();
+            routeCalculateUnit.setAlwaysFalse(true);
+            retList.add(routeCalculateUnit);
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("changeAndToOr are all always false, so leave one alwaysFalse as RouteCalculateUnit");
             }
         }
         return retList;
     }
+
 
     public static void extendConditionsFromRelations(List<TableStat.Condition> conds, Set<TableStat.Relationship> relations) {
         List<TableStat.Condition> newConds = new ArrayList<>();
@@ -268,31 +310,12 @@ public final class ConditionUtil {
         conds.addAll(newConds);
     }
 
-    private static List<RouteCalculateUnit> transformConditionToRouteUnits(List<List<TableStat.Condition>> conditionList) {
+    private static List<RouteCalculateUnit> conditionsToRouteUnits(List<List<TableStat.Condition>> orConditionList) {
         List<RouteCalculateUnit> retList = new ArrayList<>();
         //find partition column in condition
-        for (List<TableStat.Condition> aConditionList : conditionList) {
+        for (List<TableStat.Condition> andConditionList : orConditionList) {
             RouteCalculateUnit routeCalculateUnit = new RouteCalculateUnit();
-            for (TableStat.Condition condition : aConditionList) {
-                List<Object> values = condition.getValues();
-                String columnName = condition.getColumn().getName();
-                String tableFullName = condition.getColumn().getTable();
-                String operator = condition.getOperator();
-                String[] tableInfo = tableFullName.split("\\.");
-                Pair<String, String> table = new Pair<>(tableInfo[0], tableInfo[1]);
-                //execute only between ,in and =
-                if (operator.equalsIgnoreCase("between")) {
-                    RangeValue rv = new RangeValue(values.get(0), values.get(1), RangeValue.EE);
-                    routeCalculateUnit.addShardingExpr(table, columnName, rv);
-                } else if (operator.equals("=")) {
-                    routeCalculateUnit.addShardingExpr(table, columnName, values.get(0));
-                } else if (operator.equalsIgnoreCase("in")) {
-                    routeCalculateUnit.addShardingExpr(table, columnName, values.toArray());
-                } else if (operator.equalsIgnoreCase("IS")) {
-                    IsValue isValue = new IsValue(values.toArray());
-                    routeCalculateUnit.addShardingExpr(table, columnName, isValue);
-                }
-            }
+            conditionToRouteUnit(routeCalculateUnit, andConditionList);
             retList.add(routeCalculateUnit);
         }
         if (LOGGER.isTraceEnabled()) {
@@ -307,6 +330,29 @@ public final class ConditionUtil {
             LOGGER.trace(sb.toString());
         }
         return retList;
+    }
+
+    private static void conditionToRouteUnit(RouteCalculateUnit routeCalculateUnit, List<TableStat.Condition> andConditionList) {
+        for (TableStat.Condition condition : andConditionList) {
+            List<Object> values = condition.getValues();
+            String columnName = condition.getColumn().getName();
+            String tableFullName = condition.getColumn().getTable();
+            String operator = condition.getOperator();
+            String[] tableInfo = tableFullName.split("\\.");
+            Pair<String, String> table = new Pair<>(tableInfo[0], tableInfo[1]);
+            //execute only between ,in and =
+            if (operator.equalsIgnoreCase("between")) {
+                RangeValue rv = new RangeValue(values.get(0), values.get(1));
+                routeCalculateUnit.addShardingExpr(table, columnName, rv);
+            } else if (operator.equals("=")) {
+                routeCalculateUnit.addShardingExpr(table, columnName, values.get(0));
+            } else if (operator.equalsIgnoreCase("in")) {
+                routeCalculateUnit.addShardingExpr(table, columnName, values.toArray());
+            } else if (operator.equalsIgnoreCase("IS")) {
+                IsValue isValue = new IsValue(values.get(0));
+                routeCalculateUnit.addShardingExpr(table, columnName, isValue);
+            }
+        }
     }
 
     private static boolean checkConditionValues(List<Object> values) {
@@ -345,7 +391,6 @@ public final class ConditionUtil {
             whereUnit.setOrConditionList(retList);
             whereUnits.add(whereUnit);
         }
-        List<List<TableStat.Condition>> conditions = ConditionUtil.mergedConditions(whereUnits);
-        return ConditionUtil.transformConditionToRouteUnits(conditions);
+        return ConditionUtil.mergedConditions(whereUnits);
     }
 }

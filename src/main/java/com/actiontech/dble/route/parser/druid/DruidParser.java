@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.route.parser.druid;
 
-import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.ServerConnection;
@@ -27,7 +26,7 @@ public interface DruidParser {
      * @param stmt
      * @param sc
      */
-    SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, String originSql, LayerCachePool cachePool, ServerSchemaStatVisitor schemaStatVisitor, ServerConnection sc) throws SQLException;
+    SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor schemaStatVisitor, ServerConnection sc) throws SQLException;
 
 
     /**
@@ -37,7 +36,7 @@ public interface DruidParser {
      * @param stmt
      * @param sc
      */
-    SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, String originSql, LayerCachePool cachePool, ServerSchemaStatVisitor schemaStatVisitor, ServerConnection sc, boolean isExplain) throws SQLException;
+    SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor schemaStatVisitor, ServerConnection sc, boolean isExplain) throws SQLException;
 
     /**
      * @param stmt
@@ -53,7 +52,7 @@ public interface DruidParser {
      * @param stmt
      * @throws SQLNonTransientException
      */
-    void changeSql(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, LayerCachePool cachePool) throws SQLException;
+    void changeSql(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt) throws SQLException;
 
     /**
      * get parser info

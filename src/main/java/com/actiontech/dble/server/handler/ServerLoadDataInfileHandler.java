@@ -7,7 +7,6 @@ package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
-import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -25,7 +24,6 @@ import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.util.SchemaUtil;
-import com.actiontech.dble.singleton.CacheService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.singleton.SequenceManager;
 import com.actiontech.dble.sqlengine.mpp.LoadData;
@@ -82,7 +80,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     private int partitionColumnIndex = -1;
     private int autoIncrementIndex = -1;
     private boolean appendAutoIncrementColumn = false;
-    private LayerCachePool tableId2DataNodeCache;
     private boolean isStartLoadData = false;
 
 
@@ -170,7 +167,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             return;
         }
 
-        tableId2DataNodeCache = (LayerCachePool) CacheService.getCachePoolByName("TableID2DataNodeCache");
         tempPath = SystemConfig.getHomePath() + File.separator + "temp" + File.separator + serverConnection.getId() + File.separator;
         tempFile = tempPath + "clientTemp.txt";
         tempByteBuffer = new ByteArrayOutputStream();
@@ -344,13 +340,13 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                 }
                 RouteCalculateUnit routeCalculateUnit = new RouteCalculateUnit();
                 routeCalculateUnit.addShardingExpr(table, getPartitionColumn(), parseFieldString(lineList[partitionColumnIndex], loadData.getEnclose(), loadData.getEscape()));
-                return RouterUtil.tryRouteForOneTable(schema, routeCalculateUnit, tableName, rrs, false, tableId2DataNodeCache, null);
+                return RouterUtil.tryRouteForOneTable(schema, routeCalculateUnit, tableName, rrs, false);
             } else {
                 String noShardingNode = RouterUtil.isNoSharding(schema, tableName);
                 if (noShardingNode != null) {
                     return RouterUtil.routeToSingleNode(rrs, noShardingNode);
                 }
-                return RouterUtil.tryRouteForOneTable(schema, new RouteCalculateUnit(), tableName, rrs, false, tableId2DataNodeCache, null);
+                return RouterUtil.tryRouteForOneTable(schema, new RouteCalculateUnit(), tableName, rrs, false);
             }
         }
     }
@@ -759,7 +755,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
     public void clear() {
         isStartLoadData = false;
-        tableId2DataNodeCache = null;
         schema = null;
         tableConfig = null;
         isHasStoreToFile = false;

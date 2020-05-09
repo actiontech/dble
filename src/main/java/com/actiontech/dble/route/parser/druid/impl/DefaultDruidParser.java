@@ -6,7 +6,6 @@
 package com.actiontech.dble.route.parser.druid.impl;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.model.SchemaConfig;
@@ -23,7 +22,6 @@ import com.actiontech.dble.route.util.ConditionUtil;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.util.SchemaUtil;
-import com.actiontech.dble.singleton.CacheService;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -49,21 +47,21 @@ public class DefaultDruidParser implements DruidParser {
         ctx = new DruidShardingParseInfo();
     }
 
-    public SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, String originSql, LayerCachePool cachePool, ServerSchemaStatVisitor schemaStatVisitor, ServerConnection sc, boolean isExplain) throws SQLException {
+    public SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor schemaStatVisitor, ServerConnection sc, boolean isExplain) throws SQLException {
         ctx = new DruidShardingParseInfo();
         schema = visitorParse(schema, rrs, stmt, schemaStatVisitor, sc, isExplain);
-        changeSql(schema, rrs, stmt, cachePool);
+        changeSql(schema, rrs, stmt);
         return schema;
     }
 
-    public SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, String originSql, LayerCachePool cachePool, ServerSchemaStatVisitor schemaStatVisitor, ServerConnection sc) throws SQLException {
-        return this.parser(schema, rrs, stmt, originSql, cachePool, schemaStatVisitor, sc, false);
+    public SchemaConfig parser(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor schemaStatVisitor, ServerConnection sc) throws SQLException {
+        return this.parser(schema, rrs, stmt, schemaStatVisitor, sc, false);
     }
 
 
     @Override
     public void changeSql(SchemaConfig schema, RouteResultset rrs,
-                          SQLStatement stmt, LayerCachePool cachePool) throws SQLException {
+                          SQLStatement stmt) throws SQLException {
 
     }
 
@@ -205,7 +203,7 @@ public class DefaultDruidParser implements DruidParser {
     void updateAndDeleteLimitRoute(RouteResultset rrs, String tableName, SchemaConfig schema) throws SQLException {
         SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
         for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
-            RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, unit, tableName, rrs, false, CacheService.getTableId2DataNodeCache(), null);
+            RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, unit, tableName, rrs, false);
             if (rrsTmp != null && rrsTmp.getNodes() != null) {
                 Collections.addAll(nodeSet, rrsTmp.getNodes());
             }

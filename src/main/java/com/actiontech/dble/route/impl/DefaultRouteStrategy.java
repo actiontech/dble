@@ -84,7 +84,7 @@ public class DefaultRouteStrategy extends AbstractRouteStrategy {
         }
         sc.getSession2().endParse();
         DruidParser druidParser = DruidParserFactory.create(statement, rrs.getSqlType());
-        return RouterUtil.routeFromParser(druidParser, schema, rrs, statement, originSql, cachePool, new ServerSchemaStatVisitor(), sc, null, isExplain);
+        return RouterUtil.routeFromParser(druidParser, schema, rrs, statement, new ServerSchemaStatVisitor(), sc, isExplain);
 
     }
 

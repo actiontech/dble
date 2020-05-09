@@ -11,17 +11,17 @@ package com.actiontech.dble.sqlengine.mpp;
 public class IsValue {
 
 
-    private final Object[] valueList;
+    private final Object value;
 
 
-    public IsValue(Object[] list) {
-        valueList = list;
+    public IsValue(Object value) {
+        this.value = value;
     }
 
 
 
-    public Object[] getValueList() {
-        return valueList;
+    public Object getValue() {
+        return value;
     }
 
 }

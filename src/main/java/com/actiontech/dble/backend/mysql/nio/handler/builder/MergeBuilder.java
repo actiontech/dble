@@ -7,7 +7,6 @@ package com.actiontech.dble.backend.mysql.nio.handler.builder;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.PushDownVisitor;
-import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.node.TableNode;
@@ -18,7 +17,6 @@ import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.parser.ServerParse;
-import com.actiontech.dble.singleton.CacheService;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
@@ -66,7 +64,7 @@ public class MergeBuilder {
             pushDownSQL = pushDownSQL.replace(tableToSimple.getKey(), tableToSimple.getValue());
         }
         rrs.setStatement(pushDownSQL);
-        LayerCachePool pool = CacheService.getTableId2DataNodeCache();
+        rrs.setComplexSQL(true);
         Map<Pair<String, String>, SchemaConfig> tableConfigMap = new HashMap<>();
         for (TableNode tn : node.getReferedTableNodes()) {
             if (schemaConfigMap.get(tn.getSchema()) != null) {
@@ -75,7 +73,7 @@ public class MergeBuilder {
         }
         DruidSingleUnitSelectParser druidParser = new DruidSingleUnitSelectParser();
         druidParser.setSchemaMap(tableConfigMap);
-        return RouterUtil.routeFromParserComplex(schemaConfig, druidParser, tableConfigMap, rrs, select, sql, pool, new ServerSchemaStatVisitor(), session.getSource(), node);
+        return RouterUtil.routeFromParserComplex(schemaConfig, druidParser, tableConfigMap, rrs, select, new ServerSchemaStatVisitor(), session.getSource());
     }
 
     /* -------------------- getter/setter -------------------- */

@@ -33,7 +33,8 @@ public final class RouteResultset implements Serializable {
     private DDLInfo.DDLType ddlType = DDLInfo.DDLType.UNKNOWN;
 
     private List<String> globalBackupNodes = null;
-
+    private boolean complexSQL = false;
+    private boolean alwaysFalse = false;
     private boolean needOptimizer;
     private int limitStart;
     private boolean sqlRouteCacheAble;
@@ -206,7 +207,16 @@ public final class RouteResultset implements Serializable {
     }
 
     public void setNodes(RouteResultsetNode[] nodes) {
-        this.nodes = nodes;
+        if (alwaysFalse && nodes.length > 1) {
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("the condition is always false ,route from broadcast to single");
+            }
+            RouteResultsetNode[] newNodes = new RouteResultsetNode[1];
+            newNodes[0] = nodes[0];
+            this.nodes = newNodes;
+        } else {
+            this.nodes = nodes;
+        }
     }
 
     /**
@@ -313,6 +323,24 @@ public final class RouteResultset implements Serializable {
 
     public void setGlobalBackupNodes(List<String> globalBackupNodes) {
         this.globalBackupNodes = globalBackupNodes;
+    }
+
+
+    public boolean isComplexSQL() {
+        return complexSQL;
+    }
+
+    public void setComplexSQL(boolean complexSQL) {
+        this.complexSQL = complexSQL;
+    }
+
+
+    public boolean isAlwaysFalse() {
+        return alwaysFalse;
+    }
+
+    public void setAlwaysFalse(boolean alwaysFalse) {
+        this.alwaysFalse = alwaysFalse;
     }
 
 }

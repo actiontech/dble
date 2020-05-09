@@ -7,7 +7,6 @@ package com.actiontech.dble.route.parser.druid.impl;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
-import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.ServerPrivileges.CheckType;
@@ -28,9 +27,8 @@ import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.handler.MysqlSystemSchemaHandler;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
-import com.actiontech.dble.singleton.CacheService;
 import com.actiontech.dble.singleton.ProxyMeta;
-import com.actiontech.dble.sqlengine.mpp.ColumnRoutePair;
+import com.actiontech.dble.sqlengine.mpp.ColumnRoute;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.*;
 import com.alibaba.druid.sql.ast.expr.*;
@@ -150,8 +148,10 @@ public class DruidSelectParser extends DefaultDruidParser {
             //loop conditions to determine the scope
             SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
             for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
-                RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, unit, tc.getName(), rrs, true,
-                        CacheService.getTableId2DataNodeCache(), null);
+                if (unit.isAlwaysFalse()) {
+                    rrs.setAlwaysFalse(true);
+                }
+                RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, unit, tc.getName(), rrs, true);
                 if (rrsTmp != null && rrsTmp.getNodes() != null) {
                     Collections.addAll(nodeSet, rrsTmp.getNodes());
                     if (rrsTmp.isGlobalTable()) {
@@ -211,9 +211,9 @@ public class DruidSelectParser extends DefaultDruidParser {
         return false;
     }
 
-    private void tryRouteToOneNode(RouteResultset rrs, SQLSelectStatement selectStmt, int tableSize) throws SQLException {
+    private void tryRouteToOneNodeForComplex(RouteResultset rrs, SQLSelectStatement selectStmt, int tableSize) throws SQLException {
         Set<String> schemaList = new HashSet<>();
-        String dataNode = RouterUtil.tryRouteTablesToOneNode(rrs, ctx, schemaList, tableSize, true);
+        String dataNode = RouterUtil.tryRouteTablesToOneNodeForComplex(rrs, ctx, schemaList, tableSize);
         if (dataNode != null) {
             String sql = rrs.getStatement();
             for (String toRemoveSchemaName : schemaList) {
@@ -498,7 +498,7 @@ public class DruidSelectParser extends DefaultDruidParser {
             rrs.setSqlStatement(selectStmt);
             return schema;
         } else {
-            tryRouteToOneNode(rrs, selectStmt, tableSize);
+            tryRouteToOneNodeForComplex(rrs, selectStmt, tableSize);
             return schema;
         }
     }
@@ -507,7 +507,7 @@ public class DruidSelectParser extends DefaultDruidParser {
      * changeSql: add limit if need
      */
     @Override
-    public void changeSql(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, LayerCachePool cachePool)
+    public void changeSql(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt)
             throws SQLException {
         if (rrs.isFinishedExecute() || rrs.isNeedOptimizer()) {
             return;
@@ -521,7 +521,7 @@ public class DruidSelectParser extends DefaultDruidParser {
             int limitStart = 0;
             int limitSize = sqlSchema.getDefaultMaxLimit();
 
-            Map<Pair<String, String>, Map<String, Set<ColumnRoutePair>>> allConditions = getAllConditions();
+            Map<Pair<String, String>, Map<String, ColumnRoute>> allConditions = getAllConditions();
             boolean isNeedAddLimit = isNeedAddLimit(sqlSchema, rrs, mysqlSelectQuery, allConditions);
             if (isNeedAddLimit) {
                 SQLLimit limit = new SQLLimit();
@@ -574,8 +574,8 @@ public class DruidSelectParser extends DefaultDruidParser {
     /**
      * getAllConditions
      */
-    private Map<Pair<String, String>, Map<String, Set<ColumnRoutePair>>> getAllConditions() {
-        Map<Pair<String, String>, Map<String, Set<ColumnRoutePair>>> map = new HashMap<>();
+    private Map<Pair<String, String>, Map<String, ColumnRoute>> getAllConditions() {
+        Map<Pair<String, String>, Map<String, ColumnRoute>> map = new HashMap<>();
         for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
             if (unit != null && unit.getTablesAndConditions() != null) {
                 map.putAll(unit.getTablesAndConditions());
@@ -634,7 +634,7 @@ public class DruidSelectParser extends DefaultDruidParser {
     }
 
     private boolean isNeedAddLimit(SchemaConfig schema, RouteResultset rrs,
-                                   MySqlSelectQueryBlock mysqlSelectQuery, Map<Pair<String, String>, Map<String, Set<ColumnRoutePair>>> allConditions) {
+                                   MySqlSelectQueryBlock mysqlSelectQuery, Map<Pair<String, String>, Map<String, ColumnRoute>> allConditions) {
         if (rrs.getLimitSize() > -1) {
             return false;
         } else if (schema.getDefaultMaxLimit() == -1) {

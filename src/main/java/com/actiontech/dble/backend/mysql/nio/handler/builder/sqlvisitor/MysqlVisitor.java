@@ -8,6 +8,7 @@ package com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.Item.ItemType;
 import com.actiontech.dble.plan.common.item.function.operator.ItemBoolFunc2;
+import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncIn;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondOr;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemFuncNot;
@@ -185,6 +186,22 @@ public abstract class MysqlVisitor {
                 return tableName;
             }
             return "`" + item.getDbName() + "`." + tableName;
+        } else if (item instanceof ItemFuncIn) {
+            Item a = item.arguments().get(0);
+            StringBuilder sb = new StringBuilder();
+            sb.append(getItemName(a));
+            if (((ItemFuncIn) item).isNegate()) {
+                sb.append(" not ");
+            }
+            sb.append(" in (");
+            for (int index = 1; index < item.arguments().size(); index++) {
+                if (index > 1) {
+                    sb.append(",");
+                }
+                sb.append(getItemName(item.arguments().get(index)));
+            }
+            sb.append(")");
+            return sb.toString();
         } else {
             return item.getItemName();
         }

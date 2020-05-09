@@ -34,4 +34,8 @@ public abstract class ItemFuncOptNeg extends ItemIntFunc {
         negated = !negated;
     }
 
+    public boolean isNegate() {
+        return negated;
+    }
+
 }

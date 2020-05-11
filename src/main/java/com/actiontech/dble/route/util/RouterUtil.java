@@ -614,7 +614,7 @@ public final class RouterUtil {
             if (resultNodes.size() != 1) {
                 return false;
             }
-        } else if (joinKey != null && columnsMap.get(joinKey) != null && columnsMap.get(joinKey) != null) {
+        } else if (joinKey != null && columnsMap.get(joinKey) != null) {
             ColumnRoute joinKeyValue = columnsMap.get(joinKey);
             Set<String> dataNodeSet = ruleByJoinValueCalculate(rrs, tableConfig, joinKeyValue);
             if (dataNodeSet.size() > 1) {

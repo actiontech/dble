@@ -79,7 +79,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(conn.toString() + " send sql:" + rrss.getStatement());
         }
-        conn.execute(rrss, session.getSource(), autocommit);
+        conn.executeMultiNode(rrss, session.getSource(), autocommit);
     }
 
     public RouteResultsetNode getRrss() {

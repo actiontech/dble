@@ -29,23 +29,17 @@ public class DataHostConfig {
     private boolean isShowSlaveSql = false;
     private boolean isSelectReadOnlySql = false;
     private int slaveThreshold = -1;
-    private boolean tempReadHostAvailable = false;
 
     private int heartbeatTimeout = 0;
     private int errorRetryCount = 0;
 
     public DataHostConfig(String name,
-                          DataSourceConfig writeHost, DataSourceConfig[] readHosts, int slaveThreshold, int tempReadHostAvailable) {
+                          DataSourceConfig writeHost, DataSourceConfig[] readHosts, int slaveThreshold) {
         super();
         this.name = name;
         this.writeHost = writeHost;
         this.readHosts = readHosts;
         this.slaveThreshold = slaveThreshold;
-        this.tempReadHostAvailable = tempReadHostAvailable == 1;
-    }
-
-    public boolean isTempReadHostAvailable() {
-        return this.tempReadHostAvailable;
     }
 
     public int getSlaveThreshold() {

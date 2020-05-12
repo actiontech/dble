@@ -391,9 +391,6 @@ public class PhysicalDataHost {
 
     private ArrayList<PhysicalDataSource> getAllActiveRWSources(boolean includeWriteNode, boolean filterWithSlaveThreshold) {
         ArrayList<PhysicalDataSource> okSources = new ArrayList<>(allSourceMap.values().size());
-        if (!writeSource.isAlive() && !dataHostConfig.isTempReadHostAvailable()) {
-            return okSources;
-        }
         if (writeSource.isAlive() && includeWriteNode) {
             okSources.add(writeSource);
         }

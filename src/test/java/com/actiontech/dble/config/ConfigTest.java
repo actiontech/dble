@@ -131,16 +131,6 @@ public class ConfigTest {
         }
     }
 
-    /**
-     * testTempReadHostAvailable
-     */
-    @Test
-    public void testTempReadHostAvailable() {
-        PhysicalDataHost pool = this.dataHosts.get("localhost2");
-        DataHostConfig hostConfig = pool.getWriteSource().getHostConfig();
-        Assert.assertTrue(hostConfig.isTempReadHostAvailable() == true);
-    }
-
     
 
 

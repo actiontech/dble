@@ -36,8 +36,6 @@ public class DataHost implements Named {
     @XmlAttribute
     protected Integer slaveThreshold;
     @XmlAttribute
-    protected Integer tempReadHostAvailable;
-    @XmlAttribute
     protected Integer keepOrig;
 
     protected HeartBeat heartbeat;
@@ -102,15 +100,6 @@ public class DataHost implements Named {
         this.slaveThreshold = slaveThreshold;
     }
 
-
-    public Integer getTempReadHostAvailable() {
-        return tempReadHostAvailable;
-    }
-
-    public void setTempReadHostAvailable(Integer tempReadHostAvailable) {
-        this.tempReadHostAvailable = tempReadHostAvailable;
-    }
-
     public Integer getKeepOrig() {
         return keepOrig;
     }
@@ -141,8 +130,6 @@ public class DataHost implements Named {
                 name +
                 ", slaveThreshold=" +
                 slaveThreshold +
-                ", tempReadHostAvailable=" +
-                tempReadHostAvailable +
                 ", keepOrig=" +
                 keepOrig +
                 ", heartbeat=" +

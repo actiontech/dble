@@ -33,8 +33,6 @@ public class ChildTable implements Named {
     @XmlAttribute(required = true)
     protected String parentKey;
     @XmlAttribute
-    protected String cacheKey;
-    @XmlAttribute
     protected String incrementColumn;
 
     @XmlAttribute
@@ -64,14 +62,6 @@ public class ChildTable implements Named {
 
     public void setParentKey(String parentKey) {
         this.parentKey = parentKey;
-    }
-
-    public String getCacheKey() {
-        return cacheKey;
-    }
-
-    public void setCacheKey(String cacheKey) {
-        this.cacheKey = cacheKey;
     }
 
     public List<ChildTable> getChildTable() {
@@ -110,8 +100,6 @@ public class ChildTable implements Named {
                 joinKey +
                 ", parentKey=" +
                 parentKey +
-                ", cacheKey=" +
-                cacheKey +
                 ", childTable=" +
                 childTable +
                 "]";

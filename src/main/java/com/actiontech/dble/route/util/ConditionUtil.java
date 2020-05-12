@@ -133,12 +133,8 @@ public final class ConditionUtil {
         if (joinKey != null && columnName.equals(joinKey)) {
             return genNewCondition(tableFullName, columnName, operator, condition.getValues());
         }
-        String catchKey = tableConfig.getCacheKey();
-        if (catchKey != null && columnName.equals(catchKey)) {
-            return genNewCondition(tableFullName, columnName, operator, condition.getValues());
-        }
         if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("condition [" + condition + "] will be pruned for columnName is not shardingcolumn/joinkey/cachekey");
+            LOGGER.trace("condition [" + condition + "] will be pruned for columnName is not shardingcolumn/joinkey");
         }
         return null;
     }

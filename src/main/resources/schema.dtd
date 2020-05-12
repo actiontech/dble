@@ -32,7 +32,6 @@
         <!ATTLIST table dataNode CDATA #REQUIRED>
         <!ATTLIST table rule NMTOKEN #IMPLIED>
         <!ATTLIST table ruleRequired NMTOKEN #IMPLIED>
-        <!ATTLIST table cacheKey NMTOKEN #IMPLIED>
         <!ATTLIST table incrementColumn NMTOKEN #IMPLIED>
         <!ATTLIST table needAddLimit NMTOKEN #IMPLIED>
         <!ATTLIST table type NMTOKEN #IMPLIED>
@@ -47,7 +46,6 @@
         <!ATTLIST childTable parentKey NMTOKEN #REQUIRED>
         <!ATTLIST childTable incrementColumn NMTOKEN #IMPLIED>
         <!ATTLIST childTable needAddLimit NMTOKEN #IMPLIED>
-        <!ATTLIST childTable cacheKey NMTOKEN #IMPLIED>
 
 
         <!ELEMENT dataNode EMPTY>

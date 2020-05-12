@@ -35,8 +35,6 @@ public class Table implements Named {
     @XmlAttribute
     protected Boolean ruleRequired;
     @XmlAttribute
-    protected String cacheKey;
-    @XmlAttribute
     protected Boolean needAddLimit;
     @XmlAttribute
     protected String type;
@@ -102,14 +100,6 @@ public class Table implements Named {
         this.ruleRequired = ruleRequired;
     }
 
-    public String getCacheKey() {
-        return cacheKey;
-    }
-
-    public void setCacheKey(String cacheKey) {
-        this.cacheKey = cacheKey;
-    }
-
     public Boolean isNeedAddLimit() {
         return needAddLimit;
     }
@@ -171,8 +161,6 @@ public class Table implements Named {
                 rule +
                 ", ruleRequired=" +
                 ruleRequired +
-                ", cacheKey=" +
-                cacheKey +
                 ", needAddLimit=" +
                 needAddLimit +
                 ", type=" +

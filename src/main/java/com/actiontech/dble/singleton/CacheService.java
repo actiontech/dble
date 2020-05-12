@@ -34,7 +34,6 @@ public final class CacheService {
     private static final Logger LOGGER = LoggerFactory.getLogger(CacheService.class);
     private static final CacheService INSTANCE = new CacheService();
     private static final String SQL_ROUTE_CACHE = "SQLRouteCache";
-    private static final String TABLE_ID_TO_DATANODE_CACHE = "TableID2DataNodeCache";
     private final Map<String, CachePoolFactory> poolFactories = new HashMap<>();
     private final ConcurrentMap<String, CachePool> allPools = new ConcurrentHashMap<>();
 
@@ -247,11 +246,6 @@ public final class CacheService {
     public static CachePool getSqlRouteCache() {
         return INSTANCE.getCachePool(SQL_ROUTE_CACHE);
     }
-
-    public static LayerCachePool getTableId2DataNodeCache() {
-        return (LayerCachePool) INSTANCE.getCachePool(TABLE_ID_TO_DATANODE_CACHE);
-    }
-
     public static CachePool getCachePoolByName(String poolName) {
         return INSTANCE.getCachePool(poolName);
     }

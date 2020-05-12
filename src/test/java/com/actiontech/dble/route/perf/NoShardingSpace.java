@@ -20,7 +20,6 @@ import java.sql.SQLException;
 public class NoShardingSpace {
     private SchemaConfig schema;
     private static int total = 1000000;
-    protected LayerCachePool cachePool = new SimpleCachePool();
 
     public NoShardingSpace() {
         String schemaFile = "/route/schema.xml";
@@ -33,7 +32,7 @@ public class NoShardingSpace {
         SchemaConfig schema = this.schema;
         String stmt = "insert into offer (member_id, gmt_create) values ('1','2001-09-13 20:20:33')";
         for (int i = 0; i < total; i++) {
-            RouteStrategyFactory.getRouteStrategy().route(schema, -1, stmt, null, cachePool);
+            RouteStrategyFactory.getRouteStrategy().route(schema, -1, stmt, null);
         }
     }
 

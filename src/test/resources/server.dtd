@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
         <!--
+  ~ Copyright (C) 2016-2020 ActionTech.
+  ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+  -->
+
+        <!--
          -
          - Licensed under the Apache License, Version 2.0 (the "License");
          - you may not use this file except in compliance with the License.
@@ -13,12 +18,13 @@
          - See the License for the specific language governing permissions and
          - limitations under the License.
         -->
-        <!ELEMENT dble:server (system?,firewall?,user+,cluster?)>
+        <!ELEMENT dble:server (system?,firewall?,user+)>
         <!ATTLIST dble:server xmlns:dble CDATA #FIXED "http://dble.cloud/">
+        <!ATTLIST dble:server version CDATA #IMPLIED>
 
         <!ELEMENT system (property*) >
 
-        <!ELEMENT user (property+,privileges*)>
+        <!ELEMENT user (property+,privileges?)>
         <!ATTLIST user name NMTOKEN #REQUIRED>
 
         <!ELEMENT privileges (schema)*>
@@ -29,19 +35,12 @@
                 name CDATA #REQUIRED
                 dml CDATA #REQUIRED>
 
-        <!ELEMENT table (name*)>
+        <!ELEMENT table EMPTY>
         <!ATTLIST table
                 name CDATA #REQUIRED
-                dml CDATA #REQUIRED
-                ext CDATA #IMPLIED>
+                dml CDATA #REQUIRED>
 
-        <!ELEMENT cluster (node+,group*) >
-        <!ELEMENT node (property+)>
-        <!ATTLIST node name NMTOKEN #REQUIRED>
-        <!ELEMENT group (property) >
-        <!ATTLIST group name NMTOKEN #REQUIRED>
-
-        <!ELEMENT firewall (whitehost*,blacklist*) >
+        <!ELEMENT firewall (whitehost?,blacklist?) >
         <!ELEMENT whitehost (host*)>
         <!ELEMENT blacklist (property*)>
         <!ATTLIST blacklist check NMTOKEN #REQUIRED>
@@ -50,10 +49,6 @@
                 host CDATA #REQUIRED
                 user CDATA #REQUIRED
                 >
-        <!ATTLIST sqllist sql CDATA #REQUIRED>
 
-        <!ELEMENT property (#PCDATA | bean)*>
+        <!ELEMENT property (#PCDATA)*>
         <!ATTLIST property name NMTOKEN #REQUIRED>
-        <!ELEMENT bean (property*)>
-        <!ATTLIST bean name NMTOKEN #IMPLIED>
-        <!ATTLIST bean class NMTOKEN #REQUIRED>

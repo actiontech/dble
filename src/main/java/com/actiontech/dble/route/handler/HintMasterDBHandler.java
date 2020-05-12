@@ -6,7 +6,6 @@
 package com.actiontech.dble.route.handler;
 
 
-import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
@@ -30,11 +29,11 @@ public class HintMasterDBHandler implements HintHandler {
 
     @Override
     public RouteResultset route(SchemaConfig schema, int sqlType, String realSQL, ServerConnection sc,
-                                LayerCachePool cachePool, String hintSQLValue, int hintSqlType, Map hintMap)
+                                String hintSQLValue, int hintSqlType, Map hintMap)
             throws SQLException {
 
         RouteResultset rrs = RouteStrategyFactory.getRouteStrategy().route(
-                schema, sqlType, realSQL, sc, cachePool);
+                schema, sqlType, realSQL, sc);
 
         LOGGER.debug("schema.rrs(): " + rrs); // master
         Boolean isRouteToMaster = null;

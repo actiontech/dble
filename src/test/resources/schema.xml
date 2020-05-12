@@ -10,7 +10,7 @@
 <!DOCTYPE dble:schema SYSTEM "schema.dtd">
 <dble:schema xmlns:dble="http://dble.cloud/">
 
-    <schema name="cndb" checkSQLschema="true">
+    <schema name="cndb" >
         <table name="offer" dataNode="offer_dn$0-127" rule="offerRule"/>
         <table name="offer_detail" dataNode="detail_dn0,detail_dn$1-127" rule="offerDetailRule" ruleRequired="false"/>
         <table name="offer_date" dataNode="detail_dn0,detail_dn$1-127" rule="dateRule" ruleRequired="false"/>
@@ -28,7 +28,7 @@
         <table name="goods" type="global" dataNode="dn1,dn2,dn3"/>
     </schema>
 
-    <schema name="ignoreSchemaTest" dataNode="cndb_dn" checkSQLschema="true"/>
+    <schema name="ignoreSchemaTest" dataNode="cndb_dn" />
 
     <schema name="config">
         <table name="offer" dataNode="offer_dn$0-127" rule="offerRule" ruleRequired="true"/>
@@ -47,15 +47,15 @@
         <table name="company" type="global" dataNode="dn1,dn2,dn3"/>
         <table name="goods" type="global" dataNode="dn1,dn2,dn3"/>
         <table name="notpartionTable" dataNode="dn1"/>
-        <table name="area" cacheKey="ID" type="global" dataNode="dn1,dn2,dn3"/>
-        <table name="employee" cacheKey="id" dataNode="dn1,dn2" rule="sharding-by-intfile"/>
+        <table name="area" type="global" dataNode="dn1,dn2,dn3"/>
+        <table name="employee" dataNode="dn1,dn2" rule="sharding-by-intfile"/>
         <table name="customer" dataNode="dn1,dn2" rule="auto-sharding-long2">
             <childTable name="orders" joinKey="customer_id" parentKey="id">
                 <childTable name="order_items" joinKey="order_id" parentKey="id"/>
             </childTable>
             <childTable name="customer_addr" joinKey="customer_id" parentKey="id"/>
         </table>
-        <table name="globalsn" cacheKey="ID" type="global" dataNode="dn1"/>
+        <table name="globalsn" type="global" dataNode="dn1"/>
     </schema>
 
     <schema name="mysqldb" sqlMaxLimit="100">
@@ -111,8 +111,7 @@
         </writeHost>
     </dataHost>
 
-    <dataHost name="localhost4" maxCon="500" minCon="10" balance="0"
-              dbType="mysql" dbDriver="native">
+    <dataHost name="localhost4" maxCon="500" minCon="10" balance="0">
         <heartbeat>select user()</heartbeat>
         <!-- can have multi write hosts -->
         <writeHost host="hostM1" url="localhost:3306" user="root" password="123456">

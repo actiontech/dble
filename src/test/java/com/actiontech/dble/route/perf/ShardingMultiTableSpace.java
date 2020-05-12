@@ -21,7 +21,6 @@ import java.sql.SQLNonTransientException;
 public class ShardingMultiTableSpace {
     private SchemaConfig schema;
     private static int total = 1000000;
-    protected LayerCachePool cachePool = new SimpleCachePool();
 
     public ShardingMultiTableSpace() throws InterruptedException {
         String schemaFile = "/route/schema.xml";
@@ -37,7 +36,7 @@ public class ShardingMultiTableSpace {
         SchemaConfig schema = getSchema();
         String sql = "select id,member_id,gmt_create from offer where member_id in ('1','22','333','1124','4525')";
         for (int i = 0; i < total; i++) {
-            RouteStrategyFactory.getRouteStrategy().route(schema, -1, sql, null, cachePool);
+            RouteStrategyFactory.getRouteStrategy().route(schema, -1, sql, null);
         }
     }
 

@@ -13,7 +13,6 @@ import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoCommitHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoTxOperation;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionHandler;
-import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.FlowCotrollerConfig;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
@@ -23,7 +22,6 @@ import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ServerParse;
-import com.actiontech.dble.singleton.CacheService;
 import com.actiontech.dble.singleton.WriteQueueFlowController;
 import com.actiontech.dble.statistic.stat.QueryResult;
 import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
@@ -55,8 +53,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     protected int fieldCount = 0;
     volatile boolean fieldsReturned;
     private long insertId;
-    private String cacheKeyTable = null;
-    private int cacheKeyIndex = -1;
     private List<FieldPacket> fieldPackets = new ArrayList<>();
     protected volatile ByteBuffer byteBuffer;
     protected Set<BackendConnection> closedConnSet;
@@ -432,22 +428,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
             }
             this.resultSize += row.length;
-            RowDataPacket rowDataPkg = null;
-            // cache cacheKey-> dataNode
-            boolean isBigPackage = row.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE;
-            if (cacheKeyIndex != -1 && !isBigPackage) {
-                rowDataPkg = new RowDataPacket(fieldCount);
-                row[3] = packetId;
-                rowDataPkg.read(row);
-                byte[] key = rowDataPkg.fieldValues.get(cacheKeyIndex);
-                if (key != null) {
-                    String cacheKey = new String(rowDataPkg.fieldValues.get(cacheKeyIndex));
-                    LayerCachePool pool = CacheService.getTableId2DataNodeCache();
-                    if (pool != null) {
-                        pool.putIfAbsent(cacheKeyTable, cacheKey, dataNode);
-                    }
-                }
-            }
+
             if (!errorResponse.get()) {
                 FlowCotrollerConfig fconfig = WriteQueueFlowController.getFlowCotrollerConfig();
                 if (fconfig.isEnableFlowControl() &&
@@ -455,18 +436,16 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                     session.getSource().startFlowControl(conn);
                 }
                 if (session.isPrepared()) {
-                    if (rowDataPkg == null) {
-                        rowDataPkg = new RowDataPacket(fieldCount);
-                        row[3] = ++packetId;
-                        rowDataPkg.read(row);
-                    }
+                    RowDataPacket rowDataPkg = new RowDataPacket(fieldCount);
+                    row[3] = ++packetId;
+                    rowDataPkg.read(row);
                     BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
                     binRowDataPk.read(fieldPackets, rowDataPkg);
                     binRowDataPk.setPacketId(rowDataPkg.getPacketId());
                     byteBuffer = binRowDataPk.write(byteBuffer, session.getSource(), true);
                     this.packetId = (byte) session.getPacketId().get();
                 } else {
-                    if (isBigPackage) {
+                    if (row.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
                         byteBuffer = session.getSource().writeBigPackageToBuffer(row, byteBuffer, packetId);
                         this.packetId = (byte) session.getPacketId().get();
                     } else {
@@ -555,12 +534,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         fieldCount = fields.size();
         header[3] = ++packetId;
         byteBuffer = source.writeToBuffer(header, byteBuffer);
-        String cacheKey = null;
-        if (rrs.hasCacheKeyToCache()) {
-            String[] items = rrs.getCacheKeyItems();
-            cacheKeyTable = items[0];
-            cacheKey = items[1];
-        }
 
         if (!errorResponse.get()) {
             for (int i = 0, len = fieldCount; i < len; ++i) {
@@ -578,13 +551,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 }
                 fieldPackets.add(fieldPkg);
                 fieldCount = fields.size();
-                if (cacheKey != null && cacheKeyIndex == -1) {
-                    // find primary key index
-                    String fieldName = new String(fieldPkg.getName());
-                    if (cacheKey.equalsIgnoreCase(fieldName)) {
-                        cacheKeyIndex = i;
-                    }
-                }
                 fieldPkg.setPacketId(++packetId);
                 byteBuffer = fieldPkg.write(byteBuffer, source, false);
             }

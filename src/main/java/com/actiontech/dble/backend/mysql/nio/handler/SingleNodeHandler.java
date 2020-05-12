@@ -10,7 +10,6 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDataNode;
 import com.actiontech.dble.backend.mysql.LoadDataUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
-import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.FlowCotrollerConfig;
 import com.actiontech.dble.config.ServerConfig;
@@ -20,7 +19,6 @@ import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.singleton.CacheService;
 import com.actiontech.dble.singleton.WriteQueueFlowController;
 import com.actiontech.dble.statistic.stat.QueryResult;
 import com.actiontech.dble.statistic.stat.QueryResultDispatcher;
@@ -51,10 +49,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     protected long netOutBytes;
     private long resultSize;
     long selectRows;
-
-    private String cacheKeyTable = null;
-    private int cacheKeyIndex = -1;
-
     private int fieldCount;
     private List<FieldPacket> fieldPackets = new ArrayList<>();
     private volatile boolean connClosed = false;
@@ -331,14 +325,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         this.netOutBytes += eof.length;
         this.resultSize += eof.length;
 
-
-        String cacheKey = null;
-        if (rrs.hasCacheKeyToCache()) {
-            String[] items = rrs.getCacheKeyItems();
-            cacheKeyTable = items[0];
-            cacheKey = items[1];
-        }
-
         header[3] = ++packetId;
 
         ServerConnection source = session.getSource();
@@ -365,14 +351,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                     }
                     fieldPackets.add(fieldPk);
 
-                    // find cache key index
-                    if (cacheKey != null && cacheKeyIndex == -1) {
-                        String fieldName = new String(fieldPk.getName());
-                        if (cacheKey.equalsIgnoreCase(fieldName)) {
-                            cacheKeyIndex = i;
-                        }
-                    }
-
                     buffer = fieldPk.write(buffer, source, false);
                 }
 
@@ -392,25 +370,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         this.netOutBytes += row.length;
         this.resultSize += row.length;
         this.selectRows++;
-
-        RowDataPacket rowDataPk = null;
-        // cache cacheKey-> dataNode
-        boolean isBigPackage = row.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE;
-        if (cacheKeyIndex != -1 && !isBigPackage) {
-            rowDataPk = new RowDataPacket(fieldCount);
-            row[3] = packetId;
-            rowDataPk.read(row);
-            byte[] key = rowDataPk.fieldValues.get(cacheKeyIndex);
-            if (key != null) {
-                String cacheKey = new String(key);
-                RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
-                LayerCachePool pool = CacheService.getTableId2DataNodeCache();
-                if (pool != null) {
-                    pool.putIfAbsent(cacheKeyTable, cacheKey, rNode.getName());
-                }
-            }
-        }
-
         lock.lock();
         try {
             if (!writeToClient.get()) {
@@ -420,18 +379,16 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                     session.getSource().startFlowControl(conn);
                 }
                 if (session.isPrepared()) {
-                    if (rowDataPk == null) {
-                        rowDataPk = new RowDataPacket(fieldCount);
-                        row[3] = ++packetId;
-                        rowDataPk.read(row);
-                    }
+                    RowDataPacket rowDataPk = new RowDataPacket(fieldCount);
+                    row[3] = ++packetId;
+                    rowDataPk.read(row);
                     BinaryRowDataPacket binRowDataPk = new BinaryRowDataPacket();
                     binRowDataPk.read(fieldPackets, rowDataPk);
                     binRowDataPk.setPacketId(rowDataPk.getPacketId());
                     buffer = binRowDataPk.write(buffer, session.getSource(), true);
                     this.packetId = (byte) session.getPacketId().get();
                 } else {
-                    if (isBigPackage) {
+                    if (row.length >= MySQLPacket.MAX_PACKET_SIZE + MySQLPacket.PACKET_HEADER_SIZE) {
                         buffer = session.getSource().writeBigPackageToBuffer(row, buffer, packetId);
                         this.packetId = (byte) session.getPacketId().get();
                     } else {

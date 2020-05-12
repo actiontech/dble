@@ -563,14 +563,6 @@ public class XMLSchemaLoader implements SchemaLoader {
             String slaveThresholdStr = ConfigUtil.checkAndGetAttribute(element, "slaveThreshold", "-1", problemReporter);
             final int slaveThreshold = Integer.parseInt(slaveThresholdStr);
 
-            //tempReadHostAvailable 1 means read service is still work even write host crash
-            String tempReadHostAvailableStr = ConfigUtil.checkAndGetAttribute(element, "tempReadHostAvailable", "0", problemReporter);
-            int tempReadHostAvailable = 0;
-            if ("1".equals(tempReadHostAvailableStr)) {
-                tempReadHostAvailable = 1;
-            } else if (!"0".equals(tempReadHostAvailableStr)) {
-                problemReporter.warn("dataHost[" + name + "] attribute tempReadHostAvailable " + tempReadHostAvailableStr + " in schema.xml is illegal, use 0 replaced!");
-            }
             Element heartbeat = (Element) element.getElementsByTagName("heartbeat").item(0);
             final String heartbeatSQL = heartbeat.getTextContent();
             final String strHBErrorRetryCount = ConfigUtil.checkAndGetAttribute(heartbeat, "errorRetryCount", "0", problemReporter);
@@ -603,7 +595,7 @@ public class XMLSchemaLoader implements SchemaLoader {
                     readDbConfList[r] = tmpDataSourceConfig;
                 }
             }
-            DataHostConfig hostConf = new DataHostConfig(name, writeDbConf, readDbConfList, slaveThreshold, tempReadHostAvailable);
+            DataHostConfig hostConf = new DataHostConfig(name, writeDbConf, readDbConfList, slaveThreshold);
 
             hostConf.setMaxCon(maxCon);
             hostConf.setMinCon(minCon);

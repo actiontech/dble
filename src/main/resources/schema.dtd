@@ -60,7 +60,6 @@
                 minCon CDATA #REQUIRED
                 name NMTOKEN #REQUIRED
                 slaveThreshold CDATA #IMPLIED
-                tempReadHostAvailable CDATA #IMPLIED
                 keepOrig CDATA #IMPLIED>
 
         <!ELEMENT writeHost (readHost)*>

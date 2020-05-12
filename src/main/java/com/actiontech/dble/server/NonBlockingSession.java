@@ -922,6 +922,9 @@ public class NonBlockingSession implements Session {
         if (!source.isLocked()) {
             this.releaseConnections(needClosed);
         }
+        if (!transactionManager.isRetryXa()) {
+            transactionManager.setRetryXa(true);
+        }
         needWaitFinished = false;
         source.setTxStart(false);
         source.getAndIncrementXid();

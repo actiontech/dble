@@ -135,7 +135,6 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
         this.interruptTx = true;
         this.packetIfSuccess = null;
         this.implicitCommitHandler = null;
-        session.setRetryXa(false);
     }
 
     @Override

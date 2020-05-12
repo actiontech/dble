@@ -120,6 +120,7 @@ public class GlobalVisitor extends MysqlVisitor {
         PlanNode child = query.getChild();
         MysqlVisitor childVisitor = new GlobalVisitor(child, true);
         childVisitor.visit();
+        mapTableToSimple.putAll(childVisitor.getMapTableToSimple());
         sqlBuilder.append(childVisitor.getSql()).append(") ").append(query.getAlias());
         if (query.isWithSubQuery() || isTopQuery) {
             buildWhere(query);
@@ -151,6 +152,7 @@ public class GlobalVisitor extends MysqlVisitor {
             if (child.getChildren().size() == 0) {
                 sqlBuilder.append("(");
             }
+            mapTableToSimple.putAll(childVisitor.getMapTableToSimple());
             sqlBuilder.append(childVisitor.getSql());
             if (child.getChildren().size() == 0) {
                 sqlBuilder.append(")");
@@ -160,7 +162,7 @@ public class GlobalVisitor extends MysqlVisitor {
         if (merge.getOrderBys() != null && merge.getOrderBys().size() > 0) {
             sqlBuilder.append(" ORDER BY ");
             for (Order order : merge.getOrderBys()) {
-                sqlBuilder.append(order.getItem().getItemName() + " " + order.getSortOrder() + ",");
+                sqlBuilder.append(order.getItem().getItemName()).append(" ").append(order.getSortOrder()).append(",");
             }
             sqlBuilder.setLength(sqlBuilder.length() - 1);
         }
@@ -168,7 +170,7 @@ public class GlobalVisitor extends MysqlVisitor {
         if (merge.getLimitTo() != -1) {
             sqlBuilder.append(" LIMIT ");
             if (merge.getLimitFrom() != -1) {
-                sqlBuilder.append(merge.getLimitFrom() + ",");
+                sqlBuilder.append(merge.getLimitFrom()).append(",");
             }
             sqlBuilder.append(merge.getLimitTo());
         }
@@ -186,6 +188,7 @@ public class GlobalVisitor extends MysqlVisitor {
         PlanNode left = join.getLeftNode();
         MysqlVisitor leftVisitor = new GlobalVisitor(left, false);
         leftVisitor.visit();
+        mapTableToSimple.putAll(leftVisitor.getMapTableToSimple());
         sqlBuilder.append(leftVisitor.getSql());
         if (join.getLeftOuter() && join.getRightOuter()) {
             throw new RuntimeException("not supported for full outer join");
@@ -200,6 +203,7 @@ public class GlobalVisitor extends MysqlVisitor {
         PlanNode right = join.getRightNode();
         MysqlVisitor rightVisitor = new GlobalVisitor(right, false);
         rightVisitor.visit();
+        mapTableToSimple.putAll(rightVisitor.getMapTableToSimple());
         sqlBuilder.append(rightVisitor.getSql());
         StringBuilder joinOnFilterStr = new StringBuilder();
         boolean first = true;
@@ -237,7 +241,7 @@ public class GlobalVisitor extends MysqlVisitor {
     }
 
 
-    protected void buildSelect(PlanNode query) {
+    private void buildSelect(PlanNode query) {
         sqlBuilder.append("select ");
         boolean hasDistinct = query.isDistinct();
         boolean first = true;
@@ -255,7 +259,7 @@ public class GlobalVisitor extends MysqlVisitor {
         sqlBuilder.append(sb);
     }
 
-    protected void buildGroupBy(PlanNode query) {
+    private void buildGroupBy(PlanNode query) {
         boolean first = true;
         if (query.getGroupBys() != null && query.getGroupBys().size() > 0) {
             sqlBuilder.append(" GROUP BY ");
@@ -275,7 +279,7 @@ public class GlobalVisitor extends MysqlVisitor {
         }
     }
 
-    protected void buildHaving(PlanNode query) {
+    private void buildHaving(PlanNode query) {
         if (query.getHavingFilter() != null) {
             Item filter = query.getHavingFilter();
             String pdName = visitUnSelPushDownName(filter, true);
@@ -283,7 +287,7 @@ public class GlobalVisitor extends MysqlVisitor {
         }
     }
 
-    protected void buildOrderBy(PlanNode query) {
+    private void buildOrderBy(PlanNode query) {
         boolean first = true;
         if (query.getOrderBys() != null && !query.getOrderBys().isEmpty()) {
             sqlBuilder.append(" order by ");
@@ -305,7 +309,7 @@ public class GlobalVisitor extends MysqlVisitor {
         }
     }
 
-    protected void buildLimit(PlanNode query) {
+    private void buildLimit(PlanNode query) {
         long limitFrom = query.getLimitFrom();
         long limitTo = query.getLimitTo();
         if (limitFrom == -1 && limitTo == -1) {
@@ -395,6 +399,7 @@ public class GlobalVisitor extends MysqlVisitor {
             builder.append("(");
             builder.append(childVisitor.getSql());
             builder.append(")");
+            mapTableToSimple.putAll(childVisitor.getMapTableToSimple());
             return builder.toString();
         } else if (item instanceof ItemExistsSubQuery) {
             ItemExistsSubQuery existsSubQuery = (ItemExistsSubQuery) item;
@@ -409,6 +414,7 @@ public class GlobalVisitor extends MysqlVisitor {
             builder.append("(");
             builder.append(childVisitor.getSql());
             builder.append(")");
+            mapTableToSimple.putAll(childVisitor.getMapTableToSimple());
             return builder.toString();
         } else if (item instanceof ItemCondAnd || item instanceof ItemCondOr) {
             String cond;
@@ -435,19 +441,14 @@ public class GlobalVisitor extends MysqlVisitor {
         PlanNode child = item.getPlanNode();
         MysqlVisitor childVisitor = new GlobalVisitor(child, true);
         childVisitor.visit();
-        StringBuilder builder = new StringBuilder();
-        builder.append("(");
-        builder.append(childVisitor.getSql());
-        builder.append(")");
-        return builder.toString();
+        mapTableToSimple.putAll(childVisitor.getMapTableToSimple());
+        return "(" + childVisitor.getSql() + ")";
     }
 
     private String buildCmpSubQueryItem(ItemBoolFunc2 item, boolean canUseAlias) {
-        StringBuilder builder = new StringBuilder();
-        builder.append(buildCmpArgSubQueryItem(item.arguments().get(0), canUseAlias));
-        builder.append(item.funcName());
-        builder.append(buildCmpArgSubQueryItem(item.arguments().get(1), canUseAlias));
-        return builder.toString();
+        return buildCmpArgSubQueryItem(item.arguments().get(0), canUseAlias) +
+                item.funcName() +
+                buildCmpArgSubQueryItem(item.arguments().get(1), canUseAlias);
     }
 
     private String buildCmpArgSubQueryItem(Item arg, boolean canUseAlias) {
@@ -468,6 +469,7 @@ public class GlobalVisitor extends MysqlVisitor {
                 builder.append("(");
                 builder.append(childVisitor.getSql());
                 builder.append(")");
+                mapTableToSimple.putAll(childVisitor.getMapTableToSimple());
                 return builder.toString();
             }
         }

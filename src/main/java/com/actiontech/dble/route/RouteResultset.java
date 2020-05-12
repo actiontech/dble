@@ -9,6 +9,8 @@ import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.util.FormatUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.List;
@@ -17,6 +19,7 @@ import java.util.List;
  * @author mycat
  */
 public final class RouteResultset implements Serializable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RouteResultset.class);
     private static final long serialVersionUID = 3906972758236875720L;
 
     private String srcStatement; // origin statement
@@ -33,7 +36,7 @@ public final class RouteResultset implements Serializable {
 
     private boolean needOptimizer;
     private int limitStart;
-    private boolean cacheAble;
+    private boolean sqlRouteCacheAble;
     // used to store table's ID->data nodes cache
     private String cacheKey;
     private boolean containsPrimaryFilter = false;
@@ -75,6 +78,9 @@ public final class RouteResultset implements Serializable {
 
     public void setNeedOptimizer(boolean needOptimizer) {
         this.needOptimizer = needOptimizer;
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("the sql is need to use complex query Optimizer:" + srcStatement);
+        }
     }
 
     public Boolean getRunOnSlave() {
@@ -139,12 +145,12 @@ public final class RouteResultset implements Serializable {
     }
 
 
-    public boolean isCacheAble() {
-        return cacheAble;
+    public boolean isSqlRouteCacheAble() {
+        return sqlRouteCacheAble;
     }
 
-    public void setCacheAble(boolean cacheAble) {
-        this.cacheAble = cacheAble;
+    public void setSqlRouteCacheAble(boolean sqlRouteCacheAble) {
+        this.sqlRouteCacheAble = sqlRouteCacheAble;
     }
 
     public int getSqlType() {

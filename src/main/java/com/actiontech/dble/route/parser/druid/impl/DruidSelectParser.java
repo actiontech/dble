@@ -13,8 +13,6 @@ import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.ServerPrivileges.CheckType;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.singleton.CacheService;
-import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.ItemCreate;
@@ -24,11 +22,14 @@ import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.handler.MysqlSystemSchemaHandler;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
+import com.actiontech.dble.singleton.CacheService;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.sqlengine.mpp.ColumnRoutePair;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.*;
@@ -91,7 +92,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                         String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                         throw new SQLNonTransientException(msg);
                     }
-                    super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
+                    super.visitorParse(schema != null ? schema : schemaInfo.getSchemaConfig(), rrs, stmt, visitor, sc, isExplain);
                     //check to route for complex
                     if (ProxyMeta.getInstance().getTmManager().getSyncView(schemaInfo.getSchemaConfig().getName(), schemaInfo.getTable()) != null ||
                             hasInnerFuncSelect(visitor.getFunctions())) {
@@ -100,7 +101,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                         return schemaInfo.getSchemaConfig();
                     }
                     if (visitor.getSubQueryList().size() > 0) {
-                        return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size());
+                        return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size(), visitor.isContainsInnerFunction());
                     }
 
                     //route for single table
@@ -112,11 +113,11 @@ public class DruidSelectParser extends DefaultDruidParser {
                     mysqlFrom instanceof SQLJoinTableSource ||
                     mysqlFrom instanceof SQLUnionQueryTableSource) {
                 super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
-                return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size());
+                return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size(), visitor.isContainsInnerFunction());
             }
         } else if (sqlSelectQuery instanceof SQLUnionQuery) {
             super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
-            return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size());
+            return executeComplexSQL(schemaName, schema, rrs, selectStmt, sc, visitor.getSelectTableList().size(), visitor.isContainsInnerFunction());
         }
         return schema;
     }
@@ -137,7 +138,6 @@ public class DruidSelectParser extends DefaultDruidParser {
         if (noShardingNode != null) {
             //route to singleNode
             RouterUtil.routeToSingleNode(rrs, noShardingNode);
-            return;
         } else {
             //route for configured table
             TableConfig tc = schema.getTables().get(schemaInfo.getTable());
@@ -146,6 +146,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                 throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
             }
             rrs.setCacheKey(tc.getCacheKey());
+
             //loop conditions to determine the scope
             SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
             for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
@@ -158,6 +159,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                     }
                 }
             }
+
             if (nodeSet.size() == 0) {
                 String msg = " find no Route:" + rrs.getStatement();
                 LOGGER.info(msg);
@@ -186,20 +188,12 @@ public class DruidSelectParser extends DefaultDruidParser {
      * check the sql subquery first
      * route for a NoNameTable
      *
-     * @param schema
-     * @param rrs
-     * @param visitor
-     * @param isExplain
-     * @param sc
-     * @param selectStmt
-     * @throws SQLException
      */
-
     private void routeForNoFrom(SchemaConfig schema, RouteResultset rrs, ServerSchemaStatVisitor visitor, boolean isExplain, ServerConnection sc,
                                 SQLSelectStatement selectStmt) throws SQLException {
         super.visitorParse(schema, rrs, selectStmt, visitor, sc, isExplain);
         if (visitor.getSubQueryList().size() > 0) {
-            executeComplexSQL(schema.getName(), schema, rrs, selectStmt, sc, visitor.getSelectTableList().size());
+            executeComplexSQL(schema.getName(), schema, rrs, selectStmt, sc, visitor.getSelectTableList().size(), visitor.isContainsInnerFunction());
             return;
         }
         RouterUtil.routeNoNameTableToSingleNode(rrs, schema);
@@ -217,9 +211,9 @@ public class DruidSelectParser extends DefaultDruidParser {
         return false;
     }
 
-    private SchemaConfig tryRouteToOneNode(SchemaConfig schema, RouteResultset rrs, ServerConnection sc, SQLSelectStatement selectStmt, int tableSize) throws SQLException {
+    private void tryRouteToOneNode(RouteResultset rrs, SQLSelectStatement selectStmt, int tableSize) throws SQLException {
         Set<String> schemaList = new HashSet<>();
-        String dataNode = RouterUtil.tryRouteTablesToOneNode(sc.getUser(), rrs, schema, ctx, schemaList, tableSize, true);
+        String dataNode = RouterUtil.tryRouteTablesToOneNode(rrs, ctx, schemaList, tableSize, true);
         if (dataNode != null) {
             String sql = rrs.getStatement();
             for (String toRemoveSchemaName : schemaList) {
@@ -231,7 +225,6 @@ public class DruidSelectParser extends DefaultDruidParser {
             rrs.setNeedOptimizer(true);
             rrs.setSqlStatement(selectStmt);
         }
-        return schema;
     }
 
 
@@ -490,7 +483,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         return groupByCols;
     }
 
-    private SchemaConfig executeComplexSQL(String schemaName, SchemaConfig schema, RouteResultset rrs, SQLSelectStatement selectStmt, ServerConnection sc, int tableSize)
+    private SchemaConfig executeComplexSQL(String schemaName, SchemaConfig schema, RouteResultset rrs, SQLSelectStatement selectStmt, ServerConnection sc, int tableSize, boolean ontainsInnerFunction)
             throws SQLException {
         StringPtr noShardingNode = new StringPtr(null);
         Set<String> schemas = new HashSet<>();
@@ -500,8 +493,13 @@ public class DruidSelectParser extends DefaultDruidParser {
             MysqlSystemSchemaHandler.handle(sc, null, selectStmt.getSelect().getQuery());
             rrs.setFinishedExecute(true);
             return schema;
+        } else if (ontainsInnerFunction) {
+            rrs.setNeedOptimizer(true);
+            rrs.setSqlStatement(selectStmt);
+            return schema;
         } else {
-            return tryRouteToOneNode(schema, rrs, sc, selectStmt, tableSize);
+            tryRouteToOneNode(rrs, selectStmt, tableSize);
+            return schema;
         }
     }
 
@@ -523,14 +521,14 @@ public class DruidSelectParser extends DefaultDruidParser {
             int limitStart = 0;
             int limitSize = sqlSchema.getDefaultMaxLimit();
 
-            Map<String, Map<String, Set<ColumnRoutePair>>> allConditions = getAllConditions();
+            Map<Pair<String, String>, Map<String, Set<ColumnRoutePair>>> allConditions = getAllConditions();
             boolean isNeedAddLimit = isNeedAddLimit(sqlSchema, rrs, mysqlSelectQuery, allConditions);
             if (isNeedAddLimit) {
                 SQLLimit limit = new SQLLimit();
                 limit.setRowCount(new SQLIntegerExpr(limitSize));
                 mysqlSelectQuery.setLimit(limit);
                 rrs.setLimitSize(limitSize);
-                String sql = getSql(rrs, stmt, isNeedAddLimit, sqlSchema.getName());
+                String sql = RouterUtil.removeSchema(statementToString(stmt), sqlSchema.getName());
                 rrs.changeNodeSqlAfterAddLimit(sql, 0, limitSize);
             }
             SQLLimit limit = mysqlSelectQuery.getLimit();
@@ -563,102 +561,53 @@ public class DruidSelectParser extends DefaultDruidParser {
                     }
 
                     mysqlSelectQuery.setLimit(changedLimit);
-                    String sql = getSql(rrs, stmt, isNeedAddLimit, sqlSchema.getName());
+                    String sql = RouterUtil.removeSchema(statementToString(stmt), sqlSchema.getName());
                     rrs.changeNodeSqlAfterAddLimit(sql, 0, limitStart + limitSize);
                 } else {
                     rrs.changeNodeSqlAfterAddLimit(rrs.getStatement(), rrs.getLimitStart(), rrs.getLimitSize());
                 }
             }
-            rrs.setCacheAble(isNeedCache(sqlSchema));
+            rrs.setSqlRouteCacheAble(isNeedSqlRouteCache(sqlSchema));
         }
 
     }
-
-    private void tryRouteSingleTable(SchemaConfig schema, RouteResultset rrs, LayerCachePool cachePool)
-            throws SQLException {
-        if (rrs.isFinishedRoute()) {
-            return;
-        }
-        SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
-        String table = ctx.getTables().get(0);
-        String noShardingNode = RouterUtil.isNoSharding(schema, table);
-        if (noShardingNode != null) {
-            RouterUtil.routeToSingleNode(rrs, noShardingNode);
-            return;
-        }
-        for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
-            RouteResultset rrsTmp = RouterUtil.tryRouteForOneTable(schema, unit, table, rrs, true, cachePool, null);
-            if (rrsTmp != null && rrsTmp.getNodes() != null) {
-                Collections.addAll(nodeSet, rrsTmp.getNodes());
-                if (rrsTmp.isGlobalTable()) {
-                    break;
-                }
-            }
-        }
-        if (nodeSet.size() == 0) {
-            String msg = " find no Route:" + rrs.getStatement();
-            LOGGER.info(msg);
-            throw new SQLNonTransientException(msg);
-        }
-
-        RouteResultsetNode[] nodes = new RouteResultsetNode[nodeSet.size()];
-        int i = 0;
-        for (RouteResultsetNode aNodeSet : nodeSet) {
-            nodes[i] = aNodeSet;
-            i++;
-        }
-
-        rrs.setNodes(nodes);
-        rrs.setFinishedRoute(true);
-    }
-
     /**
      * getAllConditions
      */
-    private Map<String, Map<String, Set<ColumnRoutePair>>> getAllConditions() {
-        Map<String, Map<String, Set<ColumnRoutePair>>> map = new HashMap<>();
+    private Map<Pair<String, String>, Map<String, Set<ColumnRoutePair>>> getAllConditions() {
+        Map<Pair<String, String>, Map<String, Set<ColumnRoutePair>>> map = new HashMap<>();
         for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
             if (unit != null && unit.getTablesAndConditions() != null) {
                 map.putAll(unit.getTablesAndConditions());
             }
         }
-
         return map;
     }
 
 
-    protected String getSql(RouteResultset rrs, SQLStatement stmt, boolean isNeedAddLimit, String schema) {
-        if ((isNeedChangeLimit(rrs) || isNeedAddLimit)) {
-            return RouterUtil.removeSchema(statementToString(stmt), schema);
-        }
-        return rrs.getStatement();
-    }
-
-
     private boolean isNeedChangeLimit(RouteResultset rrs) {
-        if (rrs.getNodes() == null) {
-            return false;
-        } else {
-            return rrs.getNodes().length > 1;
-        }
+        return rrs.getNodes() != null && rrs.getNodes().length > 1;
     }
 
-    private boolean isNeedCache(SchemaConfig schema) {
+    private boolean isNeedSqlRouteCache(SchemaConfig schema) {
         if (ctx.getTables() == null || ctx.getTables().size() == 0) {
             return false;
         }
-        TableConfig tc = schema.getTables().get(ctx.getTables().get(0));
+        Pair<String, String> table = ctx.getTables().get(0);
+        String tableName = table.getValue();
+        TableConfig tc = schema.getTables().get(tableName);
         if (tc == null || (ctx.getTables().size() == 1 && tc.isGlobalTable())) {
             return false;
         } else {
             //single table
             if (ctx.getTables().size() == 1) {
-                String tableName = ctx.getTables().get(0);
                 String cacheKey = schema.getTables().get(tableName).getCacheKey();
-                if (ctx.getRouteCalculateUnit().getTablesAndConditions().get(tableName) != null &&
-                        ctx.getRouteCalculateUnit().getTablesAndConditions().get(tableName).get(cacheKey) != null &&
-                        tc.getDataNodes().size() > 1) { //cacheKey condition
-                    return false;
+                for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
+                    if (unit.getTablesAndConditions().get(table) != null &&
+                            unit.getTablesAndConditions().get(table).get(cacheKey) != null &&
+                            tc.getDataNodes().size() > 1) {
+                        return false;
+                    }
                 }
             }
             return true;
@@ -684,15 +633,8 @@ public class DruidSelectParser extends DefaultDruidParser {
         mysqlSelectQuery.setLimit(limit);
     }
 
-    /**
-     * @param schema
-     * @param rrs
-     * @param mysqlSelectQuery
-     * @param allConditions
-     * @return
-     */
     private boolean isNeedAddLimit(SchemaConfig schema, RouteResultset rrs,
-                                   MySqlSelectQueryBlock mysqlSelectQuery, Map<String, Map<String, Set<ColumnRoutePair>>> allConditions) {
+                                   MySqlSelectQueryBlock mysqlSelectQuery, Map<Pair<String, String>, Map<String, Set<ColumnRoutePair>>> allConditions) {
         if (rrs.getLimitSize() > -1) {
             return false;
         } else if (schema.getDefaultMaxLimit() == -1) {
@@ -704,7 +646,8 @@ public class DruidSelectParser extends DefaultDruidParser {
                 // single table and has primary key , need not limit because of only one row
                 return false;
             }
-            String tableName = ctx.getTables().get(0);
+            Pair<String, String> table = ctx.getTables().get(0);
+            String tableName = table.getValue();
             TableConfig tableConfig = schema.getTables().get(tableName);
             if (tableConfig == null) {
                 return schema.getDefaultMaxLimit() > -1; // get schema's configure
@@ -721,7 +664,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 
             String cacheKey = schema.getTables().get(tableName).getCacheKey();
             // no condition
-            return allConditions.get(tableName) == null || allConditions.get(tableName).get(cacheKey) == null;
+            return allConditions.get(table) == null || allConditions.get(table).get(cacheKey) == null;
         } else { // no table or multi-table
             return false;
         }

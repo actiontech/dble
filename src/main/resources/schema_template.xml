@@ -67,18 +67,13 @@
 
     <dataHost name="dataHost1" maxCon="1000" minCon="10" balance="0" slaveThreshold="100">
         <heartbeat>show slave status</heartbeat>
-        <!-- can have multi write hosts -->
         <writeHost host="hostM1" url="ip1:3306" user="your_user" password="your_psw">
-            <!-- can have multi read hosts -->
             <readHost host="hostS1" url="ip2:3306" user="your_user" password="your_psw"/>
         </writeHost>
-        <!--<writeHost host="hostM3" url="ip3:3306" user="your_user" password="your_psw"/>-->
     </dataHost>
     <dataHost name="dataHost2" maxCon="1000" minCon="10" balance="0" slaveThreshold="100">
         <heartbeat>show slave status</heartbeat>
-        <!-- can have multi write hosts -->
         <writeHost host="hostM2" url="ip4:3306" user="your_user" password="your_psw">
-            <!-- can have multi read hosts -->
             <readHost host="hostS2" url="ip5:3306" user="your_user" password="your_psw"/>
         </writeHost>
     </dataHost>

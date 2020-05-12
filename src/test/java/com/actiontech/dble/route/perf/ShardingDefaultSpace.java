@@ -20,7 +20,6 @@ import java.sql.SQLException;
 public class ShardingDefaultSpace {
     private SchemaConfig schema;
     private static int total = 1000000;
-    protected LayerCachePool cachePool = new SimpleCachePool();
 
     public ShardingDefaultSpace() throws InterruptedException {
         String schemaFile = "/route/schema.xml";
@@ -33,7 +32,7 @@ public class ShardingDefaultSpace {
         SchemaConfig schema = this.getSchema();
         String sql = "insert into offer (member_id, gmt_create) values ('1','2001-09-13 20:20:33')";
         for (int i = 0; i < total; i++) {
-            RouteStrategyFactory.getRouteStrategy().route(schema, -1, sql, null, cachePool);
+            RouteStrategyFactory.getRouteStrategy().route(schema, -1, sql, null);
         }
     }
 

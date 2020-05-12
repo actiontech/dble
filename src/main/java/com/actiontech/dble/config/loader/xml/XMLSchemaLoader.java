@@ -290,16 +290,13 @@ public class XMLSchemaLoader implements SchemaLoader {
             if (tableNames == null) {
                 throw new ConfigException("table name is not found!");
             }
-
-            //cacheKey used for cache and autoincrement
-            String cacheKey = tableElement.hasAttribute("cacheKey") ? tableElement.getAttribute("cacheKey").toUpperCase() : null;
             //if autoIncrement,it will use sequence handler
             String incrementColumn = tableElement.hasAttribute("incrementColumn") ? tableElement.getAttribute("incrementColumn").toUpperCase() : null;
             String checkClass = tableElement.hasAttribute("globalCheckClass") ? tableElement.getAttribute("globalCheckClass") : GLOBAL_TABLE_CHECK_DEFAULT;
             String corn = tableElement.hasAttribute("cron") ? tableElement.getAttribute("cron").toUpperCase() : GLOBAL_TABLE_CHECK_DEFAULT_CRON;
             boolean globalCheck = tableElement.hasAttribute("globalCheck") ? Boolean.valueOf(tableElement.getAttribute("globalCheck")) : false;
             for (String tableName : tableNames) {
-                TableConfig table = new TableConfig(tableName, cacheKey, needAddLimit, tableType,
+                TableConfig table = new TableConfig(tableName, needAddLimit, tableType,
                         dataNode, (tableRule != null) ? tableRule.getRule() : null, ruleRequired, incrementColumn,
                         corn, checkClass, globalCheck);
                 checkDataNodeExists(table.getDataNodes());
@@ -384,9 +381,8 @@ public class XMLSchemaLoader implements SchemaLoader {
             //join key ,the parent's column
             String joinKey = childTbElement.getAttribute("joinKey").toUpperCase();
             String parentKey = childTbElement.getAttribute("parentKey").toUpperCase();
-            String cacheKey = childTbElement.hasAttribute("cacheKey") ? childTbElement.getAttribute("cacheKey").toUpperCase() : null;
             String incrementColumn = childTbElement.hasAttribute("incrementColumn") ? childTbElement.getAttribute("incrementColumn").toUpperCase() : null;
-            TableConfig table = new TableConfig(cdTbName, cacheKey, needAddLimit,
+            TableConfig table = new TableConfig(cdTbName, needAddLimit,
                     TableTypeEnum.TYPE_SHARDING_TABLE, strDatoNodes, null, false, parentTable, joinKey, parentKey, incrementColumn,
                     null, null, false);
 

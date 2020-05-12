@@ -7,7 +7,6 @@ package com.actiontech.dble.route.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDataNode;
-import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.util.RouterUtil;
@@ -30,7 +29,7 @@ public class HintDataNodeHandler implements HintHandler {
 
     @Override
     public RouteResultset route(SchemaConfig schema, int sqlType, String realSQL, ServerConnection sc,
-                                LayerCachePool cachePool, String hintSQLValue, int hintSqlType, Map hintMap)
+                                String hintSQLValue, int hintSqlType, Map hintMap)
             throws SQLNonTransientException {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("route datanode sql hint from " + realSQL);

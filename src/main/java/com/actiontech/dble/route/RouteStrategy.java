@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.route;
 
-import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.server.ServerConnection;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -21,9 +20,9 @@ import java.sql.SQLSyntaxErrorException;
 public interface RouteStrategy {
     SQLStatement parserSQL(String originSql) throws SQLSyntaxErrorException;
 
-    RouteResultset route(SchemaConfig schema, int sqlType, String origSQL, ServerConnection sc, LayerCachePool cachePool)
+    RouteResultset route(SchemaConfig schema, int sqlType, String origSQL, ServerConnection sc)
             throws SQLException;
 
-    RouteResultset route(SchemaConfig schema, int sqlType, String origSQL, ServerConnection sc, LayerCachePool cachePool, boolean isExplain)
+    RouteResultset route(SchemaConfig schema, int sqlType, String origSQL, ServerConnection sc, boolean isExplain)
             throws SQLException;
 }

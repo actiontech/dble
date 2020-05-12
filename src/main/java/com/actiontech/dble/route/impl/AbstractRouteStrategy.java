@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.route.impl;
 
-import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteStrategy;
@@ -24,7 +23,7 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 
     @Override
     public RouteResultset route(SchemaConfig schema, int sqlType, String origSQL,
-                                ServerConnection sc, LayerCachePool cachePool, boolean isExplain) throws SQLException {
+                                ServerConnection sc, boolean isExplain) throws SQLException {
 
         RouteResultset rrs = new RouteResultset(origSQL, sqlType);
 
@@ -40,13 +39,13 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
         }
 
         if (schema == null) {
-            rrs = routeNormalSqlWithAST(null, origSQL, rrs, cachePool, sc, isExplain);
+            rrs = routeNormalSqlWithAST(null, origSQL, rrs, sc, isExplain);
         } else {
             if (sqlType == ServerParse.SHOW) {
                 rrs.setStatement(origSQL);
                 rrs = RouterUtil.routeToSingleNode(rrs, schema.getRandomDataNode());
             } else {
-                rrs = routeNormalSqlWithAST(schema, origSQL, rrs, cachePool, sc, isExplain);
+                rrs = routeNormalSqlWithAST(schema, origSQL, rrs, sc, isExplain);
             }
         }
 
@@ -58,7 +57,7 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
      * routeNormalSqlWithAST
      */
     public abstract RouteResultset routeNormalSqlWithAST(SchemaConfig schema, String stmt, RouteResultset rrs,
-                                                         LayerCachePool cachePool, ServerConnection sc, boolean isExplain) throws SQLException;
+                                                         ServerConnection sc, boolean isExplain) throws SQLException;
 
 
 }

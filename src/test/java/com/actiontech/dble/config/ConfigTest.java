@@ -55,17 +55,17 @@ public class ConfigTest {
      * <table name="tb3" dataNode="dnTest1,dnTest2" rule="rule1" />
      * </schema>
      * <schema name="ertest">
-     * <table name="er_parent" cacheKey="ID" dataNode="dnTest1,dnTest2" rule="rule1">
-     * <childTable name="er_child1" cacheKey="child1_id" joinKey="child1_id" parentKey="id" >
-     * <childTable name="er_grandson" cacheKey="grandson_id" joinKey="grandson_id" parentKey="child1_id" />
+     * <table name="er_parent" dataNode="dnTest1,dnTest2" rule="rule1">
+     * <childTable name="er_child1" joinKey="child1_id" parentKey="id" >
+     * <childTable name="er_grandson" joinKey="grandson_id" parentKey="child1_id" />
      * </childTable>
-     * <childTable name="er_child2" cacheKey="child2_id" joinKey="child2_id" parentKey="id2" />
-     * <childTable name="er_child3" cacheKey="child3_id" joinKey="child_char" parentKey="c_char" />
-     * <childTable name="er_child4" cacheKey="child4_id" joinKey="child4_id" parentKey="id2" >
-     * <childTable name="er_grandson2" cacheKey="grandson2_id" joinKey="grandson2_id" parentKey="child4_id2" />
+     * <childTable name="er_child2" joinKey="child2_id" parentKey="id2" />
+     * <childTable name="er_child3" joinKey="child_char" parentKey="c_char" />
+     * <childTable name="er_child4" joinKey="child4_id" parentKey="id2" >
+     * <childTable name="er_grandson2" joinKey="grandson2_id" parentKey="child4_id2" />
      * </childTable>
-     * <childTable name="er_child5" cacheKey="child5_id" joinKey="child5_id" parentKey="id" >
-     * <childTable name="er_grandson3" cacheKey="grandson3_id" joinKey="grandson3_id" parentKey="child5_id2" />
+     * <childTable name="er_child5" joinKey="child5_id" parentKey="id" >
+     * <childTable name="er_grandson3" joinKey="grandson3_id" parentKey="child5_id2" />
      * </childTable>
      * </table>
      * </schema>

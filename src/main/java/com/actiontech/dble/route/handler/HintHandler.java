@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.route.handler;
 
-import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.server.ServerConnection;
@@ -20,6 +19,6 @@ public interface HintHandler {
 
     RouteResultset route(SchemaConfig schema,
                          int sqlType, String realSQL, ServerConnection sc,
-                         LayerCachePool cachePool, String hintSQLValue, int hintSqlType, Map hintMap)
+                         String hintSQLValue, int hintSqlType, Map hintMap)
             throws SQLException;
 }

@@ -7,7 +7,6 @@ package com.actiontech.dble.route;
 
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.util.FormatUtil;
-import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,9 +38,6 @@ public final class RouteResultset implements Serializable {
     private boolean needOptimizer;
     private int limitStart;
     private boolean sqlRouteCacheAble;
-    // used to store table's ID->data nodes cache
-    private String cacheKey;
-    private boolean containsPrimaryFilter = false;
     // limit output total
     private int limitSize;
 
@@ -174,30 +170,6 @@ public final class RouteResultset implements Serializable {
 
     public void setLimitStart(int limitStart) {
         this.limitStart = limitStart;
-    }
-
-    public boolean hasCacheKeyToCache() {
-        return schema != null && table != null && cacheKey != null;
-    }
-
-    public void setCacheKey(String cacheKey) {
-        this.cacheKey = cacheKey;
-    }
-
-    public boolean isContainsPrimaryFilter() {
-        return containsPrimaryFilter;
-    }
-
-    public void setContainsPrimaryFilter(boolean containsPrimaryFilter) {
-        this.containsPrimaryFilter = containsPrimaryFilter;
-    }
-
-
-    /**
-     * return cache key items ,first is table name ,seconds is primary key
-     */
-    public String[] getCacheKeyItems() {
-        return new String[]{StringUtil.getFullName(schema, table, '_'), cacheKey};
     }
 
     public void setSrcStatement(String srcStatement) {

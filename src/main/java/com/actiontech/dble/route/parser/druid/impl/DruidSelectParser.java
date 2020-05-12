@@ -143,7 +143,6 @@ public class DruidSelectParser extends DefaultDruidParser {
                 String msg = "Table '" + schema.getName() + "." + schemaInfo.getTable() + "' doesn't exist";
                 throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
             }
-            rrs.setCacheKey(tc.getCacheKey());
 
             //loop conditions to determine the scope
             SortedSet<RouteResultsetNode> nodeSet = new TreeSet<>();
@@ -601,10 +600,8 @@ public class DruidSelectParser extends DefaultDruidParser {
         } else {
             //single table
             if (ctx.getTables().size() == 1) {
-                String cacheKey = schema.getTables().get(tableName).getCacheKey();
                 for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
                     if (unit.getTablesAndConditions().get(table) != null &&
-                            unit.getTablesAndConditions().get(table).get(cacheKey) != null &&
                             tc.getDataNodes().size() > 1) {
                         return false;
                     }
@@ -624,9 +621,6 @@ public class DruidSelectParser extends DefaultDruidParser {
             return;
         } else if (mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode()) {
             return;
-        } else if (rrs.isContainsPrimaryFilter()) {
-            // single table and has primary key , need not limit because of only one row
-            return;
         }
         SQLLimit limit = new SQLLimit();
         limit.setRowCount(new SQLIntegerExpr(schema.getDefaultMaxLimit()));
@@ -642,10 +636,6 @@ public class DruidSelectParser extends DefaultDruidParser {
         } else if (mysqlSelectQuery.getLimit() != null) { // has already limit
             return false;
         } else if (ctx.getTables().size() == 1) {
-            if (rrs.isContainsPrimaryFilter()) {
-                // single table and has primary key , need not limit because of only one row
-                return false;
-            }
             Pair<String, String> table = ctx.getTables().get(0);
             String tableName = table.getValue();
             TableConfig tableConfig = schema.getTables().get(tableName);
@@ -661,10 +651,8 @@ public class DruidSelectParser extends DefaultDruidParser {
             if (schema.getTables().get(tableName).isGlobalTable()) {
                 return true;
             }
-
-            String cacheKey = schema.getTables().get(tableName).getCacheKey();
             // no condition
-            return allConditions.get(table) == null || allConditions.get(table).get(cacheKey) == null;
+            return allConditions.get(table) == null;
         } else { // no table or multi-table
             return false;
         }

@@ -147,10 +147,14 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
         //do ddl what ever the serverConnection is closed
         MySQLConnection mysqlCon = (MySQLConnection) conn;
         mysqlCon.setResponseHandler(this);
-        mysqlCon.setSession(session);
-        DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(), mysqlCon,
-                DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_START);
-        mysqlCon.executeMultiNode(node, session.getSource(), sessionAutocommit && !session.getSource().isTxStart());
+        if (mysqlCon.isClosed()) {
+            mysqlCon.close("DDL find connection close");
+        } else {
+            mysqlCon.setSession(session);
+            DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(), mysqlCon,
+                    DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_START);
+            mysqlCon.executeMultiNode(node, session.getSource(), sessionAutocommit && !session.getSource().isTxStart());
+        }
     }
 
 

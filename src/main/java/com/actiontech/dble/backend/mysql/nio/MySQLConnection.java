@@ -441,6 +441,10 @@ public class MySQLConnection extends AbstractConnection implements
     }
 
     private void synAndDoExecuteMultiNode(StringBuilder synSQL, RouteResultsetNode rrn, CharsetNames clientCharset) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("send cmd by WriteToBackendExecutor to conn[" + this + "]");
+        }
+
         if (synSQL == null) {
             // not need syn connection
             if (session != null) {

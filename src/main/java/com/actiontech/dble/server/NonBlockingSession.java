@@ -437,6 +437,7 @@ public class NonBlockingSession implements Session {
     @Override
     public void execute(RouteResultset rrs) {
         if (killed) {
+            handleSpecial(rrs, false);
             source.writeErrMessage(ErrorCode.ER_QUERY_INTERRUPTED, "The query is interrupted.");
             return;
         }

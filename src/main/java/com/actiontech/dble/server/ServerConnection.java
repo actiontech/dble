@@ -348,6 +348,10 @@ public class ServerConnection extends FrontendConnection {
         RouteResultset rrs;
         try {
             rrs = RouteService.getInstance().route(schema, type, sql, this);
+            if (rrs == null) {
+                writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql can't route to any data node.");
+                return;
+            }
             if (rrs.getSqlType() == ServerParse.DDL && rrs.getSchema() != null) {
                 if (ProxyMeta.getInstance().getTmManager().getCatalogs().get(rrs.getSchema()).getView(rrs.getTable()) != null) {
                     ProxyMeta.getInstance().getTmManager().removeMetaLock(rrs.getSchema(), rrs.getTable());
@@ -358,11 +362,6 @@ public class ServerConnection extends FrontendConnection {
             }
         } catch (Exception e) {
             executeException(e, sql);
-            return;
-        }
-
-        if (rrs == null) {
-            writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql can't route to any data node.");
             return;
         }
 

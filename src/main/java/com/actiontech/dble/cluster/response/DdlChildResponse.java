@@ -74,7 +74,7 @@ public class DdlChildResponse implements ClusterXmlLoader {
                 ClusterDelayProvider.delayBeforeUpdateMeta();
                 //to judge the table is be drop
                 if (ddlInfo.getType() == DDLInfo.DDLType.DROP_TABLE) {
-                    ProxyMeta.getInstance().getTmManager().updateMetaData(schema, table, ddlInfo.getSql(), DDLInfo.DDLStatus.SUCCESS.equals(ddlInfo.getStatus()), false, DDLInfo.DDLType.DROP_TABLE, false);
+                    ProxyMeta.getInstance().getTmManager().updateMetaData(schema, table, ddlInfo.getSql(), DDLInfo.DDLStatus.SUCCESS.equals(ddlInfo.getStatus()), false, DDLInfo.DDLType.DROP_TABLE);
                 } else {
                     //else get the lastest table meta from db
                     ProxyMeta.getInstance().getTmManager().updateOnetableWithBackData(DbleServer.getInstance().getConfig(), schema, table);

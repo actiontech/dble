@@ -10,18 +10,18 @@ import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.manager.handler.PackageBufINf;
-import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.meta.SchemaMeta;
-import com.actiontech.dble.meta.protocol.StructureMeta;
+import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -67,7 +67,7 @@ public final class ShowTableStatus {
             return;
         }
         ByteBuffer buffer = c.allocate();
-        Map<String, StructureMeta.TableMeta> meta = schemata.getTableMetas();
+        Map<String, TableMeta> meta = schemata.getTableMetas();
         PackageBufINf bufInf;
 
         bufInf = writeTablesHeaderAndRows(buffer, c, meta, likeCondition);
@@ -85,7 +85,7 @@ public final class ShowTableStatus {
         c.write(buffer);
     }
 
-    private static PackageBufINf writeTablesHeaderAndRows(ByteBuffer buffer, ServerConnection c, Map<String, StructureMeta.TableMeta> tableMap, String likeCondition) {
+    private static PackageBufINf writeTablesHeaderAndRows(ByteBuffer buffer, ServerConnection c, Map<String, TableMeta> tableMap, String likeCondition) {
         int fieldCount = 18;
         ResultSetHeaderPacket header = PacketUtil.getHeader(fieldCount);
         FieldPacket[] fields = new FieldPacket[fieldCount];

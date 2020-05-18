@@ -7,12 +7,12 @@ package com.actiontech.dble.cluster.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.bean.KvBean;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
+import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
@@ -74,7 +74,7 @@ public class DdlChildResponse implements ClusterXmlLoader {
                 ClusterDelayProvider.delayBeforeUpdateMeta();
                 //to judge the table is be drop
                 if (ddlInfo.getType() == DDLInfo.DDLType.DROP_TABLE) {
-                    ProxyMeta.getInstance().getTmManager().updateMetaData(schema, table, ddlInfo.getSql(), DDLInfo.DDLStatus.SUCCESS.equals(ddlInfo.getStatus()), false, DDLInfo.DDLType.DROP_TABLE);
+                    ProxyMeta.getInstance().getTmManager().updateMetaData(schema, table, ddlInfo.getSql(), DDLInfo.DDLStatus.SUCCESS.equals(ddlInfo.getStatus()), false, DDLInfo.DDLType.DROP_TABLE, false);
                 } else {
                     //else get the lastest table meta from db
                     ProxyMeta.getInstance().getTmManager().updateOnetableWithBackData(DbleServer.getInstance().getConfig(), schema, table);

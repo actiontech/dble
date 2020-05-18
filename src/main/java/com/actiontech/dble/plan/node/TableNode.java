@@ -11,7 +11,7 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.model.TableConfig.TableTypeEnum;
 import com.actiontech.dble.meta.ProxyMetaManager;
-import com.actiontech.dble.meta.protocol.StructureMeta;
+import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.plan.NamedField;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
@@ -28,9 +28,10 @@ public class TableNode extends PlanNode {
 
     private String schema;
     private String tableName;
-    private StructureMeta.TableMeta tableMeta;
+    private TableMeta tableMeta;
     private List<String> columns;
     private List<SQLHint> hintList;
+
     private TableNode() {
     }
 
@@ -113,7 +114,7 @@ public class TableNode extends PlanNode {
         innerFields.clear();
         String tmpTable = alias == null ? tableName : alias;
         if (tableMeta != null) {
-            for (StructureMeta.ColumnMeta cm : tableMeta.getColumnsList()) {
+            for (TableMeta.ColumnMeta cm : tableMeta.getColumns()) {
                 NamedField tmpField = new NamedField(schema, tmpTable, cm.getName(), this);
                 innerFields.put(tmpField, tmpField);
             }
@@ -146,7 +147,7 @@ public class TableNode extends PlanNode {
         TableNode newTableNode = new TableNode();
         newTableNode.schema = this.schema;
         newTableNode.tableName = this.tableName;
-        newTableNode.tableMeta = this.tableMeta == null ? null : this.tableMeta.toBuilder().build();
+        newTableNode.tableMeta = this.tableMeta;
         newTableNode.columns = this.columns;
         newTableNode.referedTableNodes.add(newTableNode);
         newTableNode.setNoshardNode(this.getNoshardNode());

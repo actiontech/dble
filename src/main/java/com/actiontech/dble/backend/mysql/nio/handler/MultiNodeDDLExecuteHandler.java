@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
@@ -12,7 +12,8 @@ import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLTraceInfo;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
-import com.actiontech.dble.net.mysql.*;
+import com.actiontech.dble.net.mysql.ErrorPacket;
+import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -41,7 +42,6 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
             LOGGER.debug("execute multi node query " + rrs.getStatement());
         }
     }
-
 
     public void execute() throws Exception {
         lock.lock();
@@ -177,13 +177,13 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
                     return;
                 if (isFail()) {
                     DDLTraceManager.getInstance().endDDL(source, "ddl end with execution failure");
-                    session.handleSpecial(rrs, false);
+                    session.handleSpecial(rrs, false, null);
                     session.resetMultiStatementStatus();
                     handleEndPacket(err.toBytes(), false);
                 } else {
                     DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.META_UPDATE, source);
-                    boolean metaInited = session.handleSpecial(rrs, true);
-                    if (!metaInited) {
+                    boolean metaInitial = session.handleSpecial(rrs, true, null);
+                    if (!metaInitial) {
                         DDLTraceManager.getInstance().endDDL(source, "ddl end with meta failure");
                         executeMetaDataFailed();
                     } else {
@@ -252,7 +252,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
         }
         errConnection.add(conn);
         if (canResponse()) {
-            session.handleSpecial(rrs, false);
+            session.handleSpecial(rrs, false, null);
             DDLTraceManager.getInstance().endDDL(session.getSource(), new String(err.getMessage()));
             packetId++;
             if (byteBuffer == null) {

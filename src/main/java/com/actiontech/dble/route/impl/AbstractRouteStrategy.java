@@ -28,7 +28,6 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 
         RouteResultset rrs = new RouteResultset(origSQL, sqlType);
 
-
         /*
          * debug mode and load data ,no cache
          */

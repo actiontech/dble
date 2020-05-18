@@ -180,10 +180,6 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
     }
 
     @Override
-    public void writeQueueAvailable() {
-    }
-
-    @Override
     public void connectionClose(BackendConnection conn, String reason) {
         doFinished(true);
     }

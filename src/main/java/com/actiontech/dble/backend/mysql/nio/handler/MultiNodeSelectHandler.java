@@ -115,10 +115,6 @@ public class MultiNodeSelectHandler extends MultiNodeQueryHandler {
         return false;
     }
 
-    @Override
-    public void writeQueueAvailable() {
-    }
-
     private void mergeFieldEof(List<byte[]> fields, BackendConnection conn) throws IOException {
         fieldCount = fields.size();
         List<FieldPacket> fieldPackets = new ArrayList<>();

@@ -149,10 +149,6 @@ public class SetTestJob implements ResponseHandler, Runnable {
     }
 
     @Override
-    public void writeQueueAvailable() {
-    }
-
-    @Override
     public String toString() {
         return "SQLJob [dataNodeOrDatabase=" +
                 databaseName + ",sql=" + sql + ",  jobHandler=" +

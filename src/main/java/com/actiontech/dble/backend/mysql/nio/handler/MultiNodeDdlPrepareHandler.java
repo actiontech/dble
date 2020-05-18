@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * @author guoji.ma@gmail.com
  */
-public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
+public class MultiNodeDdlPrepareHandler extends MultiNodeHandler implements ExecutableHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeDdlPrepareHandler.class);
 
     private static final String STMT = "select 1";
@@ -73,6 +73,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
         return session;
     }
 
+    @Override
     public void execute() throws Exception {
         lock.lock();
         try {
@@ -171,7 +172,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
         }
         if (canResponse() && errorResponse.compareAndSet(false, true)) {
             if (releaseDDLLock.compareAndSet(false, true)) {
-                session.handleSpecial(oriRrs, false);
+                session.handleSpecial(oriRrs, false, null);
             }
             handleRollbackPacket(err.toBytes(), "DDL prepared failed");
         }
@@ -222,7 +223,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
                 setFail(new String(errPacket.getMessage()));
             }
             if (decrementToZero(conn) && errorResponse.compareAndSet(false, true)) {
-                session.handleSpecial(oriRrs, false);
+                session.handleSpecial(oriRrs, false, null);
                 handleRollbackPacket(err.toBytes(), "DDL prepared failed");
             }
         } finally {
@@ -256,15 +257,12 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
 
             if (this.isFail()) {
                 if (errorResponse.compareAndSet(false, true)) {
-                    session.handleSpecial(oriRrs, false);
+                    session.handleSpecial(oriRrs, false, null);
                     handleRollbackPacket(err.toBytes(), "DDL prepared failed");
                 }
             } else {
                 try {
                     DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.CONN_TEST_END, source);
-                    if (session.isPrepared()) {
-                        handler.setPrepared(true);
-                    }
                     finishedTest = true;
                     session.setTraceSimpleHandler(handler);
                     session.setPreExecuteEnd(false);
@@ -272,7 +270,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
                         handler.execute();
                     } else {
                         DDLTraceManager.getInstance().endDDL(source, "Query was interrupted");
-                        session.handleSpecial(oriRrs, false);
+                        session.handleSpecial(oriRrs, false, null);
                         ErrorPacket errPacket = new ErrorPacket();
                         errPacket.setPacketId(++packetId);
                         errPacket.setErrNo(ErrorCode.ER_QUERY_INTERRUPTED);
@@ -282,11 +280,8 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
                 } catch (Exception e) {
                     DDLTraceManager.getInstance().endDDL(source, "take Connection error:" + e.getMessage());
                     LOGGER.warn(String.valueOf(source) + oriRrs, e);
-                    session.handleSpecial(oriRrs, false);
+                    session.handleSpecial(oriRrs, false, null);
                     source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
-                }
-                if (session.isPrepared()) {
-                    session.setPrepared(false);
                 }
             }
         } finally {
@@ -313,9 +308,8 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
     }
 
     @Override
-    public void writeQueueAvailable() {
+    public void clearAfterFailExecute() {
     }
-
 
     private void handleRollbackPacket(byte[] data, String reason) {
         ServerConnection source = session.getSource();
@@ -338,7 +332,7 @@ public class MultiNodeDdlPrepareHandler extends MultiNodeHandler {
             }
             session.clearResources(true);
             if (releaseDDLLock.compareAndSet(false, true)) {
-                session.handleSpecial(oriRrs, false);
+                session.handleSpecial(oriRrs, false, null);
             }
             this.clearResources();
             return true;

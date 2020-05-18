@@ -11,7 +11,7 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.meta.protocol.StructureMeta;
+import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.net.handler.LoadDataInfileHandler;
 import com.actiontech.dble.net.mysql.BinaryPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
@@ -259,10 +259,10 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
                     }
                 } else {
                     try {
-                        StructureMeta.TableMeta tbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schema.getName(), tableName);
+                        TableMeta tbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schema.getName(), tableName);
                         if (tbMeta != null) {
-                            for (int i = 0; i < tbMeta.getColumnsCount(); i++) {
-                                String column = tbMeta.getColumns(i).getName();
+                            for (int i = 0; i < tbMeta.getColumns().size(); i++) {
+                                String column = tbMeta.getColumns().get(i).getName();
                                 if (column.equalsIgnoreCase(pColumn)) {
                                     partitionColumnIndex = i;
                                 }
@@ -726,7 +726,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
     /**
      * check if the sql is contain the partition. If the sql contain the partition word then stopped.
-     *
      */
     private boolean checkPartition(String strSql) {
         Pattern p = Pattern.compile("PARTITION\\s{0,}([\\s\\S]*)", Pattern.CASE_INSENSITIVE);
@@ -737,7 +736,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
     /**
      * use a Regular Expression to replace the "IGNORE    1234 LINES" to the " "
-     *
      */
     private String ignoreLinesDelete(String strSql) {
         Pattern p = Pattern.compile("IGNORE\\s{0,}\\d{0,}\\s{0,}LINES", Pattern.CASE_INSENSITIVE);
@@ -807,7 +805,6 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
 
     /**
      * deleteFile and its children
-     *
      */
     private static void deleteFile(String dirPath) {
         File fileDirToDel = new File(dirPath);

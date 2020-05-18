@@ -235,11 +235,6 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
     }
 
     @Override
-    public void writeQueueAvailable() {
-
-    }
-
-    @Override
     public void connectionClose(BackendConnection conn, String reason) {
         LOGGER.info("connection closed " + conn + " reason:" + reason);
         nodesErrorReason.put(((RouteResultsetNode) conn.getAttachment()).getName(), "connection closed ,mysql id:" + ((MySQLConnection) conn).getThreadId());

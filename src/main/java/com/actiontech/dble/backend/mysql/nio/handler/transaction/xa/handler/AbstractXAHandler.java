@@ -185,10 +185,6 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
     }
 
     @Override
-    public void writeQueueAvailable() {
-    }
-
-    @Override
     public void connectionAcquired(BackendConnection conn) {
         logger.warn("unexpected connection acquired in xa transaction");
     }

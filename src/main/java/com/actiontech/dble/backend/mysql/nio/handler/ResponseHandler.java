@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.backend.BackendConnection;
@@ -12,7 +12,6 @@ import com.actiontech.dble.net.mysql.RowDataPacket;
 import java.util.List;
 
 /**
- * @author mycat
  * @author mycat
  */
 public interface ResponseHandler {
@@ -56,9 +55,6 @@ public interface ResponseHandler {
      * execute after get an rowEof response
      */
     void rowEofResponse(byte[] eof, boolean isLeft, BackendConnection conn);
-
-
-    void writeQueueAvailable();
 
     /**
      * on connection close event

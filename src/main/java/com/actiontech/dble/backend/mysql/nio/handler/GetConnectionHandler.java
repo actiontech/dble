@@ -90,11 +90,6 @@ public class GetConnectionHandler implements ResponseHandler {
     }
 
     @Override
-    public void writeQueueAvailable() {
-
-    }
-
-    @Override
     public void connectionClose(BackendConnection conn, String reason) {
 
     }

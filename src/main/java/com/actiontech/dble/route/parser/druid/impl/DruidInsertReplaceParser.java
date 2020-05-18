@@ -10,13 +10,13 @@ import com.actiontech.dble.backend.mysql.nio.handler.FetchStoreNodeOfChildTableH
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.net.ConnectionException;
+import com.actiontech.dble.route.RouteResultset;
+import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.handler.ExplainHandler;
 import com.actiontech.dble.singleton.ProxyMeta;
-import com.actiontech.dble.meta.protocol.StructureMeta;
-import com.actiontech.dble.route.RouteResultset;
-import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.mpp.ColumnRoute;
 import com.actiontech.dble.util.StringUtil;
@@ -38,7 +38,7 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
             ColumnRoute columnRoute = new ColumnRoute(joinKeyVal);
             checkDefaultValues(joinKeyVal, tc, schemaInfo.getSchema(), tc.getJoinKey());
             Set<String> dataNodeSet = RouterUtil.ruleCalculate(rrs, tc.getDirectRouteTC(), columnRoute, false);
-            if (dataNodeSet.isEmpty() || dataNodeSet.size() > 1) {
+            if (dataNodeSet.size() != 1) {
                 throw new SQLNonTransientException("parent key can't find  valid data node ,expect 1 but found: " + dataNodeSet.size());
             }
             String dn = dataNodeSet.iterator().next();
@@ -53,14 +53,12 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
 
     /**
      * check if the column is not null and the
-     *
      */
     static void checkDefaultValues(String columnValue, TableConfig tableConfig, String schema, String partitionColumn) throws SQLNonTransientException {
-
         if (columnValue == null || "null".equalsIgnoreCase(columnValue)) {
-            StructureMeta.TableMeta meta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schema, tableConfig.getName());
-            for (StructureMeta.ColumnMeta columnMeta : meta.getColumnsList()) {
-                if (!columnMeta.getCanNull()) {
+            TableMeta meta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schema, tableConfig.getName());
+            for (TableMeta.ColumnMeta columnMeta : meta.getColumns()) {
+                if (!columnMeta.isCanNull()) {
                     if (columnMeta.getName().equalsIgnoreCase(partitionColumn)) {
                         String msg = "Sharding column can't be null when the table in MySQL column is not null";
                         LOGGER.info(msg);
@@ -92,11 +90,11 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
         if (incrementColumn == null) {
             throw new SQLNonTransientException("please make sure the incrementColumn's config is not null in schemal.xml");
         }
-        StructureMeta.TableMeta tbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
+        TableMeta tbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
                 schemaInfo.getTable());
         if (tbMeta != null) {
-            for (int i = 0; i < tbMeta.getColumnsList().size(); i++) {
-                if (incrementColumn.equalsIgnoreCase(tbMeta.getColumns(i).getName())) {
+            for (int i = 0; i < tbMeta.getColumns().size(); i++) {
+                if (incrementColumn.equalsIgnoreCase(tbMeta.getColumns().get(i).getName())) {
                     return i;
                 }
             }
@@ -110,13 +108,13 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
     int getTableColumns(SchemaInfo schemaInfo, List<SQLExpr> columnExprList)
             throws SQLNonTransientException {
         if (columnExprList == null || columnExprList.size() == 0) {
-            StructureMeta.TableMeta tbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
+            TableMeta tbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
             if (tbMeta == null) {
                 String msg = "Meta data of table '" + schemaInfo.getSchema() + "." + schemaInfo.getTable() + "' doesn't exist";
                 LOGGER.info(msg);
                 throw new SQLNonTransientException(msg);
             }
-            return tbMeta.getColumnsCount();
+            return tbMeta.getColumns().size();
         } else {
             return columnExprList.size();
         }
@@ -125,10 +123,10 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
     int getShardingColIndex(SchemaInfo schemaInfo, List<SQLExpr> columnExprList, String partitionColumn) throws SQLNonTransientException {
         int shardingColIndex = -1;
         if (columnExprList == null || columnExprList.size() == 0) {
-            StructureMeta.TableMeta tbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
+            TableMeta tbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
             if (tbMeta != null) {
-                for (int i = 0; i < tbMeta.getColumnsCount(); i++) {
-                    if (partitionColumn.equalsIgnoreCase(tbMeta.getColumns(i).getName())) {
+                for (int i = 0; i < tbMeta.getColumns().size(); i++) {
+                    if (partitionColumn.equalsIgnoreCase(tbMeta.getColumns().get(i).getName())) {
                         return i;
                     }
                 }

@@ -25,7 +25,7 @@ public final class DruidParserFactory {
 
     public static DruidParser create(SQLStatement statement, int sqlType)
             throws SQLNonTransientException {
-        DruidParser parser = null;
+        DruidParser parser;
         if (statement instanceof SQLSelectStatement) {
             parser = new DruidSelectParser();
         } else if (statement instanceof MySqlInsertStatement) {

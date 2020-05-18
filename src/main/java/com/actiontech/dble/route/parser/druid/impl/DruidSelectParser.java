@@ -12,7 +12,7 @@ import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.ServerPrivileges.CheckType;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.meta.protocol.StructureMeta;
+import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.ItemCreate;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
@@ -187,7 +187,6 @@ public class DruidSelectParser extends DefaultDruidParser {
      * route for from is null
      * check the sql subquery first
      * route for a NoNameTable
-     *
      */
     private void routeForNoFrom(SchemaConfig schema, RouteResultset rrs, ServerSchemaStatVisitor visitor, boolean isExplain, ServerConnection sc,
                                 SQLSelectStatement selectStmt) throws SQLException {
@@ -268,13 +267,13 @@ public class DruidSelectParser extends DefaultDruidParser {
                     addToAliaColumn(aliaColumns, selectItem);
                 }
             } else if (itemExpr instanceof SQLAllColumnExpr) {
-                StructureMeta.TableMeta tbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schema.getName(), tc.getName());
+                TableMeta tbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schema.getName(), tc.getName());
                 if (tbMeta == null) {
                     String msg = "Meta data of table '" + schema.getName() + "." + tc.getName() + "' doesn't exist";
                     LOGGER.info(msg);
                     throw new SQLNonTransientException(msg);
                 }
-                for (StructureMeta.ColumnMeta column : tbMeta.getColumnsList()) {
+                for (TableMeta.ColumnMeta column : tbMeta.getColumns()) {
                     aliaColumns.put(column.getName(), column.getName());
                 }
             } else {
@@ -571,6 +570,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
 
     }
+
     /**
      * getAllConditions
      */

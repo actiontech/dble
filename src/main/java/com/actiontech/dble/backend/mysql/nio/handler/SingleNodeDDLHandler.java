@@ -3,8 +3,10 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLTraceInfo;
+import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.RouteResultset;
+import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.singleton.DDLTraceManager;
@@ -28,12 +30,10 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
         }
     }
 
-
     public void execute(BackendConnection conn) {
         DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(), (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_START);
         super.execute(conn);
     }
-
 
     @Override
     public void connectionError(Throwable e, BackendConnection conn) {
@@ -68,11 +68,10 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
             DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(), (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_SUCCESS);
             DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.META_UPDATE, session.getSource());
             //handleSpecial
-            boolean metaInited = session.handleSpecial(rrs, true);
-            if (!metaInited) {
+            boolean metaInitial = session.handleSpecial(rrs, true, null);
+            if (!metaInitial) {
                 DDLTraceManager.getInstance().endDDL(session.getSource(), "ddl end with meta failure");
                 executeMetaDataFailed(conn);
-                return;
             } else {
                 DDLTraceManager.getInstance().endDDL(session.getSource(), null);
                 session.setRowCount(0);
@@ -93,6 +92,31 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
                 }
                 session.multiStatementNextSql(multiStatementFlag);
             }
+        }
+    }
+
+    @Override
+    protected void backConnectionErr(ErrorPacket errPkg, BackendConnection conn, boolean syncFinished) {
+        ServerConnection source = session.getSource();
+        if (conn.isClosed()) {
+            if (conn.getAttachment() != null) {
+                RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+                session.getTargetMap().remove(rNode);
+            }
+        } else if (syncFinished) {
+            session.releaseConnectionIfSafe(conn, false);
+        } else {
+            conn.closeWithoutRsp("unfinished sync");
+            if (conn.getAttachment() != null) {
+                RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
+                session.getTargetMap().remove(rNode);
+            }
+        }
+        String errMsg = " errNo:" + errPkg.getErrNo() + " " + new String(errPkg.getMessage());
+        source.setTxInterrupt(errMsg);
+        if (writeToClient.compareAndSet(false, true)) {
+            session.handleSpecial(rrs, false, null);
+            errPkg.write(source);
         }
     }
 

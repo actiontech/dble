@@ -197,10 +197,6 @@ public class NormalTransactionHandler extends MultiNodeHandler implements Transa
     }
 
     @Override
-    public void writeQueueAvailable() {
-    }
-
-    @Override
     public void connectionAcquired(BackendConnection conn) {
         logger.warn("unexpected connection acquired in normal transaction");
     }

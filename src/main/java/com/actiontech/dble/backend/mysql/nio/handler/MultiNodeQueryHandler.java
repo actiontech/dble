@@ -42,7 +42,7 @@ import java.util.concurrent.locks.LockSupport;
 /**
  * @author mycat
  */
-public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataResponseHandler {
+public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataResponseHandler, ExecutableHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeQueryHandler.class);
     protected final RouteResultset rrs;
     protected final boolean sessionAutocommit;
@@ -51,7 +51,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     protected List<BackendConnection> errConnection;
     private long netOutBytes;
     private long resultSize;
-    protected boolean prepared;
     protected ErrorPacket err;
     protected int fieldCount = 0;
     volatile boolean fieldsReturned;
@@ -98,6 +97,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         return session;
     }
 
+    @Override
     public void execute() throws Exception {
         lock.lock();
         try {
@@ -119,6 +119,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         if (sb.length() > 0) {
             TxnLogHelper.putTxnLog(session.getSource(), sb.toString());
         }
+
         for (final RouteResultsetNode node : rrs.getNodes()) {
             BackendConnection conn = session.getTarget(node);
             if (session.tryExistsCon(conn, node)) {
@@ -136,13 +137,23 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
     private void innerExecute(BackendConnection conn, RouteResultsetNode node) {
         if (clearIfSessionClosed(session)) {
-            cleanBuffer();
             return;
         }
         MySQLConnection mysqlCon = (MySQLConnection) conn;
         mysqlCon.setResponseHandler(this);
         mysqlCon.setSession(session);
         mysqlCon.executeMultiNode(node, session.getSource(), sessionAutocommit && !session.getSource().isTxStart() && !node.isModifySQL());
+    }
+
+    @Override
+    public void clearAfterFailExecute() {
+        if (!session.getSource().isAutocommit() || session.getSource().isTxStart()) {
+            session.getSource().setTxInterrupt("ROLLBACK");
+        }
+        waitAllConnConnectorError();
+        cleanBuffer();
+
+        session.forceClose("other node prepare conns failed");
     }
 
     public void cleanBuffer() {
@@ -443,7 +454,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                         session.getSource().getWriteQueue().size() > fconfig.getStart()) {
                     session.getSource().startFlowControl(conn);
                 }
-                if (prepared) {
+                if (session.isPrepared()) {
                     if (rowDataPkg == null) {
                         rowDataPkg = new RowDataPacket(fieldCount);
                         row[3] = ++packetId;
@@ -478,10 +489,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         if (closedConnSet != null) {
             closedConnSet.clear();
         }
-    }
-
-    @Override
-    public void writeQueueAvailable() {
+        cleanBuffer();
     }
 
     @Override
@@ -612,11 +620,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             lock.unlock();
         }
     }
-
-    public void setPrepared(boolean prepared) {
-        this.prepared = prepared;
-    }
-
 
     void handleEndPacket(byte[] data, AutoTxOperation txOperation, boolean isSuccess) {
         ServerConnection source = session.getSource();

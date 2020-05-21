@@ -13,8 +13,8 @@ import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.meta.SchemaMeta;
+import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.meta.ViewMeta;
-import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
@@ -182,9 +182,9 @@ public final class CheckFullMetaData {
         for (Map.Entry<String, SchemaMeta> schemaMetaEntry : ProxyMeta.getInstance().getTmManager().getCatalogs().entrySet()) {
             String schemaName = schemaMetaEntry.getKey();
             SchemaMeta schemaMeta = schemaMetaEntry.getValue();
-            for (Map.Entry<String, StructureMeta.TableMeta> tableMetaEntry : schemaMeta.getTableMetas().entrySet()) {
+            for (Map.Entry<String, TableMeta> tableMetaEntry : schemaMeta.getTableMetas().entrySet()) {
                 String tableName = tableMetaEntry.getKey();
-                StructureMeta.TableMeta tableMeta = tableMetaEntry.getValue();
+                TableMeta tableMeta = tableMetaEntry.getValue();
                 long timeStamp = tableMeta.getVersion();
                 String createQuery = tableMeta.getCreateSql();
                 boolean shouldShow = false;
@@ -234,7 +234,7 @@ public final class CheckFullMetaData {
         Map<String, SchemaConfig> schemaConfigMap = DbleServer.getInstance().getConfig().getSchemas();
         SchemaMeta schemaMeta = schemaMetaMap.get(schemaName);
         if (schemaMeta != null) {
-            StructureMeta.TableMeta tableMeta = schemaMeta.getTableMetas().get(tableName);
+            TableMeta tableMeta = schemaMeta.getTableMetas().get(tableName);
             if (tableMeta != null) {
                 RowDataPacket row = genNormalRowData(schemaName, tableName, tableMeta.getCreateSql(), tableMeta.getVersion(), charset);
                 list.add(row);
@@ -269,10 +269,10 @@ public final class CheckFullMetaData {
         SchemaMeta schemaMeta = schemaMetaMap.get(schemaName);
         if (schemaMeta != null) {
             Set<String> hasMetaTables = new HashSet<>();
-            for (Map.Entry<String, StructureMeta.TableMeta> tableMetaEntry : schemaMeta.getTableMetas().entrySet()) {
+            for (Map.Entry<String, TableMeta> tableMetaEntry : schemaMeta.getTableMetas().entrySet()) {
                 String tableName = tableMetaEntry.getKey();
                 hasMetaTables.add(tableName);
-                StructureMeta.TableMeta tableMeta = tableMetaEntry.getValue();
+                TableMeta tableMeta = tableMetaEntry.getValue();
                 RowDataPacket row = genNormalRowData(schemaName, tableName, tableMeta.getCreateSql(), tableMeta.getVersion(), charset);
                 list.add(row);
             }
@@ -343,12 +343,12 @@ public final class CheckFullMetaData {
             hasMetaSchemas.add(schemaName);
             SchemaMeta schemaMeta = schemaMetaEntry.getValue();
             Set<String> hasMetaTables = new HashSet<>();
-            for (Map.Entry<String, StructureMeta.TableMeta> tableMetaEntry : schemaMeta.getTableMetas().entrySet()) {
+            for (Map.Entry<String, TableMeta> tableMetaEntry : schemaMeta.getTableMetas().entrySet()) {
                 String tableName = tableMetaEntry.getKey();
                 hasMetaTables.add(tableName);
                 String tableID = schemaName + "." + tableName;
                 if (checkFilter.contains(tableID) ^ checkValue) {
-                    StructureMeta.TableMeta tableMeta = tableMetaEntry.getValue();
+                    TableMeta tableMeta = tableMetaEntry.getValue();
                     RowDataPacket row = genNormalRowData(schemaName, tableName, tableMeta.getCreateSql(), tableMeta.getVersion(), charset);
                     list.add(row);
                 }
@@ -392,10 +392,10 @@ public final class CheckFullMetaData {
             hasMetaSchemas.add(schemaName);
             SchemaMeta schemaMeta = schemaMetaEntry.getValue();
             Set<String> hasMetaTables = new HashSet<>();
-            for (Map.Entry<String, StructureMeta.TableMeta> tableMetaEntry : schemaMeta.getTableMetas().entrySet()) {
+            for (Map.Entry<String, TableMeta> tableMetaEntry : schemaMeta.getTableMetas().entrySet()) {
                 String tableName = tableMetaEntry.getKey();
                 hasMetaTables.add(tableName);
-                StructureMeta.TableMeta tableMeta = tableMetaEntry.getValue();
+                TableMeta tableMeta = tableMetaEntry.getValue();
                 RowDataPacket row = genNormalRowData(schemaName, tableName, tableMeta.getCreateSql(), tableMeta.getVersion(), charset);
                 list.add(row);
             }

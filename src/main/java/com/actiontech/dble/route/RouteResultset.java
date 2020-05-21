@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.route;
 
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
@@ -28,6 +28,7 @@ public final class RouteResultset implements Serializable {
     private String table;
     private String tableAlias;
     private final int sqlType;
+    private boolean online;
     private RouteResultsetNode[] nodes;
     private transient SQLStatement sqlStatement;
     private DDLInfo.DDLType ddlType = DDLInfo.DDLType.UNKNOWN;
@@ -73,6 +74,7 @@ public final class RouteResultset implements Serializable {
     public void setGroupByCols(String[] groupByCols) {
         this.groupByCols = groupByCols;
     }
+
     public boolean isNeedOptimizer() {
         return needOptimizer;
     }
@@ -130,6 +132,14 @@ public final class RouteResultset implements Serializable {
         this.srcStatement = stmt;
         this.limitSize = -1;
         this.sqlType = sqlType;
+    }
+
+    public boolean isOnline() {
+        return online;
+    }
+
+    public void setOnline(boolean online) {
+        this.online = online;
     }
 
     public void copyLimitToNodes() {
@@ -333,7 +343,6 @@ public final class RouteResultset implements Serializable {
     public void setComplexSQL(boolean complexSQL) {
         this.complexSQL = complexSQL;
     }
-
 
     public boolean isAlwaysFalse() {
         return alwaysFalse;

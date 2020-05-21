@@ -3,7 +3,7 @@ package com.actiontech.dble.manager.dump.handler;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.manager.dump.DumpException;
 import com.actiontech.dble.manager.dump.DumpFileContext;
-import com.actiontech.dble.meta.protocol.StructureMeta;
+import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.singleton.SequenceManager;
@@ -141,13 +141,13 @@ class InsertHandler extends DefaultHandler {
                     }
                 }
             } else {
-                StructureMeta.TableMeta tableMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(context.getSchema(), context.getTable());
+                TableMeta tableMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(context.getSchema(), context.getTable());
                 if (tableMeta == null) {
                     throw new DumpException("can't find meta of table and the table has no create statement.");
                 }
 
-                for (int i = 0; i < tableMeta.getColumnsList().size(); i++) {
-                    StructureMeta.ColumnMeta column = tableMeta.getColumnsList().get(i);
+                for (int i = 0; i < tableMeta.getColumns().size(); i++) {
+                    TableMeta.ColumnMeta column = tableMeta.getColumns().get(i);
                     String columnName = column.getName();
                     if (isAutoIncrement && columnName.equalsIgnoreCase(tableConfig.getIncrementColumn())) {
                         incrementColumnIndex = i;

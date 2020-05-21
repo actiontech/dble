@@ -30,7 +30,6 @@ import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.meta.table.AbstractSchemaMetaHandler;
 import com.actiontech.dble.meta.table.DDLNotifyTableMetaHandler;
 import com.actiontech.dble.meta.table.SchemaCheckMetaHandler;
@@ -60,7 +59,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class ProxyMetaManager {
     protected static final Logger LOGGER = LoggerFactory.getLogger(ProxyMetaManager.class);
-    /* catalog,table,tablemeta */
+    // catalog,table,table meta
     private final Map<String, SchemaMeta> catalogs;
     private final Map<String, String> lockTables;
     private ReentrantLock metaLock = new ReentrantLock();
@@ -191,7 +190,7 @@ public class ProxyMetaManager {
         return checkDbExists(schema) && strTable != null && this.catalogs.get(schema).getTableMetas().containsKey(strTable);
     }
 
-    public void addTable(String schema, StructureMeta.TableMeta tm) {
+    public void addTable(String schema, TableMeta tm) {
         String tbName = tm.getTableName();
         SchemaMeta schemaMeta = catalogs.get(schema);
         if (schemaMeta != null) {
@@ -229,11 +228,11 @@ public class ProxyMetaManager {
         return true;
     }
 
-    public StructureMeta.TableMeta getSyncTableMeta(String schema, String tbName) throws SQLNonTransientException {
+    public TableMeta getSyncTableMeta(String schema, String tbName) throws SQLNonTransientException {
         while (true) {
             int oldVersion = version.get();
             if (metaCount.get() == 0) {
-                StructureMeta.TableMeta meta = getTableMeta(schema, tbName);
+                TableMeta meta = getTableMeta(schema, tbName);
                 if (version.get() == oldVersion) {
                     return meta;
                 }
@@ -279,7 +278,7 @@ public class ProxyMetaManager {
         }
     }
 
-    private StructureMeta.TableMeta getTableMeta(String schema, String tbName) {
+    private TableMeta getTableMeta(String schema, String tbName) {
         return catalogs.get(schema).getTableMeta(tbName);
     }
 
@@ -577,10 +576,17 @@ public class ProxyMetaManager {
 
     public void notifyClusterDDL(String schema, String table, String sql) throws Exception {
         if (ClusterGeneralConfig.isUseZK()) {
-            CuratorFramework zkConn = ZKUtils.getConnection();
-            DDLInfo ddlInfo = new DDLInfo(schema, sql, ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), DDLInfo.DDLStatus.INIT, DDLInfo.DDLType.UNKNOWN);
             String nodeName = StringUtil.getFullName(schema, table);
-            String nodePath = ZKPaths.makePath(KVPathUtil.getDDLPath(), nodeName);
+            String ddlPath = KVPathUtil.getDDLPath();
+            String nodePath = ZKPaths.makePath(ddlPath, nodeName);
+            CuratorFramework zkConn = ZKUtils.getConnection();
+            if (zkConn.checkExists().forPath(KVPathUtil.getSyncMetaLockPath()) != null || zkConn.checkExists().forPath(nodePath) != null) {
+                String msg = "The metaLock about `" + nodeName + "` is exists. It means other instance is doing DDL.";
+                LOGGER.info(msg + " The path of DDL is " + ddlPath);
+                throw new Exception(msg);
+            }
+
+            DDLInfo ddlInfo = new DDLInfo(schema, sql, ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), DDLInfo.DDLStatus.INIT, DDLInfo.DDLType.UNKNOWN);
             zkConn.create().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
             ClusterDelayProvider.delayAfterDdlLockMeta();
         } else if (ClusterGeneralConfig.isUseGeneralCluster()) {
@@ -676,19 +682,18 @@ public class ProxyMetaManager {
         SchemaInfo schemaInfo = getSchemaInfo(schema, table);
         boolean result = isSuccess;
         if (isSuccess) {
-            String tableName = table;
-            TableConfig tbConfig = schemaInfo.getSchemaConfig().getTables().get(tableName);
+            TableConfig tbConfig = schemaInfo.getSchemaConfig().getTables().get(table);
             String showDataNode = schemaInfo.getSchemaConfig().getDataNode();
             if (tbConfig != null) {
                 for (String dataNode : tbConfig.getDataNodes()) {
                     showDataNode = dataNode;
-                    String tableId = "DataNode[" + dataNode + "]:Table[" + tableName + "]";
+                    String tableId = "DataNode[" + dataNode + "]:Table[" + table + "]";
                     if (ToResolveContainer.TABLE_LACK.contains(tableId)) {
                         AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId), ToResolveContainer.TABLE_LACK, tableId);
                     }
                 }
             }
-            DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schema, tableName, Collections.singletonList(showDataNode), null);
+            DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schema, table, Collections.singletonList(showDataNode), null);
             handler.execute();
             result = handler.isMetaInited();
         }

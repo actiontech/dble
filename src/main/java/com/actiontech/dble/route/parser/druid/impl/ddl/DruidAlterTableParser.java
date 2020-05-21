@@ -43,11 +43,13 @@ public class DruidAlterTableParser extends DefaultDruidParser {
         String msg = "The DDL is not supported, sql:";
         for (SQLAlterTableItem alterItem : alterTable.getItems()) {
             if (alterItem instanceof SQLAlterTableAddColumn ||
-                    alterItem instanceof SQLAlterTableAddIndex ||
-                    alterItem instanceof SQLAlterTableDropIndex ||
                     alterItem instanceof SQLAlterTableDropKey ||
                     alterItem instanceof SQLAlterTableDropPrimaryKey) {
                 support = true;
+            } else if (alterItem instanceof SQLAlterTableAddIndex ||
+                    alterItem instanceof SQLAlterTableDropIndex) {
+                support = true;
+                rrs.setOnline(true);
             } else if (alterItem instanceof SQLAlterTableAddConstraint) {
                 SQLConstraint constraint = ((SQLAlterTableAddConstraint) alterItem).getConstraint();
                 if (constraint instanceof MySqlPrimaryKey) {

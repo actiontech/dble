@@ -6,16 +6,18 @@ package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.cluster.*;
-import com.actiontech.dble.cluster.kVtoXml.ClusterToXml;
+import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.cluster.kVtoXml.ClusterToXml;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.PauseInfo;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.meta.PauseEndThreadPool;
 import com.actiontech.dble.meta.SchemaMeta;
-import com.actiontech.dble.meta.protocol.StructureMeta;
+import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.plan.node.TableNode;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -78,11 +80,11 @@ public final class PauseDatanodeManager {
         this.dataNodes = dataNodeSet;
         for (Entry<String, SchemaConfig> entry : DbleServer.getInstance().getConfig().getSchemas().entrySet()) {
             if (dataNodes.contains(entry.getValue().getDataNode())) {
-                LOGGER.info(new StringBuilder("lock for schema ").append(entry.getValue().getName()).
-                        append(" dataNode ").append(entry.getValue().getDataNode()).toString());
+                LOGGER.info("lock for schema " + entry.getValue().getName() +
+                        " dataNode " + entry.getValue().getDataNode());
                 SchemaConfig schemaConfig = entry.getValue();
                 SchemaMeta schemaMeta = ProxyMeta.getInstance().getTmManager().getCatalogs().get(entry.getKey());
-                for (Entry<String, StructureMeta.TableMeta> tabEntry : schemaMeta.getTableMetas().entrySet()) {
+                for (Entry<String, TableMeta> tabEntry : schemaMeta.getTableMetas().entrySet()) {
                     if (!schemaConfig.getTables().containsKey(tabEntry.getKey())) {
                         addToLockSet(entry.getKey(), tabEntry.getKey());
                     } else {

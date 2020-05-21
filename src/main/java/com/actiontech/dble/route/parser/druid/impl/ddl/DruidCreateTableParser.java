@@ -8,8 +8,7 @@ package com.actiontech.dble.route.parser.druid.impl.ddl;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.singleton.ProxyMeta;
-import com.actiontech.dble.meta.protocol.StructureMeta;
+import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.druid.impl.DefaultDruidParser;
@@ -17,6 +16,7 @@ import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.alibaba.druid.sql.ast.SQLObject;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
@@ -42,7 +42,7 @@ public class DruidCreateTableParser extends DefaultDruidParser {
 
         String schemaName = schema == null ? null : schema.getName();
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, createStmt.getTableSource());
-        StructureMeta.TableMeta tableMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
+        TableMeta tableMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
         if (tableMeta != null && !createStmt.isIfNotExiists()) {
             String msg = "Table '" + schemaInfo.getSchema() + "." + schemaInfo.getTable() + "' or table meta already exists";
             throw new SQLException(msg, "42S01", ErrorCode.ER_TABLE_EXISTS_ERROR);
@@ -51,7 +51,7 @@ public class DruidCreateTableParser extends DefaultDruidParser {
         String statement;
         if (createStmt.getLike() != null) {
             SchemaInfo likeSchemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, createStmt.getLike());
-            StructureMeta.TableMeta likeTableMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(likeSchemaInfo.getSchema(), likeSchemaInfo.getTable());
+            TableMeta likeTableMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(likeSchemaInfo.getSchema(), likeSchemaInfo.getTable());
             if (likeTableMeta == null) {
                 String msg = "Table '" + likeSchemaInfo.getSchema() + "." + likeSchemaInfo.getTable() + "' or table meta doesn't exist";
                 throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
@@ -77,9 +77,6 @@ public class DruidCreateTableParser extends DefaultDruidParser {
         return schemaInfo.getSchemaConfig();
     }
 
-
-    /**
-     */
     private void sharingTableCheck(MySqlCreateTableStatement createStmt) throws SQLNonTransientException {
         //ALLOW InnoDB ONLY
         SQLObject engine = createStmt.getTableOptions().get("ENGINE");

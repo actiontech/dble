@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * @author mycat
  */
-public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandler {
+public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandler, ExecutableHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SingleNodeHandler.class);
     protected final ReentrantLock lock = new ReentrantLock();
@@ -55,7 +55,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     private String cacheKeyTable = null;
     private int cacheKeyIndex = -1;
 
-    private boolean prepared;
     private int fieldCount;
     private List<FieldPacket> fieldPackets = new ArrayList<>();
     private volatile boolean connClosed = false;
@@ -74,6 +73,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         this.session = session;
     }
 
+    @Override
     public void execute() throws Exception {
         connClosed = false;
         if (rrs.isLoadData()) {
@@ -111,7 +111,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
     protected void execute(BackendConnection conn) {
         if (session.closed()) {
-            session.clearResources(rrs);
+            session.clearResources(true);
             recycleBuffer();
             return;
         }
@@ -121,9 +121,12 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         if (!isAutocommit && node.isModifySQL()) {
             TxnLogHelper.putTxnLog(session.getSource(), node.getStatement());
         }
-        session.readyToDeliver();
-        session.setPreExecuteEnd(false);
         conn.execute(node, session.getSource(), isAutocommit);
+    }
+
+    @Override
+    public void clearAfterFailExecute() {
+        recycleBuffer();
     }
 
     @Override
@@ -163,7 +166,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         }
     }
 
-    private void backConnectionErr(ErrorPacket errPkg, BackendConnection conn, boolean syncFinished) {
+    protected void backConnectionErr(ErrorPacket errPkg, BackendConnection conn, boolean syncFinished) {
         ServerConnection source = session.getSource();
         String errUser = source.getUser();
         String errHost = source.getHost();
@@ -188,7 +191,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             }
         }
         source.setTxInterrupt(errMsg);
-        session.handleSpecial(rrs, false);
         lock.lock();
         try {
             if (writeToClient.compareAndSet(false, true)) {
@@ -220,12 +222,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         boolean executeResponse = conn.syncAndExecute();
         if (executeResponse) {
             this.resultSize += data.length;
-            //handleSpecial
-            boolean metaInited = session.handleSpecial(rrs, true);
-            if (!metaInited) {
-                executeMetaDataFailed(conn);
-                return;
-            }
             ServerConnection source = session.getSource();
             OkPacket ok = new OkPacket();
             ok.read(data);
@@ -423,7 +419,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
                         session.getSource().getWriteQueue().size() > fconfig.getStart()) {
                     session.getSource().startFlowControl(conn);
                 }
-                if (prepared) {
+                if (session.isPrepared()) {
                     if (rowDataPk == null) {
                         rowDataPk = new RowDataPacket(fieldCount);
                         row[3] = ++packetId;
@@ -451,11 +447,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     }
 
     @Override
-    public void writeQueueAvailable() {
-
-    }
-
-    @Override
     public void connectionClose(BackendConnection conn, String reason) {
         if (connClosed) {
             return;
@@ -474,10 +465,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     @Override
     public void requestDataResponse(byte[] data, BackendConnection conn) {
         LoadDataUtil.requestFileDataResponse(data, conn);
-    }
-
-    public void setPrepared(boolean prepared) {
-        this.prepared = prepared;
     }
 
     @Override

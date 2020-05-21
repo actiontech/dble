@@ -6,8 +6,8 @@
 package com.actiontech.dble.meta.table;
 
 import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.meta.ViewMeta;
-import com.actiontech.dble.meta.protocol.StructureMeta;
 
 import java.util.Set;
 
@@ -31,7 +31,7 @@ public class SchemaInitMetaHandler extends AbstractSchemaMetaHandler {
     }
 
     @Override
-    void handleSingleMetaData(StructureMeta.TableMeta tableMeta) {
+    void handleSingleMetaData(TableMeta tableMeta) {
         if (tableMeta != null) {
             getTmManager().addTable(schema, tableMeta);
         }
@@ -45,8 +45,8 @@ public class SchemaInitMetaHandler extends AbstractSchemaMetaHandler {
     }
 
     @Override
-    void handleMultiMetaData(Set<StructureMeta.TableMeta> tableMetas) {
-        for (StructureMeta.TableMeta tableMeta : tableMetas) {
+    void handleMultiMetaData(Set<TableMeta> tableMetas) {
+        for (TableMeta tableMeta : tableMetas) {
             if (tableMeta != null) {
                 handleSingleMetaData(tableMeta);
                 break;

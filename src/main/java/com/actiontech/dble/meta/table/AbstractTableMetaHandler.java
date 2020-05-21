@@ -13,7 +13,7 @@ import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.datasource.PhysicalDataNode;
 import com.actiontech.dble.backend.datasource.PhysicalDataSource;
 import com.actiontech.dble.meta.ReloadLogHelper;
-import com.actiontech.dble.meta.protocol.StructureMeta;
+import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
@@ -73,7 +73,7 @@ public abstract class AbstractTableMetaHandler {
 
     protected abstract void countdown();
 
-    protected abstract void handlerTable(StructureMeta.TableMeta tableMeta);
+    protected abstract void handlerTable(TableMeta tableMeta);
 
     private class MySQLTableStructureListener implements SQLQueryResultListener<SQLQueryResult<Map<String, String>>> {
         private String dataNode;
@@ -102,7 +102,7 @@ public abstract class AbstractTableMetaHandler {
                 ToResolveContainer.TABLE_LACK.add(tableId);
                 if (nodesNumber.decrementAndGet() == 0) {
                     logger.info(tableId + " count down to 0 ,try to count down the table");
-                    StructureMeta.TableMeta tableMeta = genTableMeta();
+                    TableMeta tableMeta = genTableMeta();
                     handlerTable(tableMeta);
                     countdown();
                 }
@@ -132,18 +132,18 @@ public abstract class AbstractTableMetaHandler {
 
             if (nodesNumber.decrementAndGet() == 0) {
                 logger.info(tableId + " count down to 0 ,try to count down the table");
-                StructureMeta.TableMeta tableMeta = genTableMeta();
+                TableMeta tableMeta = genTableMeta();
                 handlerTable(tableMeta);
                 countdown();
             }
         }
 
-        private StructureMeta.TableMeta genTableMeta() {
-            StructureMeta.TableMeta tableMeta = null;
+        private TableMeta genTableMeta() {
+            TableMeta tableMeta = null;
             if (dataNodeTableStructureSQLMap.size() > 1) {
                 // Through the SQL is different, the table Structure may still same.
                 // for example: autoIncrement number
-                Set<StructureMeta.TableMeta> tableMetas = new HashSet<>();
+                Set<TableMeta> tableMetas = new HashSet<>();
                 for (String sql : dataNodeTableStructureSQLMap.keySet()) {
                     tableMeta = MetaHelper.initTableMeta(tableName, sql, version);
                     tableMetas.add(tableMeta);

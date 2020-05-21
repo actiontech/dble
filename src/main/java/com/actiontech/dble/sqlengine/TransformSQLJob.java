@@ -122,11 +122,6 @@ public class TransformSQLJob implements ResponseHandler, Runnable {
     }
 
     @Override
-    public void writeQueueAvailable() {
-        //do nothing
-    }
-
-    @Override
     public void connectionClose(BackendConnection conn, String reason) {
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(1);

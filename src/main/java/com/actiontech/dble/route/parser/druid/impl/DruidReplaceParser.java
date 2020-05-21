@@ -8,7 +8,7 @@ package com.actiontech.dble.route.parser.druid.impl;
 import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.meta.protocol.StructureMeta;
+import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -116,7 +116,6 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
 
     /**
      * check if the nosharding tables are Involved
-     *
      */
     private boolean parserNoSharding(ServerConnection sc, String contextSchema, SchemaInfo schemaInfo, RouteResultset rrs, SQLReplaceStatement replace) throws SQLException {
         String noShardingNode = RouterUtil.isNoSharding(schemaInfo.getSchemaConfig(), schemaInfo.getTable());
@@ -144,7 +143,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
 
 
     private String convertReplaceSQL(SchemaInfo schemaInfo, SQLReplaceStatement replace, String originSql, TableConfig tc) throws SQLNonTransientException {
-        StructureMeta.TableMeta orgTbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
+        TableMeta orgTbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(),
                 schemaInfo.getTable());
         if (orgTbMeta == null)
             return originSql;
@@ -165,7 +164,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             if (isAutoIncrement) {
                 autoIncrement = getIncrementKeyIndex(schemaInfo, tc.getIncrementColumn());
             }
-            colSize = orgTbMeta.getColumnsList().size();
+            colSize = orgTbMeta.getColumns().size();
         } else { // replace sql with  column names
             boolean hasIncrementInSql = concatColumns(tc, isAutoIncrement, sb, columns);
             colSize = columns.size();
@@ -280,6 +279,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             fetchChildTableToRoute(tc, joinKeyVal, sc, schema, sql, rrs, isExplain);
         }
     }
+
     private boolean isMultiReplace(SQLReplaceStatement insertStmt) {
         return (insertStmt.getValuesList() != null && insertStmt.getValuesList().size() > 1);
     }

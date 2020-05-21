@@ -129,11 +129,6 @@ public class FetchMySQLSequenceHandler implements ResponseHandler {
     }
 
     @Override
-    public void writeQueueAvailable() {
-
-    }
-
-    @Override
     public void connectionClose(BackendConnection conn, String reason) {
         LOGGER.warn("connection " + conn + " closed, reason:" + reason);
         handleError(conn, "connection " + conn + " closed, reason:" + reason);

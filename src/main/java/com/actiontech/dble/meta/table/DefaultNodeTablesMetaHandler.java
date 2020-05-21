@@ -5,8 +5,8 @@
 
 package com.actiontech.dble.meta.table;
 
+import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.meta.ViewMeta;
-import com.actiontech.dble.meta.protocol.StructureMeta;
 
 import java.util.Set;
 
@@ -25,7 +25,7 @@ public class DefaultNodeTablesMetaHandler extends GetTableMetaHandler {
             ViewMeta viewMeta = MetaHelper.initViewMeta(schema, createSQL, System.currentTimeMillis(), schemaMetaHandler.getTmManager());
             schemaMetaHandler.handleViewMeta(viewMeta);
         } else {
-            StructureMeta.TableMeta tableMeta = MetaHelper.initTableMeta(table, createSQL, System.currentTimeMillis());
+            TableMeta tableMeta = MetaHelper.initTableMeta(table, createSQL, System.currentTimeMillis());
             schemaMetaHandler.handleSingleMetaData(tableMeta);
         }
     }

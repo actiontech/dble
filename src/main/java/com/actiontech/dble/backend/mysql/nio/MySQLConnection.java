@@ -814,12 +814,6 @@ public class MySQLConnection extends AbstractConnection implements
         this.testing = testing;
     }
 
-    public void writeQueueAvailable() {
-        if (respHandler != null) {
-            respHandler.writeQueueAvailable();
-        }
-    }
-
     @Override
     public boolean isFromSlaveDB() {
         return fromSlaveDB;

@@ -160,10 +160,6 @@ public class MultiTablesMetaJob implements ResponseHandler, Runnable {
     }
 
     @Override
-    public void writeQueueAvailable() {
-    }
-
-    @Override
     public void connectionClose(BackendConnection conn, String reason) {
         doFinished(true);
     }

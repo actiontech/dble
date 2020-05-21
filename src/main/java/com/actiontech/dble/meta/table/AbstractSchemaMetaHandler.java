@@ -12,8 +12,8 @@ import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.ReloadLogHelper;
+import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.meta.ViewMeta;
-import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.util.CollectionUtil;
 
 import java.util.*;
@@ -167,9 +167,9 @@ public abstract class AbstractSchemaMetaHandler {
                 if (tableStruct.size() > 1) {
                     // Through the SQL is different, the table Structure may still same.
                     // for example: autoIncrement number
-                    Set<StructureMeta.TableMeta> tableMetas = new HashSet<>();
+                    Set<TableMeta> tableMetas = new HashSet<>();
                     for (String sql : tableStruct.keySet()) {
-                        StructureMeta.TableMeta tableMeta = MetaHelper.initTableMeta(tableName, sql, version);
+                        TableMeta tableMeta = MetaHelper.initTableMeta(tableName, sql, version);
                         tableMetas.add(tableMeta);
                     }
                     String tableId = schema + "." + tableName;
@@ -193,7 +193,7 @@ public abstract class AbstractSchemaMetaHandler {
                         AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableDetailId),
                                 ToResolveContainer.TABLE_LACK, tableId);
                     }
-                    StructureMeta.TableMeta tableMeta = MetaHelper.initTableMeta(tableName, tableStruct.keySet().iterator().next(), version);
+                    TableMeta tableMeta = MetaHelper.initTableMeta(tableName, tableStruct.keySet().iterator().next(), version);
                     handleSingleMetaData(tableMeta);
                 }
             }
@@ -223,11 +223,11 @@ public abstract class AbstractSchemaMetaHandler {
         this.filterTables = filterTables;
     }
 
-    abstract void handleSingleMetaData(StructureMeta.TableMeta tableMeta);
+    abstract void handleSingleMetaData(TableMeta tableMeta);
 
     abstract void handleViewMeta(ViewMeta viewMeta);
 
-    abstract void handleMultiMetaData(Set<StructureMeta.TableMeta> tableMetas);
+    abstract void handleMultiMetaData(Set<TableMeta> tableMetas);
 
     abstract void schemaMetaFinish();
 

@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.meta;
 
-import com.actiontech.dble.meta.protocol.StructureMeta;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.util.StringUtil;
 
@@ -18,7 +17,7 @@ public class SchemaMeta {
     /**
      * <table,tableMeta>
      */
-    private final ConcurrentMap<String, StructureMeta.TableMeta> tableMetas;
+    private final ConcurrentMap<String, TableMeta> tableMetas;
 
     private volatile ConcurrentMap<String, ViewMeta> viewMetas;
 
@@ -27,20 +26,19 @@ public class SchemaMeta {
         this.viewMetas = new ConcurrentHashMap<>();
     }
 
-    public Map<String, StructureMeta.TableMeta> getTableMetas() {
+    public Map<String, TableMeta> getTableMetas() {
         return tableMetas;
     }
 
-
-    public void addTableMeta(String tbName, StructureMeta.TableMeta tblMeta) {
+    public void addTableMeta(String tbName, TableMeta tblMeta) {
         this.tableMetas.put(tbName, tblMeta);
     }
 
-    public StructureMeta.TableMeta dropTable(String tbName) {
+    public TableMeta dropTable(String tbName) {
         return this.tableMetas.remove(tbName);
     }
 
-    public StructureMeta.TableMeta getTableMeta(String tbName) {
+    public TableMeta getTableMeta(String tbName) {
         return this.tableMetas.get(tbName);
     }
 
@@ -85,7 +83,7 @@ public class SchemaMeta {
 
     public SchemaMeta metaCopy() {
         SchemaMeta newMeta = new SchemaMeta();
-        for (Map.Entry<String, StructureMeta.TableMeta> entry : this.tableMetas.entrySet()) {
+        for (Map.Entry<String, TableMeta> entry : this.tableMetas.entrySet()) {
             newMeta.tableMetas.put(entry.getKey(), entry.getValue());
         }
         for (Map.Entry<String, ViewMeta> entry : this.viewMetas.entrySet()) {

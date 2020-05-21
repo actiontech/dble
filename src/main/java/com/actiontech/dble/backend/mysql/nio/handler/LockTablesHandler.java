@@ -148,10 +148,4 @@ public class LockTablesHandler extends MultiNodeHandler {
                 ": row's eof");
     }
 
-    @Override
-    public void writeQueueAvailable() {
-        // TODO Auto-generated method stub
-
-    }
-
 }

@@ -25,6 +25,7 @@ public class DruidCreateIndexParser extends DefaultDruidParser {
     @Override
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt,
                                      ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain) throws SQLException {
+        rrs.setOnline(true);
         SQLCreateIndexStatement createStmt = (SQLCreateIndexStatement) stmt;
         SQLTableSource tableSource = createStmt.getTable();
         if (tableSource instanceof SQLExprTableSource) {

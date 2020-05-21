@@ -246,10 +246,6 @@ public class SavePointHandler extends MultiNodeHandler {
     }
 
     @Override
-    public void writeQueueAvailable() {
-    }
-
-    @Override
     public void connectionAcquired(BackendConnection conn) {
     }
 

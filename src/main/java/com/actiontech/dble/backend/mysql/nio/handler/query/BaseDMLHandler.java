@@ -107,12 +107,6 @@ public abstract class BaseDMLHandler implements DMLResponseHandler {
     }
 
     @Override
-    public void writeQueueAvailable() {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
     public void connectionClose(BackendConnection conn, String reason) {
         // TODO Auto-generated method stub
 

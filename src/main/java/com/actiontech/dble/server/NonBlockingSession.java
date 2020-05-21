@@ -22,7 +22,7 @@ import com.actiontech.dble.btrace.provider.ComplexQueryProvider;
 import com.actiontech.dble.btrace.provider.CostTimeProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLTraceInfo;
 import com.actiontech.dble.net.handler.BackEndDataCleaner;
 import com.actiontech.dble.net.handler.FrontendCommandHandler;
 import com.actiontech.dble.net.mysql.EOFPacket;
@@ -41,6 +41,7 @@ import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.server.status.SlowQueryLog;
 import com.actiontech.dble.server.trace.TraceRecord;
 import com.actiontech.dble.server.trace.TraceResult;
+import com.actiontech.dble.singleton.DDLTraceManager;
 import com.actiontech.dble.singleton.PauseDatanodeManager;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.statistic.stat.QueryTimeCost;
@@ -49,6 +50,7 @@ import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.SQLNonTransientException;
 import java.sql.SQLSyntaxErrorException;
 import java.util.*;
 import java.util.Map.Entry;
@@ -454,6 +456,7 @@ public class NonBlockingSession implements Session {
             }
         }
 
+        // complex query
         RouteResultsetNode[] nodes = rrs.getNodes();
         if (nodes == null || nodes.length == 0 || nodes[0].getName() == null || nodes[0].getName().equals("")) {
             if (rrs.isNeedOptimizer()) {
@@ -470,11 +473,13 @@ public class NonBlockingSession implements Session {
             return;
         }
 
-        setRouteResultToTrace(rrs.getNodes());
-        if (nodes.length == 1) {
-            executeForSingleNode(rrs);
+        setRouteResultToTrace(nodes);
+        if (rrs.getSqlType() == DDL) {
+            // ddl
+            executeDDL(rrs);
         } else {
-            executeMultiResultSet(rrs);
+            // dml or simple select
+            executeOther(rrs);
         }
     }
 
@@ -484,101 +489,59 @@ public class NonBlockingSession implements Session {
         }
     }
 
-
-    private void executeForSingleNode(RouteResultset rrs) {
-        SingleNodeHandler singleNodeHandler = rrs.getSqlType() == DDL ?
-                new SingleNodeDDLHandler(rrs, this) :
-                new SingleNodeHandler(rrs, this);
-        setTraceSimpleHandler(singleNodeHandler);
-        if (this.isPrepared()) {
-            singleNodeHandler.setPrepared(true);
-        }
+    private void executeDDL(RouteResultset rrs) {
+        ExecutableHandler executableHandler;
         try {
-            singleNodeHandler.execute();
+            // not hint and not online ddl
+            if (rrs.getSchema() != null && !rrs.isOnline()) {
+                DDLTraceManager.getInstance().startDDL(source);
+                addTableMetaLock(rrs);
+                DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.LOCK_END, source);
+            }
+
+            if (rrs.getNodes().length == 1) {
+                executableHandler = new SingleNodeDDLHandler(rrs, this);
+            } else {
+                /*
+                 * here, just a try! The sync is the superfluous, because there are heartbeats  at every backend node.
+                 * We don't do 2pc or 3pc. Because mysql(that is, resource manager) don't support that for ddl statements.
+                 */
+                checkBackupStatus();
+                executableHandler = new MultiNodeDdlPrepareHandler(rrs, this);
+            }
+
+            setTraceSimpleHandler((ResponseHandler) executableHandler);
+            executableHandler.execute();
             discard = true;
         } catch (Exception e) {
-            singleNodeHandler.recycleBuffer();
-            handleSpecial(rrs, false);
             LOGGER.info(String.valueOf(source) + rrs, e);
-            source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.getMessage() == null ? e.toString() : e.getMessage());
-        }
-        if (this.isPrepared()) {
-            this.setPrepared(false);
+            handleSpecial(rrs, false, null);
+            source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
         }
     }
 
-    private void executeMultiResultSet(RouteResultset rrs) {
-        if (rrs.getSqlType() == ServerParse.DDL) {
-            /*
-             * here, just a try! The sync is the superfluous, because there are heartbeats  at every backend node.
-             * We don't do 2pc or 3pc. Because mysql(that is, resource manager) don't support that for ddl statements.
-             */
-            checkBackupStatus();
-            MultiNodeDdlPrepareHandler multiNodeDdlHandler = new MultiNodeDdlPrepareHandler(rrs, this);
-            try {
-                multiNodeDdlHandler.execute();
-                discard = true;
-            } catch (Exception e) {
-                LOGGER.info(String.valueOf(source) + rrs, e);
-                try {
-                    ProxyMeta.getInstance().getTmManager().notifyResponseClusterDDL(rrs.getSchema(), rrs.getTable(), rrs.getSrcStatement(), DDLInfo.DDLStatus.FAILED, DDLInfo.DDLType.UNKNOWN, true);
-                } catch (Exception ex) {
-                    LOGGER.warn("notifyResponseZKDdl error", e);
-                }
-                ProxyMeta.getInstance().getTmManager().removeMetaLock(rrs.getSchema(), rrs.getTable());
-                source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
-            }
+    private void executeOther(RouteResultset rrs) {
+        ExecutableHandler executableHandler;
+        if (rrs.getNodes().length == 1) {
+            executableHandler = new SingleNodeHandler(rrs, this);
         } else if (ServerParse.SELECT == rrs.getSqlType() && rrs.getGroupByCols() != null) {
-            MultiNodeSelectHandler multiNodeSelectHandler = new MultiNodeSelectHandler(rrs, this);
-            setTraceSimpleHandler(multiNodeSelectHandler);
-            setPreExecuteEnd(false);
-            readyToDeliver();
-            if (this.isPrepared()) {
-                multiNodeSelectHandler.setPrepared(true);
-            }
-            try {
-                multiNodeSelectHandler.execute();
-                discard = true;
-            } catch (Exception e) {
-                LOGGER.info(String.valueOf(source) + rrs, e);
-                if (!source.isAutocommit() || source.isTxStart()) {
-                    source.setTxInterrupt("ROLLBACK");
-                }
-                multiNodeSelectHandler.waitAllConnConnectorError();
-                multiNodeSelectHandler.cleanBuffer();
-                closeConnections();
-                setResponseTime(false);
-                LOGGER.info(String.valueOf(source) + rrs, e);
-                source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
-            }
-            if (this.isPrepared()) {
-                this.setPrepared(false);
-            }
+            executableHandler = new MultiNodeSelectHandler(rrs, this);
         } else {
-            MultiNodeQueryHandler multiNodeHandler = new MultiNodeQueryHandler(rrs, this);
-            setTraceSimpleHandler(multiNodeHandler);
-            setPreExecuteEnd(false);
-            readyToDeliver();
-            if (this.isPrepared()) {
-                multiNodeHandler.setPrepared(true);
-            }
-            try {
-                multiNodeHandler.execute();
-                discard = true;
-            } catch (Exception e) {
-                LOGGER.info(String.valueOf(source) + rrs, e);
-                if (!source.isAutocommit() || source.isTxStart()) {
-                    source.setTxInterrupt("ROLLBACK");
-                }
-                multiNodeHandler.waitAllConnConnectorError();
-                multiNodeHandler.cleanBuffer();
-                closeConnections();
-                setResponseTime(false);
-                source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
-            }
-            if (this.isPrepared()) {
-                this.setPrepared(false);
-            }
+            executableHandler = new MultiNodeQueryHandler(rrs, this);
+        }
+
+        setTraceSimpleHandler((ResponseHandler) executableHandler);
+        setPreExecuteEnd(false);
+        readyToDeliver();
+
+        try {
+            executableHandler.execute();
+            discard = true;
+        } catch (Exception e) {
+            LOGGER.info(String.valueOf(source) + rrs, e);
+            executableHandler.clearAfterFailExecute();
+            setResponseTime(false);
+            source.writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.toString());
         }
     }
 
@@ -592,20 +555,18 @@ public class NonBlockingSession implements Session {
             }
             discard = true;
         } catch (SQLSyntaxErrorException e) {
-            LOGGER.info(String.valueOf(source) + " execute plan is : " + node, e);
+            LOGGER.info(source + " execute plan is : " + node, e);
             source.writeErrMessage(ErrorCode.ER_YES, "optimizer build error");
         } catch (NoSuchElementException e) {
-            LOGGER.info(String.valueOf(source) + " execute plan is : " + node, e);
+            LOGGER.info(source + " execute plan is : " + node, e);
             this.closeAndClearResources("Exception");
             source.writeErrMessage(ErrorCode.ER_NO_VALID_CONNECTION, "no valid connection");
         } catch (MySQLOutPutException e) {
-            if (LOGGER.isInfoEnabled()) {
-                LOGGER.info(String.valueOf(source) + " execute plan is : " + node, e);
-            }
+            LOGGER.info(source + " execute plan is : " + node, e);
             this.closeAndClearResources("Exception");
             source.writeErrMessage(e.getSqlState(), e.getMessage(), e.getErrorCode());
         } catch (Exception e) {
-            LOGGER.info(String.valueOf(source) + " execute plan is : " + node, e);
+            LOGGER.info(source + " execute plan is : " + node, e);
             this.closeAndClearResources("Exception");
             source.writeErrMessage(ErrorCode.ER_HANDLE_DATA, e.toString());
         }
@@ -647,6 +608,18 @@ public class NonBlockingSession implements Session {
         }
     }
 
+    private void addTableMetaLock(RouteResultset rrs) throws SQLNonTransientException {
+        String schema = rrs.getSchema();
+        String table = rrs.getTable();
+        try {
+            //lock self meta
+            ProxyMeta.getInstance().getTmManager().addMetaLock(schema, table, rrs.getSrcStatement());
+            ProxyMeta.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement());
+        } catch (Exception e) {
+            ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
+            throw new SQLNonTransientException(e.toString() + ",sql:" + rrs.getStatement());
+        }
+    }
 
     private void init() {
         this.outputHandler = null;
@@ -821,18 +794,6 @@ public class NonBlockingSession implements Session {
 
     }
 
-    private void closeConnections() {
-        Iterator<Entry<RouteResultsetNode, BackendConnection>> iter = target.entrySet().iterator();
-        while (iter.hasNext()) {
-            Entry<RouteResultsetNode, BackendConnection> entry = iter.next();
-            BackendConnection c = entry.getValue();
-            iter.remove();
-            if (c != null) {
-                c.closeWithoutRsp("other node prepare conns failed");
-            }
-        }
-    }
-
     public void waitFinishConnection(RouteResultsetNode rrn) {
         BackendConnection c = target.get(rrn);
         if (c != null) {
@@ -930,13 +891,6 @@ public class NonBlockingSession implements Session {
         source.getAndIncrementXid();
     }
 
-    public void clearResources(RouteResultset rrs) {
-        clearResources(true);
-        if (rrs.getSqlType() == DDL) {
-            this.handleSpecial(rrs, false);
-        }
-    }
-
     public boolean closed() {
         return source.isClosed();
     }
@@ -978,19 +932,8 @@ public class NonBlockingSession implements Session {
         return errConn;
     }
 
-    public boolean handleSpecial(RouteResultset rrs, boolean isSuccess) {
-        if (rrs.getSchema() != null) {
-            return handleSpecial(rrs, isSuccess, null);
-        } else {
-            if (rrs.getSqlType() == ServerParse.DDL) {
-                LOGGER.info("Hint ddl do not update the meta");
-            }
-            return true;
-        }
-    }
-
     public boolean handleSpecial(RouteResultset rrs, boolean isSuccess, String errInfo) {
-        if (rrs.getSqlType() == ServerParse.DDL && rrs.getSchema() != null) {
+        if (rrs.getSchema() != null) {
             String sql = rrs.getSrcStatement();
             if (source.isTxStart()) {
                 source.setTxStart(false);
@@ -1000,11 +943,18 @@ public class NonBlockingSession implements Session {
                 LOGGER.warn("DDL execute failed or Session closed, " +
                         "Schema[" + rrs.getSchema() + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
             }
-            return ProxyMeta.getInstance().getTmManager().updateMetaData(rrs.getSchema(), rrs.getTable(), sql, isSuccess, true, rrs.getDdlType());
-        }
-        return true;
-    }
 
+            if (rrs.isOnline()) {
+                LOGGER.info("online ddl skip updating meta and cluster notify, Schema[" + rrs.getSchema() + "],SQL[" + sql + "]" + (errInfo != null ? "errorInfo:" + errInfo : ""));
+                return true;
+            }
+
+            return ProxyMeta.getInstance().getTmManager().updateMetaData(rrs.getSchema(), rrs.getTable(), sql, isSuccess, true, rrs.getDdlType());
+        } else {
+            LOGGER.info("Hint ddl do not update the meta");
+            return true;
+        }
+    }
 
     /**
      * backend packet server_status change and next round start
@@ -1090,7 +1040,7 @@ public class NonBlockingSession implements Session {
     boolean generalNextStatement(String sql) {
         int index = ParseUtil.findNextBreak(sql);
         if (index + 1 < sql.length() && !ParseUtil.isEOF(sql, index)) {
-            this.remingSql = sql.substring(index + 1, sql.length());
+            this.remingSql = sql.substring(index + 1);
             this.isMultiStatement.set(true);
             return true;
         } else {

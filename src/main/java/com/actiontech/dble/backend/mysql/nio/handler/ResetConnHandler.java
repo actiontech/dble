@@ -62,9 +62,4 @@ public class ResetConnHandler implements ResponseHandler {
         //not happen
     }
 
-    @Override
-    public void writeQueueAvailable() {
-        //not happen
-    }
-
 }

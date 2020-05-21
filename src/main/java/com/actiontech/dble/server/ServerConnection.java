@@ -10,7 +10,6 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLTraceInfo;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.config.model.UserConfig;
@@ -28,9 +27,9 @@ import com.actiontech.dble.server.response.Ping;
 import com.actiontech.dble.server.response.ShowCreateView;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.singleton.*;
-import com.actiontech.dble.util.*;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.utils.ZKPaths;
+import com.actiontech.dble.util.SplitUtil;
+import com.actiontech.dble.util.StringUtil;
+import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -341,65 +340,33 @@ public class ServerConnection extends FrontendConnection {
     }
 
     private void routeEndExecuteSQL(String sql, int type, SchemaConfig schema) {
-        RouteResultset rrs = null;
-        try {
-            if (session.isKilled()) {
-                writeErrMessage(ErrorCode.ER_QUERY_INTERRUPTED, "The query is interrupted.");
-                return;
-            }
+        if (session.isKilled()) {
+            writeErrMessage(ErrorCode.ER_QUERY_INTERRUPTED, "The query is interrupted.");
+            return;
+        }
 
+        RouteResultset rrs;
+        try {
             rrs = RouteService.getInstance().route(schema, type, sql, this);
             if (rrs == null) {
+                writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql can't route to any data node.");
                 return;
             }
             if (rrs.getSqlType() == ServerParse.DDL && rrs.getSchema() != null) {
-                DDLTraceManager.getInstance().startDDL(this);
-                addTableMetaLock(rrs);
                 if (ProxyMeta.getInstance().getTmManager().getCatalogs().get(rrs.getSchema()).getView(rrs.getTable()) != null) {
                     ProxyMeta.getInstance().getTmManager().removeMetaLock(rrs.getSchema(), rrs.getTable());
                     String msg = "Table '" + rrs.getTable() + "' already exists as a view";
                     LOGGER.info(msg);
                     throw new SQLNonTransientException(msg);
                 }
-                DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.LOCK_END, this);
             }
         } catch (Exception e) {
-            if (rrs != null && rrs.getSqlType() == ServerParse.DDL && rrs.getSchema() != null) {
-                DDLTraceManager.getInstance().endDDL(this, e.getMessage());
-            }
             executeException(e, sql);
             return;
         }
+
         session.endRoute(rrs);
         session.execute(rrs);
-    }
-
-    private void addTableMetaLock(RouteResultset rrs) throws SQLNonTransientException {
-        String schema = rrs.getSchema();
-        String table = rrs.getTable();
-        try {
-            //lock self meta
-            ProxyMeta.getInstance().getTmManager().addMetaLock(schema, table, rrs.getSrcStatement());
-            if (ClusterGeneralConfig.isUseZK()) {
-                String nodeName = StringUtil.getFullName(schema, table);
-                String ddlPath = KVPathUtil.getDDLPath();
-                String nodePth = ZKPaths.makePath(ddlPath, nodeName);
-                CuratorFramework zkConn = ZKUtils.getConnection();
-                if (zkConn.checkExists().forPath(KVPathUtil.getSyncMetaLockPath()) != null || zkConn.checkExists().forPath(nodePth) != null) {
-                    String msg = "The metaLock about `" + nodeName + "` is exists. It means other instance is doing DDL.";
-                    LOGGER.info(msg + " The path of DDL is " + ddlPath);
-                    throw new Exception(msg);
-                }
-                ProxyMeta.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement());
-            } else if (ClusterGeneralConfig.isUseGeneralCluster()) {
-                ProxyMeta.getInstance().getTmManager().notifyClusterDDL(schema, table, rrs.getStatement());
-            }
-        } catch (SQLNonTransientException e) {
-            throw e;
-        } catch (Exception e) {
-            ProxyMeta.getInstance().getTmManager().removeMetaLock(schema, table);
-            throw new SQLNonTransientException(e.toString() + ",sql:" + rrs.getStatement());
-        }
     }
 
     private void executeException(Exception e, String sql) {
@@ -601,6 +568,9 @@ public class ServerConnection extends FrontendConnection {
             session.setKilled(false);
             session.setDiscard(false);
         }
+        if (session.isPrepared()) {
+            session.setPrepared(false);
+        }
     }
 
     @Override
@@ -612,6 +582,9 @@ public class ServerConnection extends FrontendConnection {
             session.setKilled(false);
             session.setDiscard(false);
         }
+        if (session.isPrepared()) {
+            session.setPrepared(false);
+        }
     }
 
     @Override
@@ -622,6 +595,9 @@ public class ServerConnection extends FrontendConnection {
         if (session.isDiscard() || session.isKilled()) {
             session.setKilled(false);
             session.setDiscard(false);
+        }
+        if (session.isPrepared()) {
+            session.setPrepared(false);
         }
     }
 

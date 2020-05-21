@@ -9,7 +9,7 @@ import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.ServerPrivileges.CheckType;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.meta.protocol.StructureMeta;
+import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -308,7 +308,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
 
     private String convertInsertSQL(SchemaInfo schemaInfo, MySqlInsertStatement insert, String originSql, TableConfig tc) throws SQLNonTransientException {
 
-        StructureMeta.TableMeta orgTbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
+        TableMeta orgTbMeta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaInfo.getSchema(), schemaInfo.getTable());
         if (orgTbMeta == null)
             return originSql;
 
@@ -332,7 +332,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             if (isAutoIncrement) {
                 autoIncrement = getIncrementKeyIndex(schemaInfo, tc.getIncrementColumn());
             }
-            colSize = orgTbMeta.getColumnsList().size();
+            colSize = orgTbMeta.getColumns().size();
         } else {
             genColumnNames(tc, isAutoIncrement, sb, columns);
             colSize = columns.size();

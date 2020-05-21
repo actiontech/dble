@@ -11,8 +11,8 @@ import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.meta.ProxyMetaManager;
+import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.meta.ViewMeta;
-import com.actiontech.dble.meta.protocol.StructureMeta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +34,7 @@ public class SchemaCheckMetaHandler extends AbstractSchemaMetaHandler {
     }
 
     @Override
-    void handleSingleMetaData(StructureMeta.TableMeta tableMeta) {
+    void handleSingleMetaData(TableMeta tableMeta) {
         this.checkTableModify(tableMeta);
     }
 
@@ -43,8 +43,8 @@ public class SchemaCheckMetaHandler extends AbstractSchemaMetaHandler {
     }
 
     @Override
-    void handleMultiMetaData(Set<StructureMeta.TableMeta> tableMetas) {
-        for (StructureMeta.TableMeta tableMeta : tableMetas) {
+    void handleMultiMetaData(Set<TableMeta> tableMetas) {
+        for (TableMeta tableMeta : tableMetas) {
             if (tableMeta != null) {
                 String tableId = schema + "." + tableMeta.getTableName();
                 if (isTableModify(tableMeta)) {
@@ -62,7 +62,7 @@ public class SchemaCheckMetaHandler extends AbstractSchemaMetaHandler {
 
     }
 
-    private void checkTableModify(StructureMeta.TableMeta tableMeta) {
+    private void checkTableModify(TableMeta tableMeta) {
         if (tableMeta != null) {
             String tableId = schema + "." + tableMeta.getTableName();
             if (isTableModify(tableMeta)) {
@@ -79,9 +79,9 @@ public class SchemaCheckMetaHandler extends AbstractSchemaMetaHandler {
     }
 
 
-    private boolean isTableModify(StructureMeta.TableMeta tm) {
+    private boolean isTableModify(TableMeta tm) {
         String tbName = tm.getTableName();
-        StructureMeta.TableMeta oldTm;
+        TableMeta oldTm;
         try {
             oldTm = getTmManager().getSyncTableMeta(schema, tbName);
         } catch (SQLNonTransientException e) {
@@ -96,10 +96,11 @@ public class SchemaCheckMetaHandler extends AbstractSchemaMetaHandler {
             //there is an new version TableMeta after check start
             return false;
         }
-        StructureMeta.TableMeta tblMetaTmp = tm.toBuilder().setVersion(oldTm.getVersion()).build();
+        TableMeta tblMetaTmp = new TableMeta();
+        tblMetaTmp.setVersion(oldTm.getVersion());
         if (!oldTm.equals(tblMetaTmp)) { // oldTm!=tblMetaTmp means memory  meta is not equal show create table result
             try {
-                StructureMeta.TableMeta test = getTmManager().getSyncTableMeta(schema, tbName);
+                TableMeta test = getTmManager().getSyncTableMeta(schema, tbName);
                 /* oldTm==test means memory meta is not changed, so memory is really different with show create table result
                   if(oldTm!=test) means memory meta changed ,left to next check
                 */

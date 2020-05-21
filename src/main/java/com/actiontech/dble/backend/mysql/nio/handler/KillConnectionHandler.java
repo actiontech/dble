@@ -73,7 +73,7 @@ public class KillConnectionHandler implements ResponseHandler {
     public void errorResponse(byte[] data, BackendConnection conn) {
         ErrorPacket err = new ErrorPacket();
         err.read(data);
-        String msg = null;
+        String msg;
         try {
             msg = new String(err.getMessage(), CharsetUtil.getJavaCharset(conn.getCharset().getResults()));
         } catch (UnsupportedEncodingException e) {
@@ -93,11 +93,6 @@ public class KillConnectionHandler implements ResponseHandler {
     @Override
     public boolean rowResponse(byte[] row, RowDataPacket rowPacket, boolean isLeft, BackendConnection conn) {
         return false;
-    }
-
-    @Override
-    public void writeQueueAvailable() {
-
     }
 
     @Override

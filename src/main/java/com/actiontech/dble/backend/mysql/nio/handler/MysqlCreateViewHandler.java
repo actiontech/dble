@@ -153,11 +153,6 @@ public class MysqlCreateViewHandler implements ResponseHandler {
     }
 
     @Override
-    public void writeQueueAvailable() {
-        //not happen
-    }
-
-    @Override
     public void connectionClose(BackendConnection conn, String reason) {
         //not happen
     }

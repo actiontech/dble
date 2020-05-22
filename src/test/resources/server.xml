@@ -33,31 +33,6 @@
     </system>
     -->
 
-    <!-- 用户访问定义，用户名、密码、schema等信息。 -->
-    <user name="test">
-        <property name="password">test</property>
-        <property name="schemas">dbtest,mysqldb,cndb,TESTDB,dubbo,dubbo2,config,none_node_test,solo1,ignoreSchemaTest
-        </property>
-        <privileges check="true">
-            <schema name="testdb" dml="0110">
-                <table name="sharding_two_node" dml="0000" />
-                <table name="qwert" dml="0001" />
-            </schema>
-        </privileges>
-    </user>
-    <!--
-    <user name="root">
-      <property name="password"></property>
-    </user>
-    -->
 
-    <!-- 隔离区定义，可以限定某个主机上只允许某个用户登录。 -->
-    <!--
-    <quarantine>
-      <host name="1.2.3.4">
-        <property name="user">test</property>
-      </host>
-    </quarantine>
-    -->
 
 </dble:server>

@@ -18,10 +18,7 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.transform.stream.StreamSource;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -51,46 +48,27 @@ public class XmlProcessBase {
     @SuppressWarnings("rawtypes")
     private List<Class> parseXmlClass = new ArrayList<>();
 
-    /**
-     * @param parseClass
-     * @Created 2016/9/15
-     */
+
     @SuppressWarnings("rawtypes")
     public void addParseClass(Class parseClass) {
         this.parseXmlClass.add(parseClass);
     }
 
-    /**
-     * initJaxbClass
-     *
-     * @throws JAXBException
-     * @Created 2016/9/15
-     */
+
     @SuppressWarnings("rawtypes")
     public void initJaxbClass() throws JAXBException {
 
         Class[] classArray = new Class[parseXmlClass.size()];
         parseXmlClass.toArray(classArray);
 
-        try {
-            this.jaxContext = JAXBContext.newInstance(classArray, Collections.<String, Object>emptyMap());
-        } catch (JAXBException e) {
-            throw e;
-        }
+        this.jaxContext = JAXBContext.newInstance(classArray, Collections.<String, Object>emptyMap());
 
         // Deserialization
         unmarshaller = jaxContext.createUnmarshaller();
     }
 
-    /**
-     * baseParseAndWriteToXml
-     *
-     * @param user
-     * @param inputPath
-     * @param name
-     * @Created 2016/9/15
-     */
-    public void baseParseAndWriteToXml(Object user, String inputPath, String name) throws IOException {
+
+    public void baseParseAndWriteToXml(Object obj, String inputPath, String name) throws IOException {
         OutputStream out = null;
         try {
             Marshaller marshaller = this.jaxContext.createMarshaller();
@@ -107,10 +85,10 @@ public class XmlProcessBase {
             out = Files.newOutputStream(path, StandardOpenOption.CREATE,
                     StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
 
-            marshaller.marshal(user, out);
+            marshaller.marshal(obj, out);
 
         } catch (JAXBException | IOException e) {
-            LOGGER.error("ZookeeperProcessListen parseToXml  error:Exception info:", e);
+            LOGGER.error("parseToXml  error:Exception info:", e);
         } finally {
             if (out != null) {
                 out.close();
@@ -118,16 +96,8 @@ public class XmlProcessBase {
         }
     }
 
-    /**
-     * baseParseAndWriteToXml
-     *
-     * @param user
-     * @param inputPath
-     * @param name
-     * @Created 2016/9/15
-     */
     @SuppressWarnings("restriction")
-    public void baseParseAndWriteToXml(Object user, String inputPath, String name, Map<String, Object> map)
+    public void baseParseAndWriteToXml(Object obj, String inputPath, String name, Map<String, Object> map)
             throws IOException {
         OutputStream out = null;
         try {
@@ -151,10 +121,10 @@ public class XmlProcessBase {
             out = Files.newOutputStream(path, StandardOpenOption.CREATE,
                     StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
 
-            marshaller.marshal(user, out);
+            marshaller.marshal(obj, out);
 
         } catch (JAXBException | IOException e) {
-            LOGGER.error("ZookeeperProcessListen parseToXml  error:Exception info:", e);
+            LOGGER.error("parseToXml  error:Exception info:", e);
         } finally {
             if (out != null) {
                 out.close();
@@ -162,15 +132,30 @@ public class XmlProcessBase {
         }
     }
 
-    /**
-     * baseParseXmlToBean
-     *
-     * @param fileName
-     * @return
-     * @throws JAXBException
-     * @throws XMLStreamException
-     * @Created 2016/9/16
-     */
+
+    public String baseParseToString(Object obj, String name) {
+        try {
+            Marshaller marshaller = this.jaxContext.createMarshaller();
+            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+            marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.TRUE);
+
+            if (null != name) {
+                marshaller.setProperty("com.sun.xml.internal.bind.xmlHeaders",
+                        String.format("<!DOCTYPE " + Versions.ROOT_PREFIX + ":%1$s SYSTEM \"%1$s.dtd\">", name));
+            }
+            StringWriter sw = new StringWriter();
+            marshaller.marshal(obj, sw);
+
+            return sw.toString();
+
+        } catch (JAXBException e) {
+            LOGGER.error("parseToXml  error:Exception info:", e);
+            return null;
+        }
+    }
+
+
+
     public Object baseParseXmlToBean(String fileName) throws JAXBException, XMLStreamException {
         InputStream inputStream = ResourceUtil.getResourceAsStreamFromRoot(fileName);
         if (inputStream != null) {
@@ -184,7 +169,7 @@ public class XmlProcessBase {
     }
 
 
-    public void safeParseWriteToXml(Object user, String inputPath, String name) throws IOException {
+    public void safeParseWriteToXml(Object obj, String inputPath, String name) throws IOException {
         OutputStream out = null;
         try {
             Marshaller marshaller = this.jaxContext.createMarshaller();
@@ -201,10 +186,10 @@ public class XmlProcessBase {
             out = Files.newOutputStream(path, StandardOpenOption.CREATE,
                     StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
 
-            marshaller.marshal(user, out);
+            marshaller.marshal(obj, out);
 
             //write out xml.dble.safe file finish
-            // rename it into schema.xml
+            // rename it into sharding.xml
             File fromFile = new File(inputPath + ".dble.safe");
             File toFile = new File(inputPath);
             if (toFile.exists()) {
@@ -215,7 +200,7 @@ public class XmlProcessBase {
             }
 
         } catch (JAXBException | IOException e) {
-            LOGGER.error("ZookeeperProcessListen parseToXml  error:Exception info:", e);
+            LOGGER.error("parseToXml  error:Exception info:", e);
             throw new IOException(e);
         } finally {
             if (out != null) {

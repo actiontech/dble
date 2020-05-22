@@ -63,11 +63,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java</artifactId>
-            <version>2.6.1</version>
-        </dependency>
-        <dependency>
             <groupId>org.iq80.leveldb</groupId>
             <artifactId>leveldb</artifactId>
             <version>0.7</version>
@@ -231,11 +226,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>fastjson</artifactId>
-            <version>1.2.62</version>
-        </dependency>
         <!-- joda time execute time -->
         <dependency>
             <groupId>joda-time</groupId>
@@ -293,11 +283,16 @@
             <testResource>
                 <directory>src/test/resources</directory>
                 <excludes>
-                    <exclude>**/.svn/**</exclude>
-                    <exclude>rule_template.xml</exclude>
-                    <exclude>schema_template.xml</exclude>
-                    <exclude>server_template.xml</exclude>
+                    <exclude>*_template.xml</exclude>
                 </excludes>
+            </testResource>
+            <testResource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>*_template.xml</include>
+                    <include>*.dtd</include>
+                    <include>*.txt</include>
+                </includes>
             </testResource>
         </testResources>
         <pluginManagement>
@@ -512,7 +507,7 @@
                 <artifactId>appassembler-maven-plugin</artifactId>
                 <version>1.7</version>
                 <configuration>
-                    <configurationDirectory>conf</configurationDirectory>
+                    <configurationDirectory>bin</configurationDirectory>
                     <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
                     <repositoryLayout>flat</repositoryLayout>
                     <useWildcardClassPath>true</useWildcardClassPath>
@@ -527,34 +522,7 @@
                             <platforms>
                                 <platform>jsw</platform>
                             </platforms>
-                            <jvmSettings>
-                                <!-- 启动内存配置 -->
-                                <maxStackSize>128</maxStackSize>
-                                <systemProperties>
-                                    <systemProperty>DBLE_HOME=.</systemProperty>
-                                </systemProperties>
-                                <extraArguments>
-                                    <extraArgument>-server</extraArgument>
-                                    <extraArgument>-XX:+AggressiveOpts</extraArgument>
-                                    <extraArgument>-Dfile.encoding=UTF-8</extraArgument>
-                                    <!-- 远程JMX -->
-                                    <extraArgument>-Dcom.sun.management.jmxremote</extraArgument>
-                                    <extraArgument>-Dcom.sun.management.jmxremote.port=1984</extraArgument>
-                                    <extraArgument>-Dcom.sun.management.jmxremote.authenticate=false</extraArgument>
-                                    <extraArgument>-Dcom.sun.management.jmxremote.ssl=false</extraArgument>
-                                    <extraArgument>-Dcom.sun.management.jmxremote.host=127.0.0.1</extraArgument>
-                                    <extraArgument>-Xmx4G</extraArgument>
-                                    <extraArgument>-Xms1G</extraArgument>
-                                    <extraArgument>-XX:MaxDirectMemorySize=2G</extraArgument>
-                                    <extraArgument>-XX:+PrintHeapAtGC</extraArgument>
-                                    <extraArgument>-XX:+PrintGCDateStamps</extraArgument>
-                                    <extraArgument>-Xloggc:./logs/gc_%t_%p.log</extraArgument>
-                                    <extraArgument>-XX:+PrintGCTimeStamps</extraArgument>
-                                    <extraArgument>-XX:+PrintGCDetails</extraArgument>
-                                    <extraArgument>-XX:+HeapDumpOnOutOfMemoryError</extraArgument>
-                                    <extraArgument>-XX:HeapDumpPath=./logs/</extraArgument>
-                                </extraArguments>
-                            </jvmSettings>
+
                             <generatorConfigurations>
                                 <generatorConfiguration>
                                     <generator>jsw</generator>
@@ -564,6 +532,10 @@
                                     </includes>
 
                                     <configuration>
+                                        <property>
+                                            <name>wrapper.java.additional_file</name>
+                                            <value>conf/bootstrap.cnf</value>
+                                        </property>
                                         <property>
                                             <name>configuration.directory.in.classpath.first</name>
                                             <value>conf</value>

@@ -1,12 +1,11 @@
 package com.actiontech.dble.cluster;
 
-import com.actiontech.dble.cluster.bean.KvBean;
 import com.actiontech.dble.cluster.bean.ClusterAlertBean;
+import com.actiontech.dble.cluster.bean.KvBean;
 import com.actiontech.dble.cluster.bean.SubscribeRequest;
 import com.actiontech.dble.cluster.bean.SubscribeReturnBean;
 
 import java.util.List;
-import java.util.Properties;
 
 /**
  * Created by szf on 2019/3/11.
@@ -18,9 +17,8 @@ public interface ClusterSender {
      * mainly used by shell to upload xml config
      * do not start any Thread in this function!
      *
-     * @param ucoreProperties
      */
-    void initConInfo(Properties ucoreProperties);
+    void initConInfo();
 
     /**
      * general config init of clusterSender
@@ -28,9 +26,8 @@ public interface ClusterSender {
      * 1 init the config
      * 2 start customized connection controller
      *
-     * @param properties
      */
-    void initCluster(Properties properties);
+    void initCluster();
 
     /**
      * lock a path,so that other DbleServer in cluster can not hold the path in the same time
@@ -115,10 +112,4 @@ public interface ClusterSender {
      */
     boolean alertResolve(ClusterAlertBean alert);
 
-    /**
-     * check if the cluster config is complete,if not throw a RunTimeException
-     *
-     * @param properties
-     */
-    void checkClusterConfig(Properties properties);
 }

@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.ByteUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.LoadDataResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.handler.BackendAsyncHandler;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.server.NonBlockingSession;
@@ -63,7 +64,7 @@ public class MySQLConnectionHandler extends BackendAsyncHandler {
         }
         if (source.isComplexQuery()) {
             offerData(data, DbleServer.getInstance().getComplexQueryExecutor());
-        } else if (DbleServer.getInstance().getConfig().getSystem().getUsePerformanceMode() == 1) {
+        } else if (SystemConfig.getInstance().getUsePerformanceMode() == 1) {
             offerData(data);
         } else {
             offerData(data, DbleServer.getInstance().getBackendBusinessExecutor());

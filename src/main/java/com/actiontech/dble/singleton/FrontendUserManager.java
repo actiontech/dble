@@ -5,7 +5,8 @@
 
 package com.actiontech.dble.singleton;
 
-import com.actiontech.dble.config.model.UserConfig;
+import com.actiontech.dble.config.model.user.UserConfig;
+import com.actiontech.dble.route.parser.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,9 +14,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.actiontech.dble.singleton.FrontendUserManager.CheckStatus.OK;
-import static com.actiontech.dble.singleton.FrontendUserManager.CheckStatus.SERVER_MAX;
-import static com.actiontech.dble.singleton.FrontendUserManager.CheckStatus.USER_MAX;
+import static com.actiontech.dble.singleton.FrontendUserManager.CheckStatus.*;
 
 /**
  * Created by szf on 2018/6/27.
@@ -28,7 +27,7 @@ public final class FrontendUserManager {
 
     private ReentrantLock maxConLock = new ReentrantLock();
 
-    private Map<String, Integer> userConnectionMap = new ConcurrentHashMap<>();
+    private Map<Pair<String, String>, Integer> userConnectionMap = new ConcurrentHashMap<>();
 
     private int serverMaxConnection;
 
@@ -38,14 +37,14 @@ public final class FrontendUserManager {
 
     }
 
-    public void countDown(String user, boolean isManager) {
+    public void countDown(Pair<String, String> user, boolean isManager) {
         maxConLock.lock();
         try {
             if (!isManager) {
                 serverConnection--;
             }
-            int usercount = userConnectionMap.get(user).intValue();
-            userConnectionMap.put(user, --usercount);
+            int userCount = userConnectionMap.get(user);
+            userConnectionMap.put(user, --userCount);
         } catch (Throwable e) {
             //error ignore
             LOGGER.warn("Frontend lose", e);
@@ -54,18 +53,18 @@ public final class FrontendUserManager {
         }
     }
 
-    public void initForLatest(Map<String, UserConfig> userConfigMap, int serverLimit) {
+    public void initForLatest(Map<Pair<String, String>, UserConfig> userConfigMap, int serverLimit) {
         serverMaxConnection = serverLimit;
-        for (String userName : userConfigMap.keySet()) {
-            if (!userConnectionMap.containsKey(userName)) {
-                userConnectionMap.put(userName, 0);
+        for (Pair<String, String> user : userConfigMap.keySet()) {
+            if (!userConnectionMap.containsKey(user)) {
+                userConnectionMap.put(user, 0);
             }
         }
 
     }
 
 
-    public CheckStatus maxConnectionCheck(String user, int userLimit, boolean isManager) {
+    public CheckStatus maxConnectionCheck(Pair<String, String> user, int userLimit, boolean isManager) {
 
         maxConLock.lock();
         try {

@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.log.slow;
 
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.trace.TraceResult;
 
@@ -16,11 +17,11 @@ public class SlowQueryLogEntry {
     private TraceResult trace;
     private long timeStamp;
     private String sql;
-    private String user;
+    private Pair<String, String> user;
     private String clientIp;
     private long connID;
 
-    SlowQueryLogEntry(String sql, TraceResult traceResult, String user, String clientIp, long connID) {
+    SlowQueryLogEntry(String sql, TraceResult traceResult, Pair<String, String> user, String clientIp, long connID) {
         this.timeStamp = System.currentTimeMillis();
         this.sql = RouterUtil.getFixedSql(sql);
         this.trace = traceResult;

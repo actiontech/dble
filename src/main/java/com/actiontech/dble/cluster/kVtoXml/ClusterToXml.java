@@ -5,13 +5,13 @@
 
 package com.actiontech.dble.cluster.kVtoXml;
 
-import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.listener.ClusterClearKeyListener;
 import com.actiontech.dble.cluster.response.*;
 import com.actiontech.dble.cluster.listener.ClusterOffLineListener;
 import com.actiontech.dble.cluster.listener.ClusterSingleKeyListener;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
+import com.actiontech.dble.config.model.ClusterConfig;
 
 import java.util.Map;
 
@@ -43,9 +43,9 @@ public final class ClusterToXml {
             listener = new ClusterClearKeyListener();
             XmlProcessBase xmlProcess = new XmlProcessBase();
             //add all loader into listener map list
-            new XmlRuleLoader(xmlProcess, listener);
-            new XmlSchemaLoader(xmlProcess, listener);
-            new XmlServerLoader(xmlProcess, listener);
+            new XmlDbLoader(xmlProcess, listener);
+            new XmlShardingLoader(xmlProcess, listener);
+            new XmlUserLoader(xmlProcess, listener);
             new XmlEhcachesLoader(xmlProcess, listener);
             new CacheserviceResponse(listener);
             new PropertySequenceLoader(listener);
@@ -54,9 +54,9 @@ public final class ClusterToXml {
             //add listener to watch the Prefix of the keys
             new ConfigStatusResponse(listener);
             new BinlogPauseStatusResponse(listener);
-            new PauseDataNodeResponse(listener);
+            new PauseShardingNodeResponse(listener);
 
-            dataHostHaListener = new ClusterSingleKeyListener(ClusterPathUtil.getHaBasePath(), new DataHostHaResponse());
+            dataHostHaListener = new ClusterSingleKeyListener(ClusterPathUtil.getHaBasePath(), new DbGroupHaResponse());
 
             ddlListener = new ClusterSingleKeyListener(ClusterPathUtil.getDDLPath() + SEPARATOR, new DdlChildResponse());
 
@@ -81,7 +81,7 @@ public final class ClusterToXml {
             thread4.setName("ONLINE_UCORE_LISTENER");
             thread4.start();
 
-            if (ClusterHelper.useClusterHa()) {
+            if (ClusterConfig.getInstance().isNeedSyncHa()) {
                 Thread thread5 = new Thread(dataHostHaListener);
                 thread5.setName("DATA_HOST_HA_LISTENER");
                 thread5.start();

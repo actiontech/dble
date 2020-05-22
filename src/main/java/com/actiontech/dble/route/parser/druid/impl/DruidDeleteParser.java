@@ -5,10 +5,10 @@
 
 package com.actiontech.dble.route.parser.druid.impl;
 
-import com.actiontech.dble.config.ServerPrivileges;
-import com.actiontech.dble.config.ServerPrivileges.CheckType;
+import com.actiontech.dble.config.privileges.ShardingPrivileges.CheckType;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.privileges.ShardingPrivileges;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
@@ -55,7 +55,7 @@ public class DruidDeleteParser extends DefaultDruidParser {
         } else {
             SQLExprTableSource deleteTableSource = (SQLExprTableSource) tableSource;
             SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, deleteTableSource);
-            if (!ServerPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), CheckType.DELETE)) {
+            if (!ShardingPrivileges.checkPrivilege(sc.getUserConfig(), schemaInfo.getSchema(), schemaInfo.getTable(), CheckType.DELETE)) {
                 String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                 throw new SQLNonTransientException(msg);
             }
@@ -82,7 +82,7 @@ public class DruidDeleteParser extends DefaultDruidParser {
             checkTableExists(tc, schema.getName(), tableName, CheckType.DELETE);
 
             if (tc.isGlobalTable()) {
-                RouterUtil.routeToMultiNode(false, rrs, tc.getDataNodes(), tc.isGlobalTable());
+                RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), tc.isGlobalTable());
                 rrs.setFinishedRoute(true);
                 return schema;
             }

@@ -9,16 +9,23 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.backend.datasource.PhysicalDataHost;
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
-import com.actiontech.dble.backend.datasource.PhysicalDataHostDiff;
-import com.actiontech.dble.config.model.*;
+import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
+import com.actiontech.dble.backend.datasource.PhysicalDbGroupDiff;
+import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.config.model.ERTable;
+import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.user.ShardingUserConfig;
+import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.route.parser.ManagerParseConfig;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.variables.SystemVariables;
-import com.actiontech.dble.singleton.*;
+import com.actiontech.dble.singleton.CacheService;
+import com.actiontech.dble.singleton.HaConfigManager;
+import com.actiontech.dble.singleton.ProxyMeta;
+import com.actiontech.dble.singleton.SequenceManager;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
@@ -39,17 +46,14 @@ public class ServerConfig {
     private static final int ROLLBACK = 2;
     private static final int RELOAD_ALL = 3;
 
-    private volatile SystemConfig system;
-    private volatile FirewallConfig firewall;
-    private volatile FirewallConfig firewall2;
-    private volatile Map<String, UserConfig> users;
-    private volatile Map<String, UserConfig> users2;
+    private volatile Map<Pair<String, String>, UserConfig> users;
+    private volatile Map<Pair<String, String>, UserConfig> users2;
     private volatile Map<String, SchemaConfig> schemas;
     private volatile Map<String, SchemaConfig> schemas2;
-    private volatile Map<String, PhysicalDataNode> dataNodes;
-    private volatile Map<String, PhysicalDataNode> dataNodes2;
-    private volatile Map<String, PhysicalDataHost> dataHosts;
-    private volatile Map<String, PhysicalDataHost> dataHosts2;
+    private volatile Map<String, ShardingNode> shardingNodes;
+    private volatile Map<String, ShardingNode> shardingNodes2;
+    private volatile Map<String, PhysicalDbGroup> dbGroups;
+    private volatile Map<String, PhysicalDbGroup> dbGroups2;
     private volatile Map<ERTable, Set<ERTable>> erRelations;
     private volatile Map<ERTable, Set<ERTable>> erRelations2;
     private volatile boolean fullyConfigured;
@@ -62,18 +66,15 @@ public class ServerConfig {
     private ConfigInitializer confInitNew;
 
     public ServerConfig() {
-        //read schema.xml,rule.xml and server.xml
+        //read sharding.xml,rule.xml and server.xml
         confInitNew = new ConfigInitializer(false);
-        this.system = confInitNew.getSystem();
         this.users = confInitNew.getUsers();
         this.schemas = confInitNew.getSchemas();
-        this.dataHosts = confInitNew.getDataHosts();
-        this.dataNodes = confInitNew.getDataNodes();
+        this.dbGroups = confInitNew.getDbGroups();
+        this.shardingNodes = confInitNew.getShardingNodes();
         this.erRelations = confInitNew.getErRelations();
         this.fullyConfigured = confInitNew.isFullyConfigured();
-        ConfigUtil.setSchemasForPool(dataHosts, dataNodes);
-
-        this.firewall = confInitNew.getFirewall();
+        ConfigUtil.setSchemasForPool(dbGroups, shardingNodes);
 
         this.reloadTime = TimeUtil.currentTimeMillis();
         this.rollbackTime = -1L;
@@ -85,17 +86,14 @@ public class ServerConfig {
 
 
     public ServerConfig(ConfigInitializer confInit) {
-        //read schema.xml,rule.xml and server.xml
-        this.system = confInit.getSystem();
+        //read sharding.xml,rule.xml and server.xml
         this.users = confInit.getUsers();
         this.schemas = confInit.getSchemas();
-        this.dataHosts = confInit.getDataHosts();
-        this.dataNodes = confInit.getDataNodes();
+        this.dbGroups = confInit.getDbGroups();
+        this.shardingNodes = confInit.getShardingNodes();
         this.erRelations = confInit.getErRelations();
         this.fullyConfigured = confInit.isFullyConfigured();
-        ConfigUtil.setSchemasForPool(dataHosts, dataNodes);
-
-        this.firewall = confInit.getFirewall();
+        ConfigUtil.setSchemasForPool(dbGroups, shardingNodes);
 
         this.reloadTime = TimeUtil.currentTimeMillis();
         this.rollbackTime = -1L;
@@ -110,10 +108,6 @@ public class ServerConfig {
         }
     }
 
-    public SystemConfig getSystem() {
-        return system;
-    }
-
     public void testConnection() {
         try {
             confInitNew.testConnection();
@@ -124,7 +118,7 @@ public class ServerConfig {
     }
 
     public void getAndSyncKeyVariables() throws Exception {
-        ConfigUtil.getAndSyncKeyVariables(confInitNew.getDataHosts(), true);
+        ConfigUtil.getAndSyncKeyVariables(confInitNew.getDbGroups(), true);
     }
 
     public boolean isFullyConfigured() {
@@ -132,12 +126,12 @@ public class ServerConfig {
         return fullyConfigured;
     }
 
-    public Map<String, UserConfig> getUsers() {
+    public Map<Pair<String, String>, UserConfig> getUsers() {
         waitIfChanging();
         return users;
     }
 
-    public Map<String, UserConfig> getBackupUsers() {
+    public Map<Pair<String, String>, UserConfig> getBackupUsers() {
         waitIfChanging();
         return users2;
     }
@@ -152,25 +146,25 @@ public class ServerConfig {
         return schemas2;
     }
 
-    public Map<String, PhysicalDataNode> getDataNodes() {
+    public Map<String, ShardingNode> getShardingNodes() {
         waitIfChanging();
-        return dataNodes;
+        return shardingNodes;
     }
 
 
-    public Map<String, PhysicalDataNode> getBackupDataNodes() {
+    public Map<String, ShardingNode> getBackupShardingNodes() {
         waitIfChanging();
-        return dataNodes2;
+        return shardingNodes2;
     }
 
-    public Map<String, PhysicalDataHost> getDataHosts() {
+    public Map<String, PhysicalDbGroup> getDbGroups() {
         waitIfChanging();
-        return dataHosts;
+        return dbGroups;
     }
 
-    public Map<String, PhysicalDataHost> getBackupDataHosts() {
+    public Map<String, PhysicalDbGroup> getBackupDbGroups() {
         waitIfChanging();
-        return dataHosts2;
+        return dbGroups2;
     }
 
     public Map<ERTable, Set<ERTable>> getErRelations() {
@@ -181,16 +175,6 @@ public class ServerConfig {
     public Map<ERTable, Set<ERTable>> getBackupErRelations() {
         waitIfChanging();
         return erRelations2;
-    }
-
-    public FirewallConfig getFirewall() {
-        waitIfChanging();
-        return firewall;
-    }
-
-    public FirewallConfig getBackupFirewall() {
-        waitIfChanging();
-        return firewall2;
     }
 
     public ReentrantReadWriteLock getLock() {
@@ -212,22 +196,21 @@ public class ServerConfig {
         return fullyConfigured2;
     }
 
-    public boolean reload(Map<String, UserConfig> newUsers, Map<String, SchemaConfig> newSchemas,
-                          Map<String, PhysicalDataNode> newDataNodes, Map<String, PhysicalDataHost> newDataHosts,
-                          Map<String, PhysicalDataHost> changeOrAddDataHosts,
-                          Map<String, PhysicalDataHost> recycleDataHosts,
-                          Map<ERTable, Set<ERTable>> newErRelations, FirewallConfig newFirewall,
+    public boolean reload(Map<Pair<String, String>, UserConfig> newUsers, Map<String, SchemaConfig> newSchemas,
+                          Map<String, ShardingNode> newShardingNodes, Map<String, PhysicalDbGroup> newDbGroups,
+                          Map<String, PhysicalDbGroup> changeOrAddDbGroups,
+                          Map<String, PhysicalDbGroup> recycleDbGroups,
+                          Map<ERTable, Set<ERTable>> newErRelations,
                           SystemVariables newSystemVariables, boolean isFullyConfigured,
                           final int loadAllMode) throws SQLNonTransientException {
-
-        boolean result = apply(newUsers, newSchemas, newDataNodes, newDataHosts, changeOrAddDataHosts, recycleDataHosts, newErRelations, newFirewall,
+        boolean result = apply(newUsers, newSchemas, newShardingNodes, newDbGroups, changeOrAddDbGroups, recycleDbGroups, newErRelations,
                 newSystemVariables, isFullyConfigured, loadAllMode);
         this.reloadTime = TimeUtil.currentTimeMillis();
         this.status = RELOAD_ALL;
         return result;
     }
 
-    private void calcDiffForMetaData(Map<String, SchemaConfig> newSchemas, Map<String, PhysicalDataNode> newDataNodes, int loadAllMode,
+    private void calcDiffForMetaData(Map<String, SchemaConfig> newSchemas, Map<String, ShardingNode> newShardingNodes, int loadAllMode,
                                      List<Pair<String, String>> delTables, List<Pair<String, String>> reloadTables,
                                      List<String> delSchema, List<String> reloadSchema) {
         for (Map.Entry<String, SchemaConfig> schemaEntry : this.schemas.entrySet()) {
@@ -237,24 +220,24 @@ public class ServerConfig {
                 delSchema.add(oldSchema);
             } else if ((loadAllMode & ManagerParseConfig.OPTR_MODE) == 0) { // reload @@config_all not contains -r
                 SchemaConfig oldSchemaConfig = schemaEntry.getValue();
-                if (!StringUtil.equalsWithEmpty(oldSchemaConfig.getDataNode(), newSchemaConfig.getDataNode())) {
+                if (!StringUtil.equalsWithEmpty(oldSchemaConfig.getShardingNode(), newSchemaConfig.getShardingNode())) {
                     delSchema.add(oldSchema);
                     reloadSchema.add(oldSchema);
                 } else {
-                    if (newSchemaConfig.getDataNode() != null) { // reload config_all
-                        //check data node and datahost change
-                        List<String> strDataNodes = Collections.singletonList(newSchemaConfig.getDataNode());
-                        if (isDataNodeChanged(strDataNodes, newDataNodes)) {
+                    if (newSchemaConfig.getShardingNode() != null) { // reload config_all
+                        //check data node and dbGroup change
+                        List<String> strShardingNodes = Collections.singletonList(newSchemaConfig.getShardingNode());
+                        if (isShardingNodeChanged(strShardingNodes, newShardingNodes)) {
                             delSchema.add(oldSchema);
                             reloadSchema.add(oldSchema);
                             continue;
-                        } else if ((loadAllMode & ManagerParseConfig.OPTS_MODE) == 0 && isDataHostChanged(strDataNodes, newDataNodes)) { // reload @@config_all not contains -s
+                        } else if ((loadAllMode & ManagerParseConfig.OPTS_MODE) == 0 && isDbGroupChanged(strShardingNodes, newShardingNodes)) { // reload @@config_all not contains -s
                             delSchema.add(oldSchema);
                             reloadSchema.add(oldSchema);
                             continue;
                         }
                     }
-                    calcTableDiffForMetaData(newDataNodes, loadAllMode, delTables, reloadTables, oldSchema, newSchemaConfig, oldSchemaConfig);
+                    calcTableDiffForMetaData(newShardingNodes, loadAllMode, delTables, reloadTables, oldSchema, newSchemaConfig, oldSchemaConfig);
                 }
             }
         }
@@ -263,12 +246,12 @@ public class ServerConfig {
                 delSchema.add(newSchema);
                 reloadSchema.add(newSchema);
             } else if (!this.schemas.containsKey(newSchema)) {
-                reloadSchema.add(newSchema); // new added schema
+                reloadSchema.add(newSchema); // new added sharding
             }
         }
     }
 
-    private void calcTableDiffForMetaData(Map<String, PhysicalDataNode> newDataNodes, int loadAllMode, List<Pair<String, String>> delTables, List<Pair<String, String>> reloadTables, String oldSchema, SchemaConfig newSchemaConfig, SchemaConfig oldSchemaConfig) {
+    private void calcTableDiffForMetaData(Map<String, ShardingNode> newShardingNodes, int loadAllMode, List<Pair<String, String>> delTables, List<Pair<String, String>> reloadTables, String oldSchema, SchemaConfig newSchemaConfig, SchemaConfig oldSchemaConfig) {
         for (Map.Entry<String, TableConfig> tableEntry : oldSchemaConfig.getTables().entrySet()) {
             String oldTable = tableEntry.getKey();
             TableConfig newTableConfig = newSchemaConfig.getTables().get(oldTable);
@@ -276,17 +259,17 @@ public class ServerConfig {
                 delTables.add(new Pair<>(oldSchema, oldTable));
             } else {
                 TableConfig oldTableConfig = tableEntry.getValue();
-                if (!newTableConfig.getDataNodes().equals(oldTableConfig.getDataNodes()) ||
+                if (!newTableConfig.getShardingNodes().equals(oldTableConfig.getShardingNodes()) ||
                         newTableConfig.getTableType() != oldTableConfig.getTableType()) {
                     Pair<String, String> table = new Pair<>(oldSchema, oldTable);
                     delTables.add(table);
                     reloadTables.add(table);
-                } else if (isDataNodeChanged(oldTableConfig.getDataNodes(), newDataNodes)) {
+                } else if (isShardingNodeChanged(oldTableConfig.getShardingNodes(), newShardingNodes)) {
                     Pair<String, String> table = new Pair<>(oldSchema, oldTable);
                     delTables.add(table);
                     reloadTables.add(table);
                 } else if ((loadAllMode & ManagerParseConfig.OPTS_MODE) == 0 &&
-                        isDataHostChanged(oldTableConfig.getDataNodes(), newDataNodes)) { // reload @@config_all not contains -s
+                        isDbGroupChanged(oldTableConfig.getShardingNodes(), newShardingNodes)) { // reload @@config_all not contains -s
                     Pair<String, String> table = new Pair<>(oldSchema, oldTable);
                     delTables.add(table);
                     reloadTables.add(table);
@@ -300,25 +283,25 @@ public class ServerConfig {
         }
     }
 
-    private boolean isDataNodeChanged(List<String> strDataNodes, Map<String, PhysicalDataNode> newDataNodes) {
-        for (String strDataNode : strDataNodes) {
-            PhysicalDataNode newDBNode = newDataNodes.get(strDataNode);
-            PhysicalDataNode oldDBNode = dataNodes.get(strDataNode);
+    private boolean isShardingNodeChanged(List<String> strShardingNodes, Map<String, ShardingNode> newShardingNodes) {
+        for (String strShardingNode : strShardingNodes) {
+            ShardingNode newDBNode = newShardingNodes.get(strShardingNode);
+            ShardingNode oldDBNode = shardingNodes.get(strShardingNode);
             if (!oldDBNode.getDatabase().equals(newDBNode.getDatabase()) ||
-                    oldDBNode.getDataHost() == null ||
-                    !oldDBNode.getDataHost().getHostName().equals(newDBNode.getDataHost().getHostName())) {
+                    oldDBNode.getDbGroup() == null ||
+                    !oldDBNode.getDbGroup().getGroupName().equals(newDBNode.getDbGroup().getGroupName())) {
                 return true;
             }
         }
         return false;
     }
 
-    private boolean isDataHostChanged(List<String> strDataNodes, Map<String, PhysicalDataNode> newDataNodes) {
-        for (String strDataNode : strDataNodes) {
-            PhysicalDataHost newDBPool = newDataNodes.get(strDataNode).getDataHost();
-            PhysicalDataHost oldDBPool = dataNodes.get(strDataNode).getDataHost();
-            PhysicalDataHostDiff diff = new PhysicalDataHostDiff(oldDBPool, newDBPool);
-            if (!PhysicalDataHostDiff.CHANGE_TYPE_NO.equals(diff.getChangeType())) {
+    private boolean isDbGroupChanged(List<String> strShardingNodes, Map<String, ShardingNode> newShardingNodes) {
+        for (String strShardingNode : strShardingNodes) {
+            PhysicalDbGroup newDBPool = newShardingNodes.get(strShardingNode).getDbGroup();
+            PhysicalDbGroup oldDBPool = shardingNodes.get(strShardingNode).getDbGroup();
+            PhysicalDbGroupDiff diff = new PhysicalDbGroupDiff(oldDBPool, newDBPool);
+            if (!PhysicalDbGroupDiff.CHANGE_TYPE_NO.equals(diff.getChangeType())) {
                 return true;
             }
         }
@@ -326,35 +309,35 @@ public class ServerConfig {
     }
 
     public boolean canRollbackAll() {
-        return status == RELOAD_ALL && users2 != null && schemas2 != null && firewall2 != null && dataNodes2 != null && dataHosts2 != null;
+        return status == RELOAD_ALL && users2 != null && schemas2 != null && shardingNodes2 != null && dbGroups2 != null;
     }
 
-    public boolean rollback(Map<String, UserConfig> backupUsers, Map<String, SchemaConfig> backupSchemas,
-                            Map<String, PhysicalDataNode> backupDataNodes, Map<String, PhysicalDataHost> backupDataHosts,
-                            Map<ERTable, Set<ERTable>> backupErRelations, FirewallConfig backFirewall, boolean backDataHostWithoutWR) throws SQLNonTransientException {
+    public boolean rollback(Map<Pair<String, String>, UserConfig> backupUsers, Map<String, SchemaConfig> backupSchemas,
+                            Map<String, ShardingNode> backupShardingNodes, Map<String, PhysicalDbGroup> backupDbGroups,
+                            Map<ERTable, Set<ERTable>> backupErRelations, boolean backDbGroupWithoutWR) throws SQLNonTransientException {
 
-        boolean result = apply(backupUsers, backupSchemas, backupDataNodes, backupDataHosts, backupDataHosts, this.dataHosts, backupErRelations, backFirewall,
-                DbleServer.getInstance().getSystemVariables(), backDataHostWithoutWR, ManagerParseConfig.OPTR_MODE);
+        boolean result = apply(backupUsers, backupSchemas, backupShardingNodes, backupDbGroups, backupDbGroups, this.dbGroups, backupErRelations,
+                DbleServer.getInstance().getSystemVariables(), backDbGroupWithoutWR, ManagerParseConfig.OPTR_MODE);
         this.rollbackTime = TimeUtil.currentTimeMillis();
         this.status = ROLLBACK;
         return result;
     }
 
-    private boolean apply(Map<String, UserConfig> newUsers,
+    private boolean apply(Map<Pair<String, String>, UserConfig> newUsers,
                           Map<String, SchemaConfig> newSchemas,
-                          Map<String, PhysicalDataNode> newDataNodes,
-                          Map<String, PhysicalDataHost> newDataHosts,
-                          Map<String, PhysicalDataHost> changeOrAddDataHosts,
-                          Map<String, PhysicalDataHost> recycleDataHosts,
+                          Map<String, ShardingNode> newShardingNodes,
+                          Map<String, PhysicalDbGroup> newDbGroups,
+                          Map<String, PhysicalDbGroup> changeOrAddDbGroups,
+                          Map<String, PhysicalDbGroup> recycleDbGroups,
                           Map<ERTable, Set<ERTable>> newErRelations,
-                          FirewallConfig newFirewall, SystemVariables newSystemVariables,
+                          SystemVariables newSystemVariables,
                           boolean isFullyConfigured, final int loadAllMode) throws SQLNonTransientException {
         List<Pair<String, String>> delTables = new ArrayList<>();
         List<Pair<String, String>> reloadTables = new ArrayList<>();
         List<String> delSchema = new ArrayList<>();
         List<String> reloadSchema = new ArrayList<>();
         if (isFullyConfigured) {
-            calcDiffForMetaData(newSchemas, newDataNodes, loadAllMode, delTables, reloadTables, delSchema, reloadSchema);
+            calcDiffForMetaData(newSchemas, newShardingNodes, loadAllMode, delTables, reloadTables, delSchema, reloadSchema);
         }
         final ReentrantLock metaLock = ProxyMeta.getInstance().getTmManager().getMetaLock();
         metaLock.lock();
@@ -365,46 +348,48 @@ public class ServerConfig {
                 LOGGER.warn(checkResult);
                 throw new SQLNonTransientException(checkResult, "HY000", ErrorCode.ER_DOING_DDL);
             }
+            try {
+                HaConfigManager.getInstance().init();
+            } catch (Exception e) {
+                throw new SQLNonTransientException("HaConfigManager init failed", "HY000", ErrorCode.ER_YES);
+            }
             // old data host
             // 1 stop heartbeat
             // 2 backup
             //--------------------------------------------
-            if (recycleDataHosts != null) {
-                for (PhysicalDataHost oldDataHost : recycleDataHosts.values()) {
-                    if (oldDataHost != null) {
-                        oldDataHost.stopHeartbeat();
+            if (recycleDbGroups != null) {
+                for (PhysicalDbGroup oldDbGroup : recycleDbGroups.values()) {
+                    if (oldDbGroup != null) {
+                        oldDbGroup.stopHeartbeat();
                     }
                 }
             }
-            this.dataNodes2 = this.dataNodes;
-            this.dataHosts2 = this.dataHosts;
+            this.shardingNodes2 = this.shardingNodes;
+            this.dbGroups2 = this.dbGroups;
             this.users2 = this.users;
             this.schemas2 = this.schemas;
-            this.firewall2 = this.firewall;
             this.erRelations2 = this.erRelations;
             this.fullyConfigured2 = this.fullyConfigured;
             // new data host
             // 1 start heartbeat
             // 2 apply the configure
             //---------------------------------------------------
-            if (changeOrAddDataHosts != null) {
-                for (PhysicalDataHost newDataHost : changeOrAddDataHosts.values()) {
-                    if (newDataHost != null && isFullyConfigured) {
-                        newDataHost.startHeartbeat();
+            if (changeOrAddDbGroups != null) {
+                for (PhysicalDbGroup newDbGroup : changeOrAddDbGroups.values()) {
+                    if (newDbGroup != null && isFullyConfigured) {
+                        newDbGroup.startHeartbeat();
                     }
                 }
             }
-            this.dataNodes = newDataNodes;
-            this.dataHosts = newDataHosts;
+            this.shardingNodes = newShardingNodes;
+            this.dbGroups = newDbGroups;
             this.fullyConfigured = isFullyConfigured;
             DbleServer.getInstance().reloadSystemVariables(newSystemVariables);
             CacheService.getInstance().reloadCache(newSystemVariables.isLowerCaseTableNames());
             this.users = newUsers;
             this.schemas = newSchemas;
-            this.firewall = newFirewall;
             this.erRelations = newErRelations;
             CacheService.getInstance().clearCache();
-            HaConfigManager.getInstance().init();
             this.changing = false;
             if (isFullyConfigured) {
                 return reloadMetaData(delTables, reloadTables, delSchema, reloadSchema);
@@ -482,16 +467,18 @@ public class ServerConfig {
      */
     public void reviseLowerCase() {
 
-        //user schema
+        //user sharding
         for (UserConfig uc : users.values()) {
-            if (uc.getPrivilegesConfig() != null) {
-                uc.getPrivilegesConfig().changeMapToLowerCase();
-                uc.changeMapToLowerCase();
+            if (uc instanceof ShardingUserConfig) {
+                ShardingUserConfig shardingUser = (ShardingUserConfig) uc;
+                if (shardingUser.getPrivilegesConfig() != null) {
+                    shardingUser.getPrivilegesConfig().changeMapToLowerCase();
+                    shardingUser.changeMapToLowerCase();
+                }
             }
         }
 
-        //dataNode
-        for (PhysicalDataNode physicalDBNode : dataNodes.values()) {
+        for (ShardingNode physicalDBNode : shardingNodes.values()) {
             physicalDBNode.toLowerCase();
         }
 
@@ -530,23 +517,21 @@ public class ServerConfig {
     }
 
     public void selfChecking0() throws ConfigException {
-        // check 1.user's schemas are all existed in schema's conf
-        // 2.schema's conf is not empty
+        // check 1.user's schemas are all existed in sharding's conf
+        // 2.sharding's conf is not empty
         if (users == null || users.isEmpty()) {
             throw new ConfigException("SelfCheck### user all node is empty!");
         } else {
             for (UserConfig uc : users.values()) {
-                if (uc == null) {
-                    throw new ConfigException("SelfCheck### users node within the item is empty!");
-                }
-                if (!uc.isManager()) {
-                    Set<String> authSchemas = uc.getSchemas();
+                if (uc instanceof ShardingUserConfig) {
+                    ShardingUserConfig shardingUser = (ShardingUserConfig) uc;
+                    Set<String> authSchemas = shardingUser.getSchemas();
                     if (authSchemas == null) {
-                        throw new ConfigException("SelfCheck### user " + uc.getName() + "referred schemas is empty!");
+                        throw new ConfigException("SelfCheck### User[name:" + shardingUser.getName() + ",tenant:" + shardingUser.getTenant() + "] referred schemas is empty!");
                     }
                     for (String schema : authSchemas) {
                         if (!schemas.containsKey(schema)) {
-                            String errMsg = "SelfCheck###  schema " + schema + " referred by user " + uc.getName() + " is not exist!";
+                            String errMsg = "SelfCheck### User[name:" + shardingUser.getName() + ",tenant:" + shardingUser.getTenant() + "] is not exist!";
                             throw new ConfigException(errMsg);
                         }
                     }
@@ -554,18 +539,18 @@ public class ServerConfig {
             }
         }
 
-        // check schema
+        // check sharding
         for (SchemaConfig sc : schemas.values()) {
             if (null == sc) {
-                throw new ConfigException("SelfCheck### schema all node is empty!");
+                throw new ConfigException("SelfCheck### sharding all node is empty!");
             } else {
-                // check dataNode / dataHost
-                if (this.dataNodes != null && this.dataHosts != null) {
-                    Set<String> dataNodeNames = sc.getAllDataNodes();
-                    for (String dataNodeName : dataNodeNames) {
-                        PhysicalDataNode node = this.dataNodes.get(dataNodeName);
+                // check shardingNode / dbGroup
+                if (this.shardingNodes != null && this.dbGroups != null) {
+                    Set<String> shardingNodeNames = sc.getAllShardingNodes();
+                    for (String shardingNodeName : shardingNodeNames) {
+                        ShardingNode node = this.shardingNodes.get(shardingNodeName);
                         if (node == null) {
-                            throw new ConfigException("SelfCheck### schema dataNode[" + dataNodeName + "] is empty!");
+                            throw new ConfigException("SelfCheck### sharding shardingNode[" + shardingNodeName + "] is empty!");
                         }
                     }
                 }

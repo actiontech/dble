@@ -26,7 +26,7 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
     protected static final String ERR_SEQ_RESULT = "-999999999,null";
     protected static final Map<String, String> LATEST_ERRORS = new ConcurrentHashMap<>();
     private final FetchMySQLSequenceHandler mysqlSeqFetcher = new FetchMySQLSequenceHandler();
-    private static Set<String> dataNodes = new HashSet<>();
+    private static Set<String> shardingNodes = new HashSet<>();
 
     public void load(boolean isLowerCaseTableNames) {
         // load sequence properties
@@ -35,8 +35,8 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
         putNewSequenceVals(props);
     }
 
-    public Set<String> getDataNodes() {
-        return dataNodes;
+    public Set<String> getShardingNodes() {
+        return shardingNodes;
     }
 
     private void removeDesertedSequenceVals(Properties props) {
@@ -52,12 +52,12 @@ public class IncrSequenceMySQLHandler implements SequenceHandler {
     private void putNewSequenceVals(Properties props) {
         for (Map.Entry<Object, Object> entry : props.entrySet()) {
             String seqName = (String) entry.getKey();
-            String dataNode = (String) entry.getValue();
-            SequenceVal value = seqValueMap.putIfAbsent(seqName, new SequenceVal(seqName, dataNode));
+            String shardingNode = (String) entry.getValue();
+            SequenceVal value = seqValueMap.putIfAbsent(seqName, new SequenceVal(seqName, shardingNode));
             if (value != null) {
-                value.dataNode = dataNode;
+                value.shardingNode = shardingNode;
             }
-            dataNodes.add(dataNode);
+            shardingNodes.add(shardingNode);
         }
     }
 

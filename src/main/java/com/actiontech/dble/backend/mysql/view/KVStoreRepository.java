@@ -5,11 +5,11 @@
 
 package com.actiontech.dble.backend.mysql.view;
 
-import com.actiontech.dble.cluster.ClusterParamCfg;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
-import com.alibaba.fastjson.JSONObject;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,14 +39,12 @@ public class KVStoreRepository implements Repository {
             for (String singlePath : viewList) {
                 String[] paths = singlePath.split("/");
                 String jsonData = new String(zkConn.getData().forPath(KVPathUtil.getViewPath() + SEPARATOR + singlePath), "UTF-8");
-                JSONObject obj = (JSONObject) JSONObject.parse(jsonData);
+                JsonObject obj = new JsonParser().parse(jsonData).getAsJsonObject();
 
-                String createSql = obj.getString(CREATE_SQL);
+                String createSql = obj.get(CREATE_SQL).getAsString();
                 String schema = paths[paths.length - 1].split(SCHEMA_VIEW_SPLIT)[0];
                 String viewName = paths[paths.length - 1].split(SCHEMA_VIEW_SPLIT)[1];
-                if (map.get(schema) == null) {
-                    map.put(schema, new HashMap<String, String>());
-                }
+                map.computeIfAbsent(schema, k -> new HashMap<>());
                 map.get(schema).put(viewName, createSql);
             }
         } catch (Exception e) {
@@ -69,14 +67,14 @@ public class KVStoreRepository implements Repository {
     @Override
     public void put(String schemaName, String viewName, String createSql) {
         StringBuffer sb = new StringBuffer(KVPathUtil.getViewPath()).append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(viewName);
-        JSONObject m = new JSONObject();
-        m.put(SERVER_ID, ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
-        m.put(CREATE_SQL, createSql);
+        JsonObject m = new JsonObject();
+        m.addProperty(SERVER_ID, SystemConfig.getInstance().getInstanceId());
+        m.addProperty(CREATE_SQL, createSql);
         try {
             if (zkConn.checkExists().forPath(sb.toString()) == null) {
-                zkConn.create().forPath(sb.toString(), m.toJSONString().getBytes());
+                zkConn.create().forPath(sb.toString(), m.getAsString().getBytes());
             } else {
-                zkConn.setData().forPath(sb.toString(), m.toJSONString().getBytes());
+                zkConn.setData().forPath(sb.toString(), m.getAsString().getBytes());
             }
         } catch (Exception e) {
             LOGGER.warn("create zk node error :　" + e.getMessage());

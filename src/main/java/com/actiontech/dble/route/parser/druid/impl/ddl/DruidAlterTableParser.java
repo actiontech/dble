@@ -115,7 +115,7 @@ public class DruidAlterTableParser extends DefaultDruidParser {
             return false;
         }
         if (columnName.equalsIgnoreCase(changedTable.getPartitionColumn()) ||
-                columnName.equalsIgnoreCase(changedTable.getJoinKey())) {
+                columnName.equalsIgnoreCase(changedTable.getJoinColumn())) {
             return true;
         }
         // Traversal all the table node to find if some table is the child table of the changedTale
@@ -123,7 +123,7 @@ public class DruidAlterTableParser extends DefaultDruidParser {
             TableConfig tb = entry.getValue();
             if (tb.getParentTC() != null &&
                     tableName.equalsIgnoreCase(tb.getParentTC().getName()) &&
-                    columnName.equalsIgnoreCase(tb.getParentKey())) {
+                    columnName.equalsIgnoreCase(tb.getParentColumn())) {
                 return true;
             }
         }

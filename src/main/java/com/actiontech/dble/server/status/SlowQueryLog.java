@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.server.status;
 
-import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.slow.SlowQueryLogProcessor;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.trace.TraceResult;
@@ -25,9 +25,9 @@ public final class SlowQueryLog {
     private volatile SlowQueryLogProcessor processor = new SlowQueryLogProcessor();
 
     private SlowQueryLog() {
-        this.slowTime = DbleServer.getInstance().getConfig().getSystem().getSqlSlowTime();
-        this.flushPeriod = DbleServer.getInstance().getConfig().getSystem().getFlushSlowLogPeriod();
-        this.flushSize = DbleServer.getInstance().getConfig().getSystem().getFlushSlowLogSize();
+        this.slowTime = SystemConfig.getInstance().getSqlSlowTime();
+        this.flushPeriod = SystemConfig.getInstance().getFlushSlowLogPeriod();
+        this.flushSize = SystemConfig.getInstance().getFlushSlowLogSize();
     }
 
     public static SlowQueryLog getInstance() {

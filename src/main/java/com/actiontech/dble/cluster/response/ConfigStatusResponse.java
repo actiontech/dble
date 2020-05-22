@@ -7,13 +7,12 @@ package com.actiontech.dble.cluster.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.bean.KvBean;
 import com.actiontech.dble.cluster.listener.ClusterClearKeyListener;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.manager.response.ReloadConfig;
 import com.actiontech.dble.manager.response.RollbackConfig;
 import com.actiontech.dble.meta.ReloadManager;
@@ -44,7 +43,7 @@ public class ConfigStatusResponse implements ClusterXmlLoader {
             //step 1 check if the change is from itself
             LOGGER.info("notify " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
             ConfStatus status = new ConfStatus(pathValue.getValue());
-            if (status.getFrom().equals(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) {
+            if (status.getFrom().equals(SystemConfig.getInstance().getInstanceId())) {
                 //self node
                 return;
             }

@@ -16,10 +16,10 @@ def init():
     global loggername
     loggername = 'DBLEDatahostCheck'
 
-    # dble schema.xml.
+    # dble sharding.xml.
 
     global schemaxml
-    schemaxml = './conf/schema.xml'
+    schemaxml = './conf/sharding.xml'
 
     # dble manage user.
 

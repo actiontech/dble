@@ -43,7 +43,7 @@ def getManageruser(serverxml):
             return manageruser
     log.error("Don't find manager user in server.xml")
 
-# Get hosts from schema.xml file.
+# Get hosts from sharding.xml file.
 
 def getHosts(schemaxml):
     DOMTree = xml.dom.minidom.parse(schemaxml)
@@ -189,7 +189,7 @@ def main(log1,schemaxml,serverxml):
     log = log1 
     manager_user = getManageruser(serverxml)
 
-    log.info("Get hosts from schema.xml file.")
+    log.info("Get hosts from sharding.xml file.")
     hosts = getHosts(schemaxml)
 
     log.info("MySQL instance status check.")

@@ -7,7 +7,7 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.cache.CachePool;
 import com.actiontech.dble.config.ErrorCode;
@@ -41,7 +41,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(FetchStoreNodeOfChildTableHandler.class);
     private final String sql;
     private AtomicBoolean hadResult = new AtomicBoolean(false);
-    private volatile String dataNode;
+    private volatile String shardingNode;
     private Map<String, BackendConnection> receiveMap = new ConcurrentHashMap<>();
     private Map<String, String> nodesErrorReason = new ConcurrentHashMap<>();
     protected final ReentrantLock lock = new ReentrantLock();
@@ -53,7 +53,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
         this.session = session;
     }
 
-    public String execute(String schema, ArrayList<String> dataNodes) throws ConnectionException {
+    public String execute(String schema, ArrayList<String> shardingNodes) throws ConnectionException {
         String key = schema + ":" + sql;
         CachePool cache = CacheService.getCachePoolByName("ER_SQL2PARENTID");
         if (cache != null) {
@@ -63,18 +63,18 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
             }
         }
 
-        int totalCount = dataNodes.size();
+        int totalCount = shardingNodes.size();
 
         LOGGER.debug("find child node with sql:" + sql);
-        for (String dn : dataNodes) {
+        for (String dn : shardingNodes) {
             if (!LOGGER.isDebugEnabled()) {
                 //no early return when debug
-                if (dataNode != null) {
+                if (shardingNode != null) {
                     LOGGER.debug(" found return ");
-                    return dataNode;
+                    return shardingNode;
                 }
             }
-            PhysicalDataNode mysqlDN = DbleServer.getInstance().getConfig().getDataNodes().get(dn);
+            ShardingNode mysqlDN = DbleServer.getInstance().getConfig().getShardingNodes().get(dn);
             try {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("execute in data_node " + dn);
@@ -124,11 +124,11 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
 
         if (!LOGGER.isDebugEnabled()) {
             //no cached when debug
-            if (dataNode != null && cache != null) {
-                cache.putIfAbsent(key, dataNode);
+            if (shardingNode != null && cache != null) {
+                cache.putIfAbsent(key, shardingNode);
             }
         }
-        return dataNode;
+        return shardingNode;
 
     }
 
@@ -206,7 +206,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
         if (hadResult.compareAndSet(false, true)) {
             lock.lock();
             try {
-                dataNode = ((RouteResultsetNode) conn.getAttachment()).getName();
+                shardingNode = ((RouteResultsetNode) conn.getAttachment()).getName();
                 result.signal();
             } finally {
                 lock.unlock();

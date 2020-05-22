@@ -5,11 +5,11 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.query.BaseDMLHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
@@ -200,7 +200,7 @@ public class OutputHandler extends BaseDMLHandler {
     }
 
     private void doSqlStat() {
-        if (DbleServer.getInstance().getConfig().getSystem().getUseSqlStat() == 1) {
+        if (SystemConfig.getInstance().getUseSqlStat() == 1) {
             long netInBytes = 0;
             String sql = session.getSource().getExecuteSql();
             if (sql != null) {

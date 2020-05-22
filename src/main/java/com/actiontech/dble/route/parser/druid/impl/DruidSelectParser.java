@@ -8,8 +8,8 @@ package com.actiontech.dble.route.parser.druid.impl;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.ServerPrivileges;
-import com.actiontech.dble.config.ServerPrivileges.CheckType;
+import com.actiontech.dble.config.privileges.ShardingPrivileges;
+import com.actiontech.dble.config.privileges.ShardingPrivileges.CheckType;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.TableMeta;
@@ -85,8 +85,8 @@ public class DruidSelectParser extends DefaultDruidParser {
                     rrs.setFinishedExecute(true);
                     return schema;
                 } else {
-                    //normal schema in config
-                    if (!ServerPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), CheckType.SELECT)) {
+                    //normal sharding in config
+                    if (!ShardingPrivileges.checkPrivilege(sc.getUserConfig(), schemaInfo.getSchema(), schemaInfo.getTable(), CheckType.SELECT)) {
                         String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                         throw new SQLNonTransientException(msg);
                     }
@@ -211,14 +211,14 @@ public class DruidSelectParser extends DefaultDruidParser {
 
     private void tryRouteToOneNodeForComplex(RouteResultset rrs, SQLSelectStatement selectStmt, int tableSize) throws SQLException {
         Set<String> schemaList = new HashSet<>();
-        String dataNode = RouterUtil.tryRouteTablesToOneNodeForComplex(rrs, ctx, schemaList, tableSize);
-        if (dataNode != null) {
+        String shardingNode = RouterUtil.tryRouteTablesToOneNodeForComplex(rrs, ctx, schemaList, tableSize);
+        if (shardingNode != null) {
             String sql = rrs.getStatement();
             for (String toRemoveSchemaName : schemaList) {
                 sql = RouterUtil.removeSchema(sql, toRemoveSchemaName);
             }
             rrs.setStatement(sql);
-            RouterUtil.routeToSingleNode(rrs, dataNode);
+            RouterUtil.routeToSingleNode(rrs, shardingNode);
         } else {
             rrs.setNeedOptimizer(true);
             rrs.setSqlStatement(selectStmt);
@@ -230,7 +230,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                                          MySqlSelectQueryBlock mysqlSelectQuery, TableConfig tc) throws SQLException {
         //simple merge of ORDER BY has bugs,so optimizer here
         if (mysqlSelectQuery.getOrderBy() != null) {
-            tryAddLimit(schema, tc, mysqlSelectQuery, rrs);
+            tryAddLimit(tc, mysqlSelectQuery);
             rrs.setSqlStatement(stmt);
             rrs.setNeedOptimizer(true);
             return;
@@ -391,7 +391,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         boolean isDistinct = (mysqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCT) || (mysqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCTROW);
         parseAggExprCommon(schema, rrs, mysqlSelectQuery, aliaColumns, tc, isDistinct);
         if (rrs.isNeedOptimizer()) {
-            tryAddLimit(schema, tc, mysqlSelectQuery, rrs);
+            tryAddLimit(tc, mysqlSelectQuery);
             rrs.setSqlStatement(stmt);
             return;
         }
@@ -520,8 +520,8 @@ public class DruidSelectParser extends DefaultDruidParser {
             int limitSize = sqlSchema.getDefaultMaxLimit();
 
             Map<Pair<String, String>, Map<String, ColumnRoute>> allConditions = getAllConditions();
-            boolean isNeedAddLimit = isNeedAddLimit(sqlSchema, rrs, mysqlSelectQuery, allConditions);
-            if (isNeedAddLimit) {
+            int needAddLimitSize = needAddLimitSize(sqlSchema, rrs, mysqlSelectQuery, allConditions);
+            if (needAddLimitSize >= 0) {
                 SQLLimit limit = new SQLLimit();
                 limit.setRowCount(new SQLIntegerExpr(limitSize));
                 mysqlSelectQuery.setLimit(limit);
@@ -530,7 +530,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                 rrs.changeNodeSqlAfterAddLimit(sql, 0, limitSize);
             }
             SQLLimit limit = mysqlSelectQuery.getLimit();
-            if (limit != null && !isNeedAddLimit) {
+            if (limit != null && needAddLimitSize < 0) {
                 SQLIntegerExpr offset = (SQLIntegerExpr) limit.getOffset();
                 SQLIntegerExpr count = (SQLIntegerExpr) limit.getRowCount();
                 if (offset != null) {
@@ -602,7 +602,7 @@ public class DruidSelectParser extends DefaultDruidParser {
             if (ctx.getTables().size() == 1) {
                 for (RouteCalculateUnit unit : ctx.getRouteCalculateUnits()) {
                     if (unit.getTablesAndConditions().get(table) != null &&
-                            tc.getDataNodes().size() > 1) {
+                            tc.getShardingNodes().size() > 1) {
                         return false;
                     }
                 }
@@ -611,50 +611,37 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
     }
 
-    private void tryAddLimit(SchemaConfig schema, TableConfig tableConfig,
-                             MySqlSelectQueryBlock mysqlSelectQuery, RouteResultset rrs) {
-        if (schema.getDefaultMaxLimit() == -1) {
+    private void tryAddLimit(TableConfig tableConfig,
+                             MySqlSelectQueryBlock mysqlSelectQuery) {
+        if (mysqlSelectQuery.getLimit() != null) {
             return;
-        } else if (mysqlSelectQuery.getLimit() != null) {
-            return;
-        } else if (!tableConfig.isNeedAddLimit()) {
+        } else if (tableConfig.getMaxLimit() == -1) {
             return;
         } else if (mysqlSelectQuery.isForUpdate() || mysqlSelectQuery.isLockInShareMode()) {
             return;
         }
         SQLLimit limit = new SQLLimit();
-        limit.setRowCount(new SQLIntegerExpr(schema.getDefaultMaxLimit()));
+        limit.setRowCount(new SQLIntegerExpr(tableConfig.getMaxLimit()));
         mysqlSelectQuery.setLimit(limit);
     }
 
-    private boolean isNeedAddLimit(SchemaConfig schema, RouteResultset rrs,
-                                   MySqlSelectQueryBlock mysqlSelectQuery, Map<Pair<String, String>, Map<String, ColumnRoute>> allConditions) {
+    private int needAddLimitSize(SchemaConfig schema, RouteResultset rrs,
+                                     MySqlSelectQueryBlock mysqlSelectQuery, Map<Pair<String, String>, Map<String, ColumnRoute>> allConditions) {
         if (rrs.getLimitSize() > -1) {
-            return false;
-        } else if (schema.getDefaultMaxLimit() == -1) {
-            return false;
+            return -1;
         } else if (mysqlSelectQuery.getLimit() != null) { // has already limit
-            return false;
+            return -1;
         } else if (ctx.getTables().size() == 1) {
             Pair<String, String> table = ctx.getTables().get(0);
             String tableName = table.getValue();
             TableConfig tableConfig = schema.getTables().get(tableName);
             if (tableConfig == null) {
-                return schema.getDefaultMaxLimit() > -1; // get schema's configure
-            }
-
-            boolean isNeedAddLimit = tableConfig.isNeedAddLimit();
-            if (!isNeedAddLimit) {
-                return false; // get table configure
-            }
-
-            if (schema.getTables().get(tableName).isGlobalTable()) {
-                return true;
+                return schema.getDefaultMaxLimit(); // get sharding's configure
             }
             // no condition
-            return allConditions.get(table) == null;
+            return allConditions.get(table) == null ? -1 : tableConfig.getMaxLimit();
         } else { // no table or multi-table
-            return false;
+            return -1;
         }
 
     }

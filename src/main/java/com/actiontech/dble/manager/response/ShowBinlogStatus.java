@@ -6,16 +6,18 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDataHost;
-import com.actiontech.dble.backend.datasource.PhysicalDataSource;
+import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.PacketUtil;
-import com.actiontech.dble.cluster.*;
+import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.cluster.kVtoXml.ClusterToXml;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.cluster.kVtoXml.ClusterToXml;
-import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.BinlogPause;
+import com.actiontech.dble.config.model.ClusterConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOProcessor;
@@ -82,7 +84,7 @@ public final class ShowBinlogStatus {
 
     public static void execute(ManagerConnection c) {
         boolean isUseZK = ClusterGeneralConfig.isUseZK();
-        long timeout = DbleServer.getInstance().getConfig().getSystem().getShowBinlogStatusTimeout();
+        long timeout = ClusterConfig.getInstance().getShowBinlogStatusTimeout();
         if (isUseZK) {
             showBinlogWithZK(c, timeout);
         } else if (ClusterGeneralConfig.isUseGeneralCluster()) {
@@ -108,7 +110,7 @@ public final class ShowBinlogStatus {
     private static void showBinlogWithUcore(ManagerConnection c, long timeout) {
 
         //step 1 get the distributeLock of the ucore
-        DistributeLock distributeLock = new DistributeLock(ClusterPathUtil.getBinlogPauseLockPath(), ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+        DistributeLock distributeLock = new DistributeLock(ClusterPathUtil.getBinlogPauseLockPath(), SystemConfig.getInstance().getInstanceId());
         try {
             if (!distributeLock.acquire()) {
                 c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "There is another command is showing BinlogStatus");
@@ -120,7 +122,7 @@ public final class ShowBinlogStatus {
                     c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "There is another command is showing BinlogStatus");
                 } else {
                     //step 3 notify other dble to stop the commit & set self status
-                    BinlogPause pauseOnInfo = new BinlogPause(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), BinlogPauseStatus.ON);
+                    BinlogPause pauseOnInfo = new BinlogPause(SystemConfig.getInstance().getInstanceId(), BinlogPauseStatus.ON);
 
                     //step 4 wait til other dbles to feedback the ucore flag
                     long beginTime = TimeUtil.currentTimeMillis();
@@ -153,7 +155,7 @@ public final class ShowBinlogStatus {
 
                     //step 7 delete the KVtree and notify the cluster
                     ClusterHelper.cleanPath(ClusterPathUtil.getBinlogPauseStatus() + SEPARATOR);
-                    BinlogPause pauseOffInfo = new BinlogPause(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), BinlogPauseStatus.OFF);
+                    BinlogPause pauseOffInfo = new BinlogPause(SystemConfig.getInstance().getInstanceId(), BinlogPauseStatus.OFF);
                     ClusterHelper.setKV(ClusterPathUtil.getBinlogPauseStatus(), pauseOffInfo.toString());
 
                 }
@@ -187,13 +189,13 @@ public final class ShowBinlogStatus {
                     //notify zk to wait all session
                     String binlogStatusPath = KVPathUtil.getBinlogPauseStatus();
                     String binlogPause = KVPathUtil.getBinlogPauseInstance();
-                    BinlogPause pauseOnInfo = new BinlogPause(ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), BinlogPauseStatus.ON);
+                    BinlogPause pauseOnInfo = new BinlogPause(SystemConfig.getInstance().getInstanceId(), BinlogPauseStatus.ON);
                     zkConn.setData().forPath(binlogStatusPath, pauseOnInfo.toString().getBytes(StandardCharsets.UTF_8));
                     long beginTime = TimeUtil.currentTimeMillis();
                     boolean isPaused = waitAllSession(c, timeout, beginTime);
 
                     //tell zk this instance has prepared
-                    ZKUtils.createTempNode(binlogPause, ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), String.valueOf(isPaused).getBytes(StandardCharsets.UTF_8));
+                    ZKUtils.createTempNode(binlogPause, SystemConfig.getInstance().getInstanceId(), String.valueOf(isPaused).getBytes(StandardCharsets.UTF_8));
                     //check all session waiting status
                     List<String> preparedList = zkConn.getChildren().forPath(binlogPause);
                     List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
@@ -225,9 +227,9 @@ public final class ShowBinlogStatus {
                         getQueryResult(c.getCharset().getResults());
                     }
                     writeResponse(c);
-                    BinlogPause pauseOffInfo = new BinlogPause(ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), BinlogPauseStatus.OFF);
+                    BinlogPause pauseOffInfo = new BinlogPause(SystemConfig.getInstance().getInstanceId(), BinlogPauseStatus.OFF);
                     zkConn.setData().forPath(binlogStatusPath, pauseOffInfo.toString().getBytes(StandardCharsets.UTF_8));
-                    zkConn.delete().forPath(ZKPaths.makePath(binlogPause, ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID)));
+                    zkConn.delete().forPath(ZKPaths.makePath(binlogPause, SystemConfig.getInstance().getInstanceId()));
                     List<String> releaseList = zkConn.getChildren().forPath(binlogPause);
                     while (releaseList.size() != 0) {
                         releaseList = zkConn.getChildren().forPath(binlogPause);
@@ -271,7 +273,7 @@ public final class ShowBinlogStatus {
 
     public static boolean waitAllSession() {
         logger.info("waiting all sessions of distributed transaction which are not finished.");
-        long timeout = DbleServer.getInstance().getConfig().getSystem().getShowBinlogStatusTimeout();
+        long timeout = ClusterConfig.getInstance().getShowBinlogStatusTimeout();
         long beginTime = TimeUtil.currentTimeMillis();
         List<NonBlockingSession> fcList = getNeedWaitSession();
         while (!fcList.isEmpty()) {
@@ -342,12 +344,12 @@ public final class ShowBinlogStatus {
      * @param charset
      */
     private static void getQueryResult(final String charset) {
-        Collection<PhysicalDataHost> allPools = DbleServer.getInstance().getConfig().getDataHosts().values();
+        Collection<PhysicalDbGroup> allPools = DbleServer.getInstance().getConfig().getDbGroups().values();
         sourceCount = new AtomicInteger(allPools.size());
         rows = new CopyOnWriteArrayList<>();
-        for (PhysicalDataHost pool : allPools) {
+        for (PhysicalDbGroup pool : allPools) {
             //if WRITE_RANDOM_NODE ,may the binlog is not ready.
-            final PhysicalDataSource source = pool.getWriteSource();
+            final PhysicalDbInstance source = pool.getWriteSource();
             OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(FIELDS,
                     new SQLQueryResultListener<SQLQueryResult<Map<String, String>>>() {
                         @Override

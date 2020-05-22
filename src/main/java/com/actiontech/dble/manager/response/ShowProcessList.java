@@ -84,7 +84,7 @@ public final class ShowProcessList {
     public static void execute(ManagerConnection c) {
         List<RowDataPacket> rows = new ArrayList<>();
         Map<String, Integer> indexs = new HashMap<>();
-        Map<String, List<Long>> dataNodeMap = new HashMap<>(4, 1f);
+        Map<String, List<Long>> shardingNodeMap = new HashMap<>(4, 1f);
         String charset = c.getCharset().getResults();
 
         for (NIOProcessor p : DbleServer.getInstance().getFrontProcessors()) {
@@ -98,20 +98,20 @@ public final class ShowProcessList {
                 }
                 if (!CollectionUtil.isEmpty(backendConns)) {
                     for (Map.Entry<RouteResultsetNode, BackendConnection> entry : backendConns.entrySet()) {
-                        String dataNode = entry.getKey().getName();
+                        String shardingNode = entry.getKey().getName();
                         long threadId = ((MySQLConnection) entry.getValue()).getThreadId();
                         // row data package
-                        RowDataPacket row = getRow(fc, dataNode, threadId, charset);
+                        RowDataPacket row = getRow(fc, shardingNode, threadId, charset);
                         rows.add(row);
                         // index
-                        indexs.put(dataNode + "." + String.valueOf(threadId), rows.size() - 1);
-                        // datanode map
-                        if (dataNodeMap.get(dataNode) == null) {
+                        indexs.put(shardingNode + "." + String.valueOf(threadId), rows.size() - 1);
+                        // shardingnode map
+                        if (shardingNodeMap.get(shardingNode) == null) {
                             List<Long> threadIds = new ArrayList<>(3);
                             threadIds.add(threadId);
-                            dataNodeMap.put(dataNode, threadIds);
+                            shardingNodeMap.put(shardingNode, threadIds);
                         } else {
-                            dataNodeMap.get(dataNode).add(threadId);
+                            shardingNodeMap.get(shardingNode).add(threadId);
                         }
                     }
                 } else {
@@ -123,7 +123,7 @@ public final class ShowProcessList {
 
         // set 'show processlist' content
         try {
-            Map<String, Map<String, String>> backendRes = showProcessList(dataNodeMap);
+            Map<String, Map<String, String>> backendRes = showProcessList(shardingNodeMap);
             for (Map.Entry<String, Integer> entry : indexs.entrySet()) {
                 Map<String, String> res = backendRes.get(entry.getKey());
                 if (res != null) {
@@ -170,16 +170,16 @@ public final class ShowProcessList {
         c.write(buffer);
     }
 
-    private static RowDataPacket getRow(FrontendConnection fc, String dataNode, Long threadId, String charset) {
+    private static RowDataPacket getRow(FrontendConnection fc, String shardingNode, Long threadId, String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         // Front_Id
         row.add(LongUtil.toBytes(fc.getId()));
         // Datanode
-        row.add(StringUtil.encode(dataNode == null ? NULL_VAL : dataNode, charset));
+        row.add(StringUtil.encode(shardingNode == null ? NULL_VAL : shardingNode, charset));
         // BconnID
         row.add(threadId == null ? StringUtil.encode(NULL_VAL, charset) : LongUtil.toBytes(threadId));
         // User
-        row.add(StringUtil.encode(fc.getUser(), charset));
+        row.add(StringUtil.encode(fc.getUserInfo(), charset));
         // Front_Host
         row.add(StringUtil.encode(fc.getHost() + ":" + fc.getLocalPort(), charset));
         // db

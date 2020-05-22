@@ -6,6 +6,7 @@
 package com.actiontech.dble.net.handler;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.NIOHandler;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 
@@ -83,7 +84,7 @@ public abstract class BackendAsyncHandler implements NIOHandler {
         String threadName = null;
         ThreadWorkUsage workUsage = null;
         long workStart = 0;
-        if (DbleServer.getInstance().getConfig().getSystem().getUseThreadUsageStat() == 1) {
+        if (SystemConfig.getInstance().getUseThreadUsageStat() == 1) {
             threadName = Thread.currentThread().getName();
             workUsage = DbleServer.getInstance().getThreadUsedMap().get(threadName);
             if (threadName.startsWith("backend")) {

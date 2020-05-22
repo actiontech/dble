@@ -2,7 +2,7 @@ package com.actiontech.dble.util;
 
 import com.actiontech.dble.backend.mysql.SecurityUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
-import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
+import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
 import com.actiontech.dble.net.AbstractConnection;
 import com.actiontech.dble.net.mysql.BinaryPacket;
 import com.actiontech.dble.net.mysql.HandshakeV10Packet;
@@ -190,7 +190,7 @@ public final class PasswordAuthPlugin {
         if (resEncResult[4] == 0x00) {
             isConnected = true;
         } else {
-            MySQLDataSource.logTestConnectionError(resEncResult);
+            MySQLInstance.logTestConnectionError(resEncResult);
             isConnected = false;
         }
         return isConnected;

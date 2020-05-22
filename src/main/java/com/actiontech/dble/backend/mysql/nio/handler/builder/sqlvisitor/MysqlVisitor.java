@@ -140,7 +140,7 @@ public abstract class MysqlVisitor {
         return selName;
     }
 
-    // try to trim schema from field_item
+    // try to trim sharding from field_item
     protected String getItemName(Item item) {
         if (item instanceof ItemCondOr) {
             StringBuilder sb = new StringBuilder();

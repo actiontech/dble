@@ -20,7 +20,7 @@ public class DefaultNodeTablesMetaHandler extends GetTableMetaHandler {
     }
 
     @Override
-    void handleTable(String dataNode, String table, boolean isView, String createSQL) {
+    void handleTable(String shardingNode, String table, boolean isView, String createSQL) {
         if (isView) {
             ViewMeta viewMeta = MetaHelper.initViewMeta(schema, createSQL, System.currentTimeMillis(), schemaMetaHandler.getTmManager());
             schemaMetaHandler.handleViewMeta(viewMeta);
@@ -31,7 +31,7 @@ public class DefaultNodeTablesMetaHandler extends GetTableMetaHandler {
     }
 
     @Override
-    void countdown(String dataNode, Set<String> remainingTables) {
+    void countdown(String shardingNode, Set<String> remainingTables) {
         if (remainingTables.size() > 0) {
             for (String table : remainingTables) {
                 logger.warn("show create table " + table + " has no results");

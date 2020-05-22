@@ -71,7 +71,7 @@ public class DruidCreateTableParser extends DefaultDruidParser {
         try {
             RouterUtil.routeToDDLNode(schemaInfo, rrs);
         } catch (SQLException e) {
-            String msg = "Table '" + schemaInfo.getSchema() + "." + schemaInfo.getTable() + "' doesn't exist in the config of schema";
+            String msg = "Table '" + schemaInfo.getSchema() + "." + schemaInfo.getTable() + "' doesn't exist in the config of sharding";
             throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
         }
         return schemaInfo.getSchemaConfig();

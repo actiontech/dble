@@ -5,10 +5,10 @@
 */
 package com.actiontech.dble.backend.mysql.nio;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.SecurityUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.Capabilities;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.ConnectionException;
 import com.actiontech.dble.net.NIOHandler;
 import com.actiontech.dble.net.mysql.*;
@@ -71,7 +71,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
                     source.setHandler(new MySQLConnectionHandler(source));
                     source.setAuthenticated(true);
                     boolean clientCompress = Capabilities.CLIENT_COMPRESS == (Capabilities.CLIENT_COMPRESS & packet.getServerCapabilities());
-                    boolean usingCompress = DbleServer.getInstance().getConfig().getSystem().getUseCompression() == 1;
+                    boolean usingCompress = SystemConfig.getInstance().getUseCompression() == 1;
                     if (clientCompress && usingCompress) {
                         source.setSupportCompress(true);
                     }
@@ -137,7 +137,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
         source.setHandshake(packet);
         source.setThreadId(packet.getThreadId());
 
-        source.initCharacterSet(DbleServer.getInstance().getConfig().getSystem().getCharset());
+        source.initCharacterSet(SystemConfig.getInstance().getCharset());
     }
 
     private void auth323(byte packetId) {

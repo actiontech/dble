@@ -36,7 +36,7 @@ public class ViewMetaParser {
             viewName = viewName.toLowerCase();
         }
 
-        //delete the schema if exists
+        //delete the sharding if exists
         if (viewName.indexOf('.') != -1) {
             viewName = viewName.split("\\.")[1];
         }

@@ -8,16 +8,16 @@ package com.actiontech.dble.manager.response;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.config.model.UserConfig;
+import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.Map;
 
 public final class ShowWhiteHost {
@@ -38,7 +38,7 @@ public final class ShowWhiteHost {
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("USER", Fields.FIELD_TYPE_VARCHAR);
-        FIELDS[i++].setPacketId(++packetId);
+        FIELDS[i].setPacketId(++packetId);
 
 
         EOF.setPacketId(++packetId);
@@ -61,19 +61,15 @@ public final class ShowWhiteHost {
         // write rows
         byte packetId = EOF.getPacketId();
 
-        Map<String, List<UserConfig>> map = DbleServer.getInstance().getConfig().getFirewall().getWhitehost();
-        for (Map.Entry<String, List<UserConfig>> entry : map.entrySet()) {
-            List<UserConfig> userConfigs = entry.getValue();
-            StringBuilder users = new StringBuilder();
-            for (int i = 0; i < userConfigs.size(); i++) {
-                if (i > 0) {
-                    users.append(",");
+        Map<Pair<String, String>, UserConfig> map = DbleServer.getInstance().getConfig().getUsers();
+        for (Map.Entry<Pair<String, String>, UserConfig> entry : map.entrySet()) {
+            if (entry.getValue().getWhiteIPs().size() > 0) {
+                for (String whiteIP : entry.getValue().getWhiteIPs()) {
+                    RowDataPacket row = getRow(whiteIP, entry.getKey().toString(), c.getCharset().getResults());
+                    row.setPacketId(++packetId);
+                    buffer = row.write(buffer, c, true);
                 }
-                users.append(userConfigs.get(i).getName());
             }
-            RowDataPacket row = getRow(entry.getKey(), users.toString(), c.getCharset().getResults());
-            row.setPacketId(++packetId);
-            buffer = row.write(buffer, c, true);
         }
 
         // write last eof

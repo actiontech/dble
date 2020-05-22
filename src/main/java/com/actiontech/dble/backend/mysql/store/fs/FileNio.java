@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.backend.mysql.store.fs;
 
-import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.config.model.SystemConfig;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -28,7 +28,7 @@ class FileNio extends FileBase {
         this.name = fileName;
         RandomAccessFile file = new RandomAccessFile(fileName, mode);
         this.channel = file.getChannel();
-        this.fileLength = DbleServer.getInstance().getConfig().getSystem().getMappedFileSize();
+        this.fileLength = SystemConfig.getInstance().getMappedFileSize();
         this.pos = 0;
     }
 

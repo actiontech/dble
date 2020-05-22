@@ -15,7 +15,7 @@ import java.util.Set;
 public interface FrontendPrivileges {
 
     /**
-     * check whether the schema exists
+     * check whether the sharding exists
      *
      * @param schema
      */

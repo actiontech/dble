@@ -24,46 +24,46 @@ public class ConfigTableMetaHandler extends GetTableMetaHandler {
         this.schemaMetaHandler = schemaMetaHandler;
     }
 
-    public void execute(Map<String, Set<String>> dataNodeMap) {
-        for (Map.Entry<String, Set<String>> dataNodeInfo : dataNodeMap.entrySet()) {
-            String dataNode = dataNodeInfo.getKey();
-            if (selfNode != null && selfNode.contains(dataNode)) {
-                logger.info("the Node " + dataNode + " is a selfNode,count down");
-                this.countdown(dataNode, null);
+    public void execute(Map<String, Set<String>> shardingNodeMap) {
+        for (Map.Entry<String, Set<String>> shardingNodeInfo : shardingNodeMap.entrySet()) {
+            String shardingNode = shardingNodeInfo.getKey();
+            if (selfNode != null && selfNode.contains(shardingNode)) {
+                logger.info("the Node " + shardingNode + " is a selfNode,count down");
+                this.countdown(shardingNode, null);
                 continue;
             }
 
-            Set<String> existTables = listExistTables(dataNode, dataNodeInfo.getValue());
+            Set<String> existTables = listExistTables(shardingNode, shardingNodeInfo.getValue());
             if (existTables.size() == 0) {
-                logger.info("the Node " + dataNode + " has no exist table,count down");
-                this.countdown(dataNode, null);
+                logger.info("the Node " + shardingNode + " has no exist table,count down");
+                this.countdown(shardingNode, null);
                 continue;
             }
-            super.execute(dataNode, existTables);
+            super.execute(shardingNode, existTables);
         }
     }
 
     @Override
-    void handleTable(String dataNode, String table, boolean isView, String sql) {
-        schemaMetaHandler.checkTableConsistent(table, dataNode, sql);
+    void handleTable(String shardingNode, String table, boolean isView, String sql) {
+        schemaMetaHandler.checkTableConsistent(table, shardingNode, sql);
     }
 
     @Override
-    void countdown(String dataNode, Set<String> remainingTables) {
+    void countdown(String shardingNode, Set<String> remainingTables) {
         if (remainingTables != null && remainingTables.size() > 0) {
             for (String table : remainingTables) {
-                String tableId = "DataNode[" + dataNode + "]:Table[" + table + "]";
-                String warnMsg = "Can't get table " + table + "'s config from DataNode:" + dataNode + "! Maybe the table is not initialized!";
+                String tableId = "DataNode[" + shardingNode + "]:Table[" + table + "]";
+                String warnMsg = "Can't get table " + table + "'s config from DataNode:" + shardingNode + "! Maybe the table is not initialized!";
                 logger.warn(warnMsg);
                 AlertUtil.alertSelf(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, warnMsg, AlertUtil.genSingleLabel("TABLE", tableId));
                 ToResolveContainer.TABLE_LACK.add(tableId);
             }
         }
-        schemaMetaHandler.countDownShardTable(dataNode);
+        schemaMetaHandler.countDownShardTable(shardingNode);
     }
 
-    private Set<String> listExistTables(String dataNode, Set<String> tables) {
-        GetConfigTablesHandler showTablesHandler = new GetConfigTablesHandler(tables, dataNode, this);
+    private Set<String> listExistTables(String shardingNode, Set<String> tables) {
+        GetConfigTablesHandler showTablesHandler = new GetConfigTablesHandler(tables, shardingNode, this);
         showTablesHandler.execute();
         return showTablesHandler.getExistsTables();
     }

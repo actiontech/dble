@@ -54,7 +54,7 @@ public final class RouteService {
         }
 
         /*!dble: sql = select name from aa */
-        /*!dble: schema = test */
+        /*!dble: sharding = test */
         int hintLength = RouteService.isHintSql(stmt);
         if (hintLength != -1) {
             int endPos = stmt.indexOf("*/");

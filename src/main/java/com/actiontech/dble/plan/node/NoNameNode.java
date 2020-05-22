@@ -30,7 +30,7 @@ public class NoNameNode extends PlanNode {
         this.catalog = catalog;
         this.sql = sql;
         Set<String> set = new HashSet<>();
-        set.addAll(DbleServer.getInstance().getConfig().getDataNodes().keySet());
+        set.addAll(DbleServer.getInstance().getConfig().getShardingNodes().keySet());
         this.setNoshardNode(set);
         this.keepFieldSchema = true;
     }

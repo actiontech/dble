@@ -6,13 +6,12 @@
 package com.actiontech.dble.cluster.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.bean.KvBean;
 import com.actiontech.dble.cluster.listener.ClusterClearKeyListener;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.BinlogPause;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.manager.response.ShowBinlogStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +36,7 @@ public class BinlogPauseStatusResponse implements ClusterXmlLoader {
         //step 1 check if the block is from the server itself
         BinlogPause pauseInfo = new BinlogPause(configValue.getValue());
         LOGGER.info("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
-        if (pauseInfo.getFrom().equals(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) {
+        if (pauseInfo.getFrom().equals(SystemConfig.getInstance().getInstanceId())) {
             LOGGER.info("Self Notice,Do nothing return");
             return;
         }

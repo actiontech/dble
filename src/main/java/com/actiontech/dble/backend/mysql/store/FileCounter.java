@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.backend.mysql.store;
 
-import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.memory.environment.Hardware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +26,7 @@ public final class FileCounter {
         long totalMem = Hardware.getSizeOfPhysicalMemory();
         long freeMem = Hardware.getFreeSizeOfPhysicalMemory();
         long currentMem = Math.min(totalMem / 2, freeMem);
-        this.maxFileSize = (int) (currentMem / (DbleServer.getInstance().getConfig().getSystem().getMappedFileSize() / 1024));
+        this.maxFileSize = (int) (currentMem / (SystemConfig.getInstance().getMappedFileSize() / 1024));
         LOGGER.info("current mem is " + currentMem + "kb. max file size is " + maxFileSize);
         this.currentNum = 0;
     }

@@ -32,7 +32,7 @@ public class TraceResult implements Cloneable {
     private TraceRecord parseStart; //requestEnd
     private TraceRecord routeStart; //parseEnd
     private TraceRecord preExecuteStart; //routeEnd
-    private RouteResultsetNode[] dataNodes;
+    private RouteResultsetNode[] shardingNodes;
     private TraceRecord preExecuteEnd;
 
     private TraceRecord adtCommitBegin; //auto Distributed Transaction commit begin
@@ -74,18 +74,18 @@ public class TraceResult implements Cloneable {
         this.preExecuteEnd = preExecuteEnd;
     }
 
-    public RouteResultsetNode[] getDataNodes() {
-        return dataNodes;
+    public RouteResultsetNode[] getShardingNodes() {
+        return shardingNodes;
     }
 
-    public void setDataNodes(RouteResultsetNode[] dataNodes) {
-        if (this.dataNodes == null) {
-            this.dataNodes = dataNodes;
+    public void setShardingNodes(RouteResultsetNode[] shardingNodes) {
+        if (this.shardingNodes == null) {
+            this.shardingNodes = shardingNodes;
         } else {
-            RouteResultsetNode[] tempDataNodes = new RouteResultsetNode[this.dataNodes.length + dataNodes.length];
-            System.arraycopy(this.dataNodes, 0, tempDataNodes, 0, this.dataNodes.length);
-            System.arraycopy(dataNodes, 0, tempDataNodes, this.dataNodes.length, dataNodes.length);
-            this.dataNodes = tempDataNodes;
+            RouteResultsetNode[] tempShardingNodes = new RouteResultsetNode[this.shardingNodes.length + shardingNodes.length];
+            System.arraycopy(this.shardingNodes, 0, tempShardingNodes, 0, this.shardingNodes.length);
+            System.arraycopy(shardingNodes, 0, tempShardingNodes, this.shardingNodes.length, shardingNodes.length);
+            this.shardingNodes = tempShardingNodes;
         }
     }
 
@@ -169,7 +169,7 @@ public class TraceResult implements Cloneable {
         routeStart = null;
         preExecuteStart = null;
         preExecuteEnd = null;
-        dataNodes = null;
+        shardingNodes = null;
         adtCommitBegin = null;
         adtCommitEnd = null;
         complexQuery = false;
@@ -240,7 +240,7 @@ public class TraceResult implements Cloneable {
         } else if (subQuery) {
             lst.add(genTraceRecord("Doing_SubQuery", preExecuteEnd.getTimestamp()));
             return lst;
-        } else if (dataNodes == null || complexQuery) {
+        } else if (shardingNodes == null || complexQuery) {
             lst.add(genTraceRecord("Generate_Query_Explain", preExecuteEnd.getTimestamp()));
             return lst;
         } else {
@@ -436,13 +436,13 @@ public class TraceResult implements Cloneable {
         for (Map.Entry<MySQLConnection, TraceRecord> fetchStart : connFetchStartMap.entrySet()) {
             TraceRecord fetchStartRecord = fetchStart.getValue();
             minFetchStart = Math.min(minFetchStart, fetchStartRecord.getTimestamp());
-            executeList.add(genTraceRecord("Execute_SQL", preExecuteEnd.getTimestamp(), fetchStartRecord.getTimestamp(), fetchStartRecord.getDataNode(), fetchStartRecord.getRef()));
+            executeList.add(genTraceRecord("Execute_SQL", preExecuteEnd.getTimestamp(), fetchStartRecord.getTimestamp(), fetchStartRecord.getShardingNode(), fetchStartRecord.getRef()));
             TraceRecord fetchEndRecord = connFetchEndMap.get(fetchStart.getKey());
             if (fetchEndRecord == null) {
                 LOGGER.debug("connection fetchEndRecord is null ");
                 return true;
             }
-            fetchList.add(genTraceRecord("Fetch_result", fetchStartRecord.getTimestamp(), fetchEndRecord.getTimestamp(), fetchStartRecord.getDataNode(), fetchStartRecord.getRef()));
+            fetchList.add(genTraceRecord("Fetch_result", fetchStartRecord.getTimestamp(), fetchEndRecord.getTimestamp(), fetchStartRecord.getShardingNode(), fetchStartRecord.getRef()));
             maxFetchEnd = Math.max(maxFetchEnd, fetchEndRecord.getTimestamp());
         }
         lst.addAll(executeList);
@@ -467,36 +467,36 @@ public class TraceResult implements Cloneable {
             List<String[]> fetchList = new ArrayList<>(connFetchStartMap.size());
             for (Map.Entry<MySQLConnection, TraceRecord> fetchStart : connFetchStartMap.entrySet()) {
                 TraceRecord fetchStartRecord = fetchStart.getValue();
-                receivedNode.add(fetchStartRecord.getDataNode());
+                receivedNode.add(fetchStartRecord.getShardingNode());
                 minFetchStart = Math.min(minFetchStart, fetchStartRecord.getTimestamp());
-                executeList.add(genTraceRecord("Execute_SQL", preExecuteEnd.getTimestamp(), fetchStartRecord.getTimestamp(), fetchStartRecord.getDataNode(), fetchStartRecord.getRef()));
+                executeList.add(genTraceRecord("Execute_SQL", preExecuteEnd.getTimestamp(), fetchStartRecord.getTimestamp(), fetchStartRecord.getShardingNode(), fetchStartRecord.getRef()));
                 if (connFetchEndMap == null) {
-                    fetchList.add(genTraceRecord("Fetch_result", fetchStartRecord.getTimestamp(), fetchStartRecord.getDataNode(), fetchStartRecord.getRef()));
+                    fetchList.add(genTraceRecord("Fetch_result", fetchStartRecord.getTimestamp(), fetchStartRecord.getShardingNode(), fetchStartRecord.getRef()));
                 } else {
                     TraceRecord fetchEndRecord = connFetchEndMap.get(fetchStart.getKey());
                     if (fetchEndRecord == null) {
-                        fetchList.add(genTraceRecord("Fetch_result", fetchStartRecord.getTimestamp(), fetchStartRecord.getDataNode(), fetchStartRecord.getRef()));
+                        fetchList.add(genTraceRecord("Fetch_result", fetchStartRecord.getTimestamp(), fetchStartRecord.getShardingNode(), fetchStartRecord.getRef()));
                     } else {
-                        fetchList.add(genTraceRecord("Fetch_result", fetchStartRecord.getTimestamp(), fetchEndRecord.getTimestamp(), fetchStartRecord.getDataNode(), fetchStartRecord.getRef()));
+                        fetchList.add(genTraceRecord("Fetch_result", fetchStartRecord.getTimestamp(), fetchEndRecord.getTimestamp(), fetchStartRecord.getShardingNode(), fetchStartRecord.getRef()));
                         maxFetchEnd = Math.max(maxFetchEnd, fetchEndRecord.getTimestamp());
                     }
                 }
             }
             lst.addAll(executeList);
-            if (receivedNode.size() != dataNodes.length) {
-                for (RouteResultsetNode dataNode : dataNodes) {
-                    if (!receivedNode.contains(dataNode.getName())) {
-                        lst.add(genTraceRecord("Execute_SQL", preExecuteEnd.getTimestamp(), dataNode.getName(), dataNode.getStatement()));
-                        fetchList.add(genTraceRecord("Fetch_result", dataNode.getName(), dataNode.getStatement()));
+            if (receivedNode.size() != shardingNodes.length) {
+                for (RouteResultsetNode shardingNode : shardingNodes) {
+                    if (!receivedNode.contains(shardingNode.getName())) {
+                        lst.add(genTraceRecord("Execute_SQL", preExecuteEnd.getTimestamp(), shardingNode.getName(), shardingNode.getStatement()));
+                        fetchList.add(genTraceRecord("Fetch_result", shardingNode.getName(), shardingNode.getStatement()));
                     }
                 }
             }
             lst.addAll(fetchList);
         } else {
-            for (RouteResultsetNode dataNode : dataNodes) {
-                if (!receivedNode.contains(dataNode.getName())) {
-                    lst.add(genTraceRecord("Execute_SQL", preExecuteEnd.getTimestamp(), dataNode.getName(), dataNode.getStatement()));
-                    lst.add(genTraceRecord("Fetch_result", dataNode.getName(), dataNode.getStatement()));
+            for (RouteResultsetNode shardingNode : shardingNodes) {
+                if (!receivedNode.contains(shardingNode.getName())) {
+                    lst.add(genTraceRecord("Execute_SQL", preExecuteEnd.getTimestamp(), shardingNode.getName(), shardingNode.getStatement()));
+                    lst.add(genTraceRecord("Fetch_result", shardingNode.getName(), shardingNode.getStatement()));
                 }
             }
         }
@@ -518,27 +518,27 @@ public class TraceResult implements Cloneable {
 
     }
 
-    private String[] genTraceRecord(String operation, long start, String dataNode, String ref) {
+    private String[] genTraceRecord(String operation, long start, String shardingNode, String ref) {
         if (start == Long.MAX_VALUE) {
-            return genTraceRecord(operation, dataNode, ref);
+            return genTraceRecord(operation, shardingNode, ref);
         }
         String[] readQuery = new String[6];
         readQuery[0] = operation;
         readQuery[1] = nanoToMilliSecond(start - veryStart);
         readQuery[2] = "unfinished";
         readQuery[3] = "unknown";
-        readQuery[4] = dataNode;
+        readQuery[4] = shardingNode;
         readQuery[5] = ref.replaceAll("[\\t\\n\\r]", " ");
         return readQuery;
     }
 
-    private String[] genTraceRecord(String operation, String dataNode, String ref) {
+    private String[] genTraceRecord(String operation, String shardingNode, String ref) {
         String[] readQuery = new String[6];
         readQuery[0] = operation;
         readQuery[1] = "not started";
         readQuery[2] = "unfinished";
         readQuery[3] = "unknown";
-        readQuery[4] = dataNode;
+        readQuery[4] = shardingNode;
         readQuery[5] = ref.replaceAll("[\\t\\n\\r]", " ");
         return readQuery;
     }
@@ -551,13 +551,13 @@ public class TraceResult implements Cloneable {
         return genTraceRecord(operation, start, end, "-", "-");
     }
 
-    private String[] genTraceRecord(String operation, long start, long end, String dataNode, String ref) {
+    private String[] genTraceRecord(String operation, long start, long end, String shardingNode, String ref) {
         String[] readQuery = new String[6];
         readQuery[0] = operation;
         readQuery[1] = nanoToMilliSecond(start - veryStart);
         readQuery[2] = nanoToMilliSecond(end - veryStart);
         readQuery[3] = nanoToMilliSecond(end - start);
-        readQuery[4] = dataNode;
+        readQuery[4] = shardingNode;
         readQuery[5] = ref.replaceAll("[\\t\\n\\r]", " ");
         return readQuery;
     }
@@ -668,13 +668,13 @@ public class TraceResult implements Cloneable {
         for (Map.Entry<MySQLConnection, TraceRecord> fetchStart : connFetchStartMap.entrySet()) {
             TraceRecord fetchStartRecord = fetchStart.getValue();
             minFetchStart = Math.min(minFetchStart, fetchStartRecord.getTimestamp());
-            executeList.add(genLogRecord(fetchStartRecord.getDataNode() + "_First_Result_Fetch", preExecuteEnd.getTimestamp(), fetchStartRecord.getTimestamp()));
+            executeList.add(genLogRecord(fetchStartRecord.getShardingNode() + "_First_Result_Fetch", preExecuteEnd.getTimestamp(), fetchStartRecord.getTimestamp()));
             TraceRecord fetchEndRecord = connFetchEndMap.get(fetchStart.getKey());
             if (fetchEndRecord == null) {
                 LOGGER.debug("connection fetchEndRecord is null ");
                 return true;
             }
-            fetchList.add(genLogRecord(fetchStartRecord.getDataNode() + "_Last_Result_Fetch", fetchStartRecord.getTimestamp(), fetchEndRecord.getTimestamp()));
+            fetchList.add(genLogRecord(fetchStartRecord.getShardingNode() + "_Last_Result_Fetch", fetchStartRecord.getTimestamp(), fetchEndRecord.getTimestamp()));
             maxFetchEnd = Math.max(maxFetchEnd, fetchEndRecord.getTimestamp());
         }
         lst.addAll(executeList);

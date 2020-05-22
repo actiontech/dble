@@ -8,8 +8,8 @@ package com.actiontech.dble.manager.handler;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.singleton.CustomMySQLHa;
-import com.actiontech.dble.backend.datasource.PhysicalDataHost;
-import com.actiontech.dble.backend.datasource.PhysicalDataSource;
+import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.manager.response.*;
@@ -64,14 +64,14 @@ public final class ShowHandler {
                 ShowDatabase.execute(c);
                 break;
             case ManagerParseShow.DATA_NODE:
-                ShowDataNode.execute(c, null);
+                ShowShardingNode.execute(c, null);
                 break;
             case ManagerParseShow.DATANODE_SCHEMA: {
                 String name = stmt.substring(rs >>> 8).trim();
                 if (StringUtil.isEmpty(name)) {
                     c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
                 } else {
-                    ShowDataNode.execute(c, name);
+                    ShowShardingNode.execute(c, name);
                 }
                 break;
             }
@@ -89,7 +89,7 @@ public final class ShowHandler {
             }
             case ManagerParseShow.TABLE_DATA_NODE: {
                 String tableInfo = stmt.substring(rs >>> 8).trim();
-                ShowTableDataNode.execute(c, tableInfo);
+                ShowTableShardingNode.execute(c, tableInfo);
                 break;
             }
             case ManagerParseShow.PAUSE_DATANDE:
@@ -250,10 +250,10 @@ public final class ShowHandler {
                 break;
             default:
                 if (isSupportShow(stmt)) {
-                    Iterator<PhysicalDataHost> iterator = DbleServer.getInstance().getConfig().getDataHosts().values().iterator();
+                    Iterator<PhysicalDbGroup> iterator = DbleServer.getInstance().getConfig().getDbGroups().values().iterator();
                     if (iterator.hasNext()) {
-                        PhysicalDataHost pool = iterator.next();
-                        final PhysicalDataSource source = pool.getWriteSource();
+                        PhysicalDbGroup pool = iterator.next();
+                        final PhysicalDbInstance source = pool.getWriteSource();
                         TransformSQLJob sqlJob = new TransformSQLJob(stmt, null, source, c);
                         sqlJob.run();
                     } else {

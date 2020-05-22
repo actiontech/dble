@@ -20,8 +20,8 @@ public class GetConfigTablesHandler extends GetNodeTablesHandler {
     private final ConfigTableMetaHandler metaHandler;
     private final Set<String> existsTables = new HashSet<>();
 
-    GetConfigTablesHandler(Set<String> expectedTables, String dataNode, ConfigTableMetaHandler metaHandler) {
-        super(dataNode);
+    GetConfigTablesHandler(Set<String> expectedTables, String shardingNode, ConfigTableMetaHandler metaHandler) {
+        super(shardingNode);
         this.expectedTables = expectedTables;
         this.metaHandler = metaHandler;
     }
@@ -58,9 +58,9 @@ public class GetConfigTablesHandler extends GetNodeTablesHandler {
             if (existsTables.contains(table)) {
                 continue;
             }
-            metaHandler.handleTable(dataNode, table, false, null);
-            String tableId = "DataNode[" + dataNode + "]:Table[" + table + "]";
-            String warnMsg = "Can't get table " + table + "'s config from DataNode:" + dataNode + "! Maybe the table is not initialized!";
+            metaHandler.handleTable(shardingNode, table, false, null);
+            String tableId = "DataNode[" + shardingNode + "]:Table[" + table + "]";
+            String warnMsg = "Can't get table " + table + "'s config from DataNode:" + shardingNode + "! Maybe the table is not initialized!";
             LOGGER.warn(warnMsg);
             AlertUtil.alertSelf(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, warnMsg, AlertUtil.genSingleLabel("TABLE", tableId));
             ToResolveContainer.TABLE_LACK.add(tableId);

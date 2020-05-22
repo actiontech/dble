@@ -32,7 +32,7 @@ public class ERJoinChooser {
      * t1.name=t3.name and t1.id=t3.id then sel[0]: t1.id,t2.id,t3.id sel[1]:
      * t1.name,t3.name
      */
-    private List<ArrayList<JoinKeyInfo>> selLists = new ArrayList<>();
+    private List<ArrayList<JoinColumnInfo>> selLists = new ArrayList<>();
 
     // the index  selLists for trying ER
     private int trySelListIndex = 0;
@@ -140,9 +140,9 @@ public class ERJoinChooser {
             return jn;
         }
         visitJoinOns(jn);
-        initJoinKeyInfo();
+        initJoinColumnInfo();
         while (trySelListIndex < selLists.size()) {
-            List<JoinKeyInfo> selList = selLists.get(trySelListIndex);
+            List<JoinColumnInfo> selList = selLists.get(trySelListIndex);
             JoinNode erJoinNode = tryMakeERJoin(selList);
             if (erJoinNode == null) {
                 trySelListIndex++;
@@ -197,14 +197,14 @@ public class ERJoinChooser {
      *
      * @return
      */
-    private JoinNode tryMakeERJoin(List<JoinKeyInfo> selList) {
-        List<JoinKeyInfo> erKeys = new ArrayList<>();
+    private JoinNode tryMakeERJoin(List<JoinColumnInfo> selList) {
+        List<JoinColumnInfo> erKeys = new ArrayList<>();
         for (int i = 0; i < selList.size(); i++) {
-            JoinKeyInfo jki = selList.get(i);
+            JoinColumnInfo jki = selList.get(i);
             if (jki.cm == null)
                 continue;
             for (int j = i + 1; j < selList.size(); j++) {
-                JoinKeyInfo jkj = selList.get(j);
+                JoinColumnInfo jkj = selList.get(j);
                 if (isErRelation(jki.cm, jkj.cm)) {
                     erKeys.add(jkj);
                 }
@@ -219,7 +219,7 @@ public class ERJoinChooser {
     }
 
     // generate er join node ,remove jk of rKeyIndexs in selListIndex,replace the other selList's tn
-    private JoinNode makeERJoin(List<JoinKeyInfo> erKeys) {
+    private JoinNode makeERJoin(List<JoinColumnInfo> erKeys) {
         PlanNode t0 = erKeys.get(0).tn;
         PlanNode t1 = erKeys.get(1).tn;
         JoinNode joinNode = new JoinNode(t0, t1);
@@ -232,7 +232,7 @@ public class ERJoinChooser {
             joinFilter = makeJoinFilter(joinNode, t0, t1, true);
             joinNode.setJoinFilter(joinFilter);
         }
-        for (JoinKeyInfo jki : erKeys) {
+        for (JoinColumnInfo jki : erKeys) {
             // remove join units
             for (int index = joinUnits.size() - 1; index > -1; index--) {
                 PlanNode tn = joinUnits.get(index);
@@ -273,10 +273,10 @@ public class ERJoinChooser {
      */
     private List<ItemFuncEqual> makeJoinFilter(JoinNode join, PlanNode t0, PlanNode t1, boolean replaceSelList) {
         List<ItemFuncEqual> filters = new ArrayList<>();
-        for (List<JoinKeyInfo> selList : selLists) {
-            JoinKeyInfo jkit0 = null;
-            JoinKeyInfo jkit1 = null;
-            for (JoinKeyInfo jki : selList) {
+        for (List<JoinColumnInfo> selList : selLists) {
+            JoinColumnInfo jkit0 = null;
+            JoinColumnInfo jkit1 = null;
+            for (JoinColumnInfo jki : selList) {
                 if (jki.tn == t0) {
                     jkit0 = jki;
                 } else if (jki.tn == t1) {
@@ -285,7 +285,7 @@ public class ERJoinChooser {
             }
             // t0and t1 in sel list can make jkit0 jkit1 join
             if (jkit0 != null && jkit1 != null) {
-                JoinKeyInfo newJki = new JoinKeyInfo(jkit0.key);
+                JoinColumnInfo newJki = new JoinColumnInfo(jkit0.key);
                 newJki.tn = join;
                 if (jkit0.cm != null && jkit1.cm != null && isErRelation(jkit0.cm, jkit1.cm)) {
                     newJki.cm = jkit0.cm;
@@ -339,20 +339,20 @@ public class ERJoinChooser {
 
     // change t0 and t1 in selList to join node
     private void replaceSelListReferedTn(PlanNode t0, PlanNode t1, PlanNode join) {
-        for (List<JoinKeyInfo> list : selLists)
-            for (JoinKeyInfo jki : list) {
+        for (List<JoinColumnInfo> list : selLists)
+            for (JoinColumnInfo jki : list) {
                 if (jki.tn == t0 || jki.tn == t1)
                     jki.tn = join;
             }
     }
 
     /**
-     * init sellis's JoinKeyInfo,JoinKeyInfo only has key selList when just build ,
+     * init sellis's JoinColumnInfo,JoinColumnInfo only has key selList when just build ,
      * set values for them
      */
-    private void initJoinKeyInfo() {
-        for (List<JoinKeyInfo> selList : selLists) {
-            for (JoinKeyInfo jki : selList) {
+    private void initJoinColumnInfo() {
+        for (List<JoinColumnInfo> selList : selLists) {
+            for (JoinColumnInfo jki : selList) {
                 for (PlanNode tn : joinUnits) {
                     Item tmpSel = nodeHasSelectable(tn, jki.key);
                     if (tmpSel != null) {
@@ -430,10 +430,10 @@ public class ERJoinChooser {
     private void addJoinFilter(ItemFuncEqual filter) {
         Item left = filter.arguments().get(0);
         Item right = filter.arguments().get(1);
-        JoinKeyInfo jiLeft = new JoinKeyInfo(left);
-        JoinKeyInfo jiRight = new JoinKeyInfo(right);
+        JoinColumnInfo jiLeft = new JoinColumnInfo(left);
+        JoinColumnInfo jiRight = new JoinColumnInfo(right);
         for (int i = 0; i < selLists.size(); i++) {
-            List<JoinKeyInfo> equalSelectables = selLists.get(i);
+            List<JoinColumnInfo> equalSelectables = selLists.get(i);
             if (equalSelectables.contains(jiLeft)) {
                 addANewKey(jiRight, i);
                 return;
@@ -442,12 +442,12 @@ public class ERJoinChooser {
                 return;
             }
         }
-        ArrayList<JoinKeyInfo> equalSelectables = new ArrayList<>();
+        ArrayList<JoinColumnInfo> equalSelectables = new ArrayList<>();
         equalSelectables.add(jiLeft);
         equalSelectables.add(jiRight);
         selLists.add(equalSelectables);
         for (int i = selLists.size() - 1; i > -1; i--) {
-            List<JoinKeyInfo> list = selLists.get(i);
+            List<JoinColumnInfo> list = selLists.get(i);
             if (list.size() == 0)
                 selLists.remove(i);
         }
@@ -463,11 +463,11 @@ public class ERJoinChooser {
      * @param s
      * @param listIndex
      */
-    private void addANewKey(JoinKeyInfo s, int listIndex) {
-        List<JoinKeyInfo> equalSelectables = selLists.get(listIndex);
+    private void addANewKey(JoinColumnInfo s, int listIndex) {
+        List<JoinColumnInfo> equalSelectables = selLists.get(listIndex);
         for (int i = 0; i < selLists.size(); i++) {
             if (i != listIndex) {
-                List<JoinKeyInfo> list = selLists.get(i);
+                List<JoinColumnInfo> list = selLists.get(i);
                 if (list.contains(s)) {
                     equalSelectables.addAll(list);
                     list.clear();
@@ -486,7 +486,7 @@ public class ERJoinChooser {
      */
     private Item makeRestFilter() {
         Item filter = null;
-        for (List<JoinKeyInfo> selList : selLists) {
+        for (List<JoinColumnInfo> selList : selLists) {
             if (selList.size() > 2) {
                 Item sel0 = selList.get(0).key;
                 for (int index = 1; index < selList.size(); index++) {
@@ -610,16 +610,16 @@ public class ERJoinChooser {
     }
 
     /**
-     * JoinKeyInfo
+     * JoinColumnInfo
      *
      * @author ActionTech
      */
-    private static class JoinKeyInfo {
+    private static class JoinColumnInfo {
         private Item key; // join on's on key
         private PlanNode tn; // treenode of the joinkey belong to
         private ERTable cm; //  joinkey is er ,if so,save th parentkey
 
-        JoinKeyInfo(Item key) {
+        JoinColumnInfo(Item key) {
             this.key = key;
             tn = null;
             cm = null;
@@ -638,10 +638,10 @@ public class ERJoinChooser {
                 return false;
             if (o == this)
                 return true;
-            if (!(o instanceof JoinKeyInfo)) {
+            if (!(o instanceof JoinColumnInfo)) {
                 return false;
             }
-            JoinKeyInfo other = (JoinKeyInfo) o;
+            JoinColumnInfo other = (JoinColumnInfo) o;
             if (this.key == null)
                 return false;
             return StringUtil.equals(this.key.getTableName(), other.key.getTableName()) &&

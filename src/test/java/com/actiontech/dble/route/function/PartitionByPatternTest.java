@@ -15,7 +15,7 @@ public class PartitionByPatternTest {
         PartitionByPattern autoPartition = new PartitionByPattern();
         autoPartition.setPatternValue(256);
         autoPartition.setDefaultNode(2);
-        autoPartition.setMapFile("partition-pattern.txt");
+        autoPartition.setMapFile("partition-pattern-test.txt");
         autoPartition.init();
         String idVal = "0";
         Assert.assertEquals(true, 7 == autoPartition.calculate(idVal));

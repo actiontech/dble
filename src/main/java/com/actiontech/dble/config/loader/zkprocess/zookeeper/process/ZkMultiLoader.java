@@ -7,7 +7,6 @@ package com.actiontech.dble.config.loader.zkprocess.zookeeper.process;
 
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.DataInf;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.DirectoryInf;
-import com.google.gson.Gson;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.data.Stat;
@@ -32,8 +31,6 @@ public class ZkMultiLoader {
     private static final Logger LOGGER = LoggerFactory.getLogger(ZkMultiLoader.class);
 
     private CuratorFramework curator;
-
-    private Gson gson = new Gson();
 
     /**
      * getTreeDirectory
@@ -122,6 +119,13 @@ public class ZkMultiLoader {
 
     }
 
+    public void checkAndWriteString(String path, String value) throws Exception {
+        checkNotNull(path, "data of path" + path + " must be not null!");
+        checkNotNull(value, "data of value:" + value + " must be not null!");
+
+        curator.setData().forPath(path, value.getBytes());
+    }
+
 
     public boolean createPath(String path) {
 
@@ -136,13 +140,6 @@ public class ZkMultiLoader {
         }
 
         return result;
-    }
-
-    protected void writeZkString(String path, String value) throws Exception {
-        checkNotNull(path, "data of path" + path + " must be not null!");
-        checkNotNull(value, "data of value:" + value + " must be not null!");
-
-        curator.setData().forPath(path, value.getBytes());
     }
 
     /**
@@ -216,14 +213,6 @@ public class ZkMultiLoader {
 
     public void setCurator(CuratorFramework curator) {
         this.curator = curator;
-    }
-
-    public Gson getGson() {
-        return gson;
-    }
-
-    public void setGson(Gson gson) {
-        this.gson = gson;
     }
 
 }

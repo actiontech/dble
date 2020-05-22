@@ -32,16 +32,16 @@ import java.util.Set;
 import static com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 
 abstract class DruidInsertReplaceParser extends DefaultDruidParser {
-    static RouteResultset routeByERParentKey(RouteResultset rrs, TableConfig tc, String joinKeyVal, SchemaInfo schemaInfo)
+    static RouteResultset routeByERParentColumn(RouteResultset rrs, TableConfig tc, String joinColumnVal, SchemaInfo schemaInfo)
             throws SQLNonTransientException {
         if (tc.getDirectRouteTC() != null) {
-            ColumnRoute columnRoute = new ColumnRoute(joinKeyVal);
-            checkDefaultValues(joinKeyVal, tc, schemaInfo.getSchema(), tc.getJoinKey());
-            Set<String> dataNodeSet = RouterUtil.ruleCalculate(rrs, tc.getDirectRouteTC(), columnRoute, false);
-            if (dataNodeSet.size() != 1) {
-                throw new SQLNonTransientException("parent key can't find  valid data node ,expect 1 but found: " + dataNodeSet.size());
+            ColumnRoute columnRoute = new ColumnRoute(joinColumnVal);
+            checkDefaultValues(joinColumnVal, tc, schemaInfo.getSchema(), tc.getJoinColumn());
+            Set<String> shardingNodeSet = RouterUtil.ruleCalculate(rrs, tc.getDirectRouteTC(), columnRoute, false);
+            if (shardingNodeSet.size() != 1) {
+                throw new SQLNonTransientException("parent key can't find  valid data node ,expect 1 but found: " + shardingNodeSet.size());
             }
-            String dn = dataNodeSet.iterator().next();
+            String dn = shardingNodeSet.iterator().next();
             if (SQLJob.LOGGER.isDebugEnabled()) {
                 SQLJob.LOGGER.debug("found partion node (using parent partition rule directly) for child table to insert  " + dn + " sql :" + rrs.getStatement());
             }
@@ -142,19 +142,19 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
     }
 
 
-    void fetchChildTableToRoute(TableConfig tc, String joinKeyVal, ServerConnection sc, SchemaConfig schema, String sql, RouteResultset rrs, boolean isExplain) {
+    void fetchChildTableToRoute(TableConfig tc, String joinColumnVal, ServerConnection sc, SchemaConfig schema, String sql, RouteResultset rrs, boolean isExplain) {
         DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
             //get child result will be blocked, so use ComplexQueryExecutor
             @Override
             public void run() {
                 // route by sql query root parent's data node
-                String findRootTBSql = tc.getLocateRTableKeySql() + joinKeyVal;
+                String findRootTBSql = tc.getLocateRTableKeySql() + joinColumnVal;
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("to find root parent's node sql :" + findRootTBSql);
                 }
                 FetchStoreNodeOfChildTableHandler fetchHandler = new FetchStoreNodeOfChildTableHandler(findRootTBSql, sc.getSession2());
                 try {
-                    String dn = fetchHandler.execute(schema.getName(), tc.getRootParent().getDataNodes());
+                    String dn = fetchHandler.execute(schema.getName(), tc.getRootParent().getShardingNodes());
                     if (dn == null) {
                         sc.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "can't find (root) parent sharding node for sql:" + sql);
                         return;

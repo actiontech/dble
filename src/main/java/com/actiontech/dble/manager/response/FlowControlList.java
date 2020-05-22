@@ -12,6 +12,7 @@ import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.singleton.WriteQueueFlowController;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -89,11 +90,11 @@ public final class FlowControlList {
         NIOProcessor[] processors = DbleServer.getInstance().getFrontProcessors();
         for (NIOProcessor p : processors) {
             for (FrontendConnection fc : p.getFrontends().values()) {
-                if (fc.isFlowControlled()) {
+                if (fc instanceof ServerConnection && fc.isFlowControlled()) {
                     RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                     row.add(StringUtil.encode("ServerConnection", c.getCharset().getResults()));
                     row.add(LongUtil.toBytes(fc.getId()));
-                    row.add(StringUtil.encode(fc.getHost() + ":" + fc.getLocalPort() + "/" + fc.getSchema() + " user = " + fc.getUser(), c.getCharset().getResults()));
+                    row.add(StringUtil.encode(fc.getHost() + ":" + fc.getLocalPort() + "/" + ((ServerConnection) fc).getSchema() + " user = " + fc.getUser(), c.getCharset().getResults()));
                     row.add(LongUtil.toBytes(fc.getWriteQueue().size()));
                     row.setPacketId(++packetId);
                     buffer = row.write(buffer, c, true);

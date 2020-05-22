@@ -5,9 +5,7 @@
 
 package com.actiontech.dble.route;
 
-import com.actiontech.dble.SimpleCachePool;
 import com.actiontech.dble.singleton.CacheService;
-import com.actiontech.dble.cache.LayerCachePool;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.route.parser.druid.impl.ddl.DruidCreateTableParser;
@@ -33,9 +31,9 @@ public class DDLRouteTest {
     protected RouteStrategy routeStrategy;
 
     public DDLRouteTest() {
-        String schemaFile = "/route/schema.xml";
+        String shardingFile = "/route/sharding.xml";
         String ruleFile = "/route/rule.xml";
-        //SchemaLoader schemaLoader = new XMLSchemaLoader(schemaFile, ruleFile);
+        //SchemaLoader schemaLoader = new XMLSchemaLoader(shardingFile, ruleFile);
         //schemaMap = schemaLoader.getSchemas();
         //RouteStrategyFactory.init();
         //routeStrategy = RouteStrategyFactory.getRouteStrategy();
@@ -56,7 +54,7 @@ public class DDLRouteTest {
         Map<String, TableConfig> tables = schema.getTables();
         TableConfig tc;
         if (tables != null && (tc = tables.get(tablename)) != null) {
-            dataNodes = tc.getDataNodes();
+            dataNodes = tc.getShardingNodes();
         }
         int nodeSize = dataNodes.size();
 
@@ -92,7 +90,7 @@ public class DDLRouteTest {
         Map<String, TableConfig> tables = schema.getTables();
         TableConfig tc;
         if (tables != null && (tc = tables.get(tablename)) != null) {
-            dataNodes = tc.getDataNodes();
+            dataNodes = tc.getShardingNodes();
         }
         int nodeSize = dataNodes.size();
 
@@ -110,7 +108,7 @@ public class DDLRouteTest {
         tablename = "COMPANY";
         tables = schema.getTables();
         if (tables != null && (tc = tables.get(tablename)) != null) {
-            dataNodes = tc.getDataNodes();
+            dataNodes = tc.getShardingNodes();
         }
         nodeSize = dataNodes.size();
 
@@ -127,7 +125,7 @@ public class DDLRouteTest {
         tablename = "COMPANY";
         tables = schema.getTables();
         if (tables != null && (tc = tables.get(tablename)) != null) {
-            dataNodes = tc.getDataNodes();
+            dataNodes = tc.getShardingNodes();
         }
         nodeSize = dataNodes.size();
         rs = ServerParse.parse(sql);
@@ -143,7 +141,7 @@ public class DDLRouteTest {
         tablename = "COMPANY";
         tables = schema.getTables();
         if (tables != null && (tc = tables.get(tablename)) != null) {
-            dataNodes = tc.getDataNodes();
+            dataNodes = tc.getShardingNodes();
         }
         nodeSize = dataNodes.size();
         rs = ServerParse.parse(sql);
@@ -263,10 +261,10 @@ public class DDLRouteTest {
         Map<String, TableConfig> tables = schema.getTables();
         TableConfig tc;
         if (tables != null && (tc = tables.get(tablename)) != null) {
-            dataNodes = tc.getDataNodes();
+            dataNodes = tc.getShardingNodes();
         }
         int nodeSize = dataNodes.size();
-        if (nodeSize == 0 && schema.getDataNode() != null) {
+        if (nodeSize == 0 && schema.getShardingNode() != null) {
             nodeSize = 1;
         }
 
@@ -283,10 +281,10 @@ public class DDLRouteTest {
         tablename = "COMPANY";
         tables = schema.getTables();
         if (tables != null && (tc = tables.get(tablename)) != null) {
-            dataNodes = tc.getDataNodes();
+            dataNodes = tc.getShardingNodes();
         }
         nodeSize = dataNodes.size();
-        if (nodeSize == 0 && schema.getDataNode() != null) {
+        if (nodeSize == 0 && schema.getShardingNode() != null) {
             nodeSize = 1;
         }
         rs = ServerParse.parse(sql);
@@ -302,10 +300,10 @@ public class DDLRouteTest {
         tablename = "COMPANY";
         tables = schema.getTables();
         if (tables != null && (tc = tables.get(tablename)) != null) {
-            dataNodes = tc.getDataNodes();
+            dataNodes = tc.getShardingNodes();
         }
         nodeSize = dataNodes.size();
-        if (nodeSize == 0 && schema.getDataNode() != null) {
+        if (nodeSize == 0 && schema.getShardingNode() != null) {
             nodeSize = 1;
         }
         rs = ServerParse.parse(sql);
@@ -321,11 +319,11 @@ public class DDLRouteTest {
         tablename = "COMPANY";
         tables = schema.getTables();
         if (tables != null && (tc = tables.get(tablename)) != null) {
-            dataNodes = tc.getDataNodes();
+            dataNodes = tc.getShardingNodes();
         }
         nodeSize = dataNodes.size();
 
-        if (nodeSize == 0 && schema.getDataNode() != null) {
+        if (nodeSize == 0 && schema.getShardingNode() != null) {
             nodeSize = 1;
         }
         rs = ServerParse.parse(sql);
@@ -341,11 +339,11 @@ public class DDLRouteTest {
         tablename = "COMPANY";
         tables = schema.getTables();
         if (tables != null && (tc = tables.get(tablename)) != null) {
-            dataNodes = tc.getDataNodes();
+            dataNodes = tc.getShardingNodes();
         }
         nodeSize = dataNodes.size();
 
-        if (nodeSize == 0 && schema.getDataNode() != null) {
+        if (nodeSize == 0 && schema.getShardingNode() != null) {
             nodeSize = 1;
         }
 

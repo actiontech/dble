@@ -7,16 +7,18 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.LoadDataUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.FlowCotrollerConfig;
 import com.actiontech.dble.config.ServerConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.singleton.WriteQueueFlowController;
@@ -80,8 +82,8 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
             BackendConnection conn = session.getTarget(node);
             if (conn == null && rrs.isGlobalTable() && rrs.getGlobalBackupNodes() != null) {
                 // read only trx for global table
-                for (String dataNode : rrs.getGlobalBackupNodes()) {
-                    RouteResultsetNode tmpNode = new RouteResultsetNode(dataNode, rrs.getSqlType(), rrs.getStatement());
+                for (String shardingNode : rrs.getGlobalBackupNodes()) {
+                    RouteResultsetNode tmpNode = new RouteResultsetNode(shardingNode, rrs.getSqlType(), rrs.getStatement());
                     conn = session.getTarget(tmpNode);
                     if (conn != null) {
                         finalNode = tmpNode;
@@ -99,7 +101,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         // create new connection
         node.setRunOnSlave(rrs.getRunOnSlave());
         ServerConfig conf = DbleServer.getInstance().getConfig();
-        PhysicalDataNode dn = conf.getDataNodes().get(node.getName());
+        ShardingNode dn = conf.getShardingNodes().get(node.getName());
         dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), session.getSource().isAutocommit(), node, this, node);
     }
 
@@ -162,7 +164,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
     protected void backConnectionErr(ErrorPacket errPkg, BackendConnection conn, boolean syncFinished) {
         ServerConnection source = session.getSource();
-        String errUser = source.getUser();
+        Pair<String, String> errUser = source.getUser();
         String errHost = source.getHost();
         int errPort = source.getLocalPort();
 
@@ -299,7 +301,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
     }
 
     private void doSqlStat() {
-        if (DbleServer.getInstance().getConfig().getSystem().getUseSqlStat() == 1) {
+        if (SystemConfig.getInstance().getUseSqlStat() == 1) {
             long netInBytes = 0;
             if (rrs.getStatement() != null) {
                 netInBytes = rrs.getStatement().getBytes().length;

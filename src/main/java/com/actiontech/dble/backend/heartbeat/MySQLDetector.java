@@ -11,10 +11,11 @@ import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDataSource;
-import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
 import com.actiontech.dble.config.helper.GetAndSyncDataSourceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.sqlengine.HeartbeatSQLJob;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
@@ -55,7 +56,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         this.isQuit = new AtomicBoolean(false);
         con = null;
         try {
-            MySQLDataSource ds = heartbeat.getSource();
+            MySQLInstance ds = heartbeat.getSource();
             con = ds.getConnectionForHeartbeat(null);
         } catch (IOException e) {
             LOGGER.warn("create heartbeat conn error", e);
@@ -110,7 +111,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         lastReceivedQryTime = System.currentTimeMillis();
         heartbeat.getRecorder().set((lastReceivedQryTime - lastSendQryTime));
         if (result.isSuccess()) {
-            PhysicalDataSource source = heartbeat.getSource();
+            PhysicalDbInstance source = heartbeat.getSource();
             Map<String, String> resultResult = result.getResult();
             if (source.getHostConfig().isShowSlaveSql()) {
                 setStatusBySlave(source, resultResult);
@@ -122,13 +123,13 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         }
     }
 
-    private void setStatusForNormalHeartbeat(PhysicalDataSource source) {
+    private void setStatusForNormalHeartbeat(PhysicalDbInstance source) {
         if (checkRecoverFail(source)) return;
         heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
     }
 
     /** if recover failed, return true*/
-    private boolean checkRecoverFail(PhysicalDataSource source) {
+    private boolean checkRecoverFail(PhysicalDbInstance source) {
         if (heartbeat.isStop()) {
             return true;
         }
@@ -156,7 +157,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             KeyVariables variables = task.call();
             if (variables == null ||
                     variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames() ||
-                    variables.getMaxPacketSize() < DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize()) {
+                    variables.getMaxPacketSize() < SystemConfig.getInstance().getMaxPacketSize()) {
                 String url = con.getHost() + ":" + con.getPort();
                 Map<String, String> labels = AlertUtil.genSingleLabel("data_host", url);
                 String errMsg;
@@ -165,7 +166,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                 } else if (variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
                     errMsg = "this dataHost[=" + url + "]'s lower_case is wrong";
                 } else {
-                    errMsg = "this dataHost[=" + url + "]'s max_allowed_packet is " + variables.getMaxPacketSize() + ", but dble's is " + DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize();
+                    errMsg = "this dataHost[=" + url + "]'s max_allowed_packet is " + variables.getMaxPacketSize() + ", but dble's is " + SystemConfig.getInstance().getMaxPacketSize();
                 }
                 LOGGER.warn(errMsg + ", set heartbeat Error");
                 if (variables != null) {
@@ -189,7 +190,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         return false;
     }
 
-    private void setStatusBySlave(PhysicalDataSource source, Map<String, String> resultResult) {
+    private void setStatusBySlave(PhysicalDbInstance source, Map<String, String> resultResult) {
         String slaveIoRunning = resultResult != null ? resultResult.get("Slave_IO_Running") : null;
         String slaveSqlRunning = resultResult != null ? resultResult.get("Slave_SQL_Running") : null;
         if (slaveIoRunning != null && slaveIoRunning.equals(slaveSqlRunning) && slaveSqlRunning.equals("Yes")) {
@@ -197,7 +198,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             String secondsBehindMaster = resultResult.get("Seconds_Behind_Master");
             if (null != secondsBehindMaster && !"".equals(secondsBehindMaster) && !"NULL".equalsIgnoreCase(secondsBehindMaster)) {
                 int behindMaster = Integer.parseInt(secondsBehindMaster);
-                if (behindMaster > source.getHostConfig().getSlaveThreshold()) {
+                if (behindMaster > source.getHostConfig().getDelayThreshold()) {
                     MySQLHeartbeat.LOGGER.warn("found MySQL master/slave Replication delay !!! " + heartbeat.getSource().getConfig() + ", binlog sync time delay: " + behindMaster + "s");
                 }
                 heartbeat.setSlaveBehindMaster(behindMaster);
@@ -216,7 +217,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         heartbeat.setResult(MySQLHeartbeat.OK_STATUS);
     }
 
-    private void setStatusByReadOnly(PhysicalDataSource source, Map<String, String> resultResult) {
+    private void setStatusByReadOnly(PhysicalDbInstance source, Map<String, String> resultResult) {
         String readonly = resultResult != null ? resultResult.get("@@read_only") : null;
         if (readonly == null) {
             heartbeat.setErrorResult("result of select @@read_only is null");

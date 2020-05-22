@@ -6,7 +6,7 @@
 package com.actiontech.dble.util;
 
 
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
+import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.singleton.OnlineStatus;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -47,7 +47,7 @@ public final class ZKUtils {
     }
 
     private static CuratorFramework createConnection() {
-        String url = ZkConfig.getInstance().getZkURL();
+        String url = ClusterConfig.getInstance().getClusterIP();
         CuratorFramework framework = CuratorFrameworkFactory.newClient(url, new ExponentialBackoffRetry(100, 6));
         // start connection
         framework.start();

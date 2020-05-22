@@ -22,12 +22,12 @@ public class TableConfig {
 
     private final String name;
     private final String incrementColumn;
-    private final boolean needAddLimit;
+    private final int maxLimit;
     private final TableTypeEnum tableType;
-    private final ArrayList<String> dataNodes;
+    private final ArrayList<String> shardingNodes;
     private final RuleConfig rule;
     private final String partitionColumn;
-    private final boolean ruleRequired;
+    private final boolean sqlRequiredSharding;
     private final boolean isNoSharding;
     private final boolean globalCheck;
     private final String cron;
@@ -36,56 +36,56 @@ public class TableConfig {
      * Child Table
      */
     private final TableConfig parentTC;
-    private final String joinKey;
-    private final String parentKey;
+    private final String joinColumn;
+    private final String parentColumn;
     private final String locateRTableKeySql;
     private final TableConfig directRouteTC;
 
-    public TableConfig(String name, boolean needAddLimit,
-                       TableTypeEnum tableType, String dataNode, RuleConfig rule, boolean ruleRequired, String incrementColumn,
+    public TableConfig(String name, int sqlMaxLimit,
+                       TableTypeEnum tableType, String shardingNode, RuleConfig rule, boolean sqlRequiredSharding, String incrementColumn,
                        String cron, String globalCheckClass, boolean globalCheck) {
-        this(name, needAddLimit, tableType, dataNode, rule, ruleRequired,
+        this(name, sqlMaxLimit, tableType, shardingNode, rule, sqlRequiredSharding,
                 null, null, null, incrementColumn, cron, globalCheckClass, globalCheck);
     }
 
-    public TableConfig(String name, boolean needAddLimit,
-                       TableTypeEnum tableType, String dataNode, RuleConfig rule, boolean ruleRequired, TableConfig parentTC,
-                       String joinKey, String parentKey, String incrementColumn, String cron, String globalCheckClass, boolean globalCheck) {
+    public TableConfig(String name, int sqlMaxLimit,
+                       TableTypeEnum tableType, String shardingNode, RuleConfig rule, boolean sqlRequiredSharding, TableConfig parentTC,
+                       String joinColumn, String parentColumn, String incrementColumn, String cron, String globalCheckClass, boolean globalCheck) {
         if (name == null) {
             throw new IllegalArgumentException("table name is null");
-        } else if (dataNode == null) {
+        } else if (shardingNode == null) {
             throw new IllegalArgumentException("dataNode name is null");
         }
         this.incrementColumn = incrementColumn;
-        this.needAddLimit = needAddLimit;
+        this.maxLimit = sqlMaxLimit;
         this.tableType = tableType;
         this.cron = cron;
         this.globalCheckClass = globalCheckClass;
         this.globalCheck = globalCheck;
-        if (ruleRequired && rule == null) {
-            throw new IllegalArgumentException("ruleRequired but rule is null");
+        if (sqlRequiredSharding && rule == null) {
+            throw new IllegalArgumentException("sqlRequiredSharding but rule is null");
         }
         this.name = name;
-        String[] theDataNodes = SplitUtil.split(dataNode, ',', '$', '-');
-        if (theDataNodes.length <= 0) {
-            throw new IllegalArgumentException("invalid table dataNodes: " + dataNode + " for table " + name);
+        String[] theShardingNodes = SplitUtil.split(shardingNode, ',', '$', '-');
+        if (theShardingNodes.length <= 0) {
+            throw new IllegalArgumentException("invalid table dataNodes: " + shardingNode + " for table " + name);
         }
-        if (tableType != TableTypeEnum.TYPE_GLOBAL_TABLE && parentTC == null && theDataNodes.length > 1 && rule == null) {
-            throw new IllegalArgumentException("invalid table dataNodes: " + dataNode + " for table " + name);
+        if (tableType != TableTypeEnum.TYPE_GLOBAL_TABLE && parentTC == null && theShardingNodes.length > 1 && rule == null) {
+            throw new IllegalArgumentException("invalid table dataNodes: " + shardingNode + " for table " + name);
         }
-        isNoSharding = theDataNodes.length == 1;
-        dataNodes = new ArrayList<>(theDataNodes.length);
-        Collections.addAll(dataNodes, theDataNodes);
+        isNoSharding = theShardingNodes.length == 1;
+        shardingNodes = new ArrayList<>(theShardingNodes.length);
+        Collections.addAll(shardingNodes, theShardingNodes);
         this.rule = rule;
         this.partitionColumn = (rule == null) ? null : rule.getColumn();
-        this.ruleRequired = ruleRequired;
+        this.sqlRequiredSharding = sqlRequiredSharding;
         this.parentTC = parentTC;
         if (parentTC != null) {
-            this.joinKey = joinKey;
-            this.parentKey = parentKey;
+            this.joinColumn = joinColumn;
+            this.parentColumn = parentColumn;
             if (parentTC.getParentTC() == null) {
-                if (parentTC.partitionColumn.equals(parentKey)) {
-                    // secondLevel ,parentKey==parent.partitionColumn
+                if (parentTC.partitionColumn.equals(parentColumn)) {
+                    // secondLevel ,parentColumn==parent.partitionColumn
                     directRouteTC = parentTC;
                     locateRTableKeySql = null;
                 } else {
@@ -98,7 +98,7 @@ public class TableConfig {
                  * fatherTable joinkey =col2,parentkey = col1....so directRouteTC = grandTable
                  * thisTable joinkey = col3 ,parentkey = col2...so directRouteTC = grandTable
                  */
-                if (parentTC.joinKey.equals(parentKey)) {
+                if (parentTC.joinColumn.equals(parentColumn)) {
                     directRouteTC = parentTC.getDirectRouteTC();
                     locateRTableKeySql = null;
                 } else {
@@ -110,36 +110,35 @@ public class TableConfig {
                 locateRTableKeySql = genLocateRootParentSQL();
             }
         } else {
-            this.joinKey = null;
-            this.parentKey = null;
+            this.joinColumn = null;
+            this.parentColumn = null;
             locateRTableKeySql = null;
             directRouteTC = this;
         }
     }
 
-
-    public TableConfig(String name, boolean needAddLimit,
-                       TableTypeEnum tableType, ArrayList<String> dataNode, RuleConfig rule, boolean ruleRequired, TableConfig parentTC,
-                       String joinKey, String parentKey, String incrementColumn, String cron, String globalCheckClass, boolean globalCheck) {
-        this.needAddLimit = needAddLimit;
+    public TableConfig(String name, int sqlMaxLimit,
+                       TableTypeEnum tableType, ArrayList<String> shardingNodes, RuleConfig rule, boolean sqlRequiredSharding, TableConfig parentTC,
+                       String joinColumn, String parentColumn, String incrementColumn, String cron, String globalCheckClass, boolean globalCheck) {
+        this.maxLimit = sqlMaxLimit;
         this.tableType = tableType;
         this.name = name;
         this.cron = cron;
         this.globalCheckClass = globalCheckClass;
         this.globalCheck = globalCheck;
-        this.dataNodes = dataNode;
+        this.shardingNodes = shardingNodes;
         this.rule = rule;
         this.partitionColumn = (rule == null) ? null : rule.getColumn();
         this.incrementColumn = incrementColumn;
-        this.ruleRequired = ruleRequired;
+        this.sqlRequiredSharding = sqlRequiredSharding;
         this.parentTC = parentTC;
-        this.joinKey = joinKey;
-        this.parentKey = parentKey;
-        isNoSharding = dataNodes.size() == 1;
+        this.joinColumn = joinColumn;
+        this.parentColumn = parentColumn;
+        isNoSharding = shardingNodes.size() == 1;
         if (parentTC != null) {
             if (parentTC.getParentTC() == null) {
-                if (parentKey.equalsIgnoreCase(parentTC.partitionColumn)) {
-                    // secondLevel ,parentKey==parent.partitionColumn
+                if (parentColumn.equalsIgnoreCase(parentTC.partitionColumn)) {
+                    // secondLevel ,parentColumn==parent.partitionColumn
                     directRouteTC = parentTC;
                     locateRTableKeySql = null;
                 } else {
@@ -147,7 +146,7 @@ public class TableConfig {
                     locateRTableKeySql = genLocateRootParentSQL();
                 }
             } else if (parentTC.getDirectRouteTC() != null) {
-                if (parentKey.equals(parentTC.joinKey)) {
+                if (parentColumn.equals(parentTC.joinColumn)) {
                     directRouteTC = parentTC.getDirectRouteTC();
                     locateRTableKeySql = null;
                 } else {
@@ -166,8 +165,8 @@ public class TableConfig {
 
 
     TableConfig lowerCaseCopy(TableConfig parent) {
-        return new TableConfig(this.name.toLowerCase(), this.needAddLimit,
-                this.tableType, this.dataNodes, this.rule, this.ruleRequired, parent, this.joinKey, this.parentKey, this.incrementColumn,
+        return new TableConfig(this.name.toLowerCase(), this.maxLimit,
+                this.tableType, this.shardingNodes, this.rule, this.sqlRequiredSharding, parent, this.joinColumn, this.parentColumn, this.incrementColumn,
                 this.cron, this.globalCheckClass, this.globalCheck);
 
     }
@@ -180,8 +179,8 @@ public class TableConfig {
         return incrementColumn != null;
     }
 
-    public boolean isNeedAddLimit() {
-        return needAddLimit;
+    public int getMaxLimit() {
+        return maxLimit;
     }
 
     public TableConfig getDirectRouteTC() {
@@ -206,9 +205,9 @@ public class TableConfig {
         while (tb.parentTC != null) {
             tableSb.append(tb.parentTC.name).append(',');
             if (level == 0) {
-                latestCond = " " + tb.parentTC.getName() + '.' + tb.parentKey + "=";
+                latestCond = " " + tb.parentTC.getName() + '.' + tb.parentColumn + "=";
             } else {
-                String relation = tb.parentTC.getName() + '.' + tb.parentKey + '=' + tb.name + '.' + tb.joinKey;
+                String relation = tb.parentTC.getName() + '.' + tb.parentColumn + '=' + tb.name + '.' + tb.joinColumn;
                 condition.append(relation).append(" AND ");
             }
             level++;
@@ -218,7 +217,7 @@ public class TableConfig {
         return "SELECT " +
                 prevTC.parentTC.name +
                 '.' +
-                prevTC.parentKey +
+                prevTC.parentColumn +
                 " FROM " +
                 tableSb.substring(0, tableSb.length() - 1) +
                 " WHERE " +
@@ -255,28 +254,28 @@ public class TableConfig {
         return parentTC;
     }
 
-    public String getJoinKey() {
-        return joinKey;
+    public String getJoinColumn() {
+        return joinColumn;
     }
 
-    public String getParentKey() {
-        return parentKey;
+    public String getParentColumn() {
+        return parentColumn;
     }
 
     public String getName() {
         return name;
     }
 
-    public ArrayList<String> getDataNodes() {
-        return dataNodes;
+    public ArrayList<String> getShardingNodes() {
+        return shardingNodes;
     }
 
-    public String getRandomDataNode() {
-        return RouterUtil.getRandomDataNode(dataNodes);
+    public String getRandomShardingNode() {
+        return RouterUtil.getRandomShardingNode(shardingNodes);
     }
 
-    public boolean isRuleRequired() {
-        return ruleRequired;
+    public boolean isSQLRequiredSharding() {
+        return sqlRequiredSharding;
     }
 
     public RuleConfig getRule() {

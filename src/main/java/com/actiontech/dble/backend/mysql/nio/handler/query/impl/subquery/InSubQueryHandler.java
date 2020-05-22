@@ -5,10 +5,10 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.common.field.Field;
@@ -31,8 +31,8 @@ public class InSubQueryHandler extends SubQueryHandler {
     public InSubQueryHandler(long id, NonBlockingSession session, ItemInSubQuery itemSubQuery) {
         super(id, session);
         this.itemSubQuery = itemSubQuery;
-        this.maxPartSize = DbleServer.getInstance().getConfig().getSystem().getNestLoopRowsSize();
-        this.maxConnSize = DbleServer.getInstance().getConfig().getSystem().getNestLoopConnSize();
+        this.maxPartSize = SystemConfig.getInstance().getNestLoopRowsSize();
+        this.maxConnSize = SystemConfig.getInstance().getNestLoopConnSize();
     }
 
     @Override

@@ -8,11 +8,10 @@ package com.actiontech.dble.cluster.response;
 import com.actiontech.dble.backend.mysql.view.Repository;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.bean.KvBean;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.meta.ViewMeta;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.singleton.ProxyMeta;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +30,7 @@ public class ViewChildResponse implements ClusterXmlLoader {
     public void notifyProcess(KvBean configValue) throws Exception {
         LOGGER.info("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
         if (configValue.getKey().split("/").length != ClusterPathUtil.getViewChangePath().split("/").length + 1) {
-            //only with the type u.../d.../clu.../view/update(delete)/schema.table
+            //only with the type u.../d.../clu.../view/update(delete)/sharding.table
             return;
         }
 
@@ -44,8 +43,8 @@ public class ViewChildResponse implements ClusterXmlLoader {
 
         String serverId = configValue.getValue().split(Repository.SCHEMA_VIEW_SPLIT)[0];
         String optionType = configValue.getValue().split(Repository.SCHEMA_VIEW_SPLIT)[1];
-        String myId = ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
-        if (myId.equals(serverId) || KvBean.DELETE.equals(configValue.getChangeType())) {
+        String instanceId = SystemConfig.getInstance().getInstanceId();
+        if (instanceId.equals(serverId) || KvBean.DELETE.equals(configValue.getChangeType())) {
             // self node do noting
             return;
         } else {
@@ -59,7 +58,7 @@ public class ViewChildResponse implements ClusterXmlLoader {
                     ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().remove(viewName);
 
                     ClusterDelayProvider.delayBeforeReponseView();
-                    ClusterHelper.setKV(configValue.getKey() + SEPARATOR + myId, ClusterPathUtil.SUCCESS);
+                    ClusterHelper.setKV(configValue.getKey() + SEPARATOR + instanceId, ClusterPathUtil.SUCCESS);
                 } else if (Repository.UPDATE.equals(optionType)) {
                     LOGGER.info("update view " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
                     ClusterDelayProvider.delayBeforeReponseGetView();
@@ -67,7 +66,7 @@ public class ViewChildResponse implements ClusterXmlLoader {
                     if (ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().get(viewName) != null &&
                             stmt.equals(ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().get(viewName).getCreateSql())) {
                         ClusterDelayProvider.delayBeforeReponseView();
-                        ClusterHelper.setKV(configValue.getKey() + SEPARATOR + myId, ClusterPathUtil.SUCCESS);
+                        ClusterHelper.setKV(configValue.getKey() + SEPARATOR + instanceId, ClusterPathUtil.SUCCESS);
                         return;
                     }
                     ViewMeta vm = new ViewMeta(schema, stmt, ProxyMeta.getInstance().getTmManager());
@@ -79,11 +78,11 @@ public class ViewChildResponse implements ClusterXmlLoader {
                     schemaMap.put(viewName, stmt);
 
                     ClusterDelayProvider.delayBeforeReponseView();
-                    ClusterHelper.setKV(configValue.getKey() + SEPARATOR + myId, ClusterPathUtil.SUCCESS);
+                    ClusterHelper.setKV(configValue.getKey() + SEPARATOR + instanceId, ClusterPathUtil.SUCCESS);
                 }
             } catch (Exception e) {
                 ClusterDelayProvider.delayBeforeReponseView();
-                ClusterHelper.setKV(configValue.getKey() + SEPARATOR + myId, e.toString());
+                ClusterHelper.setKV(configValue.getKey() + SEPARATOR + instanceId, e.toString());
             }
         }
     }

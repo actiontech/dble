@@ -81,8 +81,8 @@ public class OneRawSQLQueryResultHandler implements SQLJobHandler {
     }
 
     @Override
-    public void finished(String dataNode, boolean failed) {
-        SQLQueryResult<Map<String, String>> queryResult = new SQLQueryResult<>(this.result, !failed, dataNode);
+    public void finished(String shardingNode, boolean failed) {
+        SQLQueryResult<Map<String, String>> queryResult = new SQLQueryResult<>(this.result, !failed, shardingNode);
         this.callback.onResult(queryResult);
     }
 

@@ -226,8 +226,12 @@ public final class ShowConnection {
         row.add(StringUtil.encode(c.getHost(), charset));
         row.add(IntegerUtil.toBytes(c.getPort()));
         row.add(IntegerUtil.toBytes(c.getLocalPort()));
-        row.add(StringUtil.encode(c.getUser(), charset));
-        row.add(StringUtil.encode(c.getSchema(), charset));
+        row.add(StringUtil.encode(c.getUserInfo(), charset));
+        if (c instanceof ServerConnection) {
+            row.add(StringUtil.encode(((ServerConnection) c).getSchema(), charset));
+        } else {
+            row.add(StringUtil.encode("", charset));
+        }
         row.add(StringUtil.encode(c.getCharset().getClient(), charset));
         row.add(StringUtil.encode(c.getCharset().getCollation(), charset));
         row.add(StringUtil.encode(c.getCharset().getResults(), charset));

@@ -74,7 +74,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     private boolean isHasStoreToFile = false;
 
     private SchemaConfig schema;
-    private final SystemConfig systemConfig = DbleServer.getInstance().getConfig().getSystem();
+    private final SystemConfig systemConfig = SystemConfig.getInstance();
     private String tableName;
     private TableConfig tableConfig;
     private int partitionColumnIndex = -1;
@@ -147,7 +147,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             return;
         }
 
-        // if there are schema in sql, remove it.
+        // if there are sharding in sql, remove it.
         if (statement.getTableName() instanceof SQLPropertyExpr) {
             statement.setTableName(new SQLIdentifierExpr(tableName));
         }
@@ -167,7 +167,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
             return;
         }
 
-        tempPath = SystemConfig.getHomePath() + File.separator + "temp" + File.separator + serverConnection.getId() + File.separator;
+        tempPath = SystemConfig.getInstance().getHomePath() + File.separator + "temp" + File.separator + serverConnection.getId() + File.separator;
         tempFile = tempPath + "clientTemp.txt";
         tempByteBuffer = new ByteArrayOutputStream();
 
@@ -321,11 +321,11 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
         RouteResultset rrs = new RouteResultset(strSql, ServerParse.INSERT);
         rrs.setLoadData(true);
         if (tableConfig != null && tableConfig.isGlobalTable()) {
-            ArrayList<String> dataNodes = tableConfig.getDataNodes();
-            RouteResultsetNode[] rrsNodes = new RouteResultsetNode[dataNodes.size()];
-            for (int i = 0, dataNodesSize = dataNodes.size(); i < dataNodesSize; i++) {
-                String dataNode = dataNodes.get(i);
-                RouteResultsetNode rrNode = new RouteResultsetNode(dataNode, ServerParse.INSERT, strSql);
+            ArrayList<String> shardingNodes = tableConfig.getShardingNodes();
+            RouteResultsetNode[] rrsNodes = new RouteResultsetNode[shardingNodes.size()];
+            for (int i = 0, shardingNodesSize = shardingNodes.size(); i < shardingNodesSize; i++) {
+                String shardingNode = shardingNodes.get(i);
+                RouteResultsetNode rrNode = new RouteResultsetNode(shardingNode, ServerParse.INSERT, strSql);
                 rrsNodes[i] = rrNode;
             }
             rrs.setGlobalTable(true);
@@ -795,7 +795,7 @@ public final class ServerLoadDataInfileHandler implements LoadDataInfileHandler 
     private String getPartitionColumn() {
         String pColumn;
         if (tableConfig.getParentTC() != null) {
-            pColumn = tableConfig.getJoinKey();
+            pColumn = tableConfig.getJoinColumn();
         } else {
             pColumn = tableConfig.getPartitionColumn();
         }

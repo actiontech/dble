@@ -47,15 +47,15 @@ public class ServerParserTest {
 
     @Test
     public void testHintComment() {
-        Assert.assertEquals(ServerParse.SELECT, 0xff & ServerParse.parse("/*#dble:schema=DN1*/SELECT ..."));
-        Assert.assertEquals(ServerParse.UPDATE, 0xff & ServerParse.parse("/*#dble: schema = DN1 */ UPDATE ..."));
+        Assert.assertEquals(ServerParse.SELECT, 0xff & ServerParse.parse("/*#dble:sharding=DN1*/SELECT ..."));
+        Assert.assertEquals(ServerParse.UPDATE, 0xff & ServerParse.parse("/*#dble: sharding = DN1 */ UPDATE ..."));
         Assert.assertEquals(ServerParse.DELETE, 0xff & ServerParse.parse("/*#dble: sql = SELECT id FROM user */ DELETE ..."));
     }
 
     @Test
     public void testOldHintComment() {
-        Assert.assertEquals(ServerParse.SELECT, 0xff & ServerParse.parse("/*!dble:schema=DN1*/SELECT ..."));
-        Assert.assertEquals(ServerParse.UPDATE, 0xff & ServerParse.parse("/*!dble: schema = DN1 */ UPDATE ..."));
+        Assert.assertEquals(ServerParse.SELECT, 0xff & ServerParse.parse("/*!dble:sharding=DN1*/SELECT ..."));
+        Assert.assertEquals(ServerParse.UPDATE, 0xff & ServerParse.parse("/*!dble: sharding = DN1 */ UPDATE ..."));
         Assert.assertEquals(ServerParse.DELETE, 0xff & ServerParse.parse("/*!dble: sql = SELECT id FROM user */ DELETE ..."));
     }
 

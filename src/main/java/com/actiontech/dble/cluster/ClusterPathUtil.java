@@ -5,8 +5,8 @@
 
 package com.actiontech.dble.cluster;
 
-import com.actiontech.dble.config.Versions;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
+import com.actiontech.dble.config.model.ClusterConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 
 /**
  * Created by szf on 2018/1/26.
@@ -15,38 +15,37 @@ public final class ClusterPathUtil {
 
     public static final String UCORE_LOCAL_WRITE_PATH = "./";
 
-    public static final String SCHEMA_SCHEMA = "schema";
-    public static final String DATA_HOST = "dataHost";
-    public static final String DATA_NODE = "dataNode";
+    public static final String SCHEMA = "schema";
+    public static final String DB_GROUP = "dbGroup";
+    public static final String SHARDING_NODE = "shardingNode";
+    public static final String BLACKLIST = "blacklist";
     public static final String SEPARATOR = "/";
-    private static final String ROOT_PATH = ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_ROOT) != null ? ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_ROOT) : "universe" + SEPARATOR + Versions.ROOT_PREFIX;
-
-    public static final String BASE_PATH = ROOT_PATH + SEPARATOR + ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_CLUSTERID) + SEPARATOR;
+    public static final String BASE_PATH = ClusterConfig.getInstance().getRootPath() + SEPARATOR + ClusterConfig.getInstance().getClusterID() + SEPARATOR;
 
     public static final String SUCCESS = "success";
 
     //depth:3,child node of conf_base_path
     private static final String CONF_STATUS = "status";
-    private static final String SCHEMA = "schema";
+    private static final String SHARDING = "sharding";
     private static final String SERVER = "server";
-    private static final String RULES = "rules";
+    public static final String DBS = "db";
 
     //depth:3,child node of conf_base_path
-    public static String getConfSchemaPath() {
-        return CONF_BASE_PATH + SCHEMA;
+    public static String getConfShardingPath() {
+        return CONF_BASE_PATH + SHARDING;
     }
 
+    public static String getConfUserPath() {
+        return CONF_BASE_PATH + USER;
+    }
+    public static String getDbConfPath() {
+        return CONF_BASE_PATH + DBS;
+    }
 
     public static final String VERSION = "version";
 
     //depth:4,child node of conf_base_path/rules/
-    public static final String TABLE_RULE = "tableRule";
     public static final String FUNCTION = "function";
-
-    //depth:3,child node of conf_base_path
-    public static String getConfRulePath() {
-        return CONF_BASE_PATH + RULES;
-    }
 
 
     //depth:4,child node of conf_base_path/server/
@@ -64,9 +63,9 @@ public final class ClusterPathUtil {
 
     //depth:2,child node of base_path
     private static final String CACHE = "cache";
-    private static final String DATA_HOSTS = "data_hosts";
-    public static final String DATA_HOST_STATUS = "data_host_status";
-    private static final String DATA_HOST_LOCKS = "data_host_locks";
+    private static final String DB_GROUPS = "dbGroups";
+    public static final String DB_GROUP_STATUS = "dbGroup_status";
+    private static final String DB_GROUP_LOCKS = "dbGroup_locks";
     private static final String EHCACHE_NAME = "ehcache.xml";
     public static final String EHCACHE = "ehcache";
 
@@ -83,11 +82,11 @@ public final class ClusterPathUtil {
     }
 
     public static String getHaBasePath() {
-        return BASE_PATH + DATA_HOSTS + SEPARATOR;
+        return BASE_PATH + DB_GROUPS + SEPARATOR;
     }
 
     public static String getHaStatusPath() {
-        return BASE_PATH + DATA_HOSTS + SEPARATOR + DATA_HOST_STATUS + SEPARATOR;
+        return BASE_PATH + DB_GROUPS + SEPARATOR + DB_GROUP_STATUS + SEPARATOR;
     }
 
     public static String getHaStatusPath(String dhName) {
@@ -95,11 +94,11 @@ public final class ClusterPathUtil {
     }
 
     public static String getHaLockPath(String dhName) {
-        return BASE_PATH + DATA_HOSTS + SEPARATOR + DATA_HOST_LOCKS + SEPARATOR + dhName;
+        return BASE_PATH + DB_GROUPS + SEPARATOR + DB_GROUP_LOCKS + SEPARATOR + dhName;
     }
 
     public static String getSelfResponsePath(String notifyPath) {
-        return notifyPath + SEPARATOR + ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
+        return notifyPath + SEPARATOR + SystemConfig.getInstance().getInstanceId();
     }
 
     //cache path base_path/cache
@@ -127,7 +126,7 @@ public final class ClusterPathUtil {
     }
 
     public static String getSelfConfStatusPath() {
-        return CONF_BASE_PATH + CONF_STATUS + SEPARATOR + ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
+        return CONF_BASE_PATH + CONF_STATUS + SEPARATOR + SystemConfig.getInstance().getInstanceId();
     }
 
     //depth:2,child node of base_path
@@ -152,7 +151,7 @@ public final class ClusterPathUtil {
     }
 
     public static String getBinlogPauseStatusSelf() {
-        return getBinlogPauseStatus() + SEPARATOR + ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
+        return getBinlogPauseStatus() + SEPARATOR + SystemConfig.getInstance().getInstanceId();
     }
 
     //depth:2,child node of base_path
@@ -170,7 +169,7 @@ public final class ClusterPathUtil {
         return BASE_PATH + "ddl_lock" + SEPARATOR + fullName;
     }
 
-    public static String getPauseDataNodePath() {
+    public static String getPauseShardingNodePath() {
         return CONF_BASE_PATH + "migration";
     }
 
@@ -193,7 +192,7 @@ public final class ClusterPathUtil {
 
     //depth:2,child node of base_path
     public static String getDDLInstancePath(String fullName) {
-        return BASE_PATH + "ddl" + SEPARATOR + fullName + SEPARATOR + ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
+        return BASE_PATH + "ddl" + SEPARATOR + fullName + SEPARATOR + SystemConfig.getInstance().getInstanceId();
     }
 
     public static String getViewPath() {

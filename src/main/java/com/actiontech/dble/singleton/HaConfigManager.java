@@ -2,19 +2,18 @@ package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.HaChangeStatus;
-import com.actiontech.dble.backend.datasource.PhysicalDataHost;
+import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.config.loader.console.ZookeeperPath;
-import com.actiontech.dble.config.loader.zkprocess.entity.Schemas;
-import com.actiontech.dble.config.loader.zkprocess.entity.schema.datahost.DataHost;
-import com.actiontech.dble.config.loader.zkprocess.entity.schema.datahost.ReadHost;
-import com.actiontech.dble.config.loader.zkprocess.entity.schema.datahost.WriteHost;
+import com.actiontech.dble.config.loader.zkprocess.entity.DbGroups;
+import com.actiontech.dble.config.loader.zkprocess.entity.dbGroups.DBGroup;
+import com.actiontech.dble.config.loader.zkprocess.entity.dbGroups.DBInstance;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
-import com.actiontech.dble.config.loader.zkprocess.parse.entryparse.schema.xml.SchemasParseXmlImpl;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DataSourceStatus;
+import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DbInstanceStatus;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.HaInfo;
-import com.actiontech.dble.config.util.SchemaWriteJob;
+import com.actiontech.dble.config.util.DbXmlWriteJob;
 import com.actiontech.dble.util.ResourceUtil;
-import com.alibaba.fastjson.JSONObject;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +25,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static com.actiontech.dble.backend.datasource.PhysicalDataHost.*;
+import static com.actiontech.dble.backend.datasource.PhysicalDbGroup.JSON_LIST;
+import static com.actiontech.dble.backend.datasource.PhysicalDbGroup.JSON_NAME;
 
 /**
  * Created by szf on 2019/10/23.
@@ -35,48 +35,50 @@ public final class HaConfigManager {
     private static final String HA_LOG = "ha_log";
     private static final Logger HA_LOGGER = LoggerFactory.getLogger(HA_LOG);
     private static final HaConfigManager INSTANCE = new HaConfigManager();
-    private SchemasParseXmlImpl parseSchemaXmlService;
-    private static final String WRITEPATH = "schema.xml";
-    private Schemas schema;
+    private XmlProcessBase xmlProcess = new XmlProcessBase();
+    private static final String WRITE_PATH = "db.xml";
+    private DbGroups dbGroups;
     private AtomicInteger indexCreater = new AtomicInteger();
     private final AtomicBoolean isWriting = new AtomicBoolean(false);
     private final ReentrantReadWriteLock adjustLock = new ReentrantReadWriteLock();
-    private volatile SchemaWriteJob schemaWriteJob;
-    private volatile Set<PhysicalDataHost> waitingSet = new HashSet<>();
+    private volatile DbXmlWriteJob dbXmlWriteJob;
+    private volatile Set<PhysicalDbGroup> waitingSet = new HashSet<>();
     private final Map<Integer, HaChangeStatus> unfinised = new ConcurrentHashMap<>();
     private final AtomicInteger reloadIndex = new AtomicInteger();
 
     private HaConfigManager() {
         try {
-            XmlProcessBase xmlProcess = new XmlProcessBase();
-            xmlProcess.addParseClass(Schemas.class);
+            xmlProcess.addParseClass(DbGroups.class);
             xmlProcess.initJaxbClass();
-            this.parseSchemaXmlService = new SchemasParseXmlImpl(xmlProcess);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    public void init() {
-        INSTANCE.schema = this.parseSchemaXmlService.parseXmlToBean(WRITEPATH);
+    public void init() throws Exception {
+        try {
+            INSTANCE.dbGroups = (DbGroups) xmlProcess.baseParseXmlToBean(WRITE_PATH);
+        } catch (Exception e) {
+            HA_LOGGER.warn("DbParseXmlImpl parseXmlToBean JAXBException", e);
+            throw e;
+        }
         reloadIndex.incrementAndGet();
         //try to clear the waiting list and
-        if (schemaWriteJob != null) {
-            schemaWriteJob.signalAll();
+        if (dbXmlWriteJob != null) {
+            dbXmlWriteJob.signalAll();
         }
         waitingSet = new HashSet<>();
     }
 
-    public void write(Schemas schemas, int reloadId) throws IOException {
-        HA_LOGGER.info("try to write schemas into local file " + reloadId);
+    public void write(DbGroups dbs, int reloadId) throws IOException {
+        HA_LOGGER.info("try to write DbGroups into local file " + reloadId);
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
         try {
             if (reloadIndex.get() == reloadId) {
                 String path = ResourceUtil.getResourcePathFromRoot(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey());
-                path = new File(path).getPath() + File.separator;
-                path += WRITEPATH;
-                this.parseSchemaXmlService.parseToXmlWriteWithException(schemas, path, "schema");
+                path = new File(path).getPath() + File.separator + WRITE_PATH;
+                this.xmlProcess.safeParseWriteToXml(dbs, path, "db");
             } else {
                 HA_LOGGER.info("reloadId changes when try to write the local file,just skip " + reloadIndex.get());
             }
@@ -90,19 +92,19 @@ public final class HaConfigManager {
         triggerNext();
     }
 
-    public void updateConfDataHost(PhysicalDataHost dataHost, boolean syncWriteConf) {
-        SchemaWriteJob thisTimeJob;
+    public void updateDbGroupConf(PhysicalDbGroup dbGroup, boolean syncWriteConf) {
+        DbXmlWriteJob thisTimeJob;
         HA_LOGGER.info("start to update the local file with sync flag " + syncWriteConf);
         //check if there is one thread is writing
         if (isWriting.compareAndSet(false, true)) {
             adjustLock.writeLock().lock();
             try {
                 HA_LOGGER.info("get into write process");
-                waitingSet.add(dataHost);
-                schemaWriteJob = new SchemaWriteJob(waitingSet, schema, reloadIndex.get());
-                thisTimeJob = schemaWriteJob;
+                waitingSet.add(dbGroup);
+                dbXmlWriteJob = new DbXmlWriteJob(waitingSet, dbGroups, reloadIndex.get());
+                thisTimeJob = dbXmlWriteJob;
                 waitingSet = new HashSet<>();
-                DbleServer.getInstance().getComplexQueryExecutor().execute(schemaWriteJob);
+                DbleServer.getInstance().getComplexQueryExecutor().execute(dbXmlWriteJob);
             } finally {
                 adjustLock.writeLock().unlock();
             }
@@ -110,8 +112,8 @@ public final class HaConfigManager {
             adjustLock.readLock().lock();
             try {
                 HA_LOGGER.info("get into merge process");
-                thisTimeJob = schemaWriteJob;
-                waitingSet.add(dataHost);
+                thisTimeJob = dbXmlWriteJob;
+                waitingSet.add(dbGroup);
             } finally {
                 adjustLock.readLock().unlock();
             }
@@ -128,9 +130,9 @@ public final class HaConfigManager {
         if (waitingSet.size() != 0 && isWriting.compareAndSet(false, true)) {
             adjustLock.writeLock().lock();
             try {
-                schemaWriteJob = new SchemaWriteJob(waitingSet, schema, reloadIndex.get());
+                dbXmlWriteJob = new DbXmlWriteJob(waitingSet, dbGroups, reloadIndex.get());
                 waitingSet = new HashSet<>();
-                DbleServer.getInstance().getComplexQueryExecutor().execute(schemaWriteJob);
+                DbleServer.getInstance().getComplexQueryExecutor().execute(dbXmlWriteJob);
             } finally {
                 adjustLock.writeLock().unlock();
             }
@@ -139,18 +141,16 @@ public final class HaConfigManager {
 
     public Map<String, String> getSourceJsonList() {
         Map<String, String> map = new HashMap<>();
-        for (DataHost dh : schema.getDataHost()) {
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put(JSON_NAME, dh.getName());
-            List<DataSourceStatus> list = new ArrayList<>();
-            WriteHost wh = dh.getWriteHost();
-            list.add(new DataSourceStatus(wh.getHost(), "true".equals(wh.getDisabled()), true));
-            jsonObject.put(JSON_WRITE_SOURCE, new DataSourceStatus(wh.getHost(), "true".equals(wh.getDisabled()), true));
-            for (ReadHost rh : wh.getReadHost()) {
-                list.add(new DataSourceStatus(rh.getHost(), "true".equals(rh.getDisabled()), false));
+        for (DBGroup dbGroup : dbGroups.getDbGroup()) {
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.addProperty(JSON_NAME, dbGroup.getName());
+            List<DbInstanceStatus> list = new ArrayList<>();
+            for (DBInstance dbInstance : dbGroup.getDbInstance()) {
+                list.add(new DbInstanceStatus(dbInstance.getName(), "true".equals(dbInstance.getDisabled()), dbInstance.getPrimary()));
             }
-            jsonObject.put(JSON_LIST, list);
-            map.put(dh.getName(), jsonObject.toJSONString());
+            Gson gson = new Gson();
+            jsonObject.add(JSON_LIST, gson.toJsonTree(list));
+            map.put(dbGroup.getName(), gson.toJson(jsonObject));
         }
         return map;
     }

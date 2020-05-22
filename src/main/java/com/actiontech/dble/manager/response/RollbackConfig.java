@@ -6,26 +6,28 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDataHost;
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.*;
+import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.xmltozk.XmltoZkMain;
 import com.actiontech.dble.config.loader.zkprocess.zktoxml.listen.ConfigStatusListener;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
 import com.actiontech.dble.config.model.ERTable;
-import com.actiontech.dble.config.model.FirewallConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.UserConfig;
+import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.ReloadManager;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.util.KVPathUtil;
@@ -78,7 +80,7 @@ public final class RollbackConfig {
             }
         } else if (ClusterGeneralConfig.isUseGeneralCluster()) {
             DistributeLock distributeLock = new DistributeLock(ClusterPathUtil.getConfChangeLockPath(),
-                    ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+                    SystemConfig.getInstance().getInstanceId());
             try {
 
                 if (!distributeLock.acquire()) {
@@ -129,7 +131,7 @@ public final class RollbackConfig {
             ClusterDelayProvider.delayAfterMasterRollback();
 
             //step 3 tail the ucore & notify the other dble
-            ConfStatus status = new ConfStatus(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ConfStatus.Status.ROLLBACK, null);
+            ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceId(), ConfStatus.Status.ROLLBACK, null);
             ClusterHelper.setKV(ClusterPathUtil.getConfStatusPath(), status.toString());
 
             //step 4 set self status success
@@ -170,7 +172,7 @@ public final class RollbackConfig {
 
             XmltoZkMain.rollbackConf();
             //tell zk this instance has prepared
-            ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
+            ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), SystemConfig.getInstance().getInstanceId(),
                     ConfigStatusListener.SUCCESS.getBytes(StandardCharsets.UTF_8));
             //check all session waiting status
             List<String> preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
@@ -247,39 +249,38 @@ public final class RollbackConfig {
             throw new Exception("Reload status error ,other client or cluster may in reload");
         }
         ServerConfig conf = DbleServer.getInstance().getConfig();
-        Map<String, PhysicalDataHost> dataHosts = conf.getBackupDataHosts();
-        Map<String, UserConfig> users = conf.getBackupUsers();
+        Map<String, PhysicalDbGroup> dataHosts = conf.getBackupDbGroups();
+        Map<Pair<String, String>, UserConfig> users = conf.getBackupUsers();
         Map<String, SchemaConfig> schemas = conf.getBackupSchemas();
-        Map<String, PhysicalDataNode> dataNodes = conf.getBackupDataNodes();
-        FirewallConfig firewall = conf.getBackupFirewall();
+        Map<String, ShardingNode> shardingNodes = conf.getBackupShardingNodes();
         Map<ERTable, Set<ERTable>> erRelations = conf.getBackupErRelations();
         boolean backIsFullyConfiged = conf.backIsFullyConfiged();
         if (conf.canRollbackAll()) {
             boolean rollbackStatus = true;
             String errorMsg = null;
             if (conf.isFullyConfigured()) {
-                for (PhysicalDataHost dn : dataHosts.values()) {
+                for (PhysicalDbGroup dn : dataHosts.values()) {
                     dn.init();
                     if (!dn.isInitSuccess()) {
                         rollbackStatus = false;
-                        errorMsg = "dataHost[" + dn.getHostName() + "] inited failure";
+                        errorMsg = "dataHost[" + dn.getGroupName() + "] inited failure";
                         break;
                     }
                 }
                 // INIT FAILED
                 if (!rollbackStatus) {
-                    for (PhysicalDataHost dn : dataHosts.values()) {
+                    for (PhysicalDbGroup dn : dataHosts.values()) {
                         dn.clearDataSources("rollbackup config");
                         dn.stopHeartbeat();
                     }
                     throw new Exception(errorMsg);
                 }
             }
-            final Map<String, PhysicalDataHost> cNodes = conf.getDataHosts();
+            final Map<String, PhysicalDbGroup> cNodes = conf.getDbGroups();
             // apply
-            boolean result = conf.rollback(users, schemas, dataNodes, dataHosts, erRelations, firewall, backIsFullyConfiged);
+            boolean result = conf.rollback(users, schemas, shardingNodes, dataHosts, erRelations, backIsFullyConfiged);
             // stop old resource heartbeat
-            for (PhysicalDataHost dn : cNodes.values()) {
+            for (PhysicalDbGroup dn : cNodes.values()) {
                 dn.clearDataSources("clear old config ");
                 dn.stopHeartbeat();
             }

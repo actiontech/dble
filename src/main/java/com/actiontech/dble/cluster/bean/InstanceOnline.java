@@ -1,12 +1,9 @@
 package com.actiontech.dble.cluster.bean;
 
-import com.actiontech.dble.DbleServer;
-import com.alibaba.fastjson.JSONObject;
-
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.util.Enumeration;
+import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.util.NetUtil;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 /**
  * Created by szf on 2019/8/28.
@@ -22,9 +19,9 @@ public final class InstanceOnline {
     private final long startTime;
 
     private InstanceOnline() {
-        serverPort = DbleServer.getInstance().getConfig().getSystem().getServerPort();
+        serverPort = SystemConfig.getInstance().getServerPort();
         startTime = System.currentTimeMillis();
-        hostAddr = getHostIp();
+        hostAddr = NetUtil.getHostIp();
     }
 
     public static InstanceOnline getInstance() {
@@ -36,9 +33,9 @@ public final class InstanceOnline {
             return false;
         }
         try {
-            JSONObject jsonObj = JSONObject.parseObject(value);
-            return serverPort == Long.parseLong(jsonObj.getString(SERVER_PORT)) &&
-                    hostAddr.equals(jsonObj.getString(HOST_ADDR));
+            JsonObject jsonObj = new JsonParser().parse(value).getAsJsonObject();
+            return serverPort == jsonObj.get(SERVER_PORT).getAsLong() &&
+                    hostAddr.equals(jsonObj.get(HOST_ADDR).getAsString());
         } catch (Exception e) {
             //remove the old online timestamp when upgrade from old version
             return true;
@@ -46,32 +43,11 @@ public final class InstanceOnline {
     }
 
     public String toString() {
-        JSONObject online = new JSONObject();
-        online.put(SERVER_PORT, serverPort);
-        online.put(HOST_ADDR, hostAddr);
-        online.put(START_TIME, startTime);
-        return online.toJSONString();
+        JsonObject online = new JsonObject();
+        online.addProperty(SERVER_PORT, serverPort);
+        online.addProperty(HOST_ADDR, hostAddr);
+        online.addProperty(START_TIME, startTime);
+        return online.getAsString();
     }
 
-    private static String getHostIp() {
-        try {
-            Enumeration<NetworkInterface> allNetInterfaces = NetworkInterface.getNetworkInterfaces();
-            while (allNetInterfaces.hasMoreElements()) {
-                NetworkInterface netInterface = (NetworkInterface) allNetInterfaces.nextElement();
-                Enumeration<InetAddress> addresses = netInterface.getInetAddresses();
-                while (addresses.hasMoreElements()) {
-                    InetAddress ip = (InetAddress) addresses.nextElement();
-                    if (ip != null &&
-                            ip instanceof Inet4Address &&
-                            !ip.isLoopbackAddress() &&
-                            ip.getHostAddress().indexOf(":") == -1) {
-                        return ip.getHostAddress();
-                    }
-                }
-            }
-        } catch (Exception e) {
-            return null;
-        }
-        return null;
-    }
 }

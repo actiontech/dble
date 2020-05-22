@@ -5,9 +5,9 @@
 
 package com.actiontech.dble.backend.mysql;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.BinaryPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.singleton.WriteQueueFlowController;
@@ -64,7 +64,7 @@ public final class LoadDataUtil {
 
     public static byte writeToBackConnection(byte packID, InputStream inputStream, MySQLConnection c) throws IOException {
         try {
-            int packSize = DbleServer.getInstance().getConfig().getSystem().getBufferPoolChunkSize() - 5;
+            int packSize = SystemConfig.getInstance().getBufferPoolChunkSize() - 5;
             // int packSize = c.getMaxPacketSize() / 32;
             //  int packSize=65530;
             byte[] buffer = new byte[packSize];

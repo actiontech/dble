@@ -5,8 +5,8 @@
 
 package com.actiontech.dble.meta.table;
 
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
-import com.actiontech.dble.backend.datasource.PhysicalDataSource;
+import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.config.ErrorInfo;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
@@ -25,15 +25,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class DryRunGetNodeTablesHandler extends GetNodeTablesHandler {
 
     private final AtomicInteger counter;
-    private final PhysicalDataNode phyDataNode;
+    private final ShardingNode phyShardingNode;
     private final Map<String, Set<String>> returnMap;
     private final boolean isLowerCase;
     private final List<ErrorInfo> list;
 
-    public DryRunGetNodeTablesHandler(AtomicInteger counter, PhysicalDataNode phyDataNode, Map<String, Set<String>> returnMap, boolean isLowerCase, List<ErrorInfo> list) {
-        super(phyDataNode.getName());
+    public DryRunGetNodeTablesHandler(AtomicInteger counter, ShardingNode phyShardingNode, Map<String, Set<String>> returnMap, boolean isLowerCase, List<ErrorInfo> list) {
+        super(phyShardingNode.getName());
         this.counter = counter;
-        this.phyDataNode = phyDataNode;
+        this.phyShardingNode = phyShardingNode;
         this.returnMap = returnMap;
         this.isLowerCase = isLowerCase;
         this.list = list;
@@ -41,10 +41,10 @@ public class DryRunGetNodeTablesHandler extends GetNodeTablesHandler {
 
     @Override
     public void execute() {
-        String mysqlShowTableCol = "Tables_in_" + phyDataNode.getDatabase();
+        String mysqlShowTableCol = "Tables_in_" + phyShardingNode.getDatabase();
         String[] mysqlShowTableCols = new String[]{mysqlShowTableCol};
-        PhysicalDataSource tds = phyDataNode.getDataHost().getWriteSource();
-        PhysicalDataSource ds = null;
+        PhysicalDbInstance tds = phyShardingNode.getDbGroup().getWriteSource();
+        PhysicalDbInstance ds = null;
         if (tds != null) {
             if (tds.isTestConnSuccess()) {
                 ds = tds;
@@ -52,17 +52,17 @@ public class DryRunGetNodeTablesHandler extends GetNodeTablesHandler {
         }
         if (ds != null) {
             MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(mysqlShowTableCols, new MySQLShowTablesListener(mysqlShowTableCol));
-            SpecialSqlJob sqlJob = new SpecialSqlJob(SQL, phyDataNode.getDatabase(), resultHandler, ds, list);
+            SpecialSqlJob sqlJob = new SpecialSqlJob(SQL, phyShardingNode.getDatabase(), resultHandler, ds, list);
             sqlJob.run();
         } else {
-            list.add(new ErrorInfo("Backend", "WARNING", "dataNode[" + phyDataNode.getName() + "] has no available writeHost,The table in this dataNode has not checked"));
+            list.add(new ErrorInfo("Backend", "WARNING", "dataNode[" + phyShardingNode.getName() + "] has no available writeHost,The table in this dataNode has not checked"));
             handleFinished();
         }
     }
 
     @Override
     protected void handleTable(String table, String tableType) {
-        returnMap.get(phyDataNode.getName()).add(table);
+        returnMap.get(phyShardingNode.getName()).add(table);
     }
 
     @Override
@@ -81,12 +81,12 @@ public class DryRunGetNodeTablesHandler extends GetNodeTablesHandler {
         @Override
         public void onResult(SQLQueryResult<List<Map<String, String>>> result) {
             if (!result.isSuccess()) {
-                String warnMsg = "Can't show tables from DataNode:" + phyDataNode + "! Maybe the data node is not initialized!";
+                String warnMsg = "Can't show tables from DataNode:" + phyShardingNode + "! Maybe the data node is not initialized!";
                 LOGGER.warn(warnMsg);
                 handleFinished();
                 return;
             }
-            returnMap.put(phyDataNode.getName(), new HashSet<>());
+            returnMap.put(phyShardingNode.getName(), new HashSet<>());
             List<Map<String, String>> rows = result.getResult();
             for (Map<String, String> row : rows) {
                 String table = row.get(mysqlShowTableCol);

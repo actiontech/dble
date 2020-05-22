@@ -5,11 +5,11 @@
 
 package com.actiontech.dble.backend.mysql.view;
 
-import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,10 +44,8 @@ public class FileSystemRepository implements Repository {
      */
     public void init() {
         try {
-            ServerConfig config = DbleServer.getInstance().getConfig();
-            SystemConfig systemConfig = config.getSystem();
-            baseDir = systemConfig.getViewPersistenceConfBaseDir();
-            baseName = systemConfig.getViewPersistenceConfBaseName();
+            baseDir = SystemConfig.getInstance().getViewPersistenceConfBaseDir();
+            baseName = SystemConfig.getInstance().getViewPersistenceConfBaseName();
 
             //Judge whether exist the basedir
             createBaseDir();
@@ -179,16 +177,16 @@ public class FileSystemRepository implements Repository {
     public Map<String, Map<String, String>> getObject() throws Exception {
         Map<String, Map<String, String>> result = new HashMap<String, Map<String, String>>();
         String jsonString = readFromFile();
-        JSONArray jsonArray = JSONObject.parseArray(jsonString);
+        JsonArray jsonArray = new JsonParser().parse(jsonString).getAsJsonArray();
         if (jsonArray != null) {
-            for (Object schema : jsonArray) {
-                JSONObject x = (JSONObject) schema;
-                String schemaName = x.getString("schema");
-                JSONArray viewList = x.getJSONArray("list");
+            for (JsonElement schema : jsonArray) {
+                JsonObject x = schema.getAsJsonObject();
+                String schemaName = x.get("schema").getAsString();
+                JsonArray viewList = x.get("list").getAsJsonArray();
                 Map<String, String> schemaView = new HashMap<String, String>();
-                for (Object view : viewList) {
-                    JSONObject y = (JSONObject) view;
-                    schemaView.put(y.getString("name"), y.getString("sql"));
+                for (JsonElement view : viewList) {
+                    JsonObject y = view.getAsJsonObject();
+                    schemaView.put(y.get("name").getAsString(), y.get("sql").getAsString());
                 }
                 result.put(schemaName, schemaView);
             }

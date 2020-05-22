@@ -6,7 +6,7 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDataHost;
+import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.parser.ManagerParseStop;
@@ -34,14 +34,14 @@ public final class StopHeartbeat {
         Pair<String[], Integer> keys = ManagerParseStop.getPair(stmt);
         if (keys.getKey() != null && keys.getValue() != null) {
             long time = keys.getValue() * 1000L;
-            Map<String, PhysicalDataHost> dns = DbleServer.getInstance().getConfig().getDataHosts();
+            Map<String, PhysicalDbGroup> dns = DbleServer.getInstance().getConfig().getDbGroups();
             for (String key : keys.getKey()) {
-                PhysicalDataHost dn = dns.get(key);
+                PhysicalDbGroup dn = dns.get(key);
                 if (dn != null) {
                     dn.getWriteSource().setHeartbeatRecoveryTime(TimeUtil.currentTimeMillis() + time);
                     ++count;
                     StringBuilder s = new StringBuilder();
-                    s.append(dn.getHostName()).append(" stop heartbeat '");
+                    s.append(dn.getGroupName()).append(" stop heartbeat '");
                     LOGGER.info(s.append(FormatUtil.formatTime(time, 3)).append("' by manager.").toString());
                 }
             }

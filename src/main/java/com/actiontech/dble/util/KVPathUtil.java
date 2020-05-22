@@ -5,9 +5,8 @@
 
 package com.actiontech.dble.util;
 
-import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.Versions;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 
 /**
  * Created by huqing.yan on 2017/6/26.
@@ -19,7 +18,7 @@ public final class KVPathUtil {
     public static final String SEPARATOR = "/";
     private static final String ROOT_PATH = Versions.ROOT_PREFIX;
     //depth:1, base_path" /root_name/cluster_name/
-    private static final String BASE_PATH = SEPARATOR + ROOT_PATH + SEPARATOR + ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_CLUSTERID) + SEPARATOR;
+    private static final String BASE_PATH = SEPARATOR + ROOT_PATH + SEPARATOR + SystemConfig.getInstance().getInstanceId() + SEPARATOR;
 
     //depth:2,child node of base_path
     public static final String CACHE = "cache";
@@ -82,23 +81,23 @@ public final class KVPathUtil {
 
     //depth:3,child node of conf_base_path
     private static final String CONF_STATUS = "status";
-    public static final String SCHEMA = "schema";
+    public static final String SHARDING = "sharding";
     public static final String SERVER = "server";
-    public static final String RULES = "rules";
+    public static final String DBS = "db";
 
     public static String getConfStatusPath() {
         return CONF_BASE_PATH + CONF_STATUS;
     }
 
     //depth:3,child node of conf_base_path
-    public static String getConfSchemaPath() {
-        return CONF_BASE_PATH + SCHEMA;
+    public static String getConfShardingPath() {
+        return CONF_BASE_PATH + SHARDING;
     }
 
-    //depth:4,child node of conf_base_path/schema/
-    public static final String SCHEMA_SCHEMA = "schema";
-    public static final String DATA_HOST = "dataHost";
-    public static final String DATA_NODE = "dataNode";
+
+    //depth:4,child node of conf_base_path/dbs/
+    public static final String DB_GROUP = "dbGroup";
+
 
     //depth:3,child node of conf_base_path
     public static String getConfServerPath() {
@@ -111,13 +110,13 @@ public final class KVPathUtil {
     public static final String FIREWALL = "firewall";
 
     //depth:3,child node of conf_base_path
-    public static String getConfRulePath() {
-        return CONF_BASE_PATH + RULES;
+    public static String getDbConfPath() {
+        return CONF_BASE_PATH + DBS;
     }
 
-    //depth:4,child node of conf_base_path/rules/
-    public static final String TABLE_RULE = "tableRule";
-    public static final String FUNCTION = "function";
+    public static String getUserConfPath() {
+        return CONF_BASE_PATH + USER;
+    }
 
     public static final String VERSION = "version";
 

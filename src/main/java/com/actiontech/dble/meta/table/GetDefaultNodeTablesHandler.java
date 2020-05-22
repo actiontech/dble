@@ -19,7 +19,7 @@ public class GetDefaultNodeTablesHandler extends GetNodeTablesHandler {
     private SchemaConfig config;
 
     GetDefaultNodeTablesHandler(SchemaConfig config) {
-        super(config.getDataNode(), !config.isNoSharding());
+        super(config.getShardingNode(), !config.isNoSharding());
         this.config = config;
     }
 

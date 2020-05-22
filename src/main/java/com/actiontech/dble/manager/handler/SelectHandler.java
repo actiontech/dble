@@ -7,8 +7,8 @@ package com.actiontech.dble.manager.handler;
 
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDataHost;
-import com.actiontech.dble.backend.datasource.PhysicalDataSource;
+import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.manager.response.SelectMaxAllowedPacket;
@@ -57,10 +57,10 @@ public final class SelectHandler {
                 break;
             default:
                 if (isSupportSelect(stmt)) {
-                    Iterator<PhysicalDataHost> iterator = DbleServer.getInstance().getConfig().getDataHosts().values().iterator();
+                    Iterator<PhysicalDbGroup> iterator = DbleServer.getInstance().getConfig().getDbGroups().values().iterator();
                     if (iterator.hasNext()) {
-                        PhysicalDataHost pool = iterator.next();
-                        final PhysicalDataSource source = pool.getWriteSource();
+                        PhysicalDbGroup pool = iterator.next();
+                        final PhysicalDbInstance source = pool.getWriteSource();
                         TransformSQLJob sqlJob = new TransformSQLJob(stmt, null, source, c);
                         sqlJob.run();
                     } else {

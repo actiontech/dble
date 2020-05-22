@@ -17,10 +17,7 @@ import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author mycat
@@ -32,13 +29,7 @@ public final class ParameterMapping {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParameterMapping.class);
     private static final Map<Class<?>, PropertyDescriptor[]> DESCRIPTORS = new HashMap<>();
 
-    /**
-     * @param object
-     * @param parameter property
-     * @throws IllegalAccessException
-     * @throws InvocationTargetException
-     */
-    public static void mapping(Object object, Map<String, ?> parameter, ProblemReporter problemReporter) throws IllegalAccessException,
+    public static void mapping(Object object, Properties parameter, ProblemReporter problemReporter) throws IllegalAccessException,
             InvocationTargetException {
         PropertyDescriptor[] pds = getDescriptors(object.getClass());
         for (PropertyDescriptor pd : pds) {
@@ -48,6 +39,8 @@ public final class ParameterMapping {
             if (cls == null) {
                 if (problemReporter != null) {
                     problemReporter.warn("unknown property [ " + pd.getName() + " ], skip");
+                } else {
+                    LOGGER.warn("unknown property [ " + pd.getName() + " ], skip");
                 }
                 continue;
             }
@@ -63,6 +56,8 @@ public final class ParameterMapping {
                     } catch (NumberFormatException nfe) {
                         if (problemReporter != null) {
                             problemReporter.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + ", skip");
+                        } else {
+                            LOGGER.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + ", skip");
                         }
                         parameter.remove(pd.getName());
                         continue;
@@ -74,6 +69,50 @@ public final class ParameterMapping {
                 if (method != null) {
                     method.invoke(object, value);
                     parameter.remove(pd.getName());
+                }
+            }
+        }
+    }
+
+
+    public static void mapping(Object object, ProblemReporter problemReporter) throws IllegalAccessException,
+            InvocationTargetException {
+        PropertyDescriptor[] pds = getDescriptors(object.getClass());
+        for (PropertyDescriptor pd : pds) {
+            String valStr = System.getProperty(pd.getName());
+            if (valStr == null) {
+                continue;
+            }
+            Object value = valStr;
+            Class<?> cls = pd.getPropertyType();
+            if (cls == null) {
+                if (problemReporter != null) {
+                    problemReporter.warn("unknown property [ " + pd.getName() + " ], skip");
+                } else {
+                    LOGGER.warn("unknown property [ " + pd.getName() + " ], skip");
+                }
+                continue;
+            }
+
+            if (!StringUtil.isEmpty(valStr)) {
+                valStr = ConfigUtil.filter(valStr);
+            }
+            if (isPrimitiveType(cls)) {
+                try {
+                    value = convert(cls, valStr);
+                } catch (NumberFormatException nfe) {
+                    if (problemReporter != null) {
+                        problemReporter.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + ", skip");
+                    } else {
+                        LOGGER.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + ", skip");
+                    }
+                    continue;
+                }
+            }
+            if (value != null) {
+                Method method = pd.getWriteMethod();
+                if (method != null) {
+                    method.invoke(object, value);
                 }
             }
         }

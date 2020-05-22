@@ -36,7 +36,7 @@ public class DruidLockTableParser extends DefaultDruidParser {
     public SchemaConfig visitorParse(SchemaConfig schema, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, ServerConnection sc, boolean isExplain)
             throws SQLException {
         MySqlLockTableStatement lockTableStat = (MySqlLockTableStatement) stmt;
-        Map<String, Set<String>> dataNodeToLocks = new HashMap<>();
+        Map<String, Set<String>> shardingNodeToLocks = new HashMap<>();
         for (MySqlLockTableStatement.Item item : lockTableStat.getItems()) {
             SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schema == null ? null : schema.getName(), item.getTableSource());
 
@@ -45,13 +45,13 @@ public class DruidLockTableParser extends DefaultDruidParser {
             SchemaConfig schemaConfig = schemaInfo.getSchemaConfig();
             TableConfig tableConfig = schemaConfig.getTables().get(table);
             if (tableConfig != null) {
-                handleConfigTable(dataNodeToLocks, tableConfig, item.getTableSource().getAlias(), item.getLockType());
+                handleConfigTable(shardingNodeToLocks, tableConfig, item.getTableSource().getAlias(), item.getLockType());
                 continue;
             } else if (ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaName, table) != null || ProxyMeta.getInstance().getTmManager().getSyncView(schemaName, table) instanceof TableNode) {
-                handleNoshardTable(dataNodeToLocks, table, schemaConfig.getDataNode(), item.getTableSource().getAlias(), item.getLockType());
+                handleNoshardTable(shardingNodeToLocks, table, schemaConfig.getShardingNode(), item.getTableSource().getAlias(), item.getLockType());
                 continue;
             } else if (ProxyMeta.getInstance().getTmManager().getSyncView(schemaName, table) instanceof QueryNode) {
-                handleSingleViewLock(dataNodeToLocks, ProxyMeta.getInstance().getTmManager().getSyncView(schemaName, table), item.getTableSource().getAlias(), item.getLockType(), schemaName);
+                handleSingleViewLock(shardingNodeToLocks, ProxyMeta.getInstance().getTmManager().getSyncView(schemaName, table), item.getTableSource().getAlias(), item.getLockType(), schemaName);
                 continue;
             }
             String msg = "Table '" + schemaConfig.getName() + "." + table + "' doesn't exist";
@@ -64,7 +64,7 @@ public class DruidLockTableParser extends DefaultDruidParser {
             lockedNodes.addAll(sc.getSession2().getTargetMap().keySet());
         }
         List<RouteResultsetNode> nodes = new ArrayList<>();
-        for (Map.Entry<String, Set<String>> entry : dataNodeToLocks.entrySet()) {
+        for (Map.Entry<String, Set<String>> entry : shardingNodeToLocks.entrySet()) {
             RouteResultsetNode node = new RouteResultsetNode(entry.getKey(), ServerParse.LOCK, " LOCK TABLES " + StringUtil.join(entry.getValue(), ","));
             nodes.add(node);
             lockedNodes.remove(node);
@@ -82,9 +82,9 @@ public class DruidLockTableParser extends DefaultDruidParser {
     /**
      * handle single config table lock
      */
-    private void handleConfigTable(Map<String, Set<String>> dataNodeToLocks, TableConfig tableConfig, String alias, MySqlLockTableStatement.LockType lockType) {
-        List<String> dataNodes = tableConfig.getDataNodes();
-        for (String dataNode : dataNodes) {
+    private void handleConfigTable(Map<String, Set<String>> shardingNodeToLocks, TableConfig tableConfig, String alias, MySqlLockTableStatement.LockType lockType) {
+        List<String> shardingNodes = tableConfig.getShardingNodes();
+        for (String shardingNode : shardingNodes) {
             StringBuilder sbItem = new StringBuilder(tableConfig.getName());
             if (alias != null) {
                 sbItem.append(" as ");
@@ -92,12 +92,12 @@ public class DruidLockTableParser extends DefaultDruidParser {
             }
             sbItem.append(" ");
             sbItem.append(lockType);
-            Set<String> locks = dataNodeToLocks.computeIfAbsent(dataNode, k -> new HashSet<>());
+            Set<String> locks = shardingNodeToLocks.computeIfAbsent(shardingNode, k -> new HashSet<>());
             locks.add(sbItem.toString());
         }
     }
 
-    private void handleNoshardTable(Map<String, Set<String>> dataNodeToLocks, String tableName, String dataNode, String alias, MySqlLockTableStatement.LockType lockType) {
+    private void handleNoshardTable(Map<String, Set<String>> shardingNodeToLocks, String tableName, String shardingNode, String alias, MySqlLockTableStatement.LockType lockType) {
         StringBuilder sbItem = new StringBuilder(tableName);
         if (alias != null) {
             sbItem.append(" as ");
@@ -105,11 +105,11 @@ public class DruidLockTableParser extends DefaultDruidParser {
         }
         sbItem.append(" ");
         sbItem.append(lockType);
-        Set<String> locks = dataNodeToLocks.computeIfAbsent(dataNode, k -> new HashSet<String>());
+        Set<String> locks = shardingNodeToLocks.computeIfAbsent(shardingNode, k -> new HashSet<String>());
         locks.add(sbItem.toString());
     }
 
-    private void handleSingleViewLock(Map<String, Set<String>> dataNodeToLocks, PlanNode viewQuery, String alias, MySqlLockTableStatement.LockType lockType, String schemaName) throws SQLNonTransientException {
+    private void handleSingleViewLock(Map<String, Set<String>> shardingNodeToLocks, PlanNode viewQuery, String alias, MySqlLockTableStatement.LockType lockType, String schemaName) throws SQLNonTransientException {
         Map<String, Set<String>> tableMap = new HashMap<>();
         findTableInPlanNode(tableMap, viewQuery, schemaName);
         for (Map.Entry<String, Set<String>> entry : tableMap.entrySet()) {
@@ -117,9 +117,9 @@ public class DruidLockTableParser extends DefaultDruidParser {
             for (String table : entry.getValue()) {
                 TableConfig tableConfig = schemaConfig.getTables().get(table);
                 if (tableConfig != null) {
-                    handleConfigTable(dataNodeToLocks, tableConfig, alias == null ? null : "view_" + alias + "_" + table, lockType);
+                    handleConfigTable(shardingNodeToLocks, tableConfig, alias == null ? null : "view_" + alias + "_" + table, lockType);
                 } else if (ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaConfig.getName(), table) != null) {
-                    handleNoshardTable(dataNodeToLocks, table, schemaConfig.getDataNode(), alias == null ? null : "view_" + alias + "_" + table, lockType);
+                    handleNoshardTable(shardingNodeToLocks, table, schemaConfig.getShardingNode(), alias == null ? null : "view_" + alias + "_" + table, lockType);
                 } else {
                     String msg = "Table '" + schemaConfig.getName() + "." + table + "' doesn't exist";
                     LOGGER.info(msg);

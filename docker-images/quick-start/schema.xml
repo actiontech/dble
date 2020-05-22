@@ -52,7 +52,7 @@
     </schema>
 
 
-    <!-- schema testdb2 route to database named dn5 in localhost2  -->
+    <!-- sharding testdb2 route to database named dn5 in localhost2  -->
     <schema name="testdb2" dataNode="dn5">
     </schema>
 

@@ -45,9 +45,9 @@ public class JsonProcessBase {
      */
     public <T> T toBeanformJson(String json, Type typeSchema) {
         T result = this.gson.fromJson(json, typeSchema);
-
         return result;
     }
+
 
     /**
      * toBeanformJson

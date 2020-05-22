@@ -2,20 +2,19 @@ package com.actiontech.dble.cluster.impl.ushard;
 
 import com.actiontech.dble.cluster.AbstractClusterSender;
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.bean.ClusterAlertBean;
 import com.actiontech.dble.cluster.bean.KvBean;
 import com.actiontech.dble.cluster.bean.SubscribeRequest;
 import com.actiontech.dble.cluster.bean.SubscribeReturnBean;
-import com.google.common.base.Strings;
+import com.actiontech.dble.config.model.ClusterConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 import io.grpc.Channel;
 import io.grpc.ManagedChannelBuilder;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
@@ -30,28 +29,23 @@ public class UshardSender extends AbstractClusterSender {
 
     private volatile DbleClusterGrpc.DbleClusterBlockingStub stub = null;
     private ConcurrentHashMap<String, Thread> lockMap = new ConcurrentHashMap<>();
-    private Properties ushardProperties;
     private final String sourceComponentType = "dble";
     private String serverId = null;
     private String sourceComponentId = null;
 
     @Override
-    public void initConInfo(Properties properties) {
-        this.ushardProperties = properties;
-        serverId = getValue(ClusterParamCfg.CLUSTER_CFG_SERVER_ID);
-        sourceComponentId = getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
+    public void initConInfo() {
         Channel channel = ManagedChannelBuilder.forAddress("127.0.0.1",
-                Integer.parseInt(getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
+                ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
         stub = DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
     }
 
     @Override
-    public void initCluster(Properties properties) {
-        this.ushardProperties = properties;
-        serverId = getValue(ClusterParamCfg.CLUSTER_CFG_SERVER_ID);
-        sourceComponentId = getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
+    public void initCluster() {
+        serverId = SystemConfig.getInstance().getServerId();
+        sourceComponentId = SystemConfig.getInstance().getInstanceId();
         Channel channel = ManagedChannelBuilder.forAddress("127.0.0.1",
-                Integer.parseInt(getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
+                ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
         stub = DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
         startUpdateNodes();
     }
@@ -229,21 +223,6 @@ public class UshardSender extends AbstractClusterSender {
         }
     }
 
-    @Override
-    public void checkClusterConfig(Properties properties) {
-        if (Strings.isNullOrEmpty(properties.getProperty(ClusterParamCfg.CLUSTER_PLUGINS_PORT.getKey())) ||
-                Strings.isNullOrEmpty(properties.getProperty(ClusterParamCfg.CLUSTER_CFG_SERVER_ID.getKey()))) {
-            throw new RuntimeException("Cluster Config is not completely set");
-        }
-    }
-
-    public String getValue(ClusterParamCfg param) {
-        if (ushardProperties != null && null != param) {
-            return ushardProperties.getProperty(param.getKey());
-        }
-        return null;
-    }
-
 
     private boolean renewLock(String sessionId) throws Exception {
         UshardInterface.RenewSessionInput input = UshardInterface.RenewSessionInput.newBuilder().setSessionId(sessionId).build();
@@ -302,7 +281,7 @@ public class UshardSender extends AbstractClusterSender {
                     } catch (Exception e) {
                         LOGGER.warn("error in ucore nodes watch,try for another time", e);
                         Channel channel = ManagedChannelBuilder.forAddress("127.0.0.1",
-                                Integer.parseInt(getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
+                                ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
                         stub = DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
                     }
                 }

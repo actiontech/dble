@@ -8,6 +8,7 @@ package com.actiontech.dble.route;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
@@ -43,16 +44,16 @@ public class DruidMysqlCreateTableTest {
 
 
     public DruidMysqlCreateTableTest() {
-        //		String schemaFile = "/route/schema.xml";
+        //		String shardingFile = "/route/sharding.xml";
         //		String ruleFile = "/route/rule.xml";
-        //		SchemaLoader schemaLoader = new XMLSchemaLoader(schemaFile, ruleFile); \
+        //		SchemaLoader schemaLoader = new XMLSchemaLoader(shardingFile, ruleFile); \
         //		schemaMap = schemaLoader.getSchemas();
         ServerConfig cnf = new ServerConfig();
         schemaMap = cnf.getSchemas();
 
         routeStrategy = RouteStrategyFactory.getRouteStrategy();
 
-        sc.setUser("test");
+        sc.setUser(new Pair<>("test",null));
     }
 
     @Test

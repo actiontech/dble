@@ -5,10 +5,10 @@
 
 package com.actiontech.dble.route.parser.druid.impl;
 
-import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.model.ERTable;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.privileges.ShardingPrivileges;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
@@ -26,7 +26,10 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * see http://dev.mysql.com/doc/refman/5.7/en/update.html
@@ -51,7 +54,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
             }
         } else {
             SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, (SQLExprTableSource) tableSource);
-            if (!ServerPrivileges.checkPrivilege(sc, schemaInfo.getSchema(), schemaInfo.getTable(), ServerPrivileges.CheckType.UPDATE)) {
+            if (!ShardingPrivileges.checkPrivilege(sc.getUserConfig(), schemaInfo.getSchema(), schemaInfo.getTable(), ShardingPrivileges.CheckType.UPDATE)) {
                 String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                 throw new SQLNonTransientException(msg);
             }
@@ -77,18 +80,18 @@ public class DruidUpdateParser extends DefaultDruidParser {
                 return schema;
             }
             TableConfig tc = schema.getTables().get(tableName);
-            checkTableExists(tc, schema.getName(), tableName, ServerPrivileges.CheckType.UPDATE);
+            checkTableExists(tc, schema.getName(), tableName, ShardingPrivileges.CheckType.UPDATE);
 
 
             if (tc.isGlobalTable()) {
-                RouterUtil.routeToMultiNode(false, rrs, tc.getDataNodes(), tc.isGlobalTable());
+                RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), tc.isGlobalTable());
                 rrs.setFinishedRoute(true);
                 return schema;
             }
             String partitionColumn = tc.getPartitionColumn();
-            String joinKey = tc.getJoinKey();
+            String joinColumn = tc.getJoinColumn();
 
-            confirmShardColumnNotUpdated(update, schema, tableName, partitionColumn, joinKey, rrs);
+            confirmShardColumnNotUpdated(update, schema, tableName, partitionColumn, joinColumn, rrs);
 
             confirmChildColumnNotUpdated(update, schema, tableName);
 
@@ -202,7 +205,7 @@ public class DruidUpdateParser extends DefaultDruidParser {
         return canUpdate;
     }
 
-    private void confirmShardColumnNotUpdated(SQLUpdateStatement update, SchemaConfig schema, String tableName, String partitionColumn, String joinKey, RouteResultset rrs) throws SQLNonTransientException {
+    private void confirmShardColumnNotUpdated(SQLUpdateStatement update, SchemaConfig schema, String tableName, String partitionColumn, String joinColumn, RouteResultset rrs) throws SQLNonTransientException {
         List<SQLUpdateSetItem> updateSetItem = update.getItems();
         if (updateSetItem != null && updateSetItem.size() > 0) {
             boolean hasParent = (schema.getTables().get(tableName).getParentTC() != null);
@@ -224,8 +227,8 @@ public class DruidUpdateParser extends DefaultDruidParser {
                     }
                 }
                 if (hasParent) {
-                    if (column.equals(joinKey)) {
-                        String msg = "Parent relevant column can't be updated " + tableName + "->" + joinKey;
+                    if (column.equals(joinColumn)) {
+                        String msg = "Parent relevant column can't be updated " + tableName + "->" + joinColumn;
                         LOGGER.info(msg);
                         throw new SQLNonTransientException(msg);
                     }

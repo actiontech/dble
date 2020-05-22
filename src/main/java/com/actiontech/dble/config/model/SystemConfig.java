@@ -9,49 +9,43 @@ import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.memory.unsafe.Platform;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
+import com.actiontech.dble.util.NetUtil;
 
 import java.io.File;
 import java.io.IOException;
 
 
-/**
- * SystemConfig
- *
- * @author mycat
- */
 public final class SystemConfig {
-    public static final String SYS_HOME = "DBLE_HOME";
+    private static final SystemConfig INSTANCE = new SystemConfig();
+    public static SystemConfig getInstance() {
+        return INSTANCE;
+    }
+    private SystemConfig() {
+    }
     static final long DEFAULT_IDLE_TIMEOUT = 30 * 60 * 1000L;
-    public static final int SEQUENCE_HANDLER_MYSQL = 1;
-    public static final int SEQUENCE_HANDLER_LOCAL_TIME = 2;
-    public static final int SEQUENCE_HANDLER_ZK_DISTRIBUTED = 3;
-    public static final int SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT = 4;
-    private static final String WARNING_FORMAT = "Property [ %s ] '%d' in server.xml is illegal, use %d replaced";
+    private static final String WARNING_FORMAT = "Property [ %s ] '%d' in bootstrap.cnf is illegal, use %d replaced";
+
     /*
      * the supported  protocol version of MySQL
      * For Other MySQL branch ,like MariaDB 10.1.x,
      * but its protocol is compatible with MySQL. So the versions array only contain official version here
      */
     public static final String[] MYSQL_VERSIONS = {"5.5", "5.6", "5.7"};
-
-    private static final int DEFAULT_PROCESSORS = Runtime.getRuntime().availableProcessors();
-
     // base config
+    private String homePath = null;
+    private String serverId = NetUtil.getHostIp();
+    private String instanceId = null;
+
     private String bindIp = "0.0.0.0";
     private int serverPort = 8066;
     private int managerPort = 9066;
-    private int processors = DEFAULT_PROCESSORS;
-    private int backendProcessors = DEFAULT_PROCESSORS;
-    private int processorExecutor = (DEFAULT_PROCESSORS != 1) ? DEFAULT_PROCESSORS : 2;
-    private int backendProcessorExecutor = (DEFAULT_PROCESSORS != 1) ? DEFAULT_PROCESSORS : 2;
+    private int processors = Runtime.getRuntime().availableProcessors();
+    private int backendProcessors = processors;
+    private int processorExecutor = (processors != 1) ? processors : 2;
+    private int backendProcessorExecutor = (processors != 1) ? processors : 2;
     private int complexExecutor = processorExecutor > 8 ? 8 : processorExecutor;
-    private int writeToBackendExecutor = (DEFAULT_PROCESSORS != 1) ? DEFAULT_PROCESSORS : 2;
-    private String fakeMySQLVersion = null;
-    private int sequenceHandlerType = SEQUENCE_HANDLER_LOCAL_TIME;
+    private int writeToBackendExecutor = (processors != 1) ? processors : 2;
     private int serverBacklog = 2048;
-    private int serverNodeId = 1;
-    private long showBinlogStatusTimeout = 60 * 1000;
     private int maxCon = 0;
     //option
     private int useCompression = 0;
@@ -75,8 +69,8 @@ public final class SystemConfig {
     private long checkTableConsistencyPeriod = 30 * 60 * 1000;
 
     //heartbeat check period
-    private long dataNodeIdleCheckPeriod = 5 * 60 * 1000L;
-    private long dataNodeHeartbeatPeriod = 10 * 1000L;
+    private long shardingNodeIdleCheckPeriod = 5 * 60 * 1000L;
+    private long shardingNodeHeartbeatPeriod = 10 * 1000L;
 
     //processor check conn
     private long processorCheckPeriod = 1000L;
@@ -86,14 +80,14 @@ public final class SystemConfig {
 
     //transaction log
     private int recordTxn = 0;
-    private String transactionLogBaseDir = SystemConfig.getHomePath() + File.separatorChar + "txlogs" + File.separatorChar;
+    private String transactionLogBaseDir = this.getHomePath() + File.separatorChar + "txlogs" + File.separatorChar;
     private String transactionLogBaseName = "server-tx";
     private int transactionRotateSize = 16; // M
 
     //XA transaction
     private long xaSessionCheckPeriod = 1000L;
     private long xaLogCleanPeriod = 1000L;
-    private String xaRecoveryLogBaseDir = SystemConfig.getHomePath() + File.separatorChar + "tmlogs" + File.separatorChar;
+    private String xaRecoveryLogBaseDir = this.getHomePath() + File.separatorChar + "tmlogs" + File.separatorChar;
     private String xaRecoveryLogBaseName = "tmlog";
     private int xaRetryCount = 0;
 
@@ -138,7 +132,7 @@ public final class SystemConfig {
     private int backSocketNoDelay = 1; // 1=true
 
     //view
-    private String viewPersistenceConfBaseDir = SystemConfig.getHomePath() + File.separatorChar + "viewConf" + File.separatorChar;
+    private String viewPersistenceConfBaseDir = this.getHomePath() + File.separatorChar + "viewConf" + File.separatorChar;
     private String viewPersistenceConfBaseName = "viewJson";
 
     // for join tmp results
@@ -147,7 +141,7 @@ public final class SystemConfig {
     private int joinQueueSize = 1024;
     //slow log
     private int enableSlowLog = 0;
-    private String slowLogBaseDir = SystemConfig.getHomePath() + File.separatorChar + "slowlogs" + File.separatorChar;
+    private String slowLogBaseDir = this.getHomePath() + File.separatorChar + "slowlogs" + File.separatorChar;
     private String slowLogBaseName = "slow-query";
     private int flushSlowLogPeriod = 1; //second
     private int flushSlowLogSize = 1000; //row
@@ -159,16 +153,12 @@ public final class SystemConfig {
     private int maxCharsPerColumn = 65535; // 128k,65535 chars
     //errors
     private ProblemReporter problemReporter;
-    private boolean useOuterHa = true;
 
     private boolean enableFlowControl = false;
     private int flowControlStartThreshold = 4096;
     private int flowControlStopThreshold = 256;
-
-    //only for compatibility
-    private boolean useNewSpellRotate = false;
-    private boolean useNewSpellSequence = false;
-    private boolean useNewSpellSQL = false;
+    private boolean useOuterHa = true;
+    private String fakeMySQLVersion = null;
 
     public SystemConfig(ProblemReporter problemReporter) {
         this.problemReporter = problemReporter;
@@ -180,20 +170,10 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setTransactionRotateSize(int transactionRotateSize) {
-        useNewSpellRotate = true;
         if (transactionRotateSize > 0) {
             this.transactionRotateSize = transactionRotateSize;
         } else if (this.problemReporter != null) {
             problemReporter.warn(String.format(WARNING_FORMAT, "transactionRotateSize", transactionRotateSize, this.transactionRotateSize));
-        }
-    }
-
-    //only for compatibility
-    @SuppressWarnings("unused")
-    public void setTransactionRatateSize(int transactionRatateSize) {
-        problemReporter.notice("There is a typo error for transactionRatateSize, please use transactionRotateSize");
-        if (!useNewSpellRotate) {
-            setTransactionRotateSize(transactionRatateSize);
         }
     }
 
@@ -243,29 +223,6 @@ public final class SystemConfig {
     }
 
 
-    public int getSequenceHandlerType() {
-        return sequenceHandlerType;
-    }
-
-    @SuppressWarnings("unused")
-    public void setSequenceHandlerType(int sequenceHandlerType) {
-        useNewSpellSequence = true;
-        if (sequenceHandlerType >= 1 && sequenceHandlerType <= 4) {
-            this.sequenceHandlerType = sequenceHandlerType;
-        } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMAT, "sequenceHandlerType", sequenceHandlerType, this.sequenceHandlerType));
-        }
-    }
-
-    //only for compatibility
-    @SuppressWarnings("unused")
-    public void setSequnceHandlerType(int sequnceHandlerType) {
-        problemReporter.notice("There is a typo error for sequnceHandlerType, please use sequenceHandlerType");
-        if (!useNewSpellSequence) {
-            setSequenceHandlerType(sequnceHandlerType);
-        }
-    }
-
     public int getMaxPacketSize() {
         return maxPacketSize;
     }
@@ -288,37 +245,35 @@ public final class SystemConfig {
         this.bindIp = bindIp;
     }
 
-    public static String getHomePath() {
-        String home = System.getProperty(SystemConfig.SYS_HOME);
-        if (home != null && home.endsWith(File.pathSeparator)) {
-            home = home.substring(0, home.length() - 1);
-            System.setProperty(SystemConfig.SYS_HOME, home);
+    @SuppressWarnings("unused")
+    public void setHomePath(String homePath) {
+        if (homePath != null && homePath.endsWith(File.pathSeparator)) {
+            homePath = homePath.substring(0, homePath.length() - 1);
         }
+        this.homePath = homePath;
+    }
 
-        // if HOMEis not set,set it as current path or parent path
-        if (home == null) {
+    public String getHomePath() {
+        // if HOME is not set,set it as current path or parent path
+        if (this.homePath == null) {
             try {
                 String path = new File("..").getCanonicalPath().replaceAll("\\\\", "/");
                 File conf = new File(path + "/conf");
                 if (conf.exists() && conf.isDirectory()) {
-                    home = path;
+                    homePath = path;
                 } else {
                     path = new File(".").getCanonicalPath().replaceAll("\\\\", "/");
                     conf = new File(path + "/conf");
                     if (conf.exists() && conf.isDirectory()) {
-                        home = path;
+                        homePath = path;
                     }
-                }
-
-                if (home != null) {
-                    System.setProperty(SystemConfig.SYS_HOME, home);
                 }
             } catch (IOException e) {
                 //ignore error
             }
         }
 
-        return home;
+        return homePath;
     }
 
     public int getUseSqlStat() {
@@ -358,15 +313,6 @@ public final class SystemConfig {
         } else if (this.problemReporter != null) {
             problemReporter.warn("Property [ charset ] '" + charset + "' in server.xml is illegal, use " + this.charset + " replaced");
         }
-    }
-
-    public String getFakeMySQLVersion() {
-        return fakeMySQLVersion;
-    }
-
-    @SuppressWarnings("unused")
-    public void setFakeMySQLVersion(String mysqlVersion) {
-        this.fakeMySQLVersion = mysqlVersion;
     }
 
     public int getServerPort() {
@@ -513,29 +459,29 @@ public final class SystemConfig {
         }
     }
 
-    public long getDataNodeIdleCheckPeriod() {
-        return dataNodeIdleCheckPeriod;
+    public long getShardingNodeIdleCheckPeriod() {
+        return shardingNodeIdleCheckPeriod;
     }
 
     @SuppressWarnings("unused")
-    public void setDataNodeIdleCheckPeriod(long dataNodeIdleCheckPeriod) {
-        if (dataNodeIdleCheckPeriod > 0) {
-            this.dataNodeIdleCheckPeriod = dataNodeIdleCheckPeriod;
+    public void setShardingNodeIdleCheckPeriod(long shardingNodeIdleCheckPeriod) {
+        if (shardingNodeIdleCheckPeriod > 0) {
+            this.shardingNodeIdleCheckPeriod = shardingNodeIdleCheckPeriod;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMAT, "dataNodeIdleCheckPeriod", dataNodeIdleCheckPeriod, this.dataNodeIdleCheckPeriod));
+            problemReporter.warn(String.format(WARNING_FORMAT, "dataNodeIdleCheckPeriod", shardingNodeIdleCheckPeriod, this.shardingNodeIdleCheckPeriod));
         }
     }
 
-    public long getDataNodeHeartbeatPeriod() {
-        return dataNodeHeartbeatPeriod;
+    public long getShardingNodeHeartbeatPeriod() {
+        return shardingNodeHeartbeatPeriod;
     }
 
     @SuppressWarnings("unused")
-    public void setDataNodeHeartbeatPeriod(long dataNodeHeartbeatPeriod) {
-        if (dataNodeHeartbeatPeriod > 0) {
-            this.dataNodeHeartbeatPeriod = dataNodeHeartbeatPeriod;
+    public void setShardingNodeHeartbeatPeriod(long shardingNodeHeartbeatPeriod) {
+        if (shardingNodeHeartbeatPeriod > 0) {
+            this.shardingNodeHeartbeatPeriod = shardingNodeHeartbeatPeriod;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMAT, "dataNodeHeartbeatPeriod", dataNodeHeartbeatPeriod, this.dataNodeHeartbeatPeriod));
+            problemReporter.warn(String.format(WARNING_FORMAT, "dataNodeHeartbeatPeriod", shardingNodeHeartbeatPeriod, this.shardingNodeHeartbeatPeriod));
         }
     }
 
@@ -552,19 +498,6 @@ public final class SystemConfig {
         }
     }
 
-
-    public long getShowBinlogStatusTimeout() {
-        return showBinlogStatusTimeout;
-    }
-
-    @SuppressWarnings("unused")
-    public void setShowBinlogStatusTimeout(long showBinlogStatusTimeout) {
-        if (showBinlogStatusTimeout > 0) {
-            this.showBinlogStatusTimeout = sqlExecuteTimeout;
-        } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMAT, "showBinlogStatusTimeout", showBinlogStatusTimeout, this.showBinlogStatusTimeout));
-        }
-    }
 
 
     public int getTxIsolation() {
@@ -665,20 +598,10 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setClearBigSQLResultSetMapMs(long clearBigSQLResultSetMapMs) {
-        useNewSpellSQL = true;
         if (clearBigSQLResultSetMapMs > 0) {
             this.clearBigSQLResultSetMapMs = clearBigSQLResultSetMapMs;
         } else if (this.problemReporter != null) {
             problemReporter.warn(String.format(WARNING_FORMAT, "clearBigSQLResultSetMapMs", clearBigSQLResultSetMapMs, this.clearBigSQLResultSetMapMs));
-        }
-    }
-
-    //only for compatibility
-    @SuppressWarnings("unused")
-    public void setClearBigSqLResultSetMapMs(long clearBigSqLResultSetMapMs) {
-        problemReporter.notice("There is a typo error for clearBigSqLResultSetMapMs, please use clearBigSQLResultSetMapMs");
-        if (!useNewSpellSQL) {
-            setClearBigSQLResultSetMapMs(clearBigSqLResultSetMapMs);
         }
     }
 
@@ -807,17 +730,23 @@ public final class SystemConfig {
         }
     }
 
-    public int getServerNodeId() {
-        return serverNodeId;
+
+
+    public String getServerId() {
+        return serverId;
+    }
+    @SuppressWarnings("unused")
+    public void setServerId(String serverId) {
+        this.serverId = serverId;
+    }
+
+    public String getInstanceId() {
+        return instanceId;
     }
 
     @SuppressWarnings("unused")
-    public void setServerNodeId(int serverNodeId) {
-        if (serverNodeId > 0) {
-            this.serverNodeId = serverNodeId;
-        } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMAT, "serverNodeId", serverNodeId, this.serverNodeId));
-        }
+    public void setInstanceId(String instanceId) {
+        this.instanceId = instanceId;
     }
 
     public int getCheckTableConsistency() {
@@ -1192,19 +1121,6 @@ public final class SystemConfig {
         }
     }
 
-
-    public boolean isUseOuterHa() {
-        return useOuterHa;
-    }
-
-    @SuppressWarnings("unused")
-    public void setUseOuterHa(boolean useOuterHa) {
-        if (!useOuterHa && ClusterGeneralConfig.getInstance().isUseCluster()) {
-            useOuterHa = true;
-        }
-        this.useOuterHa = useOuterHa;
-    }
-
     public int getXaRetryCount() {
         return xaRetryCount;
     }
@@ -1245,9 +1161,30 @@ public final class SystemConfig {
         this.flowControlStopThreshold = flowControlStopThreshold;
     }
 
+
+    public boolean isUseOuterHa() {
+        return useOuterHa;
+    }
+
+    @SuppressWarnings("unused")
+    public void setUseOuterHa(boolean useOuterHa) {
+        this.useOuterHa = useOuterHa;
+    }
+
+
+    public String getFakeMySQLVersion() {
+        return fakeMySQLVersion;
+    }
+
+    @SuppressWarnings("unused")
+    public void setFakeMySQLVersion(String mysqlVersion) {
+        this.fakeMySQLVersion = mysqlVersion;
+    }
     @Override
     public String toString() {
         return "SystemConfig [" +
+                ", serverId=" + serverId +
+                ", instanceId=" + instanceId +
                 ", bindIp=" + bindIp +
                 ", serverPort=" + serverPort +
                 ", managerPort=" + managerPort +
@@ -1257,11 +1194,7 @@ public final class SystemConfig {
                 ", backendProcessorExecutor=" + backendProcessorExecutor +
                 ", complexExecutor=" + complexExecutor +
                 ", writeToBackendExecutor=" + writeToBackendExecutor +
-                ", fakeMySQLVersion=" + fakeMySQLVersion +
-                ", sequenceHandlerType=" + sequenceHandlerType +
                 ", serverBacklog=" + serverBacklog +
-                ", serverNodeId=" + serverNodeId +
-                ", showBinlogStatusTimeout=" + showBinlogStatusTimeout +
                 ", maxCon=" + maxCon +
                 ", useCompression=" + useCompression +
                 ", usingAIO=" + usingAIO +
@@ -1277,8 +1210,8 @@ public final class SystemConfig {
                 ", txIsolation=" + txIsolation +
                 ", checkTableConsistency=" + checkTableConsistency +
                 ", checkTableConsistencyPeriod=" + checkTableConsistencyPeriod +
-                ", dataNodeIdleCheckPeriod=" + dataNodeIdleCheckPeriod +
-                ", dataNodeHeartbeatPeriod=" + dataNodeHeartbeatPeriod +
+                ", dataNodeIdleCheckPeriod=" + shardingNodeIdleCheckPeriod +
+                ", dataNodeHeartbeatPeriod=" + shardingNodeHeartbeatPeriod +
                 ", processorCheckPeriod=" + processorCheckPeriod +
                 ", idleTimeout=" + idleTimeout +
                 ", sqlExecuteTimeout=" + sqlExecuteTimeout +
@@ -1327,6 +1260,8 @@ public final class SystemConfig {
                 ", enableFlowControl=" + enableFlowControl +
                 ", flowControlStartThreshold=" + flowControlStartThreshold +
                 ", flowControlStopThreshold=" + flowControlStopThreshold +
+                ", useOuterHa=" + useOuterHa +
+                ", fakeMySQLVersion=" + fakeMySQLVersion +
                 "]";
     }
 

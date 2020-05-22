@@ -129,8 +129,8 @@ public final class ConditionUtil {
             return genNewCondition(tableFullName, columnName, operator, condition.getValues());
         }
 
-        String joinKey = tableConfig.getJoinKey();
-        if (joinKey != null && columnName.equals(joinKey)) {
+        String joinColumn = tableConfig.getJoinColumn();
+        if (joinColumn != null && columnName.equals(joinColumn)) {
             return genNewCondition(tableFullName, columnName, operator, condition.getValues());
         }
         if (LOGGER.isTraceEnabled()) {

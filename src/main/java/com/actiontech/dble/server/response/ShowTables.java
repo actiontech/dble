@@ -12,10 +12,9 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.config.model.UserConfig;
+import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.manager.handler.PackageBufINf;
 import com.actiontech.dble.meta.SchemaMeta;
 import com.actiontech.dble.meta.ViewMeta;
@@ -74,14 +73,13 @@ public final class ShowTables {
             return;
         }
 
-        ServerConfig conf = DbleServer.getInstance().getConfig();
-        UserConfig user = conf.getUsers().get(c.getUser());
+        ShardingUserConfig user = (ShardingUserConfig) (DbleServer.getInstance().getConfig().getUsers().get(c.getUser()));
         if (user == null || !user.getSchemas().contains(cSchema)) {
             c.writeErrMessage("42000", "Access denied for user '" + c.getUser() + "' to database '" + cSchema + "'", ErrorCode.ER_DBACCESS_DENIED_ERROR);
             return;
         }
-        //if schema has default node ,show tables will send to backend
-        String node = schema.getDataNode();
+        //if sharding has default node ,show tables will send to backend
+        String node = schema.getShardingNode();
         if (!Strings.isNullOrEmpty(node)) {
             try {
                 parserAndExecuteShowTables(c, stmt, node, info);

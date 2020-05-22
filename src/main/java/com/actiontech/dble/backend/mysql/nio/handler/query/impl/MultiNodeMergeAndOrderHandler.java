@@ -5,12 +5,12 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.util.ArrayMinHeap;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HeapItem;
 import com.actiontech.dble.backend.mysql.nio.handler.util.RowDataComparator;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.Order;
@@ -44,7 +44,7 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
                                          List<Order> orderBys) {
         super(id, route, autocommit, session);
         this.orderBys = orderBys;
-        this.queueSize = DbleServer.getInstance().getConfig().getSystem().getMergeQueueSize();
+        this.queueSize = SystemConfig.getInstance().getMergeQueueSize();
         this.queues = new ConcurrentHashMap<>();
         this.merges.add(this);
 

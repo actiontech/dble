@@ -1,13 +1,14 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDataHost;
+import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.HaInfo;
+import com.actiontech.dble.config.model.ClusterConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.singleton.ClusterGeneralConfig;
@@ -38,13 +39,13 @@ public final class DataHostEnable {
     public static void execute(Matcher enable, ManagerConnection mc) {
         String dhName = enable.group(1);
         String subHostName = enable.group(3);
-        boolean useCluster = ClusterHelper.useClusterHa();
-        //check the dataHost is exists
+        boolean useCluster = ClusterConfig.getInstance().isNeedSyncHa();
+        //check the dbGroup is exists
 
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
         try {
-            PhysicalDataHost dh = DbleServer.getInstance().getConfig().getDataHosts().get(dhName);
+            PhysicalDbGroup dh = DbleServer.getInstance().getConfig().getDbGroups().get(dhName);
             if (dh == null) {
                 mc.writeErrMessage(ErrorCode.ER_YES, "dataHost " + dhName + " do not exists");
                 return;
@@ -52,7 +53,7 @@ public final class DataHostEnable {
 
 
             if (!dh.checkDataSourceExist(subHostName)) {
-                mc.writeErrMessage(ErrorCode.ER_YES, "Some of the dataSource in command in " + dh.getHostName() + " do not exists");
+                mc.writeErrMessage(ErrorCode.ER_YES, "Some of the dataSource in command in " + dh.getGroupName() + " do not exists");
                 return;
             }
 
@@ -88,9 +89,9 @@ public final class DataHostEnable {
     }
 
 
-    public static boolean enableWithZK(int id, PhysicalDataHost dh, String subHostName, ManagerConnection mc) {
+    public static boolean enableWithZK(int id, PhysicalDbGroup dh, String subHostName, ManagerConnection mc) {
         CuratorFramework zkConn = ZKUtils.getConnection();
-        InterProcessMutex distributeLock = new InterProcessMutex(zkConn, KVPathUtil.getHaLockPath(dh.getHostName()));
+        InterProcessMutex distributeLock = new InterProcessMutex(zkConn, KVPathUtil.getHaLockPath(dh.getGroupName()));
         try {
             boolean locked = false;
             try {
@@ -100,7 +101,7 @@ public final class DataHostEnable {
                 }
                 locked = true;
                 String result = dh.enableHosts(subHostName, false);
-                DataHostDisable.setStatusToZK(KVPathUtil.getHaStatusPath(dh.getHostName()), zkConn, result);
+                DataHostDisable.setStatusToZK(KVPathUtil.getHaStatusPath(dh.getGroupName()), zkConn, result);
                 HaConfigManager.getInstance().haFinish(id, null, result);
             } finally {
                 if (locked) {
@@ -118,11 +119,11 @@ public final class DataHostEnable {
     }
 
 
-    public static boolean enableWithCluster(int id, PhysicalDataHost dh, String subHostName, ManagerConnection mc) {
+    public static boolean enableWithCluster(int id, PhysicalDbGroup dh, String subHostName, ManagerConnection mc) {
         //get the lock from ucore
-        DistributeLock distributeLock = new DistributeLock(ClusterPathUtil.getHaLockPath(dh.getHostName()),
-                new HaInfo(dh.getHostName(),
-                        ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
+        DistributeLock distributeLock = new DistributeLock(ClusterPathUtil.getHaLockPath(dh.getGroupName()),
+                new HaInfo(dh.getGroupName(),
+                        SystemConfig.getInstance().getInstanceId(),
                         HaInfo.HaType.DATAHOST_ENABLE,
                         HaInfo.HaStatus.INIT
                 ).toString()
@@ -134,7 +135,7 @@ public final class DataHostEnable {
             }
             String result = dh.enableHosts(subHostName, false);
             //only update for the status
-            ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dh.getHostName()), result);
+            ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dh.getGroupName()), result);
             HaConfigManager.getInstance().haFinish(id, null, result);
         } catch (Exception e) {
             mc.writeErrMessage(ErrorCode.ER_YES, e.getMessage());

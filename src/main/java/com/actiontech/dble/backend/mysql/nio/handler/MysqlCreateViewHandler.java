@@ -7,7 +7,7 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.meta.ViewMeta;
@@ -17,6 +17,7 @@ import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.StringUtil;
@@ -49,7 +50,7 @@ public class MysqlCreateViewHandler implements ResponseHandler {
             innerExecute(conn, node);
         } else {
             // create new connection
-            PhysicalDataNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
+            ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(node.getName());
             dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), session.getSource().isAutocommit(), node, this, node);
         }
     }
@@ -118,7 +119,7 @@ public class MysqlCreateViewHandler implements ResponseHandler {
 
     private void backConnectionErr(ErrorPacket errPkg, BackendConnection conn, boolean syncFinished) {
         ServerConnection source = session.getSource();
-        String errUser = source.getUser();
+        Pair<String, String> errUser = source.getUser();
         String errHost = source.getHost();
         int errPort = source.getLocalPort();
 

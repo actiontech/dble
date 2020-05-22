@@ -12,6 +12,7 @@ import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.statistic.stat.SqlResultSet;
 import com.actiontech.dble.statistic.stat.UserStat;
 import com.actiontech.dble.statistic.stat.UserStatAnalyzer;
@@ -76,9 +77,9 @@ public final class ShowSqlResultSet {
         // write rows
         byte packetId = EOF.getPacketId();
         int i = 0;
-        Map<String, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
+        Map<Pair<String, String>, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
         for (UserStat userStat : statMap.values()) {
-            String user = userStat.getUser();
+            Pair<String, String> user = userStat.getUser();
             ConcurrentMap<String, SqlResultSet> map = userStat.getSqlResultSizeRecorder().getSqlResultSet();
             if (map != null) {
                 for (SqlResultSet sqlResultSet : map.values()) {
@@ -97,10 +98,10 @@ public final class ShowSqlResultSet {
         c.write(buffer);
     }
 
-    private static RowDataPacket getRow(int i, String user, String sql, int count, long resultSetSize, String charset) {
+    private static RowDataPacket getRow(int i, Pair<String, String> user, String sql, int count, long resultSetSize, String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(LongUtil.toBytes(i));
-        row.add(StringUtil.encode(user, charset));
+        row.add(StringUtil.encode(user.toString(), charset));
         row.add(LongUtil.toBytes(count));
         row.add(StringUtil.encode(sql, charset));
         row.add(LongUtil.toBytes(resultSetSize));

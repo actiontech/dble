@@ -2,11 +2,12 @@ package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDataHost;
+import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.mysql.xa.XAStateLog;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.NIOProcessor;
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.statistic.stat.SqlResultSizeRecorder;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import com.actiontech.dble.statistic.stat.UserStat;
@@ -36,20 +37,20 @@ public final class Scheduler {
     private static final long DEFAULT_SQL_STAT_RECYCLE_PERIOD = 5 * 1000L;
     private ExecutorService timerExecutor;
 
-    public void init(SystemConfig system, ExecutorService executor) {
+    public void init(ExecutorService executor) {
         this.timerExecutor = executor;
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("TimerScheduler-%d").build());
-        long dataNodeIdleCheckPeriod = system.getDataNodeIdleCheckPeriod();
+        long shardingNodeIdleCheckPeriod = SystemConfig.getInstance().getShardingNodeIdleCheckPeriod();
         scheduler.scheduleAtFixedRate(updateTime(), 0L, TIME_UPDATE_PERIOD, TimeUnit.MILLISECONDS);
-        scheduler.scheduleWithFixedDelay(DbleServer.getInstance().processorCheck(), 0L, system.getProcessorCheckPeriod(), TimeUnit.MILLISECONDS);
-        scheduler.scheduleAtFixedRate(dataNodeConHeartBeatCheck(dataNodeIdleCheckPeriod), 0L, dataNodeIdleCheckPeriod, TimeUnit.MILLISECONDS);
-        //dataHost heartBeat  will be influence by dataHostWithoutWR
-        scheduler.scheduleAtFixedRate(dataSourceHeartbeat(), 0L, system.getDataNodeHeartbeatPeriod(), TimeUnit.MILLISECONDS);
+        scheduler.scheduleWithFixedDelay(DbleServer.getInstance().processorCheck(), 0L, SystemConfig.getInstance().getProcessorCheckPeriod(), TimeUnit.MILLISECONDS);
+        scheduler.scheduleAtFixedRate(shardingNodeConHeartBeatCheck(shardingNodeIdleCheckPeriod), 0L, shardingNodeIdleCheckPeriod, TimeUnit.MILLISECONDS);
+        //dbGroup heartBeat  will be influence by dbGroupWithoutWR
+        scheduler.scheduleAtFixedRate(dataSourceHeartbeat(), 0L, SystemConfig.getInstance().getShardingNodeHeartbeatPeriod(), TimeUnit.MILLISECONDS);
         scheduler.scheduleAtFixedRate(dataSourceOldConsClear(), 0L, DEFAULT_OLD_CONNECTION_CLEAR_PERIOD, TimeUnit.MILLISECONDS);
-        scheduler.scheduleWithFixedDelay(xaSessionCheck(), 0L, system.getXaSessionCheckPeriod(), TimeUnit.MILLISECONDS);
-        scheduler.scheduleWithFixedDelay(xaLogClean(), 0L, system.getXaLogCleanPeriod(), TimeUnit.MILLISECONDS);
-        scheduler.scheduleWithFixedDelay(resultSetMapClear(), 0L, system.getClearBigSQLResultSetMapMs(), TimeUnit.MILLISECONDS);
-        if (system.getUseSqlStat() == 1) {
+        scheduler.scheduleWithFixedDelay(xaSessionCheck(), 0L, SystemConfig.getInstance().getXaSessionCheckPeriod(), TimeUnit.MILLISECONDS);
+        scheduler.scheduleWithFixedDelay(xaLogClean(), 0L, SystemConfig.getInstance().getXaLogCleanPeriod(), TimeUnit.MILLISECONDS);
+        scheduler.scheduleWithFixedDelay(resultSetMapClear(), 0L, SystemConfig.getInstance().getClearBigSQLResultSetMapMs(), TimeUnit.MILLISECONDS);
+        if (SystemConfig.getInstance().getUseSqlStat() == 1) {
             //sql record detail timing clean
             scheduler.scheduleWithFixedDelay(recycleSqlStat(), 0L, DEFAULT_SQL_STAT_RECYCLE_PERIOD, TimeUnit.MILLISECONDS);
         }
@@ -75,7 +76,7 @@ public final class Scheduler {
         };
     }
 
-    private Runnable dataNodeConHeartBeatCheck(final long heartPeriod) {
+    private Runnable shardingNodeConHeartBeatCheck(final long heartPeriod) {
         return new Runnable() {
             @Override
             public void run() {
@@ -83,8 +84,8 @@ public final class Scheduler {
                     @Override
                     public void run() {
 
-                        Map<String, PhysicalDataHost> nodes = DbleServer.getInstance().getConfig().getDataHosts();
-                        for (PhysicalDataHost node : nodes.values()) {
+                        Map<String, PhysicalDbGroup> nodes = DbleServer.getInstance().getConfig().getDbGroups();
+                        for (PhysicalDbGroup node : nodes.values()) {
                             node.heartbeatCheck(heartPeriod);
                         }
                     }
@@ -102,8 +103,8 @@ public final class Scheduler {
                     @Override
                     public void run() {
                         if (DbleServer.getInstance().getConfig().isFullyConfigured()) {
-                            Map<String, PhysicalDataHost> hosts = DbleServer.getInstance().getConfig().getDataHosts();
-                            for (PhysicalDataHost host : hosts.values()) {
+                            Map<String, PhysicalDbGroup> hosts = DbleServer.getInstance().getConfig().getDbGroups();
+                            for (PhysicalDbGroup host : hosts.values()) {
                                 host.doHeartbeat();
                             }
                         }
@@ -125,7 +126,7 @@ public final class Scheduler {
                     @Override
                     public void run() {
 
-                        long sqlTimeout = DbleServer.getInstance().getConfig().getSystem().getSqlExecuteTimeout() * 1000L;
+                        long sqlTimeout = SystemConfig.getInstance().getSqlExecuteTimeout() * 1000L;
                         //close connection if now -lastTime>sqlExecuteTimeout
                         long currentTime = TimeUtil.currentTimeMillis();
                         Iterator<BackendConnection> iterator = NIOProcessor.BACKENDS_OLD.iterator();
@@ -187,10 +188,10 @@ public final class Scheduler {
                     long bufferSize = pool.size();
                     long bufferCapacity = pool.capacity();
                     long bufferUsagePercent = (bufferCapacity - bufferSize) * 100 / bufferCapacity;
-                    if (bufferUsagePercent < DbleServer.getInstance().getConfig().getSystem().getBufferUsagePercent()) {
-                        Map<String, UserStat> map = UserStatAnalyzer.getInstance().getUserStatMap();
-                        Set<String> userSet = DbleServer.getInstance().getConfig().getUsers().keySet();
-                        for (String user : userSet) {
+                    if (bufferUsagePercent < SystemConfig.getInstance().getBufferUsagePercent()) {
+                        Map<Pair<String, String>, UserStat> map = UserStatAnalyzer.getInstance().getUserStatMap();
+                        Set<Pair<String, String>> userSet = DbleServer.getInstance().getConfig().getUsers().keySet();
+                        for (Pair<String, String> user : userSet) {
                             UserStat userStat = map.get(user);
                             if (userStat != null) {
                                 SqlResultSizeRecorder recorder = userStat.getSqlResultSizeRecorder();
@@ -212,7 +213,7 @@ public final class Scheduler {
         return new Runnable() {
             @Override
             public void run() {
-                Map<String, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
+                Map<Pair<String, String>, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
                 for (UserStat userStat : statMap.values()) {
                     userStat.getSqlLastStat().recycle();
                     userStat.getSqlRecorder().recycle();

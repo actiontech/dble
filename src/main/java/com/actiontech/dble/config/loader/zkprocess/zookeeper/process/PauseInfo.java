@@ -14,7 +14,7 @@ public class PauseInfo {
     public static final String RESUME = "RESUME";
 
     private String from;
-    private String dataNodes;
+    private String shardingNodes;
 
 
     public int getQueueLimit() {
@@ -43,12 +43,12 @@ public class PauseInfo {
         this.from = from;
     }
 
-    public String getDataNodes() {
-        return dataNodes;
+    public String getShardingNodes() {
+        return shardingNodes;
     }
 
-    public void setDataNodes(String dataNodes) {
-        this.dataNodes = dataNodes;
+    public void setShardingNodes(String shardingNodes) {
+        this.shardingNodes = shardingNodes;
     }
 
     public String getType() {
@@ -68,8 +68,8 @@ public class PauseInfo {
     }
 
 
-    public PauseInfo(String from, String dataNodes, String type, int connectionTimeOut, int queueLimit) {
-        this.dataNodes = dataNodes;
+    public PauseInfo(String from, String shardingNodes, String type, int connectionTimeOut, int queueLimit) {
+        this.shardingNodes = shardingNodes;
         this.from = from;
         this.type = type;
         this.connectionTimeOut = connectionTimeOut;
@@ -80,12 +80,12 @@ public class PauseInfo {
         String[] s = value.split(split);
         this.from = s[0];
         this.type = s[1];
-        this.dataNodes = s[2];
+        this.shardingNodes = s[2];
         this.connectionTimeOut = Integer.parseInt(s[3]);
         this.queueLimit = Integer.parseInt(s[4]);
     }
 
     public String toString() {
-        return from + split + type + split + dataNodes + split + connectionTimeOut + split + queueLimit;
+        return from + split + type + split + shardingNodes + split + connectionTimeOut + split + queueLimit;
     }
 }

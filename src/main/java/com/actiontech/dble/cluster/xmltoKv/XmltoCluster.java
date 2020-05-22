@@ -6,10 +6,10 @@
 package com.actiontech.dble.cluster.xmltoKv;
 
 import com.actiontech.dble.cluster.ClusterController;
-import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.listener.ClusterClearKeyListener;
 import com.actiontech.dble.cluster.response.*;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
+import com.actiontech.dble.config.model.ClusterConfig;
 
 
 /**
@@ -33,11 +33,11 @@ public final class XmltoCluster {
 
         XmlProcessBase xmlProcess = new XmlProcessBase();
 
-        new XmlRuleLoader(xmlProcess, ucoreListen);
+        new XmlDbLoader(xmlProcess, ucoreListen);
 
-        new XmlServerLoader(xmlProcess, ucoreListen);
+        new XmlShardingLoader(xmlProcess, ucoreListen);
 
-        new XmlSchemaLoader(xmlProcess, ucoreListen);
+        new XmlUserLoader(xmlProcess, ucoreListen);
 
         new XmlEhcachesLoader(xmlProcess, ucoreListen);
 
@@ -47,8 +47,8 @@ public final class XmltoCluster {
 
         xmlProcess.initJaxbClass();
         ucoreListen.initAllNode();
-        if (ClusterHelper.useClusterHa()) {
-            new DataHostHaResponse().notifyCluster();
+        if (ClusterConfig.getInstance().isNeedSyncHa()) {
+            new DbGroupHaResponse().notifyCluster();
         }
     }
 

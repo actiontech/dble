@@ -42,7 +42,7 @@ public class PartitionByFileMap extends AbstractPartitionAlgorithm implements Ru
      * defaultNode:-1 means no default node ,other means the default node index
      * <p>
      * use defaultNode,the unexpected value will router to the default value.
-     * Otherwise will report error like this:can't find datanode for sharding column:column_name val:ffffffff
+     * Otherwise will report error like this:can't find shardingnode for sharding column:column_name val:ffffffff
      */
     private int defaultNode = -1;
     private int hashCode = 1;

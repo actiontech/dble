@@ -10,23 +10,22 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
-import com.actiontech.dble.backend.datasource.PhysicalDataHost;
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.view.CKVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.view.KVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.Repository;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
-import com.actiontech.dble.config.loader.zkprocess.zktoxml.listen.DataHostResponseListener;
-import com.actiontech.dble.config.loader.zkprocess.zktoxml.listen.DataHostStatusListener;
+import com.actiontech.dble.config.loader.zkprocess.zktoxml.listen.DbGroupResponseListener;
+import com.actiontech.dble.config.loader.zkprocess.zktoxml.listen.DbGroupStatusListener;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
+import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
@@ -39,7 +38,6 @@ import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.singleton.DistrbtLockManager;
-import com.actiontech.dble.singleton.OnlineStatus;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.ZKUtils;
@@ -284,11 +282,11 @@ public class ProxyMetaManager {
 
     private Set<String> getSelfNodes(ServerConfig config) {
         Set<String> selfNode = null;
-        for (Map.Entry<String, PhysicalDataHost> entry : config.getDataHosts().entrySet()) {
-            PhysicalDataHost host = entry.getValue();
+        for (Map.Entry<String, PhysicalDbGroup> entry : config.getDbGroups().entrySet()) {
+            PhysicalDbGroup host = entry.getValue();
             if (host.isAllFakeNode()) {
-                for (Map.Entry<String, PhysicalDataNode> nodeEntry : config.getDataNodes().entrySet()) {
-                    if (nodeEntry.getValue().getDataHost().getHostName().equals(host.getHostName())) {
+                for (Map.Entry<String, ShardingNode> nodeEntry : config.getShardingNodes().entrySet()) {
+                    if (nodeEntry.getValue().getDbGroup().getGroupName().equals(host.getGroupName())) {
                         if (selfNode == null) {
                             selfNode = new HashSet<>(2);
                         }
@@ -302,13 +300,13 @@ public class ProxyMetaManager {
 
     public void updateOnetableWithBackData(ServerConfig config, String schema, String tableName) {
         Set<String> selfNode = getSelfNodes(config);
-        List<String> dataNodes;
+        List<String> shardingNodes;
         if (config.getSchemas().get(schema).getTables().get(tableName) == null) {
-            dataNodes = Collections.singletonList(config.getSchemas().get(schema).getDataNode());
+            shardingNodes = Collections.singletonList(config.getSchemas().get(schema).getShardingNode());
         } else {
-            dataNodes = config.getSchemas().get(schema).getTables().get(tableName).getDataNodes();
+            shardingNodes = config.getSchemas().get(schema).getTables().get(tableName).getShardingNodes();
         }
-        DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schema, tableName, dataNodes, selfNode);
+        DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schema, tableName, shardingNodes, selfNode);
         handler.execute();
         removeMetaLock(schema, tableName);
     }
@@ -355,44 +353,18 @@ public class ProxyMetaManager {
         }
 
         initMeta(config);
-        tryDeleteOldOnline();
 
-        // online
-        ZKUtils.createOnline(KVPathUtil.getOnlinePath(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), OnlineStatus.getInstance());
         //add watcher
         ZKUtils.addChildPathCache(ddlPath, new DDLChildListener());
         //add tow ha status && ha lock watcher
-        if (ClusterHelper.useClusterHa()) {
-            ZKUtils.addChildPathCache(KVPathUtil.getHaStatusPath(), new DataHostStatusListener());
-            ZKUtils.addChildPathCache(KVPathUtil.getHaResponsePath(), new DataHostResponseListener());
+        if (ClusterConfig.getInstance().isNeedSyncHa()) {
+            ZKUtils.addChildPathCache(KVPathUtil.getHaStatusPath(), new DbGroupStatusListener());
+            ZKUtils.addChildPathCache(KVPathUtil.getHaResponsePath(), new DbGroupResponseListener());
         }
         //add watcher
         ZKUtils.addViewPathCache(KVPathUtil.getViewPath(), new ViewChildListener());
         // syncMeta UNLOCK
         zkConn.delete().forPath(KVPathUtil.getSyncMetaLockPath());
-    }
-
-    private void tryDeleteOldOnline() throws Exception {
-        //try to delete online
-        if (ZKUtils.getConnection().checkExists().forPath(KVPathUtil.getOnlinePath() +
-                KVPathUtil.SEPARATOR + ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID)) != null) {
-            byte[] info;
-            try {
-                info = ZKUtils.getConnection().getData().forPath(KVPathUtil.getOnlinePath() +
-                        KVPathUtil.SEPARATOR + ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
-            } catch (Exception e) {
-                LOGGER.info("can not get old online from zk,just do as it not exists");
-                return;
-            }
-            String oldOnlne = new String(info, StandardCharsets.UTF_8);
-            if (OnlineStatus.getInstance().canRemovePath(oldOnlne)) {
-                LOGGER.warn("remove online from zk path ,because has same IP & serverPort");
-                ZKUtils.getConnection().delete().forPath(KVPathUtil.getOnlinePath() +
-                        KVPathUtil.SEPARATOR + ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
-            } else {
-                throw new RuntimeException("Online path with other IP or serverPort exist,make sure different instance has different myid");
-            }
-        }
     }
 
     private void initViewMeta() {
@@ -438,7 +410,7 @@ public class ProxyMetaManager {
     }
 
     /**
-     * put the create sql in & parse all the tableNode & put into schema-viewMeta
+     * put the create sql in & parse all the tableNode & put into sharding-viewMeta
      *
      * @param viewCreateSqlMap
      */
@@ -489,10 +461,9 @@ public class ProxyMetaManager {
         handler.setFilter(null);
         handler.execute();
         initViewMeta();
-        SystemConfig system = config.getSystem();
-        if (system.getCheckTableConsistency() == 1) {
+        if (SystemConfig.getInstance().getCheckTableConsistency() == 1) {
             scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("MetaDataChecker-%d").build());
-            checkTaskHandler = scheduler.scheduleWithFixedDelay(tableStructureCheckTask(selfNode), system.getCheckTableConsistencyPeriod(), system.getCheckTableConsistencyPeriod(), TimeUnit.MILLISECONDS);
+            checkTaskHandler = scheduler.scheduleWithFixedDelay(tableStructureCheckTask(selfNode), SystemConfig.getInstance().getCheckTableConsistencyPeriod(), SystemConfig.getInstance().getCheckTableConsistencyPeriod(), TimeUnit.MILLISECONDS);
         }
     }
 
@@ -512,10 +483,9 @@ public class ProxyMetaManager {
         // do not reload the view meta or start a new scheduler
         if (handler.execute()) {
             initViewMeta();
-            SystemConfig system = config.getSystem();
-            if (system.getCheckTableConsistency() == 1) {
+            if (SystemConfig.getInstance().getCheckTableConsistency() == 1) {
                 scheduler = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder().setNameFormat("MetaDataChecker-%d").build());
-                checkTaskHandler = scheduler.scheduleWithFixedDelay(tableStructureCheckTask(selfNode), system.getCheckTableConsistencyPeriod(), system.getCheckTableConsistencyPeriod(), TimeUnit.MILLISECONDS);
+                checkTaskHandler = scheduler.scheduleWithFixedDelay(tableStructureCheckTask(selfNode), SystemConfig.getInstance().getCheckTableConsistencyPeriod(), SystemConfig.getInstance().getCheckTableConsistencyPeriod(), TimeUnit.MILLISECONDS);
             }
             return true;
         }
@@ -547,12 +517,12 @@ public class ProxyMetaManager {
             if (!checkDbExists(schema.getName())) {
                 continue;
             }
-            Map<String, Set<String>> dataNodeMap = new HashMap<>();
+            Map<String, Set<String>> shardingNodeMap = new HashMap<>();
             for (Map.Entry<String, TableConfig> entry : schema.getTables().entrySet()) {
                 String tableName = entry.getKey();
                 TableConfig tbConfig = entry.getValue();
-                for (String dataNode : tbConfig.getDataNodes()) {
-                    Set<String> tables = dataNodeMap.computeIfAbsent(dataNode, k -> new HashSet<>());
+                for (String shardingNode : tbConfig.getShardingNodes()) {
+                    Set<String> tables = shardingNodeMap.computeIfAbsent(shardingNode, k -> new HashSet<>());
                     tables.add(tableName);
                 }
             }
@@ -586,11 +556,11 @@ public class ProxyMetaManager {
                 throw new Exception(msg);
             }
 
-            DDLInfo ddlInfo = new DDLInfo(schema, sql, ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), DDLInfo.DDLStatus.INIT, DDLInfo.DDLType.UNKNOWN);
+            DDLInfo ddlInfo = new DDLInfo(schema, sql, SystemConfig.getInstance().getInstanceId(), DDLInfo.DDLStatus.INIT, DDLInfo.DDLType.UNKNOWN);
             zkConn.create().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
             ClusterDelayProvider.delayAfterDdlLockMeta();
         } else if (ClusterGeneralConfig.isUseGeneralCluster()) {
-            DDLInfo ddlInfo = new DDLInfo(schema, sql, ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), DDLInfo.DDLStatus.INIT, DDLInfo.DDLType.UNKNOWN);
+            DDLInfo ddlInfo = new DDLInfo(schema, sql, SystemConfig.getInstance().getInstanceId(), DDLInfo.DDLStatus.INIT, DDLInfo.DDLType.UNKNOWN);
             String nodeName = StringUtil.getUFullName(schema, table);
             String ddlLockPath = ClusterPathUtil.getDDLLockPath(nodeName);
             DistributeLock lock = new DistributeLock(ddlLockPath, ddlInfo.toString());
@@ -618,12 +588,12 @@ public class ProxyMetaManager {
         String nodeName = StringUtil.getFullName(schema, table);
         String nodePath = ZKPaths.makePath(KVPathUtil.getDDLPath(), nodeName);
         String instancePath = ZKPaths.makePath(nodePath, KVPathUtil.DDL_INSTANCE);
-        String thisNode = ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
+        String thisNode = SystemConfig.getInstance().getInstanceId();
         ZKUtils.createTempNode(instancePath, thisNode);
 
         if (needNotifyOther) {
             CuratorFramework zkConn = ZKUtils.getConnection();
-            DDLInfo ddlInfo = new DDLInfo(schema, sql, ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ddlStatus, ddlType);
+            DDLInfo ddlInfo = new DDLInfo(schema, sql, SystemConfig.getInstance().getInstanceId(), ddlStatus, ddlType);
             ClusterDelayProvider.delayBeforeDdlNotice();
             zkConn.setData().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
             ClusterDelayProvider.delayAfterDdlNotice();
@@ -652,7 +622,7 @@ public class ProxyMetaManager {
      */
     public void notifyResponseUcoreDDL(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, DDLInfo.DDLType ddlType, boolean needNotifyOther) throws Exception {
         String nodeName = StringUtil.getUFullName(schema, table);
-        DDLInfo ddlInfo = new DDLInfo(schema, sql, ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ddlStatus, ddlType);
+        DDLInfo ddlInfo = new DDLInfo(schema, sql, SystemConfig.getInstance().getInstanceId(), ddlStatus, ddlType);
         ClusterHelper.setKV(ClusterPathUtil.getDDLInstancePath(nodeName), ClusterPathUtil.SUCCESS);
         if (needNotifyOther) {
             try {
@@ -683,17 +653,17 @@ public class ProxyMetaManager {
         boolean result = isSuccess;
         if (isSuccess) {
             TableConfig tbConfig = schemaInfo.getSchemaConfig().getTables().get(table);
-            String showDataNode = schemaInfo.getSchemaConfig().getDataNode();
+            String showShardingNode = schemaInfo.getSchemaConfig().getShardingNode();
             if (tbConfig != null) {
-                for (String dataNode : tbConfig.getDataNodes()) {
-                    showDataNode = dataNode;
+                for (String dataNode : tbConfig.getShardingNodes()) {
+                    showShardingNode = dataNode;
                     String tableId = "DataNode[" + dataNode + "]:Table[" + table + "]";
                     if (ToResolveContainer.TABLE_LACK.contains(tableId)) {
                         AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId), ToResolveContainer.TABLE_LACK, tableId);
                     }
                 }
             }
-            DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schema, table, Collections.singletonList(showDataNode), null);
+            DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schema, table, Collections.singletonList(showShardingNode), null);
             handler.execute();
             result = handler.isMetaInited();
         }
@@ -736,14 +706,14 @@ public class ProxyMetaManager {
     private boolean genTableMetaByShow(SchemaInfo schemaInfo) {
         String tableName = schemaInfo.getTable();
         TableConfig tbConfig = schemaInfo.getSchemaConfig().getTables().get(tableName);
-        String showDataNode = schemaInfo.getSchemaConfig().getDataNode();
+        String showShardingNode = schemaInfo.getSchemaConfig().getShardingNode();
         if (tbConfig != null) {
-            for (String dataNode : tbConfig.getDataNodes()) {
-                showDataNode = dataNode;
+            for (String shardingNode : tbConfig.getShardingNodes()) {
+                showShardingNode = shardingNode;
                 break;
             }
         }
-        DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schemaInfo.getSchema(), tableName, Collections.singletonList(showDataNode), null);
+        DDLNotifyTableMetaHandler handler = new DDLNotifyTableMetaHandler(schemaInfo.getSchema(), tableName, Collections.singletonList(showShardingNode), null);
         handler.execute();
         return handler.isMetaInited();
     }

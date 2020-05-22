@@ -6,7 +6,7 @@
 package com.actiontech.dble.plan.util;
 
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.ServerPrivileges;
+import com.actiontech.dble.config.privileges.ShardingPrivileges;
 import com.actiontech.dble.plan.NamedField;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
@@ -194,9 +194,9 @@ public final class PlanUtil {
      * @param node node
      * @return is Join Key
      */
-    public static boolean isJoinKey(ItemFuncEqual bf, JoinNode node) {
+    public static boolean isJoinColumn(ItemFuncEqual bf, JoinNode node) {
         // only funEqula may become joinkey
-        boolean isJoinKey = false;
+        boolean isJoinColumn = false;
         Item selCol = bf.arguments().get(0);
         Item selVal = bf.arguments().get(1);
         Set<PlanNode> colTns = selCol.getReferTables();
@@ -206,21 +206,21 @@ public final class PlanUtil {
             PlanNode colTn = colTns.iterator().next();
             PlanNode valTn = valTns.iterator().next();
             if (colTn == node.getLeftNode() && valTn == node.getRightNode()) {
-                isJoinKey = true;
+                isJoinColumn = true;
             } else if (colTn == node.getRightNode() && valTn == node.getLeftNode()) {
-                isJoinKey = true;
+                isJoinColumn = true;
                 bf.arguments().set(0, selVal);
                 bf.arguments().set(1, selCol);
             }
         }
 
-        return isJoinKey;
+        return isJoinColumn;
     }
 
     /**
      * Join change the a.id=b.id in where filter in join node into join condition, and remove from where
      */
-    public static void findJoinKeysAndRemoveIt(List<Item> dnfNode, JoinNode join) {
+    public static void findJoinColumnsAndRemoveIt(List<Item> dnfNode, JoinNode join) {
         if (dnfNode.isEmpty()) {
             return;
         }
@@ -230,7 +230,7 @@ public final class PlanUtil {
                 ItemFunc sub = (ItemFunc) subItem;
                 if (!(sub.functype().equals(Functype.EQ_FUNC)))
                     continue;
-                if (join.isInnerJoin() && isJoinKey((ItemFuncEqual) sub, join)) {
+                if (join.isInnerJoin() && isJoinColumn((ItemFuncEqual) sub, join)) {
                     joinFilters.add(sub);
                     join.addJoinFilter((ItemFuncEqual) sub);
                 }
@@ -580,7 +580,7 @@ public final class PlanUtil {
 
     public static void checkTablesPrivilege(ServerConnection source, PlanNode node, SQLSelectStatement stmt) {
         for (TableNode tn : node.getReferedTableNodes()) {
-            if (!ServerPrivileges.checkPrivilege(source, tn.getSchema(), tn.getTableName(), ServerPrivileges.CheckType.SELECT)) {
+            if (!ShardingPrivileges.checkPrivilege(source.getUserConfig(), tn.getSchema(), tn.getTableName(), ShardingPrivileges.CheckType.SELECT)) {
                 String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
                 throw new MySQLOutPutException(ErrorCode.ER_PARSE_ERROR, "", msg);
             }

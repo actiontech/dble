@@ -7,8 +7,8 @@ package com.actiontech.dble.sqlengine;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
-import com.actiontech.dble.backend.datasource.PhysicalDataSource;
+import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ErrorCode;
@@ -33,30 +33,30 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
     public static final Logger LOGGER = LoggerFactory.getLogger(SQLJob.class);
 
     private final String sql;
-    private final String dataNode;
+    private final String shardingNode;
     private final String schema;
     private BackendConnection connection;
     private final SQLJobHandler jobHandler;
-    private final PhysicalDataSource ds;
+    private final PhysicalDbInstance ds;
     private boolean isMustWriteNode = false;
     private AtomicBoolean finished = new AtomicBoolean(false);
     private volatile boolean testXid;
 
-    public SQLJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDataSource ds) {
+    public SQLJob(String sql, String schema, SQLJobHandler jobHandler, PhysicalDbInstance ds) {
         super();
         this.sql = sql;
         this.jobHandler = jobHandler;
         this.ds = ds;
         this.schema = schema;
-        this.dataNode = null;
+        this.shardingNode = null;
     }
 
-    public SQLJob(String sql, String dataNode, SQLJobHandler jobHandler, boolean isMustWriteNode) {
+    public SQLJob(String sql, String shardingNode, SQLJobHandler jobHandler, boolean isMustWriteNode) {
         super();
         this.sql = sql;
         this.jobHandler = jobHandler;
         this.ds = null;
-        this.dataNode = dataNode;
+        this.shardingNode = shardingNode;
         this.schema = null;
         this.isMustWriteNode = isMustWriteNode;
     }
@@ -64,9 +64,9 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
     public void run() {
         try {
             if (ds == null) {
-                RouteResultsetNode node = new RouteResultsetNode(dataNode, ServerParse.SELECT, sql);
+                RouteResultsetNode node = new RouteResultsetNode(shardingNode, ServerParse.SELECT, sql);
                 // create new connection
-                PhysicalDataNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
+                ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), isMustWriteNode, true, node, this, node);
             } else {
                 ds.getConnection(schema, true, this, null, isMustWriteNode);
@@ -106,7 +106,7 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
 
     protected boolean doFinished(boolean failed) {
         if (finished.compareAndSet(false, true)) {
-            jobHandler.finished(dataNode == null ? schema : dataNode, failed);
+            jobHandler.finished(shardingNode == null ? schema : shardingNode, failed);
             return true;
         }
         return false;
@@ -187,7 +187,7 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
     @Override
     public String toString() {
         return "SQLJob [dataNode=" +
-                dataNode + ",schema=" +
+                shardingNode + ",schema=" +
                 schema + ",sql=" + sql + ",  jobHandler=" +
                 jobHandler + "]";
     }

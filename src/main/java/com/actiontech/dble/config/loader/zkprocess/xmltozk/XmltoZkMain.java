@@ -5,15 +5,13 @@
 
 package com.actiontech.dble.config.loader.zkprocess.xmltozk;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.ClusterController;
-import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterParamCfg;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.loader.zkprocess.xmltozk.listen.*;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
+import com.actiontech.dble.config.model.ClusterConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -32,7 +30,7 @@ public final class XmltoZkMain {
 
     public static void rollbackConf() throws Exception {
         CuratorFramework zkConn = ZKUtils.getConnection();
-        ConfStatus status = new ConfStatus(ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ConfStatus.Status.ROLLBACK, null);
+        ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceId(), ConfStatus.Status.ROLLBACK, null);
         zkConn.setData().forPath(KVPathUtil.getConfStatusPath(), status.toString().getBytes(StandardCharsets.UTF_8));
     }
 
@@ -43,17 +41,18 @@ public final class XmltoZkMain {
 
         XmlProcessBase xmlProcess = new XmlProcessBase();
 
-        // xmltozk for schema
-        new SchemasxmlTozkLoader(zkListen, zkConn, xmlProcess);
+        // xmltozk for sharding
+        new ShardingXmlToZKLoader(zkListen, zkConn, xmlProcess);
 
-        // xmltozk for server
-        new ServerxmlTozkLoader(zkListen, zkConn, xmlProcess);
 
-        // xmltozk for rule
-        new RulesxmlTozkLoader(zkListen, zkConn, xmlProcess);
+        // xmltozk for db
+        new DbXmlToZkLoader(zkListen, zkConn, xmlProcess);
 
-        if (ClusterHelper.useClusterHa() && DbleServer.getInstance().isUseOuterHa()) {
-            new DataHostStatusTozkLoader(zkListen, zkConn);
+        // xmltozk for user
+        new UserXmlToZkLoader(zkListen, zkConn, xmlProcess);
+
+        if (ClusterConfig.getInstance().isNeedSyncHa()) {
+            new DbGroupStatusToZkLoader(zkListen, zkConn);
         }
 
         xmlProcess.initJaxbClass();
@@ -61,7 +60,7 @@ public final class XmltoZkMain {
         zkListen.initAllNode();
         zkListen.clearInited();
         //write flag
-        ConfStatus status = new ConfStatus(ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID),
+        ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceId(),
                 ConfStatus.Status.RELOAD_ALL, String.valueOf(allMode));
         zkConn.setData().forPath(KVPathUtil.getConfStatusPath(), status.toString().getBytes(StandardCharsets.UTF_8));
     }
@@ -73,11 +72,12 @@ public final class XmltoZkMain {
 
         XmlProcessBase xmlProcess = new XmlProcessBase();
 
-        new SchemasxmlTozkLoader(zkListen, zkConn, xmlProcess);
+        new ShardingXmlToZKLoader(zkListen, zkConn, xmlProcess);
 
-        new ServerxmlTozkLoader(zkListen, zkConn, xmlProcess);
 
-        new RulesxmlTozkLoader(zkListen, zkConn, xmlProcess);
+        new DbXmlToZkLoader(zkListen, zkConn, xmlProcess);
+
+        new UserXmlToZkLoader(zkListen, zkConn, xmlProcess);
 
         new SequenceTozkLoader(zkListen, zkConn);
 
@@ -85,7 +85,7 @@ public final class XmltoZkMain {
 
         new OthermsgTozkLoader(zkListen, zkConn);
 
-        new DataHostStatusTozkLoader(zkListen, zkConn);
+        new DbGroupStatusToZkLoader(zkListen, zkConn);
 
         xmlProcess.initJaxbClass();
 

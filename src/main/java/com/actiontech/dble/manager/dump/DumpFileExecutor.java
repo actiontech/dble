@@ -115,7 +115,7 @@ public final class DumpFileExecutor implements Runnable {
     }
 
     private boolean preHandle(DumpFileWriter writer, int type, String stmt) throws InterruptedException, RuntimeException {
-        // push down statement util containing schema
+        // push down statement util containing sharding
         if (!(ServerParse.CREATE_DATABASE == type || ServerParse.USE == (0xff & type)) && context.getSchema() == null) {
             if (ServerParse.DDL == type || ServerParse.INSERT == type || ServerParse.LOCK == type) {
                 throw new RuntimeException("Please set schema by -s option or make sure that there are statement about schema in dump file.");

@@ -6,17 +6,15 @@
 package com.actiontech.dble;
 
 import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.backend.datasource.PhysicalDataHost;
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.xa.*;
 import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.KVStoreRepository;
 import com.actiontech.dble.buffer.DirectByteBufferPool;
-import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
+import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
@@ -49,9 +47,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * @author mycat
- */
 public final class DbleServer {
 
     public static final String NAME = "Dble_";
@@ -106,14 +101,10 @@ public final class DbleServer {
         this.config = new ServerConfig();
         this.startupTime = TimeUtil.currentTimeMillis();
         LOGGER.info("=========================================Config file read finish==================================");
-        SystemConfig system = config.getSystem();
-        if (!system.isUseOuterHa() && ClusterHelper.useClusterHa()) {
-            throw new Exception("useOuterHa can not be false when useClusterHa in myid is true");
-        }
         LOGGER.info("=========================================Init Outer Ha Config==================================");
         HaConfigManager.getInstance().init();
 
-        if (system.getEnableAlert() == 1) {
+        if (SystemConfig.getInstance().getEnableAlert() == 1) {
             AlertUtil.switchAlert(true);
         }
         AlertManager.getInstance().startAlert();
@@ -123,34 +114,34 @@ public final class DbleServer {
         LOGGER.info("============================================Server start params===================================");
         LOGGER.info(NAME + "Server is ready to startup ...");
 
-        LOGGER.info("system config params:" + system.toString());
+        LOGGER.info("system config params:" + SystemConfig.getInstance().toString());
 
         LOGGER.info("===========================================Init bufferPool start==================================");
         String inf = "Buffer pool info:[The count of pages is:" +
-                system.getBufferPoolPageNumber() + ",every page size:" +
-                system.getBufferPoolPageSize() +
+                SystemConfig.getInstance().getBufferPoolPageNumber() + ",every page size:" +
+                SystemConfig.getInstance().getBufferPoolPageSize() +
                 ", every page's chunk number(PageSize/ChunkSize) is:" +
-                (system.getBufferPoolPageSize() / system.getBufferPoolChunkSize()) +
+                (SystemConfig.getInstance().getBufferPoolPageSize() / SystemConfig.getInstance().getBufferPoolChunkSize()) +
                 "]";
         LOGGER.info(inf);
-        BufferPoolManager.getInstance().init(system);
+        BufferPoolManager.getInstance().init();
         LOGGER.info("===========================================Init bufferPool finish=================================");
 
         // startup processors
-        int frontProcessorCount = system.getProcessors();
-        int backendProcessorCount = system.getBackendProcessors();
+        int frontProcessorCount = SystemConfig.getInstance().getProcessors();
+        int backendProcessorCount = SystemConfig.getInstance().getBackendProcessors();
         frontProcessors = new NIOProcessor[frontProcessorCount];
         backendProcessors = new NIOProcessor[backendProcessorCount];
 
 
-        businessExecutor = ExecutorUtil.createFixed("BusinessExecutor", system.getProcessorExecutor());
-        backendBusinessExecutor = ExecutorUtil.createFixed("backendBusinessExecutor", system.getBackendProcessorExecutor());
-        writeToBackendExecutor = ExecutorUtil.createFixed("writeToBackendExecutor", system.getWriteToBackendExecutor());
-        complexQueryExecutor = ExecutorUtil.createCached("complexQueryExecutor", system.getComplexExecutor());
+        businessExecutor = ExecutorUtil.createFixed("BusinessExecutor", SystemConfig.getInstance().getProcessorExecutor());
+        backendBusinessExecutor = ExecutorUtil.createFixed("backendBusinessExecutor", SystemConfig.getInstance().getBackendProcessorExecutor());
+        writeToBackendExecutor = ExecutorUtil.createFixed("writeToBackendExecutor", SystemConfig.getInstance().getWriteToBackendExecutor());
+        complexQueryExecutor = ExecutorUtil.createCached("complexQueryExecutor", SystemConfig.getInstance().getComplexExecutor());
         timerExecutor = ExecutorUtil.createFixed("Timer", 1);
 
         LOGGER.info("====================================Task Queue&Thread init start==================================");
-        initTaskQueue(system);
+        initTaskQueue();
         LOGGER.info("==================================Task Queue&Thread init finish===================================");
 
 
@@ -161,7 +152,7 @@ public final class DbleServer {
             backendProcessors[i] = new NIOProcessor("backendProcessor" + i, BufferPoolManager.getBufferPool());
         }
 
-        if (system.getEnableSlowLog() == 1) {
+        if (SystemConfig.getInstance().getEnableSlowLog() == 1) {
             SlowQueryLog.getInstance().setEnableSlowLog(true);
         }
 
@@ -170,7 +161,7 @@ public final class DbleServer {
         SocketAcceptor manager;
         SocketAcceptor server;
 
-        aio = (system.getUsingAIO() == 1);
+        aio = (SystemConfig.getInstance().getUsingAIO() == 1);
         if (aio) {
             int processorCount = frontProcessorCount + backendProcessorCount;
             LOGGER.info("using aio network handler ");
@@ -178,10 +169,10 @@ public final class DbleServer {
             initAioProcessor(processorCount);
 
             connector = new AIOConnector();
-            manager = new AIOAcceptor(NAME + "Manager", system.getBindIp(),
-                    system.getManagerPort(), 100, new ManagerConnectionFactory(), this.asyncChannelGroups[0]);
-            server = new AIOAcceptor(NAME + "Server", system.getBindIp(),
-                    system.getServerPort(), system.getServerBacklog(), new ServerConnectionFactory(), this.asyncChannelGroups[0]);
+            manager = new AIOAcceptor(NAME + "Manager", SystemConfig.getInstance().getBindIp(),
+                    SystemConfig.getInstance().getManagerPort(), 100, new ManagerConnectionFactory(), this.asyncChannelGroups[0]);
+            server = new AIOAcceptor(NAME + "Server", SystemConfig.getInstance().getBindIp(),
+                    SystemConfig.getInstance().getServerPort(), SystemConfig.getInstance().getServerBacklog(), new ServerConnectionFactory(), this.asyncChannelGroups[0]);
 
         } else {
             NIOReactorPool frontReactorPool = new NIOReactorPool(
@@ -194,10 +185,10 @@ public final class DbleServer {
             connector = new NIOConnector(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIOConnector", backendReactorPool);
             ((NIOConnector) connector).start();
 
-            manager = new NIOAcceptor(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + NAME + "Manager", system.getBindIp(),
-                    system.getManagerPort(), 100, new ManagerConnectionFactory(), frontReactorPool);
-            server = new NIOAcceptor(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + NAME + "Server", system.getBindIp(),
-                    system.getServerPort(), system.getServerBacklog(), new ServerConnectionFactory(), frontReactorPool);
+            manager = new NIOAcceptor(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + NAME + "Manager", SystemConfig.getInstance().getBindIp(),
+                    SystemConfig.getInstance().getManagerPort(), 100, new ManagerConnectionFactory(), frontReactorPool);
+            server = new NIOAcceptor(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + NAME + "Server", SystemConfig.getInstance().getBindIp(),
+                    SystemConfig.getInstance().getServerPort(), SystemConfig.getInstance().getServerBacklog(), new ServerConnectionFactory(), frontReactorPool);
         }
         LOGGER.info("==========================Connection Connector&Acceptor init finish===============================");
 
@@ -209,13 +200,13 @@ public final class DbleServer {
         LOGGER.info("=====================================Get And Sync KeyVariables finish=============================");
 
         // start transaction SQL log
-        if (config.getSystem().getRecordTxn() == 1) {
+        if (SystemConfig.getInstance().getRecordTxn() == 1) {
             txnLogProcessor = new TxnLogProcessor();
             txnLogProcessor.setName("TxnLogProcessor");
             txnLogProcessor.start();
         }
 
-        SequenceManager.init(config.getSystem().getSequenceHandlerType());
+        SequenceManager.init(ClusterConfig.getInstance().getSequenceHandlerType());
         LOGGER.info("===================================Sequence manager init finish===================================");
 
 
@@ -226,19 +217,10 @@ public final class DbleServer {
         pullVarAndMeta();
         LOGGER.info("==============================Pull metaData from MySQL finish=====================================");
 
-        FrontendUserManager.getInstance().initForLatest(config.getUsers(), system.getMaxCon());
+        FrontendUserManager.getInstance().initForLatest(config.getUsers(), SystemConfig.getInstance().getMaxCon());
 
 
-        if (ClusterGeneralConfig.isUseGeneralCluster()) {
-            LOGGER.info("===================Init online status in cluster==================");
-            try {
-                OnlineStatus.getInstance().mainThreadInitClusterOnline();
-            } catch (IOException e) {
-                throw e;
-            } catch (Exception e) {
-                LOGGER.warn("cluster can not connection ", e);
-            }
-        }
+
 
 
         CacheService.getInstance().init(this.systemVariables.isLowerCaseTableNames());
@@ -254,7 +236,7 @@ public final class DbleServer {
         LOGGER.info(server.getName() + " is started and listening on " + server.getPort());
         LOGGER.info("=====================================Server started success=======================================");
 
-        Scheduler.getInstance().init(system, timerExecutor);
+        Scheduler.getInstance().init(timerExecutor);
         LOGGER.info("=======================================Scheduler started==========================================");
 
         CronScheduler.getInstance().init(config.getSchemas());
@@ -283,36 +265,35 @@ public final class DbleServer {
         }
     }
 
-    private void initTaskQueue(SystemConfig system) {
-        if (system.getUsePerformanceMode() == 1) {
+    private void initTaskQueue() {
+        if (SystemConfig.getInstance().getUsePerformanceMode() == 1) {
             concurrentFrontHandlerQueue = new ConcurrentLinkedQueue<>();
-            for (int i = 0; i < system.getProcessorExecutor(); i++) {
+            for (int i = 0; i < SystemConfig.getInstance().getProcessorExecutor(); i++) {
                 businessExecutor.execute(new ConcurrentFrontEndHandlerRunnable(concurrentFrontHandlerQueue));
             }
 
             concurrentBackHandlerQueue = new ConcurrentLinkedQueue<>();
-            for (int i = 0; i < system.getBackendProcessorExecutor(); i++) {
+            for (int i = 0; i < SystemConfig.getInstance().getBackendProcessorExecutor(); i++) {
                 backendBusinessExecutor.execute(new ConcurrentBackEndHandlerRunnable(concurrentBackHandlerQueue));
             }
         } else {
             frontHandlerQueue = new LinkedBlockingQueue<>();
-            for (int i = 0; i < system.getProcessorExecutor(); i++) {
+            for (int i = 0; i < SystemConfig.getInstance().getProcessorExecutor(); i++) {
                 businessExecutor.execute(new FrontEndHandlerRunnable(frontHandlerQueue));
             }
         }
 
         writeToBackendQueue = new LinkedBlockingQueue<>();
-        for (int i = 0; i < system.getWriteToBackendExecutor(); i++) {
+        for (int i = 0; i < SystemConfig.getInstance().getWriteToBackendExecutor(); i++) {
             writeToBackendExecutor.execute(new WriteToBackendRunnable(writeToBackendQueue));
         }
     }
 
 
-    private void initDataHost() {
-        // init datahost
-        Map<String, PhysicalDataHost> dataHosts = this.getConfig().getDataHosts();
+    private void initDbGroup() {
+        Map<String, PhysicalDbGroup> dbGroups = this.getConfig().getDbGroups();
         LOGGER.info("Initialize dataHost ...");
-        for (PhysicalDataHost node : dataHosts.values()) {
+        for (PhysicalDbGroup node : dbGroups.values()) {
             node.init();
             node.startHeartbeat();
         }
@@ -322,10 +303,6 @@ public final class DbleServer {
         systemVariables = sys;
     }
 
-
-    public boolean isUseOuterHa() {
-        return config.getSystem().isUseOuterHa();
-    }
 
     public NIOProcessor nextFrontProcessor() {
         int i = ++nextFrontProcessor;
@@ -352,7 +329,7 @@ public final class DbleServer {
     }
 
     public Queue<FrontendCommandHandler> getFrontHandlerQueue() {
-        if (config.getSystem().getUsePerformanceMode() == 1) {
+        if (SystemConfig.getInstance().getUsePerformanceMode() == 1) {
             return concurrentFrontHandlerQueue;
         } else {
             return frontHandlerQueue;
@@ -397,7 +374,7 @@ public final class DbleServer {
     private void reviseSchemas() {
         if (systemVariables.isLowerCaseTableNames()) {
             config.reviseLowerCase();
-            ConfigUtil.setSchemasForPool(config.getDataHosts(), config.getDataNodes());
+            ConfigUtil.setSchemasForPool(config.getDbGroups(), config.getShardingNodes());
         } else {
             config.loadSequence();
             config.selfChecking0();
@@ -410,7 +387,7 @@ public final class DbleServer {
         if (this.getConfig().isFullyConfigured()) {
             LOGGER.info("get variables Data start");
             //init for sys VAR
-            VarsExtractorHandler handler = new VarsExtractorHandler(config.getDataHosts());
+            VarsExtractorHandler handler = new VarsExtractorHandler(config.getDbGroups());
             SystemVariables newSystemVariables = handler.execute();
             if (newSystemVariables == null) {
                 throw new IOException("Can't get variables from data node");
@@ -418,7 +395,7 @@ public final class DbleServer {
                 systemVariables = newSystemVariables;
             }
             reviseSchemas();
-            initDataHost();
+            initDbGroup();
             LOGGER.info("get variables Data end");
             //init tmManager
             try {
@@ -427,7 +404,7 @@ public final class DbleServer {
                 throw new IOException(e);
             }
         } else {
-            //TODO Self check should be execute when the dataHost not exists
+            //TODO Self check should be execute when the dbGroup not exists
             // reviseSchemas();
         }
     }
@@ -488,9 +465,9 @@ public final class DbleServer {
             outLoop:
             for (SchemaConfig schema : DbleServer.getInstance().getConfig().getSchemas().values()) {
                 for (TableConfig table : schema.getTables().values()) {
-                    for (String dataNode : table.getDataNodes()) {
-                        PhysicalDataNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
-                        if (participantLogEntry.compareAddress(dn.getDataHost().getWriteSource().getConfig().getIp(), dn.getDataHost().getWriteSource().getConfig().getPort(), dn.getDatabase())) {
+                    for (String shardingNode : table.getShardingNodes()) {
+                        ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(shardingNode);
+                        if (participantLogEntry.compareAddress(dn.getDbGroup().getWriteSource().getConfig().getIp(), dn.getDbGroup().getWriteSource().getConfig().getPort(), dn.getDatabase())) {
                             xaCmd.append(coordinatorLogEntry.getId().substring(0, coordinatorLogEntry.getId().length() - 1));
                             xaCmd.append(".");
                             xaCmd.append(dn.getDatabase());
@@ -500,13 +477,13 @@ public final class DbleServer {
                             }
                             xaCmd.append("'");
                             XARecoverHandler handler = new XARecoverHandler(needCommit, participantLogEntry);
-                            handler.execute(xaCmd.toString(), dn.getDatabase(), dn.getDataHost().getWriteSource());
+                            handler.execute(xaCmd.toString(), dn.getDatabase(), dn.getDbGroup().getWriteSource());
                             if (!handler.isSuccess()) {
                                 throw new RuntimeException("Fail to recover xa when dble start, please check backend mysql.");
                             }
 
                             if (LOGGER.isDebugEnabled()) {
-                                LOGGER.debug(String.format("[%s] Host:[%s] schema:[%s]", xaCmd, dn.getName(), dn.getDatabase()));
+                                LOGGER.debug(String.format("[%s] Host:[%s] sharding:[%s]", xaCmd, dn.getName(), dn.getDatabase()));
                             }
 
                             //reset xaCmd
@@ -554,14 +531,7 @@ public final class DbleServer {
         }
         StringBuilder id = new StringBuilder();
         id.append("'" + NAME + "Server.");
-        if (ClusterGeneralConfig.isUseZK()) {
-            id.append(ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
-        } else if (ClusterGeneralConfig.isUseGeneralCluster()) {
-            id.append(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
-        } else {
-            id.append(this.getConfig().getSystem().getServerNodeId());
-
-        }
+        id.append(SystemConfig.getInstance().getInstanceId());
         id.append(".");
         id.append(seq);
         id.append("'");

@@ -5,27 +5,25 @@
 
 package com.actiontech.dble.cluster.impl;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.UcoreGrpc;
 import com.actiontech.dble.alarm.UcoreInterface;
 import com.actiontech.dble.cluster.AbstractClusterSender;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.bean.ClusterAlertBean;
 import com.actiontech.dble.cluster.bean.KvBean;
 import com.actiontech.dble.cluster.bean.SubscribeRequest;
 import com.actiontech.dble.cluster.bean.SubscribeReturnBean;
-import com.google.common.base.Strings;
+import com.actiontech.dble.config.model.ClusterConfig;
+import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.util.PropertiesUtil;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.commons.lang.StringUtils;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,44 +41,34 @@ public final class UcoreSender extends AbstractClusterSender {
 
     private volatile UcoreGrpc.UcoreBlockingStub stub = null;
     private ConcurrentHashMap<String, Thread> lockMap = new ConcurrentHashMap<>();
-    private Properties properties;
     private List<String> ipList = new ArrayList<>();
     private static final String SOURCE_COMPONENT_TYPE = "dble";
     private String serverId = null;
     private String sourceComponentId = null;
 
-
     @Override
-    public void initConInfo(Properties ucoreProperties) {
-        this.properties = ucoreProperties;
-        serverId = getValue(ClusterParamCfg.CLUSTER_CFG_SERVER_ID);
-        sourceComponentId = getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
+    public void initConInfo() {
         try {
-            for (String ip : properties.getProperty(ClusterParamCfg.CLUSTER_PLUGINS_IP.getKey()).split(",")) {
-                ipList.add(ip);
-            }
+            ipList.addAll(Arrays.asList(ClusterConfig.getInstance().getClusterIP().split(",")));
         } catch (Exception e) {
             LOGGER.error("error:", e);
         }
         Channel channel = ManagedChannelBuilder.forAddress(getIpList().get(0),
-                Integer.parseInt(getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
+                ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
         stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
     }
 
     @Override
-    public void initCluster(Properties ucoreProperties) {
-        this.properties = ucoreProperties;
-        serverId = getValue(ClusterParamCfg.CLUSTER_CFG_SERVER_ID);
-        sourceComponentId = getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
+    public void initCluster() {
+        serverId = SystemConfig.getInstance().getServerId();
+        sourceComponentId = SystemConfig.getInstance().getInstanceId();
         try {
-            for (String ip : properties.getProperty(ClusterParamCfg.CLUSTER_PLUGINS_IP.getKey()).split(",")) {
-                ipList.add(ip);
-            }
+            ipList.addAll(Arrays.asList(ClusterConfig.getInstance().getClusterIP().split(",")));
         } catch (Exception e) {
             LOGGER.error("error:", e);
         }
         Channel channel = ManagedChannelBuilder.forAddress(getIpList().get(0),
-                Integer.parseInt(getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
+                ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
         stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
         startUpdateNodes();
     }
@@ -139,7 +127,7 @@ public final class UcoreSender extends AbstractClusterSender {
                 ManagedChannel channel = null;
                 try {
                     channel = ManagedChannelBuilder.forAddress(ip,
-                            Integer.parseInt(getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
+                            ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
                     stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
                     output = stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).lockOnSession(input);
                     return output.getSessionId();
@@ -178,7 +166,7 @@ public final class UcoreSender extends AbstractClusterSender {
                 ManagedChannel channel = null;
                 try {
                     channel = ManagedChannelBuilder.forAddress(ip,
-                            Integer.parseInt(getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
+                            ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
                     stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
                     stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).putKv(input);
                     return;
@@ -205,7 +193,7 @@ public final class UcoreSender extends AbstractClusterSender {
                 ManagedChannel channel = null;
                 try {
                     channel = ManagedChannelBuilder.forAddress(ip,
-                            Integer.parseInt(getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
+                            ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
                     stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
                     output = stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).getKv(input);
                 } catch (Exception e2) {
@@ -240,7 +228,7 @@ public final class UcoreSender extends AbstractClusterSender {
                 ManagedChannel channel = null;
                 try {
                     channel = ManagedChannelBuilder.forAddress(ip,
-                            Integer.parseInt(getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
+                            ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
                     stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
                     output = stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).getKvTree(input);
                 } catch (Exception e2) {
@@ -275,7 +263,7 @@ public final class UcoreSender extends AbstractClusterSender {
                 ManagedChannel channel = null;
                 try {
                     channel = ManagedChannelBuilder.forAddress(ip,
-                            Integer.parseInt(getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
+                            ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
                     stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
                     stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).deleteKvTree(input);
                     flag = true;
@@ -302,7 +290,7 @@ public final class UcoreSender extends AbstractClusterSender {
                 ManagedChannel channel = null;
                 try {
                     channel = ManagedChannelBuilder.forAddress(ip,
-                            Integer.parseInt(getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
+                            ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
                     stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
                     stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).deleteKv(input);
                     return;
@@ -330,7 +318,7 @@ public final class UcoreSender extends AbstractClusterSender {
                 ManagedChannel channel = null;
                 try {
                     channel = ManagedChannelBuilder.forAddress(ip,
-                            Integer.parseInt(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
+                            ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
                     stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS);
                     UcoreInterface.SubscribeKvPrefixOutput output = stub.withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS).subscribeKvPrefix(input);
                     return groupSubscribeResult(output);
@@ -355,7 +343,7 @@ public final class UcoreSender extends AbstractClusterSender {
             for (String ip : getIpList()) {
                 ManagedChannel channel = null;
                 try {
-                    channel = ManagedChannelBuilder.forAddress(ip, Integer.parseInt(getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
+                    channel = ManagedChannelBuilder.forAddress(ip, ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
                     stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
                     stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).alert(input);
                     return;
@@ -379,7 +367,7 @@ public final class UcoreSender extends AbstractClusterSender {
             for (String ip : getIpList()) {
                 ManagedChannel channel = null;
                 try {
-                    channel = ManagedChannelBuilder.forAddress(ip, Integer.parseInt(getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
+                    channel = ManagedChannelBuilder.forAddress(ip, ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
                     stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
                     stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).alertResolve(input);
                     return true;
@@ -392,14 +380,6 @@ public final class UcoreSender extends AbstractClusterSender {
                 }
             }
             return false;
-        }
-    }
-
-    @Override
-    public void checkClusterConfig(Properties ucoreProperties) {
-        if (Strings.isNullOrEmpty(ucoreProperties.getProperty(ClusterParamCfg.CLUSTER_PLUGINS_PORT.getKey())) ||
-                Strings.isNullOrEmpty(ucoreProperties.getProperty(ClusterParamCfg.CLUSTER_CFG_SERVER_ID.getKey()))) {
-            throw new RuntimeException("Cluster Config is not completely set");
         }
     }
 
@@ -432,7 +412,7 @@ public final class UcoreSender extends AbstractClusterSender {
                 ManagedChannel channel = null;
                 try {
                     channel = ManagedChannelBuilder.forAddress(ip,
-                            Integer.parseInt(getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
+                            ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
                     stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);
                     stub.withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS).renewSession(input);
                     return true;
@@ -469,7 +449,7 @@ public final class UcoreSender extends AbstractClusterSender {
                 ManagedChannel channel = null;
                 try {
                     channel = ManagedChannelBuilder.forAddress(ip,
-                            Integer.parseInt(getValue(ClusterParamCfg.CLUSTER_PLUGINS_PORT))).usePlaintext(true).build();
+                            ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
                     stub = UcoreGrpc.newBlockingStub(channel).withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS);
                     return stub.withDeadlineAfter(GRPC_SUBTIMEOUT, TimeUnit.SECONDS).subscribeNodes(subscribeNodesInput);
                 } catch (Exception e2) {
@@ -485,24 +465,9 @@ public final class UcoreSender extends AbstractClusterSender {
 
 
     public void setIp(String ips) {
-        properties.setProperty(ClusterParamCfg.CLUSTER_PLUGINS_IP.getKey(), ips);
-        FileOutputStream out = null;
-        try {
-            File file = new File(DbleServer.class.getResource(CONFIG_FILE_NAME).getFile());
-            out = new FileOutputStream(file);
-            properties.store(out, "");
-            LOGGER.info("ips set to ucore success:" + ips);
-        } catch (Exception e) {
-            LOGGER.info("ips set to ucore failure");
-        } finally {
-            try {
-                if (out != null) {
-                    out.close();
-                }
-            } catch (Exception e) {
-                LOGGER.info("open file error");
-            }
-        }
+        ClusterConfig.getInstance().setClusterIP(ips);
+        Properties properties = ClusterConfig.getInstance().toProperties();
+        PropertiesUtil.storeProperties(properties, CONFIG_FILE_NAME);
     }
 
     private void startUpdateNodes() {
@@ -547,10 +512,4 @@ public final class UcoreSender extends AbstractClusterSender {
     }
 
 
-    public String getValue(ClusterParamCfg param) {
-        if (properties != null && null != param) {
-            return properties.getProperty(param.getKey());
-        }
-        return null;
-    }
 }

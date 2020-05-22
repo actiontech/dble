@@ -7,12 +7,13 @@ package com.actiontech.dble.server.util;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.ServerPrivileges;
 import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.UserConfig;
+import com.actiontech.dble.config.model.user.ShardingUserConfig;
+import com.actiontech.dble.config.privileges.ShardingPrivileges;
 import com.actiontech.dble.plan.common.item.function.ItemCreate;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
+import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.StringUtil;
@@ -65,7 +66,7 @@ public final class SchemaUtil {
     }
 
 
-    public static SchemaInfo getSchemaInfo(String user, SchemaConfig schemaConfig, String fullTableName) throws SQLException {
+    public static SchemaInfo getSchemaInfo(Pair<String, String> user, SchemaConfig schemaConfig, String fullTableName) throws SQLException {
         SchemaInfo schemaInfo = new SchemaInfo();
         if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             fullTableName = fullTableName.toLowerCase();
@@ -82,7 +83,7 @@ public final class SchemaUtil {
             }
             schemaInfo.schemaConfig = config;
             if (user != null) {
-                UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(user);
+                ShardingUserConfig userConfig = (ShardingUserConfig) DbleServer.getInstance().getConfig().getUsers().get(user);
                 if (!userConfig.getSchemas().contains(schemaInfo.schema)) {
                     String msg = " Access denied for user '" + user + "' to database '" + schemaInfo.schema + "'";
                     throw new SQLException(msg, "HY000", ErrorCode.ER_DBACCESS_DENIED_ERROR);
@@ -97,7 +98,7 @@ public final class SchemaUtil {
         return schemaInfo;
     }
 
-    public static SchemaInfo getSchemaInfo(String user, String schema, SQLExpr expr, String tableAlias) throws SQLException {
+    public static SchemaInfo getSchemaInfo(Pair<String, String> user, String schema, SQLExpr expr, String tableAlias) throws SQLException {
         SchemaInfo schemaInfo = new SchemaInfo();
         if (expr instanceof SQLPropertyExpr) {
             SQLPropertyExpr propertyExpr = (SQLPropertyExpr) expr;
@@ -128,7 +129,7 @@ public final class SchemaUtil {
                 throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
             }
             if (user != null) {
-                UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(user);
+                ShardingUserConfig userConfig = (ShardingUserConfig) DbleServer.getInstance().getConfig().getUsers().get(user);
                 if (!userConfig.getSchemas().contains(schemaInfo.schema)) {
                     String msg = " Access denied for user '" + user + "' to database '" + schemaInfo.schema + "'";
                     throw new SQLException(msg, "HY000", ErrorCode.ER_DBACCESS_DENIED_ERROR);
@@ -139,11 +140,11 @@ public final class SchemaUtil {
         return schemaInfo;
     }
 
-    public static SchemaInfo getSchemaInfo(String user, String schema, SQLExprTableSource tableSource) throws SQLException {
+    public static SchemaInfo getSchemaInfo(Pair<String, String> user, String schema, SQLExprTableSource tableSource) throws SQLException {
         return getSchemaInfo(user, schema, tableSource.getExpr(), tableSource.getAlias());
     }
 
-    public static boolean isNoSharding(ServerConnection source, SQLSelectQuery sqlSelectQuery, SQLStatement selectStmt, SQLStatement childSelectStmt, String contextSchema, Set<String> schemas, StringPtr dataNode)
+    public static boolean isNoSharding(ServerConnection source, SQLSelectQuery sqlSelectQuery, SQLStatement selectStmt, SQLStatement childSelectStmt, String contextSchema, Set<String> schemas, StringPtr shardingNode)
             throws SQLException {
         if (sqlSelectQuery instanceof MySqlSelectQueryBlock) {
             MySqlSelectQueryBlock mySqlSelectQueryBlock = (MySqlSelectQueryBlock) sqlSelectQuery;
@@ -155,39 +156,39 @@ public final class SchemaUtil {
                     }
                 }
             }
-            return isNoSharding(source, mySqlSelectQueryBlock.getFrom(), selectStmt, childSelectStmt, contextSchema, schemas, dataNode);
+            return isNoSharding(source, mySqlSelectQueryBlock.getFrom(), selectStmt, childSelectStmt, contextSchema, schemas, shardingNode);
         } else if (sqlSelectQuery instanceof SQLUnionQuery) {
-            return isNoSharding(source, (SQLUnionQuery) sqlSelectQuery, selectStmt, contextSchema, schemas, dataNode);
+            return isNoSharding(source, (SQLUnionQuery) sqlSelectQuery, selectStmt, contextSchema, schemas, shardingNode);
         } else {
             return false;
         }
     }
 
-    private static boolean isNoSharding(ServerConnection source, SQLUnionQuery sqlSelectQuery, SQLStatement stmt, String contextSchema, Set<String> schemas, StringPtr dataNode)
+    private static boolean isNoSharding(ServerConnection source, SQLUnionQuery sqlSelectQuery, SQLStatement stmt, String contextSchema, Set<String> schemas, StringPtr shardingNode)
             throws SQLException {
         SQLSelectQuery left = sqlSelectQuery.getLeft();
         SQLSelectQuery right = sqlSelectQuery.getRight();
-        return isNoSharding(source, left, stmt, new SQLSelectStatement(new SQLSelect(left)), contextSchema, schemas, dataNode) && isNoSharding(source, right, stmt, new SQLSelectStatement(new SQLSelect(right)), contextSchema, schemas, dataNode);
+        return isNoSharding(source, left, stmt, new SQLSelectStatement(new SQLSelect(left)), contextSchema, schemas, shardingNode) && isNoSharding(source, right, stmt, new SQLSelectStatement(new SQLSelect(right)), contextSchema, schemas, shardingNode);
     }
 
-    public static boolean isNoSharding(ServerConnection source, SQLTableSource tables, SQLStatement stmt, SQLStatement childSelectStmt, String contextSchema, Set<String> schemas, StringPtr dataNode)
+    public static boolean isNoSharding(ServerConnection source, SQLTableSource tables, SQLStatement stmt, SQLStatement childSelectStmt, String contextSchema, Set<String> schemas, StringPtr shardingNode)
             throws SQLException {
         if (tables != null) {
             if (tables instanceof SQLExprTableSource) {
-                if (!isNoSharding(source, (SQLExprTableSource) tables, stmt, childSelectStmt, contextSchema, schemas, dataNode)) {
+                if (!isNoSharding(source, (SQLExprTableSource) tables, stmt, childSelectStmt, contextSchema, schemas, shardingNode)) {
                     return false;
                 }
             } else if (tables instanceof SQLJoinTableSource) {
-                if (!isNoSharding(source, (SQLJoinTableSource) tables, stmt, childSelectStmt, contextSchema, schemas, dataNode)) {
+                if (!isNoSharding(source, (SQLJoinTableSource) tables, stmt, childSelectStmt, contextSchema, schemas, shardingNode)) {
                     return false;
                 }
             } else if (tables instanceof SQLSubqueryTableSource) {
                 SQLSelectQuery sqlSelectQuery = ((SQLSubqueryTableSource) tables).getSelect().getQuery();
-                if (!isNoSharding(source, sqlSelectQuery, stmt, new SQLSelectStatement(new SQLSelect(sqlSelectQuery)), contextSchema, schemas, dataNode)) {
+                if (!isNoSharding(source, sqlSelectQuery, stmt, new SQLSelectStatement(new SQLSelect(sqlSelectQuery)), contextSchema, schemas, shardingNode)) {
                     return false;
                 }
             } else if (tables instanceof SQLUnionQueryTableSource) {
-                if (!isNoSharding(source, ((SQLUnionQueryTableSource) tables).getUnion(), stmt, contextSchema, schemas, dataNode)) {
+                if (!isNoSharding(source, ((SQLUnionQueryTableSource) tables).getUnion(), stmt, contextSchema, schemas, shardingNode)) {
                     return false;
                 }
             } else {
@@ -197,14 +198,14 @@ public final class SchemaUtil {
         ServerSchemaStatVisitor queryTableVisitor = new ServerSchemaStatVisitor();
         childSelectStmt.accept(queryTableVisitor);
         for (SQLSelect sqlSelect : queryTableVisitor.getSubQueryList()) {
-            if (!isNoSharding(source, sqlSelect.getQuery(), stmt, new SQLSelectStatement(sqlSelect), contextSchema, schemas, dataNode)) {
+            if (!isNoSharding(source, sqlSelect.getQuery(), stmt, new SQLSelectStatement(sqlSelect), contextSchema, schemas, shardingNode)) {
                 return false;
             }
         }
         return true;
     }
 
-    private static boolean isNoSharding(ServerConnection source, SQLExprTableSource table, SQLStatement stmt, SQLStatement childSelectStmt, String contextSchema, Set<String> schemas, StringPtr dataNode)
+    private static boolean isNoSharding(ServerConnection source, SQLExprTableSource table, SQLStatement stmt, SQLStatement childSelectStmt, String contextSchema, Set<String> schemas, StringPtr shardingNode)
             throws SQLException {
         SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(source.getUser(), contextSchema, table);
         String currentSchema = schemaInfo.schema.toUpperCase();
@@ -213,16 +214,16 @@ public final class SchemaUtil {
             return false;
         }
 
-        ServerPrivileges.CheckType checkType = ServerPrivileges.CheckType.SELECT;
+        ShardingPrivileges.CheckType checkType = ShardingPrivileges.CheckType.SELECT;
         if (childSelectStmt instanceof MySqlUpdateStatement) {
-            checkType = ServerPrivileges.CheckType.UPDATE;
+            checkType = ShardingPrivileges.CheckType.UPDATE;
         } else if (childSelectStmt instanceof SQLSelectStatement) {
-            checkType = ServerPrivileges.CheckType.SELECT;
+            checkType = ShardingPrivileges.CheckType.SELECT;
         } else if (childSelectStmt instanceof MySqlDeleteStatement) {
-            checkType = ServerPrivileges.CheckType.DELETE;
+            checkType = ShardingPrivileges.CheckType.DELETE;
         }
 
-        if (!ServerPrivileges.checkPrivilege(source, schemaInfo.schema, schemaInfo.table, checkType)) {
+        if (!ShardingPrivileges.checkPrivilege(source.getUserConfig(), schemaInfo.schema, schemaInfo.table, checkType)) {
             String msg = "The statement DML privilege check is not passed, sql:" + stmt.toString().replaceAll("[\\t\\n\\r]", " ");
             throw new SQLNonTransientException(msg);
         }
@@ -230,19 +231,19 @@ public final class SchemaUtil {
         schemas.add(schemaInfo.schema);
         if (noShardingNode == null) {
             return false;
-        } else if (dataNode.get() == null) {
-            dataNode.set(noShardingNode);
+        } else if (shardingNode.get() == null) {
+            shardingNode.set(noShardingNode);
             return true;
         } else {
-            return dataNode.get().equals(noShardingNode);
+            return shardingNode.get().equals(noShardingNode);
         }
     }
 
-    public static boolean isNoSharding(ServerConnection source, SQLJoinTableSource tables, SQLStatement stmt, SQLStatement childSelectStmt, String contextSchema, Set<String> schemas, StringPtr dataNode)
+    public static boolean isNoSharding(ServerConnection source, SQLJoinTableSource tables, SQLStatement stmt, SQLStatement childSelectStmt, String contextSchema, Set<String> schemas, StringPtr shardingNode)
             throws SQLException {
         SQLTableSource left = tables.getLeft();
         SQLTableSource right = tables.getRight();
-        return isNoSharding(source, left, stmt, childSelectStmt, contextSchema, schemas, dataNode) && isNoSharding(source, right, stmt, childSelectStmt, contextSchema, schemas, dataNode);
+        return isNoSharding(source, left, stmt, childSelectStmt, contextSchema, schemas, shardingNode) && isNoSharding(source, right, stmt, childSelectStmt, contextSchema, schemas, shardingNode);
     }
 
     public static class SchemaInfo {

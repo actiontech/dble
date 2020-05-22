@@ -5,14 +5,14 @@
 
 package com.actiontech.dble.cluster.response;
 
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.bean.KvBean;
 import com.actiontech.dble.cluster.listener.ClusterClearKeyListener;
 import com.actiontech.dble.config.loader.zkprocess.comm.ConfFileRWUtils;
-import com.alibaba.fastjson.JSONObject;
+import com.actiontech.dble.config.model.SystemConfig;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,18 +42,18 @@ public class PropertySequenceLoader implements ClusterXmlLoader {
     public void notifyProcess(KvBean configValue) throws Exception {
         LOGGER.info("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
         KvBean lock = ClusterHelper.getKV(ClusterPathUtil.getConfChangeLockPath());
-        if (ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID).equals(lock.getValue())) {
+        if (SystemConfig.getInstance().getInstanceId().equals(lock.getValue())) {
             return;
         }
         if (configValue.getValue() != null && !"".equals(configValue.getValue())) {
-            JSONObject jsonObj = JSONObject.parseObject(configValue.getValue());
+            JsonObject jsonObj = new JsonParser().parse(configValue.getValue()).getAsJsonObject();
             if (jsonObj.get(PROPERTIES_SEQUENCE_CONF) != null) {
-                String sequenceConf = jsonObj.getString(PROPERTIES_SEQUENCE_CONF);
+                String sequenceConf = jsonObj.get(PROPERTIES_SEQUENCE_CONF).getAsString();
                 ConfFileRWUtils.writeFile(PROPERTIES_SEQUENCE_CONF + PROPERTIES_SUFFIX, sequenceConf);
             }
 
             if (jsonObj.get(PROPERTIES_SEQUENCE_DB_CONF) != null) {
-                String sequenceConf = jsonObj.getString(PROPERTIES_SEQUENCE_DB_CONF);
+                String sequenceConf = jsonObj.get(PROPERTIES_SEQUENCE_DB_CONF).getAsString();
                 ConfFileRWUtils.writeFile(PROPERTIES_SEQUENCE_DB_CONF + PROPERTIES_SUFFIX, sequenceConf);
             }
         }
@@ -61,16 +61,16 @@ public class PropertySequenceLoader implements ClusterXmlLoader {
 
     @Override
     public void notifyCluster() throws Exception {
-        JSONObject jsonObject = new JSONObject();
+        JsonObject jsonObject = new JsonObject();
         String sequenceConf = ConfFileRWUtils.readFileWithOutError(PROPERTIES_SEQUENCE_CONF + PROPERTIES_SUFFIX);
-        if (sequenceConf != null && !"".equals(sequenceConf)) {
-            jsonObject.put(PROPERTIES_SEQUENCE_CONF, sequenceConf);
+        if (!"".equals(sequenceConf)) {
+            jsonObject.addProperty(PROPERTIES_SEQUENCE_CONF, sequenceConf);
         }
         String sequenceDbConf = ConfFileRWUtils.readFileWithOutError(PROPERTIES_SEQUENCE_DB_CONF + PROPERTIES_SUFFIX);
-        if (sequenceDbConf != null && !"".equals(sequenceDbConf)) {
-            jsonObject.put(PROPERTIES_SEQUENCE_DB_CONF, sequenceDbConf);
+        if (!"".equals(sequenceDbConf)) {
+            jsonObject.addProperty(PROPERTIES_SEQUENCE_DB_CONF, sequenceDbConf);
         }
-        ClusterHelper.setKV(CONFIG_PATH, jsonObject.toJSONString());
+        ClusterHelper.setKV(CONFIG_PATH, jsonObject.getAsString());
     }
 
 }

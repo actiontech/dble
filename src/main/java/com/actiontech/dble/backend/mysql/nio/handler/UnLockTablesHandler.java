@@ -53,9 +53,9 @@ public class UnLockTablesHandler extends MultiNodeHandler implements ResponseHan
         }
         Map<RouteResultsetNode, BackendConnection> forUnlocks = new HashMap<>(lockedCons.size());
         for (Map.Entry<RouteResultsetNode, BackendConnection> entry : lockedCons.entrySet()) {
-            RouteResultsetNode dataNode = entry.getKey();
+            RouteResultsetNode shardingNode = entry.getKey();
             BackendConnection conn = entry.getValue();
-            RouteResultsetNode node = new RouteResultsetNode(dataNode.getName(), ServerParse.UNLOCK, srcStatement);
+            RouteResultsetNode node = new RouteResultsetNode(shardingNode.getName(), ServerParse.UNLOCK, srcStatement);
             forUnlocks.put(node, conn);
             unResponseRrns.add(node);
         }

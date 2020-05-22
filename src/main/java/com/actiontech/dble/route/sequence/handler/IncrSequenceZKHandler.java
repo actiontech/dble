@@ -6,7 +6,7 @@
 package com.actiontech.dble.route.sequence.handler;
 
 
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
+import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.route.util.PropertiesUtil;
 import com.actiontech.dble.util.KVPathUtil;
 import org.apache.curator.framework.CuratorFramework;
@@ -50,9 +50,9 @@ public class IncrSequenceZKHandler extends IncrSequenceHandler {
 
     public void load(boolean isLowerCaseTableNames) {
         props = PropertiesUtil.loadProps(FILE_NAME, isLowerCaseTableNames);
-        String zkAddress = ZkConfig.getInstance().getZkURL();
+        String zkAddress = ClusterConfig.getInstance().getClusterIP();
         if (zkAddress == null) {
-            throw new RuntimeException("please check zkURL is correct in config file \"myid.properties\" .");
+            throw new RuntimeException("please check ClusterIP is correct in config file \"cluster.cnf\" .");
         }
         try {
             initializeZK(props, zkAddress);

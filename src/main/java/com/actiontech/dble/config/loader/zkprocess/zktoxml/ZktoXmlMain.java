@@ -53,15 +53,15 @@ public final class ZktoXmlMain {
         ConfigStatusListener confListener = new ConfigStatusListener(zkListen, zkConn);
         XmlProcessBase xmlProcess = new XmlProcessBase();
 
-        // load schema
-        new SchemaszkToxmlLoader(zkListen, zkConn, xmlProcess, confListener);
+        // load sharding
+        new ShardingZkToXmlLoader(zkListen, zkConn, xmlProcess, confListener);
 
-        // load server
-        new ServerzkToxmlLoader(zkListen, zkConn, xmlProcess, confListener);
 
-        // load rule
-        new RuleszkToxmlLoader(zkListen, zkConn, xmlProcess, confListener);
+        // load db
+        new DbGroupsZKToXmlLoader(zkListen, zkConn, xmlProcess, confListener);
 
+        // load user
+        new UserZkToXmlLoader(zkListen, zkConn, xmlProcess, confListener);
         // load sequence
         new SequenceTopropertiesLoader(zkListen, zkConn);
 

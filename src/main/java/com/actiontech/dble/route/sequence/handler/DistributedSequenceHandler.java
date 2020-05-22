@@ -6,7 +6,7 @@
 package com.actiontech.dble.route.sequence.handler;
 
 
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
+import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.route.util.PropertiesUtil;
 import com.actiontech.dble.util.DateUtil;
 import com.actiontech.dble.util.KVPathUtil;
@@ -82,7 +82,7 @@ public class DistributedSequenceHandler implements Closeable, SequenceHandler {
         // load sequnce properties
         Properties props = PropertiesUtil.loadProps(SEQUENCE_DB_PROPS);
         if ("ZK".equalsIgnoreCase(props.getProperty("INSTANCEID"))) {
-            initializeZK(ZkConfig.getInstance().getZkURL());
+            initializeZK();
         } else {
             this.instanceId = Long.parseLong(props.getProperty("INSTANCEID"));
             this.ready = true;
@@ -112,9 +112,10 @@ public class DistributedSequenceHandler implements Closeable, SequenceHandler {
         }
     }
 
-    public void initializeZK(String zkAddress) {
+    public void initializeZK() {
+        String zkAddress = ClusterConfig.getInstance().getClusterIP();
         if (zkAddress == null) {
-            throw new RuntimeException("please check zkURL is correct in config file \"myid.prperties\" .");
+            throw new RuntimeException("please check clusterIP is correct in config file \"cluster.cnf\" .");
         }
         if (this.client != null) {
             this.client.close();

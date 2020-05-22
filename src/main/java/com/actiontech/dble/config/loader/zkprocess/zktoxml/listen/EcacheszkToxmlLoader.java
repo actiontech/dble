@@ -67,7 +67,7 @@ public class EcacheszkToxmlLoader extends ZkMultiLoader implements NotifyService
 
         zktoEhcacheWrite(zkDirectory);
 
-        LOGGER.info("EcacheszkToxmlLoader notifyProcess   zk ehcache write success ");
+        LOGGER.info("notifyProcess   zk ehcache write success ");
 
         return true;
     }

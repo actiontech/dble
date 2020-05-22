@@ -82,7 +82,7 @@ public final class FilterJoinColumnPusher {
 
     private static PlanNode pushJoinNodeFilter(PlanNode qtn, List<Item> dnfNodeToPush) {
         JoinNode jn = (JoinNode) qtn;
-        PlanUtil.findJoinKeysAndRemoveIt(dnfNodeToPush, jn);
+        PlanUtil.findJoinColumnsAndRemoveIt(dnfNodeToPush, jn);
         if (dnfNodeToPush.isEmpty()) {
             return qtn;
         }

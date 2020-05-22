@@ -5,13 +5,13 @@
 
 package com.actiontech.dble.backend.mysql.store;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.mysql.store.fs.FilePath;
 import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.util.exception.TmpFileException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +52,7 @@ public class FileStore {
         this.files = new ArrayList<>();
         this.locks = new ArrayList<>();
         this.mode = mode;
-        this.mappedFileSize = DbleServer.getInstance().getConfig().getSystem().getMappedFileSize();
+        this.mappedFileSize = SystemConfig.getInstance().getMappedFileSize();
         try {
             createFile();
         } catch (IOException e) {

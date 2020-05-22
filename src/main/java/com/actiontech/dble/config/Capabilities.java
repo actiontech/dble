@@ -86,5 +86,6 @@ public final class Capabilities {
     public static final int CLIENT_PLUGIN_AUTH = 0x00080000; // 524288
 
     public static final int CLIENT_MULTIPLE_STATEMENTS = 0x00010000;
+    public static final int CLIENT_CONNECT_ATTRS = 0x00100000;
 
 }

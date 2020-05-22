@@ -6,6 +6,7 @@
 package com.actiontech.dble.net.handler;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.WriteToBackendTask;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 
@@ -22,7 +23,7 @@ public class WriteToBackendRunnable implements Runnable {
     @Override
     public void run() {
         ThreadWorkUsage workUsage = null;
-        if (DbleServer.getInstance().getConfig().getSystem().getUseThreadUsageStat() == 1) {
+        if (SystemConfig.getInstance().getUseThreadUsageStat() == 1) {
             String threadName = Thread.currentThread().getName();
             workUsage = new ThreadWorkUsage();
             DbleServer.getInstance().getThreadUsedMap().put(threadName, workUsage);

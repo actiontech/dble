@@ -7,7 +7,7 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.LoadDataUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoCommitHandler;
@@ -15,6 +15,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoTxOperation
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionHandler;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.FlowCotrollerConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.RouteResultset;
@@ -58,7 +59,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     protected Set<BackendConnection> closedConnSet;
     private final boolean modifiedSQL;
     protected Set<RouteResultsetNode> connRrns = new ConcurrentSkipListSet<>();
-    private Map<String, Integer> dataNodePauseInfo; // only for debug
+    private Map<String, Integer> shardingNodePauseInfo; // only for debug
     private AtomicBoolean recycledBuffer = new AtomicBoolean(false);
 
     public MultiNodeQueryHandler(RouteResultset rrs, NonBlockingSession session) {
@@ -125,7 +126,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 connRrns.add(node);
                 // create new connection
                 node.setRunOnSlave(rrs.getRunOnSlave());
-                PhysicalDataNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(node.getName());
+                ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), session.getSource().isTxStart(), sessionAutocommit, node, this, node);
             }
         }
@@ -418,8 +419,6 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
                 cleanBuffer();
             }
             this.selectRows++;
-            RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
-            String dataNode = rNode.getName();
 
             if (rrs.getLimitSize() >= 0) {
                 if (selectRows <= rrs.getLimitStart() ||
@@ -514,7 +513,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
     }
 
     void doSqlStat() {
-        if (DbleServer.getInstance().getConfig().getSystem().getUseSqlStat() == 1) {
+        if (SystemConfig.getInstance().getUseSqlStat() == 1) {
             long netInBytes = 0;
             if (rrs != null && rrs.getStatement() != null) {
                 netInBytes += rrs.getStatement().getBytes().length;
@@ -632,42 +631,42 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             if (info != null) {
                 LOGGER.debug("Pause info of MultiNodeQueryHandler is " + info);
                 String[] infos = info.split(";");
-                dataNodePauseInfo = new HashMap<>(infos.length);
+                shardingNodePauseInfo = new HashMap<>(infos.length);
                 boolean formatCorrect = true;
                 for (String nodeInfo : infos) {
                     try {
                         String[] infoDetail = nodeInfo.split(":");
-                        dataNodePauseInfo.put(infoDetail[0], Integer.valueOf(infoDetail[1]));
+                        shardingNodePauseInfo.put(infoDetail[0], Integer.valueOf(infoDetail[1]));
                     } catch (Throwable e) {
                         formatCorrect = false;
                         break;
                     }
                 }
                 if (!formatCorrect) {
-                    dataNodePauseInfo.clear();
+                    shardingNodePauseInfo.clear();
                 }
             } else {
-                dataNodePauseInfo = new HashMap<>(0);
+                shardingNodePauseInfo = new HashMap<>(0);
             }
         } else {
-            dataNodePauseInfo = new HashMap<>(0);
+            shardingNodePauseInfo = new HashMap<>(0);
         }
     }
 
     private void pauseTime(BackendConnection conn) {
         if (LOGGER.isDebugEnabled()) {
             RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();
-            Integer millis = dataNodePauseInfo.get(rNode.getName());
+            Integer millis = shardingNodePauseInfo.get(rNode.getName());
             if (millis == null) {
                 return;
             }
-            LOGGER.debug("datanode[" + rNode.getName() + "], which conn threadid[" + ((MySQLConnection) conn).getThreadId() + "] will sleep for " + millis + " milliseconds");
+            LOGGER.debug("shardingnode[" + rNode.getName() + "], which conn threadid[" + ((MySQLConnection) conn).getThreadId() + "] will sleep for " + millis + " milliseconds");
             try {
                 Thread.sleep(millis);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            LOGGER.debug("datanode[" + rNode.getName() + "], which conn threadid[" + ((MySQLConnection) conn).getThreadId() + "] has slept for " + millis + " milliseconds");
+            LOGGER.debug("shardingnode[" + rNode.getName() + "], which conn threadid[" + ((MySQLConnection) conn).getThreadId() + "] has slept for " + millis + " milliseconds");
         }
     }
 }

@@ -7,7 +7,7 @@ package com.actiontech.dble.server;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.*;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
@@ -23,6 +23,7 @@ import com.actiontech.dble.btrace.provider.CostTimeProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLTraceInfo;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.handler.BackEndDataCleaner;
 import com.actiontech.dble.net.handler.FrontendCommandHandler;
 import com.actiontech.dble.net.mysql.EOFPacket;
@@ -119,11 +120,11 @@ public class NonBlockingSession implements Session {
     public NonBlockingSession(ServerConnection source) {
         this.source = source;
         this.target = new ConcurrentHashMap<>(2, 1f);
-        this.joinBufferMC = new MemSizeController(1024L * 1024L * DbleServer.getInstance().getConfig().getSystem().getJoinMemSize());
-        this.orderBufferMC = new MemSizeController(1024L * 1024L * DbleServer.getInstance().getConfig().getSystem().getOrderMemSize());
-        this.otherBufferMC = new MemSizeController(1024L * 1024L * DbleServer.getInstance().getConfig().getSystem().getOtherMemSize());
+        this.joinBufferMC = new MemSizeController(1024L * 1024L * SystemConfig.getInstance().getJoinMemSize());
+        this.orderBufferMC = new MemSizeController(1024L * 1024L * SystemConfig.getInstance().getOrderMemSize());
+        this.otherBufferMC = new MemSizeController(1024L * 1024L * SystemConfig.getInstance().getOtherMemSize());
         this.transactionManager = new TransactionHandlerManager(this);
-        if (DbleServer.getInstance().getConfig().getSystem().getUseSerializableMode() == 1) {
+        if (SystemConfig.getInstance().getUseSerializableMode() == 1) {
             transactionManager.setXaTxEnabled(true, source);
         }
     }
@@ -146,11 +147,11 @@ public class NonBlockingSession implements Session {
             traceResult.setVeryStartPrepare(requestTime);
             traceResult.setRequestStartPrepare(new TraceRecord(requestTime));
         }
-        if (DbleServer.getInstance().getConfig().getSystem().getUseCostTimeStat() == 0) {
+        if (SystemConfig.getInstance().getUseCostTimeStat() == 0) {
             return;
         }
         timeCost = false;
-        if (ThreadLocalRandom.current().nextInt(100) >= DbleServer.getInstance().getConfig().getSystem().getCostSamplePercent()) {
+        if (ThreadLocalRandom.current().nextInt(100) >= SystemConfig.getInstance().getCostSamplePercent()) {
             return;
         }
         timeCost = true;
@@ -485,7 +486,7 @@ public class NonBlockingSession implements Session {
 
     public void setRouteResultToTrace(RouteResultsetNode[] nodes) {
         if (SlowQueryLog.getInstance().isEnableSlowLog()) {
-            traceResult.setDataNodes(nodes);
+            traceResult.setShardingNodes(nodes);
         }
     }
 
@@ -864,7 +865,7 @@ public class NonBlockingSession implements Session {
             KillConnectionHandler kill = new KillConnectionHandler(
                     en.getValue(), this);
             ServerConfig conf = DbleServer.getInstance().getConfig();
-            PhysicalDataNode dn = conf.getDataNodes().get(
+            ShardingNode dn = conf.getShardingNodes().get(
                     en.getKey().getName());
             try {
                 dn.getConnectionFromSameSource(en.getValue().getSchema(), true, en.getValue(),
@@ -912,7 +913,7 @@ public class NonBlockingSession implements Session {
             final MySQLConnection mysqlCon = (MySQLConnection) this.getTarget(node);
             if (errConn.equals(mysqlCon)) {
                 ServerConfig conf = DbleServer.getInstance().getConfig();
-                PhysicalDataNode dn = conf.getDataNodes().get(node.getName());
+                ShardingNode dn = conf.getShardingNodes().get(node.getName());
                 try {
                     MySQLConnection newConn = (MySQLConnection) dn.getConnection(dn.getDatabase(), errConn.isAutocommit(), false, errConn.getAttachment());
                     newConn.setXaStatus(errConn.getXaStatus());

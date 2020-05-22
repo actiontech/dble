@@ -5,16 +5,16 @@
 */
 package com.actiontech.dble.config;
 
-import com.actiontech.dble.backend.datasource.PhysicalDataHost;
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
-import com.actiontech.dble.backend.datasource.PhysicalDataSource;
-import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
+import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.config.helper.TestSchemasTask;
 import com.actiontech.dble.config.helper.TestTask;
-import com.actiontech.dble.config.loader.SchemaLoader;
-import com.actiontech.dble.config.loader.xml.XMLSchemaLoader;
-import com.actiontech.dble.config.loader.xml.XMLServerLoader;
+import com.actiontech.dble.config.loader.xml.XMLDbLoader;
+import com.actiontech.dble.config.loader.xml.XMLShardingLoader;
+import com.actiontech.dble.config.loader.xml.XMLUserLoader;
 import com.actiontech.dble.config.model.*;
+import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.route.parser.util.Pair;
@@ -31,30 +31,30 @@ public class ConfigInitializer implements ProblemReporter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigInitializer.class);
 
-    private volatile SystemConfig system;
-    private volatile FirewallConfig firewall;
-    private volatile Map<String, UserConfig> users;
+    private volatile Map<Pair<String, String>, UserConfig> users;
     private volatile Map<String, SchemaConfig> schemas;
-    private volatile Map<String, PhysicalDataNode> dataNodes;
-    private volatile Map<String, PhysicalDataHost> dataHosts;
+    private volatile Map<String, ShardingNode> shardingNodes;
+    private volatile Map<String, PhysicalDbGroup> dbGroups;
     private volatile Map<ERTable, Set<ERTable>> erRelations;
     private volatile boolean fullyConfigured = false;
 
     private List<ErrorInfo> errorInfos = new ArrayList<>();
 
     public ConfigInitializer(boolean lowerCaseNames) {
-        //load server.xml
-        XMLServerLoader serverLoader = new XMLServerLoader(this);
 
-        //load rule.xml and schema.xml
-        SchemaLoader schemaLoader = new XMLSchemaLoader(lowerCaseNames, this);
-        this.schemas = schemaLoader.getSchemas();
-        this.system = serverLoader.getSystem();
-        this.users = serverLoader.getUsers();
-        this.erRelations = schemaLoader.getErRelations();
-        this.dataHosts = initDataHosts(schemaLoader);
-        this.dataNodes = initDataNodes(schemaLoader);
-        this.firewall = serverLoader.getFirewall();
+        //load db.xml
+        XMLDbLoader dbLoader = new XMLDbLoader(null, this);
+        this.dbGroups = dbLoader.getDbGroups();
+
+        //load sharding.xml
+        XMLShardingLoader shardingLoader = new XMLShardingLoader(lowerCaseNames, this);
+        this.schemas = shardingLoader.getSchemas();
+        this.erRelations = shardingLoader.getErRelations();
+        this.shardingNodes = initShardingNodes(shardingLoader.getShardingNode());
+
+        //load user.xml
+        XMLUserLoader userLoader = new XMLUserLoader(null, this);
+        this.users = userLoader.getUsers();
 
         deleteRedundancyConf();
         checkWriteHost();
@@ -78,12 +78,12 @@ public class ConfigInitializer implements ProblemReporter {
     }
 
     private void checkWriteHost() {
-        if (this.dataHosts.isEmpty()) {
+        if (this.dbGroups.isEmpty()) {
             return;
         } else {
             //Mark all dataSource whether they are fake or not
-            for (PhysicalDataHost dataHost : this.dataHosts.values()) {
-                for (PhysicalDataSource source : dataHost.getAllDataSources()) {
+            for (PhysicalDbGroup dbGroup : this.dbGroups.values()) {
+                for (PhysicalDbInstance source : dbGroup.getAllDataSources()) {
                     if (checkSourceFake(source)) {
                         source.setFakeNode(true);
                     } else if (!source.isDisabled()) {
@@ -91,70 +91,70 @@ public class ConfigInitializer implements ProblemReporter {
                     }
                 }
             }
-            // if there are dataHosts exists. no empty dataNodes allowed
-            for (PhysicalDataNode dataNode : this.dataNodes.values()) {
-                if (dataNode.getDataHost() == null) {
-                    throw new ConfigException("dataHost not exists " + dataNode.getDataHostName());
+            // if there are dbGroups exists. no empty shardingNodes allowed
+            for (ShardingNode shardingNode : this.shardingNodes.values()) {
+                if (shardingNode.getDbGroup() == null) {
+                    throw new ConfigException("dataHost not exists " + shardingNode.getDbGroupName());
                 }
             }
         }
     }
 
-    private boolean checkSourceFake(PhysicalDataSource source) {
+    private boolean checkSourceFake(PhysicalDbInstance source) {
         if (("localhost".equalsIgnoreCase(source.getConfig().getIp()) || "127.0.0.1".equals(source.getConfig().getIp()) ||
                 "0:0:0:0:0:0:0:1".equals(source.getConfig().getIp()) || "::1".equals(source.getConfig().getIp())) &&
-                (source.getConfig().getPort() == this.system.getServerPort() || source.getConfig().getPort() == this.system.getManagerPort())) {
+                (source.getConfig().getPort() == SystemConfig.getInstance().getServerPort() || source.getConfig().getPort() == SystemConfig.getInstance().getManagerPort())) {
             return true;
         }
         return false;
     }
 
     private void deleteRedundancyConf() {
-        Set<String> allUseDataNode = new HashSet<>();
+        Set<String> allUseShardingNode = new HashSet<>();
 
         if (schemas.size() == 0) {
-            errorInfos.add(new ErrorInfo("Xml", "WARNING", "No schema available"));
+            errorInfos.add(new ErrorInfo("Xml", "WARNING", "No sharding available"));
         }
 
         for (SchemaConfig sc : schemas.values()) {
-            // check dataNode / dataHost
-            Set<String> dataNodeNames = sc.getAllDataNodes();
-            allUseDataNode.addAll(dataNodeNames);
+            // check shardingNode / dbGroup
+            Set<String> shardingNodeNames = sc.getAllShardingNodes();
+            allUseShardingNode.addAll(shardingNodeNames);
         }
 
         // add global sequence node when it is some dedicated servers */
-        if (system.getSequenceHandlerType() == SystemConfig.SEQUENCE_HANDLER_MYSQL) {
+        if (ClusterConfig.getInstance().getSequenceHandlerType() == ClusterConfig.SEQUENCE_HANDLER_MYSQL) {
             IncrSequenceMySQLHandler redundancy = new IncrSequenceMySQLHandler();
             redundancy.load(false);
-            allUseDataNode.addAll(redundancy.getDataNodes());
+            allUseShardingNode.addAll(redundancy.getShardingNodes());
         }
 
         Set<String> allUseHost = new HashSet<>();
-        //delete redundancy dataNode
-        Iterator<Map.Entry<String, PhysicalDataNode>> iterator = this.dataNodes.entrySet().iterator();
+        //delete redundancy shardingNode
+        Iterator<Map.Entry<String, ShardingNode>> iterator = this.shardingNodes.entrySet().iterator();
         while (iterator.hasNext()) {
-            Map.Entry<String, PhysicalDataNode> entry = iterator.next();
-            String dataNodeName = entry.getKey();
-            if (allUseDataNode.contains(dataNodeName)) {
-                if (entry.getValue().getDataHost() != null) {
-                    allUseHost.add(entry.getValue().getDataHost().getHostName());
+            Map.Entry<String, ShardingNode> entry = iterator.next();
+            String shardingNodeName = entry.getKey();
+            if (allUseShardingNode.contains(shardingNodeName)) {
+                if (entry.getValue().getDbGroup() != null) {
+                    allUseHost.add(entry.getValue().getDbGroup().getGroupName());
                 }
             } else {
-                LOGGER.info("dataNode " + dataNodeName + " is useless,server will ignore it");
-                errorInfos.add(new ErrorInfo("Xml", "WARNING", "dataNode " + dataNodeName + " is useless"));
+                LOGGER.info("dataNode " + shardingNodeName + " is useless,server will ignore it");
+                errorInfos.add(new ErrorInfo("Xml", "WARNING", "dataNode " + shardingNodeName + " is useless"));
                 iterator.remove();
             }
         }
-        allUseDataNode.clear();
-        //delete redundancy dataHost
-        if (allUseHost.size() < this.dataHosts.size()) {
-            Iterator<String> dataHost = this.dataHosts.keySet().iterator();
-            while (dataHost.hasNext()) {
-                String dataHostName = dataHost.next();
-                if (!allUseHost.contains(dataHostName)) {
-                    LOGGER.info("dataHost " + dataHostName + " is useless,server will ignore it");
-                    errorInfos.add(new ErrorInfo("Xml", "WARNING", "dataHost " + dataHostName + " is useless"));
-                    dataHost.remove();
+        allUseShardingNode.clear();
+        //delete redundancy dbGroup
+        if (allUseHost.size() < this.dbGroups.size()) {
+            Iterator<String> dbGroup = this.dbGroups.keySet().iterator();
+            while (dbGroup.hasNext()) {
+                String dbGroupName = dbGroup.next();
+                if (!allUseHost.contains(dbGroupName)) {
+                    LOGGER.info("dbGroup " + dbGroupName + " is useless,server will ignore it");
+                    errorInfos.add(new ErrorInfo("Xml", "WARNING", "dbGroup " + dbGroupName + " is useless"));
+                    dbGroup.remove();
                 }
             }
         }
@@ -170,17 +170,17 @@ public class ConfigInitializer implements ProblemReporter {
         for (Map.Entry<String, List<Pair<String, String>>> entry : hostSchemaMap.entrySet()) {
             String hostName = entry.getKey();
             List<Pair<String, String>> nodeList = entry.getValue();
-            PhysicalDataHost pool = dataHosts.get(hostName);
+            PhysicalDbGroup pool = dbGroups.get(hostName);
 
             checkMaxCon(pool);
-            for (PhysicalDataSource ds : pool.getAllDataSources()) {
+            for (PhysicalDbInstance ds : pool.getAllDataSources()) {
                 if (ds.getConfig().isDisabled()) {
-                    errorInfos.add(new ErrorInfo("Backend", "WARNING", "DataHost[" + pool.getHostName() + "," + ds.getName() + "] is disabled"));
+                    errorInfos.add(new ErrorInfo("Backend", "WARNING", "DataHost[" + pool.getGroupName() + "," + ds.getName() + "] is disabled"));
                     LOGGER.info("DataHost[" + ds.getHostConfig().getName() + "] is disabled,just mark testing failed and skip it");
                     ds.setTestConnSuccess(false);
                     continue;
                 } else if (ds.isFakeNode()) {
-                    errorInfos.add(new ErrorInfo("Backend", "WARNING", "DataHost[" + pool.getHostName() + "," + ds.getName() + "] is fake Node"));
+                    errorInfos.add(new ErrorInfo("Backend", "WARNING", "DataHost[" + pool.getGroupName() + "," + ds.getName() + "] is fake Node"));
                     LOGGER.info("DataHost[" + ds.getHostConfig().getName() + "] is disabled,just mark testing failed and skip it");
                     ds.setTestConnSuccess(false);
                     continue;
@@ -211,26 +211,28 @@ public class ConfigInitializer implements ProblemReporter {
     }
 
 
-    private void checkMaxCon(PhysicalDataHost pool) {
+    private void checkMaxCon(PhysicalDbGroup pool) {
         int schemasCount = 0;
-        for (PhysicalDataNode dn : dataNodes.values()) {
-            if (dn.getDataHost() == pool) {
+        for (ShardingNode dn : shardingNodes.values()) {
+            if (dn.getDbGroup() == pool) {
                 schemasCount++;
             }
         }
-        if (pool.getDataHostConfig().getMaxCon() < Math.max(schemasCount + 1, pool.getDataHostConfig().getMinCon())) {
-            errorInfos.add(new ErrorInfo("Xml", "NOTICE", "DataHost[" + pool.getHostName() + "] maxCon too little,would be change to " +
-                    Math.max(schemasCount + 1, pool.getDataHostConfig().getMinCon())));
-        }
+        for (PhysicalDbInstance dataSource : pool.getAllDataSources()) {
+            if (dataSource.getConfig().getMaxCon() < Math.max(schemasCount + 1, dataSource.getConfig().getMinCon())) {
+                errorInfos.add(new ErrorInfo("Xml", "NOTICE", "dbInstance[" + pool.getGroupName() + "." + dataSource.getConfig().getInstanceName() + "] maxCon too little,would be change to " +
+                        Math.max(schemasCount + 1, dataSource.getConfig().getMinCon())));
+            }
 
-        if (Math.max(schemasCount + 1, pool.getDataHostConfig().getMinCon()) != pool.getDataHostConfig().getMinCon()) {
-            errorInfos.add(new ErrorInfo("Xml", "NOTICE", "DataHost[" + pool.getHostName() + "] minCon too little,Dble would init dataHost" +
-                    " with " + (schemasCount + 1) + " connections"));
+            if (Math.max(schemasCount + 1, dataSource.getConfig().getMinCon()) != dataSource.getConfig().getMinCon()) {
+                errorInfos.add(new ErrorInfo("Xml", "NOTICE", "DataHost[" + pool.getGroupName() + "] minCon too little,Dble would init dataHost" +
+                        " with " + (schemasCount + 1) + " connections"));
+            }
         }
     }
 
     private void testDataSource(Set<String> errNodeKeys, Set<String> errSourceKeys, BoolPtr isConnectivity,
-                                BoolPtr isAllDataSourceConnected, List<Pair<String, String>> nodeList, PhysicalDataHost pool, PhysicalDataSource ds) {
+                                BoolPtr isAllDataSourceConnected, List<Pair<String, String>> nodeList, PhysicalDbGroup pool, PhysicalDbInstance ds) {
         boolean isMaster = ds == pool.getWriteSource();
         String dataSourceName = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getName() + "]";
         try {
@@ -255,7 +257,7 @@ public class ConfigInitializer implements ProblemReporter {
                 if (!isConnected) {
                     isConnectivity.set(false);
                     for (Map.Entry<String, String> entry : testSchemaTask.getNodes().entrySet()) {
-                        dataNodes.get(entry.getValue()).setSchemaExists(false);
+                        shardingNodes.get(entry.getValue()).setSchemaExists(false);
                     }
                 }
             }
@@ -269,23 +271,23 @@ public class ConfigInitializer implements ProblemReporter {
 
     private void markDataSourceSchemaFail(Set<String> errKeys, List<Pair<String, String>> nodeList, String dataSourceName) {
         for (Pair<String, String> node : nodeList) {
-            String key = dataSourceName + ",data_node[" + node.getKey() + "],schema[" + node.getValue() + "]";
+            String key = dataSourceName + ",sharding_node[" + node.getKey() + "],sharding[" + node.getValue() + "]";
             errKeys.add(key);
-            dataNodes.get(node.getKey()).setSchemaExists(false);
+            shardingNodes.get(node.getKey()).setSchemaExists(false);
             LOGGER.warn("SelfCheck### test " + key + " database connection failed ");
         }
     }
 
     private Map<String, List<Pair<String, String>>> genHostSchemaMap() {
         Map<String, List<Pair<String, String>>> hostSchemaMap = new HashMap<>();
-        if (this.dataNodes != null && this.dataHosts != null) {
-            for (Map.Entry<String, PhysicalDataHost> entry : dataHosts.entrySet()) {
+        if (this.shardingNodes != null && this.dbGroups != null) {
+            for (Map.Entry<String, PhysicalDbGroup> entry : dbGroups.entrySet()) {
                 String hostName = entry.getKey();
-                PhysicalDataHost pool = entry.getValue();
-                for (PhysicalDataNode dataNode : dataNodes.values()) {
-                    if (pool.equals(dataNode.getDataHost())) {
+                PhysicalDbGroup pool = entry.getValue();
+                for (ShardingNode shardingNode : shardingNodes.values()) {
+                    if (pool.equals(shardingNode.getDbGroup())) {
                         List<Pair<String, String>> nodes = hostSchemaMap.computeIfAbsent(hostName, k -> new ArrayList<>());
-                        nodes.add(new Pair<>(dataNode.getName(), dataNode.getDatabase()));
+                        nodes.add(new Pair<>(shardingNode.getName(), shardingNode.getDatabase()));
                     }
                 }
             }
@@ -293,16 +295,8 @@ public class ConfigInitializer implements ProblemReporter {
         return hostSchemaMap;
     }
 
-    public SystemConfig getSystem() {
-        return system;
-    }
 
-
-    public FirewallConfig getFirewall() {
-        return firewall;
-    }
-
-    public Map<String, UserConfig> getUsers() {
+    public Map<Pair<String, String>, UserConfig> getUsers() {
         return users;
     }
 
@@ -310,54 +304,26 @@ public class ConfigInitializer implements ProblemReporter {
         return schemas;
     }
 
-    public Map<String, PhysicalDataNode> getDataNodes() {
-        return dataNodes;
+    public Map<String, ShardingNode> getShardingNodes() {
+        return shardingNodes;
     }
 
-    public Map<String, PhysicalDataHost> getDataHosts() {
-        return this.dataHosts;
+    public Map<String, PhysicalDbGroup> getDbGroups() {
+        return this.dbGroups;
     }
 
     public Map<ERTable, Set<ERTable>> getErRelations() {
         return erRelations;
     }
 
-    private Map<String, PhysicalDataHost> initDataHosts(SchemaLoader schemaLoader) {
-        Map<String, DataHostConfig> nodeConf = schemaLoader.getDataHosts();
-        //create PhysicalDBPool according to DataHost
-        Map<String, PhysicalDataHost> nodes = new HashMap<>(nodeConf.size());
-        for (DataHostConfig conf : nodeConf.values()) {
-            PhysicalDataHost pool = getPhysicalDBPoolSingleWH(conf);
-            nodes.put(pool.getHostName(), pool);
-        }
-        return nodes;
-    }
 
-    private PhysicalDataSource createDataSource(DataHostConfig conf, DataSourceConfig node,
-                                                boolean isRead) {
-        node.setIdleTimeout(system.getIdleTimeout());
-        return new MySQLDataSource(node, conf, isRead);
-    }
 
-    private PhysicalDataHost getPhysicalDBPoolSingleWH(DataHostConfig conf) {
-        //create PhysicalDatasource for write host
-        PhysicalDataSource writeSource = createDataSource(conf, conf.getWriteHost(), false);
-        PhysicalDataSource[] readSources = new PhysicalDataSource[conf.getReadHosts().length];
-        int i = 0;
-        for (DataSourceConfig readNode : conf.getReadHosts()) {
-            readSources[i++] = createDataSource(conf, readNode, true);
-        }
-
-        return new PhysicalDataHost(conf.getName(), conf, writeSource, readSources, conf.getBalance());
-    }
-
-    private Map<String, PhysicalDataNode> initDataNodes(SchemaLoader schemaLoader) {
-        Map<String, DataNodeConfig> nodeConf = schemaLoader.getDataNodes();
-        Map<String, PhysicalDataNode> nodes = new HashMap<>(nodeConf.size());
-        for (DataNodeConfig conf : nodeConf.values()) {
-            PhysicalDataHost pool = this.dataHosts.get(conf.getDataHost());
-            PhysicalDataNode dataNode = new PhysicalDataNode(conf.getDataHost(), conf.getName(), conf.getDatabase(), pool);
-            nodes.put(dataNode.getName(), dataNode);
+    private Map<String, ShardingNode> initShardingNodes(Map<String, ShardingNodeConfig> nodeConf) {
+        Map<String, ShardingNode> nodes = new HashMap<>(nodeConf.size());
+        for (ShardingNodeConfig conf : nodeConf.values()) {
+            PhysicalDbGroup pool = this.dbGroups.get(conf.getDbGroupName());
+            ShardingNode shardingNode = new ShardingNode(conf.getDbGroupName(), conf.getName(), conf.getDatabase(), pool);
+            nodes.put(shardingNode.getName(), shardingNode);
         }
         return nodes;
     }

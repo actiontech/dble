@@ -5,10 +5,10 @@
 
 package com.actiontech.dble.config.helper;
 
-import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDataSource;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.VersionUtil;
 import com.actiontech.dble.config.Isolations;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.OneTimeConnJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
@@ -31,11 +31,11 @@ public class GetAndSyncDataSourceKeyVariables implements Callable<KeyVariables> 
     private volatile boolean isFinish = false;
     private Condition finishCond = lock.newCondition();
     private volatile KeyVariables keyVariables;
-    private PhysicalDataSource ds;
+    private PhysicalDbInstance ds;
     private final String columnIsolation;
     private final boolean needSync;
 
-    public GetAndSyncDataSourceKeyVariables(PhysicalDataSource ds, boolean needSync) {
+    public GetAndSyncDataSourceKeyVariables(PhysicalDbInstance ds, boolean needSync) {
         this.ds = ds;
         this.needSync = needSync;
         String isolationName = VersionUtil.getIsolationNameByVersion(ds.getDsVersion());
@@ -84,7 +84,7 @@ public class GetAndSyncDataSourceKeyVariables implements Callable<KeyVariables> 
                 keyVariables.setLowerCase(!result.getResult().get(COLUMN_LOWER_CASE).equals("0"));
 
                 keyVariables.setAutocommit(result.getResult().get(COLUMN_AUTOCOMMIT).equals("1"));
-                keyVariables.setTargetAutocommit(DbleServer.getInstance().getConfig().getSystem().getAutocommit() == 1);
+                keyVariables.setTargetAutocommit(SystemConfig.getInstance().getAutocommit() == 1);
 
                 String isolation = result.getResult().get(columnIsolation);
                 switch (isolation) {
@@ -103,10 +103,10 @@ public class GetAndSyncDataSourceKeyVariables implements Callable<KeyVariables> 
                     default:
                         break;
                 }
-                keyVariables.setTargetIsolation(DbleServer.getInstance().getConfig().getSystem().getTxIsolation());
+                keyVariables.setTargetIsolation(SystemConfig.getInstance().getTxIsolation());
 
                 keyVariables.setMaxPacketSize(Integer.parseInt(result.getResult().get(COLUMN_MAX_PACKET)));
-                keyVariables.setTargetMaxPacketSize(DbleServer.getInstance().getConfig().getSystem().getMaxPacketSize() + KeyVariables.MARGIN_PACKET_SIZE);
+                keyVariables.setTargetMaxPacketSize(SystemConfig.getInstance().getMaxPacketSize() + KeyVariables.MARGIN_PACKET_SIZE);
 
 
 

@@ -35,8 +35,8 @@ import java.util.regex.Pattern;
 
 public final class CheckFullMetaData {
     /* check full @@metadata
-    check full @@metadata where schema = 'xx'
-    check full @@metadata where schema = 'xx' and table ='x'
+    check full @@metadata where sharding = 'xx'
+    check full @@metadata where sharding = 'xx' and table ='x'
     check full @@metadata where reload_time = '2018-01-05 11:01:04'
     check full @@metadata where reload_time >= '2018-01-05 11:01:04'
     check full @@metadata where reload_time <= '2018-01-05 11:01:04'

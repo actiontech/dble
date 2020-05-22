@@ -169,14 +169,14 @@ public abstract class BaseHandlerBuilder {
         for (Map.Entry<String, String> tableToSimple : mapTableToSimple.entrySet()) {
             sql = sql.replace(tableToSimple.getKey(), tableToSimple.getValue());
         }
-        String randomDataNode = getRandomNode(node.getNoshardNode());
-        RouteResultsetNode rrsNode = new RouteResultsetNode(randomDataNode, ServerParse.SELECT, sql);
+        String randomShardingNode = getRandomNode(node.getNoshardNode());
+        RouteResultsetNode rrsNode = new RouteResultsetNode(randomShardingNode, ServerParse.SELECT, sql);
         RouteResultsetNode[] rrss = new RouteResultsetNode[]{rrsNode};
         hBuilder.checkRRSs(rrss);
         if (session.getTargetCount() > 0 && session.getTarget(rrss[0]) == null) {
-            for (String dataNode : node.getNoshardNode()) {
-                if (!dataNode.equals(randomDataNode)) {
-                    RouteResultsetNode tmpRrsNode = new RouteResultsetNode(dataNode, ServerParse.SELECT, sql);
+            for (String shardingNode : node.getNoshardNode()) {
+                if (!shardingNode.equals(randomShardingNode)) {
+                    RouteResultsetNode tmpRrsNode = new RouteResultsetNode(shardingNode, ServerParse.SELECT, sql);
                     RouteResultsetNode[] tmpRrss = new RouteResultsetNode[]{tmpRrsNode};
                     hBuilder.checkRRSs(tmpRrss);
                     if (session.getTarget(tmpRrsNode) != null) {
@@ -393,13 +393,13 @@ public abstract class BaseHandlerBuilder {
         addHandler(mh);
     }
 
-    String getRandomNode(Set<String> dataNodes) {
+    String getRandomNode(Set<String> shardingNodes) {
         String randomDatenode = null;
-        int index = (int) (System.currentTimeMillis() % dataNodes.size());
+        int index = (int) (System.currentTimeMillis() % shardingNodes.size());
         int i = 0;
-        for (String dataNode : dataNodes) {
+        for (String shardingNode : shardingNodes) {
             if (index == i) {
-                randomDatenode = dataNode;
+                randomDatenode = shardingNode;
                 break;
             }
             i++;

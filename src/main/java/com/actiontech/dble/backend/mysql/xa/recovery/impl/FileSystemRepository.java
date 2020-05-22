@@ -5,12 +5,14 @@
 
 package com.actiontech.dble.backend.mysql.xa.recovery.impl;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
-import com.actiontech.dble.backend.mysql.xa.*;
+import com.actiontech.dble.backend.mysql.xa.CoordinatorLogEntry;
+import com.actiontech.dble.backend.mysql.xa.Deserializer;
+import com.actiontech.dble.backend.mysql.xa.Serializer;
+import com.actiontech.dble.backend.mysql.xa.VersionedFile;
 import com.actiontech.dble.backend.mysql.xa.recovery.DeserializationException;
 import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -41,7 +43,7 @@ public class FileSystemRepository implements Repository {
 
     @Override
     public void init() {
-        SystemConfig systemConfig = DbleServer.getInstance().getConfig().getSystem();
+        SystemConfig systemConfig = SystemConfig.getInstance();
 
         String baseDir = systemConfig.getXaRecoveryLogBaseDir();
         String baseName = systemConfig.getXaRecoveryLogBaseName();

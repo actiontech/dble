@@ -6,10 +6,10 @@
 package com.actiontech.dble.meta;
 
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.ClusterParamCfg;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.singleton.ProxyMeta;
-import com.alibaba.fastjson.JSONObject;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
@@ -68,14 +68,14 @@ public class ViewChildListener implements PathChildrenCacheListener {
         String path = childData.getPath();
         String[] paths = path.split("/");
         String jsonValue = new String(childData.getData(), StandardCharsets.UTF_8);
-        JSONObject obj = (JSONObject) JSONObject.parse(jsonValue);
+        JsonObject obj = new JsonParser().parse(jsonValue).getAsJsonObject();
 
         //if the view is create or replace by this server it self
-        String serverId = obj.getString(SERVER_ID);
-        if (serverId.equals(ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) {
+        String serverId = obj.get(SERVER_ID).getAsString();
+        if (serverId.equals(SystemConfig.getInstance().getInstanceId())) {
             return;
         }
-        String createSql = obj.getString(CREATE_SQL);
+        String createSql = obj.get(CREATE_SQL).getAsString();
         String schema = paths[paths.length - 1].split(SCHEMA_VIEW_SPLIT)[0];
 
         ViewMeta vm = new ViewMeta(schema, createSql, ProxyMeta.getInstance().getTmManager());

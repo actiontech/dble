@@ -681,7 +681,7 @@ public abstract class AbstractConnection implements NIOConnection {
     }
 
     public void setSocketParams(boolean isFrontChannel) throws IOException {
-        SystemConfig system = DbleServer.getInstance().getConfig().getSystem();
+        SystemConfig system = SystemConfig.getInstance();
         int soRcvBuf;
         int soSndBuf;
         int soNoDelay;

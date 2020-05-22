@@ -7,12 +7,12 @@ package com.actiontech.dble.singleton;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.kVtoXml.ClusterToXml;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.PauseInfo;
 import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.meta.PauseEndThreadPool;
@@ -41,7 +41,7 @@ public final class PauseDatanodeManager {
     protected static final Logger LOGGER = LoggerFactory.getLogger(PauseDatanodeManager.class);
     private static final PauseDatanodeManager INSTANCE = new PauseDatanodeManager();
     private ReentrantLock pauseLock = new ReentrantLock();
-    private volatile Set<String> dataNodes = null;
+    private volatile Set<String> shardingNodes = null;
     private Map<String, Set<String>> pauseMap = new ConcurrentHashMap<>();
     private AtomicBoolean isPausing = new AtomicBoolean(false);
     private DistributeLock uDistributeLock = null;
@@ -67,7 +67,7 @@ public final class PauseDatanodeManager {
                 return false;
             }
             pauseThreadPool = new PauseEndThreadPool(timeOut, queueLimit);
-            lockWithDataNodes(ds);
+            lockWithShardingNodes(ds);
             isPausing.set(true);
             return true;
         } finally {
@@ -75,21 +75,21 @@ public final class PauseDatanodeManager {
         }
     }
 
-    public void lockWithDataNodes(Set<String> dataNodeSet) {
-        LOGGER.info("Lock dataNodes with set size of" + dataNodeSet.size());
-        this.dataNodes = dataNodeSet;
+    public void lockWithShardingNodes(Set<String> shardingNodeSet) {
+        LOGGER.info("Lock dataNodes with set size of" + shardingNodeSet.size());
+        this.shardingNodes = shardingNodeSet;
         for (Entry<String, SchemaConfig> entry : DbleServer.getInstance().getConfig().getSchemas().entrySet()) {
-            if (dataNodes.contains(entry.getValue().getDataNode())) {
+            if (shardingNodes.contains(entry.getValue().getShardingNode())) {
                 LOGGER.info("lock for schema " + entry.getValue().getName() +
-                        " dataNode " + entry.getValue().getDataNode());
+                        " shardingNode " + entry.getValue().getShardingNode());
                 SchemaConfig schemaConfig = entry.getValue();
                 SchemaMeta schemaMeta = ProxyMeta.getInstance().getTmManager().getCatalogs().get(entry.getKey());
                 for (Entry<String, TableMeta> tabEntry : schemaMeta.getTableMetas().entrySet()) {
                     if (!schemaConfig.getTables().containsKey(tabEntry.getKey())) {
                         addToLockSet(entry.getKey(), tabEntry.getKey());
                     } else {
-                        for (String dataNode : schemaConfig.getTables().get(tabEntry.getKey()).getDataNodes()) {
-                            if (dataNodes.contains(dataNode)) {
+                        for (String shardingNode : schemaConfig.getTables().get(tabEntry.getKey()).getShardingNodes()) {
+                            if (shardingNodes.contains(shardingNode)) {
                                 addToLockSet(entry.getKey(), tabEntry.getKey());
                                 break;
                             }
@@ -101,8 +101,8 @@ public final class PauseDatanodeManager {
                 for (Entry<String, TableConfig> tableEntry : schemaConfig.getTables().entrySet()) {
                     LOGGER.info(new StringBuilder("lock for schema ").append(entry.getValue().getName()).append(" table config ").toString());
                     TableConfig tableConfig = tableEntry.getValue();
-                    for (String dataNode : tableConfig.getDataNodes()) {
-                        if (dataNodes.contains(dataNode)) {
+                    for (String shardingNode : tableConfig.getShardingNodes()) {
+                        if (shardingNodes.contains(shardingNode)) {
                             addToLockSet(entry.getKey(), tableEntry.getKey());
                             break;
                         }
@@ -137,7 +137,7 @@ public final class PauseDatanodeManager {
         pauseLock.lock();
         try {
             isPausing.set(false);
-            dataNodes = null;
+            shardingNodes = null;
             pauseMap.clear();
             pauseThreadPool.continueExec();
         } finally {
@@ -150,7 +150,7 @@ public final class PauseDatanodeManager {
         pauseLock.lock();
         try {
             if (isPausing.compareAndSet(true, false)) {
-                dataNodes = null;
+                shardingNodes = null;
                 pauseMap.clear();
                 pauseThreadPool.continueExec();
                 return true;
@@ -163,7 +163,7 @@ public final class PauseDatanodeManager {
 
     public boolean checkTarget(ConcurrentMap<RouteResultsetNode, BackendConnection> target) {
         for (Map.Entry<RouteResultsetNode, BackendConnection> entry : target.entrySet()) {
-            if (this.dataNodes.contains(entry.getKey().getName())) {
+            if (this.shardingNodes.contains(entry.getKey().getName())) {
                 return true;
             }
         }
@@ -173,7 +173,7 @@ public final class PauseDatanodeManager {
     public boolean checkRRS(RouteResultset rrs) {
         if (!rrs.isNeedOptimizer()) {
             for (RouteResultsetNode node : rrs.getNodes()) {
-                if (this.dataNodes.contains(node.getName())) {
+                if (this.shardingNodes.contains(node.getName())) {
                     return true;
                 }
             }
@@ -196,17 +196,17 @@ public final class PauseDatanodeManager {
     }
 
 
-    public boolean clusterPauseNotic(String dataNode, int timeOut, int queueLimit) {
+    public boolean clusterPauseNotic(String shardingNode, int timeOut, int queueLimit) {
         if (ClusterGeneralConfig.isUseGeneralCluster()) {
             try {
-                uDistributeLock = new DistributeLock(ClusterPathUtil.getPauseDataNodePath(),
-                        new PauseInfo(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), dataNode, PAUSE, timeOut, queueLimit).toString());
+                uDistributeLock = new DistributeLock(ClusterPathUtil.getPauseShardingNodePath(),
+                        new PauseInfo(SystemConfig.getInstance().getInstanceId(), shardingNode, PAUSE, timeOut, queueLimit).toString());
                 if (!uDistributeLock.acquire()) {
                     return false;
                 }
 
-                ClusterHelper.setKV(ClusterPathUtil.getPauseResultNodePath(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID)),
-                        ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+                ClusterHelper.setKV(ClusterPathUtil.getPauseResultNodePath(SystemConfig.getInstance().getInstanceId()),
+                        SystemConfig.getInstance().getInstanceId());
             } catch (Exception e) {
                 LOGGER.info("ucore connecction error", e);
                 return false;
@@ -246,18 +246,18 @@ public final class PauseDatanodeManager {
     public void resumeCluster() throws Exception {
         if (ClusterGeneralConfig.isUseGeneralCluster()) {
             ClusterHelper.setKV(ClusterPathUtil.getPauseResumePath(),
-                    new PauseInfo(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), " ", PauseInfo.RESUME, 0, 0).toString());
+                    new PauseInfo(SystemConfig.getInstance().getInstanceId(), " ", PauseInfo.RESUME, 0, 0).toString());
 
             //send self reponse
-            ClusterHelper.setKV(ClusterPathUtil.getPauseResumePath(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID)),
-                    ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+            ClusterHelper.setKV(ClusterPathUtil.getPauseResumePath(SystemConfig.getInstance().getInstanceId()),
+                    SystemConfig.getInstance().getInstanceId());
 
             LOGGER.info("try to resume cluster and waiting for others to response");
             ClusterHelper.waitingForAllTheNode(null, ClusterPathUtil.getPauseResumePath());
 
 
             PauseDatanodeManager.getInstance().getuDistributeLock().release();
-            ClusterHelper.cleanPath(ClusterPathUtil.getPauseDataNodePath());
+            ClusterHelper.cleanPath(ClusterPathUtil.getPauseShardingNodePath());
         }
 
     }
@@ -266,7 +266,7 @@ public final class PauseDatanodeManager {
         return uDistributeLock;
     }
 
-    public Set<String> getDataNodes() {
-        return dataNodes;
+    public Set<String> getShardingNodes() {
+        return shardingNodes;
     }
 }

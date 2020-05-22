@@ -6,26 +6,32 @@
 package com.actiontech.dble;
 
 
-import com.actiontech.dble.singleton.CustomMySQLHa;
 import com.actiontech.dble.cluster.ClusterController;
 import com.actiontech.dble.config.Versions;
+import com.actiontech.dble.config.loader.SystemConfigLoader;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.manager.handler.ShowServerLog;
+import com.actiontech.dble.singleton.CustomMySQLHa;
 import com.actiontech.dble.singleton.OnlineStatus;
 
-/**
- * @author mycat
- */
 public final class DbleStartup {
     private DbleStartup() {
     }
 
     public static void main(String[] args) {
-        ClusterController.init();
         try {
-            String home = SystemConfig.getHomePath();
+            ClusterController.loadClusterProperties();
+            //lod system properties
+            SystemConfigLoader.initSystemConfig();
+            if (SystemConfig.getInstance().getInstanceId() == null) {
+                String msg = "You must config instanceId in bootstrap.cnf and make sure it is an unique key for cluster";
+                System.out.println(msg);
+                System.exit(-1);
+            }
+            ClusterController.init();
+            String home = SystemConfig.getInstance().getHomePath();
             if (home == null) {
-                System.out.println(SystemConfig.SYS_HOME + "  is not set.");
+                System.out.println("homePath is not set.");
                 System.exit(-1);
             }
             Runtime.getRuntime().addShutdownHook(new Thread() {

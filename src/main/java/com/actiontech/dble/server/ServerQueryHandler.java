@@ -84,7 +84,7 @@ public class ServerQueryHandler implements FrontendQueryHandler {
                 case ServerParse.EXPLAIN:
                     ExplainHandler.handle(sql, c, rs >>> 8);
                     break;
-                //explain2 datanode=? sql=?
+                //explain2 shardingnode=? sql=?
                 case ServerParse.EXPLAIN2:
                     Explain2Handler.handle(sql, c, rs >>> 8);
                     break;

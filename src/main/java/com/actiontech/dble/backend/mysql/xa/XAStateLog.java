@@ -5,12 +5,12 @@
 
 package com.actiontech.dble.backend.mysql.xa;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.InMemoryRepository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.KVStoreRepository;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import org.slf4j.Logger;
@@ -59,7 +59,7 @@ public final class XAStateLog {
         CoordinatorLogEntry coordinatorLogEntry = IN_MEMORY_REPOSITORY.get(xaTxId);
         coordinatorLogEntry.setTxState(sessionState);
         flushMemoryRepository(xaTxId, coordinatorLogEntry);
-        if (DbleServer.getInstance().getConfig().getSystem().getUsePerformanceMode() == 1) {
+        if (SystemConfig.getInstance().getUsePerformanceMode() == 1) {
             return true;
         }
         //will preparing, may success send but failed received,should be rollback

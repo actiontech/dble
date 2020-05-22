@@ -66,7 +66,7 @@ public class SequenceTopropertiesLoader extends ZkMultiLoader implements NotifyS
     /**
      * sequenceZkToProperties
      *
-     * @param name schema
+     * @param name sharding
      * @throws Exception
      */
     private void sequenceZkToProperties(String name, DirectoryInf seqDirectory) throws Exception {

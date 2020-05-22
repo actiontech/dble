@@ -7,7 +7,6 @@ package com.actiontech.dble.config.loader.zkprocess.comm;
 
 import com.actiontech.dble.config.loader.console.ZookeeperPath;
 import com.actiontech.dble.util.ResourceUtil;
-import com.alibaba.fastjson.util.IOUtils;
 
 import java.io.*;
 
@@ -23,16 +22,23 @@ public final class ConfFileRWUtils {
     public static String readFile(String name) throws IOException {
         StringBuilder mapFileStr = new StringBuilder();
         String path = ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey() + name;
-        InputStream input = ResourceUtil.getResourceAsStreamFromRoot(path);
-        checkNotNull(input, "read file curr Path :" + path + " is null! It must be not null");
-        byte[] buffers = new byte[256];
+        InputStream input = null;
         try {
+            input = ResourceUtil.getResourceAsStreamFromRoot(path);
+            checkNotNull(input, "read file curr Path :" + path + " is null! It must be not null");
+            byte[] buffers = new byte[256];
             int readIndex;
             while ((readIndex = input.read(buffers)) != -1) {
                 mapFileStr.append(new String(buffers, 0, readIndex));
             }
         } finally {
-            IOUtils.close(input);
+            if (input != null) {
+                try {
+                    input.close();
+                } catch (IOException e1) {
+                    // ignore error
+                }
+            }
         }
         return mapFileStr.toString();
     }
@@ -61,8 +67,20 @@ public final class ConfFileRWUtils {
                 output.write(buffers, 0, readIndex);
             }
         } finally {
-            IOUtils.close(output);
-            IOUtils.close(input);
+            if (input != null) {
+                try {
+                    input.close();
+                } catch (IOException e1) {
+                    // ignore error
+                }
+            }
+            if (output != null) {
+                try {
+                    output.close();
+                } catch (IOException e1) {
+                    // ignore error
+                }
+            }
         }
     }
 }

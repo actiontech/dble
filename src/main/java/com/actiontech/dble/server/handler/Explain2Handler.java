@@ -45,19 +45,19 @@ public final class Explain2Handler {
 
         try {
             stmt = stmt.substring(offset);
-            if (!stmt.toLowerCase().contains("datanode=") || !stmt.toLowerCase().contains("sql=")) {
-                showError(stmt, c, "explain2 datanode=? sql=?");
+            if (!stmt.toLowerCase().contains("shardingnode=") || !stmt.toLowerCase().contains("sql=")) {
+                showError(stmt, c, "explain2 shardingnode=? sql=?");
                 return;
             }
-            String dataNode = stmt.substring(stmt.indexOf("=") + 1, stmt.indexOf("sql=")).trim();
+            String shardingNode = stmt.substring(stmt.indexOf("=") + 1, stmt.indexOf("sql=")).trim();
             String sql = "explain " + stmt.substring(stmt.indexOf("sql=") + 4, stmt.length()).trim();
 
-            if (dataNode.isEmpty() || sql.isEmpty()) {
+            if (shardingNode.isEmpty() || sql.isEmpty()) {
                 showError(stmt, c, "dataNode or sql is empty");
                 return;
             }
 
-            RouteResultsetNode node = new RouteResultsetNode(dataNode, ServerParse.SELECT, sql);
+            RouteResultsetNode node = new RouteResultsetNode(shardingNode, ServerParse.SELECT, sql);
             RouteResultset rrs = new RouteResultset(sql, ServerParse.SELECT);
             EMPTY_ARRAY[0] = node;
             rrs.setNodes(EMPTY_ARRAY);

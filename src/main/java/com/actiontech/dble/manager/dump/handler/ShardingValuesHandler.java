@@ -15,10 +15,10 @@ import java.util.Map;
 
 public class ShardingValuesHandler extends DefaultValuesHandler {
 
-    private Map<String, LongPtr> dataNodes = new HashMap<>(64);
+    private Map<String, LongPtr> shardingNodes = new HashMap<>(64);
 
     public void reset() {
-        dataNodes.clear();
+        shardingNodes.clear();
     }
 
     @Override
@@ -32,12 +32,12 @@ public class ShardingValuesHandler extends DefaultValuesHandler {
     @Override
     public void process(DumpFileContext context, List<SQLExpr> values, boolean isFirst) throws SQLNonTransientException, InterruptedException {
         Integer nodeIndex = handleShardingColumn(context, values);
-        String dataNode = context.getTableConfig().getDataNodes().get(nodeIndex);
+        String shardingNode = context.getTableConfig().getShardingNodes().get(nodeIndex);
         // sharding table
-        LongPtr num = dataNodes.get(dataNode);
+        LongPtr num = shardingNodes.get(shardingNode);
         if (num == null) {
-            dataNodes.put(dataNode, new LongPtr(1));
-            context.getWriter().writeInsertHeader(dataNode, insertHeader.toString() + toString(values, true));
+            shardingNodes.put(shardingNode, new LongPtr(1));
+            context.getWriter().writeInsertHeader(shardingNode, insertHeader.toString() + toString(values, true));
             return;
         }
         String stmt;
@@ -45,12 +45,12 @@ public class ShardingValuesHandler extends DefaultValuesHandler {
             num.incre();
             stmt = toString(values, false);
         } else {
-            dataNodes.put(dataNode, new LongPtr(1));
-            context.getWriter().writeInsertValues(dataNode, ";");
-            context.getWriter().writeInsertHeader(dataNode, insertHeader.toString());
+            shardingNodes.put(shardingNode, new LongPtr(1));
+            context.getWriter().writeInsertValues(shardingNode, ";");
+            context.getWriter().writeInsertHeader(shardingNode, insertHeader.toString());
             stmt = toString(values, true);
         }
-        context.getWriter().writeInsertValues(dataNode, stmt);
+        context.getWriter().writeInsertValues(shardingNode, stmt);
     }
 
     private Integer handleShardingColumn(DumpFileContext context, List<SQLExpr> values) throws SQLNonTransientException {
@@ -73,11 +73,11 @@ public class ShardingValuesHandler extends DefaultValuesHandler {
         try {
             nodeIndex = algorithm.calculate(shardingValue);
             // null means can't find any valid index
-            if (nodeIndex == null || nodeIndex >= context.getTableConfig().getDataNodes().size()) {
-                throw new SQLNonTransientException("can't find any valid datanode shardingValue" + values.toString());
+            if (nodeIndex == null || nodeIndex >= context.getTableConfig().getShardingNodes().size()) {
+                throw new SQLNonTransientException("can't find any valid shardingnode shardingValue" + values.toString());
             }
         } catch (Exception e) {
-            throw new SQLNonTransientException("can't calculate valid datanode shardingValue" + values.toString() + ",due to " + e.getMessage());
+            throw new SQLNonTransientException("can't calculate valid shardingnode shardingValue" + values.toString() + ",due to " + e.getMessage());
         }
         return nodeIndex;
     }

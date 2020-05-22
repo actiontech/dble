@@ -65,13 +65,10 @@ public final class Pair<K, V> {
     }
 
     private boolean isEquals(Object o1, Object o2) {
-        if (o1 == o2) {
-            return true;
-        }
         if (o1 == null) {
             return o2 == null;
         }
-        return o1.equals(o2);
+        return o1 == o2 || o1.equals(o2);
     }
 
 }

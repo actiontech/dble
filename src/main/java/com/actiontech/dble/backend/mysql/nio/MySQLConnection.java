@@ -13,6 +13,7 @@ import com.actiontech.dble.backend.mysql.xa.TxState;
 import com.actiontech.dble.btrace.provider.XaDelayProvider;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.Isolations;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.AbstractConnection;
 import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.handler.BackEndCleaner;
@@ -73,7 +74,7 @@ public class MySQLConnection extends AbstractConnection implements
         flag |= Capabilities.CLIENT_LONG_FLAG;
         flag |= Capabilities.CLIENT_CONNECT_WITH_DB;
         // flag |= Capabilities.CLIENT_NO_SCHEMA;
-        boolean usingCompress = DbleServer.getInstance().getConfig().getSystem().getUseCompression() == 1;
+        boolean usingCompress = SystemConfig.getInstance().getUseCompression() == 1;
         if (usingCompress) {
             flag |= Capabilities.CLIENT_COMPRESS;
         }
@@ -106,7 +107,7 @@ public class MySQLConnection extends AbstractConnection implements
         ROLLBACK.setArg("rollback".getBytes());
     }
 
-    private MySQLDataSource pool;
+    private MySQLInstance pool;
     private boolean fromSlaveDB;
     private long threadId;
     private HandshakeV10Packet handshake;
@@ -122,12 +123,12 @@ public class MySQLConnection extends AbstractConnection implements
         super(channel);
         this.lastTime = TimeUtil.currentTimeMillis();
         this.autocommitSynced = autocommitSynced;
-        boolean sysAutocommit = DbleServer.getInstance().getConfig().getSystem().getAutocommit() == 1;
+        boolean sysAutocommit = SystemConfig.getInstance().getAutocommit() == 1;
         this.autocommit = sysAutocommit == autocommitSynced; // T + T-> T, T + F-> F, F +T ->F, F + F->T
         this.fromSlaveDB = fromSlaveDB;
         this.isolationSynced = isolationSynced;
         if (isolationSynced) {
-            this.txIsolation = DbleServer.getInstance().getConfig().getSystem().getTxIsolation();
+            this.txIsolation = SystemConfig.getInstance().getTxIsolation();
         } else {
             /* if the txIsolation in server.xml is different from the isolation level in MySQL node,
              * it need to sync the status firstly for new idle connection*/
@@ -144,13 +145,13 @@ public class MySQLConnection extends AbstractConnection implements
 
     public void resetContextStatus() {
         if (isolationSynced) {
-            this.txIsolation = DbleServer.getInstance().getConfig().getSystem().getTxIsolation();
+            this.txIsolation = SystemConfig.getInstance().getTxIsolation();
         } else {
             this.txIsolation = -1;
         }
-        boolean sysAutocommit = DbleServer.getInstance().getConfig().getSystem().getAutocommit() == 1;
+        boolean sysAutocommit = SystemConfig.getInstance().getAutocommit() == 1;
         this.autocommit = sysAutocommit == autocommitSynced; // T + T-> T, T + F-> F, F +T ->F, F + F->T
-        this.initCharacterSet(DbleServer.getInstance().getConfig().getSystem().getCharset());
+        this.initCharacterSet(SystemConfig.getInstance().getCharset());
         this.usrVariables.clear();
         this.sysVariables.clear();
     }
@@ -200,11 +201,11 @@ public class MySQLConnection extends AbstractConnection implements
         }
     }
 
-    public MySQLDataSource getPool() {
+    public MySQLInstance getPool() {
         return pool;
     }
 
-    public void setPool(MySQLDataSource pool) {
+    public void setPool(MySQLInstance pool) {
         this.pool = pool;
     }
 
@@ -254,7 +255,7 @@ public class MySQLConnection extends AbstractConnection implements
         AuthPacket packet = new AuthPacket();
         packet.setPacketId(1);
         packet.setMaxPacketSize(maxPacketSize);
-        int charsetIndex = CharsetUtil.getCharsetDefaultIndex(DbleServer.getInstance().getConfig().getSystem().getCharset());
+        int charsetIndex = CharsetUtil.getCharsetDefaultIndex(SystemConfig.getInstance().getCharset());
         packet.setCharsetIndex(charsetIndex);
         packet.setUser(user);
         try {
@@ -453,7 +454,7 @@ public class MySQLConnection extends AbstractConnection implements
             DbleServer.getInstance().getWriteToBackendQueue().add(Collections.singletonList(sendQueryCmdTask(rrn.getStatement(), clientCharset)));
             return;
         }
-        // syn schema
+        // syn sharding
         List<WriteToBackendTask> taskList = new ArrayList<>(1);
         // and our query sql to multi command at last
         synSQL.append(rrn.getStatement()).append(";");

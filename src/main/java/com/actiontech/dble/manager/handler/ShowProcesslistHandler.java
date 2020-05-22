@@ -1,8 +1,8 @@
 package com.actiontech.dble.manager.handler;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
-import com.actiontech.dble.backend.datasource.PhysicalDataSource;
+import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
@@ -23,7 +23,7 @@ public class ShowProcesslistHandler {
     private static final String[] MYSQL_SHOW_PROCESSLIST_COLS = new String[]{
             "Id", "db", "Command", "Time", "State", "Info"};
     private static final String SQL = "SELECT Id,db,Command,Time,State,Info FROM information_schema.processlist where Id in ({0});";
-    private String dataNode;
+    private String shardingNode;
     private List<Long> threadIds;
     private Map<String, Map<String, String>> result;
     private Lock lock;
@@ -31,8 +31,8 @@ public class ShowProcesslistHandler {
     private boolean finished = false;
     private boolean success = false;
 
-    public ShowProcesslistHandler(String dataNode, List<Long> threadIds) {
-        this.dataNode = dataNode;
+    public ShowProcesslistHandler(String shardingNode, List<Long> threadIds) {
+        this.shardingNode = shardingNode;
         this.threadIds = threadIds;
         this.lock = new ReentrantLock();
         this.done = lock.newCondition();
@@ -40,15 +40,15 @@ public class ShowProcesslistHandler {
 
     public void execute() {
         String sbSql = SQL.replace("{0}", StringUtils.join(threadIds, ','));
-        PhysicalDataNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
-        PhysicalDataSource ds = dn.getDataHost().getWriteSource();
+        ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(shardingNode);
+        PhysicalDbInstance ds = dn.getDbGroup().getWriteSource();
         if (ds.isAlive()) {
             MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_PROCESSLIST_COLS, new MySQLShowProcesslistListener());
             SQLJob sqlJob = new SQLJob(sbSql, dn.getDatabase(), resultHandler, ds);
             sqlJob.run();
         } else {
             MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_PROCESSLIST_COLS, new MySQLShowProcesslistListener());
-            SQLJob sqlJob = new SQLJob(sbSql, dataNode, resultHandler, false);
+            SQLJob sqlJob = new SQLJob(sbSql, shardingNode, resultHandler, false);
             sqlJob.run();
         }
         waitDone();
@@ -92,14 +92,14 @@ public class ShowProcesslistHandler {
         @Override
         public void onResult(SQLQueryResult<List<Map<String, String>>> res) {
             if (!res.isSuccess()) {
-                LOGGER.warn("execute 'show processlist' error in " + dataNode);
+                LOGGER.warn("execute 'show processlist' error in " + shardingNode);
             } else {
                 success = true;
                 List<Map<String, String>> rows = res.getResult();
                 result = new HashMap<>(rows.size(), 1f);
                 for (Map<String, String> row : rows) {
                     String threadId = row.get(MYSQL_SHOW_PROCESSLIST_COLS[0]);
-                    result.put(dataNode + "." + threadId, row);
+                    result.put(shardingNode + "." + threadId, row);
                 }
             }
             signalDone();

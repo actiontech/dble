@@ -13,5 +13,5 @@ public interface SQLJobHandler {
 
     void onRowData(byte[] rowData);
 
-    void finished(String dataNode, boolean failed);
+    void finished(String shardingNode, boolean failed);
 }

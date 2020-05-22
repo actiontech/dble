@@ -94,7 +94,7 @@ public class JoinNode extends PlanNode {
         super.setUpFields();
         buildJoinFilters();
         buildOtherJoinOn();
-        buildJoinKeys(false);
+        buildJoinColumns(false);
     }
 
     @Override
@@ -275,14 +275,14 @@ public class JoinNode extends PlanNode {
      *
      * @param clearName if true:clear filter's itemname,else keep
      */
-    private void buildJoinKeys(boolean clearName) {
+    private void buildJoinColumns(boolean clearName) {
         Iterator<ItemFuncEqual> iterator = joinFilter.iterator();
         while (iterator.hasNext()) {
             ItemFuncEqual bf = iterator.next();
             if (clearName)
                 bf.setItemName(null);
-            boolean isJoinKey = PlanUtil.isJoinKey(bf, this);
-            if (!isJoinKey) {
+            boolean isJoinColumn = PlanUtil.isJoinColumn(bf, this);
+            if (!isJoinColumn) {
                 otherJoinOnFilter = FilterUtils.and(otherJoinOnFilter, bf);
                 iterator.remove();
             }
@@ -305,7 +305,7 @@ public class JoinNode extends PlanNode {
         return rightKeys;
     }
 
-    public JoinNode addJoinKeys(Item leftKey, Item rightKey) {
+    public JoinNode addJoinColumns(Item leftKey, Item rightKey) {
         this.joinFilter.add(FilterUtils.equal(leftKey, rightKey));
         return this;
     }
@@ -372,7 +372,7 @@ public class JoinNode extends PlanNode {
         this.leftOuter = this.rightOuter;
         this.rightOuter = tmpOuter;
 
-        this.buildJoinKeys(true);
+        this.buildJoinColumns(true);
 
     }
 

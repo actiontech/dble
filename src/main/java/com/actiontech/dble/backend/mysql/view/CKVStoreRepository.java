@@ -7,11 +7,12 @@ package com.actiontech.dble.backend.mysql.view;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.*;
-import com.actiontech.dble.cluster.bean.KvBean;
+import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.cluster.bean.KvBean;
 import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,7 +87,7 @@ public class CKVStoreRepository implements Repository {
         StringBuffer nsb = new StringBuffer().append(ClusterPathUtil.getViewPath()).
                 append(SEPARATOR).append(UPDATE).append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(viewName);
         DistributeLock distributeLock = new DistributeLock(lsb.toString(),
-                ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + UPDATE);
+                SystemConfig.getInstance().getInstanceId() + SCHEMA_VIEW_SPLIT + UPDATE);
 
 
         try {
@@ -102,10 +103,10 @@ public class CKVStoreRepository implements Repository {
             schemaMap.put(viewName, createSql);
             ClusterHelper.setKV(sb.toString(), createSql);
             ClusterDelayProvider.delayAfterViewSetKey();
-            ClusterHelper.setKV(nsb.toString(), ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + UPDATE);
+            ClusterHelper.setKV(nsb.toString(), SystemConfig.getInstance().getInstanceId() + SCHEMA_VIEW_SPLIT + UPDATE);
             ClusterDelayProvider.delayAfterViewNotic();
             //self reponse set
-            ClusterHelper.setKV(nsb.toString() + ClusterPathUtil.SEPARATOR + ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ClusterPathUtil.SUCCESS);
+            ClusterHelper.setKV(nsb.toString() + ClusterPathUtil.SEPARATOR + SystemConfig.getInstance().getInstanceId(), ClusterPathUtil.SUCCESS);
 
             String errorMsg = ClusterHelper.waitingForAllTheNode(ClusterPathUtil.SUCCESS, nsb.toString() + SEPARATOR);
 
@@ -140,15 +141,15 @@ public class CKVStoreRepository implements Repository {
      */
     @Override
     public void delete(String schemaName, String view) {
-        StringBuffer sb = new StringBuffer().append(ClusterPathUtil.getViewPath()).
+        StringBuilder sb = new StringBuilder().append(ClusterPathUtil.getViewPath()).
                 append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(view);
-        StringBuffer nsb = new StringBuffer().append(ClusterPathUtil.getViewPath()).
+        StringBuilder nsb = new StringBuilder().append(ClusterPathUtil.getViewPath()).
                 append(SEPARATOR).append(UPDATE).append(SEPARATOR).
                 append(schemaName).append(SCHEMA_VIEW_SPLIT).append(view);
-        StringBuffer lsb = new StringBuffer().append(ClusterPathUtil.getViewPath()).
-                append(SEPARATOR).append(LOCK).append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(view);
-        DistributeLock distributeLock = new DistributeLock(lsb.toString(),
-                ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + DELETE);
+        String lsb = ClusterPathUtil.getViewPath() +
+                SEPARATOR + LOCK + SEPARATOR + schemaName + SCHEMA_VIEW_SPLIT + view;
+        DistributeLock distributeLock = new DistributeLock(lsb,
+                SystemConfig.getInstance().getInstanceId() + SCHEMA_VIEW_SPLIT + DELETE);
 
         try {
             viewCreateSqlMap.get(schemaName).remove(view);
@@ -162,11 +163,11 @@ public class CKVStoreRepository implements Repository {
             ClusterDelayProvider.delayAfterGetLock();
             ClusterHelper.cleanKV(sb.toString());
             ClusterDelayProvider.delayAfterViewSetKey();
-            ClusterHelper.setKV(nsb.toString(), ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID) + SCHEMA_VIEW_SPLIT + DELETE);
+            ClusterHelper.setKV(nsb.toString(), SystemConfig.getInstance().getInstanceId() + SCHEMA_VIEW_SPLIT + DELETE);
             ClusterDelayProvider.delayAfterViewNotic();
 
             //self reponse set
-            ClusterHelper.setKV(nsb.toString() + ClusterPathUtil.SEPARATOR + ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID), ClusterPathUtil.SUCCESS);
+            ClusterHelper.setKV(nsb.toString() + ClusterPathUtil.SEPARATOR + SystemConfig.getInstance().getInstanceId(), ClusterPathUtil.SUCCESS);
 
             String errorMsg = ClusterHelper.waitingForAllTheNode(ClusterPathUtil.SUCCESS, nsb.toString() + SEPARATOR);
 

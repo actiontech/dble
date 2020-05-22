@@ -35,7 +35,7 @@ public class HintMasterDBHandler implements HintHandler {
         RouteResultset rrs = RouteStrategyFactory.getRouteStrategy().route(
                 schema, sqlType, realSQL, sc);
 
-        LOGGER.debug("schema.rrs(): " + rrs); // master
+        LOGGER.debug("rrs(): " + rrs); // master
         Boolean isRouteToMaster = null;
 
         LOGGER.debug("hintSQLValue:::::::::" + hintSQLValue); // slave

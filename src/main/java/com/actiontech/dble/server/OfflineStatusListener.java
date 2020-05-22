@@ -6,10 +6,10 @@
 package com.actiontech.dble.server;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.cluster.ClusterParamCfg;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.BinlogPause;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
+import com.actiontech.dble.config.model.ClusterConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -101,10 +101,10 @@ public class OfflineStatusListener implements PathChildrenCacheListener {
             }
             if (BinlogPause.BinlogPauseStatus.ON == binlogPauseInfo.getStatus()) {
                 //ClusterParamCfg.CLUSTER_CFG_MYID
-                String instancePath = ZKPaths.makePath(KVPathUtil.getBinlogPauseInstance(), ZkConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID));
+                String instancePath = ZKPaths.makePath(KVPathUtil.getBinlogPauseInstance(), SystemConfig.getInstance().getInstanceId());
                 boolean needDelete = true;
                 long beginTime = TimeUtil.currentTimeMillis();
-                long timeout = DbleServer.getInstance().getConfig().getSystem().getShowBinlogStatusTimeout();
+                long timeout = ClusterConfig.getInstance().getShowBinlogStatusTimeout();
                 while (zkConn.checkExists().forPath(instancePath) == null) {
                     //wait 2* timeout to release itself
                     if (TimeUtil.currentTimeMillis() > beginTime + 2 * timeout) {

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -  
+ - Licensed under the Apache License, Version 2.0 (the "License");
+ - you may not use this file except in compliance with the License.
+ - You may obtain a copy of the License at
+ -  
+ -      http://www.apache.org/licenses/LICENSE-2.0
+ -  
+ - Unless required by applicable law or agreed to in writing, software
+ - distributed under the License is distributed on an "AS IS" BASIS,
+ - WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ - See the License for the specific language governing permissions and
+ - limitations under the License.
+-->
+<!DOCTYPE dble:sharding SYSTEM "sharding.dtd">
+<dble:sharding xmlns:dble="http://dble.cloud/">
+
+    <!-- schema定义 -->
+    <schema name="dbtest">
+
+        <shardingTable name="tb1" shardingNode="dnTest2,dnTest1" function="func1" shardingColumn="id" />
+        <shardingTable name="tb2" shardingNode="dnTest2,dnTest3" function="func1" shardingColumn="id"/>
+        <shardingTable name="tb3" shardingNode="dnTest1,dnTest2" function="func1" shardingColumn="id"/>
+    </schema>
+
+
+    <schema name="dbtest2" sqlMaxLimit="100" shardingNode="dnTest4"></schema>
+
+    <schema name="ertest">
+        <shardingTable name="er_parent" shardingNode="dnTest1,dnTest2" function="func1" shardingColumn="id">
+            <childTable name="er_child1" joinColumn="child1_id" parentColumn="id">
+                <childTable name="er_grandson" joinColumn="grandson_id" parentColumn="child1_id"/>
+            </childTable>
+            <childTable name="er_child2" joinColumn="child2_id" parentColumn="id2"/>
+            <childTable name="er_child3" joinColumn="child_char" parentColumn="c_char"/>
+            <childTable name="er_child4" joinColumn="child4_id" parentColumn="id2">
+                <childTable name="er_grandson2" joinColumn="grandson2_id"
+                            parentColumn="child4_id2"/>
+            </childTable>
+            <childTable name="er_child5" joinColumn="child5_id" parentColumn="id">
+                <childTable name="er_grandson3" joinColumn="grandson3_id"
+                            parentColumn="child5_id2"/>
+            </childTable>
+        </shardingTable>
+    </schema>
+    <!-- 数据节点定义，数据节点由数据源和其他一些参数组织而成。 -->
+    <shardingNode name="dnTest1" dbGroup="localhost1" database="db1"/>
+    <shardingNode name="dnTest2" dbGroup="localhost1" database="db2"/>
+    <shardingNode name="dnTest3" dbGroup="localhost1" database="db3"/>
+    <shardingNode name="dnTest4" dbGroup="localhost2" database="db4"/>
+
+
+    <function name="func1"
+              class="com.actiontech.dble.route.function.PartitionByLong">
+        <property name="partitionCount">2</property>
+        <property name="partitionLength">512</property>
+    </function>
+</dble:sharding>

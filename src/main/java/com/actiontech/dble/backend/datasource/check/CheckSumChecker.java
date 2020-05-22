@@ -67,8 +67,8 @@ public class CheckSumChecker extends AbstractConsistencyChecker {
             StringBuilder sb = new StringBuilder("Error when check Global Consistency, Table ");
             sb.append(tableName).append(" dataNode ");
             for (SQLQueryResult<List<Map<String, String>>> r : elist) {
-                LOGGER.info("error node is : " + r.getTableName() + "-" + r.getDataNode());
-                sb.append(r.getDataNode()).append(",");
+                LOGGER.info("error node is : " + r.getTableName() + "-" + r.getShardingNode());
+                sb.append(r.getShardingNode()).append(",");
             }
             sb.setLength(sb.length() - 1);
             AlertUtil.alertSelf(AlarmCode.GLOBAL_TABLE_COLUMN_LOST, Alert.AlertLevel.WARN, sb.toString(), AlertUtil.genSingleLabel("TABLE", tableId));

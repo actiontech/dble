@@ -5,20 +5,19 @@
  */
 package com.actiontech.dble.net;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Versions;
-import com.actiontech.dble.config.util.AuthUtil;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.manager.ManagerConnection;
-import com.actiontech.dble.net.handler.*;
-import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.server.ServerConnection;
+import com.actiontech.dble.net.handler.FrontendQueryHandler;
+import com.actiontech.dble.net.mysql.ErrorPacket;
+import com.actiontech.dble.net.mysql.HandshakeV10Packet;
+import com.actiontech.dble.route.parser.util.Pair;
+import com.actiontech.dble.server.response.Ping;
 import com.actiontech.dble.singleton.FrontendUserManager;
-import com.actiontech.dble.singleton.SerializableLock;
-import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.RandomUtil;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
@@ -30,10 +29,6 @@ import java.net.InetSocketAddress;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.NetworkChannel;
 import java.nio.channels.SocketChannel;
-import java.util.List;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author mycat
@@ -43,22 +38,15 @@ public abstract class FrontendConnection extends AbstractConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(FrontendConnection.class);
 
     protected byte[] seed;
-    protected String user;
-    protected String schema;
+    protected Pair<String, String> user;
     private long clientFlags;
-
-    protected String executeSql;
-
-    protected FrontendPrivileges privileges;
-    protected FrontendQueryHandler queryHandler;
-    protected FrontendPrepareHandler prepareHandler;
-    protected LoadDataInfileHandler loadDataInfileHandler;
+    protected String schema;
 
     protected boolean isAccepted;
     protected boolean isAuthenticated;
-    private boolean userReadOnly = true;
-    private boolean sessionReadOnly = false;
-    private volatile boolean multStatementAllow = false;
+
+    protected FrontendQueryHandler queryHandler;
+    protected String executeSql;
 
     public FrontendConnection(NetworkChannel channel) throws IOException {
         super(channel);
@@ -75,7 +63,6 @@ public abstract class FrontendConnection extends AbstractConnection {
         this.host = remoteAddress.getHostString();
         this.port = localAddress.getPort();
         this.localPort = remoteAddress.getPort();
-        this.handler = new FrontendAuthenticator(this);
     }
 
     public FrontendConnection() {
@@ -123,68 +110,17 @@ public abstract class FrontendConnection extends AbstractConnection {
         processor.addFrontend(this);
     }
 
-    public LoadDataInfileHandler getLoadDataInfileHandler() {
-        return loadDataInfileHandler;
-    }
-
-    public void setLoadDataInfileHandler(LoadDataInfileHandler loadDataInfileHandler) {
-        this.loadDataInfileHandler = loadDataInfileHandler;
-    }
-
-    public boolean isMultStatementAllow() {
-        return multStatementAllow;
-    }
-
-    public void setMultStatementAllow(boolean multStatementAllow) {
-        this.multStatementAllow = multStatementAllow;
-    }
-
-    public void setQueryHandler(FrontendQueryHandler queryHandler) {
-        this.queryHandler = queryHandler;
-    }
-
-    public void setPrepareHandler(FrontendPrepareHandler prepareHandler) {
-        this.prepareHandler = prepareHandler;
-    }
 
     public void setAuthenticated(boolean authenticated) {
         this.isAuthenticated = authenticated;
     }
 
-    public FrontendPrivileges getPrivileges() {
-        return privileges;
-    }
-
-    public void setPrivileges(FrontendPrivileges privileges) {
-        this.privileges = privileges;
-    }
-
-    public void setSessionReadOnly(boolean sessionReadOnly) {
-        this.sessionReadOnly = sessionReadOnly;
-    }
-
-    public boolean isReadOnly() {
-        return userReadOnly || sessionReadOnly;
-    }
-
-    public String getUser() {
+    public Pair<String, String> getUser() {
         return user;
     }
 
-    public void setUser(String user) {
-        this.user = user;
-        this.userReadOnly = privileges.isReadOnly(user);
-    }
-
-    public String getSchema() {
-        return schema;
-    }
-
-    public void setSchema(String schema) {
-        if (schema != null && DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
-            schema = schema.toLowerCase();
-        }
-        this.schema = schema;
+    public void setQueryHandler(FrontendQueryHandler queryHandler) {
+        this.queryHandler = queryHandler;
     }
 
     public String getExecuteSql() {
@@ -195,10 +131,26 @@ public abstract class FrontendConnection extends AbstractConnection {
         this.executeSql = executeSql;
     }
 
+    public void setUser(Pair<String, String> user) {
+        this.user = user;
+    }
+
+    public String getUserInfo() {
+        String userInfo = user.getKey();
+        if (user.getValue() != null) {
+            userInfo += ":" + user.getValue();
+        }
+        return userInfo;
+    }
+
+
     public byte[] getSeed() {
         return seed;
     }
 
+    public String getSchema() {
+        return schema;
+    }
     public void initCharsetIndex(int ci) {
         String name = CharsetUtil.getCharset(ci);
         if (name != null) {
@@ -230,91 +182,19 @@ public abstract class FrontendConnection extends AbstractConnection {
         err.write(this);
     }
 
-    protected abstract void setRequestTime();
 
-    public abstract void startProcess();
-
-    protected abstract void markFinished();
-
-    public void initDB(byte[] data) {
-        MySQLMessage mm = new MySQLMessage(data);
-        mm.position(5);
-        String db = null;
+    public void query(byte[] data) {
+        String sql = null;
         try {
-            db = mm.readString(charsetName.getClient());
+            MySQLMessage mm = new MySQLMessage(data);
+            mm.position(5);
+            sql = mm.readString(charsetName.getClient());
         } catch (UnsupportedEncodingException e) {
             writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + charsetName.getClient() + "'");
             return;
         }
-        if (db != null && DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
-            db = db.toLowerCase();
-        }
-        // check schema
-        if (db == null || !privileges.schemaExists(db)) {
-            writeErrMessage(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + db + "'");
-            return;
-        }
-
-        if (!privileges.userExists(user, host)) {
-            writeErrMessage(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + user + "'");
-            return;
-        }
-
-        Set<String> schemas = privileges.getUserSchemas(user);
-        if (schemas == null || schemas.size() == 0 || schemas.contains(db)) {
-            this.schema = db;
-            if (this instanceof ServerConnection) {
-                ((ServerConnection) this).getSession2().setRowCount(0);
-            }
-            write(writeToBuffer(OkPacket.OK, allocate()));
-        } else {
-            String s = "Access denied for user '" + user + "' to database '" + db + "'";
-            writeErrMessage(ErrorCode.ER_DBACCESS_DENIED_ERROR, s);
-        }
+        query(sql);
     }
-
-
-    public void loadDataInfileStart(String sql) {
-        if (loadDataInfileHandler != null) {
-            try {
-                loadDataInfileHandler.start(sql);
-            } catch (Exception e) {
-                LOGGER.info("load data error", e);
-                writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.getMessage());
-            }
-
-        } else {
-            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "load data infile sql is not  unsupported!");
-        }
-    }
-
-    public void loadDataInfileData(byte[] data) {
-        if (loadDataInfileHandler != null) {
-            try {
-                loadDataInfileHandler.handle(data);
-            } catch (Exception e) {
-                LOGGER.info("load data error", e);
-                writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.getMessage());
-            }
-        } else {
-            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "load data infile  data is not  unsupported!");
-        }
-
-    }
-
-    public void loadDataInfileEnd(byte packID) {
-        if (loadDataInfileHandler != null) {
-            try {
-                loadDataInfileHandler.end(packID);
-            } catch (Exception e) {
-                LOGGER.info("load data error", e);
-                writeErrMessage(ErrorCode.ERR_HANDLE_DATA, e.getMessage());
-            }
-        } else {
-            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "load data infile end is not  unsupported!");
-        }
-    }
-
 
     public void query(String sql) {
         if (sql == null || sql.length() == 0) {
@@ -333,188 +213,23 @@ public abstract class FrontendConnection extends AbstractConnection {
         // record SQL
         this.setExecuteSql(sql);
 
-        if (!privileges.checkFirewallSQLPolicy(user, sql)) {
-            writeErrMessage(ErrorCode.ERR_WRONG_USED, "The statement is unsafe SQL, reject for user '" + user + "'");
-            return;
-        }
+        handlerQuery(sql);
 
-        // execute
-        if (queryHandler != null) {
-            queryHandler.setReadOnly(userReadOnly);
-            queryHandler.setSessionReadOnly(sessionReadOnly);
-            queryHandler.query(sql);
-        } else {
-            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Query unsupported!");
-        }
     }
 
-    public void query(byte[] data) {
-        String sql = null;
-        try {
-            MySQLMessage mm = new MySQLMessage(data);
-            mm.position(5);
-            sql = mm.readString(charsetName.getClient());
-        } catch (UnsupportedEncodingException e) {
-            writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + charsetName.getClient() + "'");
-            return;
-        }
-        if (this instanceof ServerConnection) {
-            SerializableLock.getInstance().lock(this.id);
-        }
-        this.query(sql);
-    }
-
-    public void stmtPrepare(byte[] data) {
-        if (prepareHandler != null) {
-            MySQLMessage mm = new MySQLMessage(data);
-            mm.position(5);
-            String sql = null;
-            try {
-                sql = mm.readString(charsetName.getClient());
-            } catch (UnsupportedEncodingException e) {
-                writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET,
-                        "Unknown charset '" + charsetName.getClient() + "'");
-                return;
-            }
-            if (sql == null || sql.length() == 0) {
-                writeErrMessage(ErrorCode.ER_NOT_ALLOWED_COMMAND, "Empty SQL");
-                return;
-            }
-
-            // record SQL
-            this.setExecuteSql(sql);
-
-            // execute
-            prepareHandler.prepare(sql);
-        } else {
-            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare unsupported!");
-        }
-    }
-
-    public void stmtSendLongData(byte[] data) {
-        if (prepareHandler != null) {
-            prepareHandler.sendLongData(data);
-        } else {
-            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare unsupported!");
-        }
-    }
-
-    public void setOption(byte[] data) {
-        MySQLMessage mm = new MySQLMessage(data); //see sql\protocol_classic.cc parse_packet
-        if (mm.length() == 7) {
-            mm.position(5);
-            int optCommand = mm.readUB2();
-            if (optCommand == 0) {
-                this.multStatementAllow = true;
-                write(writeToBuffer(EOFPacket.EOF, allocate()));
-                return;
-            } else if (optCommand == 1) {
-                this.multStatementAllow = false;
-                write(writeToBuffer(EOFPacket.EOF, allocate()));
-                return;
-            }
-        }
-        writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Set Option ERROR!");
-    }
-
-    //  mysql-server\sql\sql_class.cc void THD::cleanup_connection(void)
-    public void resetConnection() {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("resetConnection request");
-        }
-        innerResetConnection();
-        this.write(OkPacket.OK);
-    }
-
-    private void innerResetConnection() {
-        if (this instanceof ServerConnection) {
-            ServerConnection sc = (ServerConnection) this;
-            sc.innerCleanUp();
-        }
-    }
-
-    public void changeUser(byte[] data, ChangeUserPacket changeUserPacket, AtomicBoolean isAuthSwitch) {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("changeUser request");
-        }
-        innerResetConnection();
-        changeUserPacket.read(data);
-        if ("mysql_native_password".equals(changeUserPacket.getAuthPlugin())) {
-            AuthSwitchRequestPackage authSwitch = new AuthSwitchRequestPackage(changeUserPacket.getAuthPlugin().getBytes(), this.getSeed());
-            authSwitch.setPacketId(changeUserPacket.getPacketId() + 1);
-            isAuthSwitch.set(true);
-            authSwitch.write(this);
-        } else {
-            writeErrMessage((byte) (changeUserPacket.getPacketId() + 1), ErrorCode.ER_PLUGIN_IS_NOT_LOADED, "NOT SUPPORT THIS PLUGIN!");
-        }
-    }
-
-    public void changeUserAuthSwitch(byte[] data, ChangeUserPacket changeUserPacket) {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("changeUser AuthSwitch request");
-        }
-        AuthSwitchResponsePackage authSwitchResponse = new AuthSwitchResponsePackage();
-        authSwitchResponse.read(data);
-        changeUserPacket.setPassword(authSwitchResponse.getAuthPluginData());
-        String errMsg = AuthUtil.authority(this, changeUserPacket.getUser(), changeUserPacket.getPassword(), changeUserPacket.getDatabase(), false);
-        byte packetId = (byte) (authSwitchResponse.getPacketId() + 1);
-        if (errMsg == null) {
-            changeUserSuccess(changeUserPacket, packetId);
-        } else {
-            writeErrMessage(packetId, ErrorCode.ER_ACCESS_DENIED_ERROR, errMsg);
-        }
-    }
-
-    private void changeUserSuccess(ChangeUserPacket newUser, byte packetId) {
-        this.setUser(newUser.getUser());
-        this.setSchema(newUser.getDatabase());
-        this.initCharsetIndex(newUser.getCharsetIndex());
-        OkPacket ok = new OkPacket();
-        ok.read(OkPacket.OK);
-        ok.setPacketId(packetId);
-        ok.write(this);
-    }
-
-    public void stmtReset(byte[] data) {
-        if (prepareHandler != null) {
-            prepareHandler.reset(data);
-        } else {
-            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare unsupported!");
-        }
-    }
-
-    public void stmtExecute(byte[] data, Queue<byte[]> dataqueue) {
-        byte[] sendData = dataqueue.poll();
-        while (sendData != null) {
-            this.stmtSendLongData(sendData);
-            sendData = dataqueue.poll();
-        }
-        if (prepareHandler != null) {
-            prepareHandler.execute(data);
-        } else {
-            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare unsupported!");
-        }
-    }
-
-    public void stmtClose(byte[] data) {
-        if (prepareHandler != null) {
-            prepareHandler.close(data);
-        } else {
-            writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare unsupported!");
-        }
-    }
 
     public void ping() {
-        write(writeToBuffer(OkPacket.OK, allocate()));
+        Ping.response(this);
     }
 
-    public void heartbeat(byte[] data) {
-        write(writeToBuffer(OkPacket.OK, allocate()));
-    }
+    protected abstract void handlerQuery(String sql);
 
-    public void kill(byte[] data) {
-        writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
-    }
+    protected abstract void setRequestTime();
+
+    public abstract void startProcess();
+
+    protected abstract void markFinished();
+    protected abstract void setSchema(String schema);
 
     @Override
     public void register() throws IOException {
@@ -537,7 +252,7 @@ public abstract class FrontendConnection extends AbstractConnection {
             hs.setThreadId(id);
             hs.setSeed(rand1);
             hs.setServerCapabilities(getServerCapabilities());
-            int charsetIndex = CharsetUtil.getCharsetDefaultIndex(DbleServer.getInstance().getConfig().getSystem().getCharset());
+            int charsetIndex = CharsetUtil.getCharsetDefaultIndex(SystemConfig.getInstance().getCharset());
             hs.setServerCharsetIndex((byte) (charsetIndex & 0xff));
             hs.setServerStatus(2);
             hs.setRestOfScrambleBuff(rand2);
@@ -545,49 +260,6 @@ public abstract class FrontendConnection extends AbstractConnection {
         }
     }
 
-    @Override
-    public void handle(final byte[] data) {
-        setRequestTime();
-        if (isSupportCompress()) {
-            List<byte[]> packs = CompressUtil.decompressMysqlPacket(data, decompressUnfinishedDataQueue);
-            for (byte[] pack : packs) {
-                if (pack.length != 0) {
-                    rawHandle(pack);
-                }
-            }
-
-        } else {
-            rawHandle(data);
-        }
-    }
-
-    public void rawHandle(final byte[] data) {
-
-        //load data infile  client send empty packet which size is 4
-        if (data.length == 4 && data[0] == 0 && data[1] == 0 && data[2] == 0) {
-            // load in data empty packet
-            DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
-                @Override
-                public void run() {
-                    loadDataInfileEnd(data[3]);
-                }
-            });
-            return;
-        }
-        //when TERMINATED char of load data infile is \001
-        if (data.length > 4 && data[0] == 1 && data[1] == 0 && data[2] == 0 && data[3] == 0 && data[4] == MySQLPacket.COM_QUIT) {
-            this.getProcessor().getCommands().doQuit();
-            DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
-                @Override
-                public void run() {
-                    close("quit cmd");
-                }
-            });
-            return;
-        }
-        handler.handle(data);
-
-    }
 
     protected int getServerCapabilities() {
         int flag = 0;
@@ -596,7 +268,7 @@ public abstract class FrontendConnection extends AbstractConnection {
         flag |= Capabilities.CLIENT_LONG_FLAG;
         flag |= Capabilities.CLIENT_CONNECT_WITH_DB;
         // flag |= Capabilities.CLIENT_NO_SCHEMA;
-        boolean usingCompress = DbleServer.getInstance().getConfig().getSystem().getUseCompression() == 1;
+        boolean usingCompress = SystemConfig.getInstance().getUseCompression() == 1;
         if (usingCompress) {
             flag |= Capabilities.CLIENT_COMPRESS;
         }
@@ -614,16 +286,8 @@ public abstract class FrontendConnection extends AbstractConnection {
         flag |= Capabilities.CLIENT_MULTI_STATEMENTS;
         flag |= Capabilities.CLIENT_MULTI_RESULTS;
         flag |= Capabilities.CLIENT_PLUGIN_AUTH;
+        flag |= Capabilities.CLIENT_CONNECT_ATTRS;
         return flag;
-    }
-
-    @Override
-    public String toString() {
-        return "[thread=" +
-                Thread.currentThread().getName() + ",class=" +
-                getClass().getSimpleName() + ",frontId=" + id +
-                ",host=" + host + ",port=" + port +
-                ",schema=" + schema + ']';
     }
 
     @Override

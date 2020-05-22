@@ -5,12 +5,15 @@
 
 package com.actiontech.dble.config.loader.zkprocess.comm;
 
-import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.config.loader.zkprocess.zktoxml.ZktoXmlMain;
+import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.singleton.OnlineStatus;
+import com.actiontech.dble.util.KVPathUtil;
+import com.actiontech.dble.util.ZKUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Properties;
+import java.nio.charset.StandardCharsets;
 
 
 /**
@@ -28,17 +31,13 @@ public final class ZkConfig {
 
     private static ZkConfig zkCfgInstance = new ZkConfig();
 
-    private static Properties zkProperties = null;
 
-
-    public String getZkURL() {
-        return zkProperties == null ? null :
-                zkProperties.getProperty(ClusterParamCfg.CLUSTER_PLUGINS_IP.getKey());
-    }
-
-    public static void initZk(Properties cluterProperties) {
+    public static void initZk() {
         try {
-            zkProperties = cluterProperties;
+            tryDeleteOldOnline();
+            // online
+            ZKUtils.createOnline(KVPathUtil.getOnlinePath(), SystemConfig.getInstance().getInstanceId(), OnlineStatus.getInstance());
+
             ZktoXmlMain.loadZktoFile();
         } catch (Exception e) {
             LOGGER.error("error:", e);
@@ -53,22 +52,29 @@ public final class ZkConfig {
         return zkCfgInstance;
     }
 
-    /**
-     * get property from myid
-     *
-     * @param param
-     * @return
-     * @Created 2016/9/15
-     */
-    public String getValue(ClusterParamCfg param) {
-        if (zkProperties != null && null != param) {
-            return zkProperties.getProperty(param.getKey());
-        }
-        return null;
-    }
 
-    public static void setZkProperties(Properties zkProperties) {
-        ZkConfig.zkProperties = zkProperties;
+
+    private static void tryDeleteOldOnline() throws Exception {
+        //try to delete online
+        if (ZKUtils.getConnection().checkExists().forPath(KVPathUtil.getOnlinePath() +
+                KVPathUtil.SEPARATOR + SystemConfig.getInstance().getInstanceId()) != null) {
+            byte[] info;
+            try {
+                info = ZKUtils.getConnection().getData().forPath(KVPathUtil.getOnlinePath() +
+                        KVPathUtil.SEPARATOR + SystemConfig.getInstance().getInstanceId());
+            } catch (Exception e) {
+                LOGGER.info("can not get old online from zk,just do as it not exists");
+                return;
+            }
+            String oldOnlne = new String(info, StandardCharsets.UTF_8);
+            if (OnlineStatus.getInstance().canRemovePath(oldOnlne)) {
+                LOGGER.warn("remove online from zk path ,because has same IP & serverPort");
+                ZKUtils.getConnection().delete().forPath(KVPathUtil.getOnlinePath() +
+                        KVPathUtil.SEPARATOR + SystemConfig.getInstance().getInstanceId());
+            } else {
+                throw new RuntimeException("Online path with other IP or serverPort exist,make sure different instance has different myid");
+            }
+        }
     }
 
 }

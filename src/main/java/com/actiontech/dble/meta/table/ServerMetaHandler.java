@@ -75,7 +75,7 @@ public class ServerMetaHandler {
             SchemaInitMetaHandler multiTableMeta = new SchemaInitMetaHandler(this, entry.getValue(), selfNode);
             if (filter != null) {
                 multiTableMeta.setFilterTables(filter.get(entry.getKey()));
-                ReloadLogHelper.infoList("schema filter " + entry.getKey(), LOGGER, filter.get(entry.getKey()));
+                ReloadLogHelper.infoList("sharding filter " + entry.getKey(), LOGGER, filter.get(entry.getKey()));
             }
             multiTableMeta.execute();
         }

@@ -30,7 +30,7 @@ public final class ShowVariables {
 
         RouteResultset rrs = new RouteResultset(stmt, ServerParse.SHOW);
         try {
-            RouterUtil.routeToSingleNode(rrs, schema.getRandomDataNode());
+            RouterUtil.routeToSingleNode(rrs, schema.getRandomShardingNode());
             ShowVariablesHandler handler = new ShowVariablesHandler(rrs, c.getSession2());
             try {
                 handler.execute();

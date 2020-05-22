@@ -1,6 +1,6 @@
 package com.actiontech.dble.backend.datasource.check;
 
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.manager.response.CheckGlobalConsistency;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public abstract class AbstractConsistencyChecker implements SQLQueryResultListener<SQLQueryResult<List<Map<String, String>>>> {
 
-    List<SQLJob> sqlJobs = new ArrayList<>();
+    private List<SQLJob> sqlJobs = new ArrayList<>();
     private final AtomicInteger count = new AtomicInteger();
     protected volatile String tableName;
     protected volatile String schema;
@@ -26,9 +26,9 @@ public abstract class AbstractConsistencyChecker implements SQLQueryResultListen
     private List<SQLQueryResult<List<Map<String, String>>>> results = Collections.synchronizedList(new ArrayList<>());
     private List<SQLQueryResult<List<Map<String, String>>>> errorList = Collections.synchronizedList(new ArrayList<>());
 
-    void addCheckNode(String dbName, PhysicalDataNode dataNode) {
+    void addCheckNode(String dbName, ShardingNode shardingNode) {
         MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(this.getFetchCols(), this);
-        SQLJob sqlJob = new SQLJob(this.getCountSQL(dbName, tableName), dataNode.getName(), resultHandler, true);
+        SQLJob sqlJob = new SQLJob(this.getCountSQL(dbName, tableName), shardingNode.getName(), resultHandler, true);
         sqlJobs.add(sqlJob);
     }
 

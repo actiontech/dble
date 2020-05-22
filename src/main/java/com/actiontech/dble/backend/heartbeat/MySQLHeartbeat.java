@@ -8,7 +8,7 @@ package com.actiontech.dble.backend.heartbeat;
 import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.backend.mysql.nio.MySQLDataSource;
+import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
 import com.actiontech.dble.statistic.DataSourceSyncRecorder;
 import com.actiontech.dble.statistic.HeartbeatRecorder;
 import org.slf4j.Logger;
@@ -37,7 +37,7 @@ public class MySQLHeartbeat {
     private final AtomicBoolean isChecking = new AtomicBoolean(false);
     private final HeartbeatRecorder recorder = new HeartbeatRecorder();
     private final DataSourceSyncRecorder asyncRecorder = new DataSourceSyncRecorder();
-    private final MySQLDataSource source;
+    private final MySQLInstance source;
     protected volatile int status;
     private String heartbeatSQL;
     private long heartbeatTimeout; // during the time, heart failed will ignore
@@ -49,7 +49,7 @@ public class MySQLHeartbeat {
     private MySQLDetector detector;
     private volatile String message;
 
-    public MySQLHeartbeat(MySQLDataSource source) {
+    public MySQLHeartbeat(MySQLInstance source) {
         this.source = source;
         this.status = INIT_STATUS;
         this.errorRetryCount = source.getHostConfig().getErrorRetryCount();
@@ -61,7 +61,7 @@ public class MySQLHeartbeat {
         return message;
     }
 
-    public MySQLDataSource getSource() {
+    public MySQLInstance getSource() {
         return source;
     }
 
@@ -114,7 +114,7 @@ public class MySQLHeartbeat {
         this.isChecking.set(false);
         this.message = errMsg;
         setError();
-        Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getHostConfig().getName() + "-" + this.source.getConfig().getHostName());
+        Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getHostConfig().getName() + "-" + this.source.getConfig().getInstanceName());
         AlertUtil.alert(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "heartbeat status:" + this.status, "mysql", this.source.getConfig().getId(), labels);
     }
 
@@ -132,7 +132,7 @@ public class MySQLHeartbeat {
                 break;
         }
         if (this.status != OK_STATUS) {
-            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getHostConfig().getName() + "-" + this.source.getConfig().getHostName());
+            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getHostConfig().getName() + "-" + this.source.getConfig().getInstanceName());
             AlertUtil.alert(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "heartbeat status:" + this.status, "mysql", this.source.getConfig().getId(), labels);
         }
     }
@@ -158,7 +158,7 @@ public class MySQLHeartbeat {
                 this.status = OK_STATUS;
                 this.errorCount = 0;
                 this.startErrorTime.set(-1);
-                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getHostConfig().getName() + "-" + this.source.getConfig().getHostName());
+                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getHostConfig().getName() + "-" + this.source.getConfig().getInstanceName());
                 AlertUtil.alertResolve(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "mysql", this.source.getConfig().getId(), labels);
         }
         if (isStop) {

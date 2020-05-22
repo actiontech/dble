@@ -10,7 +10,7 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
-import com.actiontech.dble.backend.datasource.PhysicalDataSource;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
@@ -29,7 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class TestSchemasTask extends Thread {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestSchemasTask.class);
-    private PhysicalDataSource ds;
+    private PhysicalDbInstance ds;
     private BoolPtr boolPtr;
     private Set<String> errKeys;
     private Map<String, String> nodes = new HashMap<>();
@@ -38,13 +38,13 @@ public class TestSchemasTask extends Thread {
     private volatile boolean isFinish = false;
     private Condition finishCond = lock.newCondition();
 
-    public TestSchemasTask(PhysicalDataSource ds, List<Pair<String, String>> nodeList, Set<String> errKeys, BoolPtr boolPtr, boolean needAlert) {
+    public TestSchemasTask(PhysicalDbInstance ds, List<Pair<String, String>> nodeList, Set<String> errKeys, BoolPtr boolPtr, boolean needAlert) {
         this.ds = ds;
         this.errKeys = errKeys;
         this.boolPtr = boolPtr;
         this.needAlert = needAlert;
         for (Pair<String, String> node : nodeList) {
-            nodes.put(node.getValue(), node.getKey()); // schema->node
+            nodes.put(node.getValue(), node.getKey()); // sharding->node
         }
 
     }
@@ -89,7 +89,7 @@ public class TestSchemasTask extends Thread {
                     }
                     String nodeName = nodes.remove(schema);
                     if (nodeName != null) {
-                        String key = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getConfig().getHostName() + "],data_node[" + nodeName + "],schema[" + schema + "]";
+                        String key = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getConfig().getInstanceName() + "],data_node[" + nodeName + "],schema[" + schema + "]";
                         LOGGER.info("SelfCheck### test " + key + " database connection success ");
                     }
                 }
@@ -102,11 +102,11 @@ public class TestSchemasTask extends Thread {
             for (Map.Entry<String, String> node : nodes.entrySet()) {
                 boolPtr.set(false);
                 String nodeName = node.getValue();
-                String key = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getConfig().getHostName() + "],data_node[" + nodeName + "],schema[" + node.getKey() + "]";
+                String key = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getConfig().getInstanceName() + "],data_node[" + nodeName + "],schema[" + node.getKey() + "]";
                 errKeys.add(key);
                 LOGGER.warn("test conn " + key + " error");
                 if (needAlert) {
-                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName());
+                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getInstanceName());
                     labels.put("data_node", nodeName);
                     AlertUtil.alert(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "{" + key + "} is lack", "mysql", ds.getConfig().getId(), labels);
                     ToResolveContainer.DATA_NODE_LACK.add(key);

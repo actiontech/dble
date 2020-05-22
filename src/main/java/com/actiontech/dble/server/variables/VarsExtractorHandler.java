@@ -5,8 +5,8 @@
 
 package com.actiontech.dble.server.variables;
 
-import com.actiontech.dble.backend.datasource.PhysicalDataHost;
-import com.actiontech.dble.backend.datasource.PhysicalDataSource;
+import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.OneTimeConnJob;
 import org.slf4j.Logger;
@@ -26,12 +26,12 @@ public class VarsExtractorHandler {
     private boolean extracting;
     private Lock lock;
     private Condition done;
-    private Map<String, PhysicalDataHost> dataHosts;
+    private Map<String, PhysicalDbGroup> dbGroups;
     private volatile SystemVariables systemVariables = null;
-    private PhysicalDataSource usedDataource = null;
+    private PhysicalDbInstance usedDataource = null;
 
-    public VarsExtractorHandler(Map<String, PhysicalDataHost> dataHosts) {
-        this.dataHosts = dataHosts;
+    public VarsExtractorHandler(Map<String, PhysicalDbGroup> dbGroups) {
+        this.dbGroups = dbGroups;
         this.extracting = false;
         this.lock = new ReentrantLock();
         this.done = lock.newCondition();
@@ -39,7 +39,7 @@ public class VarsExtractorHandler {
 
     public SystemVariables execute() {
         OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_VARIABLES_COLS, new MysqlVarsListener(this));
-        PhysicalDataSource ds = getPhysicalDatasource();
+        PhysicalDbInstance ds = getPhysicalDatasource();
         this.usedDataource = ds;
         if (ds != null) {
             OneTimeConnJob sqlJob = new OneTimeConnJob(MYSQL_SHOW_VARIABLES, null, resultHandler, ds);
@@ -51,10 +51,10 @@ public class VarsExtractorHandler {
         return systemVariables;
     }
 
-    private PhysicalDataSource getPhysicalDatasource() {
-        PhysicalDataSource ds = null;
-        for (PhysicalDataHost dataHost : dataHosts.values()) {
-            PhysicalDataSource dsTest = dataHost.getWriteSource();
+    private PhysicalDbInstance getPhysicalDatasource() {
+        PhysicalDbInstance ds = null;
+        for (PhysicalDbGroup dbGroup : dbGroups.values()) {
+            PhysicalDbInstance dsTest = dbGroup.getWriteSource();
             if (dsTest.isTestConnSuccess()) {
                 ds = dsTest;
             }
@@ -63,8 +63,8 @@ public class VarsExtractorHandler {
             }
         }
         if (ds == null) {
-            for (PhysicalDataHost dataHost : dataHosts.values()) {
-                for (PhysicalDataSource dsTest : dataHost.getAllActiveDataSources()) {
+            for (PhysicalDbGroup dbGroup : dbGroups.values()) {
+                for (PhysicalDbInstance dsTest : dbGroup.getAllActiveDataSources()) {
                     if (dsTest.isTestConnSuccess()) {
                         ds = dsTest;
                         break;
@@ -112,11 +112,11 @@ public class VarsExtractorHandler {
         }
     }
 
-    public PhysicalDataSource getUsedDataource() {
+    public PhysicalDbInstance getUsedDataource() {
         return usedDataource;
     }
 
-    public void setUsedDataource(PhysicalDataSource usedDataource) {
+    public void setUsedDataource(PhysicalDbInstance usedDataource) {
         this.usedDataource = usedDataource;
     }
 }

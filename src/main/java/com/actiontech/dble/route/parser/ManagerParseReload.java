@@ -267,7 +267,7 @@ public final class ManagerParseReload {
         return OTHER;
     }
 
-    // RELOAD @@METADATA WHERE schema=? and table=?
+    // RELOAD @@METADATA WHERE sharding=? and table=?
     private static int reload2MCheck(String stmt, int offset) {
         if (stmt.length() > offset + 7) {
             char c1 = stmt.charAt(++offset);

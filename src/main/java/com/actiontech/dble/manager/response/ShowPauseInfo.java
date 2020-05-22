@@ -55,11 +55,11 @@ public final class ShowPauseInfo {
         buffer = EOF.write(buffer, c, true);
         // write rows
         byte packetId = EOF.getPacketId();
-        if (PauseDatanodeManager.getInstance().getDataNodes() != null) {
-            for (String dataNode : PauseDatanodeManager.getInstance().getDataNodes()) {
+        if (PauseDatanodeManager.getInstance().getShardingNodes() != null) {
+            for (String shardingNode : PauseDatanodeManager.getInstance().getShardingNodes()) {
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                 row.setPacketId(++packetId);
-                row.add(StringUtil.encode(dataNode, c.getCharset().getResults()));
+                row.add(StringUtil.encode(shardingNode, c.getCharset().getResults()));
                 buffer = row.write(buffer, c, true);
             }
         }

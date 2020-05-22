@@ -6,9 +6,7 @@
 package com.actiontech.dble.cluster.listener;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.bean.KvBean;
 import com.actiontech.dble.cluster.bean.SubscribeRequest;
@@ -18,9 +16,10 @@ import com.actiontech.dble.cluster.response.ClusterXmlLoader;
 import com.actiontech.dble.cluster.response.DdlChildResponse;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.BinlogPause;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.PauseInfo;
+import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.singleton.OnlineStatus;
 import com.actiontech.dble.singleton.PauseDatanodeManager;
 import com.actiontech.dble.singleton.ProxyMeta;
-import com.actiontech.dble.singleton.OnlineStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +77,7 @@ public class ClusterOffLineListener implements Runnable {
 
     private void checkPauseStatusRelease(String serverId) {
         try {
-            KvBean lock = ClusterHelper.getKV(ClusterPathUtil.getPauseDataNodePath());
+            KvBean lock = ClusterHelper.getKV(ClusterPathUtil.getPauseShardingNodePath());
             boolean needRelease = false;
             if (!"".equals(lock.getValue())) {
                 PauseInfo pauseInfo = new PauseInfo(lock.getValue());
@@ -89,7 +88,7 @@ public class ClusterOffLineListener implements Runnable {
                 needRelease = true;
             }
             if (needRelease) {
-                ClusterXmlLoader loader = ClusterToXml.getListener().getReponse(ClusterPathUtil.getPauseDataNodePath());
+                ClusterXmlLoader loader = ClusterToXml.getListener().getReponse(ClusterPathUtil.getPauseShardingNodePath());
                 loader.notifyCluster();
             }
 
@@ -130,11 +129,11 @@ public class ClusterOffLineListener implements Runnable {
                         checkPauseStatusRelease(serverId);
                     }
                 }
-                String serverId = ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
-                String selfPath = ClusterPathUtil.getOnlinePath(serverId);
+                String instanceId = SystemConfig.getInstance().getInstanceId();
+                String selfPath = ClusterPathUtil.getOnlinePath(instanceId);
                 if (!newMap.containsKey(selfPath)) {
                     lackSelf = !reInitOnlineStatus();
-                    newMap.put(selfPath, serverId);
+                    newMap.put(selfPath, instanceId);
                 }
                 onlineMap = newMap;
                 index = output.getIndex();

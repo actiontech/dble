@@ -18,7 +18,7 @@ public final class DebugPauseUtil {
     }
 
     public static String getPauseInfo(String fileName) {
-        File pauseFile = new File(SystemConfig.getHomePath() + File.separator + "conf", fileName);
+        File pauseFile = new File(SystemConfig.getInstance().getHomePath() + File.separator + "conf", fileName);
         if (!pauseFile.exists()) {
             LOGGER.debug(pauseFile.getAbsolutePath() + " is not exists");
             return null;

@@ -26,13 +26,13 @@ public final class BufferPoolManager {
         return INSTANCE.bufferPool;
     }
 
-    public void init(SystemConfig system) throws IOException {
+    public void init() throws IOException {
         // a page size
-        int bufferPoolPageSize = system.getBufferPoolPageSize();
+        int bufferPoolPageSize = SystemConfig.getInstance().getBufferPoolPageSize();
         // total page number
-        short bufferPoolPageNumber = system.getBufferPoolPageNumber();
+        short bufferPoolPageNumber = SystemConfig.getInstance().getBufferPoolPageNumber();
         //minimum allocation unit
-        short bufferPoolChunkSize = system.getBufferPoolChunkSize();
+        short bufferPoolChunkSize = SystemConfig.getInstance().getBufferPoolChunkSize();
         if ((long) bufferPoolPageSize * (long) bufferPoolPageNumber > Platform.getMaxDirectMemory()) {
             throw new IOException("Direct BufferPool size[bufferPoolPageSize(" + bufferPoolPageSize + ")*bufferPoolPageNumber(" + bufferPoolPageNumber + ")] larger than MaxDirectMemory[" + Platform.getMaxDirectMemory() + "]");
         }

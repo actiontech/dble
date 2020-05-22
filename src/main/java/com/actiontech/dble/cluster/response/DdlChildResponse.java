@@ -8,11 +8,10 @@ package com.actiontech.dble.cluster.response;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.bean.KvBean;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
@@ -33,7 +32,7 @@ public class DdlChildResponse implements ClusterXmlLoader {
     public void notifyProcess(KvBean configValue) throws Exception {
         if (configValue.getKey().split("/").length == ClusterPathUtil.getDDLPath().split("/").length + 2) {
             //child change the listener is not supported
-            //only response for the key /un.../d.../clu.../ddl/schema.table
+            //only response for the key /un.../d.../clu.../ddl/sharding.table
             return;
         } else {
             LOGGER.info("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
@@ -49,7 +48,7 @@ public class DdlChildResponse implements ClusterXmlLoader {
 
             DDLInfo ddlInfo = new DDLInfo(configValue.getValue());
 
-            if (ddlInfo.getFrom().equals(ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID))) {
+            if (ddlInfo.getFrom().equals(SystemConfig.getInstance().getInstanceId())) {
                 return; //self node
             }
 

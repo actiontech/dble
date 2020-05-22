@@ -10,8 +10,8 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
-import com.actiontech.dble.backend.datasource.PhysicalDataNode;
-import com.actiontech.dble.backend.datasource.PhysicalDataSource;
+import com.actiontech.dble.backend.datasource.ShardingNode;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.MultiTablesMetaJob;
@@ -43,37 +43,37 @@ public abstract class GetTableMetaHandler {
         this.logger = new ReloadLogHelper(isReload);
     }
 
-    public void execute(String dataNode, Set<String> tables) {
+    public void execute(String shardingNode, Set<String> tables) {
         StringBuilder sbSql = new StringBuilder();
         for (String table : tables) {
             sbSql.append(SQL_SHOW_CREATE_TABLE.replace("{0}", table));
         }
-        PhysicalDataNode dn = DbleServer.getInstance().getConfig().getDataNodes().get(dataNode);
-        PhysicalDataSource ds = dn.getDataHost().getWriteSource();
+        ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(shardingNode);
+        PhysicalDbInstance ds = dn.getDbGroup().getWriteSource();
         if (ds.isAlive()) {
-            logger.info("Datasource is alive start sqljob for dataNode:" + dataNode);
-            MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new TableStructureListener(dataNode, tables, ds));
+            logger.info("Datasource is alive start sqljob for dataNode:" + shardingNode);
+            MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new TableStructureListener(shardingNode, tables, ds));
             MultiTablesMetaJob sqlJob = new MultiTablesMetaJob(sbSql.toString(), dn.getDatabase(), resultHandler, ds, logger.isReload());
             sqlJob.run();
         } else {
-            logger.info("Datasource is not alive start sqljob for dataNode:" + dataNode);
-            MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new TableStructureListener(dataNode, tables, null));
-            MultiTablesMetaJob sqlJob = new MultiTablesMetaJob(sbSql.toString(), dataNode, resultHandler, false, logger.isReload());
+            logger.info("Datasource is not alive start sqljob for dataNode:" + shardingNode);
+            MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new TableStructureListener(shardingNode, tables, null));
+            MultiTablesMetaJob sqlJob = new MultiTablesMetaJob(sbSql.toString(), shardingNode, resultHandler, false, logger.isReload());
             sqlJob.run();
         }
     }
 
-    abstract void countdown(String dataNode, Set<String> tables);
+    abstract void countdown(String shardingNode, Set<String> tables);
 
-    abstract void handleTable(String dataNode, String table, boolean isView, String sql);
+    abstract void handleTable(String shardingNode, String table, boolean isView, String sql);
 
     private class TableStructureListener implements SQLQueryResultListener<SQLQueryResult<List<Map<String, String>>>> {
-        private String dataNode;
-        private PhysicalDataSource ds;
+        private String shardingNode;
+        private PhysicalDbInstance ds;
         private Set<String> expectedTables;
 
-        TableStructureListener(String dataNode, Set<String> expectedTables, PhysicalDataSource ds) {
-            this.dataNode = dataNode;
+        TableStructureListener(String shardingNode, Set<String> expectedTables, PhysicalDbInstance ds) {
+            this.shardingNode = shardingNode;
             this.expectedTables = expectedTables;
             this.ds = ds;
         }
@@ -82,11 +82,11 @@ public abstract class GetTableMetaHandler {
         public void onResult(SQLQueryResult<List<Map<String, String>>> result) {
             String key = null;
             if (ds != null) {
-                key = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getConfig().getHostName() + "],data_node[" + dataNode + "],schema[" + schema + "]";
+                key = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getConfig().getInstanceName() + "],data_node[" + shardingNode + "],schema[" + schema + "]";
             }
             if (ds != null && ToResolveContainer.DATA_NODE_LACK.contains(key)) {
-                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getHostName());
-                labels.put("data_node", dataNode);
+                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getInstanceName());
+                labels.put("data_node", shardingNode);
                 AlertUtil.alertResolve(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "mysql", ds.getConfig().getId(), labels,
                         ToResolveContainer.DATA_NODE_LACK, key);
             }
@@ -110,11 +110,11 @@ public abstract class GetTableMetaHandler {
                     table = table.toLowerCase();
                 }
                 expectedTables.remove(table);
-                handleTable(dataNode, table, isView, createSQL);
+                handleTable(shardingNode, table, isView, createSQL);
             }
 
-            logger.info("dataNode normally count down:" + dataNode + " for schema " + schema);
-            countdown(dataNode, expectedTables);
+            logger.info("dataNode normally count down:" + shardingNode + " for schema " + schema);
+            countdown(shardingNode, expectedTables);
         }
     }
 

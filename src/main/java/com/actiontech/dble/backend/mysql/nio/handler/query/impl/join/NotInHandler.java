@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl.join;
 
-import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
@@ -16,6 +15,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.util.TwoTableComparator;
 import com.actiontech.dble.backend.mysql.store.LocalResult;
 import com.actiontech.dble.backend.mysql.store.UnSortedLocalResult;
 import com.actiontech.dble.buffer.BufferPool;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.plan.Order;
@@ -49,7 +49,7 @@ public class NotInHandler extends OwnThreadDMLHandler {
         super(id, session);
         this.leftOrders = leftOrder;
         this.rightOrders = rightOrder;
-        int queueSize = DbleServer.getInstance().getConfig().getSystem().getJoinQueueSize();
+        int queueSize = SystemConfig.getInstance().getJoinQueueSize();
         this.leftQueue = new FairLinkedBlockingDeque<>(queueSize);
         this.rightQueue = new FairLinkedBlockingDeque<>(queueSize);
         this.leftFieldPackets = new ArrayList<>();

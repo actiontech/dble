@@ -79,21 +79,21 @@ public final class ShowDataDistribution {
             c.writeErrMessage(ErrorCode.ER_YES, "The table " + name + " doesn‘t exist");
             return;
         } else if (tableConfig.isNoSharding()) {
-            c.writeErrMessage(ErrorCode.ER_YES, "The schema table " + name + " is no sharding table");
+            c.writeErrMessage(ErrorCode.ER_YES, "The table " + name + " is no sharding table");
             return;
         }
         ReentrantLock lock = new ReentrantLock();
         Condition cond = lock.newCondition();
         Map<String, Integer> results = new ConcurrentHashMap<>();
         AtomicBoolean succeed = new AtomicBoolean(true);
-        for (String dataNode : tableConfig.getDataNodes()) {
-            OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(new String[]{"COUNT"}, new ShowDataDistributionListener(dataNode, lock, cond, results, succeed));
-            SQLJob sqlJob = new SQLJob("SELECT COUNT(*) AS COUNT FROM " + schemaInfo[1], dataNode, resultHandler, true);
+        for (String shardingNode : tableConfig.getShardingNodes()) {
+            OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(new String[]{"COUNT"}, new ShowDataDistributionListener(shardingNode, lock, cond, results, succeed));
+            SQLJob sqlJob = new SQLJob("SELECT COUNT(*) AS COUNT FROM " + schemaInfo[1], shardingNode, resultHandler, true);
             sqlJob.run();
         }
         lock.lock();
         try {
-            while (results.size() != tableConfig.getDataNodes().size()) {
+            while (results.size() != tableConfig.getShardingNodes().size()) {
                 cond.await();
             }
         } catch (InterruptedException e) {
@@ -145,10 +145,10 @@ public final class ShowDataDistribution {
         private Condition cond;
         private Map<String, Integer> results;
         private AtomicBoolean succeed;
-        private String dataNode;
+        private String shardingNode;
 
-        ShowDataDistributionListener(String dataNode, ReentrantLock lock, Condition cond, Map<String, Integer> results, AtomicBoolean succeed) {
-            this.dataNode = dataNode;
+        ShowDataDistributionListener(String shardingNode, ReentrantLock lock, Condition cond, Map<String, Integer> results, AtomicBoolean succeed) {
+            this.shardingNode = shardingNode;
             this.lock = lock;
             this.cond = cond;
             this.results = results;
@@ -160,10 +160,10 @@ public final class ShowDataDistribution {
         public void onResult(SQLQueryResult<Map<String, String>> result) {
             if (!result.isSuccess()) {
                 succeed.set(false);
-                results.put(dataNode, 0);
+                results.put(shardingNode, 0);
             } else {
                 String count = result.getResult().get("COUNT");
-                results.put(dataNode, Integer.valueOf(count));
+                results.put(shardingNode, Integer.valueOf(count));
             }
             lock.lock();
             try {

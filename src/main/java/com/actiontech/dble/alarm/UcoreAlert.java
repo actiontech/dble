@@ -5,10 +5,9 @@
 
 package com.actiontech.dble.alarm;
 
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterParamCfg;
 import com.actiontech.dble.cluster.bean.ClusterAlertBean;
+import com.actiontech.dble.config.model.SystemConfig;
 
 
 public final class UcoreAlert implements Alert {
@@ -18,9 +17,9 @@ public final class UcoreAlert implements Alert {
     private final String alertComponentId;
 
     public UcoreAlert() {
-        serverId = ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_SERVER_ID);
-        sourceComponentId = ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
-        alertComponentId = ClusterGeneralConfig.getInstance().getValue(ClusterParamCfg.CLUSTER_CFG_MYID);
+        serverId = SystemConfig.getInstance().getServerId();
+        sourceComponentId = SystemConfig.getInstance().getInstanceId();
+        alertComponentId = SystemConfig.getInstance().getInstanceId();
     }
 
     @Override

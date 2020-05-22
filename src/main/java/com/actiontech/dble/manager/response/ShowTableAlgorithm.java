@@ -81,7 +81,7 @@ public final class ShowTableAlgorithm {
         } else {
             tableConfig = schemaConfig.getTables().get(tableName);
             if (tableConfig == null) {
-                if (schemaConfig.getDataNode() == null) {
+                if (schemaConfig.getShardingNode() == null) {
                     c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "the table [" + tableName + "] in schema [" + schemaName + "] does not exists");
                     return;
                 } else if (ProxyMeta.getInstance().getTmManager().checkTableExists(schemaName, tableName)) {
@@ -156,7 +156,7 @@ public final class ShowTableAlgorithm {
             case SHARDING_SINGLE: {
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                 row.add(StringUtil.encode("TYPE", charset));
-                row.add(StringUtil.encode("SINGLE SHARDING TABLE", charset));
+                row.add(StringUtil.encode("SINGLE TABLE", charset));
                 list.add(row);
                 break;
             }

@@ -20,7 +20,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * abstract impl of the single-schema-MetaHandler
+ * abstract impl of the single-sharding-MetaHandler
  * extends by SchemaCheckMetaHandler & SchemaInitMetaHandler
  */
 public abstract class AbstractSchemaMetaHandler {
@@ -28,7 +28,7 @@ public abstract class AbstractSchemaMetaHandler {
     //shard-DataNode-Set when the set to be count down into the empty,means that all the dataNode have finished
     private volatile Set<String> shardDNSet = new HashSet<>();
     //defaultDNflag  has no default Node/default Node has no table/ default Node table return finish ---- false
-    // schema has default Node & default Node has not return yet  ---- true
+    // sharding has default Node & default Node has not return yet  ---- true
     private AtomicBoolean defaultDNflag;
     private AtomicBoolean countDownFlag = new AtomicBoolean(false);
     private String schema;
@@ -70,9 +70,9 @@ public abstract class AbstractSchemaMetaHandler {
     public void execute() {
         boolean existTable = false;
         // default node
-        String defaultNode = schemaConfig.getDataNode();
+        String defaultNode = schemaConfig.getShardingNode();
         if (defaultNode != null && (selfNode == null || !selfNode.contains(defaultNode))) {
-            Set<String> tables = getTablesFromDefaultDataNode();
+            Set<String> tables = getTablesFromDefaultShardingNode();
             if (!CollectionUtil.isEmpty(filterTables)) {
                 tables.retainAll(filterTables);
                 filterTables.removeAll(tables);
@@ -86,17 +86,17 @@ public abstract class AbstractSchemaMetaHandler {
         }
 
         // tables in config
-        Map<String, Set<String>> dataNodeMap = new HashMap<>();
+        Map<String, Set<String>> shardingNodeMap = new HashMap<>();
         for (Map.Entry<String, TableConfig> entry : filterConfigTables().entrySet()) {
             existTable = true;
             String tableName = entry.getKey();
             TableConfig tbConfig = entry.getValue();
-            for (String dataNode : tbConfig.getDataNodes()) {
-                Set<String> tables = dataNodeMap.get(dataNode);
+            for (String shardingNode : tbConfig.getShardingNodes()) {
+                Set<String> tables = shardingNodeMap.get(shardingNode);
                 if (tables == null) {
                     tables = new HashSet<>();
-                    dataNodeMap.put(dataNode, tables);
-                    shardDNSet.add(dataNode);
+                    shardingNodeMap.put(shardingNode, tables);
+                    shardDNSet.add(shardingNode);
                 }
                 tables.add(tableName);
             }
@@ -104,14 +104,14 @@ public abstract class AbstractSchemaMetaHandler {
 
         logger.infoList("try to execute show create table in [" + schema + "] dataNodes:", shardDNSet);
         ConfigTableMetaHandler tableHandler = new ConfigTableMetaHandler(this, schema, selfNode, logger.isReload());
-        tableHandler.execute(dataNodeMap);
+        tableHandler.execute(shardingNodeMap);
         if (!existTable) {
             logger.info("no table exist in schema " + schema + ",count down");
             countDown();
         }
     }
 
-    private Set<String> getTablesFromDefaultDataNode() {
+    private Set<String> getTablesFromDefaultShardingNode() {
         GetDefaultNodeTablesHandler showTablesHandler = new GetDefaultNodeTablesHandler(schemaConfig);
         showTablesHandler.execute();
         return showTablesHandler.getTables();
@@ -133,33 +133,33 @@ public abstract class AbstractSchemaMetaHandler {
         return newReload;
     }
 
-    public synchronized void checkTableConsistent(String table, String dataNode, String sql) {
+    public synchronized void checkTableConsistent(String table, String shardingNode, String sql) {
         Map<String, List<String>> tableStruct = tablesStructMap.get(table);
         if (tableStruct == null) {
             tableStruct = new HashMap<>();
-            List<String> dataNodeList = new LinkedList<>();
-            dataNodeList.add(dataNode);
-            tableStruct.put(sql, dataNodeList);
+            List<String> shardingNodeList = new LinkedList<>();
+            shardingNodeList.add(shardingNode);
+            tableStruct.put(sql, shardingNodeList);
             tablesStructMap.put(table, tableStruct);
         } else if (tableStruct.containsKey(sql)) {
-            List<String> dataNodeList = tableStruct.get(sql);
-            dataNodeList.add(dataNode);
+            List<String> shardingNodeList = tableStruct.get(sql);
+            shardingNodeList.add(shardingNode);
         } else {
-            List<String> dataNodeList = new LinkedList<>();
-            dataNodeList.add(dataNode);
-            tableStruct.put(sql, dataNodeList);
+            List<String> shardingNodeList = new LinkedList<>();
+            shardingNodeList.add(shardingNode);
+            tableStruct.put(sql, shardingNodeList);
         }
     }
 
-    private synchronized boolean countDownShardDN(String dataNode) {
-        shardDNSet.remove(dataNode);
+    private synchronized boolean countDownShardDN(String shardingNode) {
+        shardDNSet.remove(shardingNode);
         return shardDNSet.size() == 0;
     }
 
 
-    void countDownShardTable(String dataNode) {
-        logger.info("shard dataNode count down[" + schema + "][" + dataNode + "] ");
-        if (countDownShardDN(dataNode)) {
+    void countDownShardTable(String shardingNode) {
+        logger.info("shard dataNode count down[" + schema + "][" + shardingNode + "] ");
+        if (countDownShardDN(shardingNode)) {
             long version = System.currentTimeMillis();
             for (Map.Entry<String, Map<String, List<String>>> tablesStruct : tablesStructMap.entrySet()) {
                 String tableName = tablesStruct.getKey();

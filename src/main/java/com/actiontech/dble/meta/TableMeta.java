@@ -72,7 +72,12 @@ public final class TableMeta {
 
     @Override
     public int hashCode() {
-        return super.hashCode();
+        int result = 31 + tableName.hashCode();
+        result = 31 * result + (int) (version ^ (version >>> 32));
+        result = 31 * result + createSql.hashCode();
+        result = 31 * result + columns.hashCode();
+
+        return result;
     }
 
     public static class ColumnMeta {
@@ -118,7 +123,11 @@ public final class TableMeta {
 
         @Override
         public int hashCode() {
-            return super.hashCode();
+            int result = 31 + name.hashCode();
+            result = 31 * result + dataType.hashCode();
+            result = 31 * result + (canNull ? 1231 : 1237);
+
+            return result;
         }
     }
 

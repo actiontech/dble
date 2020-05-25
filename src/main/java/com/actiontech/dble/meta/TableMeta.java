@@ -14,6 +14,16 @@ public final class TableMeta {
     private String createSql;
     private List<ColumnMeta> columns;
 
+    public TableMeta() {
+    }
+
+    public TableMeta(TableMeta origin, long newVersion) {
+        tableName = origin.getTableName();
+        columns = origin.getColumns();
+        createSql = origin.getCreateSql();
+        version = newVersion;
+    }
+
     public String getTableName() {
         return tableName;
     }
@@ -46,6 +56,30 @@ public final class TableMeta {
         this.createSql = createSql;
     }
 
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (!(other instanceof TableMeta)) {
+            return false;
+        }
+
+        TableMeta temp = (TableMeta) other;
+        return tableName.equals(temp.getTableName()) && version == temp.getVersion() &&
+                createSql.equals(temp.getCreateSql()) && columns.equals(temp.getColumns());
+    }
+
+    @Override
+    public int hashCode() {
+        int result = 31 + tableName.hashCode();
+        result = 31 * result + (int) (version ^ (version >>> 32));
+        result = 31 * result + createSql.hashCode();
+        result = 31 * result + columns.hashCode();
+
+        return result;
+    }
+
     public static class ColumnMeta {
         private String name;
         private String dataType;
@@ -72,6 +106,28 @@ public final class TableMeta {
 
         public boolean isCanNull() {
             return canNull;
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof ColumnMeta)) {
+                return false;
+            }
+            ColumnMeta temp = (ColumnMeta) other;
+            return name.equals(temp.getName()) && dataType.equals(temp.getDataType()) &&
+                    canNull == temp.isCanNull();
+        }
+
+        @Override
+        public int hashCode() {
+            int result = 31 + name.hashCode();
+            result = 31 * result + dataType.hashCode();
+            result = 31 * result + (canNull ? 1231 : 1237);
+
+            return result;
         }
     }
 

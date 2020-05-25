@@ -96,8 +96,7 @@ public class SchemaCheckMetaHandler extends AbstractSchemaMetaHandler {
             //there is an new version TableMeta after check start
             return false;
         }
-        TableMeta tblMetaTmp = new TableMeta();
-        tblMetaTmp.setVersion(oldTm.getVersion());
+        TableMeta tblMetaTmp = new TableMeta(tm, oldTm.getVersion());
         if (!oldTm.equals(tblMetaTmp)) { // oldTm!=tblMetaTmp means memory  meta is not equal show create table result
             try {
                 TableMeta test = getTmManager().getSyncTableMeta(schema, tbName);

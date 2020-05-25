@@ -26,7 +26,10 @@ import com.actiontech.dble.server.response.InformationSchemaProfiling;
 import com.actiontech.dble.server.response.Ping;
 import com.actiontech.dble.server.response.ShowCreateView;
 import com.actiontech.dble.server.util.SchemaUtil;
-import com.actiontech.dble.singleton.*;
+import com.actiontech.dble.singleton.ProxyMeta;
+import com.actiontech.dble.singleton.RouteService;
+import com.actiontech.dble.singleton.SerializableLock;
+import com.actiontech.dble.singleton.TsQueriesCounter;
 import com.actiontech.dble.util.SplitUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
@@ -349,7 +352,6 @@ public class ServerConnection extends FrontendConnection {
         try {
             rrs = RouteService.getInstance().route(schema, type, sql, this);
             if (rrs == null) {
-                writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql can't route to any data node.");
                 return;
             }
             if (rrs.getSqlType() == ServerParse.DDL && rrs.getSchema() != null) {

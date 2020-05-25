@@ -492,9 +492,9 @@ public class NonBlockingSession implements Session {
     private void executeDDL(RouteResultset rrs) {
         ExecutableHandler executableHandler;
         try {
+            DDLTraceManager.getInstance().startDDL(source);
             // not hint and not online ddl
             if (rrs.getSchema() != null && !rrs.isOnline()) {
-                DDLTraceManager.getInstance().startDDL(source);
                 addTableMetaLock(rrs);
                 DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.LOCK_END, source);
             }

@@ -29,6 +29,7 @@ import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement.ValuesClause;
+import com.alibaba.druid.sql.ast.statement.SQLSelect;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
@@ -52,6 +53,11 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             throw new SQLNonTransientException(msg);
         }
 
+        if (insert.getQuery() != null) {
+            tryRouteInsertQuery(sc, rrs, stmt, visitor, schemaInfo);
+            return schema;
+        }
+
         if (insert.getValuesList().isEmpty()) {
             String msg = "Insert syntax error,no values in sql";
             throw new SQLNonTransientException(msg);
@@ -63,12 +69,6 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             return schema;
         }
 
-        if (insert.getQuery() != null) {
-            // insert into .... select ....
-            String msg = "`INSERT ... SELECT Syntax` is not supported!";
-            LOGGER.info(msg);
-            throw new SQLNonTransientException(msg);
-        }
 
         TableConfig tc = schema.getTables().get(tableName);
         checkTableExists(tc, schema.getName(), tableName, CheckType.INSERT);
@@ -109,6 +109,35 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
             ctx.addTable(new Pair<>(schema.getName(), tableName));
         }
         return schema;
+    }
+
+    @Override
+    SQLSelect acceptVisitor(SQLStatement stmt, ServerSchemaStatVisitor visitor) {
+        MySqlInsertStatement insert = (MySqlInsertStatement) stmt;
+        insert.getQuery().accept(visitor);
+        return insert.getQuery();
+    }
+
+    @Override
+    int tryGetShardingColIndex(SchemaInfo schemaInfo, SQLStatement stmt, String partitionColumn) throws SQLNonTransientException {
+        return tryGetShardingColIndex(schemaInfo, (MySqlInsertStatement) stmt, partitionColumn);
+    }
+
+    /**
+     * find the index of the partition column
+     *
+     * @param schemaInfo      SchemaInfo
+     * @param insertStmt      MySqlInsertStatement
+     * @param partitionColumn partitionColumn
+     * @return the index of the partition column
+     * @throws SQLNonTransientException if not find
+     */
+    private int tryGetShardingColIndex(SchemaInfo schemaInfo, MySqlInsertStatement insertStmt, String partitionColumn)
+            throws SQLNonTransientException {
+
+        int shardingColIndex = getShardingColIndex(schemaInfo, insertStmt.getColumns(), partitionColumn);
+        if (shardingColIndex != -1) return shardingColIndex;
+        throw new SQLNonTransientException("bad insert sql, sharding column/joinKey:" + partitionColumn + " not provided," + insertStmt);
     }
 
     private boolean parserNoSharding(ServerConnection sc, String contextSchema, SchemaInfo schemaInfo, RouteResultset rrs,
@@ -275,22 +304,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         rrs.setFinishedRoute(true);
     }
 
-    /**
-     * find the index of the partition column
-     *
-     * @param schemaInfo      SchemaInfo
-     * @param insertStmt      MySqlInsertStatement
-     * @param partitionColumn partitionColumn
-     * @return the index of the partition column
-     * @throws SQLNonTransientException if not find
-     */
-    private int tryGetShardingColIndex(SchemaInfo schemaInfo, MySqlInsertStatement insertStmt, String partitionColumn)
-            throws SQLNonTransientException {
 
-        int shardingColIndex = getShardingColIndex(schemaInfo, insertStmt.getColumns(), partitionColumn);
-        if (shardingColIndex != -1) return shardingColIndex;
-        throw new SQLNonTransientException("bad insert sql, sharding column/joinColumn:" + partitionColumn + " not provided," + insertStmt);
-    }
 
 
     /**
@@ -437,4 +451,6 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         }
         return sb.append(")");
     }
+
+
 }

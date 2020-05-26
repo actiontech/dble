@@ -578,7 +578,8 @@ public final class RouterUtil {
         return false;
     }
 
-    private static boolean tryCalcNodeForShardingColumn(
+
+    public static boolean tryCalcNodeForShardingColumn(
             RouteResultset rrs, Set<String> resultNodes, Set<Pair<String, String>> tablesSet,
             Map.Entry<Pair<String, String>, Map<String, ColumnRoute>> entry, Pair<String, String> table,
             TableConfig tableConfig) throws SQLNonTransientException {

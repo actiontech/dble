@@ -3,6 +3,7 @@ package com.actiontech.dble.plan.node;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.util.ToStringUtil;
+import com.actiontech.dble.route.parser.druid.RouteTableConfigInfo;
 
 import java.util.List;
 
@@ -37,6 +38,25 @@ public class JoinInnerNode extends PlanNode {
         return null;
     }
 
+    @Override
+    public RouteTableConfigInfo findFieldSourceFromIndex(int index) throws Exception {
+        if (columnsSelected.size() > index) {
+            Item sourceColumns = columnsSelected.get(index);
+            for (PlanNode pn : this.getChildren()) {
+                if (pn.getAlias() != null && pn.getAlias().equals(sourceColumns.getTableName())) {
+                    for (int i = 0; i < pn.columnsSelected.size(); i++) {
+                        Item cSelected = pn.columnsSelected.get(i);
+                        if (cSelected.getAlias() != null && cSelected.getAlias().equals(sourceColumns.getItemName())) {
+                            return this.getChild().findFieldSourceFromIndex(i);
+                        } else if (cSelected.getAlias() == null && cSelected.getItemName().equals(sourceColumns.getItemName())) {
+                            return this.getChild().findFieldSourceFromIndex(i);
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
 
     @Override
     public int getHeight() {

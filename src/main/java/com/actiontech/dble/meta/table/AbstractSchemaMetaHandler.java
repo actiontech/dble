@@ -175,17 +175,17 @@ public abstract class AbstractSchemaMetaHandler {
                     String tableId = schema + "." + tableName;
                     if (tableMetas.size() > 1) {
                         consistentWarning(tableName, tableStruct);
-                    } else if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(tableId)) {
-                        AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId),
-                                ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, tableId);
+                    } else if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_SHARDINGS.contains(tableId)) {
+                        AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_SHARDINGS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId),
+                                ToResolveContainer.TABLE_NOT_CONSISTENT_IN_SHARDINGS, tableId);
                     }
                     handleMultiMetaData(tableMetas);
                     tableMetas.clear();
                 } else if (tableStruct.size() == 1) {
                     String tableId = schema + "." + tableName;
-                    if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(tableId)) {
-                        AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId),
-                                ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, tableId);
+                    if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_SHARDINGS.contains(tableId)) {
+                        AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_SHARDINGS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId),
+                                ToResolveContainer.TABLE_NOT_CONSISTENT_IN_SHARDINGS, tableId);
                     }
 
                     String tableDetailId = "DataNode[" + tableStruct.values().iterator().next() + "]:Table[" + tableName + "]";
@@ -206,8 +206,8 @@ public abstract class AbstractSchemaMetaHandler {
     private synchronized void consistentWarning(String tableName, Map<String, List<String>> tableStruct) {
         String errorMsg = "Table [" + tableName + "] structure are not consistent in different data node!";
         logger.warn(errorMsg);
-        AlertUtil.alertSelf(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, errorMsg, AlertUtil.genSingleLabel("TABLE", schema + "." + tableName));
-        ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.add(schema + "." + tableName);
+        AlertUtil.alertSelf(AlarmCode.TABLE_NOT_CONSISTENT_IN_SHARDINGS, Alert.AlertLevel.WARN, errorMsg, AlertUtil.genSingleLabel("TABLE", schema + "." + tableName));
+        ToResolveContainer.TABLE_NOT_CONSISTENT_IN_SHARDINGS.add(schema + "." + tableName);
         logger.info("Currently detected: ");
         for (Map.Entry<String, List<String>> entry : tableStruct.entrySet()) {
             StringBuilder stringBuilder = new StringBuilder("{");

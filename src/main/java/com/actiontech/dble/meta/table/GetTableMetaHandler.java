@@ -82,13 +82,13 @@ public abstract class GetTableMetaHandler {
         public void onResult(SQLQueryResult<List<Map<String, String>>> result) {
             String key = null;
             if (ds != null) {
-                key = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getConfig().getInstanceName() + "],data_node[" + shardingNode + "],schema[" + schema + "]";
+                key = "dbInstance[" + ds.getHostConfig().getName() + "." + ds.getConfig().getInstanceName() + "],sharding_node[" + shardingNode + "],schema[" + schema + "]";
             }
-            if (ds != null && ToResolveContainer.DATA_NODE_LACK.contains(key)) {
-                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getInstanceName());
-                labels.put("data_node", shardingNode);
-                AlertUtil.alertResolve(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "mysql", ds.getConfig().getId(), labels,
-                        ToResolveContainer.DATA_NODE_LACK, key);
+            if (ds != null && ToResolveContainer.SHARDING_NODE_LACK.contains(key)) {
+                Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", ds.getHostConfig().getName() + "-" + ds.getConfig().getInstanceName());
+                labels.put("sharding_node", shardingNode);
+                AlertUtil.alertResolve(AlarmCode.SHARDING_NODE_LACK, Alert.AlertLevel.WARN, "mysql", ds.getConfig().getId(), labels,
+                        ToResolveContainer.SHARDING_NODE_LACK, key);
             }
 
             String table;

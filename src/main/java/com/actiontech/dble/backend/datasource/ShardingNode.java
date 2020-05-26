@@ -120,13 +120,13 @@ public class ShardingNode {
         if (runOnSlave == null) {
             PhysicalDbInstance readSource = dbGroup.getRWSplistNode();
             if (!readSource.isAlive()) {
-                String heartbeatError = "the data source[" + readSource.getConfig().getUrl() + "] can't reach. Please check the dataHost status";
+                String heartbeatError = "the dbInstance[" + readSource.getConfig().getUrl() + "] can't reach. Please check the dataHost status";
                 if (dbGroup.getDbGroupConfig().isShowSlaveSql()) {
                     heartbeatError += ",Tip:heartbeat[show slave status] need the SUPER or REPLICATION CLIENT privilege(s)";
                 }
                 LOGGER.warn(heartbeatError);
-                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", readSource.getHostConfig().getName() + "-" + readSource.getConfig().getInstanceName());
-                AlertUtil.alert(AlarmCode.DATA_HOST_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", readSource.getConfig().getId(), labels);
+                Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", readSource.getHostConfig().getName() + "-" + readSource.getConfig().getInstanceName());
+                AlertUtil.alert(AlarmCode.DB_INSTANCE_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", readSource.getConfig().getId(), labels);
                 throw new IOException(heartbeatError);
             }
             return readSource.getConnection(schema, autoCommit, attachment);

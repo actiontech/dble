@@ -112,23 +112,23 @@ public final class DatabaseHandler {
         }
     }
 
-    private static void tryResolve(String dataHost, String dataHost2, String shardingNode, String schema, String dataHostId) {
-        String key = "DataHost[" + dataHost + "." + dataHost2 + "],data_node[" + shardingNode + "],schema[" + schema + "]";
-        if (ToResolveContainer.DATA_NODE_LACK.contains(key)) {
-            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", dataHost + "-" + dataHost2);
-            labels.put("data_node", shardingNode);
-            AlertUtil.alertResolve(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "mysql", dataHostId, labels,
-                    ToResolveContainer.DATA_NODE_LACK, key);
+    private static void tryResolve(String dbGroupName, String dbInstanceName, String shardingNode, String schema, String dataHostId) {
+        String key = "dbInstance[" + dbGroupName + "." + dbInstanceName + "],sharding_node[" + shardingNode + "],schema[" + schema + "]";
+        if (ToResolveContainer.SHARDING_NODE_LACK.contains(key)) {
+            Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", dbGroupName + "-" + dbInstanceName);
+            labels.put("sharding_node", shardingNode);
+            AlertUtil.alertResolve(AlarmCode.SHARDING_NODE_LACK, Alert.AlertLevel.WARN, "mysql", dataHostId, labels,
+                    ToResolveContainer.SHARDING_NODE_LACK, key);
         }
     }
 
-    private static void tryAlert(String dataHost, String dataHost2, String shardingNode, String schema, String dataHostId) {
-        String key = "DataHost[" + dataHost + "." + dataHost2 + "],data_node[" + shardingNode + "],schema[" + schema + "]";
-        if (ToResolveContainer.DATA_NODE_LACK.contains(key)) {
-            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", dataHost + "-" + dataHost2);
-            labels.put("data_node", shardingNode);
-            AlertUtil.alert(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "{" + key + "} is lack", "mysql", dataHostId, labels);
-            ToResolveContainer.DATA_NODE_LACK.add(key);
+    private static void tryAlert(String dbGroupName, String dbInstanceName, String shardingNode, String schema, String dataHostId) {
+        String key = "dbInstance[" + dbGroupName + "." + dbInstanceName + "],sharding_node[" + shardingNode + "],schema[" + schema + "]";
+        if (ToResolveContainer.SHARDING_NODE_LACK.contains(key)) {
+            Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", dbGroupName + "-" + dbInstanceName);
+            labels.put("sharding_node", shardingNode);
+            AlertUtil.alert(AlarmCode.SHARDING_NODE_LACK, Alert.AlertLevel.WARN, "{" + key + "} is lack", "mysql", dataHostId, labels);
+            ToResolveContainer.SHARDING_NODE_LACK.add(key);
         }
     }
 }

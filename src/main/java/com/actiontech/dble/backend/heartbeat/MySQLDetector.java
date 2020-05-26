@@ -159,18 +159,18 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                     variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames() ||
                     variables.getMaxPacketSize() < SystemConfig.getInstance().getMaxPacketSize()) {
                 String url = con.getHost() + ":" + con.getPort();
-                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", url);
+                Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", url);
                 String errMsg;
                 if (variables == null) {
                     errMsg = "GetAndSyncDataSourceKeyVariables failed";
                 } else if (variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
-                    errMsg = "this dataHost[=" + url + "]'s lower_case is wrong";
+                    errMsg = "this dbInstance[=" + url + "]'s lower_case is wrong";
                 } else {
-                    errMsg = "this dataHost[=" + url + "]'s max_allowed_packet is " + variables.getMaxPacketSize() + ", but dble's is " + SystemConfig.getInstance().getMaxPacketSize();
+                    errMsg = "this dbInstance[=" + url + "]'s max_allowed_packet is " + variables.getMaxPacketSize() + ", but dble's is " + SystemConfig.getInstance().getMaxPacketSize();
                 }
                 LOGGER.warn(errMsg + ", set heartbeat Error");
                 if (variables != null) {
-                    AlertUtil.alert(AlarmCode.DATA_HOST_LOWER_CASE_ERROR, Alert.AlertLevel.WARN, errMsg, "mysql", this.heartbeat.getSource().getConfig().getId(), labels);
+                    AlertUtil.alert(AlarmCode.DB_INSTANCE_LOWER_CASE_ERROR, Alert.AlertLevel.WARN, errMsg, "mysql", this.heartbeat.getSource().getConfig().getId(), labels);
                     ToResolveContainer.DATA_HOST_LOWER_CASE_ERROR.add(con.getHost() + ":" + con.getPort());
                 }
                 heartbeat.setErrorResult(errMsg);
@@ -178,8 +178,8 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             } else {
                 String url = con.getHost() + ":" + con.getPort();
                 if (ToResolveContainer.DATA_HOST_LOWER_CASE_ERROR.contains(url)) {
-                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", url);
-                    AlertUtil.alertResolve(AlarmCode.DATA_HOST_LOWER_CASE_ERROR, Alert.AlertLevel.WARN, "mysql", this.heartbeat.getSource().getConfig().getId(), labels,
+                    Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", url);
+                    AlertUtil.alertResolve(AlarmCode.DB_INSTANCE_LOWER_CASE_ERROR, Alert.AlertLevel.WARN, "mysql", this.heartbeat.getSource().getConfig().getId(), labels,
                             ToResolveContainer.DATA_HOST_LOWER_CASE_ERROR, url);
                 }
                 if (!source.isSalveOrRead()) { // writehost checkRecoverFail read only

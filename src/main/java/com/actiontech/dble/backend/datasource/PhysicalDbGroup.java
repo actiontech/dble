@@ -226,13 +226,13 @@ public class PhysicalDbGroup {
             }
         }
         if (!theNode.isAlive()) {
-            String heartbeatError = "the data source[" + theNode.getConfig().getUrl() + "] can't reach. Please check the dataHost status";
+            String heartbeatError = "dbInstance[" + theNode.getConfig().getUrl() + "] can't reach. Please check the dataHost status";
             if (dbGroupConfig.isShowSlaveSql()) {
                 heartbeatError += ",Tip:heartbeat[show slave status] need the SUPER or REPLICATION CLIENT privilege(s)";
             }
             LOGGER.warn(heartbeatError);
-            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", theNode.getHostConfig().getName() + "-" + theNode.getConfig().getInstanceName());
-            AlertUtil.alert(AlarmCode.DATA_HOST_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", theNode.getConfig().getId(), labels);
+            Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", theNode.getHostConfig().getName() + "-" + theNode.getConfig().getInstanceName());
+            AlertUtil.alert(AlarmCode.DB_INSTANCE_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", theNode.getConfig().getId(), labels);
             throw new IOException(heartbeatError);
         }
         theNode.getConnection(schema, autocommit, handler, attachment, false);

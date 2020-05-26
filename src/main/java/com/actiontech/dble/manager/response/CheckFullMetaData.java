@@ -209,7 +209,7 @@ public final class CheckFullMetaData {
                     row.add(StringUtil.encode(FormatUtil.formatDate(timeStamp), charset));
                     row.add(StringUtil.encode(createQuery, charset));
                     String tableID = schemaName + "." + tableName;
-                    if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(tableID)) {
+                    if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_SHARDINGS.contains(tableID)) {
                         row.add(LongUtil.toBytes(0L));
                     } else {
                         row.add(LongUtil.toBytes(1L));
@@ -312,7 +312,7 @@ public final class CheckFullMetaData {
         row.add(StringUtil.encode(FormatUtil.formatDate(timestamp), charset));
         row.add(StringUtil.encode(createSql, charset));
         String tableID = schemaName + "." + tableName;
-        if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(tableID)) {
+        if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_SHARDINGS.contains(tableID)) {
             row.add(LongUtil.toBytes(0L));
         } else {
             row.add(LongUtil.toBytes(1L));
@@ -330,7 +330,7 @@ public final class CheckFullMetaData {
         Set<String> checkFilter;
         boolean checkValue = filterValue.equals("1");
         if (filterKey.equals("consistent_in_data_nodes")) {
-            checkFilter = ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS;
+            checkFilter = ToResolveContainer.TABLE_NOT_CONSISTENT_IN_SHARDINGS;
         } else {
             checkFilter = ToResolveContainer.TABLE_NOT_CONSISTENT_IN_MEMORY;
         }

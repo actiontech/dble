@@ -88,11 +88,11 @@ public abstract class AbstractTableMetaHandler {
 
         @Override
         public void onResult(SQLQueryResult<Map<String, String>> result) {
-            String tableId = "DataNode[" + shardingNode + "]:Table[" + tableName + "]";
+            String tableId = "sharding_node[" + shardingNode + "]:Table[" + tableName + "]";
             logger.info(tableId + " on result " + result.isSuccess() + " count is " + nodesNumber);
             String key = null;
             if (ds != null) {
-                key = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getConfig().getInstanceName() + "],data_node[" + shardingNode + "],schema[" + schema + "]";
+                key = "dbInstance[" + ds.getHostConfig().getName() + "." + ds.getConfig().getInstanceName() + "],sharding_node[" + shardingNode + "],schema[" + schema + "]";
             }
             if (!result.isSuccess()) {
                 //not thread safe
@@ -112,11 +112,11 @@ public abstract class AbstractTableMetaHandler {
                     AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId),
                             ToResolveContainer.TABLE_LACK, tableId);
                 }
-                if (ds != null && ToResolveContainer.DATA_NODE_LACK.contains(key)) {
-                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getInstanceName());
-                    labels.put("data_node", shardingNode);
-                    AlertUtil.alertResolve(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "mysql", ds.getConfig().getId(), labels,
-                            ToResolveContainer.DATA_NODE_LACK, key);
+                if (ds != null && ToResolveContainer.SHARDING_NODE_LACK.contains(key)) {
+                    Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", ds.getHostConfig().getName() + "-" + ds.getConfig().getInstanceName());
+                    labels.put("sharding_node", shardingNode);
+                    AlertUtil.alertResolve(AlarmCode.SHARDING_NODE_LACK, Alert.AlertLevel.WARN, "mysql", ds.getConfig().getId(), labels,
+                            ToResolveContainer.SHARDING_NODE_LACK, key);
                 }
             }
 
@@ -151,16 +151,16 @@ public abstract class AbstractTableMetaHandler {
                 String tableId = schema + "." + tableName;
                 if (tableMetas.size() > 1) {
                     consistentWarning();
-                } else if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(tableId)) {
-                    AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId),
-                            ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, tableId);
+                } else if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_SHARDINGS.contains(tableId)) {
+                    AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_SHARDINGS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId),
+                            ToResolveContainer.TABLE_NOT_CONSISTENT_IN_SHARDINGS, tableId);
                 }
                 tableMetas.clear();
             } else if (shardingNodeTableStructureSQLMap.size() == 1) {
                 String tableId = schema + "." + tableName;
-                if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.contains(tableId)) {
-                    AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId),
-                            ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, tableId);
+                if (ToResolveContainer.TABLE_NOT_CONSISTENT_IN_SHARDINGS.contains(tableId)) {
+                    AlertUtil.alertSelfResolve(AlarmCode.TABLE_NOT_CONSISTENT_IN_SHARDINGS, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId),
+                            ToResolveContainer.TABLE_NOT_CONSISTENT_IN_SHARDINGS, tableId);
                 }
                 tableMeta = MetaHelper.initTableMeta(tableName, shardingNodeTableStructureSQLMap.keySet().iterator().next(), version);
             }
@@ -170,8 +170,8 @@ public abstract class AbstractTableMetaHandler {
         private synchronized void consistentWarning() {
             String errorMsg = "Table [" + tableName + "] structure are not consistent in different data node!";
             logger.warn(errorMsg);
-            AlertUtil.alertSelf(AlarmCode.TABLE_NOT_CONSISTENT_IN_DATAHOSTS, Alert.AlertLevel.WARN, errorMsg, AlertUtil.genSingleLabel("TABLE", schema + "." + tableName));
-            ToResolveContainer.TABLE_NOT_CONSISTENT_IN_DATAHOSTS.add(schema + "." + tableName);
+            AlertUtil.alertSelf(AlarmCode.TABLE_NOT_CONSISTENT_IN_SHARDINGS, Alert.AlertLevel.WARN, errorMsg, AlertUtil.genSingleLabel("TABLE", schema + "." + tableName));
+            ToResolveContainer.TABLE_NOT_CONSISTENT_IN_SHARDINGS.add(schema + "." + tableName);
             logger.info("Currently detected: ");
             for (Map.Entry<String, List<String>> entry : shardingNodeTableStructureSQLMap.entrySet()) {
                 StringBuilder stringBuilder = new StringBuilder();

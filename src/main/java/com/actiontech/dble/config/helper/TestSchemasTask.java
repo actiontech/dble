@@ -102,14 +102,14 @@ public class TestSchemasTask extends Thread {
             for (Map.Entry<String, String> node : nodes.entrySet()) {
                 boolPtr.set(false);
                 String nodeName = node.getValue();
-                String key = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getConfig().getInstanceName() + "],data_node[" + nodeName + "],schema[" + node.getKey() + "]";
+                String key = "dbInstance[" + ds.getHostConfig().getName() + "." + ds.getConfig().getInstanceName() + "],sharding_node[" + nodeName + "],schema[" + node.getKey() + "]";
                 errKeys.add(key);
                 LOGGER.warn("test conn " + key + " error");
                 if (needAlert) {
-                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getInstanceName());
-                    labels.put("data_node", nodeName);
-                    AlertUtil.alert(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "{" + key + "} is lack", "mysql", ds.getConfig().getId(), labels);
-                    ToResolveContainer.DATA_NODE_LACK.add(key);
+                    Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", ds.getHostConfig().getName() + "-" + ds.getConfig().getInstanceName());
+                    labels.put("sharding_node", nodeName);
+                    AlertUtil.alert(AlarmCode.SHARDING_NODE_LACK, Alert.AlertLevel.WARN, "{" + key + "} is lack", "mysql", ds.getConfig().getId(), labels);
+                    ToResolveContainer.SHARDING_NODE_LACK.add(key);
                 }
             }
         }

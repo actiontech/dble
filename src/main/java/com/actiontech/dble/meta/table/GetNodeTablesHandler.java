@@ -89,26 +89,26 @@ public abstract class GetNodeTablesHandler {
         public void onResult(SQLQueryResult<List<Map<String, String>>> result) {
             String key = null;
             if (ds != null) {
-                key = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getConfig().getInstanceName() + "],data_node[" + shardingNode + "],schema[" + schema + "]";
+                key = "dbInstance[" + ds.getHostConfig().getName() + "." + ds.getConfig().getInstanceName() + "],sharding_node[" + shardingNode + "],schema[" + schema + "]";
             }
             if (!result.isSuccess()) {
                 //not thread safe
                 String warnMsg = "Can't show tables from DataNode:" + shardingNode + "! Maybe the data node is not initialized!";
                 LOGGER.warn(warnMsg);
                 if (ds != null) {
-                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getInstanceName());
-                    labels.put("data_node", shardingNode);
-                    AlertUtil.alert(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "{" + key + "} is lack", "mysql", ds.getConfig().getId(), labels);
-                    ToResolveContainer.DATA_NODE_LACK.add(key);
+                    Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", ds.getHostConfig().getName() + "-" + ds.getConfig().getInstanceName());
+                    labels.put("sharding_node", shardingNode);
+                    AlertUtil.alert(AlarmCode.SHARDING_NODE_LACK, Alert.AlertLevel.WARN, "{" + key + "} is lack", "mysql", ds.getConfig().getId(), labels);
+                    ToResolveContainer.SHARDING_NODE_LACK.add(key);
                 }
                 handleFinished();
                 return;
             }
-            if (ds != null && ToResolveContainer.DATA_NODE_LACK.contains(key)) {
-                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", ds.getHostConfig().getName() + "-" + ds.getConfig().getInstanceName());
-                labels.put("data_node", shardingNode);
-                AlertUtil.alertResolve(AlarmCode.DATA_NODE_LACK, Alert.AlertLevel.WARN, "mysql", ds.getConfig().getId(), labels,
-                        ToResolveContainer.DATA_NODE_LACK, key);
+            if (ds != null && ToResolveContainer.SHARDING_NODE_LACK.contains(key)) {
+                Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", ds.getHostConfig().getName() + "-" + ds.getConfig().getInstanceName());
+                labels.put("sharding_node", shardingNode);
+                AlertUtil.alertResolve(AlarmCode.SHARDING_NODE_LACK, Alert.AlertLevel.WARN, "mysql", ds.getConfig().getId(), labels,
+                        ToResolveContainer.SHARDING_NODE_LACK, key);
             }
             List<Map<String, String>> rows = result.getResult();
             for (Map<String, String> row : rows) {

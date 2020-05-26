@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.config.model;
 
 import com.actiontech.dble.backend.mysql.CharsetUtil;
@@ -710,7 +710,6 @@ public final class SystemConfig {
     }
 
 
-
     public boolean isUseDefaultPageNumber() {
         return useDefaultPageNumber;
     }
@@ -1068,7 +1067,11 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setWriteToBackendExecutor(int writeToBackendExecutor) {
-        this.writeToBackendExecutor = writeToBackendExecutor;
+        if (writeToBackendExecutor > 0) {
+            this.writeToBackendExecutor = writeToBackendExecutor;
+        } else if (this.problemReporter != null) {
+            problemReporter.warn(String.format(WARNING_FORMAT, "writeToBackendExecutor", writeToBackendExecutor, this.writeToBackendExecutor));
+        }
     }
 
     public int getEnableSlowLog() {

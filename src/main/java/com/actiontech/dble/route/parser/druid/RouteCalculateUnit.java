@@ -185,7 +185,7 @@ public class RouteCalculateUnit {
             ret = new ColumnRoute(true); //WILL NOT HAPPEN
         }
         if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("ColumnRoute[" + oldItemClone + "] and ColumnRoute[" + newItem + "] will merge to ColumnRoute[" + ret + "]");
+            LOGGER.trace("ColumnRoute[" + oldItem + "] and ColumnRoute[" + newItem + "] will merge to ColumnRoute[" + ret + "]");
         }
         return ret;
     }

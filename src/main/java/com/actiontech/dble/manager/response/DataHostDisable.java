@@ -109,12 +109,12 @@ public final class DataHostDisable {
                 setStatusToZK(ClusterPathUtil.getHaStatusPath(dh.getGroupName()), zkConn, dh.getClusterHaJson());
                 // write out notify message ,let other dble to response
                 setStatusToZK(ClusterPathUtil.getHaResponsePath(dh.getGroupName()), zkConn, new HaInfo(dh.getGroupName(),
-                        SystemConfig.getInstance().getInstanceId(),
+                        SystemConfig.getInstance().getInstanceName(),
                         HaInfo.HaType.DATAHOST_DISABLE,
                         HaInfo.HaStatus.SUCCESS
                 ).toString());
                 //write out self change success result
-                ZKUtils.createTempNode(ClusterPathUtil.getHaResponsePath(dh.getGroupName()), SystemConfig.getInstance().getInstanceId(),
+                ZKUtils.createTempNode(ClusterPathUtil.getHaResponsePath(dh.getGroupName()), SystemConfig.getInstance().getInstanceName(),
                         ClusterPathUtil.SUCCESS.getBytes(StandardCharsets.UTF_8));
                 //change stage into waiting others
                 HaConfigManager.getInstance().haWaitingOthers(id);
@@ -147,7 +147,7 @@ public final class DataHostDisable {
         //get the lock from ucore
         ClusterGeneralDistributeLock distributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getHaLockPath(dh.getGroupName()),
                 new HaInfo(dh.getGroupName(),
-                        SystemConfig.getInstance().getInstanceId(),
+                        SystemConfig.getInstance().getInstanceName(),
                         HaInfo.HaType.DATAHOST_DISABLE,
                         HaInfo.HaStatus.INIT
                 ).toString()
@@ -166,7 +166,7 @@ public final class DataHostDisable {
             // update the notify value let other dble to notify
             ClusterHelper.setKV(ClusterPathUtil.getHaResponsePath(dh.getGroupName()),
                     new HaInfo(dh.getGroupName(),
-                            SystemConfig.getInstance().getInstanceId(),
+                            SystemConfig.getInstance().getInstanceName(),
                             HaInfo.HaType.DATAHOST_DISABLE,
                             HaInfo.HaStatus.SUCCESS
                     ).toString());

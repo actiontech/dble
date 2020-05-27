@@ -49,7 +49,7 @@ public class XMLUserLoader {
     }
 
     public void loadXml(String dtdFile, String xmlFile) {
-        //read server.xml
+        //read user.xml
         InputStream dtd = null;
         InputStream xml = null;
         try {

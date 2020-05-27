@@ -197,13 +197,13 @@ public final class PauseDatanodeManager {
         if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().isUseZK()) {
             try {
                 uDistributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getPauseShardingNodePath(),
-                        new PauseInfo(SystemConfig.getInstance().getInstanceId(), shardingNode, PAUSE, timeOut, queueLimit).toString());
+                        new PauseInfo(SystemConfig.getInstance().getInstanceName(), shardingNode, PAUSE, timeOut, queueLimit).toString());
                 if (!uDistributeLock.acquire()) {
                     return false;
                 }
 
-                ClusterHelper.setKV(ClusterPathUtil.getPauseResultNodePath(SystemConfig.getInstance().getInstanceId()),
-                        SystemConfig.getInstance().getInstanceId());
+                ClusterHelper.setKV(ClusterPathUtil.getPauseResultNodePath(SystemConfig.getInstance().getInstanceName()),
+                        SystemConfig.getInstance().getInstanceName());
             } catch (Exception e) {
                 LOGGER.info("ucore connecction error", e);
                 return false;
@@ -242,11 +242,11 @@ public final class PauseDatanodeManager {
     public void resumeCluster() throws Exception {
         if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().isUseZK()) {
             ClusterHelper.setKV(ClusterPathUtil.getPauseResumePath(),
-                    new PauseInfo(SystemConfig.getInstance().getInstanceId(), " ", PauseInfo.RESUME, 0, 0).toString());
+                    new PauseInfo(SystemConfig.getInstance().getInstanceName(), " ", PauseInfo.RESUME, 0, 0).toString());
 
             //send self reponse
-            ClusterHelper.setKV(ClusterPathUtil.getPauseResumePath(SystemConfig.getInstance().getInstanceId()),
-                    SystemConfig.getInstance().getInstanceId());
+            ClusterHelper.setKV(ClusterPathUtil.getPauseResumePath(SystemConfig.getInstance().getInstanceName()),
+                    SystemConfig.getInstance().getInstanceName());
 
             LOGGER.info("try to resume cluster and waiting for others to response");
             ClusterHelper.waitingForAllTheNode(null, ClusterPathUtil.getPauseResumePath());

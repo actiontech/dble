@@ -43,7 +43,7 @@ public class ConfigStatusResponse implements ClusterXmlLoader {
             //step 1 check if the change is from itself
             LOGGER.info("notify " + pathValue.getKey() + " " + pathValue.getValue() + " " + pathValue.getChangeType());
             ConfStatus status = new ConfStatus(pathValue.getValue());
-            if (status.getFrom().equals(SystemConfig.getInstance().getInstanceId())) {
+            if (status.getFrom().equals(SystemConfig.getInstance().getInstanceName())) {
                 //self node
                 return;
             }

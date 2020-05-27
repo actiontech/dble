@@ -66,7 +66,7 @@ public class ServerConfig {
     private ConfigInitializer confInitNew;
 
     public ServerConfig() {
-        //read sharding.xml,rule.xml and server.xml
+        //read sharding.xml,db.xml and user.xml
         confInitNew = new ConfigInitializer(false);
         this.users = confInitNew.getUsers();
         this.schemas = confInitNew.getSchemas();
@@ -86,7 +86,7 @@ public class ServerConfig {
 
 
     public ServerConfig(ConfigInitializer confInit) {
-        //read sharding.xml,rule.xml and server.xml
+        //read sharding.xml,db.xml and user.xml
         this.users = confInit.getUsers();
         this.schemas = confInit.getSchemas();
         this.dbGroups = confInit.getDbGroups();

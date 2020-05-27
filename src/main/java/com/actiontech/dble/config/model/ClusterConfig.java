@@ -43,7 +43,8 @@ public final class ClusterConfig {
     private boolean needSyncHa = false;
     private int sequenceHandlerType = SEQUENCE_HANDLER_LOCAL_TIME;
     private long showBinlogStatusTimeout = 60 * 1000;
-
+    private String sequenceStartTime;
+    private boolean sequenceInstanceByZk = true;
 
     public boolean isClusterEnable() {
         return clusterEnable;
@@ -127,6 +128,26 @@ public final class ClusterConfig {
         }
     }
 
+    public boolean isSequenceInstanceByZk() {
+        return sequenceInstanceByZk;
+    }
+
+    @SuppressWarnings("unused")
+    public void setSequenceInstanceByZk(boolean sequenceInstanceByZk) {
+        this.sequenceInstanceByZk = sequenceInstanceByZk;
+    }
+
+
+    public String getSequenceStartTime() {
+        return sequenceStartTime;
+    }
+
+    @SuppressWarnings("unused")
+    public void setSequenceStartTime(String sequenceStartTime) {
+        this.sequenceStartTime = sequenceStartTime;
+    }
+
+
     @Override
     public String toString() {
         return "ClusterConfig [" +
@@ -137,8 +158,10 @@ public final class ClusterConfig {
                 ", rootPath=" + rootPath +
                 ", clusterID=" + clusterID +
                 ", needSyncHa=" + needSyncHa +
-                ", sequenceHandlerType=" + sequenceHandlerType +
                 ", showBinlogStatusTimeout=" + showBinlogStatusTimeout +
+                ", sequenceHandlerType=" + sequenceHandlerType +
+                ", sequenceStartTime=" + sequenceStartTime +
+                ", sequenceInstanceByZk=" + sequenceInstanceByZk +
                 "]";
     }
 

@@ -100,7 +100,7 @@ public class OfflineStatusListener implements PathChildrenCacheListener {
                 return;
             }
             if (BinlogPause.BinlogPauseStatus.ON == binlogPauseInfo.getStatus()) {
-                String instancePath = ZKPaths.makePath(binlogStatusPath, SystemConfig.getInstance().getInstanceId());
+                String instancePath = ZKPaths.makePath(binlogStatusPath, SystemConfig.getInstance().getInstanceName());
                 boolean needDelete = true;
                 long beginTime = TimeUtil.currentTimeMillis();
                 long timeout = ClusterConfig.getInstance().getShowBinlogStatusTimeout();

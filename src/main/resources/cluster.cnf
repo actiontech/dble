@@ -16,6 +16,10 @@ clusterPort=5700
 clusterID=cluster-1
 # if HA need sync by cluster, only useful when useOuterHa=true
 needSyncHa=false
-sequenceHandlerType=2
 # unit is millisecond
 showBinlogStatusTimeout=60000
+sequenceHandlerType=2
+# valid for sequenceHandlerType=2 or 3
+#sequenceStartTime=2010-11-04 09:42:54
+# valid for sequenceHandlerType=3 and clusterMode is zk, default true
+#sequenceInstanceByZk=true

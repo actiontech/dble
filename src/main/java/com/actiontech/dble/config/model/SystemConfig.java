@@ -34,7 +34,8 @@ public final class SystemConfig {
     // base config
     private String homePath = null;
     private String serverId = NetUtil.getHostIp();
-    private String instanceId = null;
+    private String instanceName = null;
+    private int instanceId = -1;
 
     private String bindIp = "0.0.0.0";
     private int serverPort = 8066;
@@ -311,7 +312,7 @@ public final class SystemConfig {
         if (CharsetUtil.getCharsetDefaultIndex(charset) > 0) {
             this.charset = charset;
         } else if (this.problemReporter != null) {
-            problemReporter.warn("Property [ charset ] '" + charset + "' in server.xml is illegal, use " + this.charset + " replaced");
+            problemReporter.warn("Property [ charset ] '" + charset + "' in bootstrap.cnf is illegal, use " + this.charset + " replaced");
         }
     }
 
@@ -740,12 +741,21 @@ public final class SystemConfig {
         this.serverId = serverId;
     }
 
-    public String getInstanceId() {
-        return instanceId;
+    public String getInstanceName() {
+        return instanceName;
     }
 
     @SuppressWarnings("unused")
-    public void setInstanceId(String instanceId) {
+    public void setInstanceName(String instanceName) {
+        this.instanceName = instanceName;
+    }
+
+
+    public int getInstanceId() {
+        return instanceId;
+    }
+    @SuppressWarnings("unused")
+    public void setInstanceId(int instanceId) {
         this.instanceId = instanceId;
     }
 
@@ -1184,6 +1194,7 @@ public final class SystemConfig {
     public String toString() {
         return "SystemConfig [" +
                 ", serverId=" + serverId +
+                ", instanceName=" + instanceName +
                 ", instanceId=" + instanceId +
                 ", bindIp=" + bindIp +
                 ", serverPort=" + serverPort +

@@ -142,7 +142,7 @@ public final class DryRun {
 
     private static void ucoreConnectionTest(List<ErrorInfo> list) {
         try {
-            String selfPath = ClusterPathUtil.getOnlinePath(SystemConfig.getInstance().getInstanceId());
+            String selfPath = ClusterPathUtil.getOnlinePath(SystemConfig.getInstance().getInstanceName());
             ClusterHelper.getKV(selfPath);
         } catch (Exception e) {
             list.add(new ErrorInfo("Cluster", "ERROR", "Dble in cluster but all the ucore can't connect"));

@@ -97,7 +97,7 @@ public final class ReloadConfig {
             distributeLock = new ZkDistributeLock(ZKUtils.getConnection(), ClusterPathUtil.getConfChangeLockPath());
         } else {
             distributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getConfChangeLockPath(),
-                    SystemConfig.getInstance().getInstanceId());
+                    SystemConfig.getInstance().getInstanceName());
         }
         try {
             if (!distributeLock.acquire()) {
@@ -169,7 +169,7 @@ public final class ReloadConfig {
             XmltoCluster.initFileToUcore();
             ReloadLogHelper.info("reload config: sent config file to ucore", LOGGER);
             //step 4 write the reload flag and self reload result into ucore,notify the other dble to reload
-            ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceId(),
+            ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceName(),
                     ConfStatus.Status.RELOAD_ALL, String.valueOf(loadAllMode));
             ClusterHelper.setKV(ClusterPathUtil.getConfStatusPath(), status.toString());
             ReloadLogHelper.info("reload config: sent config status to ucore", LOGGER);
@@ -211,7 +211,7 @@ public final class ReloadConfig {
             XmltoZkMain.writeConfFileToZK(loadAllMode);
             ReloadLogHelper.info("reload config: sent config status to zk", LOGGER);
             //tell zk this instance has prepared
-            ZKUtils.createTempNode(ClusterPathUtil.getConfStatusPath(), SystemConfig.getInstance().getInstanceId(),
+            ZKUtils.createTempNode(ClusterPathUtil.getConfStatusPath(), SystemConfig.getInstance().getInstanceName(),
                     ConfigStatusListener.SUCCESS.getBytes(StandardCharsets.UTF_8));
             ReloadLogHelper.info("reload config: sent finished status to zk, waiting other instances", LOGGER);
             //check all session waiting status

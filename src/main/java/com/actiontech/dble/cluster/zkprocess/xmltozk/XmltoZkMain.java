@@ -31,7 +31,7 @@ public final class XmltoZkMain {
 
     public static void rollbackConf() throws Exception {
         CuratorFramework zkConn = ZKUtils.getConnection();
-        ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceId(), ConfStatus.Status.ROLLBACK, null);
+        ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceName(), ConfStatus.Status.ROLLBACK, null);
         zkConn.setData().forPath(ClusterPathUtil.getConfStatusPath(), status.toString().getBytes(StandardCharsets.UTF_8));
     }
 
@@ -61,7 +61,7 @@ public final class XmltoZkMain {
         zkListen.initAllNode();
         zkListen.clearInited();
         //write flag
-        ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceId(),
+        ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceName(),
                 ConfStatus.Status.RELOAD_ALL, String.valueOf(allMode));
         zkConn.setData().forPath(ClusterPathUtil.getConfStatusPath(), status.toString().getBytes(StandardCharsets.UTF_8));
     }

@@ -80,13 +80,15 @@ public final class ShowSysParam {
             paramValues.add(new ParamInfo("clusterID", ClusterConfig.getInstance().getClusterID(), "dble cluster id"));
             paramValues.add(new ParamInfo("needHaSync", ClusterConfig.getInstance().isNeedSyncHa() + "", "Whether dble use cluster ha, The default value is false"));
         }
-        paramValues.add(new ParamInfo("sequenceHandlerType", ClusterConfig.getInstance().getSequenceHandlerType() > 4 || ClusterConfig.getInstance().getSequenceHandlerType() < 1 ? "Incorrect Sequence Type" : SEQUENCES[ClusterConfig.getInstance().getSequenceHandlerType()], "Global Sequence Type. The default is Local TimeStamp(like Snowflake)"));
         paramValues.add(new ParamInfo("showBinlogStatusTimeout", ClusterConfig.getInstance().getShowBinlogStatusTimeout() + "ms", "The time out from show @@binlog.status.The default value is 60000ms"));
-
+        paramValues.add(new ParamInfo("sequenceHandlerType", ClusterConfig.getInstance().getSequenceHandlerType() > 4 || ClusterConfig.getInstance().getSequenceHandlerType() < 1 ? "Incorrect Sequence Type" : SEQUENCES[ClusterConfig.getInstance().getSequenceHandlerType()], "Global Sequence Type. The default is Local TimeStamp(like Snowflake)"));
+        paramValues.add(new ParamInfo("sequenceStartTime", ClusterConfig.getInstance().getSequenceStartTime(), "valid for sequenceHandlerType=2 or 3, default is 2010-11-04 09:42:54"));
+        paramValues.add(new ParamInfo("sequenceInstanceByZk", ClusterConfig.getInstance().isSequenceInstanceByZk() + "", "valid for sequenceHandlerType=3 and clusterMode is zk, default true"));
 
         SystemConfig sysConfig = SystemConfig.getInstance();
         paramValues.add(new ParamInfo("serverId", sysConfig.getServerId() + "", "serverID of machine which install dble, the default value is the machine IP"));
-        paramValues.add(new ParamInfo("instanceId", sysConfig.getInstanceId() + "", "instanceId used to create xa transaction and unique key for cluster"));
+        paramValues.add(new ParamInfo("instanceName", sysConfig.getInstanceName() + "", "instanceName used to create xa transaction and unique key for cluster"));
+        paramValues.add(new ParamInfo("instanceId", sysConfig.getInstanceId() + "", "instanceId used to when sequenceHandlerType=2 or (sequenceHandlerType=3 and sequenceInstanceByZk)"));
         paramValues.add(new ParamInfo("useOuterHa", sysConfig.isUseOuterHa() + "", "Whether use outer ha component. The default value is true and it will always true when clusterEnable=true.If no component in fact, nothing will happen."));
         paramValues.add(new ParamInfo("fakeMySQLVersion", sysConfig.getFakeMySQLVersion(), "MySQL Version showed in Client"));
         paramValues.add(new ParamInfo("bindIp", sysConfig.getBindIp() + "", "The host where the server is running. The default is 0.0.0.0"));

@@ -49,7 +49,7 @@ public class DbGroupHaResponse implements ClusterXmlLoader {
             //data_host_locks events,we only try to response to the DISABLE,ignore others
             HaInfo info = new HaInfo(configValue.getValue());
             if (info.getLockType() == HaInfo.HaType.DATAHOST_DISABLE &&
-                    !info.getStartId().equals(SystemConfig.getInstance().getInstanceId()) &&
+                    !info.getStartId().equals(SystemConfig.getInstance().getInstanceName()) &&
                     info.getStatus() == HaInfo.HaStatus.SUCCESS) {
                 try {
                     //start the log

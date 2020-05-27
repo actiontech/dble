@@ -47,8 +47,8 @@ public class BinlogPauseStatusListener extends ZkMultiLoader implements NotifySe
         LOGGER.info("BinlogPauseStatusListener notifyProcess zk to object  :" + strPauseInfo);
 
         BinlogPause pauseInfo = new BinlogPause(strPauseInfo);
-        String instanceId = SystemConfig.getInstance().getInstanceId();
-        if (pauseInfo.getFrom().equals(instanceId)) {
+        String instanceName = SystemConfig.getInstance().getInstanceName();
+        if (pauseInfo.getFrom().equals(instanceName)) {
             return true; //self node
         }
         if (pauseInfo.getStatus() == BinlogPause.BinlogPauseStatus.ON) {
@@ -56,11 +56,11 @@ public class BinlogPauseStatusListener extends ZkMultiLoader implements NotifySe
             boolean isPaused = ShowBinlogStatus.waitAllSession();
             if (!isPaused) {
                 ClusterHelper.cleanBackupLocked();
-                ZKUtils.createTempNode(currZkPath, instanceId, "Error can't wait all session finished".getBytes(StandardCharsets.UTF_8));
+                ZKUtils.createTempNode(currZkPath, instanceName, "Error can't wait all session finished".getBytes(StandardCharsets.UTF_8));
                 return true;
             }
             try {
-                ZKUtils.createTempNode(currZkPath, instanceId, ClusterPathUtil.SUCCESS.getBytes(StandardCharsets.UTF_8));
+                ZKUtils.createTempNode(currZkPath, instanceName, ClusterPathUtil.SUCCESS.getBytes(StandardCharsets.UTF_8));
             } catch (Exception e) {
                 ClusterHelper.cleanBackupLocked();
                 LOGGER.warn("create binlogPause instance failed", e);
@@ -69,7 +69,7 @@ public class BinlogPauseStatusListener extends ZkMultiLoader implements NotifySe
             LOGGER.info("clean resource for binlog status finish");
             //step 3 if the flag is off than try to unlock the commit
             ClusterHelper.cleanBackupLocked();
-            cleanResource(ZKPaths.makePath(currZkPath, instanceId));
+            cleanResource(ZKPaths.makePath(currZkPath, instanceName));
         }
         return true;
     }

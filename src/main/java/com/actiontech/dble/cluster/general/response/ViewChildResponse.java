@@ -43,8 +43,8 @@ public class ViewChildResponse implements ClusterXmlLoader {
 
         String serverId = configValue.getValue().split(Repository.SCHEMA_VIEW_SPLIT)[0];
         String optionType = configValue.getValue().split(Repository.SCHEMA_VIEW_SPLIT)[1];
-        String instanceId = SystemConfig.getInstance().getInstanceId();
-        if (instanceId.equals(serverId) || KvBean.DELETE.equals(configValue.getChangeType())) {
+        String instanceName = SystemConfig.getInstance().getInstanceName();
+        if (instanceName.equals(serverId) || KvBean.DELETE.equals(configValue.getChangeType())) {
             // self node do noting
             return;
         } else {
@@ -58,7 +58,7 @@ public class ViewChildResponse implements ClusterXmlLoader {
                     ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().remove(viewName);
 
                     ClusterDelayProvider.delayBeforeReponseView();
-                    ClusterHelper.setKV(configValue.getKey() + SEPARATOR + instanceId, ClusterPathUtil.SUCCESS);
+                    ClusterHelper.setKV(configValue.getKey() + SEPARATOR + instanceName, ClusterPathUtil.SUCCESS);
                 } else if (Repository.UPDATE.equals(optionType)) {
                     LOGGER.info("update view " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
                     ClusterDelayProvider.delayBeforeReponseGetView();
@@ -66,7 +66,7 @@ public class ViewChildResponse implements ClusterXmlLoader {
                     if (ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().get(viewName) != null &&
                             stmt.equals(ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().get(viewName).getCreateSql())) {
                         ClusterDelayProvider.delayBeforeReponseView();
-                        ClusterHelper.setKV(configValue.getKey() + SEPARATOR + instanceId, ClusterPathUtil.SUCCESS);
+                        ClusterHelper.setKV(configValue.getKey() + SEPARATOR + instanceName, ClusterPathUtil.SUCCESS);
                         return;
                     }
                     ViewMeta vm = new ViewMeta(schema, stmt, ProxyMeta.getInstance().getTmManager());
@@ -78,11 +78,11 @@ public class ViewChildResponse implements ClusterXmlLoader {
                     schemaMap.put(viewName, stmt);
 
                     ClusterDelayProvider.delayBeforeReponseView();
-                    ClusterHelper.setKV(configValue.getKey() + SEPARATOR + instanceId, ClusterPathUtil.SUCCESS);
+                    ClusterHelper.setKV(configValue.getKey() + SEPARATOR + instanceName, ClusterPathUtil.SUCCESS);
                 }
             } catch (Exception e) {
                 ClusterDelayProvider.delayBeforeReponseView();
-                ClusterHelper.setKV(configValue.getKey() + SEPARATOR + instanceId, e.toString());
+                ClusterHelper.setKV(configValue.getKey() + SEPARATOR + instanceName, e.toString());
             }
         }
     }

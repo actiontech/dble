@@ -54,7 +54,7 @@ public final class PauseEnd {
                 }
 
                 PauseInfo pauseInfo = new PauseInfo(value.getValue());
-                if (!pauseInfo.getFrom().equals(SystemConfig.getInstance().getInstanceId())) {
+                if (!pauseInfo.getFrom().equals(SystemConfig.getInstance().getInstanceName())) {
                     c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "This node is not the node which start pause");
                     return;
                 }

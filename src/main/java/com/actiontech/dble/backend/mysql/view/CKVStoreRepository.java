@@ -79,7 +79,7 @@ public class CKVStoreRepository implements Repository {
         Map<String, String> schemaMap = viewCreateSqlMap.get(schemaName);
 
         ClusterGeneralDistributeLock distributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getViewLockPath(schemaName, viewName),
-                SystemConfig.getInstance().getInstanceId() + SCHEMA_VIEW_SPLIT + UPDATE);
+                SystemConfig.getInstance().getInstanceName() + SCHEMA_VIEW_SPLIT + UPDATE);
         final String viewChangePath = ClusterPathUtil.getViewChangePath(schemaName, viewName);
         try {
             int time = 0;
@@ -94,10 +94,10 @@ public class CKVStoreRepository implements Repository {
             schemaMap.put(viewName, createSql);
             ClusterHelper.setKV(ClusterPathUtil.getViewPath(schemaName, viewName), createSql);
             ClusterDelayProvider.delayAfterViewSetKey();
-            ClusterHelper.setKV(viewChangePath, SystemConfig.getInstance().getInstanceId() + SCHEMA_VIEW_SPLIT + UPDATE);
+            ClusterHelper.setKV(viewChangePath, SystemConfig.getInstance().getInstanceName() + SCHEMA_VIEW_SPLIT + UPDATE);
             ClusterDelayProvider.delayAfterViewNotic();
             //self response set
-            ClusterHelper.setKV(viewChangePath + ClusterPathUtil.SEPARATOR + SystemConfig.getInstance().getInstanceId(), ClusterPathUtil.SUCCESS);
+            ClusterHelper.setKV(viewChangePath + ClusterPathUtil.SEPARATOR + SystemConfig.getInstance().getInstanceName(), ClusterPathUtil.SUCCESS);
 
             String errorMsg = ClusterHelper.waitingForAllTheNode(ClusterPathUtil.SUCCESS, viewChangePath + ClusterPathUtil.SEPARATOR);
 
@@ -133,7 +133,7 @@ public class CKVStoreRepository implements Repository {
     @Override
     public void delete(String schemaName, String viewName) {
         ClusterGeneralDistributeLock distributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getViewLockPath(schemaName, viewName),
-                SystemConfig.getInstance().getInstanceId() + SCHEMA_VIEW_SPLIT + DELETE);
+                SystemConfig.getInstance().getInstanceName() + SCHEMA_VIEW_SPLIT + DELETE);
         final String viewChangePath = ClusterPathUtil.getViewChangePath(schemaName, viewName);
         try {
             viewCreateSqlMap.get(schemaName).remove(viewName);
@@ -147,11 +147,11 @@ public class CKVStoreRepository implements Repository {
             ClusterDelayProvider.delayAfterGetLock();
             ClusterHelper.cleanKV(ClusterPathUtil.getViewPath(schemaName, viewName));
             ClusterDelayProvider.delayAfterViewSetKey();
-            ClusterHelper.setKV(viewChangePath, SystemConfig.getInstance().getInstanceId() + SCHEMA_VIEW_SPLIT + DELETE);
+            ClusterHelper.setKV(viewChangePath, SystemConfig.getInstance().getInstanceName() + SCHEMA_VIEW_SPLIT + DELETE);
             ClusterDelayProvider.delayAfterViewNotic();
 
             //self reponse set
-            ClusterHelper.setKV(viewChangePath + ClusterPathUtil.SEPARATOR + SystemConfig.getInstance().getInstanceId(), ClusterPathUtil.SUCCESS);
+            ClusterHelper.setKV(viewChangePath + ClusterPathUtil.SEPARATOR + SystemConfig.getInstance().getInstanceName(), ClusterPathUtil.SUCCESS);
 
             String errorMsg = ClusterHelper.waitingForAllTheNode(ClusterPathUtil.SUCCESS, ClusterPathUtil.SEPARATOR);
 

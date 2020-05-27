@@ -18,8 +18,8 @@ public final class UcoreAlert implements Alert {
 
     public UcoreAlert() {
         serverId = SystemConfig.getInstance().getServerId();
-        sourceComponentId = SystemConfig.getInstance().getInstanceId();
-        alertComponentId = SystemConfig.getInstance().getInstanceId();
+        sourceComponentId = SystemConfig.getInstance().getInstanceName();
+        alertComponentId = SystemConfig.getInstance().getInstanceName();
     }
 
     @Override

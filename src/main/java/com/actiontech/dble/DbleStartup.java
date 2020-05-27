@@ -23,8 +23,8 @@ public final class DbleStartup {
             ClusterController.loadClusterProperties();
             //lod system properties
             SystemConfigLoader.initSystemConfig();
-            if (SystemConfig.getInstance().getInstanceId() == null) {
-                String msg = "You must config instanceId in bootstrap.cnf and make sure it is an unique key for cluster";
+            if (SystemConfig.getInstance().getInstanceName() == null) {
+                String msg = "You must config instanceName in bootstrap.cnf and make sure it is an unique key for cluster";
                 System.out.println(msg);
                 System.exit(-1);
             }

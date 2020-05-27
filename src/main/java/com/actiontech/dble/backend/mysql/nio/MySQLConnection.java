@@ -130,7 +130,7 @@ public class MySQLConnection extends AbstractConnection implements
         if (isolationSynced) {
             this.txIsolation = SystemConfig.getInstance().getTxIsolation();
         } else {
-            /* if the txIsolation in server.xml is different from the isolation level in MySQL node,
+            /* if the txIsolation in bootstrap.cnf is different from the isolation level in MySQL node,
              * it need to sync the status firstly for new idle connection*/
             this.txIsolation = -1;
         }

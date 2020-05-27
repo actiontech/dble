@@ -42,7 +42,7 @@ public class PropertySequenceLoader implements ClusterXmlLoader {
     public void notifyProcess(KvBean configValue) throws Exception {
         LOGGER.info("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
         KvBean lock = ClusterHelper.getKV(ClusterPathUtil.getConfChangeLockPath());
-        if (SystemConfig.getInstance().getInstanceId().equals(lock.getValue())) {
+        if (SystemConfig.getInstance().getInstanceName().equals(lock.getValue())) {
             return;
         }
         if (configValue.getValue() != null && !"".equals(configValue.getValue())) {

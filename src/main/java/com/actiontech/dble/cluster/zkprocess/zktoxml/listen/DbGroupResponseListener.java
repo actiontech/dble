@@ -55,7 +55,7 @@ public class DbGroupResponseListener implements PathChildrenCacheListener {
                 }
             } catch (Exception e) {
                 LOGGER.warn("get error when try to response to the disable");
-                ZKUtils.createTempNode(childData.getPath(), SystemConfig.getInstance().getInstanceId(), e.getMessage().getBytes());
+                ZKUtils.createTempNode(childData.getPath(), SystemConfig.getInstance().getInstanceName(), e.getMessage().getBytes());
             }
         }
     }
@@ -64,14 +64,14 @@ public class DbGroupResponseListener implements PathChildrenCacheListener {
     private void response(String data, String path) throws Exception {
         HaInfo info = new HaInfo(data);
         CuratorFramework zkConn = ZKUtils.getConnection();
-        if (!info.getStartId().equals(SystemConfig.getInstance().getInstanceId()) &&
+        if (!info.getStartId().equals(SystemConfig.getInstance().getInstanceName()) &&
                 info.getStatus() == HaInfo.HaStatus.SUCCESS) {
             int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.RESPONSE_NOTIFY, HaInfo.HaStartType.CLUSTER_NOTIFY, HaInfo.HaStage.RESPONSE_NOTIFY.toString());
             PhysicalDbGroup dataHost = (PhysicalDbGroup) DbleServer.getInstance().getConfig().getDbGroups().get(info.getDbGroupName());
             String jsonString = new String(zkConn.getData().forPath(ClusterPathUtil.getHaStatusPath(info.getDbGroupName())), "UTF-8");
             dataHost.changeIntoLatestStatus(jsonString);
             //response to kv
-            ZKUtils.createTempNode(path, SystemConfig.getInstance().getInstanceId(), ClusterPathUtil.SUCCESS.getBytes());
+            ZKUtils.createTempNode(path, SystemConfig.getInstance().getInstanceName(), ClusterPathUtil.SUCCESS.getBytes());
             HaConfigManager.getInstance().haFinish(id, null, data);
         }
     }

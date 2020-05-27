@@ -55,7 +55,7 @@ public class DDLChildListener implements PathChildrenCacheListener {
         LOGGER.info("DDL node " + childData.getPath() + " created , and data is " + data);
         DDLInfo ddlInfo = new DDLInfo(data);
         final String fromNode = ddlInfo.getFrom();
-        if (fromNode.equals(SystemConfig.getInstance().getInstanceId())) {
+        if (fromNode.equals(SystemConfig.getInstance().getInstanceName())) {
             return; //self node
         }
         if (DDLStatus.INIT != ddlInfo.getStatus()) {
@@ -82,7 +82,7 @@ public class DDLChildListener implements PathChildrenCacheListener {
         String data = new String(childData.getData(), StandardCharsets.UTF_8);
         LOGGER.info("DDL node " + childData.getPath() + " updated , and data is " + data);
         DDLInfo ddlInfo = new DDLInfo(data);
-        if (ddlInfo.getFrom().equals(SystemConfig.getInstance().getInstanceId())) {
+        if (ddlInfo.getFrom().equals(SystemConfig.getInstance().getInstanceName())) {
             return; //self node
         }
         if (DDLStatus.INIT == ddlInfo.getStatus()) {

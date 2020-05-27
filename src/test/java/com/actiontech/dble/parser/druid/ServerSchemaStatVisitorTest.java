@@ -36,7 +36,8 @@ public class ServerSchemaStatVisitorTest {
         WhereUnit whereUnit = whereUnits.get(0);
         List<Condition> list1 = whereUnit.getOutAndConditions();
 
-        Assert.assertEquals(list1.get(0).toString(), "travelrecord.id = (1, 2)");
+        Assert.assertEquals(list1.get(0).toString(), "travelrecord.id = 1");
+        Assert.assertEquals(list1.get(1).toString(), "travelrecord.id = 2");
 
         WhereUnit childWhereUnits = whereUnit.getSubWhereUnit().get(0);
         List<List<Condition>> childList = childWhereUnits.getOrConditionList();

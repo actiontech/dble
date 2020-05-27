@@ -23,15 +23,15 @@ public class HaInfo {
 
     private final HaType lockType;
     private final String startId;
-    private final String dhName;
+    private final String dbGroupName;
 
     private final HaStatus status;
     private String split = ";";
 
-    public HaInfo(String dhName, String startId, HaType lockType, HaStatus status) {
+    public HaInfo(String dbGroupName, String startId, HaType lockType, HaStatus status) {
         this.lockType = lockType;
         this.startId = startId;
-        this.dhName = dhName;
+        this.dbGroupName = dbGroupName;
         this.status = status;
     }
 
@@ -39,7 +39,7 @@ public class HaInfo {
         String[] infoDetail = kv.split(split);
         this.lockType = HaType.valueOf(infoDetail[0]);
         this.startId = infoDetail[1];
-        this.dhName = infoDetail[2];
+        this.dbGroupName = infoDetail[2];
         this.status = HaStatus.valueOf(infoDetail[3]);
     }
 
@@ -51,8 +51,8 @@ public class HaInfo {
         return startId;
     }
 
-    public String getDhName() {
-        return dhName;
+    public String getDbGroupName() {
+        return dbGroupName;
     }
 
     public HaStatus getStatus() {
@@ -61,6 +61,6 @@ public class HaInfo {
 
     @Override
     public String toString() {
-        return lockType + split + startId + split + dhName + split + status;
+        return lockType + split + startId + split + dbGroupName + split + status;
     }
 }

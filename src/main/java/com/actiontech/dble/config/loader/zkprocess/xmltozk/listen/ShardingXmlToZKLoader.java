@@ -6,7 +6,7 @@
 package com.actiontech.dble.config.loader.zkprocess.xmltozk.listen;
 
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.config.loader.console.ZookeeperPath;
+import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.loader.zkprocess.comm.NotifyService;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.config.loader.zkprocess.entity.Shardings;
@@ -14,7 +14,6 @@ import com.actiontech.dble.config.loader.zkprocess.entity.sharding.schema.Table;
 import com.actiontech.dble.config.loader.zkprocess.entity.sharding.schema.TableGsonAdapter;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
-import com.actiontech.dble.util.KVPathUtil;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.curator.framework.CuratorFramework;
@@ -23,14 +22,14 @@ import org.slf4j.LoggerFactory;
 
 public class ShardingXmlToZKLoader extends ZkMultiLoader implements NotifyService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ShardingXmlToZKLoader.class);
-    private static final String SHARDING_PATH = ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey() + "sharding.xml";
+    private static final String SHARDING_PATH = ClusterPathUtil.LOCAL_WRITE_PATH + "sharding.xml";
     private final String currZkPath;
     private final Gson gson;
     private XmlProcessBase xmlParseBase;
     public ShardingXmlToZKLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator,
                                  XmlProcessBase xmlParseBase) {
         this.setCurator(curator);
-        currZkPath = KVPathUtil.getConfShardingPath();
+        currZkPath = ClusterPathUtil.getConfShardingPath();
         this.xmlParseBase = xmlParseBase;
         xmlParseBase.addParseClass(Shardings.class);
         GsonBuilder gsonBuilder = new GsonBuilder();

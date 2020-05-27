@@ -6,7 +6,7 @@
 package com.actiontech.dble.config.loader.zkprocess.zktoxml.listen;
 
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.config.loader.console.ZookeeperPath;
+import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.loader.zkprocess.comm.NotifyService;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.config.loader.zkprocess.entity.Users;
@@ -14,7 +14,6 @@ import com.actiontech.dble.config.loader.zkprocess.entity.user.User;
 import com.actiontech.dble.config.loader.zkprocess.entity.user.UserGsonAdapter;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
-import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -34,7 +33,7 @@ public class UserZkToXmlLoader extends ZkMultiLoader implements NotifyService {
     public UserZkToXmlLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator,
                              XmlProcessBase xmlParseBase, ConfigStatusListener confListener) {
         this.setCurator(curator);
-        currZkPath = KVPathUtil.getUserConfPath();
+        currZkPath = ClusterPathUtil.getUserConfPath();
         this.xmlParseBase = xmlParseBase;
         xmlParseBase.addParseClass(Users.class);
         GsonBuilder gsonBuilder = new GsonBuilder();
@@ -50,7 +49,7 @@ public class UserZkToXmlLoader extends ZkMultiLoader implements NotifyService {
         LOGGER.info("notifyProcess zk to object users:" + jsonContent);
         Users userBean = ClusterHelper.parseUserJsonToBean(gson, jsonContent);
 
-        String path = ResourceUtil.getResourcePathFromRoot(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey());
+        String path = ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH);
         path = new File(path).getPath() + File.separator + USER_XML_PATH;
 
         xmlParseBase.baseParseAndWriteToXml(userBean, path, "user");

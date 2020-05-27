@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.config.loader.zkprocess.comm;
 
-import com.actiontech.dble.config.loader.console.ZookeeperPath;
+import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.util.ResourceUtil;
 
 import java.io.*;
@@ -21,7 +21,7 @@ public final class ConfFileRWUtils {
 
     public static String readFile(String name) throws IOException {
         StringBuilder mapFileStr = new StringBuilder();
-        String path = ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey() + name;
+        String path = ClusterPathUtil.LOCAL_WRITE_PATH + name;
         InputStream input = null;
         try {
             input = ResourceUtil.getResourceAsStreamFromRoot(path);
@@ -52,7 +52,7 @@ public final class ConfFileRWUtils {
     }
 
     public static void writeFile(String name, String value) throws IOException {
-        String path = ResourceUtil.getResourcePathFromRoot(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey());
+        String path = ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH);
         checkNotNull(path, "write ecache file curr Path :" + path + " is null! It must be not null");
         path = new File(path).getPath() + File.separator + name;
 

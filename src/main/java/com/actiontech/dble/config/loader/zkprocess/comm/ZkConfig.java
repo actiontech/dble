@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.config.loader.zkprocess.comm;
 
+import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.loader.zkprocess.zktoxml.ZktoXmlMain;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.singleton.OnlineStatus;
@@ -36,7 +37,7 @@ public final class ZkConfig {
         try {
             tryDeleteOldOnline();
             // online
-            ZKUtils.createOnline(KVPathUtil.getOnlinePath(), SystemConfig.getInstance().getInstanceId(), OnlineStatus.getInstance());
+            ZKUtils.createOnline(ClusterPathUtil.getOnlinePath(), SystemConfig.getInstance().getInstanceId(), OnlineStatus.getInstance());
 
             ZktoXmlMain.loadZktoFile();
         } catch (Exception e) {
@@ -56,12 +57,10 @@ public final class ZkConfig {
 
     private static void tryDeleteOldOnline() throws Exception {
         //try to delete online
-        if (ZKUtils.getConnection().checkExists().forPath(KVPathUtil.getOnlinePath() +
-                KVPathUtil.SEPARATOR + SystemConfig.getInstance().getInstanceId()) != null) {
+        if (ZKUtils.getConnection().checkExists().forPath(ClusterPathUtil.getOnlinePath(SystemConfig.getInstance().getInstanceId())) != null) {
             byte[] info;
             try {
-                info = ZKUtils.getConnection().getData().forPath(KVPathUtil.getOnlinePath() +
-                        KVPathUtil.SEPARATOR + SystemConfig.getInstance().getInstanceId());
+                info = ZKUtils.getConnection().getData().forPath(ClusterPathUtil.getOnlinePath(SystemConfig.getInstance().getInstanceId()));
             } catch (Exception e) {
                 LOGGER.info("can not get old online from zk,just do as it not exists");
                 return;
@@ -69,8 +68,7 @@ public final class ZkConfig {
             String oldOnlne = new String(info, StandardCharsets.UTF_8);
             if (OnlineStatus.getInstance().canRemovePath(oldOnlne)) {
                 LOGGER.warn("remove online from zk path ,because has same IP & serverPort");
-                ZKUtils.getConnection().delete().forPath(KVPathUtil.getOnlinePath() +
-                        KVPathUtil.SEPARATOR + SystemConfig.getInstance().getInstanceId());
+                ZKUtils.getConnection().delete().forPath(ClusterPathUtil.getOnlinePath(SystemConfig.getInstance().getInstanceId()));
             } else {
                 throw new RuntimeException("Online path with other IP or serverPort exist,make sure different instance has different myid");
             }

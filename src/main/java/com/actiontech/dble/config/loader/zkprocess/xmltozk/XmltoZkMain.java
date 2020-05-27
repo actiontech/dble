@@ -6,6 +6,7 @@
 package com.actiontech.dble.config.loader.zkprocess.xmltozk;
 
 import com.actiontech.dble.cluster.ClusterController;
+import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.loader.zkprocess.xmltozk.listen.*;
@@ -31,7 +32,7 @@ public final class XmltoZkMain {
     public static void rollbackConf() throws Exception {
         CuratorFramework zkConn = ZKUtils.getConnection();
         ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceId(), ConfStatus.Status.ROLLBACK, null);
-        zkConn.setData().forPath(KVPathUtil.getConfStatusPath(), status.toString().getBytes(StandardCharsets.UTF_8));
+        zkConn.setData().forPath(ClusterPathUtil.getConfStatusPath(), status.toString().getBytes(StandardCharsets.UTF_8));
     }
 
     public static void writeConfFileToZK(final int allMode) throws Exception {
@@ -62,7 +63,7 @@ public final class XmltoZkMain {
         //write flag
         ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceId(),
                 ConfStatus.Status.RELOAD_ALL, String.valueOf(allMode));
-        zkConn.setData().forPath(KVPathUtil.getConfStatusPath(), status.toString().getBytes(StandardCharsets.UTF_8));
+        zkConn.setData().forPath(ClusterPathUtil.getConfStatusPath(), status.toString().getBytes(StandardCharsets.UTF_8));
     }
 
     public static void initFileToZK() throws Exception {
@@ -72,16 +73,13 @@ public final class XmltoZkMain {
 
         XmlProcessBase xmlProcess = new XmlProcessBase();
 
-        new ShardingXmlToZKLoader(zkListen, zkConn, xmlProcess);
-
-
         new DbXmlToZkLoader(zkListen, zkConn, xmlProcess);
+
+        new ShardingXmlToZKLoader(zkListen, zkConn, xmlProcess);
 
         new UserXmlToZkLoader(zkListen, zkConn, xmlProcess);
 
         new SequenceTozkLoader(zkListen, zkConn);
-
-        new EcachesxmlTozkLoader(zkListen, zkConn, xmlProcess);
 
         new OthermsgTozkLoader(zkListen, zkConn);
 

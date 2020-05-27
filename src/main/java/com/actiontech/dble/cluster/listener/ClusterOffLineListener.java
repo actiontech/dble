@@ -88,7 +88,7 @@ public class ClusterOffLineListener implements Runnable {
                 needRelease = true;
             }
             if (needRelease) {
-                ClusterXmlLoader loader = ClusterToXml.getListener().getReponse(ClusterPathUtil.getPauseShardingNodePath());
+                ClusterXmlLoader loader = ClusterToXml.getListener().getResponse(ClusterPathUtil.getPauseShardingNodePath());
                 loader.notifyCluster();
             }
 

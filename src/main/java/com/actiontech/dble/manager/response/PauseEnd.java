@@ -10,10 +10,10 @@ import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.bean.KvBean;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.PauseInfo;
+import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.singleton.PauseDatanodeManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +45,7 @@ public final class PauseEnd {
 
     public static void resume(ManagerConnection c) {
         LOGGER.info("resume start from command");
-        if (ClusterGeneralConfig.isUseGeneralCluster()) {
+        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().isUseZK()) {
             try {
                 KvBean value = ClusterHelper.getKV(ClusterPathUtil.getPauseShardingNodePath());
                 if (value.getValue() == null || "".equals(value.getValue())) {

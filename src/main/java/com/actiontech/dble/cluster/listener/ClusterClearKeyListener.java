@@ -152,7 +152,7 @@ public class ClusterClearKeyListener implements Runnable {
         this.childService.put(path, loader);
     }
 
-    public ClusterXmlLoader getReponse(String key) {
+    public ClusterXmlLoader getResponse(String key) {
         return this.childService.get(key);
     }
 

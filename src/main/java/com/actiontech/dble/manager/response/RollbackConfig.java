@@ -9,14 +9,13 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.cluster.*;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.xmltozk.XmltoZkMain;
 import com.actiontech.dble.config.loader.zkprocess.zktoxml.listen.ConfigStatusListener;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
+import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.ERTable;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -29,11 +28,8 @@ import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
-import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.utils.ZKPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,59 +56,58 @@ public final class RollbackConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger(RollbackConfig.class);
 
     public static void execute(ManagerConnection c) {
-        if (ClusterGeneralConfig.isUseZK()) {
-            CuratorFramework zkConn = ZKUtils.getConnection();
-            InterProcessMutex distributeLock = new InterProcessMutex(zkConn, KVPathUtil.getConfChangeLockPath());
-            try {
-                if (!distributeLock.acquire(100, TimeUnit.MILLISECONDS)) {
-                    c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rollbacking, please try again later.");
-                } else {
-                    ClusterDelayProvider.delayAfterReloadLock();
-                    try {
-                        rollbackWithZk(zkConn, c);
-                    } finally {
-                        distributeLock.release();
-                    }
-                }
-            } catch (Exception e) {
-                LOGGER.info("reload config failure", e);
-                writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
-            }
-        } else if (ClusterGeneralConfig.isUseGeneralCluster()) {
-            DistributeLock distributeLock = new DistributeLock(ClusterPathUtil.getConfChangeLockPath(),
-                    SystemConfig.getInstance().getInstanceId());
-            try {
-
-                if (!distributeLock.acquire()) {
-                    c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rollbacking, please try again later.");
-                    return;
-                }
-                ClusterDelayProvider.delayAfterReloadLock();
-                try {
-                    rollbackWithUcore(c);
-                } finally {
-                    distributeLock.release();
-                }
-            } catch (Exception e) {
-                LOGGER.info("reload config failure", e);
-                writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
-            }
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            if (rollbackWithCluster(c)) return;
         } else {
-            final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
-            lock.writeLock().lock();
-            try {
-                if (!rollback(TRIGGER_TYPE_COMMAND)) {
-                    writeSpecialError(c, "Rollback interruputed by others,config should be reload");
-                } else {
-                    writeOKResult(c);
-                }
-            } catch (Exception e) {
-                writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
-            } finally {
-                lock.writeLock().unlock();
-            }
+            rollbackWithoutCluster(c);
         }
         ReloadManager.reloadFinish();
+    }
+
+    private static boolean rollbackWithCluster(ManagerConnection c) {
+        DistributeLock distributeLock;
+        if (ClusterConfig.getInstance().isUseZK()) {
+            distributeLock = new ZkDistributeLock(ZKUtils.getConnection(), ClusterPathUtil.getConfChangeLockPath());
+        } else {
+            distributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getConfChangeLockPath(),
+                    SystemConfig.getInstance().getInstanceId());
+        }
+        try {
+            if (!distributeLock.acquire()) {
+                c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rollbacking, please try again later.");
+                return true;
+            }
+            ClusterDelayProvider.delayAfterReloadLock();
+            try {
+                if (ClusterConfig.getInstance().isUseZK()) {
+                    rollbackWithZk(ZKUtils.getConnection(), c);
+                } else {
+                    rollbackWithUcore(c);
+                }
+            } finally {
+                distributeLock.release();
+            }
+        } catch (Exception e) {
+            LOGGER.info("reload config failure", e);
+            writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
+        }
+        return false;
+    }
+
+    private static void rollbackWithoutCluster(ManagerConnection c) {
+        final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
+        lock.writeLock().lock();
+        try {
+            if (!rollback(TRIGGER_TYPE_COMMAND)) {
+                writeSpecialError(c, "Rollback interruputed by others,config should be reload");
+            } else {
+                writeOKResult(c);
+            }
+        } catch (Exception e) {
+            writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
 
@@ -172,29 +167,29 @@ public final class RollbackConfig {
 
             XmltoZkMain.rollbackConf();
             //tell zk this instance has prepared
-            ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), SystemConfig.getInstance().getInstanceId(),
+            ZKUtils.createTempNode(ClusterPathUtil.getConfStatusPath(), SystemConfig.getInstance().getInstanceId(),
                     ConfigStatusListener.SUCCESS.getBytes(StandardCharsets.UTF_8));
             //check all session waiting status
-            List<String> preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
-            List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
+            List<String> preparedList = zkConn.getChildren().forPath(ClusterPathUtil.getConfStatusPath());
+            List<String> onlineList = zkConn.getChildren().forPath(ClusterPathUtil.getOnlinePath());
 
             while (preparedList.size() < onlineList.size()) {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));
-                onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
-                preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
+                onlineList = zkConn.getChildren().forPath(ClusterPathUtil.getOnlinePath());
+                preparedList = zkConn.getChildren().forPath(ClusterPathUtil.getConfStatusPath());
             }
             ReloadLogHelper.info("rollback config: all instances finished ", LOGGER);
             ClusterDelayProvider.delayBeforeDeleteReloadLock();
             StringBuilder sbErrorInfo = new StringBuilder();
             for (String child : preparedList) {
-                String childPath = ZKPaths.makePath(KVPathUtil.getConfStatusPath(), child);
+                String childPath = ZKPaths.makePath(ClusterPathUtil.getConfStatusPath(), child);
                 byte[] errorInfo = zkConn.getData().forPath(childPath);
                 if (!ConfigStatusListener.SUCCESS.equals(new String(errorInfo, StandardCharsets.UTF_8))) {
                     sbErrorInfo.append(child).append(":");
                     sbErrorInfo.append(new String(errorInfo, StandardCharsets.UTF_8));
                     sbErrorInfo.append(";");
                 }
-                zkConn.delete().forPath(ZKPaths.makePath(KVPathUtil.getConfStatusPath(), child));
+                zkConn.delete().forPath(ZKPaths.makePath(ClusterPathUtil.getConfStatusPath(), child));
             }
 
             if (sbErrorInfo.length() == 0) {

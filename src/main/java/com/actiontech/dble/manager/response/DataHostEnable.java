@@ -2,18 +2,16 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
+import com.actiontech.dble.cluster.ClusterGeneralDistributeLock;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.HaInfo;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.singleton.HaConfigManager;
-import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
@@ -39,7 +37,6 @@ public final class DataHostEnable {
     public static void execute(Matcher enable, ManagerConnection mc) {
         String dhName = enable.group(1);
         String subHostName = enable.group(3);
-        boolean useCluster = ClusterConfig.getInstance().isNeedSyncHa();
         //check the dbGroup is exists
 
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
@@ -58,13 +55,15 @@ public final class DataHostEnable {
             }
 
             int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.LOCAL_CHANGE, HaInfo.HaStartType.LOCAL_COMMAND, enable.group(0));
-            if (ClusterGeneralConfig.isUseGeneralCluster() && useCluster) {
-                if (!enableWithCluster(id, dh, subHostName, mc)) {
-                    return;
-                }
-            } else if (ClusterGeneralConfig.isUseZK() && useCluster) {
-                if (!enableWithZK(id, dh, subHostName, mc)) {
-                    return;
+            if (ClusterConfig.getInstance().isNeedSyncHa()) {
+                if (ClusterConfig.getInstance().isUseZK()) {
+                    if (!enableWithZK(id, dh, subHostName, mc)) {
+                        return;
+                    }
+                } else {
+                    if (!enableWithCluster(id, dh, subHostName, mc)) {
+                        return;
+                    }
                 }
             } else {
                 try {
@@ -91,7 +90,7 @@ public final class DataHostEnable {
 
     public static boolean enableWithZK(int id, PhysicalDbGroup dh, String subHostName, ManagerConnection mc) {
         CuratorFramework zkConn = ZKUtils.getConnection();
-        InterProcessMutex distributeLock = new InterProcessMutex(zkConn, KVPathUtil.getHaLockPath(dh.getGroupName()));
+        InterProcessMutex distributeLock = new InterProcessMutex(zkConn, ClusterPathUtil.getHaLockPath(dh.getGroupName()));
         try {
             boolean locked = false;
             try {
@@ -101,13 +100,13 @@ public final class DataHostEnable {
                 }
                 locked = true;
                 String result = dh.enableHosts(subHostName, false);
-                DataHostDisable.setStatusToZK(KVPathUtil.getHaStatusPath(dh.getGroupName()), zkConn, result);
+                DataHostDisable.setStatusToZK(ClusterPathUtil.getHaStatusPath(dh.getGroupName()), zkConn, result);
                 HaConfigManager.getInstance().haFinish(id, null, result);
             } finally {
                 if (locked) {
                     distributeLock.release();
                 }
-                LOGGER.info("reload config: release distributeLock " + KVPathUtil.getConfChangeLockPath() + " from zk");
+                LOGGER.info("reload config: release distributeLock " + ClusterPathUtil.getConfChangeLockPath() + " from zk");
             }
         } catch (Exception e) {
             LOGGER.info("reload config using ZK failure", e);
@@ -121,7 +120,7 @@ public final class DataHostEnable {
 
     public static boolean enableWithCluster(int id, PhysicalDbGroup dh, String subHostName, ManagerConnection mc) {
         //get the lock from ucore
-        DistributeLock distributeLock = new DistributeLock(ClusterPathUtil.getHaLockPath(dh.getGroupName()),
+        ClusterGeneralDistributeLock distributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getHaLockPath(dh.getGroupName()),
                 new HaInfo(dh.getGroupName(),
                         SystemConfig.getInstance().getInstanceId(),
                         HaInfo.HaType.DATAHOST_ENABLE,

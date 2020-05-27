@@ -10,9 +10,9 @@ import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.InMemoryRepository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.KVStoreRepository;
+import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.route.RouteResultsetNode;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +36,7 @@ public final class XAStateLog {
     private static final Repository FILE_REPOSITORY;
 
     static {
-        if (ClusterGeneralConfig.isUseZK()) {
+        if (ClusterConfig.getInstance().isClusterEnable() && ClusterConfig.getInstance().isUseZK()) {
             FILE_REPOSITORY = new KVStoreRepository();
         } else {
             FILE_REPOSITORY = new FileSystemRepository();

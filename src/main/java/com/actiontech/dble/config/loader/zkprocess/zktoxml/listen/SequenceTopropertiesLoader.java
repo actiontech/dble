@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.config.loader.zkprocess.zktoxml.listen;
 
+import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.loader.zkprocess.comm.ConfFileRWUtils;
 import com.actiontech.dble.config.loader.zkprocess.comm.NotifyService;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
@@ -12,7 +13,6 @@ import com.actiontech.dble.config.loader.zkprocess.zookeeper.DirectoryInf;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkDataImpl;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkDirectoryImpl;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
-import com.actiontech.dble.util.KVPathUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,29 +37,25 @@ public class SequenceTopropertiesLoader extends ZkMultiLoader implements NotifyS
 
     private static final String PROPERTIES_SEQUENCE_DB_CONF = "sequence_db_conf";
 
-    private static final String PROPERTIES_SEQUENCE_DISTRIBUTED_CONF = "sequence_distributed_conf";
-
     private ZookeeperProcessListen zookeeperListen;
 
     public SequenceTopropertiesLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator) {
         this.setCurator(curator);
         this.zookeeperListen = zookeeperListen;
-        currZkPath = KVPathUtil.getSequencesPath();
+        currZkPath = ClusterPathUtil.getSequencesCommonPath();
         this.zookeeperListen.addToInit(this);
     }
 
     @Override
     public boolean notifyProcess() throws Exception {
         DirectoryInf sequenceDirectory = new ZkDirectoryImpl(currZkPath, null);
-        this.getTreeDirectory(currZkPath, KVPathUtil.SEQUENCES, sequenceDirectory);
+        this.getTreeDirectory(currZkPath, ClusterPathUtil.SEQUENCE_COMMON, sequenceDirectory);
 
         sequenceDirectory = (DirectoryInf) sequenceDirectory.getSubordinateInfo().get(0);
 
         this.sequenceZkToProperties(PROPERTIES_SEQUENCE_CONF, sequenceDirectory);
 
         this.sequenceZkToProperties(PROPERTIES_SEQUENCE_DB_CONF, sequenceDirectory);
-
-        this.sequenceZkToProperties(PROPERTIES_SEQUENCE_DISTRIBUTED_CONF, sequenceDirectory);
         return true;
     }
 
@@ -70,7 +66,7 @@ public class SequenceTopropertiesLoader extends ZkMultiLoader implements NotifyS
      * @throws Exception
      */
     private void sequenceZkToProperties(String name, DirectoryInf seqDirectory) throws Exception {
-        ZkDirectoryImpl zkDirectory = (ZkDirectoryImpl) this.getZkDirectory(seqDirectory, KVPathUtil.SEQUENCE_COMMON);
+        ZkDirectoryImpl zkDirectory = (ZkDirectoryImpl) this.getZkDirectory(seqDirectory, ClusterPathUtil.SEQUENCE_COMMON);
 
         if (null != zkDirectory) {
             String writeFile = name + PROPERTIES_SUFFIX;
@@ -80,7 +76,7 @@ public class SequenceTopropertiesLoader extends ZkMultiLoader implements NotifyS
             if (commData != null) {
                 ConfFileRWUtils.writeFile(commData.getName(), commData.getValue());
             }
-            String sequenceWatchPath = KVPathUtil.getSequencesCommonPath() + writeFile;
+            String sequenceWatchPath = ClusterPathUtil.getSequencesCommonPath() + writeFile;
             this.zookeeperListen.addWatch(sequenceWatchPath, this);
             LOGGER.info("SequenceTozkLoader notifyProcess " + name + " to local properties success");
         }

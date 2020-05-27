@@ -5,8 +5,8 @@
 
 package com.actiontech.dble.backend.mysql.view;
 
+import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -17,8 +17,6 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static com.actiontech.dble.util.KVPathUtil.SEPARATOR;
 
 /**
  * Created by szf on 2017/10/12.
@@ -35,15 +33,15 @@ public class KVStoreRepository implements Repository {
     public void init() {
         Map<String, Map<String, String>> map = new HashMap<String, Map<String, String>>();
         try {
-            List<String> viewList = zkConn.getChildren().forPath(KVPathUtil.getViewPath());
+            List<String> viewList = zkConn.getChildren().forPath(ClusterPathUtil.getViewPath());
             for (String singlePath : viewList) {
                 String[] paths = singlePath.split("/");
-                String jsonData = new String(zkConn.getData().forPath(KVPathUtil.getViewPath() + SEPARATOR + singlePath), "UTF-8");
+                String jsonData = new String(zkConn.getData().forPath(ClusterPathUtil.getViewPath(singlePath)), "UTF-8");
                 JsonObject obj = new JsonParser().parse(jsonData).getAsJsonObject();
 
                 String createSql = obj.get(CREATE_SQL).getAsString();
-                String schema = paths[paths.length - 1].split(SCHEMA_VIEW_SPLIT)[0];
-                String viewName = paths[paths.length - 1].split(SCHEMA_VIEW_SPLIT)[1];
+                String schema = paths[paths.length - 1].split(Repository.SCHEMA_VIEW_SPLIT)[0];
+                String viewName = paths[paths.length - 1].split(Repository.SCHEMA_VIEW_SPLIT)[1];
                 map.computeIfAbsent(schema, k -> new HashMap<>());
                 map.get(schema).put(viewName, createSql);
             }
@@ -66,15 +64,15 @@ public class KVStoreRepository implements Repository {
 
     @Override
     public void put(String schemaName, String viewName, String createSql) {
-        StringBuffer sb = new StringBuffer(KVPathUtil.getViewPath()).append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(viewName);
+        String viewPath = ClusterPathUtil.getViewPath(schemaName, viewName);
         JsonObject m = new JsonObject();
         m.addProperty(SERVER_ID, SystemConfig.getInstance().getInstanceId());
         m.addProperty(CREATE_SQL, createSql);
         try {
-            if (zkConn.checkExists().forPath(sb.toString()) == null) {
-                zkConn.create().forPath(sb.toString(), m.getAsString().getBytes());
+            if (zkConn.checkExists().forPath(viewPath) == null) {
+                zkConn.create().forPath(viewPath, m.getAsString().getBytes());
             } else {
-                zkConn.setData().forPath(sb.toString(), m.getAsString().getBytes());
+                zkConn.setData().forPath(viewPath, m.getAsString().getBytes());
             }
         } catch (Exception e) {
             LOGGER.warn("create zk node error :　" + e.getMessage());
@@ -82,15 +80,10 @@ public class KVStoreRepository implements Repository {
 
     }
 
-    /**
-     * @param schemaName
-     * @param view
-     */
     @Override
-    public void delete(String schemaName, String view) {
-        StringBuffer sb = new StringBuffer(KVPathUtil.getViewPath()).append(SEPARATOR).append(schemaName).append(SCHEMA_VIEW_SPLIT).append(view);
+    public void delete(String schemaName, String viewName) {
         try {
-            zkConn.delete().forPath(sb.toString());
+            zkConn.delete().forPath(ClusterPathUtil.getViewPath(schemaName, viewName));
         } catch (Exception e) {
             LOGGER.warn("delete zk node error :　" + e.getMessage());
         }

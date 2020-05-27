@@ -31,7 +31,7 @@ public class PropertySequenceLoader implements ClusterXmlLoader {
     private static final String PROPERTIES_SEQUENCE_DB_CONF = "sequence_db_conf";
 
 
-    private static final String CONFIG_PATH = ClusterPathUtil.getSequencesPath();
+    private static final String CONFIG_PATH = ClusterPathUtil.getSequencesCommonPath();
 
 
     public PropertySequenceLoader(ClusterClearKeyListener confListener) {

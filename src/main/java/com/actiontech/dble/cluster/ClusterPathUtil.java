@@ -8,26 +8,34 @@ package com.actiontech.dble.cluster;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 
+import static com.actiontech.dble.backend.mysql.view.Repository.SCHEMA_VIEW_SPLIT;
+
 /**
  * Created by szf on 2018/1/26.
  */
 public final class ClusterPathUtil {
 
-    public static final String UCORE_LOCAL_WRITE_PATH = "./";
+    public static final String LOCAL_WRITE_PATH = "./";
+
+    public static final String SEPARATOR = "/";
+
+    public static final String BASE_PATH = ClusterConfig.getInstance().getRootPath() + SEPARATOR + ClusterConfig.getInstance().getClusterID() + SEPARATOR;
+
+
+    //depth:2,conf_base_path: base_path/conf/
+    public static final String CONF_BASE_PATH = BASE_PATH + "conf" + SEPARATOR;
 
     public static final String SCHEMA = "schema";
     public static final String DB_GROUP = "dbGroup";
     public static final String SHARDING_NODE = "shardingNode";
     public static final String BLACKLIST = "blacklist";
-    public static final String SEPARATOR = "/";
-    public static final String BASE_PATH = ClusterConfig.getInstance().getRootPath() + SEPARATOR + ClusterConfig.getInstance().getClusterID() + SEPARATOR;
+
 
     public static final String SUCCESS = "success";
 
     //depth:3,child node of conf_base_path
     private static final String CONF_STATUS = "status";
     private static final String SHARDING = "sharding";
-    private static final String SERVER = "server";
     public static final String DBS = "db";
 
     //depth:3,child node of conf_base_path
@@ -35,7 +43,7 @@ public final class ClusterPathUtil {
         return CONF_BASE_PATH + SHARDING;
     }
 
-    public static String getConfUserPath() {
+    public static String getUserConfPath() {
         return CONF_BASE_PATH + USER;
     }
     public static String getDbConfPath() {
@@ -48,37 +56,16 @@ public final class ClusterPathUtil {
     public static final String FUNCTION = "function";
 
 
-    //depth:4,child node of conf_base_path/server/
-    public static final String DEFAULT = "default";
     public static final String USER = "user";
-    public static final String FIREWALL = "firewall";
-    //public static final String ALARM = "alarm";
 
-    public static String getConfServerPath() {
-        return CONF_BASE_PATH + SERVER;
-    }
 
-    //depth:2,conf_base_path: base_path/conf/
-    public static final String CONF_BASE_PATH = BASE_PATH + "conf" + SEPARATOR;
-
-    //depth:2,child node of base_path
-    private static final String CACHE = "cache";
     private static final String DB_GROUPS = "dbGroups";
     public static final String DB_GROUP_STATUS = "dbGroup_status";
+    private static final String DB_GROUP_RESPONSE = "dbGroup_response";
     private static final String DB_GROUP_LOCKS = "dbGroup_locks";
-    private static final String EHCACHE_NAME = "ehcache.xml";
-    public static final String EHCACHE = "ehcache";
 
     private ClusterPathUtil() {
 
-    }
-
-    public static String getEhcacheNamePath() {
-        return getCachePath() + SEPARATOR + EHCACHE_NAME;
-    }
-
-    public static String getEhcacheProPath() {
-        return getCachePath() + SEPARATOR + "cacheservice";
     }
 
     public static String getHaBasePath() {
@@ -86,25 +73,26 @@ public final class ClusterPathUtil {
     }
 
     public static String getHaStatusPath() {
-        return BASE_PATH + DB_GROUPS + SEPARATOR + DB_GROUP_STATUS + SEPARATOR;
+        return getHaBasePath() + DB_GROUP_STATUS + SEPARATOR;
     }
 
-    public static String getHaStatusPath(String dhName) {
-        return getHaStatusPath() + dhName;
+    public static String getHaStatusPath(String dbGroupName) {
+        return getHaStatusPath() + dbGroupName;
     }
-
+    public static String getHaResponsePath() {
+        return getHaBasePath() + DB_GROUP_RESPONSE;
+    }
+    public static String getHaResponsePath(String dhName) {
+        return getHaResponsePath() + SEPARATOR + dhName;
+    }
     public static String getHaLockPath(String dhName) {
-        return BASE_PATH + DB_GROUPS + SEPARATOR + DB_GROUP_LOCKS + SEPARATOR + dhName;
+        return LOCK_BASE_PATH + DB_GROUP_LOCKS + SEPARATOR + dhName;
     }
 
     public static String getSelfResponsePath(String notifyPath) {
         return notifyPath + SEPARATOR + SystemConfig.getInstance().getInstanceId();
     }
 
-    //cache path base_path/cache
-    private static String getCachePath() {
-        return BASE_PATH + CACHE;
-    }
 
     //depth:2,sequences path:base_path/sequences
     private static final String SEQUENCES = "sequences";
@@ -112,10 +100,22 @@ public final class ClusterPathUtil {
     public static String getSequencesPath() {
         return CONF_BASE_PATH + SEQUENCES;
     }
+    //depth:3,sequences path:base_path/sequences/common
+    public static final String SEQUENCE_COMMON = "common";
 
+    public static String getSequencesCommonPath() {
+        return getSequencesPath() + SEPARATOR + SEQUENCE_COMMON + SEPARATOR;
+    }
 
     //depth:2,lock_base_path: base_path/lock/
     private static final String LOCK_BASE_PATH = CONF_BASE_PATH + "lock";
+    public static String getLockBasePath() {
+        return LOCK_BASE_PATH;
+    }
+    //depth:3, lock path : lock_base_path/...(detail)
+    public static String getSyncMetaLockPath() {
+        return LOCK_BASE_PATH + SEPARATOR + "syncMeta.lock";
+    }
 
     public static String getConfChangeLockPath() {
         return LOCK_BASE_PATH + SEPARATOR + "confChange.lock";
@@ -134,17 +134,18 @@ public final class ClusterPathUtil {
         return BASE_PATH + "online";
     }
 
-    public static String getOnlinePath(String serverId) {
-        return BASE_PATH + "online" + SEPARATOR + serverId;
-    }
-
-    public static String getBinlogPauseLockPath() {
-        return LOCK_BASE_PATH + SEPARATOR + "binlogStatus.lock";
+    public static String getOnlinePath(String instanceId) {
+        return BASE_PATH + "online" + SEPARATOR + instanceId;
     }
 
     //depth:2,binlog_pause path:base_path/binlog_pause
     private static final String BINLOG_PAUSE_PATH = BASE_PATH + "conf" + SEPARATOR + "binlog_pause";
-    private static final String BINLOG_PAUSE_STATUS = "status";
+    public static final String BINLOG_PAUSE_STATUS = "status";
+
+
+    public static String getBinlogPauseLockPath() {
+        return LOCK_BASE_PATH + SEPARATOR + "binlogStatus.lock";
+    }
 
     public static String getBinlogPauseStatus() {
         return BINLOG_PAUSE_PATH + SEPARATOR + BINLOG_PAUSE_STATUS;
@@ -165,8 +166,12 @@ public final class ClusterPathUtil {
     }
 
     //depth:2,child node of base_path
+    public static String getDDLInstancePath(String fullName) {
+        return getDDLPath(fullName) + SEPARATOR + SystemConfig.getInstance().getInstanceId();
+    }
+    //depth:2,child node of base_path
     public static String getDDLLockPath(String fullName) {
-        return BASE_PATH + "ddl_lock" + SEPARATOR + fullName;
+        return LOCK_BASE_PATH + "ddl_lock" + SEPARATOR + fullName;
     }
 
     public static String getPauseShardingNodePath() {
@@ -190,17 +195,27 @@ public final class ClusterPathUtil {
         return CONF_BASE_PATH + "migration" + SEPARATOR + "resume" + SEPARATOR + id;
     }
 
-    //depth:2,child node of base_path
-    public static String getDDLInstancePath(String fullName) {
-        return BASE_PATH + "ddl" + SEPARATOR + fullName + SEPARATOR + SystemConfig.getInstance().getInstanceId();
-    }
 
     public static String getViewPath() {
         return BASE_PATH + "view";
     }
 
-    public static String getViewChangePath() {
-        return getViewPath() + SEPARATOR + "update";
+    public static String getViewPath(String fullName) {
+        return ClusterPathUtil.getViewPath() + SEPARATOR + fullName;
+    }
+    public static String getViewPath(String schemaName, String viewName) {
+        return ClusterPathUtil.getViewPath() + SEPARATOR + schemaName + SEPARATOR + SCHEMA_VIEW_SPLIT + viewName;
     }
 
+    public static String getViewChangePath() {
+        return getViewPath() + SEPARATOR + "operator";
+    }
+
+    public static String getViewChangePath(String schemaName, String viewName) {
+        return getViewChangePath() + SEPARATOR + schemaName + SCHEMA_VIEW_SPLIT + viewName;
+    }
+
+    public static String getViewLockPath(String schemaName, String viewName) {
+        return LOCK_BASE_PATH + "view_lock" + schemaName + SEPARATOR + SCHEMA_VIEW_SPLIT + viewName;
+    }
 }

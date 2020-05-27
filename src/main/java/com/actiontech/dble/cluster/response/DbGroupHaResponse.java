@@ -39,11 +39,10 @@ public class DbGroupHaResponse implements ClusterXmlLoader {
             while (reloadStatus != null) {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
                 reloadStatus = ClusterHelper.getKV(ClusterPathUtil.getConfStatusPath());
-                continue;
             }
             String[] path = configValue.getKey().split("/");
             String dhName = path[path.length - 1];
-            PhysicalDbGroup dataHost = (PhysicalDbGroup) DbleServer.getInstance().getConfig().getDbGroups().get(dhName);
+            PhysicalDbGroup dataHost = DbleServer.getInstance().getConfig().getDbGroups().get(dhName);
             dataHost.changeIntoLatestStatus(configValue.getValue());
             HaConfigManager.getInstance().haFinish(id, null, configValue.getValue());
         } else {
@@ -56,14 +55,14 @@ public class DbGroupHaResponse implements ClusterXmlLoader {
                     //start the log
                     int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.RESPONSE_NOTIFY, HaInfo.HaStartType.CLUSTER_NOTIFY, HaInfo.HaStage.RESPONSE_NOTIFY.toString());
                     //try to get the lastest status of the dbGroup
-                    KvBean lastestStatus = ClusterHelper.getKV(ClusterPathUtil.getHaStatusPath(info.getDhName()));
+                    KvBean latestStatus = ClusterHelper.getKV(ClusterPathUtil.getHaStatusPath(info.getDbGroupName()));
                     //find out the target dbGroup and change it into latest status
-                    PhysicalDbGroup dataHost = (PhysicalDbGroup) DbleServer.getInstance().getConfig().getDbGroups().get(info.getDhName());
-                    dataHost.changeIntoLatestStatus(lastestStatus.getValue());
+                    PhysicalDbGroup dataHost = DbleServer.getInstance().getConfig().getDbGroups().get(info.getDbGroupName());
+                    dataHost.changeIntoLatestStatus(latestStatus.getValue());
                     //response the event ,only disable event has response
                     ClusterHelper.setKV(ClusterPathUtil.getSelfResponsePath(configValue.getKey()), ClusterPathUtil.SUCCESS);
                     //ha manager writeOut finish log
-                    HaConfigManager.getInstance().haFinish(id, null, lastestStatus.getValue());
+                    HaConfigManager.getInstance().haFinish(id, null, latestStatus.getValue());
                 } catch (Exception e) {
                     //response the event ,only disable event has response
                     ClusterHelper.setKV(ClusterPathUtil.getSelfResponsePath(configValue.getKey()), e.getMessage());

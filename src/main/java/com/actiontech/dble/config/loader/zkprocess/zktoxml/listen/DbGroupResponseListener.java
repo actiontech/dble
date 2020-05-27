@@ -6,7 +6,6 @@ import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.HaInfo;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.singleton.HaConfigManager;
-import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
@@ -68,8 +67,8 @@ public class DbGroupResponseListener implements PathChildrenCacheListener {
         if (!info.getStartId().equals(SystemConfig.getInstance().getInstanceId()) &&
                 info.getStatus() == HaInfo.HaStatus.SUCCESS) {
             int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.RESPONSE_NOTIFY, HaInfo.HaStartType.CLUSTER_NOTIFY, HaInfo.HaStage.RESPONSE_NOTIFY.toString());
-            PhysicalDbGroup dataHost = (PhysicalDbGroup) DbleServer.getInstance().getConfig().getDbGroups().get(info.getDhName());
-            String jsonString = new String(zkConn.getData().forPath(KVPathUtil.getHaStatusPath(info.getDhName())), "UTF-8");
+            PhysicalDbGroup dataHost = (PhysicalDbGroup) DbleServer.getInstance().getConfig().getDbGroups().get(info.getDbGroupName());
+            String jsonString = new String(zkConn.getData().forPath(ClusterPathUtil.getHaStatusPath(info.getDbGroupName())), "UTF-8");
             dataHost.changeIntoLatestStatus(jsonString);
             //response to kv
             ZKUtils.createTempNode(path, SystemConfig.getInstance().getInstanceId(), ClusterPathUtil.SUCCESS.getBytes());

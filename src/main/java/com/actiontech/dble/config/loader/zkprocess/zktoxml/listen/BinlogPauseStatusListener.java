@@ -6,6 +6,8 @@
 package com.actiontech.dble.config.loader.zkprocess.zktoxml.listen;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.loader.zkprocess.comm.NotifyService;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.DirectoryInf;
@@ -15,7 +17,6 @@ import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkDirectory
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.manager.response.ShowBinlogStatus;
-import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
@@ -33,38 +34,42 @@ public class BinlogPauseStatusListener extends ZkMultiLoader implements NotifySe
 
     public BinlogPauseStatusListener(ZookeeperProcessListen zookeeperListen, CuratorFramework curator) {
         this.setCurator(curator);
-        currZkPath = KVPathUtil.getBinlogPauseStatus();
+        currZkPath = ClusterPathUtil.getBinlogPauseStatus();
         zookeeperListen.addWatch(currZkPath, this);
     }
 
     @Override
     public boolean notifyProcess() throws Exception {
         DirectoryInf statusDirectory = new ZkDirectoryImpl(currZkPath, null);
-        this.getTreeDirectory(currZkPath, KVPathUtil.BINLOG_PAUSE_STATUS, statusDirectory);
+        this.getTreeDirectory(currZkPath, ClusterPathUtil.BINLOG_PAUSE_STATUS, statusDirectory);
         ZkDataImpl zkDdata = (ZkDataImpl) statusDirectory.getSubordinateInfo().get(0);
         String strPauseInfo = zkDdata.getDataValue();
         LOGGER.info("BinlogPauseStatusListener notifyProcess zk to object  :" + strPauseInfo);
 
         BinlogPause pauseInfo = new BinlogPause(strPauseInfo);
-        String myID = SystemConfig.getInstance().getInstanceId();
-        if (pauseInfo.getFrom().equals(myID)) {
+        String instanceId = SystemConfig.getInstance().getInstanceId();
+        if (pauseInfo.getFrom().equals(instanceId)) {
             return true; //self node
         }
-        String instancePath = ZKPaths.makePath(KVPathUtil.getBinlogPauseInstance(), myID);
         if (pauseInfo.getStatus() == BinlogPause.BinlogPauseStatus.ON) {
             DbleServer.getInstance().getBackupLocked().compareAndSet(false, true);
             boolean isPaused = ShowBinlogStatus.waitAllSession();
             if (!isPaused) {
-                cleanResource(instancePath);
+                ClusterHelper.cleanBackupLocked();
+                ZKUtils.createTempNode(currZkPath, instanceId, "Error can't wait all session finished".getBytes(StandardCharsets.UTF_8));
+                return true;
             }
             try {
-                ZKUtils.createTempNode(KVPathUtil.getBinlogPauseInstance(), myID, String.valueOf(isPaused).getBytes(StandardCharsets.UTF_8));
+                ZKUtils.createTempNode(currZkPath, instanceId, ClusterPathUtil.SUCCESS.getBytes(StandardCharsets.UTF_8));
             } catch (Exception e) {
-                cleanResource(instancePath);
+                ClusterHelper.cleanBackupLocked();
                 LOGGER.warn("create binlogPause instance failed", e);
             }
         } else if (pauseInfo.getStatus() == BinlogPause.BinlogPauseStatus.OFF) {
-            cleanResource(instancePath);
+            LOGGER.info("clean resource for binlog status finish");
+            //step 3 if the flag is off than try to unlock the commit
+            ClusterHelper.cleanBackupLocked();
+            cleanResource(ZKPaths.makePath(currZkPath, instanceId));
         }
         return true;
     }

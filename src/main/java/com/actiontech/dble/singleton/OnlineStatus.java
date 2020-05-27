@@ -9,7 +9,7 @@ import com.actiontech.dble.backend.mysql.view.CKVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.Repository;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.cluster.ClusterGeneralDistributeLock;
 import com.actiontech.dble.cluster.bean.InstanceOnline;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.util.NetUtil;
@@ -28,7 +28,7 @@ public final class OnlineStatus {
     private static final String SERVER_PORT = "SERVER_PORT";
     private static final String HOST_ADDR = "HOST_ADDR";
     private static final String START_TIME = "START_TIME";
-    private volatile DistributeLock onlineLock = null;
+    private volatile ClusterGeneralDistributeLock onlineLock = null;
     private volatile boolean onlineInited = false;
     private volatile boolean mainThreadTryed = false;
     private volatile int serverPort;
@@ -96,7 +96,7 @@ public final class OnlineStatus {
         if (onlineLock != null) {
             onlineLock.release();
         }
-        onlineLock = new DistributeLock(ClusterPathUtil.getOnlinePath(
+        onlineLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getOnlinePath(
                 SystemConfig.getInstance().getInstanceId()),
                 toString(), 6);
         int time = 0;
@@ -124,7 +124,7 @@ public final class OnlineStatus {
             if (onlineLock != null) {
                 onlineLock.release();
             }
-            onlineLock = new DistributeLock(ClusterPathUtil.getOnlinePath(
+            onlineLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getOnlinePath(
                     SystemConfig.getInstance().getInstanceId()),
                     toString(), 6);
             int time = 0;

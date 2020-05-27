@@ -1,5 +1,6 @@
 package com.actiontech.dble.cluster;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.bean.ClusterAlertBean;
 import com.actiontech.dble.cluster.bean.KvBean;
 import com.actiontech.dble.cluster.bean.SubscribeRequest;
@@ -21,7 +22,7 @@ import com.actiontech.dble.config.loader.zkprocess.entity.user.User;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DbInstanceStatus;
 import com.actiontech.dble.config.model.ClusterConfig;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
+import com.actiontech.dble.util.ZKUtils;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import org.slf4j.Logger;
@@ -30,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import javax.xml.bind.JAXBException;
 import javax.xml.stream.XMLStreamException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -46,16 +48,12 @@ public final class ClusterHelper {
 
     }
 
-    public static String lock(String path, String value) throws Exception {
-        return ClusterGeneralConfig.getInstance().getClusterSender().lock(path, value);
-    }
-
-    static void unlockKey(String path, String sessionId) {
-        ClusterGeneralConfig.getInstance().getClusterSender().unlockKey(path, sessionId);
-    }
-
     public static void setKV(String path, String value) throws Exception {
-        ClusterGeneralConfig.getInstance().getClusterSender().setKV(path, value);
+        if (ClusterConfig.getInstance().isUseZK()) {
+            ZKUtils.getConnection().create().forPath(path, value.getBytes(StandardCharsets.UTF_8));
+        } else {
+            ClusterGeneralConfig.getInstance().getClusterSender().setKV(path, value);
+        }
     }
 
     public static KvBean getKV(String path) {
@@ -68,6 +66,14 @@ public final class ClusterHelper {
 
     public static List<KvBean> getKVPath(String path) {
         return ClusterGeneralConfig.getInstance().getClusterSender().getKVPath(path);
+    }
+
+    public static int getChildrenSize(String path) throws Exception {
+        if (ClusterConfig.getInstance().isUseZK()) {
+            return ZKUtils.getConnection().getChildren().forPath(path).size();
+        } else {
+            return ClusterGeneralConfig.getInstance().getClusterSender().getKVPath(path).size();
+        }
     }
 
     public static void cleanPath(String path) {
@@ -392,5 +398,10 @@ public final class ClusterHelper {
             usersBean.setVersion(gson.fromJson(version.toString(), String.class));
         }
         return usersBean;
+    }
+    public static synchronized void cleanBackupLocked() {
+        if (DbleServer.getInstance().getBackupLocked() != null) {
+            DbleServer.getInstance().getBackupLocked().compareAndSet(true, false);
+        }
     }
 }

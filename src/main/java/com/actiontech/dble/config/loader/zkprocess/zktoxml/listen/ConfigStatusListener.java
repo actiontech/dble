@@ -17,7 +17,6 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.manager.response.ReloadConfig;
 import com.actiontech.dble.manager.response.RollbackConfig;
 import com.actiontech.dble.meta.ReloadManager;
-import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
@@ -40,7 +39,7 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
 
     public ConfigStatusListener(ZookeeperProcessListen zookeeperListen, CuratorFramework curator) {
         this.setCurator(curator);
-        currZkPath = KVPathUtil.getConfStatusPath();
+        currZkPath = ClusterPathUtil.getConfStatusPath();
         zookeeperListen.addWatch(currZkPath, this);
     }
 
@@ -74,13 +73,13 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
 
                     ClusterDelayProvider.delayAfterSlaveRollback();
                     LOGGER.info("rollback config: sent config status success to zk start");
-                    ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), SystemConfig.getInstance().getInstanceId(),
+                    ZKUtils.createTempNode(ClusterPathUtil.getConfStatusPath(), SystemConfig.getInstance().getInstanceId(),
                             SUCCESS.getBytes(StandardCharsets.UTF_8));
                     LOGGER.info("rollback config: sent config status success to zk end");
                 } catch (Exception e) {
                     String errorinfo = e.getMessage() == null ? e.toString() : e.getMessage();
                     LOGGER.info("rollback config: sent config status failed to zk start");
-                    ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), SystemConfig.getInstance().getInstanceId(),
+                    ZKUtils.createTempNode(ClusterPathUtil.getConfStatusPath(), SystemConfig.getInstance().getInstanceId(),
                             errorinfo.getBytes(StandardCharsets.UTF_8));
                     LOGGER.info("rollback config: sent config status failed to zk end");
                 }
@@ -116,12 +115,12 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
                 }
                 ClusterDelayProvider.delayAfterSlaveReload();
                 LOGGER.info("reload config: sent config status success to zk start");
-                ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), SystemConfig.getInstance().getInstanceId(), SUCCESS.getBytes(StandardCharsets.UTF_8));
+                ZKUtils.createTempNode(ClusterPathUtil.getConfStatusPath(), SystemConfig.getInstance().getInstanceId(), SUCCESS.getBytes(StandardCharsets.UTF_8));
                 LOGGER.info("reload config: sent config status success to zk end");
             } catch (Exception e) {
                 String errorinfo = e.getMessage() == null ? e.toString() : e.getMessage();
                 LOGGER.info("reload config: sent config status failed to zk start");
-                ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), SystemConfig.getInstance().getInstanceId(), errorinfo.getBytes(StandardCharsets.UTF_8));
+                ZKUtils.createTempNode(ClusterPathUtil.getConfStatusPath(), SystemConfig.getInstance().getInstanceId(), errorinfo.getBytes(StandardCharsets.UTF_8));
                 LOGGER.info("reload config: sent config status failed to zk end");
             }
         }
@@ -132,7 +131,7 @@ public class ConfigStatusListener extends ZkMultiLoader implements NotifyService
     private boolean checkLocalResult(boolean result) throws Exception {
         if (!result) {
             LOGGER.info("reload config: sent config status success to ucore start");
-            ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), SystemConfig.getInstance().getInstanceId(),
+            ZKUtils.createTempNode(ClusterPathUtil.getConfStatusPath(), SystemConfig.getInstance().getInstanceId(),
                     "interrupt by command.should reload config again".getBytes(StandardCharsets.UTF_8));
         }
         return result;

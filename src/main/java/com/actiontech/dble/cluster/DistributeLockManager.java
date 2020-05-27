@@ -12,12 +12,12 @@ import java.util.Map;
  * Created by szf on 2018/3/6.
  * this class is save the DistributeLock when ddl executed
  */
-public final class DistrbtLockManager {
+public final class DistributeLockManager {
 
     private final Map<String, DistributeLock> lockTables;
-    private static final DistrbtLockManager INSTANCE = new DistrbtLockManager();
+    private static final DistributeLockManager INSTANCE = new DistributeLockManager();
 
-    private DistrbtLockManager() {
+    private DistributeLockManager() {
         this.lockTables = new HashMap<>();
     }
 
@@ -30,5 +30,9 @@ public final class DistrbtLockManager {
         if (removedLock != null) {
             removedLock.release();
         }
+    }
+
+    public static boolean isLooked(String path) {
+        return INSTANCE.lockTables.containsKey(path);
     }
 }

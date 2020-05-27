@@ -507,7 +507,7 @@ public final class DbleServer {
      * covert the collection to array
      **/
     private CoordinatorLogEntry[] getCoordinatorLogEntries() {
-        Repository fileRepository = ClusterGeneralConfig.isUseZK() ? new KVStoreRepository() : new FileSystemRepository();
+        Repository fileRepository = ClusterConfig.getInstance().isClusterEnable() && ClusterConfig.getInstance().isUseZK() ? new KVStoreRepository() : new FileSystemRepository();
         Collection<CoordinatorLogEntry> allCoordinatorLogEntries = fileRepository.getAllCoordinatorLogEntries(true);
         fileRepository.close();
         if (allCoordinatorLogEntries == null) {

@@ -84,7 +84,8 @@ public final class ClusterController {
         }
         if (clusterConfig.isClusterEnable()) {
             if (Strings.isNullOrEmpty(clusterConfig.getClusterIP()) ||
-                    Strings.isNullOrEmpty(clusterConfig.getClusterID())) {
+                    Strings.isNullOrEmpty(clusterConfig.getClusterID()) ||
+                    Strings.isNullOrEmpty(clusterConfig.getRootPath())) {
                 throw new RuntimeException("Cluster Config is not completely set");
             }
         }

@@ -84,11 +84,11 @@ public final class OnlineStatus {
         serverPort = SystemConfig.getInstance().getServerPort();
         //check if the online mark is on than delete the mark and renew it
         String oldValue = ClusterHelper.getKV(ClusterPathUtil.getOnlinePath(
-                SystemConfig.getInstance().getInstanceId())).getValue();
+                SystemConfig.getInstance().getInstanceName())).getValue();
         if (!"".equals(oldValue)) {
             if (InstanceOnline.getInstance().canRemovePath(oldValue)) {
                 ClusterHelper.cleanKV(ClusterPathUtil.getOnlinePath(
-                        SystemConfig.getInstance().getInstanceId()));
+                        SystemConfig.getInstance().getInstanceName()));
             } else {
                 throw new IOException("Online path with other IP or serverPort exist,make sure different instance has different myid");
             }
@@ -97,7 +97,7 @@ public final class OnlineStatus {
             onlineLock.release();
         }
         onlineLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getOnlinePath(
-                SystemConfig.getInstance().getInstanceId()),
+                SystemConfig.getInstance().getInstanceName()),
                 toString(), 6);
         int time = 0;
         while (!onlineLock.acquire()) {
@@ -125,7 +125,7 @@ public final class OnlineStatus {
                 onlineLock.release();
             }
             onlineLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getOnlinePath(
-                    SystemConfig.getInstance().getInstanceId()),
+                    SystemConfig.getInstance().getInstanceName()),
                     toString(), 6);
             int time = 0;
             while (!onlineLock.acquire()) {
@@ -151,7 +151,7 @@ public final class OnlineStatus {
         if (onlineLock != null) {
             onlineLock.release();
             ClusterHelper.cleanKV(ClusterPathUtil.getOnlinePath(
-                    SystemConfig.getInstance().getInstanceId()));
+                    SystemConfig.getInstance().getInstanceName()));
             LOGGER.info("shut down online status clear");
         }
     }

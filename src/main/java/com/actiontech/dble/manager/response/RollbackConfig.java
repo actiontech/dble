@@ -72,7 +72,7 @@ public final class RollbackConfig {
             distributeLock = new ZkDistributeLock(ZKUtils.getConnection(), ClusterPathUtil.getConfChangeLockPath());
         } else {
             distributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getConfChangeLockPath(),
-                    SystemConfig.getInstance().getInstanceId());
+                    SystemConfig.getInstance().getInstanceName());
         }
         try {
             if (!distributeLock.acquire()) {
@@ -128,7 +128,7 @@ public final class RollbackConfig {
             ClusterDelayProvider.delayAfterMasterRollback();
 
             //step 3 tail the ucore & notify the other dble
-            ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceId(), ConfStatus.Status.ROLLBACK, null);
+            ConfStatus status = new ConfStatus(SystemConfig.getInstance().getInstanceName(), ConfStatus.Status.ROLLBACK, null);
             ClusterHelper.setKV(ClusterPathUtil.getConfStatusPath(), status.toString());
 
             //step 4 set self status success
@@ -169,7 +169,7 @@ public final class RollbackConfig {
 
             XmltoZkMain.rollbackConf();
             //tell zk this instance has prepared
-            ZKUtils.createTempNode(ClusterPathUtil.getConfStatusPath(), SystemConfig.getInstance().getInstanceId(),
+            ZKUtils.createTempNode(ClusterPathUtil.getConfStatusPath(), SystemConfig.getInstance().getInstanceName(),
                     ConfigStatusListener.SUCCESS.getBytes(StandardCharsets.UTF_8));
             //check all session waiting status
             List<String> preparedList = zkConn.getChildren().forPath(ClusterPathUtil.getConfStatusPath());

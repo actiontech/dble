@@ -48,7 +48,7 @@ public class DdlChildResponse implements ClusterXmlLoader {
 
             DDLInfo ddlInfo = new DDLInfo(configValue.getValue());
 
-            if (ddlInfo.getFrom().equals(SystemConfig.getInstance().getInstanceId())) {
+            if (ddlInfo.getFrom().equals(SystemConfig.getInstance().getInstanceName())) {
                 return; //self node
             }
 

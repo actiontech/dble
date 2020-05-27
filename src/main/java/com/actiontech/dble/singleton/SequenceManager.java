@@ -23,10 +23,18 @@ public final class SequenceManager {
                 INSTANCE.handler = new IncrSequenceTimeHandler();
                 break;
             case ClusterConfig.SEQUENCE_HANDLER_ZK_DISTRIBUTED:
-                INSTANCE.handler = new DistributedSequenceHandler();
+                if (ClusterConfig.getInstance().isClusterEnable() && ClusterConfig.getInstance().isUseZK()) {
+                    INSTANCE.handler = new DistributedSequenceHandler();
+                } else {
+                    throw new java.lang.IllegalArgumentException("Invalid sequence handler type " + seqHandlerType + " for no-zk clusetr");
+                }
                 break;
             case ClusterConfig.SEQUENCE_HANDLER_ZK_GLOBAL_INCREMENT:
-                INSTANCE.handler = new IncrSequenceZKHandler();
+                if (ClusterConfig.getInstance().isClusterEnable() && ClusterConfig.getInstance().isUseZK()) {
+                    INSTANCE.handler = new IncrSequenceZKHandler();
+                } else {
+                    throw new java.lang.IllegalArgumentException("Invalid sequence handler type " + seqHandlerType + " for no-zk clusetr");
+                }
                 break;
             default:
                 throw new java.lang.IllegalArgumentException("Invalid sequnce handler type " + seqHandlerType);

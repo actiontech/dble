@@ -72,7 +72,7 @@ public class ViewChildListener implements PathChildrenCacheListener {
 
         //if the view is create or replace by this server it self
         String serverId = obj.get(SERVER_ID).getAsString();
-        if (serverId.equals(SystemConfig.getInstance().getInstanceId())) {
+        if (serverId.equals(SystemConfig.getInstance().getInstanceName())) {
             return;
         }
         String createSql = obj.get(CREATE_SQL).getAsString();

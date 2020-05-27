@@ -53,7 +53,7 @@ public class PauseShardingNodeResponse implements ClusterXmlLoader {
         if (!DELETE.equals(configValue.getChangeType())) {
             if (configValue.getKey().equals(ClusterPathUtil.getPauseShardingNodePath()) || ClusterPathUtil.getPauseResumePath().equals(configValue.getKey())) {
                 final PauseInfo pauseInfo = new PauseInfo(configValue.getValue());
-                if (!pauseInfo.getFrom().equals(SystemConfig.getInstance().getInstanceId())) {
+                if (!pauseInfo.getFrom().equals(SystemConfig.getInstance().getInstanceName())) {
                     if (PauseInfo.PAUSE.equals(pauseInfo.getType())) {
                         final String shardingNodes = pauseInfo.getShardingNodes();
                         waitThread = new Thread(new Runnable() {
@@ -89,8 +89,8 @@ public class PauseShardingNodeResponse implements ClusterXmlLoader {
                                                 }
                                             }
                                             if (!nextTurn) {
-                                                ClusterHelper.setKV(ClusterPathUtil.getPauseResultNodePath(SystemConfig.getInstance().getInstanceId()),
-                                                        SystemConfig.getInstance().getInstanceId());
+                                                ClusterHelper.setKV(ClusterPathUtil.getPauseResultNodePath(SystemConfig.getInstance().getInstanceName()),
+                                                        SystemConfig.getInstance().getInstanceName());
                                                 break;
                                             }
                                         } finally {
@@ -117,8 +117,8 @@ public class PauseShardingNodeResponse implements ClusterXmlLoader {
                         }
                         LOGGER.info("resume dataNodes for get notice");
                         PauseDatanodeManager.getInstance().resume();
-                        ClusterHelper.setKV(ClusterPathUtil.getPauseResumePath(SystemConfig.getInstance().getInstanceId()),
-                                SystemConfig.getInstance().getInstanceId());
+                        ClusterHelper.setKV(ClusterPathUtil.getPauseResumePath(SystemConfig.getInstance().getInstanceName()),
+                                SystemConfig.getInstance().getInstanceName());
 
                     }
                 }

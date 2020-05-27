@@ -531,7 +531,7 @@ public final class DbleServer {
         }
         StringBuilder id = new StringBuilder();
         id.append("'" + NAME + "Server.");
-        id.append(SystemConfig.getInstance().getInstanceId());
+        id.append(SystemConfig.getInstance().getInstanceName());
         id.append(".");
         id.append(seq);
         id.append("'");

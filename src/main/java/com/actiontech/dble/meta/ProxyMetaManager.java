@@ -548,7 +548,7 @@ public class ProxyMetaManager {
                 String msg = "There is another instance init meta data, try it later.";
                 throw new Exception(msg);
             }
-            DDLInfo ddlInfo = new DDLInfo(schema, sql, SystemConfig.getInstance().getInstanceId(), DDLInfo.DDLStatus.INIT, DDLInfo.DDLType.UNKNOWN);
+            DDLInfo ddlInfo = new DDLInfo(schema, sql, SystemConfig.getInstance().getInstanceName(), DDLInfo.DDLStatus.INIT, DDLInfo.DDLType.UNKNOWN);
             String tableFullName = StringUtil.getUFullName(schema, table);
             String tableDDLPath = ClusterPathUtil.getDDLPath(tableFullName);
             String ddlLockPath = ClusterPathUtil.getDDLLockPath(tableFullName);
@@ -583,13 +583,13 @@ public class ProxyMetaManager {
     private void notifyResponseZKDdl(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, DDLInfo.DDLType ddlType, boolean needNotifyOther) throws Exception {
         String tableFullName = StringUtil.getFullName(schema, table);
         String tableDDLPath = ClusterPathUtil.getDDLPath(tableFullName);
-        String thisNode = SystemConfig.getInstance().getInstanceId();
+        String thisNode = SystemConfig.getInstance().getInstanceName();
         ZKUtils.createTempNode(tableDDLPath, thisNode);
 
         if (needNotifyOther) {
             try {
                 CuratorFramework zkConn = ZKUtils.getConnection();
-                DDLInfo ddlInfo = new DDLInfo(schema, sql, SystemConfig.getInstance().getInstanceId(), ddlStatus, ddlType);
+                DDLInfo ddlInfo = new DDLInfo(schema, sql, SystemConfig.getInstance().getInstanceName(), ddlStatus, ddlType);
                 ClusterDelayProvider.delayBeforeDdlNotice();
                 zkConn.setData().forPath(tableDDLPath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
                 ClusterDelayProvider.delayAfterDdlNotice();
@@ -629,7 +629,7 @@ public class ProxyMetaManager {
      */
     public void notifyResponseUcoreDDL(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, DDLInfo.DDLType ddlType, boolean needNotifyOther) throws Exception {
         String nodeName = StringUtil.getUFullName(schema, table);
-        DDLInfo ddlInfo = new DDLInfo(schema, sql, SystemConfig.getInstance().getInstanceId(), ddlStatus, ddlType);
+        DDLInfo ddlInfo = new DDLInfo(schema, sql, SystemConfig.getInstance().getInstanceName(), ddlStatus, ddlType);
         ClusterHelper.setKV(ClusterPathUtil.getDDLInstancePath(nodeName), ClusterPathUtil.SUCCESS);
         if (needNotifyOther) {
             try {

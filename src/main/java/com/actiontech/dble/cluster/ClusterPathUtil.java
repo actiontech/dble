@@ -36,7 +36,6 @@ public final class ClusterPathUtil {
     //depth:3,child node of conf_base_path
     private static final String CONF_STATUS = "status";
     private static final String SHARDING = "sharding";
-    public static final String DBS = "db";
 
     //depth:3,child node of conf_base_path
     public static String getConfShardingPath() {
@@ -47,7 +46,7 @@ public final class ClusterPathUtil {
         return CONF_BASE_PATH + USER;
     }
     public static String getDbConfPath() {
-        return CONF_BASE_PATH + DBS;
+        return CONF_BASE_PATH + "db";
     }
 
     public static final String VERSION = "version";
@@ -90,7 +89,7 @@ public final class ClusterPathUtil {
     }
 
     public static String getSelfResponsePath(String notifyPath) {
-        return notifyPath + SEPARATOR + SystemConfig.getInstance().getInstanceId();
+        return notifyPath + SEPARATOR + SystemConfig.getInstance().getInstanceName();
     }
 
 
@@ -108,7 +107,7 @@ public final class ClusterPathUtil {
     }
 
     //depth:2,lock_base_path: base_path/lock/
-    private static final String LOCK_BASE_PATH = CONF_BASE_PATH + "lock";
+    private static final String LOCK_BASE_PATH = BASE_PATH + "lock";
     public static String getLockBasePath() {
         return LOCK_BASE_PATH;
     }
@@ -126,7 +125,7 @@ public final class ClusterPathUtil {
     }
 
     public static String getSelfConfStatusPath() {
-        return CONF_BASE_PATH + CONF_STATUS + SEPARATOR + SystemConfig.getInstance().getInstanceId();
+        return getConfStatusPath() + SEPARATOR + SystemConfig.getInstance().getInstanceName();
     }
 
     //depth:2,child node of base_path
@@ -134,12 +133,12 @@ public final class ClusterPathUtil {
         return BASE_PATH + "online";
     }
 
-    public static String getOnlinePath(String instanceId) {
-        return BASE_PATH + "online" + SEPARATOR + instanceId;
+    public static String getOnlinePath(String instanceName) {
+        return getOnlinePath() + SEPARATOR + instanceName;
     }
 
     //depth:2,binlog_pause path:base_path/binlog_pause
-    private static final String BINLOG_PAUSE_PATH = BASE_PATH + "conf" + SEPARATOR + "binlog_pause";
+    private static final String BINLOG_PAUSE_PATH = BASE_PATH + "binlog_pause";
     public static final String BINLOG_PAUSE_STATUS = "status";
 
 
@@ -152,7 +151,7 @@ public final class ClusterPathUtil {
     }
 
     public static String getBinlogPauseStatusSelf() {
-        return getBinlogPauseStatus() + SEPARATOR + SystemConfig.getInstance().getInstanceId();
+        return getBinlogPauseStatus() + SEPARATOR + SystemConfig.getInstance().getInstanceName();
     }
 
     //depth:2,child node of base_path
@@ -162,12 +161,12 @@ public final class ClusterPathUtil {
 
     //depth:2,child node of base_path
     public static String getDDLPath(String fullName) {
-        return BASE_PATH + "ddl" + SEPARATOR + fullName;
+        return getDDLPath() + SEPARATOR + fullName;
     }
 
     //depth:2,child node of base_path
     public static String getDDLInstancePath(String fullName) {
-        return getDDLPath(fullName) + SEPARATOR + SystemConfig.getInstance().getInstanceId();
+        return getDDLPath(fullName) + SEPARATOR + SystemConfig.getInstance().getInstanceName();
     }
     //depth:2,child node of base_path
     public static String getDDLLockPath(String fullName) {

@@ -36,7 +36,7 @@ public final class ZkConfig {
         try {
             tryDeleteOldOnline();
             // online
-            ZKUtils.createOnline(ClusterPathUtil.getOnlinePath(), SystemConfig.getInstance().getInstanceId(), OnlineStatus.getInstance());
+            ZKUtils.createOnline(ClusterPathUtil.getOnlinePath(), SystemConfig.getInstance().getInstanceName(), OnlineStatus.getInstance());
 
             ZktoXmlMain.loadZktoFile();
         } catch (Exception e) {
@@ -56,10 +56,10 @@ public final class ZkConfig {
 
     private static void tryDeleteOldOnline() throws Exception {
         //try to delete online
-        if (ZKUtils.getConnection().checkExists().forPath(ClusterPathUtil.getOnlinePath(SystemConfig.getInstance().getInstanceId())) != null) {
+        if (ZKUtils.getConnection().checkExists().forPath(ClusterPathUtil.getOnlinePath(SystemConfig.getInstance().getInstanceName())) != null) {
             byte[] info;
             try {
-                info = ZKUtils.getConnection().getData().forPath(ClusterPathUtil.getOnlinePath(SystemConfig.getInstance().getInstanceId()));
+                info = ZKUtils.getConnection().getData().forPath(ClusterPathUtil.getOnlinePath(SystemConfig.getInstance().getInstanceName()));
             } catch (Exception e) {
                 LOGGER.info("can not get old online from zk,just do as it not exists");
                 return;
@@ -67,7 +67,7 @@ public final class ZkConfig {
             String oldOnlne = new String(info, StandardCharsets.UTF_8);
             if (OnlineStatus.getInstance().canRemovePath(oldOnlne)) {
                 LOGGER.warn("remove online from zk path ,because has same IP & serverPort");
-                ZKUtils.getConnection().delete().forPath(ClusterPathUtil.getOnlinePath(SystemConfig.getInstance().getInstanceId()));
+                ZKUtils.getConnection().delete().forPath(ClusterPathUtil.getOnlinePath(SystemConfig.getInstance().getInstanceName()));
             } else {
                 throw new RuntimeException("Online path with other IP or serverPort exist,make sure different instance has different myid");
             }

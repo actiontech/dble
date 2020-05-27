@@ -61,7 +61,7 @@ public final class UcoreSender extends AbstractClusterSender {
     @Override
     public void initCluster() {
         serverId = SystemConfig.getInstance().getServerId();
-        sourceComponentId = SystemConfig.getInstance().getInstanceId();
+        sourceComponentId = SystemConfig.getInstance().getInstanceName();
         try {
             ipList.addAll(Arrays.asList(ClusterConfig.getInstance().getClusterIP().split(",")));
         } catch (Exception e) {

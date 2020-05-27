@@ -129,11 +129,11 @@ public class ClusterOffLineListener implements Runnable {
                         checkPauseStatusRelease(serverId);
                     }
                 }
-                String instanceId = SystemConfig.getInstance().getInstanceId();
-                String selfPath = ClusterPathUtil.getOnlinePath(instanceId);
+                String instanceName = SystemConfig.getInstance().getInstanceName();
+                String selfPath = ClusterPathUtil.getOnlinePath(instanceName);
                 if (!newMap.containsKey(selfPath)) {
                     lackSelf = !reInitOnlineStatus();
-                    newMap.put(selfPath, instanceId);
+                    newMap.put(selfPath, instanceName);
                 }
                 onlineMap = newMap;
                 index = output.getIndex();

@@ -195,18 +195,6 @@ public final class ConfigUtil {
         return defaultValue;
     }
 
-    public static String checkAndGetAttribute(String propertyName, String val, String defaultValue, ProblemReporter reporter) {
-        if (val != null) {
-            if (isBool(val) || isNumeric(val)) {
-                return val;
-            } else if (reporter != null) {
-                reporter.warn("property[" + propertyName + "] " + val + " in server.xml is illegal, use " + defaultValue + " replaced");
-            }
-        }
-        return defaultValue;
-    }
-
-
     public static String checkBoolAttribute(String propertyName, String val, String defaultValue, ProblemReporter reporter, String fileName) {
         if (val != null) {
             if (isBool(val)) {

@@ -43,7 +43,7 @@ public class UshardSender extends AbstractClusterSender {
     @Override
     public void initCluster() {
         serverId = SystemConfig.getInstance().getServerId();
-        sourceComponentId = SystemConfig.getInstance().getInstanceId();
+        sourceComponentId = SystemConfig.getInstance().getInstanceName();
         Channel channel = ManagedChannelBuilder.forAddress("127.0.0.1",
                 ClusterConfig.getInstance().getClusterPort()).usePlaintext(true).build();
         stub = DbleClusterGrpc.newBlockingStub(channel).withDeadlineAfter(GENERAL_GRPC_TIMEOUT, TimeUnit.SECONDS);

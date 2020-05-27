@@ -7,7 +7,7 @@ package com.actiontech.dble.route.sequence.handler;
 
 
 import com.actiontech.dble.config.model.ClusterConfig;
-import com.actiontech.dble.route.util.PropertiesUtil;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.util.DateUtil;
 import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -22,17 +22,14 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.SQLNonTransientException;
-import java.util.Properties;
 
 /**
  * Deprecated:
  * <p>
  * use ZK(get InstanceID from ZK) Or local file (set InstanceID) generate a sequence
  * ID :long 63 bits
- * |threadId(9)|instanceId(5)|clusterId(4)|increment(6)|current time millis(39 digits ,used for 17 years)|
+ * |threadId(9)|instanceId(9)|increment(6)|current time millis(39 digits ,used for 17 years)|
  * <p/>
- * local file:sequence_distributed_conf.properties
- * set :INSTANCEID=ZK then the INSTANCEIDwill generated from zk
  *
  * @author Hash Zhang
  * @version 1.0
@@ -47,20 +44,16 @@ import java.util.Properties;
 public class DistributedSequenceHandler implements Closeable, SequenceHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(DistributedSequenceHandler.class);
     private static final long DEFAULT_START_TIMESTAMP = 1288834974657L; //Thu Nov 04 09:42:54 CST 2010
-    private static final String SEQUENCE_DB_PROPS = "sequence_distributed_conf.properties";
     private static DistributedSequenceHandler instance = new DistributedSequenceHandler();
 
     private final long threadIdBits = 9L;
-    private final long instanceIdBits = 5L;
-    private final long clusterIdBits = 4L;
+    private final long instanceIdBits = 9L;
     private final long incrementBits = 6L;
     private final long timestampBits = 39L;
 
     private final long incrementShift = timestampBits;
-    private final long clusterIdShift = incrementShift + incrementBits;
-    private final long instanceIdShift = clusterIdShift + clusterIdBits;
+    private final long instanceIdShift = incrementShift + incrementBits;
     private volatile long instanceId;
-    private long clusterId;
 
     private ThreadLocal<Long> threadInc = new ThreadLocal<>();
     private ThreadLocal<Long> threadLastTime = new ThreadLocal<>();
@@ -78,18 +71,11 @@ public class DistributedSequenceHandler implements Closeable, SequenceHandler {
     }
 
     public void load(boolean isLowerCaseTableNames) {
-        // load sequnce properties
-        Properties props = PropertiesUtil.loadProps(SEQUENCE_DB_PROPS);
-        if ("ZK".equalsIgnoreCase(props.getProperty("INSTANCEID"))) {
+        if (ClusterConfig.getInstance().isSequenceInstanceByZk()) {
             initializeZK();
         } else {
-            this.instanceId = Long.parseLong(props.getProperty("INSTANCEID"));
+            this.instanceId = SystemConfig.getInstance().getInstanceId();
             this.ready = true;
-        }
-        this.clusterId = Long.parseLong(props.getProperty("CLUSTERID"));
-        long maxclusterId = ~(-1L << clusterIdBits);
-        if (clusterId > maxclusterId || clusterId < 0) {
-            throw new IllegalArgumentException(String.format("cluster Id can't be greater than %d or less than 0", maxclusterId));
         }
         long maxInstanceId = ~(-1L << instanceIdBits);
         if (instanceId > maxInstanceId || instanceId < 0) {
@@ -97,15 +83,15 @@ public class DistributedSequenceHandler implements Closeable, SequenceHandler {
         }
 
         try {
-            String startTimeStr = props.getProperty("START_TIME");
+            String startTimeStr = ClusterConfig.getInstance().getSequenceStartTime();
             if (!StringUtil.isEmpty(startTimeStr)) {
                 startTimeMilliseconds = DateUtil.parseDate(startTimeStr).getTime();
                 if (startTimeMilliseconds > System.currentTimeMillis()) {
-                    LOGGER.warn("START_TIME in " + SEQUENCE_DB_PROPS + " mustn't be over than dble start time, starting from 2010-11-04 09:42:54");
+                    LOGGER.warn("START_TIME in cluster.cnf mustn't be over than dble start time, starting from 2010-11-04 09:42:54");
                 }
             }
         } catch (Exception pe) {
-            LOGGER.warn("START_TIME in " + SEQUENCE_DB_PROPS + " parse exception, starting from 2010-11-04 09:42:54");
+            LOGGER.warn("START_TIME in cluster.cnf parse exception, starting from 2010-11-04 09:42:54");
         } finally {
             this.deadline = startTimeMilliseconds + (1L << 39);
         }
@@ -190,7 +176,7 @@ public class DistributedSequenceHandler implements Closeable, SequenceHandler {
         long threadIdShift = instanceIdShift + instanceIdBits;
         long timestampMask = (1L << timestampBits) - 1L;
         return (((threadID.get() % maxThreadId) << threadIdShift)) | (instanceId << instanceIdShift) |
-                (clusterId << clusterIdShift) | (a << incrementShift) | ((time - startTimeMilliseconds) & timestampMask);
+                (a << incrementShift) | ((time - startTimeMilliseconds) & timestampMask);
     }
 
     private synchronized Long getNextThreadID() {

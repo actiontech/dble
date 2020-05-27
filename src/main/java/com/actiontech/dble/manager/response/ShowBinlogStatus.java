@@ -109,7 +109,7 @@ public final class ShowBinlogStatus {
     private static void showBinlogWithUcore(ManagerConnection c, long timeout) {
 
         //step 1 get the distributeLock of the ucore
-        ClusterGeneralDistributeLock distributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getBinlogPauseLockPath(), SystemConfig.getInstance().getInstanceId());
+        ClusterGeneralDistributeLock distributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getBinlogPauseLockPath(), SystemConfig.getInstance().getInstanceName());
         try {
             if (!distributeLock.acquire()) {
                 c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "There is another command is showing BinlogStatus");
@@ -121,7 +121,7 @@ public final class ShowBinlogStatus {
                     c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "There is another command is showing BinlogStatus");
                 } else {
                     //step 3 notify other dble to stop the commit & set self status
-                    BinlogPause pauseOnInfo = new BinlogPause(SystemConfig.getInstance().getInstanceId(), BinlogPauseStatus.ON);
+                    BinlogPause pauseOnInfo = new BinlogPause(SystemConfig.getInstance().getInstanceName(), BinlogPauseStatus.ON);
 
                     //step 4 wait til other dbles to feedback the ucore flag
                     long beginTime = TimeUtil.currentTimeMillis();
@@ -154,7 +154,7 @@ public final class ShowBinlogStatus {
 
                     //step 7 delete the KVtree and notify the cluster
                     ClusterHelper.cleanPath(ClusterPathUtil.getBinlogPauseStatus() + SEPARATOR);
-                    BinlogPause pauseOffInfo = new BinlogPause(SystemConfig.getInstance().getInstanceId(), BinlogPauseStatus.OFF);
+                    BinlogPause pauseOffInfo = new BinlogPause(SystemConfig.getInstance().getInstanceName(), BinlogPauseStatus.OFF);
                     ClusterHelper.setKV(ClusterPathUtil.getBinlogPauseStatus(), pauseOffInfo.toString());
 
                 }
@@ -187,13 +187,13 @@ public final class ShowBinlogStatus {
                     errMsg = null;
                     //notify zk to wait all session
                     String binlogStatusPath = ClusterPathUtil.getBinlogPauseStatus();
-                    BinlogPause pauseOnInfo = new BinlogPause(SystemConfig.getInstance().getInstanceId(), BinlogPauseStatus.ON);
+                    BinlogPause pauseOnInfo = new BinlogPause(SystemConfig.getInstance().getInstanceName(), BinlogPauseStatus.ON);
                     zkConn.setData().forPath(binlogStatusPath, pauseOnInfo.toString().getBytes(StandardCharsets.UTF_8));
                     long beginTime = TimeUtil.currentTimeMillis();
                     boolean isPaused = waitAllSession(c, timeout, beginTime);
 
                     //tell zk this instance has prepared
-                    ZKUtils.createTempNode(binlogStatusPath, SystemConfig.getInstance().getInstanceId(), String.valueOf(isPaused).getBytes(StandardCharsets.UTF_8));
+                    ZKUtils.createTempNode(binlogStatusPath, SystemConfig.getInstance().getInstanceName(), String.valueOf(isPaused).getBytes(StandardCharsets.UTF_8));
                     //check all session waiting status
                     List<String> preparedList = zkConn.getChildren().forPath(binlogStatusPath);
                     List<String> onlineList = zkConn.getChildren().forPath(ClusterPathUtil.getOnlinePath());
@@ -225,9 +225,9 @@ public final class ShowBinlogStatus {
                         getQueryResult(c.getCharset().getResults());
                     }
                     writeResponse(c);
-                    BinlogPause pauseOffInfo = new BinlogPause(SystemConfig.getInstance().getInstanceId(), BinlogPauseStatus.OFF);
+                    BinlogPause pauseOffInfo = new BinlogPause(SystemConfig.getInstance().getInstanceName(), BinlogPauseStatus.OFF);
                     zkConn.setData().forPath(binlogStatusPath, pauseOffInfo.toString().getBytes(StandardCharsets.UTF_8));
-                    zkConn.delete().forPath(ZKPaths.makePath(binlogStatusPath, SystemConfig.getInstance().getInstanceId()));
+                    zkConn.delete().forPath(ZKPaths.makePath(binlogStatusPath, SystemConfig.getInstance().getInstanceName()));
                     List<String> releaseList = zkConn.getChildren().forPath(binlogStatusPath);
                     while (releaseList.size() != 0) {
                         releaseList = zkConn.getChildren().forPath(binlogStatusPath);

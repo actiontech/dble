@@ -123,6 +123,11 @@ public class ZkMultiLoader {
         checkNotNull(path, "data of path" + path + " must be not null!");
         checkNotNull(value, "data of value:" + value + " must be not null!");
 
+        Stat stat = curator.checkExists().forPath(path);
+
+        if (null == stat) {
+            this.createPath(path);
+        }
         curator.setData().forPath(path, value.getBytes());
     }
 

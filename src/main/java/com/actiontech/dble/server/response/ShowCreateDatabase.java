@@ -54,7 +54,7 @@ public final class ShowCreateDatabase {
             String schema = StringUtil.removeBackQuote(statement.getDatabase().toString());
             SchemaConfig sc = DbleServer.getInstance().getConfig().getSchemas().get(schema);
             if (sc == null) {
-                throw new Exception("Unknown schema '" + schema + "' in server.xml");
+                throw new Exception("Unknown schema '" + schema + "' in sharding.xml");
             }
             ByteBuffer buffer = c.allocate();
             // write header

@@ -13,7 +13,9 @@
 -XX:MaxDirectMemorySize=2G
 #  base config
 -DhomePath=.
--DinstanceId=1
+-DinstanceName=1
+# valid for sequenceHandlerType=2 or 3
+#-DinstanceId=1
 #-DserverId=xxx1
 #-DuseSerializableMode=1
 #-DbindIp=0.0.0.0

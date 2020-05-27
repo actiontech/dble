@@ -36,7 +36,7 @@ public class BinlogPauseStatusResponse implements ClusterXmlLoader {
         //step 1 check if the block is from the server itself
         BinlogPause pauseInfo = new BinlogPause(configValue.getValue());
         LOGGER.info("notify " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
-        if (pauseInfo.getFrom().equals(SystemConfig.getInstance().getInstanceId())) {
+        if (pauseInfo.getFrom().equals(SystemConfig.getInstance().getInstanceName())) {
             LOGGER.info("Self Notice,Do nothing return");
             return;
         }

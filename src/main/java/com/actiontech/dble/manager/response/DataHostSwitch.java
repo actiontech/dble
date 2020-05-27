@@ -89,7 +89,7 @@ public final class DataHostSwitch {
         //get the lock from ucore
         ClusterGeneralDistributeLock distributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getHaLockPath(dh.getGroupName()),
                 new HaInfo(dh.getGroupName(),
-                        SystemConfig.getInstance().getInstanceId(),
+                        SystemConfig.getInstance().getInstanceName(),
                         HaInfo.HaType.DATAHOST_SWITCH,
                         HaInfo.HaStatus.INIT
                 ).toString()

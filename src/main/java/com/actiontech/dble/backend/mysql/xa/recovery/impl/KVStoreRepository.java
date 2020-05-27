@@ -37,7 +37,7 @@ public class KVStoreRepository implements Repository {
 
     @Override
     public void init() {
-        logPath = KVPathUtil.XALOG + SystemConfig.getInstance().getInstanceId();
+        logPath = KVPathUtil.XALOG + SystemConfig.getInstance().getInstanceName();
     }
 
     @Override

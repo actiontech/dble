@@ -66,7 +66,7 @@ public class KVStoreRepository implements Repository {
     public void put(String schemaName, String viewName, String createSql) {
         String viewPath = ClusterPathUtil.getViewPath(schemaName, viewName);
         JsonObject m = new JsonObject();
-        m.addProperty(SERVER_ID, SystemConfig.getInstance().getInstanceId());
+        m.addProperty(SERVER_ID, SystemConfig.getInstance().getInstanceName());
         m.addProperty(CREATE_SQL, createSql);
         try {
             if (zkConn.checkExists().forPath(viewPath) == null) {

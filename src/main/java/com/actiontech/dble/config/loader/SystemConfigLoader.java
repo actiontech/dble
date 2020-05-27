@@ -94,7 +94,7 @@ public final class SystemConfigLoader {
         ParameterMapping.mapping(systemConfig, null);
         Properties system = new Properties();
 
-        if (systemConfig.getInstanceId() == null) {
+        if (systemConfig.getInstanceName() == null) {
             // if not start with wrapper.conf
             system = readBootStrapConf();
         }

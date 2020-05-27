@@ -44,10 +44,6 @@ public class DruidMysqlCreateTableTest {
 
 
     public DruidMysqlCreateTableTest() {
-        //		String shardingFile = "/route/sharding.xml";
-        //		String ruleFile = "/route/rule.xml";
-        //		SchemaLoader schemaLoader = new XMLSchemaLoader(shardingFile, ruleFile); \
-        //		schemaMap = schemaLoader.getSchemas();
         ServerConfig cnf = new ServerConfig();
         schemaMap = cnf.getSchemas();
 

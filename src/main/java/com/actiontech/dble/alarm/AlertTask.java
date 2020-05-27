@@ -1,6 +1,6 @@
 package com.actiontech.dble.alarm;
 
-import com.actiontech.dble.cluster.bean.ClusterAlertBean;
+import com.actiontech.dble.cluster.general.bean.ClusterAlertBean;
 
 import java.util.Set;
 

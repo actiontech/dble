@@ -10,7 +10,7 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLTraceInfo;
+import com.actiontech.dble.cluster.zkprocess.zookeeper.process.DDLTraceInfo;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;

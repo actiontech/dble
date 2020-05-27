@@ -1,7 +1,7 @@
 package com.actiontech.dble.meta;
 
 import com.actiontech.dble.cluster.ClusterGeneralConfig;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
+import com.actiontech.dble.cluster.zkprocess.zookeeper.process.ConfStatus;
 import com.actiontech.dble.meta.table.ServerMetaHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

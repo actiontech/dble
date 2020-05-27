@@ -5,10 +5,11 @@
 
 package com.actiontech.dble.cluster;
 
-import com.actiontech.dble.cluster.impl.UcoreSender;
-import com.actiontech.dble.cluster.impl.ushard.UshardSender;
-import com.actiontech.dble.cluster.kVtoXml.ClusterToXml;
-import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
+import com.actiontech.dble.cluster.general.AbstractClusterSender;
+import com.actiontech.dble.cluster.general.impl.UcoreSender;
+import com.actiontech.dble.cluster.general.impl.ushard.UshardSender;
+import com.actiontech.dble.cluster.general.kVtoXml.ClusterToXml;
+import com.actiontech.dble.cluster.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.singleton.OnlineStatus;
 

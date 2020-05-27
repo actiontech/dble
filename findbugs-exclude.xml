@@ -28,7 +28,7 @@
         <Class name="com.actiontech.dble.meta.protocol.StructureMeta$TableMeta$Builder"/>
     </Match>
     <Match>
-        <Package name="com.actiontech.dble.cluster.impl.ushard"/>
+        <Package name="com.actiontech.dble.cluster.general.impl.ushard"/>
     </Match>
     <Match>
         <Package name="com.actiontech.dble.alarm"/>

@@ -3,9 +3,9 @@ package com.actiontech.dble.config.util;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.config.loader.zkprocess.entity.DbGroups;
-import com.actiontech.dble.config.loader.zkprocess.entity.dbGroups.DBGroup;
-import com.actiontech.dble.config.loader.zkprocess.entity.dbGroups.DBInstance;
+import com.actiontech.dble.cluster.zkprocess.entity.DbGroups;
+import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBGroup;
+import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBInstance;
 import com.actiontech.dble.singleton.HaConfigManager;
 import org.slf4j.LoggerFactory;
 

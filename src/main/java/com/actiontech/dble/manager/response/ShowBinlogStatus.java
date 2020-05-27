@@ -9,13 +9,13 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.PacketUtil;
-import com.actiontech.dble.cluster.ClusterGeneralDistributeLock;
+import com.actiontech.dble.cluster.general.ClusterGeneralDistributeLock;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.kVtoXml.ClusterToXml;
+import com.actiontech.dble.cluster.general.kVtoXml.ClusterToXml;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.BinlogPause;
+import com.actiontech.dble.cluster.zkprocess.zookeeper.process.BinlogPause;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.manager.ManagerConnection;
@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
 import static com.actiontech.dble.cluster.ClusterPathUtil.SEPARATOR;
-import static com.actiontech.dble.config.loader.zkprocess.zookeeper.process.BinlogPause.BinlogPauseStatus;
+import static com.actiontech.dble.cluster.zkprocess.zookeeper.process.BinlogPause.BinlogPauseStatus;
 
 public final class ShowBinlogStatus {
     private ShowBinlogStatus() {

@@ -5,14 +5,14 @@
 
 package com.actiontech.dble.cluster;
 
-import com.actiontech.dble.config.loader.zkprocess.entity.DbGroups;
-import com.actiontech.dble.config.loader.zkprocess.entity.Shardings;
-import com.actiontech.dble.config.loader.zkprocess.entity.Users;
-import com.actiontech.dble.config.loader.zkprocess.entity.sharding.schema.Table;
-import com.actiontech.dble.config.loader.zkprocess.entity.sharding.schema.TableGsonAdapter;
-import com.actiontech.dble.config.loader.zkprocess.entity.user.User;
-import com.actiontech.dble.config.loader.zkprocess.entity.user.UserGsonAdapter;
-import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
+import com.actiontech.dble.cluster.zkprocess.entity.DbGroups;
+import com.actiontech.dble.cluster.zkprocess.entity.Shardings;
+import com.actiontech.dble.cluster.zkprocess.entity.Users;
+import com.actiontech.dble.cluster.zkprocess.entity.sharding.schema.Table;
+import com.actiontech.dble.cluster.zkprocess.entity.sharding.schema.TableGsonAdapter;
+import com.actiontech.dble.cluster.zkprocess.entity.user.User;
+import com.actiontech.dble.cluster.zkprocess.entity.user.UserGsonAdapter;
+import com.actiontech.dble.cluster.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import com.google.gson.Gson;

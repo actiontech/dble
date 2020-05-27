@@ -7,10 +7,10 @@ package com.actiontech.dble.backend.mysql.view;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.ClusterGeneralDistributeLock;
+import com.actiontech.dble.cluster.general.ClusterGeneralDistributeLock;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.bean.KvBean;
+import com.actiontech.dble.cluster.general.bean.KvBean;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import org.slf4j.Logger;

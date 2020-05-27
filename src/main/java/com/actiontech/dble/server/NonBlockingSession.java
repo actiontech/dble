@@ -22,7 +22,7 @@ import com.actiontech.dble.btrace.provider.ComplexQueryProvider;
 import com.actiontech.dble.btrace.provider.CostTimeProvider;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLTraceInfo;
+import com.actiontech.dble.cluster.zkprocess.zookeeper.process.DDLTraceInfo;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.net.handler.BackEndDataCleaner;
 import com.actiontech.dble.net.handler.FrontendCommandHandler;

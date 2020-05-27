@@ -7,8 +7,8 @@ package com.actiontech.dble.server;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.BinlogPause;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
+import com.actiontech.dble.cluster.zkprocess.zookeeper.process.BinlogPause;
+import com.actiontech.dble.cluster.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.singleton.ProxyMeta;

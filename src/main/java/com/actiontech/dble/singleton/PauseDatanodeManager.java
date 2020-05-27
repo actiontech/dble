@@ -6,11 +6,11 @@ package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.cluster.ClusterGeneralDistributeLock;
+import com.actiontech.dble.cluster.general.ClusterGeneralDistributeLock;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.kVtoXml.ClusterToXml;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.PauseInfo;
+import com.actiontech.dble.cluster.general.kVtoXml.ClusterToXml;
+import com.actiontech.dble.cluster.zkprocess.zookeeper.process.PauseInfo;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static com.actiontech.dble.config.loader.zkprocess.zookeeper.process.PauseInfo.PAUSE;
+import static com.actiontech.dble.cluster.zkprocess.zookeeper.process.PauseInfo.PAUSE;
 
 public final class PauseDatanodeManager {
     protected static final Logger LOGGER = LoggerFactory.getLogger(PauseDatanodeManager.class);

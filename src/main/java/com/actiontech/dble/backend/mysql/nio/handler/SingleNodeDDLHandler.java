@@ -2,7 +2,7 @@ package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLTraceInfo;
+import com.actiontech.dble.cluster.zkprocess.zookeeper.process.DDLTraceInfo;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.RouteResultset;

@@ -2,11 +2,11 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
-import com.actiontech.dble.cluster.ClusterGeneralDistributeLock;
+import com.actiontech.dble.cluster.general.ClusterGeneralDistributeLock;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.HaInfo;
+import com.actiontech.dble.cluster.zkprocess.zookeeper.process.HaInfo;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.manager.ManagerConnection;

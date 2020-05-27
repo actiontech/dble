@@ -2,7 +2,7 @@
 
 echo "check JAVA_HOME & java"
 JAVA_CMD="$2"/bin/java
-MAIN_CLASS=com.actiontech.dble.cluster.xmltoKv.XmltoCluster
+MAIN_CLASS=com.actiontech.dble.cluster.general.xmltoKv.XmltoCluster
 if [ ! -n "$2" ]; then
     JAVA_CMD=$JAVA_HOME/bin/java
     if [ ! -d "$JAVA_HOME" ]; then

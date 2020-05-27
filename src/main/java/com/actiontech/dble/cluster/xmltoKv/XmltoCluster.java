@@ -39,10 +39,6 @@ public final class XmltoCluster {
 
         new XmlUserLoader(xmlProcess, ucoreListen);
 
-        new XmlEhcachesLoader(xmlProcess, ucoreListen);
-
-        new CacheserviceResponse(ucoreListen);
-
         new PropertySequenceLoader(ucoreListen);
 
         xmlProcess.initJaxbClass();

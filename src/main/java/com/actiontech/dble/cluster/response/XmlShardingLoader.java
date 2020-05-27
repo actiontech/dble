@@ -53,7 +53,7 @@ public class XmlShardingLoader implements ClusterXmlLoader {
         Shardings sharding = ClusterHelper.parseShardingJsonToBean(gson, configValue.getValue());
         ClusterHelper.writeMapFileAddFunction(sharding.getFunction());
 
-        String path = ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.UCORE_LOCAL_WRITE_PATH);
+        String path = ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH);
         path = new File(path).getPath() + File.separator + SHARDING_XML_PATH;
 
         LOGGER.info("notifyProcess ucore to object writePath :" + path);
@@ -66,7 +66,7 @@ public class XmlShardingLoader implements ClusterXmlLoader {
 
     @Override
     public void notifyCluster() throws Exception {
-        String path = ClusterPathUtil.UCORE_LOCAL_WRITE_PATH + SHARDING_XML_PATH;
+        String path = ClusterPathUtil.LOCAL_WRITE_PATH + SHARDING_XML_PATH;
         String json = ClusterHelper.parseShardingXmlFileToJson(xmlParseBase, gson, path);
         ClusterHelper.setKV(CONFIG_PATH, json);
     }

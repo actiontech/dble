@@ -5,18 +5,15 @@
 
 package com.actiontech.dble.config.loader.zkprocess.xmltozk.listen;
 
+import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.loader.zkprocess.comm.ConfFileRWUtils;
 import com.actiontech.dble.config.loader.zkprocess.comm.NotifyService;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
-import com.actiontech.dble.util.KVPathUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.StringReader;
-import java.util.Properties;
 
 /**
  * SequenceTozkLoader
@@ -41,12 +38,11 @@ public class SequenceTozkLoader extends ZkMultiLoader implements NotifyService {
 
     private static final String PROPERTIES_SEQUENCE_DB_CONF = "sequence_db_conf";
 
-    private static final String PROPERTIES_SEQUENCE_DISTRIBUTED_CONF = "sequence_distributed_conf";
 
 
     public SequenceTozkLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator) {
         this.setCurator(curator);
-        currZkPath = KVPathUtil.getSequencesPath();
+        currZkPath = ClusterPathUtil.getSequencesCommonPath();
         zookeeperListen.addToInit(this);
     }
 
@@ -61,9 +57,6 @@ public class SequenceTozkLoader extends ZkMultiLoader implements NotifyService {
 
         LOGGER.info("SequenceTozkLoader notifyProcess sequence_db_conf to zk success");
 
-        this.sequenceTozk(currZkPath, PROPERTIES_SEQUENCE_DISTRIBUTED_CONF);
-
-        LOGGER.info("SequenceTozkLoader notifyProcess sequence_distributed_conf to zk success");
 
 
         return true;
@@ -80,15 +73,7 @@ public class SequenceTozkLoader extends ZkMultiLoader implements NotifyService {
     private void sequenceTozk(String basePath, String name) throws Exception {
         String readFile = name + PROPERTIES_SUFFIX;
         String commSequence = ConfFileRWUtils.readFile(readFile);
-        if (name.equals(PROPERTIES_SEQUENCE_DISTRIBUTED_CONF)) {
-            Properties props = new Properties();
-            props.load(new StringReader(commSequence));
-            if (!"ZK".equals(props.getProperty("INSTANCEID"))) {
-                LOGGER.info("The property of INSTANCEID in " + readFile + " is not zk,no need to store in zk");
-                return;
-            }
-        }
-        String sequenceZkPath = ZKPaths.makePath(KVPathUtil.SEQUENCE_COMMON, readFile);
-        this.checkAndWriteString(basePath, sequenceZkPath, commSequence);
+        String sequenceZkPath = ZKPaths.makePath(basePath, readFile);
+        this.checkAndWriteString(sequenceZkPath, commSequence);
     }
 }

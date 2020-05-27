@@ -1,6 +1,6 @@
 package com.actiontech.dble.meta;
 
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
+import com.actiontech.dble.cluster.ClusterGeneralConfig;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
 import com.actiontech.dble.meta.table.ServerMetaHandler;
 import org.slf4j.Logger;
@@ -27,7 +27,7 @@ public class ReloadStatus {
     public static final String RELOAD_INTERRUPUTED = "INTERRUPUTED";
 
     private final int id;
-    private final String cluster;
+    private final String clusterType;
     private volatile String status;
     private final String triggerType;
     private final long lastReloadStart;
@@ -38,7 +38,7 @@ public class ReloadStatus {
     private final ConfStatus.Status reloadType;
 
     public ReloadStatus(String triggerType, ConfStatus.Status reloadType) {
-        cluster = ClusterGeneralConfig.getInstance().getClusterType();
+        clusterType = ClusterGeneralConfig.getInstance().getClusterType();
         id = ReloadManager.getReloadInstance().nextId();
         this.triggerType = triggerType;
         status = RELOAD_STATUS_SELF_RELOAD;
@@ -68,11 +68,11 @@ public class ReloadStatus {
     }
 
     public boolean isFinished() {
-        return status == RELOAD_STATUS_NONE;
+        return status.equals(RELOAD_STATUS_NONE);
     }
 
     public boolean checkCanRelease() {
-        return status == RELOAD_STATUS_META_RELOAD;
+        return status.equals(RELOAD_STATUS_META_RELOAD);
     }
 
     public boolean interruputed() {
@@ -95,8 +95,8 @@ public class ReloadStatus {
         return id;
     }
 
-    public String getCluster() {
-        return cluster;
+    public String getClusterType() {
+        return clusterType;
     }
 
     public String getStatus() {

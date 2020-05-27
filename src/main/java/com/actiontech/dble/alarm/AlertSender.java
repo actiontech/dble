@@ -1,7 +1,8 @@
 package com.actiontech.dble.alarm;
 
 import com.actiontech.dble.cluster.ClusterController;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
+import com.actiontech.dble.cluster.ClusterGeneralConfig;
+import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.singleton.AlertGeneralConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,7 +65,7 @@ public class AlertSender implements Runnable {
         confg.initAlertConfig();
         alert = confg.customizedAlert();
         if (DEFAULT_ALERT == alert &&
-                ClusterGeneralConfig.isUseGeneralCluster() &&
+                ClusterConfig.getInstance().isClusterEnable() &&
                 (ClusterController.CONFIG_MODE_UCORE.equals(ClusterGeneralConfig.getInstance().getClusterType()) ||
                         ClusterController.CONFIG_MODE_USHARD.equals(ClusterGeneralConfig.getInstance().getClusterType()))) {
             LOGGER.info("Ucore cluster,use default alert UcoreAlert");

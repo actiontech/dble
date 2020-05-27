@@ -7,7 +7,7 @@ package com.actiontech.dble.config.loader.zkprocess.xmltozk.listen;
 
 
 import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.config.loader.console.ZookeeperPath;
+import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.loader.zkprocess.comm.NotifyService;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.config.loader.zkprocess.entity.Users;
@@ -15,7 +15,6 @@ import com.actiontech.dble.config.loader.zkprocess.entity.user.User;
 import com.actiontech.dble.config.loader.zkprocess.entity.user.UserGsonAdapter;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ZkMultiLoader;
-import com.actiontech.dble.util.KVPathUtil;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.curator.framework.CuratorFramework;
@@ -25,14 +24,14 @@ import org.slf4j.LoggerFactory;
 public class UserXmlToZkLoader extends ZkMultiLoader implements NotifyService {
     private static final Logger LOGGER = LoggerFactory.getLogger(UserXmlToZkLoader.class);
     private final String currZkPath;
-    private static final String USER_XML_PATH = ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey() + "user.xml";
+    private static final String USER_XML_PATH = ClusterPathUtil.LOCAL_WRITE_PATH + "user.xml";
     private final Gson gson;
     private XmlProcessBase xmlParseBase;
 
     public UserXmlToZkLoader(ZookeeperProcessListen zookeeperListen, CuratorFramework curator,
                              XmlProcessBase xmlParseBase) {
         this.setCurator(curator);
-        currZkPath = KVPathUtil.getUserConfPath();
+        currZkPath = ClusterPathUtil.getUserConfPath();
         this.xmlParseBase = xmlParseBase;
         xmlParseBase.addParseClass(Users.class);
         GsonBuilder gsonBuilder = new GsonBuilder();

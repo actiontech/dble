@@ -28,7 +28,7 @@ public final class ClusterToXml {
 
     private static ClusterSingleKeyListener viewListener = null;
 
-    private static ClusterSingleKeyListener dataHostHaListener = null;
+    private static ClusterSingleKeyListener dbGroupHaListener = null;
 
     private static ClusterOffLineListener onlineListener = null;
 
@@ -46,8 +46,6 @@ public final class ClusterToXml {
             new XmlDbLoader(xmlProcess, listener);
             new XmlShardingLoader(xmlProcess, listener);
             new XmlUserLoader(xmlProcess, listener);
-            new XmlEhcachesLoader(xmlProcess, listener);
-            new CacheserviceResponse(listener);
             new PropertySequenceLoader(listener);
             xmlProcess.initJaxbClass();
 
@@ -56,7 +54,7 @@ public final class ClusterToXml {
             new BinlogPauseStatusResponse(listener);
             new PauseShardingNodeResponse(listener);
 
-            dataHostHaListener = new ClusterSingleKeyListener(ClusterPathUtil.getHaBasePath(), new DbGroupHaResponse());
+            dbGroupHaListener = new ClusterSingleKeyListener(ClusterPathUtil.getHaBasePath(), new DbGroupHaResponse());
 
             ddlListener = new ClusterSingleKeyListener(ClusterPathUtil.getDDLPath() + SEPARATOR, new DdlChildResponse());
 
@@ -82,7 +80,7 @@ public final class ClusterToXml {
             thread4.start();
 
             if (ClusterConfig.getInstance().isNeedSyncHa()) {
-                Thread thread5 = new Thread(dataHostHaListener);
+                Thread thread5 = new Thread(dbGroupHaListener);
                 thread5.setName("DATA_HOST_HA_LISTENER");
                 thread5.start();
             }

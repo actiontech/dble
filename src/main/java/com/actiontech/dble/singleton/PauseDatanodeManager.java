@@ -6,11 +6,12 @@ package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
+import com.actiontech.dble.cluster.ClusterGeneralDistributeLock;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.kVtoXml.ClusterToXml;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.PauseInfo;
+import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.TableConfig;
@@ -44,7 +45,7 @@ public final class PauseDatanodeManager {
     private volatile Set<String> shardingNodes = null;
     private Map<String, Set<String>> pauseMap = new ConcurrentHashMap<>();
     private AtomicBoolean isPausing = new AtomicBoolean(false);
-    private DistributeLock uDistributeLock = null;
+    private ClusterGeneralDistributeLock uDistributeLock = null;
 
     private volatile PauseEndThreadPool pauseThreadPool = null;
 
@@ -99,7 +100,7 @@ public final class PauseDatanodeManager {
             } else {
                 SchemaConfig schemaConfig = entry.getValue();
                 for (Entry<String, TableConfig> tableEntry : schemaConfig.getTables().entrySet()) {
-                    LOGGER.info(new StringBuilder("lock for schema ").append(entry.getValue().getName()).append(" table config ").toString());
+                    LOGGER.info("lock for schema " + entry.getValue().getName() + " table config ");
                     TableConfig tableConfig = tableEntry.getValue();
                     for (String shardingNode : tableConfig.getShardingNodes()) {
                         if (shardingNodes.contains(shardingNode)) {
@@ -114,11 +115,7 @@ public final class PauseDatanodeManager {
     }
 
     private void addToLockSet(String schema, String table) {
-        Set<String> tableSet = this.pauseMap.get(schema);
-        if (tableSet == null) {
-            tableSet = new HashSet<>();
-            this.pauseMap.put(schema, tableSet);
-        }
+        Set<String> tableSet = this.pauseMap.computeIfAbsent(schema, k -> new HashSet<>());
         if (!tableSet.contains(table)) {
             tableSet.add(table);
         }
@@ -197,9 +194,9 @@ public final class PauseDatanodeManager {
 
 
     public boolean clusterPauseNotic(String shardingNode, int timeOut, int queueLimit) {
-        if (ClusterGeneralConfig.isUseGeneralCluster()) {
+        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().isUseZK()) {
             try {
-                uDistributeLock = new DistributeLock(ClusterPathUtil.getPauseShardingNodePath(),
+                uDistributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getPauseShardingNodePath(),
                         new PauseInfo(SystemConfig.getInstance().getInstanceId(), shardingNode, PAUSE, timeOut, queueLimit).toString());
                 if (!uDistributeLock.acquire()) {
                     return false;
@@ -217,8 +214,7 @@ public final class PauseDatanodeManager {
 
 
     public boolean waitForCluster(ManagerConnection c, long beginTime, long timeOut) throws Exception {
-
-        if (ClusterGeneralConfig.isUseGeneralCluster()) {
+        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().isUseZK()) {
             Map<String, String> expectedMap = ClusterToXml.getOnlineMap();
             StringBuffer sb = new StringBuffer();
             for (; ; ) {
@@ -244,7 +240,7 @@ public final class PauseDatanodeManager {
 
 
     public void resumeCluster() throws Exception {
-        if (ClusterGeneralConfig.isUseGeneralCluster()) {
+        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().isUseZK()) {
             ClusterHelper.setKV(ClusterPathUtil.getPauseResumePath(),
                     new PauseInfo(SystemConfig.getInstance().getInstanceId(), " ", PauseInfo.RESUME, 0, 0).toString());
 
@@ -262,7 +258,7 @@ public final class PauseDatanodeManager {
 
     }
 
-    private DistributeLock getuDistributeLock() {
+    private ClusterGeneralDistributeLock getuDistributeLock() {
         return uDistributeLock;
     }
 

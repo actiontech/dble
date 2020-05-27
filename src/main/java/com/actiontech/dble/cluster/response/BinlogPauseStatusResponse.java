@@ -47,29 +47,23 @@ public class BinlogPauseStatusResponse implements ClusterXmlLoader {
             LOGGER.info("start pause for binlog status");
             boolean isPaused = ShowBinlogStatus.waitAllSession();
             if (!isPaused) {
-                cleanResource();
+                ClusterHelper.cleanBackupLocked();
                 ClusterHelper.setKV(ClusterPathUtil.getBinlogPauseStatusSelf(), "Error can't wait all session finished ");
                 return;
             }
             try {
                 ClusterHelper.setKV(ClusterPathUtil.getBinlogPauseStatusSelf(), ClusterPathUtil.SUCCESS);
             } catch (Exception e) {
-                cleanResource();
+                ClusterHelper.cleanBackupLocked();
                 LOGGER.warn("create binlogPause instance failed", e);
             }
         } else if (pauseInfo.getStatus() == BinlogPause.BinlogPauseStatus.OFF) {
             LOGGER.info("clean resource for binlog status finish");
             //step 3 if the flag is off than try to unlock the commit
-            cleanResource();
+            ClusterHelper.cleanBackupLocked();
         }
     }
 
-
-    private synchronized void cleanResource() {
-        if (DbleServer.getInstance().getBackupLocked() != null) {
-            DbleServer.getInstance().getBackupLocked().compareAndSet(true, false);
-        }
-    }
 
     @Override
     public void notifyCluster() throws Exception {

@@ -6,12 +6,12 @@
 package com.actiontech.dble.server;
 
 import com.actiontech.dble.DbleServer;
+import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.BinlogPause;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.DDLInfo;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.singleton.ProxyMeta;
-import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.actiontech.dble.util.ZKUtils;
@@ -54,7 +54,7 @@ public class OfflineStatusListener implements PathChildrenCacheListener {
     }
 
     private void releaseForDDL(String crashNode) {
-        String ddlPath = KVPathUtil.getDDLPath();
+        String ddlPath = ClusterPathUtil.getDDLPath();
         CuratorFramework zkConn = ZKUtils.getConnection();
         try {
             List<String> ddlList = zkConn.getChildren().forPath(ddlPath);
@@ -87,7 +87,7 @@ public class OfflineStatusListener implements PathChildrenCacheListener {
     }
 
     private void releaseForBinlog(String crashNode) {
-        String binlogStatusPath = KVPathUtil.getBinlogPauseStatus();
+        String binlogStatusPath = ClusterPathUtil.getBinlogPauseStatus();
         CuratorFramework zkConn = ZKUtils.getConnection();
         try {
             byte[] binlogStatusData = zkConn.getData().forPath(binlogStatusPath);
@@ -100,8 +100,7 @@ public class OfflineStatusListener implements PathChildrenCacheListener {
                 return;
             }
             if (BinlogPause.BinlogPauseStatus.ON == binlogPauseInfo.getStatus()) {
-                //ClusterParamCfg.CLUSTER_CFG_MYID
-                String instancePath = ZKPaths.makePath(KVPathUtil.getBinlogPauseInstance(), SystemConfig.getInstance().getInstanceId());
+                String instancePath = ZKPaths.makePath(binlogStatusPath, SystemConfig.getInstance().getInstanceId());
                 boolean needDelete = true;
                 long beginTime = TimeUtil.currentTimeMillis();
                 long timeout = ClusterConfig.getInstance().getShowBinlogStatusTimeout();

@@ -25,7 +25,7 @@ import java.io.File;
 public class XmlUserLoader implements ClusterXmlLoader {
     private static final Logger LOGGER = LoggerFactory.getLogger(XmlUserLoader.class);
     private static final String USER_XML_PATH = "user.xml";
-    private static final String CONFIG_PATH = ClusterPathUtil.getConfUserPath();
+    private static final String CONFIG_PATH = ClusterPathUtil.getUserConfPath();
     private final Gson gson;
     private XmlProcessBase xmlParseBase;
 
@@ -49,7 +49,7 @@ public class XmlUserLoader implements ClusterXmlLoader {
         //the config Value in ucore is an all in one json config of the user.xml
         Users users = ClusterHelper.parseUserJsonToBean(gson, configValue.getValue());
 
-        String path = ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.UCORE_LOCAL_WRITE_PATH);
+        String path = ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH);
         path = new File(path).getPath() + File.separator + USER_XML_PATH;
 
         LOGGER.info("notifyProcess ucore to object writePath :" + path);
@@ -62,7 +62,7 @@ public class XmlUserLoader implements ClusterXmlLoader {
 
     @Override
     public void notifyCluster() throws Exception {
-        String path = ClusterPathUtil.UCORE_LOCAL_WRITE_PATH + USER_XML_PATH;
+        String path = ClusterPathUtil.LOCAL_WRITE_PATH + USER_XML_PATH;
         String json = ClusterHelper.parseUserXmlFileToJson(xmlParseBase, gson, path);
         ClusterHelper.setKV(CONFIG_PATH, json);
     }

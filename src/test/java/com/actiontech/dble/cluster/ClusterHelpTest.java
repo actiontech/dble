@@ -34,8 +34,8 @@ public class ClusterHelpTest {
 
     @Test
     public void testShardingXml() throws Exception {
-        String READ_PATH = ClusterPathUtil.UCORE_LOCAL_WRITE_PATH + "sharding_template.xml";
-        String originXml = loadOriginXml(ClusterPathUtil.UCORE_LOCAL_WRITE_PATH + "sharding.dtd", READ_PATH);
+        String READ_PATH = ClusterPathUtil.LOCAL_WRITE_PATH + "sharding_template.xml";
+        String originXml = loadOriginXml(ClusterPathUtil.LOCAL_WRITE_PATH + "sharding.dtd", READ_PATH);
         XmlProcessBase xmlProcess = new XmlProcessBase();
         xmlProcess.addParseClass(Shardings.class);
         xmlProcess.initJaxbClass();
@@ -51,8 +51,8 @@ public class ClusterHelpTest {
 
     @Test
     public void testDXml() throws Exception {
-        String READ_PATH = ClusterPathUtil.UCORE_LOCAL_WRITE_PATH + "db_template.xml";
-        String originXml = loadOriginXml(ClusterPathUtil.UCORE_LOCAL_WRITE_PATH + "db.dtd", READ_PATH);
+        String READ_PATH = ClusterPathUtil.LOCAL_WRITE_PATH + "db_template.xml";
+        String originXml = loadOriginXml(ClusterPathUtil.LOCAL_WRITE_PATH + "db.dtd", READ_PATH);
         XmlProcessBase xmlProcess = new XmlProcessBase();
         xmlProcess.addParseClass(DbGroups.class);
         xmlProcess.initJaxbClass();
@@ -66,8 +66,8 @@ public class ClusterHelpTest {
 
     @Test
     public void testUserXml() throws Exception {
-        String READ_PATH = ClusterPathUtil.UCORE_LOCAL_WRITE_PATH + "user_template.xml";
-        String originXml = loadOriginXml(ClusterPathUtil.UCORE_LOCAL_WRITE_PATH + "user.dtd", READ_PATH);
+        String READ_PATH = ClusterPathUtil.LOCAL_WRITE_PATH + "user_template.xml";
+        String originXml = loadOriginXml(ClusterPathUtil.LOCAL_WRITE_PATH + "user.dtd", READ_PATH);
         XmlProcessBase xmlProcess = new XmlProcessBase();
         xmlProcess.addParseClass(Users.class);
         xmlProcess.initJaxbClass();

@@ -47,7 +47,7 @@ public class XmlDbLoader implements ClusterXmlLoader {
         }
         DbGroups dbs = ClusterHelper.parseDbGroupsJsonToBean(gson, configValue.getValue());
 
-        String path = ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.UCORE_LOCAL_WRITE_PATH);
+        String path = ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH);
         path = new File(path).getPath() + File.separator + DB_XML_PATH;
 
         LOGGER.info("notifyProcess ucore to xml write Path :" + path);
@@ -60,7 +60,7 @@ public class XmlDbLoader implements ClusterXmlLoader {
 
     @Override
     public void notifyCluster() throws Exception {
-        String path = ClusterPathUtil.UCORE_LOCAL_WRITE_PATH + DB_XML_PATH;
+        String path = ClusterPathUtil.LOCAL_WRITE_PATH + DB_XML_PATH;
         String json = ClusterHelper.parseDbGroupXmlFileToJson(xmlParseBase, gson, path);
         ClusterHelper.setKV(CONFIG_PATH, json);
     }

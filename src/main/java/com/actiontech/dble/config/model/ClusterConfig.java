@@ -153,4 +153,7 @@ public final class ClusterConfig {
         return props;
     }
 
+    public boolean isUseZK() {
+        return CONFIG_MODE_ZK.equals(ClusterConfig.getInstance().getClusterMode());
+    }
 }

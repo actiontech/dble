@@ -62,7 +62,7 @@ public class ViewChildResponse implements ClusterXmlLoader {
                 } else if (Repository.UPDATE.equals(optionType)) {
                     LOGGER.info("update view " + configValue.getKey() + " " + configValue.getValue() + " " + configValue.getChangeType());
                     ClusterDelayProvider.delayBeforeReponseGetView();
-                    String stmt = ClusterHelper.getKV(ClusterPathUtil.getViewPath() + SEPARATOR + schema + Repository.SCHEMA_VIEW_SPLIT + viewName).getValue();
+                    String stmt = ClusterHelper.getKV(ClusterPathUtil.getViewPath(schema, viewName)).getValue();
                     if (ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().get(viewName) != null &&
                             stmt.equals(ProxyMeta.getInstance().getTmManager().getCatalogs().get(schema).getViewMetas().get(viewName).getCreateSql())) {
                         ClusterDelayProvider.delayBeforeReponseView();

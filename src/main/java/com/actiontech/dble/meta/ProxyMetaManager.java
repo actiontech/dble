@@ -17,9 +17,7 @@ import com.actiontech.dble.backend.mysql.view.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.view.KVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.Repository;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.cluster.*;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.zktoxml.listen.DbGroupResponseListener;
@@ -36,14 +34,10 @@ import com.actiontech.dble.meta.table.ServerMetaHandler;
 import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
-import com.actiontech.dble.singleton.DistrbtLockManager;
-import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.ZKUtils;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.utils.ZKPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -313,65 +307,67 @@ public class ProxyMetaManager {
 
     public void init(ServerConfig config) throws Exception {
         LOGGER.info("init metaData start");
-        if (ClusterGeneralConfig.isUseZK()) {
-            this.metaZKinit(config);
-        } else {
-            initMeta(config);
-        }
+        tryAddSyncMetaLock();
+        initMeta(config);
+        releaseSyncMetaLock();
         LOGGER.info("init metaData end");
     }
 
-    private void metaZKinit(ServerConfig config) throws Exception {
-        //add syncMeta.lock the other DDL will wait
-        boolean createSuccess = false;
-        int times = 0;
-        while (!createSuccess) {
-            try {
-                //syncMeta LOCK ,if another server start, it may failed
-                ZKUtils.createTempNode(KVPathUtil.getSyncMetaLockPath());
-                createSuccess = true;
-            } catch (Exception e) {
+    private void tryAddSyncMetaLock() throws Exception {
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            DistributeLock lock;
+            if (ClusterConfig.getInstance().isUseZK()) {
+                lock = new ZkDistributeLock(ZKUtils.getConnection(), ClusterPathUtil.getSyncMetaLockPath());
+            } else {
+                lock = new ClusterGeneralDistributeLock(ClusterPathUtil.getSyncMetaLockPath(), String.valueOf(System.currentTimeMillis()));
+            }
+            int times = 0;
+            while (!lock.acquire()) {
+                if (times % 60 == 0) {
+                    LOGGER.info("tryAddSyncMetaLock failed");
+                    times = 0;
+                }
+                times++;
+            }
+            DistributeLockManager.addLock(lock);
+            times = 0;
+            String ddlPath = ClusterPathUtil.getDDLPath();
+            while (ClusterHelper.getChildrenSize(ddlPath) > 0) {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
                 if (times % 60 == 0) {
-                    LOGGER.info("createTempNode syncMeta.lock failed", e);
+                    LOGGER.info("waiting for DDL in " + ddlPath);
                     times = 0;
                 }
                 times++;
             }
         }
-        String ddlPath = KVPathUtil.getDDLPath();
-        CuratorFramework zkConn = ZKUtils.getConnection();
-        //WAIT DDL PATH HAS NOT CHILD
-        times = 0;
-        while (zkConn.getChildren().forPath(ddlPath).size() > 0) {
-            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-            if (times % 60 == 0) {
-                LOGGER.info("waiting for DDL in " + ddlPath);
-                times = 0;
+    }
+
+    private void releaseSyncMetaLock() throws Exception {
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            if (ClusterConfig.getInstance().isUseZK()) {
+                //add watcher
+                ZKUtils.addChildPathCache(ClusterPathUtil.getDDLPath(), new DDLChildListener());
+                //add tow ha status && ha lock watcher
+                if (ClusterConfig.getInstance().isNeedSyncHa()) {
+                    ZKUtils.addChildPathCache(ClusterPathUtil.getHaStatusPath(), new DbGroupStatusListener());
+                    ZKUtils.addChildPathCache(ClusterPathUtil.getHaResponsePath(), new DbGroupResponseListener());
+                }
+                //add watcher
+                ZKUtils.addViewPathCache(ClusterPathUtil.getViewPath(), new ViewChildListener());
             }
-            times++;
+            // syncMeta UNLOCK
+            DistributeLockManager.releaseLock(ClusterPathUtil.getSyncMetaLockPath());
         }
-
-        initMeta(config);
-
-        //add watcher
-        ZKUtils.addChildPathCache(ddlPath, new DDLChildListener());
-        //add tow ha status && ha lock watcher
-        if (ClusterConfig.getInstance().isNeedSyncHa()) {
-            ZKUtils.addChildPathCache(KVPathUtil.getHaStatusPath(), new DbGroupStatusListener());
-            ZKUtils.addChildPathCache(KVPathUtil.getHaResponsePath(), new DbGroupResponseListener());
-        }
-        //add watcher
-        ZKUtils.addViewPathCache(KVPathUtil.getViewPath(), new ViewChildListener());
-        // syncMeta UNLOCK
-        zkConn.delete().forPath(KVPathUtil.getSyncMetaLockPath());
     }
 
     private void initViewMeta() {
-        if (ClusterGeneralConfig.isUseZK()) {
-            loadViewFromKV();
-        } else if (ClusterGeneralConfig.isUseGeneralCluster()) {
-            loadViewFromCKV();
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            if (ClusterConfig.getInstance().isUseZK()) {
+                loadViewFromKV();
+            } else {
+                loadViewFromCKV();
+            }
         } else {
             loadViewFromFile();
         }
@@ -545,67 +541,76 @@ public class ProxyMetaManager {
     }
 
     public void notifyClusterDDL(String schema, String table, String sql) throws Exception {
-        if (ClusterGeneralConfig.isUseZK()) {
-            String nodeName = StringUtil.getFullName(schema, table);
-            String ddlPath = KVPathUtil.getDDLPath();
-            String nodePath = ZKPaths.makePath(ddlPath, nodeName);
-            CuratorFramework zkConn = ZKUtils.getConnection();
-            if (zkConn.checkExists().forPath(KVPathUtil.getSyncMetaLockPath()) != null || zkConn.checkExists().forPath(nodePath) != null) {
-                String msg = "The metaLock about `" + nodeName + "` is exists. It means other instance is doing DDL.";
-                LOGGER.info(msg + " The path of DDL is " + ddlPath);
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            if (DistributeLockManager.isLooked(ClusterPathUtil.getSyncMetaLockPath())) {
+                String msg = "There is another instance init meta data, try it later.";
                 throw new Exception(msg);
             }
-
             DDLInfo ddlInfo = new DDLInfo(schema, sql, SystemConfig.getInstance().getInstanceId(), DDLInfo.DDLStatus.INIT, DDLInfo.DDLType.UNKNOWN);
-            zkConn.create().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
-            ClusterDelayProvider.delayAfterDdlLockMeta();
-        } else if (ClusterGeneralConfig.isUseGeneralCluster()) {
-            DDLInfo ddlInfo = new DDLInfo(schema, sql, SystemConfig.getInstance().getInstanceId(), DDLInfo.DDLStatus.INIT, DDLInfo.DDLType.UNKNOWN);
-            String nodeName = StringUtil.getUFullName(schema, table);
-            String ddlLockPath = ClusterPathUtil.getDDLLockPath(nodeName);
-            DistributeLock lock = new DistributeLock(ddlLockPath, ddlInfo.toString());
+            String tableFullName = StringUtil.getUFullName(schema, table);
+            String tableDDLPath = ClusterPathUtil.getDDLPath(tableFullName);
+            String ddlLockPath = ClusterPathUtil.getDDLLockPath(tableFullName);
+            DistributeLock lock;
+            if (ClusterConfig.getInstance().isUseZK()) {
+                lock = new ZkDistributeLock(ZKUtils.getConnection(), ddlLockPath);
+            } else {
+                lock = new ClusterGeneralDistributeLock(ddlLockPath, ddlInfo.toString());
+            }
             if (!lock.acquire()) {
-                String msg = "The metaLock about `" + nodeName + "` is exists. It means other instance is doing DDL.";
-                LOGGER.info(msg + " The path of DDL is " + ddlLockPath);
+                String msg = "The metaLock about `" + tableFullName + "` is exists. It means other instance is doing DDL.";
+                LOGGER.info(msg + " The path of DDL is " + tableDDLPath);
                 throw new Exception(msg);
             }
+            DistributeLockManager.addLock(lock);
             ClusterDelayProvider.delayAfterDdlLockMeta();
-            DistrbtLockManager.addLock(lock);
-            ClusterHelper.setKV(ClusterPathUtil.getDDLPath(nodeName), ddlInfo.toString());
+            ClusterHelper.setKV(tableDDLPath, ddlInfo.toString());
         }
     }
 
     public void notifyResponseClusterDDL(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, DDLInfo.DDLType ddlType, boolean needNotifyOther) throws Exception {
         ClusterDelayProvider.delayAfterDdlExecuted();
-        if (ClusterGeneralConfig.isUseZK()) {
-            notifyResponseZKDdl(schema, table, sql, ddlStatus, ddlType, needNotifyOther);
-        } else if (ClusterGeneralConfig.isUseGeneralCluster()) {
-            notifyResponseUcoreDDL(schema, table, sql, ddlStatus, ddlType, needNotifyOther);
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            if (ClusterConfig.getInstance().isUseZK()) {
+                notifyResponseZKDdl(schema, table, sql, ddlStatus, ddlType, needNotifyOther);
+            } else {
+                notifyResponseUcoreDDL(schema, table, sql, ddlStatus, ddlType, needNotifyOther);
+            }
         }
     }
 
     private void notifyResponseZKDdl(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, DDLInfo.DDLType ddlType, boolean needNotifyOther) throws Exception {
-        String nodeName = StringUtil.getFullName(schema, table);
-        String nodePath = ZKPaths.makePath(KVPathUtil.getDDLPath(), nodeName);
-        String instancePath = ZKPaths.makePath(nodePath, KVPathUtil.DDL_INSTANCE);
+        String tableFullName = StringUtil.getFullName(schema, table);
+        String tableDDLPath = ClusterPathUtil.getDDLPath(tableFullName);
         String thisNode = SystemConfig.getInstance().getInstanceId();
-        ZKUtils.createTempNode(instancePath, thisNode);
+        ZKUtils.createTempNode(tableDDLPath, thisNode);
 
         if (needNotifyOther) {
-            CuratorFramework zkConn = ZKUtils.getConnection();
-            DDLInfo ddlInfo = new DDLInfo(schema, sql, SystemConfig.getInstance().getInstanceId(), ddlStatus, ddlType);
-            ClusterDelayProvider.delayBeforeDdlNotice();
-            zkConn.setData().forPath(nodePath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
-            ClusterDelayProvider.delayAfterDdlNotice();
-            while (true) {
-                List<String> preparedList = zkConn.getChildren().forPath(instancePath);
-                List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
-                if (preparedList.size() >= onlineList.size()) {
-                    ClusterDelayProvider.delayBeforeDdlNoticeDeleted();
-                    zkConn.delete().deletingChildrenIfNeeded().forPath(nodePath);
-                    break;
+            try {
+                CuratorFramework zkConn = ZKUtils.getConnection();
+                DDLInfo ddlInfo = new DDLInfo(schema, sql, SystemConfig.getInstance().getInstanceId(), ddlStatus, ddlType);
+                ClusterDelayProvider.delayBeforeDdlNotice();
+                zkConn.setData().forPath(tableDDLPath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
+                ClusterDelayProvider.delayAfterDdlNotice();
+                while (true) {
+                    List<String> preparedList = zkConn.getChildren().forPath(tableDDLPath);
+                    List<String> onlineList = zkConn.getChildren().forPath(ClusterPathUtil.getOnlinePath());
+                    if (preparedList.size() >= onlineList.size()) {
+                        ClusterDelayProvider.delayBeforeDdlNoticeDeleted();
+                        zkConn.delete().deletingChildrenIfNeeded().forPath(tableDDLPath);
+                        break;
+                    }
+                    LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
                 }
-                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
+            } finally {
+                ClusterDelayProvider.delayBeforeDdlNoticeDeleted();
+                try {
+                    ZKUtils.getConnection().delete().deletingChildrenIfNeeded().forPath(tableDDLPath);
+                } catch (Exception e) {
+                    LOGGER.warn("delete zk path failed:" + tableDDLPath);
+                }
+                //release the lock
+                ClusterDelayProvider.delayBeforeDdlLockRelease();
+                DistributeLockManager.releaseLock(ClusterPathUtil.getDDLLockPath(tableFullName));
             }
         }
     }
@@ -642,7 +647,7 @@ public class ProxyMetaManager {
                 ClusterHelper.cleanPath(ClusterPathUtil.getDDLPath(nodeName));
                 //release the lock
                 ClusterDelayProvider.delayBeforeDdlLockRelease();
-                DistrbtLockManager.releaseLock(ClusterPathUtil.getDDLLockPath(nodeName));
+                DistributeLockManager.releaseLock(ClusterPathUtil.getDDLLockPath(nodeName));
             }
         }
 

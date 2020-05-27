@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.config.loader.zkprocess.zktoxml;
 
+import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZookeeperProcessListen;
 import com.actiontech.dble.config.loader.zkprocess.parse.XmlProcessBase;
 import com.actiontech.dble.config.loader.zkprocess.xmltozk.XmltoZkMain;
@@ -65,10 +66,7 @@ public final class ZktoXmlMain {
         // load sequence
         new SequenceTopropertiesLoader(zkListen, zkConn);
 
-        // load ehcache
-        new EcacheszkToxmlLoader(zkListen, zkConn, xmlProcess);
-
-        ZKUtils.addChildPathCache(KVPathUtil.getOnlinePath(), new OfflineStatusListener());
+        ZKUtils.addChildPathCache(ClusterPathUtil.getOnlinePath(), new OfflineStatusListener());
 
         new BinlogPauseStatusListener(zkListen, zkConn);
 

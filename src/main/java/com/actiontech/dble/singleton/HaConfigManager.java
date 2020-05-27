@@ -3,7 +3,7 @@ package com.actiontech.dble.singleton;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.HaChangeStatus;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
-import com.actiontech.dble.config.loader.console.ZookeeperPath;
+import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.loader.zkprocess.entity.DbGroups;
 import com.actiontech.dble.config.loader.zkprocess.entity.dbGroups.DBGroup;
 import com.actiontech.dble.config.loader.zkprocess.entity.dbGroups.DBInstance;
@@ -76,7 +76,7 @@ public final class HaConfigManager {
         lock.readLock().lock();
         try {
             if (reloadIndex.get() == reloadId) {
-                String path = ResourceUtil.getResourcePathFromRoot(ZookeeperPath.ZK_LOCAL_WRITE_PATH.getKey());
+                String path = ResourceUtil.getResourcePathFromRoot(ClusterPathUtil.LOCAL_WRITE_PATH);
                 path = new File(path).getPath() + File.separator + WRITE_PATH;
                 this.xmlProcess.safeParseWriteToXml(dbs, path, "db");
             } else {

@@ -1,11 +1,16 @@
-package com.actiontech.dble.singleton;
+/*
+ * Copyright (C) 2016-2020 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 
-import com.actiontech.dble.cluster.AbstractClusterSender;
+package com.actiontech.dble.cluster;
+
 import com.actiontech.dble.cluster.impl.UcoreSender;
 import com.actiontech.dble.cluster.impl.ushard.UshardSender;
 import com.actiontech.dble.cluster.kVtoXml.ClusterToXml;
 import com.actiontech.dble.config.loader.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.model.ClusterConfig;
+import com.actiontech.dble.singleton.OnlineStatus;
 
 import java.io.IOException;
 
@@ -96,14 +101,5 @@ public final class ClusterGeneralConfig {
         return INSTANCE;
     }
 
-
-    public static boolean isUseGeneralCluster() {
-        return ClusterConfig.getInstance().isClusterEnable() &&
-                !CONFIG_MODE_ZK.equals(ClusterConfig.getInstance().getClusterMode());
-    }
-
-    public static boolean isUseZK() {
-        return ClusterConfig.getInstance().isClusterEnable() && CONFIG_MODE_ZK.equals(ClusterConfig.getInstance().getClusterMode());
-    }
 
 }

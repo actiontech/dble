@@ -13,9 +13,7 @@ import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.ClusterHelper;
-import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.cluster.*;
 import com.actiontech.dble.cluster.xmltoKv.XmltoCluster;
 import com.actiontech.dble.config.ConfigInitializer;
 import com.actiontech.dble.config.ErrorCode;
@@ -23,6 +21,7 @@ import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.loader.zkprocess.xmltozk.XmltoZkMain;
 import com.actiontech.dble.config.loader.zkprocess.zktoxml.listen.ConfigStatusListener;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.ConfStatus;
+import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.ERTable;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -40,13 +39,10 @@ import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.variables.VarsExtractorHandler;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.singleton.CronScheduler;
 import com.actiontech.dble.singleton.FrontendUserManager;
-import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.utils.ZKPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,79 +80,73 @@ public final class ReloadConfig {
     }
 
     private static void execute(ManagerConnection c, final int loadAllMode) {
-        if (ClusterGeneralConfig.isUseZK()) {
-            CuratorFramework zkConn = ZKUtils.getConnection();
-            InterProcessMutex distributeLock = new InterProcessMutex(zkConn, KVPathUtil.getConfChangeLockPath());
-            try {
-                if (!distributeLock.acquire(100, TimeUnit.MILLISECONDS)) {
-                    c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rolling back, please try again later.");
-                    return;
-                }
-                LOGGER.info("reload config: added distributeLock " + KVPathUtil.getConfChangeLockPath() + " to zk");
-                ClusterDelayProvider.delayAfterReloadLock();
-                try {
-                    if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, ConfStatus.Status.RELOAD_ALL)) {
-                        writeErrorResult(c, "Reload status error ,other client or cluster may in reload");
-                        return;
-                    }
-                    reloadWithZookeeper(loadAllMode, zkConn, c);
-                } finally {
-                    distributeLock.release();
-                    LOGGER.info("reload config: release distributeLock " + KVPathUtil.getConfChangeLockPath() + " from zk");
-                }
-            } catch (Exception e) {
-                LOGGER.info("reload config using ZK failure", e);
-                writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
-            }
-        } else if (ClusterGeneralConfig.isUseGeneralCluster()) {
-            DistributeLock distributeLock = new DistributeLock(ClusterPathUtil.getConfChangeLockPath(),
-                    SystemConfig.getInstance().getInstanceId());
-            try {
-                if (!distributeLock.acquire()) {
-                    c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rolling back, please try again later.");
-                    return;
-                }
-                LOGGER.info("reload config: added distributeLock " + ClusterPathUtil.getConfChangeLockPath() + " to ucore");
-                ClusterDelayProvider.delayAfterReloadLock();
-                try {
-                    if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, ConfStatus.Status.RELOAD_ALL)) {
-                        writeErrorResult(c, "Reload status error ,other client or cluster may in reload");
-                        return;
-                    }
-                    reloadWithUcore(loadAllMode, c);
-                } finally {
-                    distributeLock.release();
-                    LOGGER.info("reload config: release distributeLock " + ClusterPathUtil.getConfChangeLockPath() + " from ucore");
-                }
-            } catch (Exception e) {
-                LOGGER.info("reload config failure using ucore", e);
-                writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
-            }
-
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            if (reloadWithCluster(c, loadAllMode)) return;
         } else {
-            final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
-            lock.writeLock().lock();
-            try {
-                try {
-                    if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, ConfStatus.Status.RELOAD_ALL)) {
-                        writeErrorResult(c, "Reload status error ,other client or cluster may in reload");
-                        return;
-                    }
-                    if (reloadAll(loadAllMode)) {
-                        writeOKResult(c);
-                    } else {
-                        writeSpecialError(c, "Reload interruputed by others,metadata should be reload");
-                    }
-                } catch (Exception e) {
-                    LOGGER.info("reload error", e);
-                    writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
-                }
-            } finally {
-                lock.writeLock().unlock();
-            }
+            if (reloadWithoutCluster(c, loadAllMode)) return;
         }
 
         ReloadManager.reloadFinish();
+    }
+
+    private static boolean reloadWithCluster(ManagerConnection c, int loadAllMode) {
+        DistributeLock distributeLock;
+        if (ClusterConfig.getInstance().isUseZK()) {
+            distributeLock = new ZkDistributeLock(ZKUtils.getConnection(), ClusterPathUtil.getConfChangeLockPath());
+        } else {
+            distributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getConfChangeLockPath(),
+                    SystemConfig.getInstance().getInstanceId());
+        }
+        try {
+            if (!distributeLock.acquire()) {
+                c.writeErrMessage(ErrorCode.ER_YES, "Other instance is reloading/rolling back, please try again later.");
+                return true;
+            }
+            LOGGER.info("reload config: added distributeLock " + ClusterPathUtil.getConfChangeLockPath() + "");
+            ClusterDelayProvider.delayAfterReloadLock();
+            try {
+                if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, ConfStatus.Status.RELOAD_ALL)) {
+                    writeErrorResult(c, "Reload status error ,other client or cluster may in reload");
+                    return true;
+                }
+                if (ClusterConfig.getInstance().isUseZK()) {
+                    reloadWithZookeeper(loadAllMode, ZKUtils.getConnection(), c);
+                } else {
+                    reloadWithUcore(loadAllMode, c);
+                }
+            } finally {
+                distributeLock.release();
+                LOGGER.info("reload config: release distributeLock " + ClusterPathUtil.getConfChangeLockPath() + " from ucore");
+            }
+        } catch (Exception e) {
+            LOGGER.info("reload config failure using ucore", e);
+            writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
+        }
+        return false;
+    }
+
+    private static boolean reloadWithoutCluster(ManagerConnection c, int loadAllMode) {
+        final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
+        lock.writeLock().lock();
+        try {
+            try {
+                if (!ReloadManager.startReload(TRIGGER_TYPE_COMMAND, ConfStatus.Status.RELOAD_ALL)) {
+                    writeErrorResult(c, "Reload status error ,other client or cluster may in reload");
+                    return true;
+                }
+                if (reloadAll(loadAllMode)) {
+                    writeOKResult(c);
+                } else {
+                    writeSpecialError(c, "Reload interruputed by others,metadata should be reload");
+                }
+            } catch (Exception e) {
+                LOGGER.info("reload error", e);
+                writeErrorResult(c, e.getMessage() == null ? e.toString() : e.getMessage());
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+        return false;
     }
 
     private static void reloadWithUcore(final int loadAllMode, ManagerConnection c) {
@@ -219,32 +209,32 @@ public final class ReloadConfig {
             XmltoZkMain.writeConfFileToZK(loadAllMode);
             ReloadLogHelper.info("reload config: sent config status to zk", LOGGER);
             //tell zk this instance has prepared
-            ZKUtils.createTempNode(KVPathUtil.getConfStatusPath(), SystemConfig.getInstance().getInstanceId(),
+            ZKUtils.createTempNode(ClusterPathUtil.getConfStatusPath(), SystemConfig.getInstance().getInstanceId(),
                     ConfigStatusListener.SUCCESS.getBytes(StandardCharsets.UTF_8));
             ReloadLogHelper.info("reload config: sent finished status to zk, waiting other instances", LOGGER);
             //check all session waiting status
-            List<String> preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
-            List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
+            List<String> preparedList = zkConn.getChildren().forPath(ClusterPathUtil.getConfStatusPath());
+            List<String> onlineList = zkConn.getChildren().forPath(ClusterPathUtil.getOnlinePath());
 
             ReloadManager.waitingOthers();
             while (preparedList.size() < onlineList.size()) {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));
-                onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
-                preparedList = zkConn.getChildren().forPath(KVPathUtil.getConfStatusPath());
+                onlineList = zkConn.getChildren().forPath(ClusterPathUtil.getOnlinePath());
+                preparedList = zkConn.getChildren().forPath(ClusterPathUtil.getConfStatusPath());
             }
 
             ReloadLogHelper.info("reload config: all instances finished ", LOGGER);
             ClusterDelayProvider.delayBeforeDeleteReloadLock();
             StringBuilder sbErrorInfo = new StringBuilder();
             for (String child : preparedList) {
-                String childPath = ZKPaths.makePath(KVPathUtil.getConfStatusPath(), child);
+                String childPath = ZKPaths.makePath(ClusterPathUtil.getConfStatusPath(), child);
                 byte[] errorInfo = zkConn.getData().forPath(childPath);
                 if (!ConfigStatusListener.SUCCESS.equals(new String(errorInfo, StandardCharsets.UTF_8))) {
                     sbErrorInfo.append(child).append(":");
                     sbErrorInfo.append(new String(errorInfo, StandardCharsets.UTF_8));
                     sbErrorInfo.append(";");
                 }
-                zkConn.delete().forPath(ZKPaths.makePath(KVPathUtil.getConfStatusPath(), child));
+                zkConn.delete().forPath(ZKPaths.makePath(ClusterPathUtil.getConfStatusPath(), child));
             }
 
             if (sbErrorInfo.length() == 0) {

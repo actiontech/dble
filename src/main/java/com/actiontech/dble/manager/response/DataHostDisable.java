@@ -2,18 +2,16 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
+import com.actiontech.dble.cluster.ClusterGeneralDistributeLock;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.loader.zkprocess.zookeeper.process.HaInfo;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.singleton.HaConfigManager;
-import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
@@ -29,7 +27,6 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 
-import static com.actiontech.dble.util.KVPathUtil.SEPARATOR;
 
 /**
  * Created by szf on 2019/10/22.
@@ -44,7 +41,6 @@ public final class DataHostDisable {
     public static void execute(Matcher disable, ManagerConnection mc) {
         String dhName = disable.group(1);
         String subHostName = disable.group(3);
-        boolean useCluster = ClusterConfig.getInstance().isNeedSyncHa();
 
         //check the dbGroup is exists
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
@@ -63,13 +59,15 @@ public final class DataHostDisable {
             }
 
             int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.LOCAL_CHANGE, HaInfo.HaStartType.LOCAL_COMMAND, disable.group(0));
-            if (ClusterGeneralConfig.isUseGeneralCluster() && useCluster) {
-                if (!disableWithCluster(id, dh, subHostName, mc)) {
-                    return;
-                }
-            } else if (ClusterGeneralConfig.isUseZK() && useCluster) {
-                if (!disableWithZK(id, dh, subHostName, mc)) {
-                    return;
+            if (ClusterConfig.getInstance().isNeedSyncHa()) {
+                if (ClusterConfig.getInstance().isUseZK()) {
+                    if (!disableWithZK(id, dh, subHostName, mc)) {
+                        return;
+                    }
+                } else {
+                    if (!disableWithCluster(id, dh, subHostName, mc)) {
+                        return;
+                    }
                 }
             } else {
                 try {
@@ -95,7 +93,7 @@ public final class DataHostDisable {
 
     public static boolean disableWithZK(int id, PhysicalDbGroup dh, String subHostName, ManagerConnection mc) {
         CuratorFramework zkConn = ZKUtils.getConnection();
-        InterProcessMutex distributeLock = new InterProcessMutex(zkConn, KVPathUtil.getHaLockPath(dh.getGroupName()));
+        InterProcessMutex distributeLock = new InterProcessMutex(zkConn, ClusterPathUtil.getHaLockPath(dh.getGroupName()));
         try {
             boolean locked = false;
             try {
@@ -108,20 +106,20 @@ public final class DataHostDisable {
                 //local set disable
                 final String result = dh.disableHosts(subHostName, false);
                 // update total dbGroup status
-                setStatusToZK(KVPathUtil.getHaStatusPath(dh.getGroupName()), zkConn, dh.getClusterHaJson());
+                setStatusToZK(ClusterPathUtil.getHaStatusPath(dh.getGroupName()), zkConn, dh.getClusterHaJson());
                 // write out notify message ,let other dble to response
-                setStatusToZK(KVPathUtil.getHaResponsePath(dh.getGroupName()), zkConn, new HaInfo(dh.getGroupName(),
+                setStatusToZK(ClusterPathUtil.getHaResponsePath(dh.getGroupName()), zkConn, new HaInfo(dh.getGroupName(),
                         SystemConfig.getInstance().getInstanceId(),
                         HaInfo.HaType.DATAHOST_DISABLE,
                         HaInfo.HaStatus.SUCCESS
                 ).toString());
                 //write out self change success result
-                ZKUtils.createTempNode(KVPathUtil.getHaResponsePath(dh.getGroupName()), SystemConfig.getInstance().getInstanceId(),
+                ZKUtils.createTempNode(ClusterPathUtil.getHaResponsePath(dh.getGroupName()), SystemConfig.getInstance().getInstanceId(),
                         ClusterPathUtil.SUCCESS.getBytes(StandardCharsets.UTF_8));
                 //change stage into waiting others
                 HaConfigManager.getInstance().haWaitingOthers(id);
                 //use zk to waiting other dble to response
-                String errorMessage = isZKfinished(zkConn, KVPathUtil.getHaResponsePath(dh.getGroupName()));
+                String errorMessage = isZkFinished(zkConn, ClusterPathUtil.getHaResponsePath(dh.getGroupName()));
 
                 //change stage into finished
                 HaConfigManager.getInstance().haFinish(id, errorMessage, result);
@@ -133,7 +131,7 @@ public final class DataHostDisable {
                 if (locked) {
                     distributeLock.release();
                 }
-                LOGGER.info("reload config: release distributeLock " + KVPathUtil.getConfChangeLockPath() + " from zk");
+                LOGGER.info("reload config: release distributeLock " + ClusterPathUtil.getConfChangeLockPath() + " from zk");
             }
         } catch (Exception e) {
             LOGGER.info("reload config using ZK failure", e);
@@ -147,7 +145,7 @@ public final class DataHostDisable {
 
     public static boolean disableWithCluster(int id, PhysicalDbGroup dh, String subHostName, ManagerConnection mc) {
         //get the lock from ucore
-        DistributeLock distributeLock = new DistributeLock(ClusterPathUtil.getHaLockPath(dh.getGroupName()),
+        ClusterGeneralDistributeLock distributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getHaLockPath(dh.getGroupName()),
                 new HaInfo(dh.getGroupName(),
                         SystemConfig.getInstance().getInstanceId(),
                         HaInfo.HaType.DATAHOST_DISABLE,
@@ -166,18 +164,18 @@ public final class DataHostDisable {
             //update total dataSources status
             ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dh.getGroupName()), dh.getClusterHaJson());
             // update the notify value let other dble to notify
-            ClusterHelper.setKV(ClusterPathUtil.getHaLockPath(dh.getGroupName()),
+            ClusterHelper.setKV(ClusterPathUtil.getHaResponsePath(dh.getGroupName()),
                     new HaInfo(dh.getGroupName(),
                             SystemConfig.getInstance().getInstanceId(),
                             HaInfo.HaType.DATAHOST_DISABLE,
                             HaInfo.HaStatus.SUCCESS
                     ).toString());
             //write out self success message
-            ClusterHelper.setKV(ClusterPathUtil.getSelfResponsePath(ClusterPathUtil.getHaLockPath(dh.getGroupName())), ClusterPathUtil.SUCCESS);
+            ClusterHelper.setKV(ClusterPathUtil.getSelfResponsePath(ClusterPathUtil.getHaResponsePath(dh.getGroupName())), ClusterPathUtil.SUCCESS);
             //change log stage into wait others
             HaConfigManager.getInstance().haWaitingOthers(id);
             //waiting for other dble to response
-            String errorMsg = ClusterHelper.waitingForAllTheNode(ClusterPathUtil.SUCCESS, ClusterPathUtil.getHaLockPath(dh.getGroupName()) + SEPARATOR);
+            String errorMsg = ClusterHelper.waitingForAllTheNode(ClusterPathUtil.SUCCESS, ClusterPathUtil.getHaResponsePath(dh.getGroupName()) + ClusterPathUtil.SEPARATOR);
             //set  log stage to finish
             HaConfigManager.getInstance().haFinish(id, errorMsg, result);
             if (errorMsg != null) {
@@ -189,7 +187,7 @@ public final class DataHostDisable {
             HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
             return false;
         } finally {
-            ClusterHelper.cleanPath(ClusterPathUtil.getHaLockPath(dh.getGroupName()) + SEPARATOR);
+            ClusterHelper.cleanPath(ClusterPathUtil.getHaResponsePath(dh.getGroupName()) + ClusterPathUtil.SEPARATOR);
             distributeLock.release();
         }
         return true;
@@ -206,15 +204,15 @@ public final class DataHostDisable {
     }
 
 
-    public static String isZKfinished(CuratorFramework zkConn, String preparePath) {
+    public static String isZkFinished(CuratorFramework zkConn, String preparePath) {
         try {
             List<String> preparedList = zkConn.getChildren().forPath(preparePath);
-            List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
+            List<String> onlineList = zkConn.getChildren().forPath(ClusterPathUtil.getOnlinePath());
 
             StringBuilder errorMsg = new StringBuilder();
             while (preparedList.size() < onlineList.size()) {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-                onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
+                onlineList = zkConn.getChildren().forPath(ClusterPathUtil.getOnlinePath());
                 preparedList = zkConn.getChildren().forPath(preparePath);
             }
             for (String preparedNode : preparedList) {

@@ -9,9 +9,9 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.PacketUtil;
+import com.actiontech.dble.cluster.ClusterGeneralDistributeLock;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.kVtoXml.ClusterToXml;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
@@ -27,12 +27,10 @@ import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.sqlengine.OneRawSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLJob;
 import com.actiontech.dble.sqlengine.SQLQueryResult;
 import com.actiontech.dble.sqlengine.SQLQueryResultListener;
-import com.actiontech.dble.util.KVPathUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.actiontech.dble.util.ZKUtils;
@@ -83,12 +81,13 @@ public final class ShowBinlogStatus {
     private static volatile String errMsg = null;
 
     public static void execute(ManagerConnection c) {
-        boolean isUseZK = ClusterGeneralConfig.isUseZK();
         long timeout = ClusterConfig.getInstance().getShowBinlogStatusTimeout();
-        if (isUseZK) {
-            showBinlogWithZK(c, timeout);
-        } else if (ClusterGeneralConfig.isUseGeneralCluster()) {
-            showBinlogWithUcore(c, timeout);
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            if (ClusterConfig.getInstance().isUseZK()) {
+                showBinlogWithZK(c, timeout);
+            } else {
+                showBinlogWithUcore(c, timeout);
+            }
         } else {
             if (!DbleServer.getInstance().getBackupLocked().compareAndSet(false, true)) {
                 c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "There is another command is showing BinlogStatus");
@@ -110,7 +109,7 @@ public final class ShowBinlogStatus {
     private static void showBinlogWithUcore(ManagerConnection c, long timeout) {
 
         //step 1 get the distributeLock of the ucore
-        DistributeLock distributeLock = new DistributeLock(ClusterPathUtil.getBinlogPauseLockPath(), SystemConfig.getInstance().getInstanceId());
+        ClusterGeneralDistributeLock distributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getBinlogPauseLockPath(), SystemConfig.getInstance().getInstanceId());
         try {
             if (!distributeLock.acquire()) {
                 c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "There is another command is showing BinlogStatus");
@@ -173,7 +172,7 @@ public final class ShowBinlogStatus {
 
     private static void showBinlogWithZK(ManagerConnection c, long timeout) {
         CuratorFramework zkConn = ZKUtils.getConnection();
-        String lockPath = KVPathUtil.getBinlogPauseLockPath();
+        String lockPath = ClusterPathUtil.getBinlogPauseLockPath();
         InterProcessMutex distributeLock = new InterProcessMutex(zkConn, lockPath);
         try {
             //zkLock, the other instance cant't get lock before finished
@@ -187,18 +186,17 @@ public final class ShowBinlogStatus {
                 } else {
                     errMsg = null;
                     //notify zk to wait all session
-                    String binlogStatusPath = KVPathUtil.getBinlogPauseStatus();
-                    String binlogPause = KVPathUtil.getBinlogPauseInstance();
+                    String binlogStatusPath = ClusterPathUtil.getBinlogPauseStatus();
                     BinlogPause pauseOnInfo = new BinlogPause(SystemConfig.getInstance().getInstanceId(), BinlogPauseStatus.ON);
                     zkConn.setData().forPath(binlogStatusPath, pauseOnInfo.toString().getBytes(StandardCharsets.UTF_8));
                     long beginTime = TimeUtil.currentTimeMillis();
                     boolean isPaused = waitAllSession(c, timeout, beginTime);
 
                     //tell zk this instance has prepared
-                    ZKUtils.createTempNode(binlogPause, SystemConfig.getInstance().getInstanceId(), String.valueOf(isPaused).getBytes(StandardCharsets.UTF_8));
+                    ZKUtils.createTempNode(binlogStatusPath, SystemConfig.getInstance().getInstanceId(), String.valueOf(isPaused).getBytes(StandardCharsets.UTF_8));
                     //check all session waiting status
-                    List<String> preparedList = zkConn.getChildren().forPath(binlogPause);
-                    List<String> onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
+                    List<String> preparedList = zkConn.getChildren().forPath(binlogStatusPath);
+                    List<String> onlineList = zkConn.getChildren().forPath(ClusterPathUtil.getOnlinePath());
                     // TODO: While waiting, a new instance of dble is upping and working.
 
                     boolean isAllSuccess = true;
@@ -210,12 +208,12 @@ public final class ShowBinlogStatus {
                             break;
                         }
                         LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-                        onlineList = zkConn.getChildren().forPath(KVPathUtil.getOnlinePath());
-                        preparedList = zkConn.getChildren().forPath(binlogPause);
+                        onlineList = zkConn.getChildren().forPath(ClusterPathUtil.getOnlinePath());
+                        preparedList = zkConn.getChildren().forPath(binlogStatusPath);
                     }
                     if (isAllSuccess) {
                         for (String preparedNode : preparedList) {
-                            String preparePath = ZKPaths.makePath(binlogPause, preparedNode);
+                            String preparePath = ZKPaths.makePath(binlogStatusPath, preparedNode);
                             byte[] resultStatus = zkConn.getData().forPath(preparePath);
                             String data = new String(resultStatus, StandardCharsets.UTF_8);
                             if (!Boolean.parseBoolean(data)) {
@@ -229,10 +227,10 @@ public final class ShowBinlogStatus {
                     writeResponse(c);
                     BinlogPause pauseOffInfo = new BinlogPause(SystemConfig.getInstance().getInstanceId(), BinlogPauseStatus.OFF);
                     zkConn.setData().forPath(binlogStatusPath, pauseOffInfo.toString().getBytes(StandardCharsets.UTF_8));
-                    zkConn.delete().forPath(ZKPaths.makePath(binlogPause, SystemConfig.getInstance().getInstanceId()));
-                    List<String> releaseList = zkConn.getChildren().forPath(binlogPause);
+                    zkConn.delete().forPath(ZKPaths.makePath(binlogStatusPath, SystemConfig.getInstance().getInstanceId()));
+                    List<String> releaseList = zkConn.getChildren().forPath(binlogStatusPath);
                     while (releaseList.size() != 0) {
-                        releaseList = zkConn.getChildren().forPath(binlogPause);
+                        releaseList = zkConn.getChildren().forPath(binlogStatusPath);
                         LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
                     }
                 }

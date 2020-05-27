@@ -8,7 +8,6 @@ package com.actiontech.dble.cluster;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ParameterMapping;
-import com.actiontech.dble.singleton.ClusterGeneralConfig;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.base.Strings;

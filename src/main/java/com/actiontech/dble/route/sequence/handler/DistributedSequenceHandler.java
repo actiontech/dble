@@ -66,7 +66,6 @@ public class DistributedSequenceHandler implements Closeable, SequenceHandler {
     private ThreadLocal<Long> threadLastTime = new ThreadLocal<>();
     private ThreadLocal<Long> threadID = new ThreadLocal<>();
     private long nextID = 0L;
-    private static final String PATH = KVPathUtil.getSequencesPath();
     private static final String INSTANCE_PATH = KVPathUtil.getSequencesInstancePath();
     private volatile boolean ready = false;
     private long startTimeMilliseconds = DEFAULT_START_TIMESTAMP;
@@ -132,7 +131,7 @@ public class DistributedSequenceHandler implements Closeable, SequenceHandler {
 
         try {
             String slavePath = client.create().creatingParentsIfNeeded().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).
-                    forPath(PATH.concat("/instance/node"), "ready".getBytes());
+                    forPath(INSTANCE_PATH.concat("/node"), "ready".getBytes());
             String tempInstanceId = slavePath.substring(slavePath.length() - 10, slavePath.length());
             instanceId = Long.parseLong(tempInstanceId) & ((1 << instanceIdBits) - 1);
             ready = true;

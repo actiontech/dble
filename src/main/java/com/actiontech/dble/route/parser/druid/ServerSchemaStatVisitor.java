@@ -254,18 +254,8 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
             return true;
         }
 
-        Condition condition = null;
-        for (Condition item : this.getConditions()) {
-            if (item.getColumn().equals(column) && item.getOperator().equalsIgnoreCase("between")) {
-                condition = item;
-                break;
-            }
-        }
-
-        if (condition == null) {
-            condition = new Condition(column, "between");
-            this.conditions.add(condition);
-        }
+        Condition condition = new Condition(column, "between");
+        this.conditions.add(condition);
 
 
         condition.getValues().add(begin);
@@ -453,21 +443,8 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
         Column column = this.getColumn(expr);
         if (column != null) {
-            Condition condition = null;
-            Iterator var6 = this.getConditions().iterator();
-
-            while (var6.hasNext()) {
-                Condition item = (Condition) var6.next();
-                if (item.getColumn().equals(column) && item.getOperator().equals(operator)) {
-                    condition = item;
-                    break;
-                }
-            }
-
-            if (condition == null) {
-                condition = new Condition(column, operator);
-                this.conditions.add(condition);
-            }
+            Condition condition = new Condition(column, operator);
+            this.conditions.add(condition);
 
             SQLExpr[] var12 = valueExprs;
             int var13 = valueExprs.length;

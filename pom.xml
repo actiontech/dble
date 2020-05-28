@@ -20,7 +20,6 @@
         <version.template.file>version.txt.template</version.template.file>
         <version.file>version.txt</version.file>
         <config.version>3.0</config.version>
-        <server.comment>dble Server (ActionTech)</server.comment>
         <project.build.sourceEncoding>
             UTF-8
         </project.build.sourceEncoding>
@@ -420,22 +419,6 @@
                                 <replacement>
                                     <token>@config_version@</token>
                                     <value>${config.version}</value>
-                                </replacement>
-                                <replacement>
-                                    <token>@version-comment@</token>
-                                    <value>${server.comment}</value>
-                                </replacement>
-                                <replacement>
-                                    <token>@annotation-name@</token>
-                                    <value>dble:</value>
-                                </replacement>
-                                <replacement>
-                                    <token>@root_prefix@</token>
-                                    <value>dble</value>
-                                </replacement>
-                                <replacement>
-                                    <token>@domain@</token>
-                                    <value>http://dble.cloud/</value>
                                 </replacement>
                             </replacements>
                         </configuration>

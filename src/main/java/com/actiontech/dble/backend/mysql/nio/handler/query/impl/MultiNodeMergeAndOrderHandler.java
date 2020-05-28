@@ -238,4 +238,9 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
         sb.append('}');
         return sb.toString();
     }
+
+    @Override
+    public HandlerType type() {
+        return HandlerType.MERGE_AND_ORDER;
+    }
 }

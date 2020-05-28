@@ -71,9 +71,4 @@ public abstract class MultiNodeMergeHandler extends OwnThreadDMLHandler {
         }
     }
 
-    @Override
-    public HandlerType type() {
-        return HandlerType.MERGE;
-    }
-
 }

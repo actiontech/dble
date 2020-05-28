@@ -36,7 +36,7 @@ import java.util.regex.Pattern;
 public final class DatabaseHandler {
 
     private static final OkPacket OK = new OkPacket();
-    private static final Pattern PATTERN = Pattern.compile("^\\s*(create|drop)\\s*database\\s*@@dataNode\\s*=\\s*(['\"])([a-zA-Z_0-9,$\\-]+)(['\"])\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN = Pattern.compile("^\\s*(create|drop)\\s*database\\s*@@shardingNode\\s*=\\s*(['\"])([a-zA-Z_0-9,$\\-]+)(['\"])\\s*$", Pattern.CASE_INSENSITIVE);
 
     private static final String CREATE_DATABASE = "create database if not exists `%s`";
     private static final String DROP_DATABASE = "drop database if exists `%s`";
@@ -54,15 +54,15 @@ public final class DatabaseHandler {
 
         Matcher ma = PATTERN.matcher(stmt);
         if (!ma.matches() || !ma.group(2).equals(ma.group(4))) {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql did not match create|drop database @@dataNode ='dn......'");
+            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql did not match create|drop database @@shardingNode ='dn......'");
             return;
         }
         String shardingNodeStr = ma.group(3);
         Set<String> shardingNodes = new HashSet<>(Arrays.asList(SplitUtil.split(shardingNodeStr, ',', '$', '-')));
-        //check dataNodes
+        //check shardingNodes
         for (String singleDn : shardingNodes) {
             if (DbleServer.getInstance().getConfig().getShardingNodes().get(singleDn) == null) {
-                c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "DataNode " + singleDn + " does not exists");
+                c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "shardingNode " + singleDn + " does not exists");
                 return;
             }
         }
@@ -82,10 +82,10 @@ public final class DatabaseHandler {
                         errShardingNodes.add(shardingNode);
                     } else if (isCreate) {
                         dn.setSchemaExists(true);
-                        tryResolve(ds.getHostConfig().getName(), ds.getConfig().getInstanceName(), shardingNode, schema, ds.getConfig().getId());
+                        tryResolve(ds.getDbGroupConfig().getName(), ds.getConfig().getInstanceName(), shardingNode, schema, ds.getConfig().getId());
                     } else {
                         dn.setSchemaExists(false);
-                        tryAlert(ds.getHostConfig().getName(), ds.getConfig().getInstanceName(), shardingNode, schema, ds.getConfig().getId());
+                        tryAlert(ds.getDbGroupConfig().getName(), ds.getConfig().getInstanceName(), shardingNode, schema, ds.getConfig().getId());
                     }
                     numberCount.decrementAndGet();
                 }

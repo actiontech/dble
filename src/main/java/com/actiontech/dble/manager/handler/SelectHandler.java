@@ -64,7 +64,7 @@ public final class SelectHandler {
                         TransformSQLJob sqlJob = new TransformSQLJob(stmt, null, source, c);
                         sqlJob.run();
                     } else {
-                        c.writeErrMessage(ErrorCode.ER_YES, "no valid data host");
+                        c.writeErrMessage(ErrorCode.ER_YES, "no valid dbGroup/dbInstance");
                     }
                 } else {
                     c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");

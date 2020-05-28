@@ -44,7 +44,7 @@ public final class ShowDataSource {
         byte packetId = 0;
         HEADER.setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("DATAHOST", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("DB_GROUP", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
@@ -104,7 +104,7 @@ public final class ShowDataSource {
         if (null != name) {
             ShardingNode dn = conf.getShardingNodes().get(name);
             for (PhysicalDbInstance w : dn.getDbGroup().getAllDataSources()) {
-                RowDataPacket row = getRow(w.getHostConfig().getName(), w, c.getCharset().getResults());
+                RowDataPacket row = getRow(w.getDbGroupConfig().getName(), w, c.getCharset().getResults());
                 row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
             }

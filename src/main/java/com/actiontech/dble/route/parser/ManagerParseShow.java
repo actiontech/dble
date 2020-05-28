@@ -17,8 +17,8 @@ public final class ManagerParseShow {
     public static final int COMMAND = 1;
     public static final int CONNECTION = 2;
     public static final int DATABASE = 3;
-    public static final int DATA_NODE = 4;
-    public static final int DATASOURCE = 5;
+    public static final int SHARDING_NODE = 4;
+    public static final int DB_INSTANCE = 5;
     public static final int HELP = 6;
     public static final int CUSTOM_MYSQL_HA = 7;
     public static final int PROCESSOR = 8;
@@ -37,10 +37,10 @@ public final class ManagerParseShow {
     public static final int VERSION = 24;
     public static final int CONNECTION_SQL_STATUS = 26;
     public static final int CONNECTION_SQL = 27;
-    public static final int DATANODE_SCHEMA = 28;
-    public static final int DATASOURCE_WHERE = 29;
+    public static final int SHARDING_NODE_SCHEMA = 28;
+    public static final int DB_INSTANCE_WHERE = 29;
     public static final int HEARTBEAT = 30;
-    public static final int TABLE_DATA_NODE = 31;
+    public static final int TABLE_SHARDING_NODE = 31;
     public static final int BACKEND = 33;
     public static final int BACKEND_OLD = 34;
     public static final int CACHE = 35;
@@ -48,8 +48,8 @@ public final class ManagerParseShow {
     public static final int SYSPARAM = 37;
     public static final int SYSLOG = 38;
     public static final int HEARTBEAT_DETAIL = 39;
-    public static final int DATASOURCE_SYNC = 40;
-    public static final int DATASOURCE_SYNC_DETAIL = 41;
+    public static final int DB_INSTANCE_SYNC = 40;
+    public static final int DB_INSTANCE_SYNC_DETAIL = 41;
     public static final int WHITE_HOST = 43;
     public static final int DIRECTMEMORY = 45;
     public static final int BINLOG_STATUS = 47;
@@ -447,6 +447,9 @@ public final class ManagerParseShow {
                 case 'I':
                 case 'i':
                     return show2DICheck(stmt, offset);
+                case 'b':
+                case 'B':
+                    return show2DBCheck(stmt, offset);
                 default:
                     return OTHER;
             }
@@ -464,12 +467,6 @@ public final class ManagerParseShow {
                     case 'B':
                     case 'b':
                         return show2DataBCheck(stmt, offset);
-                    case 'N':
-                    case 'n':
-                        return show2DataNCheck(stmt, offset);
-                    case 'S':
-                    case 's':
-                        return show2DataSCheck(stmt, offset);
                     case '_':
                         return show2DataDistributionCheck(stmt, offset);
                     default:
@@ -536,8 +533,7 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
-    // SHOW @@DataSyn
-    private static int show2DataSynCheck(String stmt, int offset) {
+    private static int show2DBinsSynCheck(String stmt, int offset) {
         if (stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
                 case 'S':
@@ -569,7 +565,7 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
-    //show @@datasource.syndetail
+    //show @@dbinstance.syndetail
     private static int show2SynDetailCheck(String stmt, int offset) {
         if (stmt.length() > offset + "etail where name=".length()) {
             char c1 = stmt.charAt(++offset);
@@ -620,7 +616,7 @@ public final class ManagerParseShow {
                     }
                     String name = stmt.substring(offset).trim();
                     if (name.length() > 0 && !name.contains(" ")) {
-                        return DATASOURCE_SYNC_DETAIL;
+                        return DB_INSTANCE_SYNC_DETAIL;
                     }
                 }
             }
@@ -631,7 +627,7 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
-    //show @@datasource.synstatus
+    //show @@dbinstance.synstatus
     private static int show2SynStatuslCheck(String stmt, int offset) {
         if (stmt.length() > offset + "tatus".length()) {
             char c1 = stmt.charAt(++offset);
@@ -645,7 +641,7 @@ public final class ManagerParseShow {
                 if (ParseUtil.isErrorTail(++offset, stmt)) {
                     return OTHER;
                 }
-                return DATASOURCE_SYNC;
+                return DB_INSTANCE_SYNC;
             }
         }
         return OTHER;
@@ -792,6 +788,9 @@ public final class ManagerParseShow {
                 case 'L':
                 case 'l':
                     return show2SlCheck(stmt, offset);
+                case 'H':
+                case 'h':
+                    return show2ShCheck(stmt, offset);
                 default:
                     return OTHER;
             }
@@ -913,6 +912,53 @@ public final class ManagerParseShow {
                 }
             }
         }
+        return OTHER;
+    }
+
+
+    //show @@shardingnode
+    private static int show2ShCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "ARDINGNODE".length()) {
+            char c1 = stmt.charAt(++offset);
+            char c2 = stmt.charAt(++offset);
+            char c3 = stmt.charAt(++offset);
+            char c4 = stmt.charAt(++offset);
+            char c5 = stmt.charAt(++offset);
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            char c9 = stmt.charAt(++offset);
+            char c10 = stmt.charAt(++offset);
+            if ((c1 == 'A' || c1 == 'a') && (c2 == 'R' || c2 == 'r') && (c3 == 'D' || c3 == 'd') &&
+                    (c4 == 'I' || c4 == 'i') && (c5 == 'N' || c5 == 'n') && (c6 == 'G' || c6 == 'g') &&
+                    (c7 == 'N' || c7 == 'n') && (c8 == 'O' || c8 == 'o') && (c9 == 'D' || c9 == 'd') && (c10 == 'E' || c10 == 'e')) {
+                if ((stmt.length() > offset + 1)) {
+                    char cTest = stmt.charAt(offset + 1);
+                    if (cTest == 'S' || cTest == 's') {
+                        return checkWherePlus(stmt, ++offset, TABLE_SHARDING_NODE);
+                    }
+                }
+                while (stmt.length() > ++offset) {
+                    switch (stmt.charAt(offset)) {
+                        case ' ':
+                        case '\r':
+                        case '\n':
+                        case '\t':
+                            continue;
+                        case 'W':
+                        case 'w':
+                            if (!ParseUtil.isSpace(stmt.charAt(offset - 1))) {
+                                return OTHER;
+                            }
+                            return show2ShardingNWhereCheck(stmt, offset);
+                        default:
+                            return OTHER;
+                    }
+                }
+                return SHARDING_NODE;
+            }
+        }
+
         return OTHER;
     }
 
@@ -1145,41 +1191,6 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
-    // SHOW @@DATANODE
-    private static int show2DataNCheck(String stmt, int offset) {
-        if (stmt.length() > offset + "ODE".length()) {
-            char c1 = stmt.charAt(++offset);
-            char c2 = stmt.charAt(++offset);
-            char c3 = stmt.charAt(++offset);
-            if ((c1 == 'O' || c1 == 'o') && (c2 == 'D' || c2 == 'd') && (c3 == 'E' || c3 == 'e')) {
-                if ((stmt.length() > offset + 1)) {
-                    char cTest = stmt.charAt(offset + 1);
-                    if (cTest == 'S' || cTest == 's') {
-                        return checkWherePlus(stmt, ++offset, TABLE_DATA_NODE);
-                    }
-                }
-                while (stmt.length() > ++offset) {
-                    switch (stmt.charAt(offset)) {
-                        case ' ':
-                        case '\r':
-                        case '\n':
-                        case '\t':
-                            continue;
-                        case 'W':
-                        case 'w':
-                            if (!ParseUtil.isSpace(stmt.charAt(offset - 1))) {
-                                return OTHER;
-                            }
-                            return show2DataNWhereCheck(stmt, offset);
-                        default:
-                            return OTHER;
-                    }
-                }
-                return DATA_NODE;
-            }
-        }
-        return OTHER;
-    }
 
     // SHOW @@aaa WHERE S[chema=? and table =?]
     private static int checkWhereTableInfo(String stmt, int offset, int expectCode) {
@@ -1212,8 +1223,8 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
-    // SHOW @@DATANODE WHERE
-    private static int show2DataNWhereCheck(String stmt, int offset) {
+    // SHOW @@SHARDINGNODE WHERE
+    private static int show2ShardingNWhereCheck(String stmt, int offset) {
         if (stmt.length() > offset + "HERE".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -1230,7 +1241,7 @@ public final class ManagerParseShow {
                             if (stmt.charAt(offset - 1) != ' ') {
                                 return OTHER;
                             }
-                            return show2DataNWhereSchemaCheck(stmt, offset);
+                            return show2ShardingNWhereSchemaCheck(stmt, offset);
                         default:
                             return OTHER;
                     }
@@ -1240,8 +1251,8 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
-    // SHOW @@DATANODE WHERE SCHEMA = XXXXXX
-    private static int show2DataNWhereSchemaCheck(String stmt, int offset) {
+    // SHOW @@shardingNODE WHERE SCHEMA = XXXXXX
+    private static int show2ShardingNWhereSchemaCheck(String stmt, int offset) {
         if (stmt.length() > offset + "CHEMA".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -1260,7 +1271,7 @@ public final class ManagerParseShow {
                                     case ' ':
                                         continue;
                                     default:
-                                        return (offset << 8) | DATANODE_SCHEMA;
+                                        return (offset << 8) | SHARDING_NODE_SCHEMA;
                                 }
                             }
                             return OTHER;
@@ -1273,16 +1284,20 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
-    // SHOW @@DATASOURCE
-    private static int show2DataSCheck(String stmt, int offset) {
-        if (stmt.length() > offset + "OURCE".length()) {
+    // SHOW @@DBINSTANCE
+    private static int show2DBCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "INSTANCE".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
-            if ((c1 == 'O' || c1 == 'o') && (c2 == 'U' || c2 == 'u') && (c3 == 'R' || c3 == 'r') &&
-                    (c4 == 'C' || c4 == 'c') && (c5 == 'E' || c5 == 'e')) {
+            char c6 = stmt.charAt(++offset);
+            char c7 = stmt.charAt(++offset);
+            char c8 = stmt.charAt(++offset);
+            if ((c1 == 'I' || c1 == 'i') && (c2 == 'N' || c2 == 'n') && (c3 == 'S' || c3 == 's') &&
+                    (c4 == 'T' || c4 == 't') && (c5 == 'A' || c5 == 'a') && (c6 == 'N' || c6 == 'n') &&
+                    (c7 == 'C' || c7 == 'c') && (c8 == 'E' || c8 == 'e')) {
                 while (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':
@@ -1292,15 +1307,15 @@ public final class ManagerParseShow {
                             if (stmt.charAt(offset - 1) != ' ') {
                                 return OTHER;
                             }
-                            return show2DataSWhereCheck(stmt, offset);
+                            return show2DBinsWhereCheck(stmt, offset);
                         case '.':
-                            return show2DataSynCheck(stmt, offset);
+                            return show2DBinsSynCheck(stmt, offset);
                         default:
                             return OTHER;
                     }
                 }
 
-                return DATASOURCE;
+                return DB_INSTANCE;
             }
         }
         return OTHER;
@@ -1343,8 +1358,8 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
-    // SHOW @@DATASOURCE WHERE
-    private static int show2DataSWhereCheck(String stmt, int offset) {
+    // show @@DBINSTANCE WHERE
+    private static int show2DBinsWhereCheck(String stmt, int offset) {
         if (stmt.length() > offset + "HERE".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
@@ -1356,12 +1371,12 @@ public final class ManagerParseShow {
                     switch (stmt.charAt(offset)) {
                         case ' ':
                             continue;
-                        case 'd':
-                        case 'D':
+                        case 's':
+                        case 'S':
                             if (stmt.charAt(offset - 1) != ' ') {
                                 return OTHER;
                             }
-                            return show2DataSWhereDatanodeCheck(stmt, offset);
+                            return show2DBinsWhereShardingnodeCheck(stmt, offset);
                         default:
                             return OTHER;
                     }
@@ -1429,9 +1444,9 @@ public final class ManagerParseShow {
         return OTHER;
     }
 
-    // SHOW @@DATASOURCE WHERE DATANODE = XXXXXX
-    private static int show2DataSWhereDatanodeCheck(String stmt, int offset) {
-        if (stmt.length() > offset + "ATANODE".length()) {
+    // show @@DBINSTANCE WHERE shardingNODE = XXXXXX
+    private static int show2DBinsWhereShardingnodeCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "HARDINGNODE".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
@@ -1439,9 +1454,15 @@ public final class ManagerParseShow {
             char c5 = stmt.charAt(++offset);
             char c6 = stmt.charAt(++offset);
             char c7 = stmt.charAt(++offset);
-            if ((c1 == 'A' || c1 == 'a') && (c2 == 'T' || c2 == 't') && (c3 == 'A' || c3 == 'a') &&
-                    (c4 == 'N' || c4 == 'n') && (c5 == 'O' || c5 == 'o') && (c6 == 'D' || c6 == 'd') &&
-                    (c7 == 'E' || c7 == 'e')) {
+            char c8 = stmt.charAt(++offset);
+            char c9 = stmt.charAt(++offset);
+            char ca = stmt.charAt(++offset);
+            char cb = stmt.charAt(++offset);
+            if ((c1 == 'H' || c1 == 'h') && (c2 == 'A' || c2 == 'a') && (c3 == 'R' || c3 == 'r') &&
+                    (c4 == 'D' || c4 == 'd') && (c5 == 'I' || c5 == 'i') && (c6 == 'N' || c6 == 'n') &&
+                    (c7 == 'G' || c7 == 'g') &&
+                    (c8 == 'N' || c8 == 'n') && (c9 == 'O' || c9 == 'o') && (ca == 'D' || ca == 'd') &&
+                    (cb == 'E' || cb == 'e')) {
                 while (stmt.length() > ++offset) {
                     switch (stmt.charAt(offset)) {
                         case ' ':
@@ -1452,7 +1473,7 @@ public final class ManagerParseShow {
                                     case ' ':
                                         continue;
                                     default:
-                                        return (offset << 8) | DATASOURCE_WHERE;
+                                        return (offset << 8) | DB_INSTANCE_WHERE;
                                 }
                             }
                             return OTHER;

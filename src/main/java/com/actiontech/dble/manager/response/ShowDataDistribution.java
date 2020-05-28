@@ -45,7 +45,7 @@ public final class ShowDataDistribution {
         byte packetId = 0;
         HEADER.setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("DATANODE", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("SHARDING_NODE", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("COUNT", Fields.FIELD_TYPE_LONG);
         FIELDS[i].setPacketId(++packetId);

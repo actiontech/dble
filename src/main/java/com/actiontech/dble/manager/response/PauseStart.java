@@ -27,7 +27,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class PauseStart {
-    private static final Pattern PATTERN_FOR_PAUSE = Pattern.compile("^\\s*pause\\s*@@dataNode\\s*=\\s*'([a-zA-Z_0-9,]+)'\\s*and\\s*timeout\\s*=\\s*([0-9]+)\\s*(,\\s*queue\\s*=\\s*([0-9]+)){0,1}\\s*(,\\s*wait_limit\\s*=\\s*([0-9]+)){0,1}\\s*$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN_FOR_PAUSE = Pattern.compile("^\\s*pause\\s*@@shardingNode\\s*=\\s*'([a-zA-Z_0-9,]+)'\\s*and\\s*timeout\\s*=\\s*([0-9]+)\\s*(,\\s*queue\\s*=\\s*([0-9]+)){0,1}\\s*(,\\s*wait_limit\\s*=\\s*([0-9]+)){0,1}\\s*$", Pattern.CASE_INSENSITIVE);
     private static final OkPacket OK = new OkPacket();
     private static final int DEFAULT_CONNECTION_TIME_OUT = 120000;
     private static final int DEFAULT_QUEUE_LIMIT = 200;
@@ -57,7 +57,7 @@ public final class PauseStart {
 
         Matcher ma = PATTERN_FOR_PAUSE.matcher(sql);
         if (!ma.matches()) {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql did not match pause @@dataNode ='dn......' and timeout = ([0-9]+)");
+            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The sql did not match pause @@shardingNode ='dn......' and timeout = ([0-9]+)");
             return;
         }
         String shardingNode = ma.group(1);
@@ -67,7 +67,7 @@ public final class PauseStart {
         //check dataNodes
         for (String singleDn : shardingNodes) {
             if (DbleServer.getInstance().getConfig().getShardingNodes().get(singleDn) == null) {
-                c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "DataNode " + singleDn + " did not exists");
+                c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "ShardingNode " + singleDn + " did not exists");
                 return;
             }
         }
@@ -81,7 +81,7 @@ public final class PauseStart {
 
 
         if (!PauseDatanodeManager.getInstance().startPausing(connectionTimeOut, shardingNodes, queueLimit)) {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Some dataNodes is paused, please resume first");
+            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Some shardingNodes is paused, please resume first");
             return;
         }
 

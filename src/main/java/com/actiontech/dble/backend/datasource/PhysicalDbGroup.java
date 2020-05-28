@@ -217,10 +217,10 @@ public class PhysicalDbGroup {
                 theNode = this.getAllActiveDataSources().iterator().next();
             } else {
                 if (theNode.isDisabled()) {
-                    String errorMsg = "the dataHost[" + theNode.getHostConfig().getName() + "] is disabled, please check it";
+                    String errorMsg = "the dataHost[" + theNode.getDbGroupConfig().getName() + "] is disabled, please check it";
                     throw new IOException(errorMsg);
                 } else {
-                    String errorMsg = "the dataHost[" + theNode.getHostConfig().getName() + "] is a fake node, please check it";
+                    String errorMsg = "the dataHost[" + theNode.getDbGroupConfig().getName() + "] is a fake node, please check it";
                     throw new IOException(errorMsg);
                 }
             }
@@ -231,7 +231,7 @@ public class PhysicalDbGroup {
                 heartbeatError += ",Tip:heartbeat[show slave status] need the SUPER or REPLICATION CLIENT privilege(s)";
             }
             LOGGER.warn(heartbeatError);
-            Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", theNode.getHostConfig().getName() + "-" + theNode.getConfig().getInstanceName());
+            Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", theNode.getDbGroupConfig().getName() + "-" + theNode.getConfig().getInstanceName());
             AlertUtil.alert(AlarmCode.DB_INSTANCE_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", theNode.getConfig().getId(), labels);
             throw new IOException(heartbeatError);
         }

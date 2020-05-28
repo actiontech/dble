@@ -23,5 +23,6 @@
     <suppress checks=".*" files="BTraceCostTime.java"/>
     <suppress checks="CyclomaticComplexity" files="CreateTableParserImp.java"/>
     <suppress checks="CyclomaticComplexity" files="XMLSchemaLoader.java"/>
-
+    <suppress checks="UncommentedMain" files="XmltoCluster.java"/>
+    <suppress checks="UncommentedMain" files="XmltoZkMain.java"/>
 </suppressions>

@@ -82,9 +82,9 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
 
         lastSendQryTime = System.currentTimeMillis();
         String[] fetchCols = {};
-        if (heartbeat.getSource().getHostConfig().isShowSlaveSql()) {
+        if (heartbeat.getSource().getDbGroupConfig().isShowSlaveSql()) {
             fetchCols = MYSQL_SLAVE_STATUS_COLS;
-        } else if (heartbeat.getSource().getHostConfig().isSelectReadOnlySql()) {
+        } else if (heartbeat.getSource().getDbGroupConfig().isSelectReadOnlySql()) {
             fetchCols = MYSQL_READ_ONLY_COLS;
         }
 
@@ -113,9 +113,9 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         if (result.isSuccess()) {
             PhysicalDbInstance source = heartbeat.getSource();
             Map<String, String> resultResult = result.getResult();
-            if (source.getHostConfig().isShowSlaveSql()) {
+            if (source.getDbGroupConfig().isShowSlaveSql()) {
                 setStatusBySlave(source, resultResult);
-            } else if (source.getHostConfig().isSelectReadOnlySql()) {
+            } else if (source.getDbGroupConfig().isSelectReadOnlySql()) {
                 setStatusByReadOnly(source, resultResult);
             } else {
                 setStatusForNormalHeartbeat(source);
@@ -198,7 +198,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
             String secondsBehindMaster = resultResult.get("Seconds_Behind_Master");
             if (null != secondsBehindMaster && !"".equals(secondsBehindMaster) && !"NULL".equalsIgnoreCase(secondsBehindMaster)) {
                 int behindMaster = Integer.parseInt(secondsBehindMaster);
-                if (behindMaster > source.getHostConfig().getDelayThreshold()) {
+                if (behindMaster > source.getDbGroupConfig().getDelayThreshold()) {
                     MySQLHeartbeat.LOGGER.warn("found MySQL master/slave Replication delay !!! " + heartbeat.getSource().getConfig() + ", binlog sync time delay: " + behindMaster + "s");
                 }
                 heartbeat.setSlaveBehindMaster(behindMaster);

@@ -94,7 +94,7 @@ public class ConfigInitializer implements ProblemReporter {
             // if there are dbGroups exists. no empty shardingNodes allowed
             for (ShardingNode shardingNode : this.shardingNodes.values()) {
                 if (shardingNode.getDbGroup() == null) {
-                    throw new ConfigException("dataHost not exists " + shardingNode.getDbGroupName());
+                    throw new ConfigException("dbGroup not exists " + shardingNode.getDbGroupName());
                 }
             }
         }
@@ -140,8 +140,8 @@ public class ConfigInitializer implements ProblemReporter {
                     allUseHost.add(entry.getValue().getDbGroup().getGroupName());
                 }
             } else {
-                LOGGER.info("dataNode " + shardingNodeName + " is useless,server will ignore it");
-                errorInfos.add(new ErrorInfo("Xml", "WARNING", "dataNode " + shardingNodeName + " is useless"));
+                LOGGER.info("shardingNode " + shardingNodeName + " is useless,server will ignore it");
+                errorInfos.add(new ErrorInfo("Xml", "WARNING", "shardingNode " + shardingNodeName + " is useless"));
                 iterator.remove();
             }
         }
@@ -175,13 +175,13 @@ public class ConfigInitializer implements ProblemReporter {
             checkMaxCon(pool);
             for (PhysicalDbInstance ds : pool.getAllDataSources()) {
                 if (ds.getConfig().isDisabled()) {
-                    errorInfos.add(new ErrorInfo("Backend", "WARNING", "DataHost[" + pool.getGroupName() + "," + ds.getName() + "] is disabled"));
-                    LOGGER.info("DataHost[" + ds.getHostConfig().getName() + "] is disabled,just mark testing failed and skip it");
+                    errorInfos.add(new ErrorInfo("Backend", "WARNING", "dbGroup[" + pool.getGroupName() + "," + ds.getName() + "] is disabled"));
+                    LOGGER.info("dbGroup[" + ds.getDbGroupConfig().getName() + "] is disabled,just mark testing failed and skip it");
                     ds.setTestConnSuccess(false);
                     continue;
                 } else if (ds.isFakeNode()) {
-                    errorInfos.add(new ErrorInfo("Backend", "WARNING", "DataHost[" + pool.getGroupName() + "," + ds.getName() + "] is fake Node"));
-                    LOGGER.info("DataHost[" + ds.getHostConfig().getName() + "] is disabled,just mark testing failed and skip it");
+                    errorInfos.add(new ErrorInfo("Backend", "WARNING", "dbGroup[" + pool.getGroupName() + "," + ds.getName() + "] is fake Node"));
+                    LOGGER.info("dbGroup[" + ds.getDbGroupConfig().getName() + "] is disabled,just mark testing failed and skip it");
                     ds.setTestConnSuccess(false);
                     continue;
                 }
@@ -220,12 +220,12 @@ public class ConfigInitializer implements ProblemReporter {
         }
         for (PhysicalDbInstance dataSource : pool.getAllDataSources()) {
             if (dataSource.getConfig().getMaxCon() < Math.max(schemasCount + 1, dataSource.getConfig().getMinCon())) {
-                errorInfos.add(new ErrorInfo("Xml", "NOTICE", "dbInstance[" + pool.getGroupName() + "." + dataSource.getConfig().getInstanceName() + "] maxCon too little,would be change to " +
+                errorInfos.add(new ErrorInfo("Xml", "NOTICE", "dbGroup[" + pool.getGroupName() + "." + dataSource.getConfig().getInstanceName() + "] maxCon too little,would be change to " +
                         Math.max(schemasCount + 1, dataSource.getConfig().getMinCon())));
             }
 
             if (Math.max(schemasCount + 1, dataSource.getConfig().getMinCon()) != dataSource.getConfig().getMinCon()) {
-                errorInfos.add(new ErrorInfo("Xml", "NOTICE", "DataHost[" + pool.getGroupName() + "] minCon too little,Dble would init dataHost" +
+                errorInfos.add(new ErrorInfo("Xml", "NOTICE", "dbGroup[" + pool.getGroupName() + "] minCon too little, Dble would init dbGroup" +
                         " with " + (schemasCount + 1) + " connections"));
             }
         }
@@ -234,7 +234,7 @@ public class ConfigInitializer implements ProblemReporter {
     private void testDataSource(Set<String> errNodeKeys, Set<String> errSourceKeys, BoolPtr isConnectivity,
                                 BoolPtr isAllDataSourceConnected, List<Pair<String, String>> nodeList, PhysicalDbGroup pool, PhysicalDbInstance ds) {
         boolean isMaster = ds == pool.getWriteSource();
-        String dataSourceName = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getName() + "]";
+        String dataSourceName = "dbInstance[" + ds.getDbGroupConfig().getName() + "." + ds.getName() + "]";
         try {
             BoolPtr isDSConnectedPtr = new BoolPtr(false);
             TestTask testDsTask = new TestTask(ds, isDSConnectedPtr);
@@ -246,7 +246,7 @@ public class ConfigInitializer implements ProblemReporter {
                 isConnectivity.set(false);
                 isAllDataSourceConnected.set(false);
                 errSourceKeys.add(dataSourceName);
-                errorInfos.add(new ErrorInfo("Backend", "WARNING", "Can't connect to [" + ds.getHostConfig().getName() + "," + ds.getName() + "]"));
+                errorInfos.add(new ErrorInfo("Backend", "WARNING", "Can't connect to [" + ds.getDbGroupConfig().getName() + "," + ds.getName() + "]"));
                 markDataSourceSchemaFail(errNodeKeys, nodeList, dataSourceName);
             } else {
                 BoolPtr isSchemaConnectedPtr = new BoolPtr(true);

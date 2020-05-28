@@ -12,7 +12,6 @@ import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.helper.GetAndSyncDataSourceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.util.StringUtil;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
@@ -142,7 +141,11 @@ public final class ConfigUtil {
                 if ("property".equals(name)) {
                     String key = e.getAttribute("name");
                     String value = e.getTextContent();
-                    map.put(key, StringUtil.isEmpty(value) ? null : value.trim());
+                    if (value == null) {
+                        map.put(key, "");
+                    } else {
+                        map.put(key, value.trim());
+                    }
                 }
             }
         }

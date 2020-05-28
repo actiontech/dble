@@ -936,12 +936,14 @@ public class ServerConnection extends FrontendConnection {
         SerializableLock.getInstance().unLock(this.id);
         markFinished();
         super.write(buffer);
-        if (session != null && (session.isDiscard() || session.isKilled())) {
-            session.setKilled(false);
-            session.setDiscard(false);
-        }
-        if (session.isPrepared()) {
-            session.setPrepared(false);
+        if (session != null) {
+            if (session.isDiscard() || session.isKilled()) {
+                session.setKilled(false);
+                session.setDiscard(false);
+            }
+            if (session.isPrepared()) {
+                session.setPrepared(false);
+            }
         }
     }
 

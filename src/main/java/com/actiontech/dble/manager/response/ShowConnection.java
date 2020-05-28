@@ -214,7 +214,7 @@ public final class ShowConnection {
             isMatch = fc.getHost().equals(whereInfo.get("host"));
         }
         if (whereInfo.get("user") != null) {
-            isMatch = isMatch && fc.getUser().equals(whereInfo.get("user"));
+            isMatch = isMatch && fc.getUser().getKey().equals(whereInfo.get("user"));
         }
         return isMatch;
     }

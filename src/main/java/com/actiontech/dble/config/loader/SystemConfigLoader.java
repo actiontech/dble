@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
@@ -100,8 +101,8 @@ public final class SystemConfigLoader {
         }
 
         Properties systemDynamic = readBootStrapDynamicConf();
-        for (Object key : systemDynamic.keySet()) {
-            system.put(key, systemDynamic.get(key));
+        for (Map.Entry<Object, Object> item : systemDynamic.entrySet()) {
+            system.put(item.getKey(), item.getValue());
         }
         ParameterMapping.mapping(systemConfig, system, null);
         if (system.size() > 0) {

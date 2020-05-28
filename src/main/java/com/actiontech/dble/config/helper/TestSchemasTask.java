@@ -89,7 +89,7 @@ public class TestSchemasTask extends Thread {
                     }
                     String nodeName = nodes.remove(schema);
                     if (nodeName != null) {
-                        String key = "DataHost[" + ds.getHostConfig().getName() + "." + ds.getConfig().getInstanceName() + "],data_node[" + nodeName + "],schema[" + schema + "]";
+                        String key = "DataHost[" + ds.getDbGroupConfig().getName() + "." + ds.getConfig().getInstanceName() + "],data_node[" + nodeName + "],schema[" + schema + "]";
                         LOGGER.info("SelfCheck### test " + key + " database connection success ");
                     }
                 }
@@ -102,11 +102,11 @@ public class TestSchemasTask extends Thread {
             for (Map.Entry<String, String> node : nodes.entrySet()) {
                 boolPtr.set(false);
                 String nodeName = node.getValue();
-                String key = "dbInstance[" + ds.getHostConfig().getName() + "." + ds.getConfig().getInstanceName() + "],sharding_node[" + nodeName + "],schema[" + node.getKey() + "]";
+                String key = "dbInstance[" + ds.getDbGroupConfig().getName() + "." + ds.getConfig().getInstanceName() + "],sharding_node[" + nodeName + "],schema[" + node.getKey() + "]";
                 errKeys.add(key);
                 LOGGER.warn("test conn " + key + " error");
                 if (needAlert) {
-                    Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", ds.getHostConfig().getName() + "-" + ds.getConfig().getInstanceName());
+                    Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", ds.getDbGroupConfig().getName() + "-" + ds.getConfig().getInstanceName());
                     labels.put("sharding_node", nodeName);
                     AlertUtil.alert(AlarmCode.SHARDING_NODE_LACK, Alert.AlertLevel.WARN, "{" + key + "} is lack", "mysql", ds.getConfig().getId(), labels);
                     ToResolveContainer.SHARDING_NODE_LACK.add(key);

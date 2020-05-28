@@ -52,9 +52,9 @@ public class MySQLHeartbeat {
     public MySQLHeartbeat(MySQLInstance source) {
         this.source = source;
         this.status = INIT_STATUS;
-        this.errorRetryCount = source.getHostConfig().getErrorRetryCount();
-        this.heartbeatTimeout = source.getHostConfig().getHeartbeatTimeout();
-        this.heartbeatSQL = source.getHostConfig().getHearbeatSQL();
+        this.errorRetryCount = source.getDbGroupConfig().getErrorRetryCount();
+        this.heartbeatTimeout = source.getDbGroupConfig().getHeartbeatTimeout();
+        this.heartbeatSQL = source.getDbGroupConfig().getHearbeatSQL();
     }
 
     public String getMessage() {
@@ -114,7 +114,7 @@ public class MySQLHeartbeat {
         this.isChecking.set(false);
         this.message = errMsg;
         setError();
-        Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getHostConfig().getName() + "-" + this.source.getConfig().getInstanceName());
+        Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getDbGroupConfig().getName() + "-" + this.source.getConfig().getInstanceName());
         AlertUtil.alert(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "heartbeat status:" + this.status, "mysql", this.source.getConfig().getId(), labels);
     }
 
@@ -132,7 +132,7 @@ public class MySQLHeartbeat {
                 break;
         }
         if (this.status != OK_STATUS) {
-            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getHostConfig().getName() + "-" + this.source.getConfig().getInstanceName());
+            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getDbGroupConfig().getName() + "-" + this.source.getConfig().getInstanceName());
             AlertUtil.alert(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "heartbeat status:" + this.status, "mysql", this.source.getConfig().getId(), labels);
         }
     }
@@ -158,7 +158,7 @@ public class MySQLHeartbeat {
                 this.status = OK_STATUS;
                 this.errorCount = 0;
                 this.startErrorTime.set(-1);
-                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getHostConfig().getName() + "-" + this.source.getConfig().getInstanceName());
+                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getDbGroupConfig().getName() + "-" + this.source.getConfig().getInstanceName());
                 AlertUtil.alertResolve(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "mysql", this.source.getConfig().getId(), labels);
         }
         if (isStop) {

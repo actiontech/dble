@@ -156,7 +156,7 @@ public final class ShowHelp {
         HELPS.put("kill @@ddl_lock where schema='?' and table='?'", "Kill ddl lock held by the specified ddl");
 
         // stop
-        HELPS.put("stop @@heartbeat name:time", "Pause dataNode heartbeat");
+        HELPS.put("stop @@heartbeat name:time", "Pause shardingNode heartbeat");
 
         // reload
         HELPS.put("reload @@config", "Reload basic config from file");
@@ -190,9 +190,9 @@ public final class ShowHelp {
         HELPS.put("dryrun", "Dry run to check config before reload xml");
 
         //pause
-        HELPS.put("pause @@DataNode = 'dn1,dn2,....' and timeout = ? [,queue = ?,wait_limit = ?]", "Block query requests witch specified dataNodes involved ");
-        HELPS.put("RESUME", "Resume the query requests of the paused dataNodes");
-        HELPS.put("show @@pause", "Show which dataNodes have bean pause");
+        HELPS.put("pause @@shardingNode = 'dn1,dn2,....' and timeout = ? [,queue = ?,wait_limit = ?]", "Block query requests witch specified shardingNodes involved ");
+        HELPS.put("RESUME", "Resume the query requests of the paused shardingNodes");
+        HELPS.put("show @@pause", "Show which shardingNodes have bean pause");
 
         //slow_query_log
         HELPS.put("show @@slow_query_log", "Show if the slow query log is enabled");
@@ -206,9 +206,9 @@ public final class ShowHelp {
         HELPS.put("reload @@slow_query.flushsize", "Reset the flush size");
 
         //create database
-        HELPS.put("create database @@dataNode ='dn......'", "create database for shardingNode setted in sharding.xml");
+        HELPS.put("create database @@shardingNode ='dn......'", "create database for shardingNode set in sharding.xml");
         //drop database
-        HELPS.put("drop database @@dataNode ='dn......'", "drop database for shardingNode setted in sharding.xml");
+        HELPS.put("drop database @@shardingNode ='dn......'", "drop database for shardingNode set in sharding.xml");
 
         //check @@metadata
         HELPS.put("check @@metadata", "show last time of `reload @@metadata`/start dble");
@@ -225,7 +225,7 @@ public final class ShowHelp {
         HELPS.put("dataHost @@events ", "show all the dataHost ha event which not finished yet ");
 
         //dump file
-        HELPS.put("split src dest -sschema -r500 -w500 -l10000", "split dump file into multi dump files according to dataNode");
+        HELPS.put("split src dest -sschema -r500 -w500 -l10000", "split dump file into multi dump files according to shardingNode");
 
         // list sort
         KEYS.addAll(HELPS.keySet());

@@ -51,7 +51,7 @@ public final class ShowProcessList {
         FIELDS[i] = PacketUtil.getField("Front_Id", Fields.FIELD_TYPE_LONG);
         FIELDS[i++].setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("Datanode", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("shardingNode", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("MysqlId", Fields.FIELD_TYPE_VAR_STRING);
@@ -174,7 +174,7 @@ public final class ShowProcessList {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         // Front_Id
         row.add(LongUtil.toBytes(fc.getId()));
-        // Datanode
+        // shardingNode
         row.add(StringUtil.encode(shardingNode == null ? NULL_VAL : shardingNode, charset));
         // BconnID
         row.add(threadId == null ? StringUtil.encode(NULL_VAL, charset) : LongUtil.toBytes(threadId));

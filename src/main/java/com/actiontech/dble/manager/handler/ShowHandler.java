@@ -63,10 +63,10 @@ public final class ShowHandler {
             case ManagerParseShow.DATABASE:
                 ShowDatabase.execute(c);
                 break;
-            case ManagerParseShow.DATA_NODE:
+            case ManagerParseShow.SHARDING_NODE:
                 ShowShardingNode.execute(c, null);
                 break;
-            case ManagerParseShow.DATANODE_SCHEMA: {
+            case ManagerParseShow.SHARDING_NODE_SCHEMA: {
                 String name = stmt.substring(rs >>> 8).trim();
                 if (StringUtil.isEmpty(name)) {
                     c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
@@ -75,10 +75,10 @@ public final class ShowHandler {
                 }
                 break;
             }
-            case ManagerParseShow.DATASOURCE:
+            case ManagerParseShow.DB_INSTANCE:
                 ShowDataSource.execute(c, null);
                 break;
-            case ManagerParseShow.DATASOURCE_WHERE: {
+            case ManagerParseShow.DB_INSTANCE_WHERE: {
                 String name = stmt.substring(rs >>> 8).trim();
                 if (StringUtil.isEmpty(name)) {
                     c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
@@ -87,7 +87,7 @@ public final class ShowHandler {
                 }
                 break;
             }
-            case ManagerParseShow.TABLE_DATA_NODE: {
+            case ManagerParseShow.TABLE_SHARDING_NODE: {
                 String tableInfo = stmt.substring(rs >>> 8).trim();
                 ShowTableShardingNode.execute(c, tableInfo);
                 break;
@@ -170,10 +170,10 @@ public final class ShowHandler {
             case ManagerParseShow.HEARTBEAT_DETAIL://by songwie
                 ShowHeartbeatDetail.response(c, stmt);
                 break;
-            case ManagerParseShow.DATASOURCE_SYNC://by songwie
+            case ManagerParseShow.DB_INSTANCE_SYNC://by songwie
                 ShowDatasourceSyn.response(c);
                 break;
-            case ManagerParseShow.DATASOURCE_SYNC_DETAIL://by songwie
+            case ManagerParseShow.DB_INSTANCE_SYNC_DETAIL://by songwie
                 ShowDatasourceSynDetail.response(c, stmt);
                 break;
             case ManagerParseShow.DIRECTMEMORY:

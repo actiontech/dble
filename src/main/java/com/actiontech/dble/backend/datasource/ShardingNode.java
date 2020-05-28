@@ -125,7 +125,7 @@ public class ShardingNode {
                     heartbeatError += ",Tip:heartbeat[show slave status] need the SUPER or REPLICATION CLIENT privilege(s)";
                 }
                 LOGGER.warn(heartbeatError);
-                Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", readSource.getHostConfig().getName() + "-" + readSource.getConfig().getInstanceName());
+                Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", readSource.getDbGroupConfig().getName() + "-" + readSource.getConfig().getInstanceName());
                 AlertUtil.alert(AlarmCode.DB_INSTANCE_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", readSource.getConfig().getId(), labels);
                 throw new IOException(heartbeatError);
             }
@@ -156,9 +156,9 @@ public class ShardingNode {
         if (dbGroup.isInitSuccess()) {
             PhysicalDbInstance writeSource = dbGroup.getWriteSource();
             if (writeSource.isDisabled()) {
-                throw new IllegalArgumentException("[" + writeSource.getHostConfig().getName() + "." + writeSource.getConfig().getInstanceName() + "] is disabled");
+                throw new IllegalArgumentException("[" + writeSource.getDbGroupConfig().getName() + "." + writeSource.getConfig().getInstanceName() + "] is disabled");
             } else if (writeSource.isFakeNode()) {
-                throw new IllegalArgumentException("[" + writeSource.getHostConfig().getName() + "." + writeSource.getConfig().getInstanceName() + "] is fake node");
+                throw new IllegalArgumentException("[" + writeSource.getDbGroupConfig().getName() + "." + writeSource.getConfig().getInstanceName() + "] is fake node");
             }
             if (writeSource.isReadOnly()) {
                 throw new IllegalArgumentException("The Data Source[" + writeSource.getConfig().getUrl() + "] is running with the --read-only option so it cannot execute this statement");

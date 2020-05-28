@@ -45,7 +45,7 @@ public abstract class PhysicalDbInstance {
     private MySQLHeartbeat heartbeat;
     private volatile boolean readInstance;
     private volatile long heartbeatRecoveryTime;
-    private final DbGroupConfig hostConfig;
+    private final DbGroupConfig dbGroupConfig;
     private PhysicalDbGroup dbGroup;
     private final AtomicInteger connectionCount;
     private volatile AtomicBoolean disabled;
@@ -58,11 +58,11 @@ public abstract class PhysicalDbInstance {
     private AtomicLong writeCount = new AtomicLong(0);
     private String dsVersion;
 
-    public PhysicalDbInstance(DbInstanceConfig config, DbGroupConfig hostConfig, boolean isReadNode) {
+    public PhysicalDbInstance(DbInstanceConfig config, DbGroupConfig dbGroupConfig, boolean isReadNode) {
         this.size = config.getMaxCon();
         this.config = config;
         this.name = config.getInstanceName();
-        this.hostConfig = hostConfig;
+        this.dbGroupConfig = dbGroupConfig;
         heartbeat = this.createHeartBeat();
         this.readInstance = isReadNode;
         this.connectionCount = new AtomicInteger();
@@ -73,7 +73,7 @@ public abstract class PhysicalDbInstance {
         this.size = org.size;
         this.config = org.config;
         this.name = org.name;
-        this.hostConfig = org.hostConfig;
+        this.dbGroupConfig = org.dbGroupConfig;
         this.readInstance = org.readInstance;
         this.connectionCount = org.connectionCount;
         this.disabled = new AtomicBoolean(org.disabled.get());
@@ -111,8 +111,8 @@ public abstract class PhysicalDbInstance {
         writeCount.addAndGet(1);
     }
 
-    public DbGroupConfig getHostConfig() {
-        return hostConfig;
+    public DbGroupConfig getDbGroupConfig() {
+        return dbGroupConfig;
     }
 
 
@@ -305,17 +305,17 @@ public abstract class PhysicalDbInstance {
                 } else {
                     break;
                 }
-                if (ToResolveContainer.CREATE_CONN_FAIL.contains(this.getHostConfig().getName() + "-" + this.getConfig().getInstanceName())) {
-                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getInstanceName());
+                if (ToResolveContainer.CREATE_CONN_FAIL.contains(this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName())) {
+                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
                     AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", this.getConfig().getId(),
-                            labels, ToResolveContainer.CREATE_CONN_FAIL, this.getHostConfig().getName() + "-" + this.getConfig().getInstanceName());
+                            labels, ToResolveContainer.CREATE_CONN_FAIL, this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
                 }
             } catch (IOException e) {
                 String errMsg = "create connection err:";
                 LOGGER.warn(errMsg, e);
-                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getInstanceName());
+                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
                 AlertUtil.alert(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, errMsg + e.getMessage(), "mysql", this.getConfig().getId(), labels);
-                ToResolveContainer.CREATE_CONN_FAIL.add(this.getHostConfig().getName() + "-" + this.getConfig().getInstanceName());
+                ToResolveContainer.CREATE_CONN_FAIL.add(this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
             }
         }
     }
@@ -377,10 +377,10 @@ public abstract class PhysicalDbInstance {
     private void takeCon(BackendConnection conn,
                          final ResponseHandler handler, final Object attachment,
                          String schema) {
-        if (ToResolveContainer.CREATE_CONN_FAIL.contains(this.getHostConfig().getName() + "-" + this.getConfig().getInstanceName())) {
-            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getInstanceName());
+        if (ToResolveContainer.CREATE_CONN_FAIL.contains(this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName())) {
+            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
             AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", this.getConfig().getId(), labels,
-                    ToResolveContainer.CREATE_CONN_FAIL, this.getHostConfig().getName() + "-" + this.getConfig().getInstanceName());
+                    ToResolveContainer.CREATE_CONN_FAIL, this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
         }
         takeCon(conn, schema);
         conn.setAttachment(attachment);
@@ -396,9 +396,9 @@ public abstract class PhysicalDbInstance {
                     createNewConnection(new DelegateResponseHandler(handler) {
                         @Override
                         public void connectionError(Throwable e, BackendConnection conn) {
-                            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", hostConfig.getName() + "-" + config.getInstanceName());
+                            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", dbGroupConfig.getName() + "-" + config.getInstanceName());
                             AlertUtil.alert(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "createNewConn Error" + e.getMessage(), "mysql", config.getId(), labels);
-                            ToResolveContainer.CREATE_CONN_FAIL.add(hostConfig.getName() + "-" + config.getInstanceName());
+                            ToResolveContainer.CREATE_CONN_FAIL.add(dbGroupConfig.getName() + "-" + config.getInstanceName());
                             handler.connectionError(e, conn);
                         }
 
@@ -430,24 +430,24 @@ public abstract class PhysicalDbInstance {
         } else if (!this.createNewCount()) {
             if (forceCreate) {
                 this.connectionCount.incrementAndGet();
-                LOGGER.warn("connection pool [" + hostConfig.getName() + "." + this.name + "] has reached maxCon, but we still try to create new connection for important task");
+                LOGGER.warn("connection pool [" + dbGroupConfig.getName() + "." + this.name + "] has reached maxCon, but we still try to create new connection for important task");
                 createNewConnection(handler, attachment, schema, mustWrite);
             } else {
-                String maxConError = "the max active Connections size can not be max than maxCon for data host[" + this.getHostConfig().getName() + "." + this.getName() + "]";
+                String maxConError = "the max active Connections size can not be max than maxCon for data host[" + this.getDbGroupConfig().getName() + "." + this.getName() + "]";
                 LOGGER.warn(maxConError);
-                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getInstanceName());
+                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
                 AlertUtil.alert(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, maxConError, "dble", this.getConfig().getId(), labels);
-                ToResolveContainer.REACH_MAX_CON.add(this.getHostConfig().getName() + "-" + this.getConfig().getInstanceName());
+                ToResolveContainer.REACH_MAX_CON.add(this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
                 throw new IOException(maxConError);
             }
         } else { // create connection
-            if (ToResolveContainer.REACH_MAX_CON.contains(this.getHostConfig().getName() + "-" + this.getConfig().getInstanceName())) {
-                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getInstanceName());
+            if (ToResolveContainer.REACH_MAX_CON.contains(this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName())) {
+                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
                 AlertUtil.alertResolve(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, "dble", this.getConfig().getId(), labels,
-                        ToResolveContainer.REACH_MAX_CON, this.getHostConfig().getName() + "-" + this.getConfig().getInstanceName());
+                        ToResolveContainer.REACH_MAX_CON, this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
 
             }
-            LOGGER.info("no idle connection in pool [" + hostConfig.getName() + "." + this.name + "],create new connection for schema: " + schema);
+            LOGGER.info("no idle connection in pool [" + dbGroupConfig.getName() + "." + this.name + "],create new connection for schema: " + schema);
             createNewConnection(handler, attachment, schema, mustWrite);
         }
     }
@@ -469,17 +469,17 @@ public abstract class PhysicalDbInstance {
             if (disabled.get()) {
                 throw new IOException("the dataSource is disabled [" + this.name + "]");
             } else if (!this.createNewCount()) {
-                String maxConError = "the max active Connections size can not be max than maxCon data host[" + this.getHostConfig().getName() + "." + this.getName() + "]";
+                String maxConError = "the max active Connections size can not be max than maxCon data host[" + this.getDbGroupConfig().getName() + "." + this.getName() + "]";
                 LOGGER.warn(maxConError);
-                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getInstanceName());
+                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
                 AlertUtil.alert(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, maxConError, "dble", this.getConfig().getId(), labels);
-                ToResolveContainer.REACH_MAX_CON.add(this.getHostConfig().getName() + "-" + this.getConfig().getInstanceName());
+                ToResolveContainer.REACH_MAX_CON.add(this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
                 throw new IOException(maxConError);
             } else { // create connection
-                if (ToResolveContainer.REACH_MAX_CON.contains(this.getHostConfig().getName() + "-" + this.getConfig().getInstanceName())) {
-                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getInstanceName());
+                if (ToResolveContainer.REACH_MAX_CON.contains(this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName())) {
+                    Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
                     AlertUtil.alertResolve(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, "dble", this.getConfig().getId(), labels,
-                            ToResolveContainer.REACH_MAX_CON, this.getHostConfig().getName() + "-" + this.getConfig().getInstanceName());
+                            ToResolveContainer.REACH_MAX_CON, this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
                 }
                 LOGGER.info("no ilde connection in pool,create new connection for " + this.name + " of schema " + schema);
                 con = createNewBackendConnection(schema);
@@ -521,15 +521,15 @@ public abstract class PhysicalDbInstance {
             NewConnectionRespHandler simpleHandler = new NewConnectionRespHandler();
             this.createNewConnection(simpleHandler, schema);
             con = simpleHandler.getBackConn();
-            if (ToResolveContainer.CREATE_CONN_FAIL.contains(this.getHostConfig().getName() + "-" + this.getConfig().getInstanceName())) {
-                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getInstanceName());
+            if (ToResolveContainer.CREATE_CONN_FAIL.contains(this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName())) {
+                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
                 AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", this.getConfig().getId(), labels,
-                        ToResolveContainer.CREATE_CONN_FAIL, this.getHostConfig().getName() + "-" + this.getConfig().getInstanceName());
+                        ToResolveContainer.CREATE_CONN_FAIL, this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
             }
         } catch (IOException e) {
-            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getHostConfig().getName() + "-" + this.getConfig().getInstanceName());
+            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
             AlertUtil.alert(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "createNewConn Error" + e.getMessage(), "mysql", this.getConfig().getId(), labels);
-            ToResolveContainer.CREATE_CONN_FAIL.add(this.getHostConfig().getName() + "-" + this.getConfig().getInstanceName());
+            ToResolveContainer.CREATE_CONN_FAIL.add(this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
             throw e;
         }
         return con;

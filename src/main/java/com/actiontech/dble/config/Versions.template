@@ -15,10 +15,10 @@ public abstract class Versions {
     public static final byte PROTOCOL_VERSION = 10;
 
     private static byte[] serverVersion = "@server-version@".getBytes();
-    public static final byte[] VERSION_COMMENT = "@version-comment@".getBytes();
-    public static final String ANNOTATION_NAME = "@annotation-name@";
-    public static final String ROOT_PREFIX = "@root_prefix@";
-    public static final String DOMAIN = "@domain@";
+    public static final byte[] VERSION_COMMENT = "dble Server (ActionTech)".getBytes();
+    public static final String ANNOTATION_NAME = "dble:";
+    public static final String ROOT_PREFIX = "dble";
+    public static final String DOMAIN = "http://dble.cloud/";
     public static final String CONFIG_VERSION = "@config_version@";
     private static final Pattern VERSION_PATTERN = Pattern.compile("^(\\d{1,})\\.(\\d{1,})$", Pattern.CASE_INSENSITIVE);
 

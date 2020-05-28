@@ -40,6 +40,7 @@ public abstract class MultiNodeMergeHandler extends OwnThreadDMLHandler {
             this.exeHandlers.add(exeHandler);
         }
         this.route = route;
+        session.setRouteResultToTrace(route);
     }
 
     public abstract void execute() throws Exception;

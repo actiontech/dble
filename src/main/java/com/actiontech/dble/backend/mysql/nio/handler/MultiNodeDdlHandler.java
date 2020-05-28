@@ -255,7 +255,7 @@ public class MultiNodeDdlHandler extends MultiNodeHandler {
                     }
                     finishedTest = true;
                     session.setTraceSimpleHandler(handler);
-                    session.setPreExecuteEnd();
+                    session.setPreExecuteEnd(false);
                     handler.execute();
                 } catch (Exception e) {
                     LOGGER.warn(String.valueOf(source) + oriRrs, e);

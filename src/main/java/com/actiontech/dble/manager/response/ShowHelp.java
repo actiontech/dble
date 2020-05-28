@@ -114,6 +114,7 @@ public final class ShowHelp {
         HELPS.put("show @@session", "Report front session details");
         HELPS.put("show @@session.xa", "Report front session and associated xa transaction details");
         HELPS.put("show @@connection.sql", "Report connection sql");
+        HELPS.put("show @@connection.sql.status where FRONT_ID= ?;", "Show current connection sql status and detail");
         HELPS.put("show @@sql", "Report SQL list");
         // helps.put("show @@sql where id = ?", "Report  specify SQL");
         HELPS.put("show @@sql.high", "Report Hight Frequency SQL");

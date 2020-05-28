@@ -217,12 +217,19 @@ public class NonBlockingSession implements Session {
         provider.readyToDeliver(source.getId());
     }
 
-    public void setPreExecuteEnd() {
+    public void setPreExecuteEnd(boolean isComplexQuery) {
         sessionStage = SessionStage.Execute_SQL;
         if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
+            traceResult.setComplexQuery(isComplexQuery);
             traceResult.setPreExecuteEnd(new TraceRecord(System.nanoTime()));
             traceResult.clearConnReceivedMap();
             traceResult.clearConnFlagMap();
+        }
+    }
+
+    public void setSubQuery() {
+        if (traceEnable || SlowQueryLog.getInstance().isEnableSlowLog()) {
+            traceResult.setSubQuery(true);
         }
     }
 
@@ -381,6 +388,15 @@ public class NonBlockingSession implements Session {
         }
     }
 
+    public List<String[]> genRunningSQLStage() {
+        if (SlowQueryLog.getInstance().isEnableSlowLog()) {
+            TraceResult tmpResult = (TraceResult) traceResult.clone();
+            return tmpResult.genRunningSQLStage();
+        } else {
+            return null;
+        }
+    }
+
     @Override
     public int getTargetCount() {
         return target.size();
@@ -458,6 +474,8 @@ public class NonBlockingSession implements Session {
             }
             return;
         }
+
+        setRouteResultToTrace(rrs.getNodes());
         if (this.getSessionXaID() != null && this.xaState == TxState.TX_INITIALIZE_STATE) {
             this.xaState = TxState.TX_STARTED_STATE;
         }
@@ -479,6 +497,12 @@ public class NonBlockingSession implements Session {
             }
         } else {
             executeMultiResultSet(rrs);
+        }
+    }
+
+    public void setRouteResultToTrace(RouteResultsetNode[] nodes) {
+        if (SlowQueryLog.getInstance().isEnableSlowLog()) {
+            traceResult.setDataNodes(nodes);
         }
     }
 
@@ -505,7 +529,7 @@ public class NonBlockingSession implements Session {
         } else if (ServerParse.SELECT == rrs.getSqlType() && rrs.getGroupByCols() != null) {
             MultiNodeSelectHandler multiNodeSelectHandler = new MultiNodeSelectHandler(rrs, this);
             setTraceSimpleHandler(multiNodeSelectHandler);
-            setPreExecuteEnd();
+            setPreExecuteEnd(false);
             readyToDeliver();
             if (this.isPrepared()) {
                 multiNodeSelectHandler.setPrepared(true);
@@ -522,7 +546,7 @@ public class NonBlockingSession implements Session {
         } else {
             MultiNodeQueryHandler multiNodeHandler = new MultiNodeQueryHandler(rrs, this);
             setTraceSimpleHandler(multiNodeHandler);
-            setPreExecuteEnd();
+            setPreExecuteEnd(false);
             readyToDeliver();
             if (this.isPrepared()) {
                 multiNodeHandler.setPrepared(true);
@@ -593,8 +617,9 @@ public class NonBlockingSession implements Session {
                 return;
             }
         }
-        setPreExecuteEnd();
+        setPreExecuteEnd(true);
         if (PlanUtil.containsSubQuery(node)) {
+            setSubQuery();
             final PlanNode finalNode = node;
             DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
                 //sub Query build will be blocked, so use ComplexQueryExecutor

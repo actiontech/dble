@@ -117,8 +117,8 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
             case ManagerParse.RELEASE_RELOAD_METADATA:
                 ReleaseReloadMetadata.execute(c);
                 break;
-            case ManagerParse.DATAHOST:
-                DataHostHandler.handle(sql, c);
+            case ManagerParse.DB_GROUP:
+                DbGroupHAHandler.handle(sql, c);
                 break;
             case ManagerParse.SPLIT:
                 c.skipIdleCheck(true);

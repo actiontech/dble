@@ -1,4 +1,9 @@
-package com.actiontech.dble.manager.response;
+/*
+ * Copyright (C) 2016-2020 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
+package com.actiontech.dble.manager.response.ha;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
@@ -31,10 +36,10 @@ import java.util.regex.Matcher;
 /**
  * Created by szf on 2019/10/22.
  */
-public final class DataHostDisable {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DataHostDisable.class);
+public final class DbGroupHaDisable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DbGroupHaDisable.class);
 
-    private DataHostDisable() {
+    private DbGroupHaDisable() {
 
     }
 
@@ -48,13 +53,13 @@ public final class DataHostDisable {
         try {
             PhysicalDbGroup dh = DbleServer.getInstance().getConfig().getDbGroups().get(dhName);
             if (dh == null) {
-                mc.writeErrMessage(ErrorCode.ER_YES, "dataHost " + dhName + " do not exists");
+                mc.writeErrMessage(ErrorCode.ER_YES, "dbGroup " + dhName + " do not exists");
                 return;
             }
 
 
-            if (!dh.checkDataSourceExist(subHostName)) {
-                mc.writeErrMessage(ErrorCode.ER_YES, "Some of the dataSource in command in " + dh.getGroupName() + " do not exists");
+            if (!dh.checkInstanceExist(subHostName)) {
+                mc.writeErrMessage(ErrorCode.ER_YES, "Some of the dbInstance in command in " + dh.getGroupName() + " do not exists");
                 return;
             }
 
@@ -76,7 +81,7 @@ public final class DataHostDisable {
                     HaConfigManager.getInstance().haFinish(id, null, result);
                 } catch (Exception e) {
                     HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
-                    mc.writeErrMessage(ErrorCode.ER_YES, "disable dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
+                    mc.writeErrMessage(ErrorCode.ER_YES, "disable dbGroup with error, use show @@dbInstance to check latest status. Error:" + e.getMessage());
                     return;
                 }
             }
@@ -98,8 +103,8 @@ public final class DataHostDisable {
             boolean locked = false;
             try {
                 if (!distributeLock.acquire(100, TimeUnit.MILLISECONDS)) {
-                    mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is change the dataHost status");
-                    HaConfigManager.getInstance().haFinish(id, "Other instance is changing the dataHost, please try again later.", null);
+                    mc.writeErrMessage(ErrorCode.ER_YES, "Other dble instance is change the dbGroup status");
+                    HaConfigManager.getInstance().haFinish(id, "Other dble instance is changing the dbGroup, please try again later.", null);
                     return false;
                 }
                 locked = true;
@@ -110,7 +115,7 @@ public final class DataHostDisable {
                 // write out notify message ,let other dble to response
                 setStatusToZK(ClusterPathUtil.getHaResponsePath(dh.getGroupName()), zkConn, new HaInfo(dh.getGroupName(),
                         SystemConfig.getInstance().getInstanceName(),
-                        HaInfo.HaType.DATAHOST_DISABLE,
+                        HaInfo.HaType.DISABLE,
                         HaInfo.HaStatus.SUCCESS
                 ).toString());
                 //write out self change success result
@@ -148,26 +153,26 @@ public final class DataHostDisable {
         ClusterGeneralDistributeLock distributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getHaLockPath(dh.getGroupName()),
                 new HaInfo(dh.getGroupName(),
                         SystemConfig.getInstance().getInstanceName(),
-                        HaInfo.HaType.DATAHOST_DISABLE,
+                        HaInfo.HaType.DISABLE,
                         HaInfo.HaStatus.INIT
                 ).toString()
         );
         try {
             if (!distributeLock.acquire()) {
-                mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is changing the dataHost, please try again later.");
-                HaConfigManager.getInstance().haFinish(id, "Other instance is changing the dataHost, please try again later.", null);
+                mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is changing the dbGroup, please try again later.");
+                HaConfigManager.getInstance().haFinish(id, "Other instance is changing the dbGroup, please try again later.", null);
                 return false;
             }
             //local set disable
             final String result = dh.disableHosts(subHostName, false);
 
-            //update total dataSources status
+            //update total dbInstance status
             ClusterHelper.setKV(ClusterPathUtil.getHaStatusPath(dh.getGroupName()), dh.getClusterHaJson());
             // update the notify value let other dble to notify
             ClusterHelper.setKV(ClusterPathUtil.getHaResponsePath(dh.getGroupName()),
                     new HaInfo(dh.getGroupName(),
                             SystemConfig.getInstance().getInstanceName(),
-                            HaInfo.HaType.DATAHOST_DISABLE,
+                            HaInfo.HaType.DISABLE,
                             HaInfo.HaStatus.SUCCESS
                     ).toString());
             //write out self success message

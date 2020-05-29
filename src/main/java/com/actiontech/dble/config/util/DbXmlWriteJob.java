@@ -64,7 +64,7 @@ public class DbXmlWriteJob implements Runnable {
             PhysicalDbInstance dbInstance = physicalDbInstances.get(dbInstanceBean.getName());
             if (dbInstance != null) {
                 dbInstanceBean.setPrimary(!dbInstance.isReadInstance());
-                dbInstanceBean.setDisabled("" + dbInstance.isDisabled());
+                dbInstanceBean.setDisabled(dbInstance.isDisabled() ? "true" : null);
             } else {
                 LOGGER.warn("dbInstance " + dbInstanceBean.getName() + " is not found");
             }

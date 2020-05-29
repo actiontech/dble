@@ -101,10 +101,10 @@ public final class ShowHelp {
         HELPS.put("show @@server", "Report server status");
         HELPS.put("show @@threadpool", "Report threadPool status");
         HELPS.put("show @@database", "Report databases");
-        HELPS.put("show @@datanode [where schema = ?]", "Report dataNodes");
-        HELPS.put("show @@datasource [where dataNode = ?]", "Report dataSources");
-        HELPS.put("show @@datasource.synstatus", "Report datasource data synchronous");
-        HELPS.put("show @@datasource.syndetail where name=?", "Report datasource data synchronous detail");
+        HELPS.put("show @@shardingNode [where schema = ?]", "Report shardingNodes");
+        HELPS.put("show @@dbinstance [where shardingNode = ?]", "Report dbinstance");
+        HELPS.put("show @@dbinstance.synstatus", "Report dbinstance data synchronous");
+        HELPS.put("show @@dbinstance.syndetail where name=?", "Report dbinstance data synchronous detail");
         HELPS.put("show @@processor", "Report processor status");
         HELPS.put("show @@command", "Report commands status");
         HELPS.put("show @@connection where processor=? and front_id=? and host=? and user=?", "Report connection status");
@@ -140,14 +140,14 @@ public final class ShowHelp {
 
         HELPS.put("show @@cost_time", "Report cost time of query , contains back End ,front End and over all");
         HELPS.put("show @@thread_used", "Report usage of threads, for optimize performance ");
-        HELPS.put("show @@dataNodes where schema='?' and table='?'", "Report the data nodes info of a table");
+        HELPS.put("show @@shardingNodes where schema='?' and table='?'", "Report the sharding nodes info of a table");
         HELPS.put("show @@algorithm where schema='?' and table='?'", "Report the algorithm info of a table");
         HELPS.put("show @@ddl", "Report all ddl info in progress");
         HELPS.put("show @@reload_status", "Report latest reload status in this dble");
         HELPS.put("show @@user", "Report all user in this dble");
         HELPS.put("show @@user.privilege", "Report privilege of all business user in this dble");
         HELPS.put("show @@questions", "Report the questions & transactions have been executed in server port");
-        HELPS.put("show @@data_distribution where table ='schema.table'", "Report the data distribution in different data node");
+        HELPS.put("show @@data_distribution where table ='schema.table'", "Report the data distribution in different sharding node");
 
 
         // kill
@@ -219,10 +219,12 @@ public final class ShowHelp {
         HELPS.put("show @@alert", "Show if the alert is enabled");
         HELPS.put("enable @@alert", "Turn on the alert");
         HELPS.put("disable @@alert", "Turn off the alert");
-        HELPS.put("dataHost @@disable name='?' (node = '?')", "disable some dataSources/dataHost");
-        HELPS.put("dataHost @@enable name='?' (node = '?')", "enable some dataSources/dataHost");
-        HELPS.put("dataHost @@switch name='?' master='?'", "switch writeHost and readHost in one dataHost");
-        HELPS.put("dataHost @@events ", "show all the dataHost ha event which not finished yet ");
+
+        //ha
+        HELPS.put("dbGroup @@disable name='?' (instance = '?')", "disable some dbGroup/dbInstance");
+        HELPS.put("dbGroup @@enable name='?' (instance = '?')", "enable some dbGroup/dbInstance");
+        HELPS.put("dbGroup @@switch name='?' master='?'", "switch primary in one dbGroup");
+        HELPS.put("dbGroup @@events ", "show all the dbGroup ha event which not finished yet ");
 
         //dump file
         HELPS.put("split src dest -sschema -r500 -w500 -l10000", "split dump file into multi dump files according to shardingNode");

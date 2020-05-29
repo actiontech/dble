@@ -37,7 +37,7 @@ public final class ManagerParse {
     public static final int KILL_DDL_LOCK = 20;
     public static final int KILL_XA_SESSION = 21;
     public static final int RELEASE_RELOAD_METADATA = 22;
-    public static final int DATAHOST = 23;
+    public static final int DB_GROUP = 23;
     public static final int SPLIT = 24;
     public static final int DROP_DB = 25;
     public static final int FLOW_CONTROL = 26;
@@ -101,9 +101,9 @@ public final class ManagerParse {
     private static int dCheck(String stmt, int offset) {
         if (stmt.length() > ++offset) {
             switch (stmt.charAt(offset)) {
-                case 'A':
-                case 'a':
-                    return dataHostCheck(stmt, --offset);
+                case 'B':
+                case 'b':
+                    return dbGroupCheck(stmt, offset);
                 case 'R':
                 case 'r':
                     return drCheck(stmt, offset);
@@ -117,23 +117,19 @@ public final class ManagerParse {
         return OTHER;
     }
 
-    private static int dataHostCheck(String stmt, int offset) {
-        if (stmt.length() > offset + "ataHost".length()) {
+    private static int dbGroupCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "Group".length()) {
             char c1 = stmt.charAt(++offset);
             char c2 = stmt.charAt(++offset);
             char c3 = stmt.charAt(++offset);
             char c4 = stmt.charAt(++offset);
             char c5 = stmt.charAt(++offset);
-            char c6 = stmt.charAt(++offset);
-            char c7 = stmt.charAt(++offset);
-            if ((c1 == 'a' || c1 == 'A') &&
-                    (c2 == 't' || c2 == 'T') &&
-                    (c3 == 'a' || c3 == 'A') &&
-                    (c4 == 'h' || c4 == 'H') &&
-                    (c5 == 'o' || c5 == 'O') &&
-                    (c6 == 's' || c6 == 'S') &&
-                    (c7 == 't' || c7 == 'T')) {
-                return DATAHOST;
+            if ((c1 == 'g' || c1 == 'G') &&
+                    (c2 == 'r' || c2 == 'R') &&
+                    (c3 == 'o' || c3 == 'O') &&
+                    (c4 == 'u' || c4 == 'U') &&
+                    (c5 == 'p' || c5 == 'P')) {
+                return DB_GROUP;
             }
         }
         return OTHER;

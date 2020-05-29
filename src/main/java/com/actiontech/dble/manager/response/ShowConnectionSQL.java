@@ -15,6 +15,7 @@ import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.FormatUtil;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
@@ -29,7 +30,7 @@ public final class ShowConnectionSQL {
     private ShowConnectionSQL() {
     }
 
-    private static final int FIELD_COUNT = 7;
+    private static final int FIELD_COUNT = 8;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
@@ -59,6 +60,9 @@ public final class ShowConnectionSQL {
 
         FIELDS[i] = PacketUtil.getField("SQL", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
+
+        FIELDS[i] = PacketUtil.getField("STAGE", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
     }
@@ -113,7 +117,12 @@ public final class ShowConnectionSQL {
             executeSql = c.getExecuteSql().length() <= 1024 ? c.getExecuteSql() : c.getExecuteSql().substring(0, 1024);
         }
         row.add(StringUtil.encode(executeSql, charset));
+        if (c instanceof ServerConnection) {
+            ServerConnection sc = (ServerConnection) c;
+            row.add(StringUtil.encode(sc.getSession2().getSessionStage().toString(), charset));
+        } else {
+            row.add(StringUtil.encode("Manager connection", charset));
+        }
         return row;
     }
-
 }

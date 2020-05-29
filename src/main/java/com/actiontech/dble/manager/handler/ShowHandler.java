@@ -223,6 +223,14 @@ public final class ShowHandler {
             case ManagerParseShow.DDL_STATE:
                 ShowDdlState.execute(c);
                 break;
+            case ManagerParseShow.CONNECTION_SQL_STATUS:
+                String id = stmt.substring(rs >>> 8).trim();
+                if (StringUtil.isEmpty(id)) {
+                    c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
+                } else {
+                    ShowConnectionSQLStatus.execute(c, id);
+                }
+                break;
             default:
                 if (isSupportShow(stmt)) {
                     Iterator<PhysicalDBPool> iterator = DbleServer.getInstance().getConfig().getDataHosts().values().iterator();

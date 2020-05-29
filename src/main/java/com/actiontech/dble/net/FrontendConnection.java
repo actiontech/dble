@@ -211,6 +211,7 @@ public abstract class FrontendConnection extends AbstractConnection {
     }
 
     protected void writeErrMessage(byte id, int vendorCode, String sqlState, String msg) {
+        markFinished();
         ErrorPacket err = new ErrorPacket();
         err.setPacketId(id);
         err.setErrNo(vendorCode);
@@ -222,6 +223,8 @@ public abstract class FrontendConnection extends AbstractConnection {
     protected abstract void setRequestTime();
 
     public abstract void startProcess();
+
+    protected abstract void markFinished();
 
     public void initDB(byte[] data) {
 

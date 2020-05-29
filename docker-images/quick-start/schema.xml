@@ -63,13 +63,13 @@
     <dataNode name="dn5" dataHost="backend-mysql1" database="db5"/>
     <dataNode name="dn6" dataHost="backend-mysql2" database="db6"/>
 
-    <dataHost name="backend-mysql1" maxCon="300" minCon="10" balance="0" switchType="-1" slaveThreshold="100">
+    <dataHost name="backend-mysql1" maxCon="300" minCon="10" balance="0" slaveThreshold="100">
         <heartbeat>show slave status</heartbeat>
         <writeHost host="hostM1" url="172.18.0.2:3306" user="root"
                    password="123456">
         </writeHost>
     </dataHost>
-    <dataHost name="backend-mysql2" maxCon="300" minCon="10" balance="0" switchType="-1" slaveThreshold="100">
+    <dataHost name="backend-mysql2" maxCon="300" minCon="10" balance="0" slaveThreshold="100">
         <heartbeat>show slave status</heartbeat>
         <writeHost host="hostM1" url="172.18.0.3:3306" user="root"
                    password="123456">

@@ -565,10 +565,10 @@ public class PhysicalDbGroup {
         return gson.toJson(jsonObject);
     }
 
-    public boolean checkDataSourceExist(String subHostName) {
+    public boolean checkInstanceExist(String instanceName) {
         //add check for subHostName
-        if (subHostName != null) {
-            for (String dn : subHostName.split(",")) {
+        if (instanceName != null) {
+            for (String dn : instanceName.split(",")) {
                 boolean find = false;
                 for (PhysicalDbInstance pds : this.getAllDataSources()) {
                     if (pds.getName().equals(dn)) {

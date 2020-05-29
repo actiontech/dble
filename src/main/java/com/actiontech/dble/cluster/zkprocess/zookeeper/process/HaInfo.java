@@ -17,7 +17,7 @@ public class HaInfo {
     }
 
     public enum HaType {
-        DATAHOST_DISABLE, DATAHOST_ENABLE, DATAHOST_SWITCH
+        DISABLE, ENABLE, SWITCH
     }
 
 

@@ -1,4 +1,9 @@
-package com.actiontech.dble.manager.response;
+/*
+ * Copyright (C) 2016-2020 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
+package com.actiontech.dble.manager.response.ha;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
@@ -26,52 +31,52 @@ import java.util.regex.Matcher;
 /**
  * Created by szf on 2019/10/22.
  */
-public final class DataHostEnable {
+public final class DbGroupHaEnable {
 
-    private DataHostEnable() {
+    private DbGroupHaEnable() {
 
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DataHostEnable.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DbGroupHaEnable.class);
 
     public static void execute(Matcher enable, ManagerConnection mc) {
-        String dhName = enable.group(1);
-        String subHostName = enable.group(3);
+        String dbGroupName = enable.group(1);
+        String dbInstanceName = enable.group(3);
         //check the dbGroup is exists
 
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
         try {
-            PhysicalDbGroup dh = DbleServer.getInstance().getConfig().getDbGroups().get(dhName);
-            if (dh == null) {
-                mc.writeErrMessage(ErrorCode.ER_YES, "dataHost " + dhName + " do not exists");
+            PhysicalDbGroup dbGroup = DbleServer.getInstance().getConfig().getDbGroups().get(dbGroupName);
+            if (dbGroup == null) {
+                mc.writeErrMessage(ErrorCode.ER_YES, "dbGroup " + dbGroupName + " do not exists");
                 return;
             }
 
 
-            if (!dh.checkDataSourceExist(subHostName)) {
-                mc.writeErrMessage(ErrorCode.ER_YES, "Some of the dataSource in command in " + dh.getGroupName() + " do not exists");
+            if (!dbGroup.checkInstanceExist(dbInstanceName)) {
+                mc.writeErrMessage(ErrorCode.ER_YES, "Some of the dbInstanceName in command in " + dbGroup.getGroupName() + " do not exists");
                 return;
             }
 
             int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.LOCAL_CHANGE, HaInfo.HaStartType.LOCAL_COMMAND, enable.group(0));
             if (ClusterConfig.getInstance().isNeedSyncHa()) {
                 if (ClusterConfig.getInstance().isUseZK()) {
-                    if (!enableWithZK(id, dh, subHostName, mc)) {
+                    if (!enableWithZK(id, dbGroup, dbInstanceName, mc)) {
                         return;
                     }
                 } else {
-                    if (!enableWithCluster(id, dh, subHostName, mc)) {
+                    if (!enableWithCluster(id, dbGroup, dbInstanceName, mc)) {
                         return;
                     }
                 }
             } else {
                 try {
-                    String result = dh.enableHosts(subHostName, true);
+                    String result = dbGroup.enableHosts(dbInstanceName, true);
                     HaConfigManager.getInstance().haFinish(id, null, result);
                 } catch (Exception e) {
                     HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
-                    mc.writeErrMessage(ErrorCode.ER_YES, "enable dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
+                    mc.writeErrMessage(ErrorCode.ER_YES, "enable dbGroup with error, use show @@dbInstance to check latest status. Error:" + e.getMessage());
                     return;
                 }
             }
@@ -95,12 +100,12 @@ public final class DataHostEnable {
             boolean locked = false;
             try {
                 if (!distributeLock.acquire(100, TimeUnit.MILLISECONDS)) {
-                    mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is change the dataHost status");
+                    mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is change the dbGroup status");
                     return false;
                 }
                 locked = true;
                 String result = dh.enableHosts(subHostName, false);
-                DataHostDisable.setStatusToZK(ClusterPathUtil.getHaStatusPath(dh.getGroupName()), zkConn, result);
+                DbGroupHaDisable.setStatusToZK(ClusterPathUtil.getHaStatusPath(dh.getGroupName()), zkConn, result);
                 HaConfigManager.getInstance().haFinish(id, null, result);
             } finally {
                 if (locked) {
@@ -123,13 +128,13 @@ public final class DataHostEnable {
         ClusterGeneralDistributeLock distributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getHaLockPath(dh.getGroupName()),
                 new HaInfo(dh.getGroupName(),
                         SystemConfig.getInstance().getInstanceName(),
-                        HaInfo.HaType.DATAHOST_ENABLE,
+                        HaInfo.HaType.ENABLE,
                         HaInfo.HaStatus.INIT
                 ).toString()
         );
         try {
             if (!distributeLock.acquire()) {
-                mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is changing the dataHost, please try again later.");
+                mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is changing the dbGroup, please try again later.");
                 return false;
             }
             String result = dh.enableHosts(subHostName, false);

@@ -1,4 +1,9 @@
-package com.actiontech.dble.manager.response;
+/*
+ * Copyright (C) 2016-2020 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
+package com.actiontech.dble.manager.response.ha;
 
 import com.actiontech.dble.backend.datasource.HaChangeStatus;
 import com.actiontech.dble.backend.mysql.PacketUtil;
@@ -18,7 +23,7 @@ import java.util.Map;
 /**
  * Created by szf on 2019/10/28.
  */
-public final class DataHostEvents {
+public final class DbGroupHaEvents {
 
 
     private static final int FIELD_COUNT = 5;
@@ -44,7 +49,7 @@ public final class DataHostEvents {
         EOF.setPacketId(++packetId);
     }
 
-    private DataHostEvents() {
+    private DbGroupHaEvents() {
     }
 
     public static void execute(ManagerConnection mc) {

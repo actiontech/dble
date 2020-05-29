@@ -1,4 +1,9 @@
-package com.actiontech.dble.manager.response;
+/*
+ * Copyright (C) 2016-2020 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+
+package com.actiontech.dble.manager.response.ha;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
@@ -25,31 +30,31 @@ import java.util.regex.Matcher;
 /**
  * Created by szf on 2019/10/22.
  */
-public final class DataHostSwitch {
+public final class DbGroupHaSwitch {
 
-    private DataHostSwitch() {
+    private DbGroupHaSwitch() {
 
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DataHostSwitch.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DbGroupHaSwitch.class);
 
     public static void execute(Matcher switcher, ManagerConnection mc) {
-        String dhName = switcher.group(1);
+        String dbGroupName = switcher.group(1);
         String masterName = switcher.group(2);
         //check the dbGroup is exists
 
         final ReentrantReadWriteLock lock = DbleServer.getInstance().getConfig().getLock();
         lock.readLock().lock();
         try {
-            PhysicalDbGroup dh = DbleServer.getInstance().getConfig().getDbGroups().get(dhName);
+            PhysicalDbGroup dh = DbleServer.getInstance().getConfig().getDbGroups().get(dbGroupName);
             if (dh == null) {
-                mc.writeErrMessage(ErrorCode.ER_YES, "dataHost " + dhName + " do not exists");
+                mc.writeErrMessage(ErrorCode.ER_YES, "dbGroup " + dbGroupName + " do not exists");
                 return;
             }
 
             int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.LOCAL_CHANGE, HaInfo.HaStartType.LOCAL_COMMAND, switcher.group(0));
-            if (!dh.checkDataSourceExist(masterName)) {
-                mc.writeErrMessage(ErrorCode.ER_YES, "Some of the dataSource in command in " + dh.getGroupName() + " do not exists");
+            if (!dh.checkInstanceExist(masterName)) {
+                mc.writeErrMessage(ErrorCode.ER_YES, "Some of the dbInstance in command in " + dh.getGroupName() + " do not exists");
                 return;
             }
             if (ClusterConfig.getInstance().isNeedSyncHa()) {
@@ -69,7 +74,7 @@ public final class DataHostSwitch {
                     HaConfigManager.getInstance().haFinish(id, null, result);
                 } catch (Exception e) {
                     HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
-                    mc.writeErrMessage(ErrorCode.ER_YES, "swtich dataHost with error, use show @@dataSource to check latest status. Error:" + e.getMessage());
+                    mc.writeErrMessage(ErrorCode.ER_YES, "swtich dbGroup with error, use show @@dbInstance to check latest status. Error:" + e.getMessage());
                     return;
                 }
             }
@@ -89,14 +94,14 @@ public final class DataHostSwitch {
         ClusterGeneralDistributeLock distributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getHaLockPath(dh.getGroupName()),
                 new HaInfo(dh.getGroupName(),
                         SystemConfig.getInstance().getInstanceName(),
-                        HaInfo.HaType.DATAHOST_SWITCH,
+                        HaInfo.HaType.SWITCH,
                         HaInfo.HaStatus.INIT
                 ).toString()
         );
         boolean locked = false;
         try {
             if (!distributeLock.acquire()) {
-                mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is changing the dataHost, please try again later.");
+                mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is changing the dbGroup, please try again later.");
                 return false;
             }
             locked = true;
@@ -122,11 +127,11 @@ public final class DataHostSwitch {
         try {
             try {
                 if (!distributeLock.acquire(100, TimeUnit.MILLISECONDS)) {
-                    mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is change the dataHost status");
+                    mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is change the dbGroup status");
                     return false;
                 }
                 String result = dh.switchMaster(subHostName, false);
-                DataHostDisable.setStatusToZK(ClusterPathUtil.getHaStatusPath(dh.getGroupName()), zkConn, result);
+                DbGroupHaDisable.setStatusToZK(ClusterPathUtil.getHaStatusPath(dh.getGroupName()), zkConn, result);
                 HaConfigManager.getInstance().haFinish(id, null, result);
             } finally {
                 distributeLock.release();

@@ -16,7 +16,7 @@
 -DinstanceName=1
 # valid for sequenceHandlerType=2 or 3
 -DinstanceId=1
-#-DserverId=xxx1
+-DserverId=xxx1
 #-DuseSerializableMode=1
 #-DbindIp=0.0.0.0
 #-DserverPort=8066

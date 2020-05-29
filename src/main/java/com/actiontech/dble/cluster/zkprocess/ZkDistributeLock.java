@@ -6,28 +6,26 @@
 package com.actiontech.dble.cluster.zkprocess;
 
 import com.actiontech.dble.cluster.DistributeLock;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+import com.actiontech.dble.util.ZKUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.TimeUnit;
+import java.nio.charset.StandardCharsets;
 
 public class ZkDistributeLock extends DistributeLock {
     private static final Logger LOGGER = LoggerFactory.getLogger(ZkDistributeLock.class);
-    private InterProcessMutex distributeLock;
-    private final CuratorFramework zkConn;
 
-    public ZkDistributeLock(CuratorFramework zkConn, String path) {
-        this.zkConn = zkConn;
+    public ZkDistributeLock(String path, String value) {
         this.path = path;
+        this.value = value;
     }
 
     @Override
     public boolean acquire() {
-        distributeLock = new InterProcessMutex(zkConn, path);
+
         try {
-            return distributeLock.acquire(100, TimeUnit.MILLISECONDS);
+            ZKUtils.createTempNode(path, value.getBytes(StandardCharsets.UTF_8));
+            return true;
         } catch (Exception e) {
             LOGGER.warn("acquire ZkDistributeLock failed ", e);
             return false;
@@ -38,7 +36,7 @@ public class ZkDistributeLock extends DistributeLock {
     @Override
     public void release() {
         try {
-            distributeLock.release();
+            ZKUtils.getConnection().delete().deletingChildrenIfNeeded().forPath(path);
         } catch (Exception e) {
             LOGGER.warn("release ZkDistributeLock failed ", e);
         }

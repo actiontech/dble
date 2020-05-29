@@ -123,6 +123,8 @@ src/main/resources/db.xml
 src/main/resources/sharding.xml 
 src/main/resources/user.xml
 src/main/resources/bootstrap.dynamic.cnf
+src/main/resources/bootstrap.cnf
+src/main/resources/cluster.cnf
 version.txt
 dependency-reduced-pom.xml
 checkstyle-result.out

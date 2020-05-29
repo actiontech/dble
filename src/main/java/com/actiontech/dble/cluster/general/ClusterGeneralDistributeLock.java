@@ -18,7 +18,6 @@ public class ClusterGeneralDistributeLock extends DistributeLock {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClusterGeneralDistributeLock.class);
     private final int maxErrorCnt;
     private int errorCount = 0;
-    private String value;
     private String session;
 
     //private Thread renewThread;

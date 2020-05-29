@@ -34,11 +34,10 @@ public final class ZkConfig {
 
     public static void initZk() {
         try {
+            ZktoXmlMain.loadZktoFile();
             tryDeleteOldOnline();
             // online
             ZKUtils.createOnline(ClusterPathUtil.getOnlinePath(), SystemConfig.getInstance().getInstanceName(), OnlineStatus.getInstance());
-
-            ZktoXmlMain.loadZktoFile();
         } catch (Exception e) {
             LOGGER.error("error:", e);
         }

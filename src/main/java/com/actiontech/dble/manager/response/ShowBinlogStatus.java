@@ -9,13 +9,15 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.PacketUtil;
-import com.actiontech.dble.cluster.general.ClusterGeneralDistributeLock;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.cluster.general.ClusterGeneralDistributeLock;
 import com.actiontech.dble.cluster.general.kVtoXml.ClusterToXml;
+import com.actiontech.dble.cluster.zkprocess.ZkDistributeLock;
+import com.actiontech.dble.cluster.zkprocess.zookeeper.process.BinlogPause;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.cluster.zkprocess.zookeeper.process.BinlogPause;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.manager.ManagerConnection;
@@ -35,7 +37,6 @@ import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.utils.ZKPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -120,16 +121,17 @@ public final class ShowBinlogStatus {
                 if (!DbleServer.getInstance().getBackupLocked().compareAndSet(false, true)) {
                     c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "There is another command is showing BinlogStatus");
                 } else {
-                    //step 3 notify other dble to stop the commit & set self status
-                    BinlogPause pauseOnInfo = new BinlogPause(SystemConfig.getInstance().getInstanceName(), BinlogPauseStatus.ON);
 
-                    //step 4 wait til other dbles to feedback the ucore flag
+                    //step 3 wait til other dbles to feedback the ucore flag
                     long beginTime = TimeUtil.currentTimeMillis();
                     boolean isPaused = waitAllSession(c, timeout, beginTime);
                     if (!isPaused) {
                         writeResponse(c);
                         return;
                     }
+                    //step 4 notify other dble to stop the commit & set self status
+                    BinlogPause pauseOnInfo = new BinlogPause(SystemConfig.getInstance().getInstanceName(), BinlogPauseStatus.ON);
+
                     ClusterHelper.setKV(ClusterPathUtil.getBinlogPauseStatus(), pauseOnInfo.toString());
                     ClusterHelper.setKV(ClusterPathUtil.getBinlogPauseStatusSelf(), ClusterPathUtil.SUCCESS);
 
@@ -173,75 +175,73 @@ public final class ShowBinlogStatus {
     private static void showBinlogWithZK(ManagerConnection c, long timeout) {
         CuratorFramework zkConn = ZKUtils.getConnection();
         String lockPath = ClusterPathUtil.getBinlogPauseLockPath();
-        InterProcessMutex distributeLock = new InterProcessMutex(zkConn, lockPath);
+        DistributeLock distributeLock = new ZkDistributeLock(lockPath, String.valueOf(System.currentTimeMillis()));
+        //zkLock, the other instance cant't get lock before finished
+        if (!distributeLock.acquire()) {
+            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "There is another command is showing BinlogStatus");
+            return;
+        }
         try {
-            //zkLock, the other instance cant't get lock before finished
-            if (!distributeLock.acquire(100, TimeUnit.MILLISECONDS)) {
+            if (!DbleServer.getInstance().getBackupLocked().compareAndSet(false, true)) {
                 c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "There is another command is showing BinlogStatus");
-                return;
-            }
-            try {
-                if (!DbleServer.getInstance().getBackupLocked().compareAndSet(false, true)) {
-                    c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "There is another command is showing BinlogStatus");
-                } else {
-                    errMsg = null;
-                    //notify zk to wait all session
-                    String binlogStatusPath = ClusterPathUtil.getBinlogPauseStatus();
-                    BinlogPause pauseOnInfo = new BinlogPause(SystemConfig.getInstance().getInstanceName(), BinlogPauseStatus.ON);
-                    zkConn.setData().forPath(binlogStatusPath, pauseOnInfo.toString().getBytes(StandardCharsets.UTF_8));
-                    long beginTime = TimeUtil.currentTimeMillis();
-                    boolean isPaused = waitAllSession(c, timeout, beginTime);
-
-                    //tell zk this instance has prepared
-                    ZKUtils.createTempNode(binlogStatusPath, SystemConfig.getInstance().getInstanceName(), String.valueOf(isPaused).getBytes(StandardCharsets.UTF_8));
-                    //check all session waiting status
-                    List<String> preparedList = zkConn.getChildren().forPath(binlogStatusPath);
-                    List<String> onlineList = zkConn.getChildren().forPath(ClusterPathUtil.getOnlinePath());
-                    // TODO: While waiting, a new instance of dble is upping and working.
-
-                    boolean isAllSuccess = true;
-                    while (preparedList.size() < onlineList.size()) {
-                        if (TimeUtil.currentTimeMillis() > beginTime + 2 * timeout) {
-                            isAllSuccess = false;
-                            errMsg = "timeout while waiting for unfinished distributed transactions.";
-                            logger.info(errMsg);
-                            break;
-                        }
-                        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
-                        onlineList = zkConn.getChildren().forPath(ClusterPathUtil.getOnlinePath());
-                        preparedList = zkConn.getChildren().forPath(binlogStatusPath);
-                    }
-                    if (isAllSuccess) {
-                        for (String preparedNode : preparedList) {
-                            String preparePath = ZKPaths.makePath(binlogStatusPath, preparedNode);
-                            byte[] resultStatus = zkConn.getData().forPath(preparePath);
-                            String data = new String(resultStatus, StandardCharsets.UTF_8);
-                            if (!Boolean.parseBoolean(data)) {
-                                isAllSuccess = false;
-                            }
-                        }
-                    }
-                    if (isAllSuccess) {
-                        getQueryResult(c.getCharset().getResults());
-                    }
+            } else {
+                errMsg = null;
+                long beginTime = TimeUtil.currentTimeMillis();
+                boolean isPaused = waitAllSession(c, timeout, beginTime);
+                if (!isPaused) {
                     writeResponse(c);
-                    BinlogPause pauseOffInfo = new BinlogPause(SystemConfig.getInstance().getInstanceName(), BinlogPauseStatus.OFF);
-                    zkConn.setData().forPath(binlogStatusPath, pauseOffInfo.toString().getBytes(StandardCharsets.UTF_8));
-                    zkConn.delete().forPath(ZKPaths.makePath(binlogStatusPath, SystemConfig.getInstance().getInstanceName()));
-                    List<String> releaseList = zkConn.getChildren().forPath(binlogStatusPath);
-                    while (releaseList.size() != 0) {
-                        releaseList = zkConn.getChildren().forPath(binlogStatusPath);
-                        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+                    return;
+                }
+                //notify zk to wait all session
+                String binlogStatusPath = ClusterPathUtil.getBinlogPauseStatus();
+                BinlogPause pauseOnInfo = new BinlogPause(SystemConfig.getInstance().getInstanceName(), BinlogPauseStatus.ON);
+                zkConn.setData().forPath(binlogStatusPath, pauseOnInfo.toString().getBytes(StandardCharsets.UTF_8));
+
+                //tell zk this instance has prepared
+                ZKUtils.createTempNode(binlogStatusPath, SystemConfig.getInstance().getInstanceName(), ClusterPathUtil.SUCCESS.getBytes(StandardCharsets.UTF_8));
+                //check all session waiting status
+                List<String> preparedList = zkConn.getChildren().forPath(binlogStatusPath);
+                List<String> onlineList = zkConn.getChildren().forPath(ClusterPathUtil.getOnlinePath());
+                // TODO: While waiting, a new instance of dble is upping and working.
+
+                while (preparedList.size() < onlineList.size()) {
+                    if (TimeUtil.currentTimeMillis() > beginTime + 2 * timeout) {
+                        errMsg = "timeout while waiting for unfinished distributed transactions.";
+                        logger.info(errMsg);
+                        break;
+                    }
+                    LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+                    onlineList = zkConn.getChildren().forPath(ClusterPathUtil.getOnlinePath());
+                    preparedList = zkConn.getChildren().forPath(binlogStatusPath);
+                }
+                if (errMsg == null) {
+                    for (String preparedNode : preparedList) {
+                        String preparePath = ZKPaths.makePath(binlogStatusPath, preparedNode);
+                        byte[] resultStatus = zkConn.getData().forPath(preparePath);
+                        String data = new String(resultStatus, StandardCharsets.UTF_8);
+                        if (!ClusterPathUtil.SUCCESS.equals(data)) {
+                            errMsg = "timeout while waiting for unfinished distributed transactions.";
+                        }
                     }
                 }
-            } catch (Exception e) {
-                logger.info("catch Exception", e);
-            } finally {
-                DbleServer.getInstance().getBackupLocked().compareAndSet(true, false);
-                distributeLock.release();
+                if (errMsg == null) {
+                    getQueryResult(c.getCharset().getResults());
+                }
+                writeResponse(c);
+                BinlogPause pauseOffInfo = new BinlogPause(SystemConfig.getInstance().getInstanceName(), BinlogPauseStatus.OFF);
+                zkConn.setData().forPath(binlogStatusPath, pauseOffInfo.toString().getBytes(StandardCharsets.UTF_8));
+                zkConn.delete().forPath(ZKPaths.makePath(binlogStatusPath, SystemConfig.getInstance().getInstanceName()));
+                List<String> releaseList = zkConn.getChildren().forPath(binlogStatusPath);
+                while (releaseList.size() != 0) {
+                    releaseList = zkConn.getChildren().forPath(binlogStatusPath);
+                    LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+                }
             }
         } catch (Exception e) {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage());
+            logger.info("catch Exception", e);
+        } finally {
+            DbleServer.getInstance().getBackupLocked().compareAndSet(true, false);
+            distributeLock.release();
         }
     }
 

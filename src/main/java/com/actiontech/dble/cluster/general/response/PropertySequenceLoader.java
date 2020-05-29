@@ -11,6 +11,7 @@ import com.actiontech.dble.cluster.general.bean.KvBean;
 import com.actiontech.dble.cluster.general.listener.ClusterClearKeyListener;
 import com.actiontech.dble.cluster.zkprocess.comm.ConfFileRWUtils;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.slf4j.Logger;
@@ -70,7 +71,7 @@ public class PropertySequenceLoader implements ClusterXmlLoader {
         if (!"".equals(sequenceDbConf)) {
             jsonObject.addProperty(PROPERTIES_SEQUENCE_DB_CONF, sequenceDbConf);
         }
-        ClusterHelper.setKV(CONFIG_PATH, jsonObject.getAsString());
+        ClusterHelper.setKV(CONFIG_PATH, (new Gson()).toJson(jsonObject));
     }
 
 }

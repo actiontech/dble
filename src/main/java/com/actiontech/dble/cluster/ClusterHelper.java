@@ -25,6 +25,7 @@ import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.util.ZKUtils;
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
+import org.apache.curator.utils.ZKPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,7 +101,7 @@ public final class ClusterHelper {
         return ClusterGeneralConfig.getInstance().getClusterSender().subscribeKvPrefix(request);
     }
 
-    private static void changeDataHostByStatus(DBGroup dbGroup, List<DbInstanceStatus> statusList) {
+    private static void changeDbGroupByStatus(DBGroup dbGroup, List<DbInstanceStatus> statusList) {
         Map<String, DbInstanceStatus> statusMap = new HashMap<>(statusList.size());
         for (DbInstanceStatus status : statusList) {
             statusMap.put(status.getName(), status);
@@ -287,27 +288,10 @@ public final class ClusterHelper {
                     }.getType());
             dbs.setDbGroup(dbGroupList);
             if (ClusterConfig.getInstance().isNeedSyncHa()) {
-                List<KvBean> statusKVList = ClusterHelper.getKVPath(ClusterPathUtil.getHaStatusPath());
-                if (statusKVList != null && statusKVList.size() > 0) {
-                    Map<String, DBGroup> dbGroupMap = ClusterHelper.changeFromListToMap(dbGroupList);
-                    for (KvBean kv : statusKVList) {
-                        String[] path = kv.getKey().split("/");
-                        String dbGroupName = path[path.length - 1];
-                        DBGroup dbGroup = dbGroupMap.get(dbGroupName);
-                        if (dbGroup != null) {
-                            JsonObject jsonStatusObject = new JsonParser().parse(kv.getValue()).getAsJsonObject();
-                            JsonElement instanceJson = jsonStatusObject.get(JSON_LIST);
-                            if (instanceJson != null) {
-                                List<DbInstanceStatus> list = gson.fromJson(instanceJson.toString(),
-                                        new TypeToken<List<DbInstanceStatus>>() {
-                                        }.getType());
-                                dbs.setDbGroup(dbGroupList);
-                                ClusterHelper.changeDataHostByStatus(dbGroup, list);
-                            }
-                        } else {
-                            LOGGER.warn("dbGroup " + dbGroupName + " is not found");
-                        }
-                    }
+                if (ClusterConfig.getInstance().isUseZK()) {
+                    syncHaStatusFromZk(gson, dbs, dbGroupList);
+                } else {
+                    syncHaStatusFromCluster(gson, dbs, dbGroupList);
                 }
             }
         }
@@ -317,6 +301,50 @@ public final class ClusterHelper {
             dbs.setVersion(gson.fromJson(version.toString(), String.class));
         }
         return dbs;
+    }
+    private static void syncHaStatusFromZk(Gson gson, DbGroups dbs, List<DBGroup> dbGroupList) {
+        try {
+            List<String> dbGroupStatusList = ZKUtils.getConnection().getChildren().forPath(ClusterPathUtil.getHaStatusPath());
+            if (dbGroupList != null && dbGroupList.size() > 0) {
+                Map<String, DBGroup> dbGroupMap = ClusterHelper.changeFromListToMap(dbGroupList);
+                for (String dbGroupName : dbGroupStatusList) {
+                    DBGroup dbGroup = dbGroupMap.get(dbGroupName);
+                    String data = new String(ZKUtils.getConnection().getData().forPath(ZKPaths.makePath(ClusterPathUtil.getHaStatusPath(), dbGroupName)), "UTF-8");
+                    changStatusByJson(gson, dbs, dbGroupList, dbGroupName, dbGroup, data);
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.warn("get error try to write schema.xml");
+        }
+    }
+
+    private static void changStatusByJson(Gson gson, DbGroups dbs, List<DBGroup> dbGroupList, String dbGroupName, DBGroup dbGroup, String data) {
+        if (dbGroup != null) {
+            JsonObject jsonStatusObject = new JsonParser().parse(data).getAsJsonObject();
+            JsonElement instanceJson = jsonStatusObject.get(JSON_LIST);
+            if (instanceJson != null) {
+                List<DbInstanceStatus> list = gson.fromJson(instanceJson.toString(),
+                        new TypeToken<List<DbInstanceStatus>>() {
+                        }.getType());
+                dbs.setDbGroup(dbGroupList);
+                ClusterHelper.changeDbGroupByStatus(dbGroup, list);
+            }
+        } else {
+            LOGGER.warn("dbGroup " + dbGroupName + " is not found");
+        }
+    }
+
+    private static void syncHaStatusFromCluster(Gson gson, DbGroups dbs, List<DBGroup> dbGroupList) {
+        List<KvBean> statusKVList = ClusterHelper.getKVPath(ClusterPathUtil.getHaStatusPath());
+        if (statusKVList != null && statusKVList.size() > 0) {
+            Map<String, DBGroup> dbGroupMap = ClusterHelper.changeFromListToMap(dbGroupList);
+            for (KvBean kv : statusKVList) {
+                String[] path = kv.getKey().split("/");
+                String dbGroupName = path[path.length - 1];
+                DBGroup dbGroup = dbGroupMap.get(dbGroupName);
+                changStatusByJson(gson, dbs, dbGroupList, dbGroupName, dbGroup, kv.getValue());
+            }
+        }
     }
 
 

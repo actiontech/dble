@@ -69,7 +69,8 @@ public final class RollbackConfig {
     private static boolean rollbackWithCluster(ManagerConnection c) {
         DistributeLock distributeLock;
         if (ClusterConfig.getInstance().isUseZK()) {
-            distributeLock = new ZkDistributeLock(ZKUtils.getConnection(), ClusterPathUtil.getConfChangeLockPath());
+            distributeLock = new ZkDistributeLock(ClusterPathUtil.getConfChangeLockPath(),
+                    SystemConfig.getInstance().getInstanceName());
         } else {
             distributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getConfChangeLockPath(),
                     SystemConfig.getInstance().getInstanceName());

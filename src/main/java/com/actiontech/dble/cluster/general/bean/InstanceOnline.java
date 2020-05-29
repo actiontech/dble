@@ -2,6 +2,7 @@ package com.actiontech.dble.cluster.general.bean;
 
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.util.NetUtil;
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -47,7 +48,7 @@ public final class InstanceOnline {
         online.addProperty(SERVER_PORT, serverPort);
         online.addProperty(HOST_ADDR, hostAddr);
         online.addProperty(START_TIME, startTime);
-        return online.getAsString();
+        return (new Gson()).toJson(online);
     }
 
 }

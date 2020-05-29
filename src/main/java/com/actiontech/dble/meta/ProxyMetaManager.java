@@ -17,14 +17,17 @@ import com.actiontech.dble.backend.mysql.view.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.view.KVStoreRepository;
 import com.actiontech.dble.backend.mysql.view.Repository;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.*;
+import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.cluster.DistributeLockManager;
 import com.actiontech.dble.cluster.general.ClusterGeneralDistributeLock;
 import com.actiontech.dble.cluster.zkprocess.ZkDistributeLock;
-import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.cluster.zkprocess.zktoxml.listen.DbGroupResponseListener;
 import com.actiontech.dble.cluster.zkprocess.zktoxml.listen.DbGroupStatusListener;
 import com.actiontech.dble.cluster.zkprocess.zookeeper.process.DDLInfo;
+import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -319,7 +322,7 @@ public class ProxyMetaManager {
         if (ClusterConfig.getInstance().isClusterEnable()) {
             DistributeLock lock;
             if (ClusterConfig.getInstance().isUseZK()) {
-                lock = new ZkDistributeLock(ZKUtils.getConnection(), ClusterPathUtil.getSyncMetaLockPath());
+                lock = new ZkDistributeLock(ClusterPathUtil.getSyncMetaLockPath(), String.valueOf(System.currentTimeMillis()));
             } else {
                 lock = new ClusterGeneralDistributeLock(ClusterPathUtil.getSyncMetaLockPath(), String.valueOf(System.currentTimeMillis()));
             }
@@ -554,7 +557,7 @@ public class ProxyMetaManager {
             String ddlLockPath = ClusterPathUtil.getDDLLockPath(tableFullName);
             DistributeLock lock;
             if (ClusterConfig.getInstance().isUseZK()) {
-                lock = new ZkDistributeLock(ZKUtils.getConnection(), ddlLockPath);
+                lock = new ZkDistributeLock(ddlLockPath, ddlInfo.toString());
             } else {
                 lock = new ClusterGeneralDistributeLock(ddlLockPath, ddlInfo.toString());
             }
@@ -581,10 +584,10 @@ public class ProxyMetaManager {
     }
 
     private void notifyResponseZKDdl(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, DDLInfo.DDLType ddlType, boolean needNotifyOther) throws Exception {
-        String tableFullName = StringUtil.getFullName(schema, table);
+        String tableFullName = StringUtil.getUFullName(schema, table);
         String tableDDLPath = ClusterPathUtil.getDDLPath(tableFullName);
-        String thisNode = SystemConfig.getInstance().getInstanceName();
-        ZKUtils.createTempNode(tableDDLPath, thisNode);
+        String instancePath = ClusterPathUtil.getDDLInstancePath(tableFullName);
+        ZKUtils.createTempNode(ClusterPathUtil.getDDLInstanceSelfPath(tableFullName), ClusterPathUtil.SUCCESS.getBytes(StandardCharsets.UTF_8));
 
         if (needNotifyOther) {
             try {
@@ -594,11 +597,11 @@ public class ProxyMetaManager {
                 zkConn.setData().forPath(tableDDLPath, ddlInfo.toString().getBytes(StandardCharsets.UTF_8));
                 ClusterDelayProvider.delayAfterDdlNotice();
                 while (true) {
-                    List<String> preparedList = zkConn.getChildren().forPath(tableDDLPath);
+                    List<String> preparedList = zkConn.getChildren().forPath(instancePath);
                     List<String> onlineList = zkConn.getChildren().forPath(ClusterPathUtil.getOnlinePath());
                     if (preparedList.size() >= onlineList.size()) {
                         ClusterDelayProvider.delayBeforeDdlNoticeDeleted();
-                        zkConn.delete().deletingChildrenIfNeeded().forPath(tableDDLPath);
+                        zkConn.delete().deletingChildrenIfNeeded().forPath(instancePath);
                         break;
                     }
                     LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
@@ -630,14 +633,14 @@ public class ProxyMetaManager {
     public void notifyResponseUcoreDDL(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, DDLInfo.DDLType ddlType, boolean needNotifyOther) throws Exception {
         String nodeName = StringUtil.getUFullName(schema, table);
         DDLInfo ddlInfo = new DDLInfo(schema, sql, SystemConfig.getInstance().getInstanceName(), ddlStatus, ddlType);
-        ClusterHelper.setKV(ClusterPathUtil.getDDLInstancePath(nodeName), ClusterPathUtil.SUCCESS);
+        ClusterHelper.setKV(ClusterPathUtil.getDDLInstanceSelfPath(nodeName), ClusterPathUtil.SUCCESS);
         if (needNotifyOther) {
             try {
                 ClusterDelayProvider.delayBeforeDdlNotice();
                 ClusterHelper.setKV(ClusterPathUtil.getDDLPath(nodeName), ddlInfo.toString());
                 ClusterDelayProvider.delayAfterDdlNotice();
 
-                String errorMsg = ClusterHelper.waitingForAllTheNode(ClusterPathUtil.SUCCESS, ClusterPathUtil.getDDLPath(nodeName));
+                String errorMsg = ClusterHelper.waitingForAllTheNode(ClusterPathUtil.SUCCESS, ClusterPathUtil.getDDLInstancePath(nodeName));
 
                 if (errorMsg != null) {
                     throw new RuntimeException(errorMsg);

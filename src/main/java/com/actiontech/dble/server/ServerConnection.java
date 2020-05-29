@@ -468,11 +468,11 @@ public class ServerConnection extends FrontendConnection {
             db = db.toLowerCase();
         }
         // check sharding
-        if (db == null || !DbleServer.getInstance().getConfig().getSchemas().containsKey(schema)) {
+        if (db == null || !DbleServer.getInstance().getConfig().getSchemas().containsKey(db)) {
             writeErrMessage(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + db + "'");
             return;
         }
-        if (userConfig instanceof ShardingUserConfig && !((ShardingUserConfig) userConfig).getSchemas().contains(schema)) {
+        if (userConfig instanceof ShardingUserConfig && !((ShardingUserConfig) userConfig).getSchemas().contains(db)) {
             String s = "Access denied for user '" + user + "' to database '" + db + "'";
             writeErrMessage(ErrorCode.ER_DBACCESS_DENIED_ERROR, s);
             return;

@@ -13,6 +13,7 @@ import com.actiontech.dble.cluster.general.ClusterGeneralDistributeLock;
 import com.actiontech.dble.cluster.general.bean.InstanceOnline;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.util.NetUtil;
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.slf4j.Logger;
@@ -31,13 +32,14 @@ public final class OnlineStatus {
     private volatile ClusterGeneralDistributeLock onlineLock = null;
     private volatile boolean onlineInited = false;
     private volatile boolean mainThreadTryed = false;
-    private volatile int serverPort;
+    private final int serverPort;
     private String hostAddr;
     private final long startTime;
 
     private OnlineStatus() {
         startTime = System.currentTimeMillis();
         hostAddr = NetUtil.getHostIp();
+        serverPort = SystemConfig.getInstance().getServerPort();
     }
 
     private static final OnlineStatus INSTANCE = new OnlineStatus();
@@ -54,7 +56,7 @@ public final class OnlineStatus {
      */
     public synchronized boolean mainThreadInitClusterOnline() throws IOException {
         mainThreadTryed = true;
-        return clusterOnlinInit();
+        return clusterOnlineInit();
     }
 
 
@@ -65,7 +67,7 @@ public final class OnlineStatus {
      */
     public void nodeListenerInitClusterOnline() throws IOException {
         if (mainThreadTryed) {
-            clusterOnlinInit();
+            clusterOnlineInit();
         }
     }
 
@@ -76,12 +78,11 @@ public final class OnlineStatus {
      * @return
      * @throws IOException
      */
-    public synchronized boolean clusterOnlinInit() throws IOException {
+    public synchronized boolean clusterOnlineInit() throws IOException {
         if (onlineInited) {
             //when the first init finished  the online check & rebuild would handle by ClusterOffLineListener
             return false;
         }
-        serverPort = SystemConfig.getInstance().getServerPort();
         //check if the online mark is on than delete the mark and renew it
         String oldValue = ClusterHelper.getKV(ClusterPathUtil.getOnlinePath(
                 SystemConfig.getInstance().getInstanceName())).getValue();
@@ -174,7 +175,7 @@ public final class OnlineStatus {
         online.addProperty(SERVER_PORT, serverPort);
         online.addProperty(HOST_ADDR, hostAddr);
         online.addProperty(START_TIME, startTime);
-        return online.getAsString();
+        return (new Gson()).toJson(online);
     }
 
 }

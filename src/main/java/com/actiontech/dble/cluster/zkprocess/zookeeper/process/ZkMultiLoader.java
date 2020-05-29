@@ -5,8 +5,6 @@
 
 package com.actiontech.dble.cluster.zkprocess.zookeeper.process;
 
-import com.actiontech.dble.cluster.zkprocess.zookeeper.DataInf;
-import com.actiontech.dble.cluster.zkprocess.zookeeper.DirectoryInf;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.data.Stat;
@@ -18,13 +16,6 @@ import java.util.List;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-/**
- * ZkMultiLoader
- * <p>
- * <p>
- * author:liujun
- * Created:2016/9/15
- */
 public class ZkMultiLoader {
 
 
@@ -32,42 +23,26 @@ public class ZkMultiLoader {
 
     private CuratorFramework curator;
 
-    /**
-     * getTreeDirectory
-     *
-     * @param path
-     * @param zkDirectory
-     * @throws Exception
-     * @Created 2016/9/15
-     */
-    public void getTreeDirectory(String path, String name, DirectoryInf zkDirectory) throws Exception {
 
+    public ZkData getTreeDirectory(String path, String name, boolean needChild) throws Exception {
         boolean check = this.checkPathExists(path);
-
         if (check) {
             String currDate = this.getDataToString(path);
-
-            List<String> childPathList = this.getChildNames(path);
-
-            if (null != childPathList && !childPathList.isEmpty()) {
-                DirectoryInf directory = new ZkDirectoryImpl(name, currDate);
-
-                zkDirectory.add(directory);
-
-                for (String childPath : childPathList) {
-                    this.getTreeDirectory(ZKPaths.makePath(path, childPath), childPath, directory);
+            ZkData zkData = new ZkData(name, currDate);
+            if (needChild) {
+                List<String> childPathList = this.getChildNames(path);
+                if (null != childPathList && !childPathList.isEmpty()) {
+                    for (String childPath : childPathList) {
+                        ZkData zkChildData = this.getTreeDirectory(ZKPaths.makePath(path, childPath), childPath, true);
+                        zkData.addChild(zkChildData);
+                    }
                 }
-            } else {
-                zkDirectory.add(new ZkDataImpl(name, currDate));
             }
+            return zkData;
         }
+        return null;
     }
 
-    /**
-     * @param path
-     * @return
-     * @Created 2016/9/21
-     */
     protected boolean checkPathExists(String path) {
         try {
             Stat state = this.curator.checkExists().forPath(path);
@@ -156,60 +131,6 @@ public class ZkMultiLoader {
             return "{}";
         }
         return new String(raw, StandardCharsets.UTF_8);
-    }
-
-    /**
-     * getZkData
-     *
-     * @param zkDirectory
-     * @param name
-     * @return
-     * @Created 2016/9/16
-     */
-    protected DataInf getZkData(DirectoryInf zkDirectory, String name) {
-        List<Object> list = zkDirectory.getSubordinateInfo();
-
-        if (null != list && !list.isEmpty()) {
-            for (Object directObj : list) {
-
-                if (directObj instanceof ZkDataImpl) {
-                    ZkDataImpl zkDirectoryValue = (ZkDataImpl) directObj;
-
-                    if (name.equals(zkDirectoryValue.getName())) {
-
-                        return zkDirectoryValue;
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
-     * getZkDirectory
-     *
-     * @param zkDirectory
-     * @param name
-     * @return
-     * @Created 2016/9/16
-     */
-    protected DirectoryInf getZkDirectory(DirectoryInf zkDirectory, String name) {
-        List<Object> list = zkDirectory.getSubordinateInfo();
-
-        if (null != list && !list.isEmpty()) {
-            for (Object directObj : list) {
-
-                if (directObj instanceof DirectoryInf) {
-                    DirectoryInf zkDirectoryValue = (DirectoryInf) directObj;
-
-                    if (name.equals(zkDirectoryValue.getDataName())) {
-
-                        return zkDirectoryValue;
-                    }
-                }
-            }
-        }
-        return null;
     }
 
     public CuratorFramework getCurator() {

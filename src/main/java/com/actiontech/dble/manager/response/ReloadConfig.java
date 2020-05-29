@@ -13,16 +13,18 @@ import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.*;
+import com.actiontech.dble.cluster.ClusterHelper;
+import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.DistributeLock;
 import com.actiontech.dble.cluster.general.ClusterGeneralDistributeLock;
 import com.actiontech.dble.cluster.general.xmltoKv.XmltoCluster;
 import com.actiontech.dble.cluster.zkprocess.ZkDistributeLock;
-import com.actiontech.dble.config.ConfigInitializer;
-import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.cluster.zkprocess.xmltozk.XmltoZkMain;
 import com.actiontech.dble.cluster.zkprocess.zktoxml.listen.ConfigStatusListener;
 import com.actiontech.dble.cluster.zkprocess.zookeeper.process.ConfStatus;
+import com.actiontech.dble.config.ConfigInitializer;
+import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.ERTable;
 import com.actiontech.dble.config.model.SchemaConfig;
@@ -94,7 +96,7 @@ public final class ReloadConfig {
     private static boolean reloadWithCluster(ManagerConnection c, int loadAllMode) {
         DistributeLock distributeLock;
         if (ClusterConfig.getInstance().isUseZK()) {
-            distributeLock = new ZkDistributeLock(ZKUtils.getConnection(), ClusterPathUtil.getConfChangeLockPath());
+            distributeLock = new ZkDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
         } else {
             distributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getConfChangeLockPath(),
                     SystemConfig.getInstance().getInstanceName());

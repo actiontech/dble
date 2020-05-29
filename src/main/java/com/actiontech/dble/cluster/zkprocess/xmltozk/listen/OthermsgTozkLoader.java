@@ -40,6 +40,10 @@ public class OthermsgTozkLoader extends ZkMultiLoader implements NotifyService {
         ZKPaths.mkdirs(this.getCurator().getZookeeperClient().getZooKeeper(), online);
         LOGGER.info("OthermsgTozkLoader zookeeper mkdir " + online + " success");
 
+        String seqCommon = ClusterPathUtil.getSequencesCommonPath();
+        ZKPaths.mkdirs(this.getCurator().getZookeeperClient().getZooKeeper(), seqCommon);
+        LOGGER.info("OthermsgTozkLoader zookeeper mkdir " + seqCommon + " success");
+
         String seqLine = KVPathUtil.getSequencesInstancePath();
         ZKPaths.mkdirs(this.getCurator().getZookeeperClient().getZooKeeper(), seqLine);
         LOGGER.info("OthermsgTozkLoader zookeeper mkdir " + seqLine + " success");
@@ -61,6 +65,14 @@ public class OthermsgTozkLoader extends ZkMultiLoader implements NotifyService {
         String confStatusPath = ClusterPathUtil.getConfStatusPath();
         ZKPaths.mkdirs(this.getCurator().getZookeeperClient().getZooKeeper(), confStatusPath);
         LOGGER.info("OthermsgTozkLoader zookeeper mkdir " + confStatusPath + " success");
+
+        String haStatusPath = ClusterPathUtil.getHaStatusPath();
+        ZKPaths.mkdirs(this.getCurator().getZookeeperClient().getZooKeeper(), haStatusPath);
+        LOGGER.info("OthermsgTozkLoader zookeeper mkdir " + haStatusPath + " success");
+
+        String haResponsePath = ClusterPathUtil.getHaResponsePath();
+        ZKPaths.mkdirs(this.getCurator().getZookeeperClient().getZooKeeper(), haResponsePath);
+        LOGGER.info("OthermsgTozkLoader zookeeper mkdir " + haResponsePath + " success");
 
         String lockBasePathPath = ClusterPathUtil.getLockBasePath();
         if (this.getCurator().checkExists().forPath(lockBasePathPath) == null) {

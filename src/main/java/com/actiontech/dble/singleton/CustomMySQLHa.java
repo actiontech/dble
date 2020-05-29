@@ -62,7 +62,7 @@ public final class CustomMySQLHa {
         if (SystemConfig.getInstance().isUseOuterHa()) {
             String msg = "You use OuterHa or Cluster, please use the third party HA Component";
             if (byHook) {
-                System.out.println(msg);
+                System.out.println("You use OuterHa or Cluster, no need to clean up ha process");
             } else if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(msg);
             }

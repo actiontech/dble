@@ -7,11 +7,13 @@ package com.actiontech.dble.manager.response.ha;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
-import com.actiontech.dble.cluster.general.ClusterGeneralDistributeLock;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
-import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.cluster.DistributeLock;
+import com.actiontech.dble.cluster.general.ClusterGeneralDistributeLock;
+import com.actiontech.dble.cluster.zkprocess.ZkDistributeLock;
 import com.actiontech.dble.cluster.zkprocess.zookeeper.process.HaInfo;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.manager.ManagerConnection;
@@ -19,11 +21,9 @@ import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.singleton.HaConfigManager;
 import com.actiontech.dble.util.ZKUtils;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 
@@ -89,7 +89,7 @@ public final class DbGroupHaSwitch {
         }
     }
 
-    public static boolean switchWithCluster(int id, PhysicalDbGroup dh, String subHostName, ManagerConnection mc) {
+    private static boolean switchWithCluster(int id, PhysicalDbGroup dh, String subHostName, ManagerConnection mc) {
         //get the lock from ucore
         ClusterGeneralDistributeLock distributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getHaLockPath(dh.getGroupName()),
                 new HaInfo(dh.getGroupName(),
@@ -121,28 +121,28 @@ public final class DbGroupHaSwitch {
     }
 
 
-    public static boolean switchWithZK(int id, PhysicalDbGroup dh, String subHostName, ManagerConnection mc) {
+    private static boolean switchWithZK(int id, PhysicalDbGroup dh, String subHostName, ManagerConnection mc) {
         CuratorFramework zkConn = ZKUtils.getConnection();
-        InterProcessMutex distributeLock = new InterProcessMutex(zkConn, ClusterPathUtil.getHaLockPath(dh.getGroupName()));
+        DistributeLock distributeLock = new ZkDistributeLock(ClusterPathUtil.getHaLockPath(dh.getGroupName()), String.valueOf(System.currentTimeMillis()));
+
+        if (!distributeLock.acquire()) {
+            mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is change the dbGroup status");
+            return false;
+        }
         try {
-            try {
-                if (!distributeLock.acquire(100, TimeUnit.MILLISECONDS)) {
-                    mc.writeErrMessage(ErrorCode.ER_YES, "Other instance is change the dbGroup status");
-                    return false;
-                }
-                String result = dh.switchMaster(subHostName, false);
-                DbGroupHaDisable.setStatusToZK(ClusterPathUtil.getHaStatusPath(dh.getGroupName()), zkConn, result);
-                HaConfigManager.getInstance().haFinish(id, null, result);
-            } finally {
-                distributeLock.release();
-                LOGGER.info("reload config: release distributeLock " + ClusterPathUtil.getConfChangeLockPath() + " from zk");
-            }
+            String result = dh.switchMaster(subHostName, false);
+            DbGroupHaDisable.setStatusToZK(ClusterPathUtil.getHaStatusPath(dh.getGroupName()), zkConn, result);
+            HaConfigManager.getInstance().haFinish(id, null, result);
+
+            return true;
         } catch (Exception e) {
             LOGGER.info("reload config using ZK failure", e);
             mc.writeErrMessage(ErrorCode.ER_YES, e.getMessage());
             HaConfigManager.getInstance().haFinish(id, e.getMessage(), null);
             return false;
+        } finally {
+            distributeLock.release();
+            LOGGER.info("reload config: release distributeLock " + ClusterPathUtil.getConfChangeLockPath() + " from zk");
         }
-        return true;
     }
 }

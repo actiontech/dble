@@ -8,6 +8,7 @@ package com.actiontech.dble.backend.mysql.view;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.util.ZKUtils;
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.apache.curator.framework.CuratorFramework;
@@ -70,9 +71,9 @@ public class KVStoreRepository implements Repository {
         m.addProperty(CREATE_SQL, createSql);
         try {
             if (zkConn.checkExists().forPath(viewPath) == null) {
-                zkConn.create().forPath(viewPath, m.getAsString().getBytes());
+                zkConn.create().forPath(viewPath, (new Gson()).toJson(m).getBytes());
             } else {
-                zkConn.setData().forPath(viewPath, m.getAsString().getBytes());
+                zkConn.setData().forPath(viewPath, (new Gson()).toJson(m).getBytes());
             }
         } catch (Exception e) {
             LOGGER.warn("create zk node error :　" + e.getMessage());

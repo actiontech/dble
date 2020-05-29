@@ -5,30 +5,17 @@
 
 package com.actiontech.dble.cluster.zkprocess.zookeeper.process;
 
-import com.actiontech.dble.cluster.zkprocess.zookeeper.DataInf;
+import java.util.HashMap;
+import java.util.Map;
 
-/**
- * ZkDataImpl
- * <p>
- * <p>
- * author:liujun
- * Created:2016/9/15
- */
-public class ZkDataImpl implements DataInf {
-
+public class ZkData {
     private String name;
-
     private String value;
+    private Map<String, ZkData> children = new HashMap<>();
 
-    public ZkDataImpl(String name, String value) {
-        super();
+    public ZkData(String name, String value) {
         this.name = name;
         this.value = value;
-    }
-
-    @Override
-    public String getDataInfo() {
-        return this.name + ":" + this.value;
     }
 
     public String getName() {
@@ -47,9 +34,13 @@ public class ZkDataImpl implements DataInf {
         this.value = value;
     }
 
-    @Override
-    public String getDataValue() {
-        return this.value;
+
+    public Map<String, ZkData> getChildren() {
+        return children;
+    }
+
+    public void addChild(ZkData child) {
+        children.put(child.getName(), child);
     }
 
 }

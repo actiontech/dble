@@ -72,11 +72,11 @@ public final class ClusterPathUtil {
     }
 
     public static String getHaStatusPath() {
-        return getHaBasePath() + DB_GROUP_STATUS + SEPARATOR;
+        return getHaBasePath() + DB_GROUP_STATUS;
     }
 
     public static String getHaStatusPath(String dbGroupName) {
-        return getHaStatusPath() + dbGroupName;
+        return getHaStatusPath() + SEPARATOR + dbGroupName;
     }
     public static String getHaResponsePath() {
         return getHaBasePath() + DB_GROUP_RESPONSE;
@@ -85,7 +85,7 @@ public final class ClusterPathUtil {
         return getHaResponsePath() + SEPARATOR + dhName;
     }
     public static String getHaLockPath(String dhName) {
-        return LOCK_BASE_PATH + DB_GROUP_LOCKS + SEPARATOR + dhName;
+        return LOCK_BASE_PATH + SEPARATOR + DB_GROUP_LOCKS + SEPARATOR + dhName;
     }
 
     public static String getSelfResponsePath(String notifyPath) {
@@ -103,7 +103,7 @@ public final class ClusterPathUtil {
     public static final String SEQUENCE_COMMON = "common";
 
     public static String getSequencesCommonPath() {
-        return getSequencesPath() + SEPARATOR + SEQUENCE_COMMON + SEPARATOR;
+        return getSequencesPath() + SEPARATOR + SEQUENCE_COMMON;
     }
 
     //depth:2,lock_base_path: base_path/lock/
@@ -164,13 +164,18 @@ public final class ClusterPathUtil {
         return getDDLPath() + SEPARATOR + fullName;
     }
 
-    //depth:2,child node of base_path
-    public static String getDDLInstancePath(String fullName) {
-        return getDDLPath(fullName) + SEPARATOR + SystemConfig.getInstance().getInstanceName();
+    public static String getDDLInstanceSelfPath(String fullName) {
+        return getDDLInstancePath(fullName) + SEPARATOR + SystemConfig.getInstance().getInstanceName();
     }
+
+
+    public static String getDDLInstancePath(String fullName) {
+        return getDDLPath(fullName) + SEPARATOR + "instance";
+    }
+
     //depth:2,child node of base_path
     public static String getDDLLockPath(String fullName) {
-        return LOCK_BASE_PATH + "ddl_lock" + SEPARATOR + fullName;
+        return LOCK_BASE_PATH + SEPARATOR + "ddl_lock" + SEPARATOR + fullName;
     }
 
     public static String getPauseShardingNodePath() {
@@ -203,7 +208,7 @@ public final class ClusterPathUtil {
         return ClusterPathUtil.getViewPath() + SEPARATOR + fullName;
     }
     public static String getViewPath(String schemaName, String viewName) {
-        return ClusterPathUtil.getViewPath() + SEPARATOR + schemaName + SEPARATOR + SCHEMA_VIEW_SPLIT + viewName;
+        return ClusterPathUtil.getViewPath() + SEPARATOR + schemaName + SCHEMA_VIEW_SPLIT + viewName;
     }
 
     public static String getViewChangePath() {
@@ -215,6 +220,6 @@ public final class ClusterPathUtil {
     }
 
     public static String getViewLockPath(String schemaName, String viewName) {
-        return LOCK_BASE_PATH + "view_lock" + schemaName + SEPARATOR + SCHEMA_VIEW_SPLIT + viewName;
+        return LOCK_BASE_PATH + "view_lock" + schemaName + SCHEMA_VIEW_SPLIT + viewName;
     }
 }

@@ -10,10 +10,8 @@ import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.zkprocess.comm.NotifyService;
 import com.actiontech.dble.cluster.zkprocess.comm.ZookeeperProcessListen;
-import com.actiontech.dble.cluster.zkprocess.zookeeper.DirectoryInf;
 import com.actiontech.dble.cluster.zkprocess.zookeeper.process.BinlogPause;
-import com.actiontech.dble.cluster.zkprocess.zookeeper.process.ZkDataImpl;
-import com.actiontech.dble.cluster.zkprocess.zookeeper.process.ZkDirectoryImpl;
+import com.actiontech.dble.cluster.zkprocess.zookeeper.process.ZkData;
 import com.actiontech.dble.cluster.zkprocess.zookeeper.process.ZkMultiLoader;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.manager.response.ShowBinlogStatus;
@@ -40,10 +38,8 @@ public class BinlogPauseStatusListener extends ZkMultiLoader implements NotifySe
 
     @Override
     public boolean notifyProcess() throws Exception {
-        DirectoryInf statusDirectory = new ZkDirectoryImpl(currZkPath, null);
-        this.getTreeDirectory(currZkPath, ClusterPathUtil.BINLOG_PAUSE_STATUS, statusDirectory);
-        ZkDataImpl zkDdata = (ZkDataImpl) statusDirectory.getSubordinateInfo().get(0);
-        String strPauseInfo = zkDdata.getDataValue();
+        ZkData data = this.getTreeDirectory(currZkPath, ClusterPathUtil.BINLOG_PAUSE_STATUS, false);
+        String strPauseInfo = data.getValue();
         LOGGER.info("BinlogPauseStatusListener notifyProcess zk to object  :" + strPauseInfo);
 
         BinlogPause pauseInfo = new BinlogPause(strPauseInfo);

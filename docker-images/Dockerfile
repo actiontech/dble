@@ -1,5 +1,7 @@
 From centos:centos7
-RUN yum install -y wget java mysql
+RUN yum install -y wget java mysql && \
+    yum clean all && \
+    rm -rf /var/cache/yum/*
 
 RUN version=$(curl "https://github.com/actiontech/dble/releases/latest"|awk -F "/" '{print $8}') && \
     wget -P /opt https://github.com/actiontech/dble/releases/download/$version%2Ftag/actiontech-dble-$version.tar.gz && \

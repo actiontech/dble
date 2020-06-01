@@ -704,30 +704,33 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
      *
      */
     private void resetConditionsFromWhereUnit(WhereUnit whereUnit) {
-        List<List<Condition>> retList = new ArrayList<>();
-        List<Condition> outSideCondition = new ArrayList<>();
-        outSideCondition.addAll(conditions);
-        List<Relationship> outSideRelationship = new ArrayList<>();
-        outSideRelationship.addAll(relationships);
-        this.conditions.clear();
-        this.relationships.clear();
-        for (SQLExpr sqlExpr : whereUnit.getSplitedExprList()) {
-            sqlExpr.accept(this);
-            List<Condition> conds = new ArrayList<>();
-            conds.addAll(getConditions());
-            conds.addAll(outSideCondition);
-            Set<Relationship> relations = new HashSet<>();
-            relations.addAll(getRelationships());
-            relations.addAll(outSideRelationship);
-            ConditionUtil.extendConditionsFromRelations(conds, relations);
-            retList.add(conds);
+        if (!whereUnit.isFinishedExtend()) {
+            List<List<Condition>> retList = new ArrayList<>();
+            List<Condition> outSideCondition = new ArrayList<>();
+            outSideCondition.addAll(conditions);
+            List<Relationship> outSideRelationship = new ArrayList<>();
+            outSideRelationship.addAll(relationships);
             this.conditions.clear();
             this.relationships.clear();
-        }
-        whereUnit.setOrConditionList(retList);
+            for (SQLExpr sqlExpr : whereUnit.getSplitedExprList()) {
+                sqlExpr.accept(this);
+                List<Condition> conds = new ArrayList<>();
+                conds.addAll(getConditions());
+                conds.addAll(outSideCondition);
+                Set<Relationship> relations = new HashSet<>();
+                relations.addAll(getRelationships());
+                relations.addAll(outSideRelationship);
+                ConditionUtil.extendConditionsFromRelations(conds, relations);
+                retList.add(conds);
+                this.conditions.clear();
+                this.relationships.clear();
+            }
+            whereUnit.setOrConditionList(retList);
 
-        for (WhereUnit subWhere : whereUnit.getSubWhereUnit()) {
-            resetConditionsFromWhereUnit(subWhere);
+            for (WhereUnit subWhere : whereUnit.getSubWhereUnit()) {
+                resetConditionsFromWhereUnit(subWhere);
+            }
+            whereUnit.setFinishedExtend(true);
         }
     }
 

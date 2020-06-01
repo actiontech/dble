@@ -65,6 +65,8 @@ public class WhereUnit {
 
     private boolean finishedParse = false;
 
+    private boolean finishedExtend = false;
+
     public List<Condition> getOutAndConditions() {
         return outAndConditions;
     }
@@ -88,6 +90,15 @@ public class WhereUnit {
 
     public void setFinishedParse(boolean finishedParse) {
         this.finishedParse = finishedParse;
+    }
+
+
+    public boolean isFinishedExtend() {
+        return finishedExtend;
+    }
+
+    public void setFinishedExtend(boolean finishedExtend) {
+        this.finishedExtend = finishedExtend;
     }
 
     public WhereUnit() {

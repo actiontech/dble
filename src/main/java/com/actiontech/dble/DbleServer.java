@@ -13,6 +13,8 @@ import com.actiontech.dble.backend.mysql.xa.recovery.Repository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.FileSystemRepository;
 import com.actiontech.dble.backend.mysql.xa.recovery.impl.KVStoreRepository;
 import com.actiontech.dble.buffer.DirectByteBufferPool;
+import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SchemaConfig;
@@ -33,6 +35,7 @@ import com.actiontech.dble.singleton.*;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import com.actiontech.dble.util.ExecutorUtil;
 import com.actiontech.dble.util.TimeUtil;
+import com.actiontech.dble.util.ZKUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -217,11 +220,11 @@ public final class DbleServer {
         pullVarAndMeta();
         LOGGER.info("==============================Pull metaData from MySQL finish=====================================");
 
+
+        LOGGER.info("=========================================Init online status in cluster==================================");
+        initOnlineStatus();
+
         FrontendUserManager.getInstance().initForLatest(config.getUsers(), SystemConfig.getInstance().getMaxCon());
-
-
-
-
 
         CacheService.getInstance().init(this.systemVariables.isLowerCaseTableNames());
         LOGGER.info("====================================Cache service init finish=====================================");
@@ -381,6 +384,17 @@ public final class DbleServer {
         }
     }
 
+    private void initOnlineStatus() throws Exception {
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            if (ClusterConfig.getInstance().isUseZK()) {
+                ZkConfig.tryDeleteOldOnline();
+                // online
+                ZKUtils.createOnline(ClusterPathUtil.getOnlinePath(), SystemConfig.getInstance().getInstanceName(), OnlineStatus.getInstance());
+            } else {
+                OnlineStatus.getInstance().mainThreadInitClusterOnline();
+            }
+        }
+    }
     private void pullVarAndMeta() throws IOException {
         ProxyMetaManager tmManager = new ProxyMetaManager();
         ProxyMeta.getInstance().setTmManager(tmManager);

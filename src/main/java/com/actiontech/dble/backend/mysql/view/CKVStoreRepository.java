@@ -7,9 +7,9 @@ package com.actiontech.dble.backend.mysql.view;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
-import com.actiontech.dble.cluster.general.ClusterGeneralDistributeLock;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
+import com.actiontech.dble.cluster.general.ClusterGeneralDistributeLock;
 import com.actiontech.dble.cluster.general.bean.KvBean;
 import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -153,7 +153,7 @@ public class CKVStoreRepository implements Repository {
             //self reponse set
             ClusterHelper.setKV(viewChangePath + ClusterPathUtil.SEPARATOR + SystemConfig.getInstance().getInstanceName(), ClusterPathUtil.SUCCESS);
 
-            String errorMsg = ClusterHelper.waitingForAllTheNode(ClusterPathUtil.SUCCESS, ClusterPathUtil.SEPARATOR);
+            String errorMsg = ClusterHelper.waitingForAllTheNode(ClusterPathUtil.SUCCESS, viewChangePath + ClusterPathUtil.SEPARATOR);
 
             if (errorMsg != null) {
                 throw new RuntimeException(errorMsg);

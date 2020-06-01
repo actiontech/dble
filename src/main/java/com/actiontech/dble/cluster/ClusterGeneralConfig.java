@@ -11,7 +11,6 @@ import com.actiontech.dble.cluster.general.impl.ushard.UshardSender;
 import com.actiontech.dble.cluster.general.kVtoXml.ClusterToXml;
 import com.actiontech.dble.cluster.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.model.ClusterConfig;
-import com.actiontech.dble.singleton.OnlineStatus;
 
 import java.io.IOException;
 
@@ -75,16 +74,9 @@ public final class ClusterGeneralConfig {
         if (CONFIG_MODE_ZK.equals(ClusterConfig.getInstance().getClusterMode())) {
             ZkConfig.initZk();
         } else {
-            LOGGER.info("===================Init online status in cluster==================");
-            try {
-                OnlineStatus.getInstance().mainThreadInitClusterOnline();
-            } catch (IOException e) {
-                throw e;
-            } catch (Exception e) {
-                LOGGER.warn("cluster can not connection ", e);
-            }
             INSTANCE.clusterSender.initCluster();
             ClusterToXml.loadKVtoFile();
+
         }
     }
 

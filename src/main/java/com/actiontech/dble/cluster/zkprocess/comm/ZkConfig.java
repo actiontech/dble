@@ -35,9 +35,6 @@ public final class ZkConfig {
     public static void initZk() {
         try {
             ZktoXmlMain.loadZktoFile();
-            tryDeleteOldOnline();
-            // online
-            ZKUtils.createOnline(ClusterPathUtil.getOnlinePath(), SystemConfig.getInstance().getInstanceName(), OnlineStatus.getInstance());
         } catch (Exception e) {
             LOGGER.error("error:", e);
         }
@@ -53,7 +50,7 @@ public final class ZkConfig {
 
 
 
-    private static void tryDeleteOldOnline() throws Exception {
+    public static void tryDeleteOldOnline() throws Exception {
         //try to delete online
         if (ZKUtils.getConnection().checkExists().forPath(ClusterPathUtil.getOnlinePath(SystemConfig.getInstance().getInstanceName())) != null) {
             byte[] info;

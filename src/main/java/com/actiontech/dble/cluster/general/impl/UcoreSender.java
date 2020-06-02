@@ -464,7 +464,7 @@ public final class UcoreSender extends AbstractClusterSender {
     }
 
 
-    public void setIp(String ips) {
+    public void setIp(String ips) throws IOException {
         ClusterConfig.getInstance().setClusterIP(ips);
         Properties properties = ClusterConfig.getInstance().toProperties();
         PropertiesUtil.storeProperties(properties, CONFIG_FILE_NAME);

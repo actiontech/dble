@@ -15,13 +15,13 @@ import java.util.regex.Pattern;
  */
 public final class DbGroupHAHandler {
 
-
-    private static final Pattern PATTERN_DH_DISABLE = Pattern.compile("^\\s*dbGroup\\s*@@disable\\s*name\\s*=\\s*'([a-zA-Z_0-9\\-\\.]+)'" +
-            "\\s*(instance\\s*=\\s*'([a-zA-Z_0-9\\-\\,\\.]+)')?$", Pattern.CASE_INSENSITIVE);
-    private static final Pattern PATTERN_DH_ENABLE = Pattern.compile("^\\s*dbGroup\\s*@@enable\\s*name\\s*=\\s*'([a-zA-Z_0-9\\-\\.]+)'" +
-            "\\s*(instance\\s*=\\s*'([a-zA-Z_0-9\\-\\,\\.]+)')?$", Pattern.CASE_INSENSITIVE);
-    private static final Pattern PATTERN_DH_SWITCH = Pattern.compile("^dbGroup\\s*@@switch\\s*name\\s*=\\s*'([a-zA-Z_0-9\\-\\,\\.]+)'" +
-            "\\s*master\\s*=\\s*'([a-zA-Z_0-9\\-\\,\\.]+)'\\s*$", Pattern.CASE_INSENSITIVE);
+    public static final String DB_NAME_FORMAT = "a-zA-Z_0-9\\-\\."; //nmtoken
+    private static final Pattern PATTERN_DH_DISABLE = Pattern.compile("^\\s*dbGroup\\s*@@disable\\s*name\\s*=\\s*'([" + DB_NAME_FORMAT + "]+)'" +
+            "\\s*(instance\\s*=\\s*'([" + DB_NAME_FORMAT + "\\,]+)')?$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN_DH_ENABLE = Pattern.compile("^\\s*dbGroup\\s*@@enable\\s*name\\s*=\\s*'([" + DB_NAME_FORMAT + "]+)'" +
+            "\\s*(instance\\s*=\\s*'([" + DB_NAME_FORMAT + "\\,]+)')?$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN_DH_SWITCH = Pattern.compile("^\\s*dbGroup\\s*@@switch\\s*name\\s*=\\s*'([" + DB_NAME_FORMAT + "]+)'" +
+            "\\s*master\\s*=\\s*'([" + DB_NAME_FORMAT + "]+)'\\s*$", Pattern.CASE_INSENSITIVE);
     private static final Pattern PATTERN_DH_EVENTS = Pattern.compile("^dbGroup\\s*@@events\\s*$", Pattern.CASE_INSENSITIVE);
 
     private DbGroupHAHandler() {

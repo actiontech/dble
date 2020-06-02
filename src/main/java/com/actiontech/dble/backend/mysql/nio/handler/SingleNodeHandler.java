@@ -11,7 +11,7 @@ import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.LoadDataUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.FlowCotrollerConfig;
+import com.actiontech.dble.config.FlowControllerConfig;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
@@ -375,7 +375,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         lock.lock();
         try {
             if (!writeToClient.get()) {
-                FlowCotrollerConfig fconfig = WriteQueueFlowController.getFlowCotrollerConfig();
+                FlowControllerConfig fconfig = WriteQueueFlowController.getFlowCotrollerConfig();
                 if (fconfig.isEnableFlowControl() &&
                         session.getSource().getWriteQueue().size() > fconfig.getStart()) {
                     session.getSource().startFlowControl(conn);

@@ -6,7 +6,7 @@
 package com.actiontech.dble.net;
 
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
-import com.actiontech.dble.config.FlowCotrollerConfig;
+import com.actiontech.dble.config.FlowControllerConfig;
 import com.actiontech.dble.singleton.WriteQueueFlowController;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
@@ -220,7 +220,7 @@ public class NIOSocketWR extends SocketWR {
     }
 
     private int checkFlowControl(int flowControlCount) {
-        FlowCotrollerConfig config = WriteQueueFlowController.getFlowCotrollerConfig();
+        FlowControllerConfig config = WriteQueueFlowController.getFlowCotrollerConfig();
         if (con.isFlowControlled()) {
             if (!config.isEnableFlowControl()) {
                 con.stopFlowControl();

@@ -7,10 +7,13 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
+import com.actiontech.dble.manager.handler.WriteDynamicBootstrap;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.server.status.SlowQueryLog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 
 public final class ReloadSlowQueryFlushPeriod {
     private ReloadSlowQueryFlushPeriod() {
@@ -23,7 +26,14 @@ public final class ReloadSlowQueryFlushPeriod {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "the commend is not correct");
             return;
         }
-
+        try {
+            WriteDynamicBootstrap.getInstance().changeValue("flushSlowLogPeriod", String.valueOf(time));
+        } catch (IOException e) {
+            String msg = "reload @@slow_query.flushPeriod failed";
+            LOGGER.warn(String.valueOf(c) + " " + msg, e);
+            c.writeErrMessage(ErrorCode.ER_YES, msg);
+            return;
+        }
         SlowQueryLog.getInstance().setFlushPeriod(time);
         LOGGER.info(String.valueOf(c) + " reload @@slow_query.flushPeriod=" + time + " success by manager");
 

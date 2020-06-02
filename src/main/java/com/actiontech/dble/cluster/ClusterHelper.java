@@ -314,7 +314,7 @@ public final class ClusterHelper {
                 }
             }
         } catch (Exception e) {
-            LOGGER.warn("get error try to write schema.xml");
+            LOGGER.warn("get error try to write db.xml");
         }
     }
 

@@ -15,6 +15,7 @@ import com.actiontech.dble.config.model.DbInstanceConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
+import com.actiontech.dble.manager.handler.DbGroupHAHandler;
 import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import org.w3c.dom.Element;
@@ -26,6 +27,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @SuppressWarnings("unchecked")
 public class XMLDbLoader {
@@ -35,6 +38,7 @@ public class XMLDbLoader {
     private final Map<String, DbGroupConfig> dbGroupConfigs;
     private ProblemReporter problemReporter;
     private final Map<String, PhysicalDbGroup> dbGroups;
+    private static final Pattern PATTERN_DB = Pattern.compile("([" + DbGroupHAHandler.DB_NAME_FORMAT + "]+)", Pattern.CASE_INSENSITIVE);
 
     public XMLDbLoader(String dbFile, ProblemReporter problemReporter) {
         this.dbGroupConfigs = new HashMap<>();
@@ -101,8 +105,12 @@ public class XMLDbLoader {
             Set<String> instanceNames = new HashSet<>();
             Element element = (Element) list.item(i);
             String name = element.getAttribute("name");
+            Matcher nameMatcher = PATTERN_DB.matcher(name);
+            if (!nameMatcher.matches()) {
+                throw new ConfigException("dbGroup name " + name + " show be use " + DbGroupHAHandler.DB_NAME_FORMAT + "!");
+            }
             if (dbGroupConfigs.containsKey(name)) {
-                throw new ConfigException("dbGroup name " + name + "duplicated!");
+                throw new ConfigException("dbGroup name " + name + " duplicated!");
             }
             /*
              * rwSplitMode type for read
@@ -164,7 +172,10 @@ public class XMLDbLoader {
         String nodeUrl = node.getAttribute("url");
         String user = node.getAttribute("user");
         String password = node.getAttribute("password");
-
+        Matcher nameMatcher = PATTERN_DB.matcher(name);
+        if (!nameMatcher.matches()) {
+            throw new ConfigException("dbInstance name " + name + " show be use " + DbGroupHAHandler.DB_NAME_FORMAT + "!");
+        }
         if (empty(name) || empty(nodeUrl) || empty(user)) {
             throw new ConfigException(
                     "dbGroup " + dbGroup +

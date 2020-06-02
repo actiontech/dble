@@ -68,15 +68,14 @@ public final class ClusterGeneralConfig {
 
 
     public static void initData() throws IOException {
-        if (!ClusterConfig.getInstance().isClusterEnable()) {
-            return;
-        }
-        if (CONFIG_MODE_ZK.equals(ClusterConfig.getInstance().getClusterMode())) {
-            ZkConfig.initZk();
-        } else {
-            INSTANCE.clusterSender.initCluster();
-            ClusterToXml.loadKVtoFile();
+        if (ClusterConfig.getInstance().isClusterEnable()) {
+            if (CONFIG_MODE_ZK.equals(ClusterConfig.getInstance().getClusterMode())) {
+                ZkConfig.initZk();
+            } else {
+                INSTANCE.clusterSender.initCluster();
+                ClusterToXml.loadKVtoFile();
 
+            }
         }
     }
 

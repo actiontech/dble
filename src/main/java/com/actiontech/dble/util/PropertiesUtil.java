@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Properties;
 
 public final class PropertiesUtil {
@@ -18,7 +19,7 @@ public final class PropertiesUtil {
 
     }
 
-    public static void storeProperties(Properties properties, String configFile) {
+    public static void storeProperties(Properties properties, String configFile) throws IOException {
         FileOutputStream out = null;
         try {
             File file = new File(PropertiesUtil.class.getResource(configFile).getFile());
@@ -26,7 +27,8 @@ public final class PropertiesUtil {
             properties.store(out, "");
             LOGGER.info("set to file success:" + configFile);
         } catch (Exception e) {
-            LOGGER.warn("ips set to file failure", e);
+            LOGGER.warn("set to file failure", e);
+            throw e;
         } finally {
             try {
                 if (out != null) {

@@ -29,7 +29,7 @@ import java.util.Set;
 public final class SystemConfigLoader {
     private static final Logger LOGGER = LoggerFactory.getLogger(SystemConfigLoader.class);
     private static final String BOOT_STRAP_FILE_NAME = "/bootstrap.cnf";
-    private static final String BOOT_STRAP_DYNAMIC_FILE_NAME = "/bootstrap.dynamic.cnf";
+    public static final String BOOT_STRAP_DYNAMIC_FILE_NAME = "/bootstrap.dynamic.cnf";
     private SystemConfigLoader() {
     }
 
@@ -74,7 +74,7 @@ public final class SystemConfigLoader {
         return pros;
     }
 
-    private static Properties readBootStrapDynamicConf() throws IOException {
+    public static Properties readBootStrapDynamicConf() throws IOException {
         Properties pros = new Properties();
         try (InputStream configIS = ResourceUtil.getResourceAsStream(BOOT_STRAP_DYNAMIC_FILE_NAME)) {
             if (configIS == null) {

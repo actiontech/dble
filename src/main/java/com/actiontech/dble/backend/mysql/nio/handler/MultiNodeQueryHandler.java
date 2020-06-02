@@ -14,7 +14,7 @@ import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoCommitHandl
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.AutoTxOperation;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.TransactionHandler;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.FlowCotrollerConfig;
+import com.actiontech.dble.config.FlowControllerConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.mysql.*;
@@ -429,7 +429,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
             this.resultSize += row.length;
 
             if (!errorResponse.get()) {
-                FlowCotrollerConfig fconfig = WriteQueueFlowController.getFlowCotrollerConfig();
+                FlowControllerConfig fconfig = WriteQueueFlowController.getFlowCotrollerConfig();
                 if (fconfig.isEnableFlowControl() &&
                         session.getSource().getWriteQueue().size() > fconfig.getStart()) {
                     session.getSource().startFlowControl(conn);

@@ -2,7 +2,7 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.config.FlowCotrollerConfig;
+import com.actiontech.dble.config.FlowControllerConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -60,7 +60,7 @@ public final class FlowControlShow {
         // write rows
         byte packetId = EOF.getPacketId();
 
-        FlowCotrollerConfig config = WriteQueueFlowController.getFlowCotrollerConfig();
+        FlowControllerConfig config = WriteQueueFlowController.getFlowCotrollerConfig();
         //find
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(StringUtil.encode(config.isEnableFlowControl() ? "true" : "false", c.getCharset().getResults()));

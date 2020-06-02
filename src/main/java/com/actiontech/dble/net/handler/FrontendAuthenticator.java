@@ -7,6 +7,8 @@ package com.actiontech.dble.net.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.user.RwSplitUserConfig;
+import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.util.AuthUtil;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOHandler;
@@ -86,6 +88,10 @@ public abstract class FrontendAuthenticator implements NIOHandler {
 
         // check mysql client user
         String errMsg = AuthUtil.authority(source, new Pair<>(authPacket.getUser(), authPacket.getTenant()), authPacket.getPassword(), authPacket.getDatabase(), this instanceof ManagerAuthenticator);
+        //this version is not support rwSplitUser
+        if (errMsg == null) {
+            errMsg = rejectRwSplitUser(authPacket);
+        }
         if (errMsg == null) {
             success(authPacket);
         } else {
@@ -113,5 +119,15 @@ public abstract class FrontendAuthenticator implements NIOHandler {
         } else {
             source.writeErrMessage((byte) 2, errNo, info);
         }
+    }
+
+    //todo: delete next version
+    private String rejectRwSplitUser(AuthPacket auth) {
+        Pair<String, String> user = new Pair<>(auth.getUser(), auth.getTenant());
+        UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(user);
+        if (userConfig instanceof RwSplitUserConfig) {
+            return "this version is not support rwSplitUser";
+        }
+        return null;
     }
 }

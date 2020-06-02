@@ -5,10 +5,10 @@
 
 package com.actiontech.dble.manager.response;
 
-import com.actiontech.dble.singleton.CustomMySQLHa;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
+import com.actiontech.dble.singleton.CustomMySQLHa;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

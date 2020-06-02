@@ -4,7 +4,7 @@
 #
 
 
-clusterEnable=true
+clusterEnable=false
 # cluster ucore/zk
 clusterMode=zk
 # zk:  ipAddress=10.186.19.aa:2281,10.186.60.bb:2281

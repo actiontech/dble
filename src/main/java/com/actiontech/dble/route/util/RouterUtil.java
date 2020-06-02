@@ -452,6 +452,9 @@ public final class RouterUtil {
                 rrs.setAlwaysFalse(true);
                 rangeNodeSet.addAll(tc.getDataNodes());
             }
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("all ColumnRoute " + columnRoute + " merge to these node:" + routeNodeSet);
+            }
         }
         return routeNodeSet;
     }

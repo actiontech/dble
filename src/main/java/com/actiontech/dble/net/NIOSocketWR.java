@@ -72,7 +72,7 @@ public class NIOSocketWR extends SocketWR {
             String errMsg;
             if (con instanceof MySQLConnection) {
                 MySQLConnection mysqlCon = (MySQLConnection) con;
-                errMsg = "Connection {DataHost[" + mysqlCon.getHost() + ":" + mysqlCon.getPort() + "],Schema[" + mysqlCon.getSchema() + "],threadID[" +
+                errMsg = "Connection {dbInstance[" + mysqlCon.getHost() + ":" + mysqlCon.getPort() + "],Schema[" + mysqlCon.getSchema() + "],threadID[" +
                         mysqlCon.getThreadId() + "]} was closed ";
                 if (!(e instanceof ClosedChannelException)) {
                     errMsg += ",reason is:" + e + "";

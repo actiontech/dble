@@ -665,9 +665,9 @@ public class ProxyMetaManager {
             TableConfig tbConfig = schemaInfo.getSchemaConfig().getTables().get(table);
             String showShardingNode = schemaInfo.getSchemaConfig().getShardingNode();
             if (tbConfig != null) {
-                for (String dataNode : tbConfig.getShardingNodes()) {
-                    showShardingNode = dataNode;
-                    String tableId = "DataNode[" + dataNode + "]:Table[" + table + "]";
+                for (String shardingNode : tbConfig.getShardingNodes()) {
+                    showShardingNode = shardingNode;
+                    String tableId = "sharding_node[" + shardingNode + "]:Table[" + table + "]";
                     if (ToResolveContainer.TABLE_LACK.contains(tableId)) {
                         AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableId), ToResolveContainer.TABLE_LACK, tableId);
                     }

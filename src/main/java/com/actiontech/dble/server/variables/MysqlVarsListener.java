@@ -24,7 +24,7 @@ public class MysqlVarsListener implements SQLQueryResultListener<SQLQueryResult<
     public void onResult(SQLQueryResult<Map<String, String>> result) {
         if (!result.isSuccess()) {
             //not thread safe
-            LOGGER.warn("Can't get variables from DataNode: " + result.getShardingNode() + "!");
+            LOGGER.warn("Can't get variables from shardingNode: " + result.getShardingNode() + "!");
             handler.signalDone();
             return;
         }

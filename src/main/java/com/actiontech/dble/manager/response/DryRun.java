@@ -108,7 +108,7 @@ public final class DryRun {
             if (loader.isFullyConfigured()) {
                 list.add(new ErrorInfo("Backend", "ERROR", "Get Vars from backend failed,Maybe all backend MySQL can't connected"));
             } else {
-                list.add(new ErrorInfo("Backend", "WARNING", "No dataHost available"));
+                list.add(new ErrorInfo("Backend", "WARNING", "No dbGroup available"));
             }
         } else {
             try {
@@ -151,7 +151,7 @@ public final class DryRun {
 
 
     private static void tableExistsCheck(List<ErrorInfo> list, ServerConfig serverConfig, boolean isLowerCase) {
-        //get All the exists table from all dataNode
+        //get All the exists table from all shardingNode
 
         Map<String, Set<String>> tableMap = showShardingNodeTable(serverConfig, isLowerCase, list);
 
@@ -166,7 +166,7 @@ public final class DryRun {
 
                 if (sb.length() > 1) {
                     sb.setLength(sb.length() - 1);
-                    list.add(new ErrorInfo("Meta", "WARNING", "Table " + schema.getName() + "." + table.getName() + " don't exists in dataNode[" + sb.toString() + "]"));
+                    list.add(new ErrorInfo("Meta", "WARNING", "Table " + schema.getName() + "." + table.getName() + " don't exists in shardingNode[" + sb.toString() + "]"));
                 }
             }
         }

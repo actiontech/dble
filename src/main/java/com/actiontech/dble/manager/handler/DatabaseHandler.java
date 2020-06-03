@@ -112,22 +112,22 @@ public final class DatabaseHandler {
         }
     }
 
-    private static void tryResolve(String dbGroupName, String dbInstanceName, String shardingNode, String schema, String dataHostId) {
+    private static void tryResolve(String dbGroupName, String dbInstanceName, String shardingNode, String schema, String dbInstanceId) {
         String key = "dbInstance[" + dbGroupName + "." + dbInstanceName + "],sharding_node[" + shardingNode + "],schema[" + schema + "]";
         if (ToResolveContainer.SHARDING_NODE_LACK.contains(key)) {
             Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", dbGroupName + "-" + dbInstanceName);
             labels.put("sharding_node", shardingNode);
-            AlertUtil.alertResolve(AlarmCode.SHARDING_NODE_LACK, Alert.AlertLevel.WARN, "mysql", dataHostId, labels,
+            AlertUtil.alertResolve(AlarmCode.SHARDING_NODE_LACK, Alert.AlertLevel.WARN, "mysql", dbInstanceId, labels,
                     ToResolveContainer.SHARDING_NODE_LACK, key);
         }
     }
 
-    private static void tryAlert(String dbGroupName, String dbInstanceName, String shardingNode, String schema, String dataHostId) {
+    private static void tryAlert(String dbGroupName, String dbInstanceName, String shardingNode, String schema, String dbInstanceId) {
         String key = "dbInstance[" + dbGroupName + "." + dbInstanceName + "],sharding_node[" + shardingNode + "],schema[" + schema + "]";
         if (ToResolveContainer.SHARDING_NODE_LACK.contains(key)) {
             Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", dbGroupName + "-" + dbInstanceName);
             labels.put("sharding_node", shardingNode);
-            AlertUtil.alert(AlarmCode.SHARDING_NODE_LACK, Alert.AlertLevel.WARN, "{" + key + "} is lack", "mysql", dataHostId, labels);
+            AlertUtil.alert(AlarmCode.SHARDING_NODE_LACK, Alert.AlertLevel.WARN, "{" + key + "} is lack", "mysql", dbInstanceId, labels);
             ToResolveContainer.SHARDING_NODE_LACK.add(key);
         }
     }

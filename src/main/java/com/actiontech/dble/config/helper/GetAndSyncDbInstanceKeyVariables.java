@@ -21,8 +21,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class GetAndSyncDataSourceKeyVariables implements Callable<KeyVariables> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GetAndSyncDataSourceKeyVariables.class);
+public class GetAndSyncDbInstanceKeyVariables implements Callable<KeyVariables> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GetAndSyncDbInstanceKeyVariables.class);
     private static final String COLUMN_LOWER_CASE = "@@lower_case_table_names";
     private static final String COLUMN_AUTOCOMMIT = "@@autocommit";
     private static final String COLUMN_READONLY = "@@read_only";
@@ -35,7 +35,7 @@ public class GetAndSyncDataSourceKeyVariables implements Callable<KeyVariables> 
     private final String columnIsolation;
     private final boolean needSync;
 
-    public GetAndSyncDataSourceKeyVariables(PhysicalDbInstance ds, boolean needSync) {
+    public GetAndSyncDbInstanceKeyVariables(PhysicalDbInstance ds, boolean needSync) {
         this.ds = ds;
         this.needSync = needSync;
         String isolationName = VersionUtil.getIsolationNameByVersion(ds.getDsVersion());
@@ -59,7 +59,7 @@ public class GetAndSyncDataSourceKeyVariables implements Callable<KeyVariables> 
             }
             sql.append(columns[i]);
         }
-        OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(columns, new GetDataSourceKeyVariablesListener());
+        OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(columns, new GetDbInstanceKeyVariablesListener());
         OneTimeConnJob sqlJob = new OneTimeConnJob(sql.toString(), null, resultHandler, ds);
         sqlJob.run();
         lock.lock();
@@ -76,7 +76,7 @@ public class GetAndSyncDataSourceKeyVariables implements Callable<KeyVariables> 
     }
 
 
-    private class GetDataSourceKeyVariablesListener implements SQLQueryResultListener<SQLQueryResult<Map<String, String>>> {
+    private class GetDbInstanceKeyVariablesListener implements SQLQueryResultListener<SQLQueryResult<Map<String, String>>> {
         @Override
         public void onResult(SQLQueryResult<Map<String, String>> result) {
             if (result.isSuccess()) {
@@ -129,12 +129,12 @@ public class GetAndSyncDataSourceKeyVariables implements Callable<KeyVariables> 
                     }
 
                     if (checkNeedSync) {
-                        SyncDataSourceKeyVariables task = new SyncDataSourceKeyVariables(keyVariables, ds);
+                        SyncDbInstanceKeyVariables task = new SyncDbInstanceKeyVariables(keyVariables, ds);
                         boolean synced = false;
                         try {
                             synced = task.call();
                         } catch (Exception e) {
-                            LOGGER.warn("SyncDataSourceKeyVariables error", e);
+                            LOGGER.warn("SyncDbInstanceKeyVariables error", e);
                         }
                         if (synced) {
                             ds.setAutocommitSynced(true);

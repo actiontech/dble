@@ -469,7 +469,7 @@ public final class SystemConfig {
         if (shardingNodeIdleCheckPeriod > 0) {
             this.shardingNodeIdleCheckPeriod = shardingNodeIdleCheckPeriod;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMAT, "dataNodeIdleCheckPeriod", shardingNodeIdleCheckPeriod, this.shardingNodeIdleCheckPeriod));
+            problemReporter.warn(String.format(WARNING_FORMAT, "shardingNodeIdleCheckPeriod", shardingNodeIdleCheckPeriod, this.shardingNodeIdleCheckPeriod));
         }
     }
 
@@ -482,7 +482,7 @@ public final class SystemConfig {
         if (shardingNodeHeartbeatPeriod > 0) {
             this.shardingNodeHeartbeatPeriod = shardingNodeHeartbeatPeriod;
         } else if (this.problemReporter != null) {
-            problemReporter.warn(String.format(WARNING_FORMAT, "dataNodeHeartbeatPeriod", shardingNodeHeartbeatPeriod, this.shardingNodeHeartbeatPeriod));
+            problemReporter.warn(String.format(WARNING_FORMAT, "shardingNodeHeartbeatPeriod", shardingNodeHeartbeatPeriod, this.shardingNodeHeartbeatPeriod));
         }
     }
 
@@ -1221,8 +1221,8 @@ public final class SystemConfig {
                 ", txIsolation=" + txIsolation +
                 ", checkTableConsistency=" + checkTableConsistency +
                 ", checkTableConsistencyPeriod=" + checkTableConsistencyPeriod +
-                ", dataNodeIdleCheckPeriod=" + shardingNodeIdleCheckPeriod +
-                ", dataNodeHeartbeatPeriod=" + shardingNodeHeartbeatPeriod +
+                ", shardingNodeIdleCheckPeriod=" + shardingNodeIdleCheckPeriod +
+                ", shardingNodeHeartbeatPeriod=" + shardingNodeHeartbeatPeriod +
                 ", processorCheckPeriod=" + processorCheckPeriod +
                 ", idleTimeout=" + idleTimeout +
                 ", sqlExecuteTimeout=" + sqlExecuteTimeout +

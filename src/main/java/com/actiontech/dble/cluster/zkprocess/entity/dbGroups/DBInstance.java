@@ -154,7 +154,7 @@ public class DBInstance implements Propertied {
 
     @Override
     public String toString() {
-        return "WriteHost [name=" +
+        return "dbInstance [name=" +
                 name +
                 ", url=" +
                 url +

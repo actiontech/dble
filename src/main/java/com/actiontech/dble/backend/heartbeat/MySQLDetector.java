@@ -13,7 +13,7 @@ import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
-import com.actiontech.dble.config.helper.GetAndSyncDataSourceKeyVariables;
+import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.sqlengine.HeartbeatSQLJob;
@@ -135,13 +135,13 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
         }
         if (heartbeat.getStatus() == MySQLHeartbeat.OK_STATUS) { // ok->ok
             if (!heartbeat.getSource().isSalveOrRead() && source.isReadOnly()) { // writehost checkRecoverFail read only status is back?
-                GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(source, true);
+                GetAndSyncDbInstanceKeyVariables task = new GetAndSyncDbInstanceKeyVariables(source, true);
                 KeyVariables variables = task.call();
                 if (variables != null) {
                     source.setReadOnly(variables.isReadOnly());
                 } else {
-                    LOGGER.warn("GetAndSyncDataSourceKeyVariables failed, set heartbeat Error");
-                    heartbeat.setErrorResult("GetAndSyncDataSourceKeyVariables failed");
+                    LOGGER.warn("GetAndSyncDbInstanceKeyVariables failed, set heartbeat Error");
+                    heartbeat.setErrorResult("GetAndSyncDbInstanceKeyVariables failed");
                     return true;
                 }
             }
@@ -153,7 +153,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                 heartbeat.setErrorResult("testConnection failed");
                 return true;
             }
-            GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(source, true);
+            GetAndSyncDbInstanceKeyVariables task = new GetAndSyncDbInstanceKeyVariables(source, true);
             KeyVariables variables = task.call();
             if (variables == null ||
                     variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames() ||
@@ -162,7 +162,7 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                 Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", url);
                 String errMsg;
                 if (variables == null) {
-                    errMsg = "GetAndSyncDataSourceKeyVariables failed";
+                    errMsg = "GetAndSyncDbInstanceKeyVariables failed";
                 } else if (variables.isLowerCase() != DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
                     errMsg = "this dbInstance[=" + url + "]'s lower_case is wrong";
                 } else {

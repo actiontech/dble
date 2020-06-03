@@ -9,7 +9,7 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
-import com.actiontech.dble.statistic.DataSourceSyncRecorder;
+import com.actiontech.dble.statistic.DbInstanceSyncRecorder;
 import com.actiontech.dble.statistic.HeartbeatRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +36,7 @@ public class MySQLHeartbeat {
     private final int errorRetryCount;
     private final AtomicBoolean isChecking = new AtomicBoolean(false);
     private final HeartbeatRecorder recorder = new HeartbeatRecorder();
-    private final DataSourceSyncRecorder asyncRecorder = new DataSourceSyncRecorder();
+    private final DbInstanceSyncRecorder asyncRecorder = new DbInstanceSyncRecorder();
     private final MySQLInstance source;
     protected volatile int status;
     private String heartbeatSQL;
@@ -253,7 +253,7 @@ public class MySQLHeartbeat {
         return heartbeatSQL;
     }
 
-    public DataSourceSyncRecorder getAsyncRecorder() {
+    public DbInstanceSyncRecorder getAsyncRecorder() {
         return this.asyncRecorder;
     }
 }

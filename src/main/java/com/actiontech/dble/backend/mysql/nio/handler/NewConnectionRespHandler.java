@@ -33,8 +33,8 @@ public class NewConnectionRespHandler implements ResponseHandler {
             if (backConn == null) {
                 throw new IOException(errMsg);
             } else if (((MySQLConnection) backConn).getPool().isDisabled()) {
-                backConn.close("DataSource turned into disabled");
-                throw new IOException("DataSource " + ((MySQLConnection) backConn).getPool().toString() + " is disabled");
+                backConn.close("dbInstance turned into disabled");
+                throw new IOException("dbInstance " + ((MySQLConnection) backConn).getPool().toString() + " is disabled");
             }
             return backConn;
         } catch (InterruptedException e) {
@@ -50,7 +50,7 @@ public class NewConnectionRespHandler implements ResponseHandler {
         LOGGER.info(conn + " connectionError " + e);
         lock.lock();
         try {
-            errMsg = "Backend connect Error, Connection{DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
+            errMsg = "Backend connect Error, Connection{dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
             initiated.signal();
         } finally {
             lock.unlock();
@@ -105,7 +105,7 @@ public class NewConnectionRespHandler implements ResponseHandler {
     public void connectionClose(BackendConnection conn, String reason) {
         lock.lock();
         try {
-            errMsg = "Backend connect connectionClose, Connection{DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]}";
+            errMsg = "Backend connect connectionClose, Connection{dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]}";
             initiated.signal();
         } finally {
             lock.unlock();

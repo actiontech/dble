@@ -12,7 +12,7 @@ import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
-import com.actiontech.dble.singleton.PauseDatanodeManager;
+import com.actiontech.dble.singleton.PauseShardingNodeManager;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
@@ -35,7 +35,7 @@ public final class ShowPauseInfo {
         byte packetId = 0;
         HEADER.setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("PAUSE_DATANODE", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("PAUSE_SHARDING_NODE", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
@@ -55,8 +55,8 @@ public final class ShowPauseInfo {
         buffer = EOF.write(buffer, c, true);
         // write rows
         byte packetId = EOF.getPacketId();
-        if (PauseDatanodeManager.getInstance().getShardingNodes() != null) {
-            for (String shardingNode : PauseDatanodeManager.getInstance().getShardingNodes()) {
+        if (PauseShardingNodeManager.getInstance().getShardingNodes() != null) {
+            for (String shardingNode : PauseShardingNodeManager.getInstance().getShardingNodes()) {
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                 row.setPacketId(++packetId);
                 row.add(StringUtil.encode(shardingNode, c.getCharset().getResults()));

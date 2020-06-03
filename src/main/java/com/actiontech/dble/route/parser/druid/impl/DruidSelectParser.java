@@ -76,7 +76,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                 SQLExprTableSource fromSource = (SQLExprTableSource) mysqlFrom;
                 SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(sc.getUser(), schemaName, fromSource);
                 if (schemaInfo.isDual()) {
-                    //dual just route for a Random dataNode
+                    //dual just route for a Random shardingNode
                     RouterUtil.routeNoNameTableToSingleNode(rrs, schema);
                     return schema;
                 } else if (SchemaUtil.MYSQL_SYS_SCHEMA.contains(schemaInfo.getSchema().toUpperCase())) {

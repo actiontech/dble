@@ -74,7 +74,7 @@ public class ConMap {
         return items.values();
     }
 
-    public int getActiveCountForSchema(String schema, PhysicalDbInstance dataSource) {
+    public int getActiveCountForSchema(String schema, PhysicalDbInstance dbInstance) {
         int total = 0;
         for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
             for (BackendConnection con : processor.getBackends().values()) {
@@ -82,7 +82,7 @@ public class ConMap {
                     MySQLConnection mysqlCon = (MySQLConnection) con;
 
                     if (StringUtil.equals(mysqlCon.getSchema(), schema) &&
-                            mysqlCon.getPool() == dataSource &&
+                            mysqlCon.getPool() == dbInstance &&
                             mysqlCon.isBorrowed()) {
                         total++;
                     }
@@ -93,7 +93,7 @@ public class ConMap {
     }
 
 
-    public void clearConnections(String reason, PhysicalDbInstance dataSource) {
+    public void clearConnections(String reason, PhysicalDbInstance dbInstance) {
         for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
             ConcurrentMap<Long, BackendConnection> map = processor.getBackends();
             Iterator<Entry<Long, BackendConnection>> iterator = map.entrySet().iterator();
@@ -102,7 +102,7 @@ public class ConMap {
                 Entry<Long, BackendConnection> entry = iterator.next();
                 BackendConnection con = entry.getValue();
                 if (con instanceof MySQLConnection) {
-                    if (((MySQLConnection) con).getPool() == dataSource) {
+                    if (((MySQLConnection) con).getPool() == dbInstance) {
                         con.close(reason);
                         iterator.remove();
                     }

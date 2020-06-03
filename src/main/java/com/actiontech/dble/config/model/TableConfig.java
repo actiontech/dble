@@ -54,7 +54,7 @@ public class TableConfig {
         if (name == null) {
             throw new IllegalArgumentException("table name is null");
         } else if (shardingNode == null) {
-            throw new IllegalArgumentException("dataNode name is null");
+            throw new IllegalArgumentException("shardingNode name is null");
         }
         this.incrementColumn = incrementColumn;
         this.maxLimit = sqlMaxLimit;
@@ -68,10 +68,10 @@ public class TableConfig {
         this.name = name;
         String[] theShardingNodes = SplitUtil.split(shardingNode, ',', '$', '-');
         if (theShardingNodes.length <= 0) {
-            throw new IllegalArgumentException("invalid table dataNodes: " + shardingNode + " for table " + name);
+            throw new IllegalArgumentException("invalid table shardingNode: " + shardingNode + " for table " + name);
         }
         if (tableType != TableTypeEnum.TYPE_GLOBAL_TABLE && parentTC == null && theShardingNodes.length > 1 && rule == null) {
-            throw new IllegalArgumentException("invalid table dataNodes: " + shardingNode + " for table " + name);
+            throw new IllegalArgumentException("invalid table shardingNode: " + shardingNode + " for table " + name);
         }
         isNoSharding = theShardingNodes.length == 1;
         shardingNodes = new ArrayList<>(theShardingNodes.length);

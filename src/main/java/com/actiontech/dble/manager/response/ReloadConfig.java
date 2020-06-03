@@ -293,7 +293,7 @@ public final class ReloadConfig {
         /*
          *  1 load new conf
          *  1.1 ConfigInitializer init adn check itself
-         *  1.2 DataNode/dbGroup test connection
+         *  1.2 ShardingNode/dbGroup test connection
          */
         ReloadLogHelper.info("reload config: load all xml info start", LOGGER);
         ConfigInitializer loader;
@@ -334,15 +334,15 @@ public final class ReloadConfig {
         Map<String, PhysicalDbGroup> addOrChangeHosts = new HashMap<>();
         Map<String, PhysicalDbGroup> noChangeHosts = new HashMap<>();
         Map<String, PhysicalDbGroup> recycleHosts = new HashMap<>();
-        distinguishDataHost(loader.getDbGroups(), config.getDbGroups(), addOrChangeHosts, noChangeHosts, recycleHosts);
+        distinguishDbGroup(loader.getDbGroups(), config.getDbGroups(), addOrChangeHosts, noChangeHosts, recycleHosts);
 
-        Map<String, PhysicalDbGroup> mergedDataHosts = new HashMap<>();
-        mergedDataHosts.putAll(addOrChangeHosts);
-        mergedDataHosts.putAll(noChangeHosts);
+        Map<String, PhysicalDbGroup> mergedDbGroups = new HashMap<>();
+        mergedDbGroups.putAll(addOrChangeHosts);
+        mergedDbGroups.putAll(noChangeHosts);
 
-        ConfigUtil.getAndSyncKeyVariables(mergedDataHosts, true);
+        ConfigUtil.getAndSyncKeyVariables(mergedDbGroups, true);
 
-        SystemVariables newSystemVariables = getSystemVariablesFromDataHost(loader, mergedDataHosts);
+        SystemVariables newSystemVariables = getSystemVariablesFromdbGroup(loader, mergedDbGroups);
         ReloadLogHelper.info("reload config: get variables from random node end", LOGGER);
         ServerConfig serverConfig = new ServerConfig(loader);
 
@@ -357,33 +357,33 @@ public final class ReloadConfig {
         Map<String, SchemaConfig> newSchemas = serverConfig.getSchemas();
         Map<String, ShardingNode> newShardingNodes = serverConfig.getShardingNodes();
         Map<ERTable, Set<ERTable>> newErRelations = serverConfig.getErRelations();
-        Map<String, PhysicalDbGroup> newDataHosts = serverConfig.getDbGroups();
+        Map<String, PhysicalDbGroup> newDbGroups = serverConfig.getDbGroups();
 
         /*
          *  2 transform
-         *  2.1 old dataSource continue to work
+         *  2.1 old lDbInstance continue to work
          *  2.1.1 define the diff of new & old dbGroup config
          *  2.1.2 create new init plan for the reload
-         *  2.2 init the new dataSource
+         *  2.2 init the new lDbInstance
          *  2.3 transform
          *  2.4 put the old connection into a queue
          */
 
 
-        /* 2.2 init the dataSource with diff*/
+        /* 2.2 init the lDbInstance with diff*/
         ReloadLogHelper.info("reload config: init new data host  start", LOGGER);
-        String reasonMsg = initDataHostByMap(mergedDataHosts, newShardingNodes, loader.isFullyConfigured());
+        String reasonMsg = initDbGroupByMap(mergedDbGroups, newShardingNodes, loader.isFullyConfigured());
         ReloadLogHelper.info("reload config: init new data host end", LOGGER);
         if (reasonMsg == null) {
             /* 2.3 apply new conf */
             ReloadLogHelper.info("reload config: apply new config start", LOGGER);
             boolean result;
             try {
-                result = config.reload(newUsers, newSchemas, newShardingNodes, mergedDataHosts, addOrChangeHosts, recycleHosts, newErRelations,
+                result = config.reload(newUsers, newSchemas, newShardingNodes, mergedDbGroups, addOrChangeHosts, recycleHosts, newErRelations,
                         newSystemVariables, loader.isFullyConfigured(), loadAllMode);
                 CronScheduler.getInstance().init(config.getSchemas());
                 if (!result) {
-                    initFailed(newDataHosts);
+                    initFailed(newDbGroups);
                 }
                 FrontendUserManager.getInstance().initForLatest(newUsers, SystemConfig.getInstance().getMaxCon());
                 ReloadLogHelper.info("reload config: apply new config end", LOGGER);
@@ -393,32 +393,32 @@ public final class ReloadConfig {
                 }
                 return result;
             } catch (Exception e) {
-                initFailed(newDataHosts);
+                initFailed(newDbGroups);
                 throw e;
             }
         } else {
-            initFailed(newDataHosts);
+            initFailed(newDbGroups);
             throw new Exception(reasonMsg);
         }
     }
 
-    private static void initFailed(Map<String, PhysicalDbGroup> newDataHosts) throws Exception {
+    private static void initFailed(Map<String, PhysicalDbGroup> newDbGroups) throws Exception {
         // INIT FAILED
         ReloadLogHelper.info("reload failed, clear previously created data sources ", LOGGER);
-        for (PhysicalDbGroup dataHost : newDataHosts.values()) {
-            dataHost.clearDataSources("reload config");
-            dataHost.stopHeartbeat();
+        for (PhysicalDbGroup dbGroup : newDbGroups.values()) {
+            dbGroup.clearDbInstances("reload config");
+            dbGroup.stopHeartbeat();
         }
     }
 
     private static boolean forceReloadAll(final int loadAllMode, ConfigInitializer loader) throws Exception {
         ServerConfig config = DbleServer.getInstance().getConfig();
         ServerConfig serverConfig = new ServerConfig(loader);
-        Map<String, PhysicalDbGroup> newDataHosts = serverConfig.getDbGroups();
+        Map<String, PhysicalDbGroup> newDbGroups = serverConfig.getDbGroups();
 
-        ConfigUtil.getAndSyncKeyVariables(newDataHosts, true);
+        ConfigUtil.getAndSyncKeyVariables(newDbGroups, true);
 
-        SystemVariables newSystemVariables = getSystemVariablesFromDataHost(loader, newDataHosts);
+        SystemVariables newSystemVariables = getSystemVariablesFromdbGroup(loader, newDbGroups);
         ReloadLogHelper.info("reload config: get variables from random node end", LOGGER);
 
         if (newSystemVariables.isLowerCaseTableNames() && loader.isFullyConfigured()) {
@@ -435,18 +435,18 @@ public final class ReloadConfig {
 
 
         ReloadLogHelper.info("reload config: init new data host  start", LOGGER);
-        String reasonMsg = initDataHostByMap(newDataHosts, newShardingNodes, loader.isFullyConfigured());
+        String reasonMsg = initDbGroupByMap(newDbGroups, newShardingNodes, loader.isFullyConfigured());
         ReloadLogHelper.info("reload config: init new data host end", LOGGER);
         if (reasonMsg == null) {
             /* 2.3 apply new conf */
             ReloadLogHelper.info("reload config: apply new config start", LOGGER);
             boolean result;
             try {
-                result = config.reload(newUsers, newSchemas, newShardingNodes, newDataHosts, newDataHosts, config.getDbGroups(), newErRelations,
+                result = config.reload(newUsers, newSchemas, newShardingNodes, newDbGroups, newDbGroups, config.getDbGroups(), newErRelations,
                         newSystemVariables, loader.isFullyConfigured(), loadAllMode);
                 CronScheduler.getInstance().init(config.getSchemas());
                 if (!result) {
-                    initFailed(newDataHosts);
+                    initFailed(newDbGroups);
                 }
                 FrontendUserManager.getInstance().initForLatest(newUsers, SystemConfig.getInstance().getMaxCon());
                 ReloadLogHelper.info("reload config: apply new config end", LOGGER);
@@ -456,11 +456,11 @@ public final class ReloadConfig {
                 }
                 return result;
             } catch (Exception e) {
-                initFailed(newDataHosts);
+                initFailed(newDbGroups);
                 throw e;
             }
         } else {
-            initFailed(newDataHosts);
+            initFailed(newDbGroups);
             throw new Exception(reasonMsg);
         }
     }
@@ -477,8 +477,8 @@ public final class ReloadConfig {
         }
     }
 
-    private static SystemVariables getSystemVariablesFromDataHost(ConfigInitializer loader, Map<String, PhysicalDbGroup> newDataHosts) throws Exception {
-        VarsExtractorHandler handler = new VarsExtractorHandler(newDataHosts);
+    private static SystemVariables getSystemVariablesFromdbGroup(ConfigInitializer loader, Map<String, PhysicalDbGroup> newDbGroups) throws Exception {
+        VarsExtractorHandler handler = new VarsExtractorHandler(newDbGroups);
         SystemVariables newSystemVariables;
         newSystemVariables = handler.execute();
         if (newSystemVariables == null) {
@@ -528,10 +528,10 @@ public final class ReloadConfig {
     }
 
     private static void recycleOldBackendConnections(Map<String, PhysicalDbGroup> recycleMap, boolean closeFrontCon) {
-        for (PhysicalDbGroup dataHost : recycleMap.values()) {
-            dataHost.stopHeartbeat();
+        for (PhysicalDbGroup dbGroup : recycleMap.values()) {
+            dbGroup.stopHeartbeat();
             long oldTimestamp = System.currentTimeMillis();
-            for (PhysicalDbInstance ds : dataHost.getAllActiveDataSources()) {
+            for (PhysicalDbInstance ds : dbGroup.getAllActiveDbInstances()) {
                 for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
                     for (BackendConnection con : processor.getBackends().values()) {
                         if (con instanceof MySQLConnection) {
@@ -571,22 +571,22 @@ public final class ReloadConfig {
 
     }
 
-    private static void distinguishDataHost(Map<String, PhysicalDbGroup> newDataHosts, Map<String, PhysicalDbGroup> oldDataHosts,
-                                            Map<String, PhysicalDbGroup> addOrChangeHosts, Map<String, PhysicalDbGroup> noChangeHosts,
-                                            Map<String, PhysicalDbGroup> recycleHosts) {
+    private static void distinguishDbGroup(Map<String, PhysicalDbGroup> newDbGroups, Map<String, PhysicalDbGroup> oldDbGroups,
+                                           Map<String, PhysicalDbGroup> addOrChangeDbGroups, Map<String, PhysicalDbGroup> noChangeDbGroups,
+                                           Map<String, PhysicalDbGroup> recycleHosts) {
 
-        for (Map.Entry<String, PhysicalDbGroup> entry : newDataHosts.entrySet()) {
-            PhysicalDbGroup oldPool = oldDataHosts.get(entry.getKey());
+        for (Map.Entry<String, PhysicalDbGroup> entry : newDbGroups.entrySet()) {
+            PhysicalDbGroup oldPool = oldDbGroups.get(entry.getKey());
             PhysicalDbGroup newPool = entry.getValue();
             if (oldPool == null) {
-                addOrChangeHosts.put(newPool.getGroupName(), newPool);
+                addOrChangeDbGroups.put(newPool.getGroupName(), newPool);
             } else {
-                calcChangedDatahosts(addOrChangeHosts, noChangeHosts, recycleHosts, entry, oldPool);
+                calcChangedDbGroups(addOrChangeDbGroups, noChangeDbGroups, recycleHosts, entry, oldPool);
             }
         }
 
-        for (Map.Entry<String, PhysicalDbGroup> entry : oldDataHosts.entrySet()) {
-            PhysicalDbGroup newPool = newDataHosts.get(entry.getKey());
+        for (Map.Entry<String, PhysicalDbGroup> entry : oldDbGroups.entrySet()) {
+            PhysicalDbGroup newPool = newDbGroups.get(entry.getKey());
 
             if (newPool == null) {
                 PhysicalDbGroup oldPool = entry.getValue();
@@ -595,7 +595,7 @@ public final class ReloadConfig {
         }
     }
 
-    private static void calcChangedDatahosts(Map<String, PhysicalDbGroup> addOrChangeHosts, Map<String, PhysicalDbGroup> noChangeHosts, Map<String, PhysicalDbGroup> recycleHosts, Map.Entry<String, PhysicalDbGroup> entry, PhysicalDbGroup oldPool) {
+    private static void calcChangedDbGroups(Map<String, PhysicalDbGroup> addOrChangeHosts, Map<String, PhysicalDbGroup> noChangeHosts, Map<String, PhysicalDbGroup> recycleHosts, Map.Entry<String, PhysicalDbGroup> entry, PhysicalDbGroup oldPool) {
         PhysicalDbGroupDiff toCheck = new PhysicalDbGroupDiff(entry.getValue(), oldPool);
         switch (toCheck.getChangeType()) {
             case PhysicalDbGroupDiff.CHANGE_TYPE_CHANGE:
@@ -620,28 +620,28 @@ public final class ReloadConfig {
     }
 
 
-    private static String initDataHostByMap(Map<String, PhysicalDbGroup> newDataHosts, Map<String, ShardingNode> newShardingNodes, boolean fullyConfigured) {
+    private static String initDbGroupByMap(Map<String, PhysicalDbGroup> newDbGroups, Map<String, ShardingNode> newShardingNodes, boolean fullyConfigured) {
         String reasonMsg = null;
-        for (PhysicalDbGroup dataHost : newDataHosts.values()) {
-            ReloadLogHelper.info("try to init dataSouce : " + dataHost.toString(), LOGGER);
-            String hostName = dataHost.getGroupName();
+        for (PhysicalDbGroup dbGroup : newDbGroups.values()) {
+            ReloadLogHelper.info("try to init dataSouce : " + dbGroup.toString(), LOGGER);
+            String hostName = dbGroup.getGroupName();
             // set schemas
             ArrayList<String> dnSchemas = new ArrayList<>(30);
             for (ShardingNode dn : newShardingNodes.values()) {
                 if (dn.getDbGroup().getGroupName().equals(hostName)) {
-                    dn.setDbGroup(dataHost);
+                    dn.setDbGroup(dbGroup);
                     dnSchemas.add(dn.getDatabase());
                 }
             }
-            dataHost.setSchemas(dnSchemas.toArray(new String[dnSchemas.size()]));
-            if (!dataHost.isInitSuccess() && fullyConfigured) {
-                dataHost.init();
-                if (!dataHost.isInitSuccess()) {
-                    reasonMsg = "Init DataHost [" + dataHost.getGroupName() + "] failed";
+            dbGroup.setSchemas(dnSchemas.toArray(new String[dnSchemas.size()]));
+            if (!dbGroup.isInitSuccess() && fullyConfigured) {
+                dbGroup.init();
+                if (!dbGroup.isInitSuccess()) {
+                    reasonMsg = "Init dbGroup [" + dbGroup.getGroupName() + "] failed";
                     break;
                 }
             } else {
-                LOGGER.info("dataHost[" + hostName + "] already initiated, so doing nothing");
+                LOGGER.info("dbGroup[" + hostName + "] already initiated, so doing nothing");
             }
         }
         return reasonMsg;

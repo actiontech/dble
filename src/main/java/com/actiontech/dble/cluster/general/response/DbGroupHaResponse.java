@@ -42,8 +42,8 @@ public class DbGroupHaResponse implements ClusterXmlLoader {
             }
             String[] path = configValue.getKey().split("/");
             String dhName = path[path.length - 1];
-            PhysicalDbGroup dataHost = DbleServer.getInstance().getConfig().getDbGroups().get(dhName);
-            dataHost.changeIntoLatestStatus(configValue.getValue());
+            PhysicalDbGroup dbGroup = DbleServer.getInstance().getConfig().getDbGroups().get(dhName);
+            dbGroup.changeIntoLatestStatus(configValue.getValue());
             HaConfigManager.getInstance().haFinish(id, null, configValue.getValue());
         } else {
             //data_host_locks events,we only try to response to the DISABLE,ignore others
@@ -57,8 +57,8 @@ public class DbGroupHaResponse implements ClusterXmlLoader {
                     //try to get the lastest status of the dbGroup
                     KvBean latestStatus = ClusterHelper.getKV(ClusterPathUtil.getHaStatusPath(info.getDbGroupName()));
                     //find out the target dbGroup and change it into latest status
-                    PhysicalDbGroup dataHost = DbleServer.getInstance().getConfig().getDbGroups().get(info.getDbGroupName());
-                    dataHost.changeIntoLatestStatus(latestStatus.getValue());
+                    PhysicalDbGroup dbGroup = DbleServer.getInstance().getConfig().getDbGroups().get(info.getDbGroupName());
+                    dbGroup.changeIntoLatestStatus(latestStatus.getValue());
                     //response the event ,only disable event has response
                     ClusterHelper.setKV(ClusterPathUtil.getSelfResponsePath(configValue.getKey()), ClusterPathUtil.SUCCESS);
                     //ha manager writeOut finish log

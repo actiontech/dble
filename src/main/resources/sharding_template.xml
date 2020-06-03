@@ -5,7 +5,7 @@
   -->
 
 <!DOCTYPE dble:sharding SYSTEM "sharding.dtd">
-<dble:sharding xmlns:dble="http://dble.cloud/" version="3.0">
+<dble:sharding xmlns:dble="http://dble.cloud/" version="4.0">
 
     <schema name="testdb"  sqlMaxLimit="100">
         <shardingTable name="tb_enum_sharding" shardingNode="dn1,dn2" sqlMaxLimit="200" function="func_enum" shardingColumn="code"/>

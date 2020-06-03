@@ -17,7 +17,6 @@
 # valid for sequenceHandlerType=2 or 3
 -DinstanceId=1
 -DserverId=xxx1
-#-DuseSerializableMode=1
 #-DbindIp=0.0.0.0
 #-DserverPort=8066
 #-DmanagerPort=9066
@@ -29,30 +28,32 @@
 #-DcomplexExecutor=8
 #-DwriteToBackendExecutor=4
 
-# if need out HA
--DuseOuterHa=true
+
 -DfakeMySQLVersion=5.7.11
 
 # serverBacklog size,default 2048
 -DserverBacklog=2048
-#-DshowBinlogStatusTimeout=60000
 
-# option
-#-DuseCompression=1
--DusingAIO=0
--DuseThreadUsageStat=1
 #-DusePerformanceMode=0
-
-#  query time cost statistics
-#-DuseCostTimeStat=0
-#-DmaxCostStatSize=100
-#-DcostSamplePercent=1
+# if need out HA
+-DuseOuterHa=true
 
 # connection
 #-Dcharset=utf8mb4
 -DmaxPacketSize=167772160
 -DtxIsolation=2
 #-Dautocommit=1
+
+# option
+#-DuseCompression=1
+-DusingAIO=0
+
+-DuseThreadUsageStat=1
+#  query time cost statistics
+#-DuseCostTimeStat=0
+#-DmaxCostStatSize=100
+#-DcostSamplePercent=1
+
 
 # consistency
 #  check the consistency of table structure between nodes,default not
@@ -64,6 +65,40 @@
 -DprocessorCheckPeriod=1000
 -DsqlExecuteTimeout=3000
 -DidleTimeout=1800000
+
+
+#-DbackSocket unit:bytes
+#-DbackSocketSoRcvbuf=4194304
+#-DbackSocketSoSndbuf=1048576
+#-DbackSocketNoDelay=1
+
+#  frontSocket
+#-DfrontSocketSoRcvbuf=1048576
+#-DfrontSocketSoSndbuf=4194304
+#-DfrontSocketNoDelay=1
+
+
+#  query memory used for per session,unit is M
+-DotherMemSize=4
+-DorderMemSize=4
+-DjoinMemSize=4
+
+
+#  off Heap unit:bytes
+-DbufferPoolChunkSize=32767
+-DbufferPoolPageNumber=512
+-DbufferPoolPageSize=2097152
+#-DmappedFileSize=2097152
+
+
+#  sql statistics
+#  1 means use SQL statistics, 0 means not
+-DuseSqlStat=1
+#-DbufferUsagePercent=80
+-DclearBigSQLResultSetMapMs=600000
+#-DsqlRecordCount=10
+#-DmaxResultSet=524288
+
 
 #  transaction log
 #  1 enable record the transaction log, 0 disable ,the unit of transactionRotateSize is M
@@ -83,45 +118,20 @@
 #  XA Retry count, retry times in backend, 0 means always retry until success
 #-DxaRetryCount=0
 
+#-DviewPersistenceConfBaseDir=/viewPath
+#-viewPersistenceConfBaseName=viewJson
+
+#  for join tmp results
+#-DmergeQueueSize=1024
+#-DorderByQueueSize=1024
+#-DjoinQueueSize=1024
+
 
 #  true is use JoinStrategy, default false
 #-DuseJoinStrategy=true
 -DnestLoopConnSize=4
 -DnestLoopRowsSize=2000
 
-#  query memory used for per session,unit is M
--DotherMemSize=4
--DorderMemSize=4
--DjoinMemSize=4
-
-#  off Heap unit:bytes
--DbufferPoolChunkSize=32767
--DbufferPoolPageNumber=512
--DbufferPoolPageSize=2097152
-#-DmappedFileSize=2097152
-
-#  sql statistics
-#  1 means use SQL statistics, 0 means not
--DuseSqlStat=1
-#-DbufferUsagePercent=80
--DclearBigSQLResultSetMapMs=600000
-#-DsqlRecordCount=10
-#-DmaxResultSet=524288
-
-#-DbackSocket unit:bytes
-#-DbackSocketSoRcvbuf=4194304
-#-DbackSocketSoSndbuf=1048576
-#-DbackSocketNoDelay=1
-
-#  frontSocket
-#-DfrontSocketSoRcvbuf=1048576
-#-DfrontSocketSoSndbuf=4194304
-#-DfrontSocketNoDelay=1
-
-#  for join tmp results
-#-DmergeQueueSize=1024
-#-DorderByQueueSize=1024
-#-DjoinQueueSize=1024
 
 #  if enable the slow query log
 -DenableSlowLog=1
@@ -139,4 +149,7 @@
 #-DmaxCharsPerColumn=65535
 #  used for load data, because dble need save to disk if loading file contains large size
 #-DmaxRowSizeToFile=10000
-#-DuseOuterHa=true
+
+#enableFlowControl=false
+#flowControlStartThreshold=4096
+#flowControlStopThreshold=256

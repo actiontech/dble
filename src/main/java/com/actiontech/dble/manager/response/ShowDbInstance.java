@@ -24,14 +24,8 @@ import com.actiontech.dble.util.StringUtil;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-/**
- * ShowDataSource
- *
- * @author mycat
- * @author mycat
- */
-public final class ShowDataSource {
-    private ShowDataSource() {
+public final class ShowDbInstance {
+    private ShowDbInstance() {
     }
 
     private static final int FIELD_COUNT = 12;
@@ -103,7 +97,7 @@ public final class ShowDataSource {
 
         if (null != name) {
             ShardingNode dn = conf.getShardingNodes().get(name);
-            for (PhysicalDbInstance w : dn.getDbGroup().getAllDataSources()) {
+            for (PhysicalDbInstance w : dn.getDbGroup().getAllDbInstances()) {
                 RowDataPacket row = getRow(w.getDbGroupConfig().getName(), w, c.getCharset().getResults());
                 row.setPacketId(++packetId);
                 buffer = row.write(buffer, c, true);
@@ -112,10 +106,10 @@ public final class ShowDataSource {
         } else {
             // add all
             for (Map.Entry<String, PhysicalDbGroup> entry : conf.getDbGroups().entrySet()) {
-                PhysicalDbGroup dataHost = entry.getValue();
-                String datahost = entry.getKey();
-                for (PhysicalDbInstance source : dataHost.getAllDataSources()) {
-                    RowDataPacket sRow = getRow(datahost, source, c.getCharset().getResults());
+                PhysicalDbGroup dbGroup = entry.getValue();
+                String dbGroupName = entry.getKey();
+                for (PhysicalDbInstance source : dbGroup.getAllDbInstances()) {
+                    RowDataPacket sRow = getRow(dbGroupName, source, c.getCharset().getResults());
                     sRow.setPacketId(++packetId);
                     buffer = sRow.write(buffer, c, true);
                 }
@@ -130,12 +124,11 @@ public final class ShowDataSource {
         c.write(buffer);
     }
 
-    private static RowDataPacket getRow(String dataHost, PhysicalDbInstance ds,
+    private static RowDataPacket getRow(String dbGroup, PhysicalDbInstance ds,
                                         String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        //row.add(StringUtil.encode(dataNode, charset));
         int idleCount = ds.getIdleCount();
-        row.add(StringUtil.encode(dataHost, charset));
+        row.add(StringUtil.encode(dbGroup, charset));
         row.add(StringUtil.encode(ds.getName(), charset));
         row.add(StringUtil.encode(ds.getConfig().getIp(), charset));
         row.add(IntegerUtil.toBytes(ds.getConfig().getPort()));

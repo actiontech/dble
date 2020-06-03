@@ -150,7 +150,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
             errMsg = e.getMessage() == null ? e.toString() : e.getMessage();
         } else {
             LOGGER.warn("Backend connect Error, Connection info:" + conn, e);
-            errMsg = "Backend connect Error, Connection{DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
+            errMsg = "Backend connect Error, Connection{dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
         }
         session.onQueryError(errMsg.getBytes());
     }
@@ -160,7 +160,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
         if (terminate.get())
             return;
         LOGGER.warn(conn.toString() + "|connectionClose()|" + reason);
-        reason = "Connection {DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
+        reason = "Connection {dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
                 ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
         session.onQueryError(reason.getBytes());
     }

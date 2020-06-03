@@ -94,7 +94,7 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
         boolean finished = result[0];
         boolean justRemoved = result[1];
         if (justRemoved) {
-            String closeReason = "Connection {DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
+            String closeReason = "Connection {dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
                     ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
             if (logger.isDebugEnabled()) {
                 logger.debug(closeReason);

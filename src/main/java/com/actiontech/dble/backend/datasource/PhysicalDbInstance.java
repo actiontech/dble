@@ -405,10 +405,10 @@ public abstract class PhysicalDbInstance {
                         @Override
                         public void connectionAcquired(BackendConnection conn) {
                             if (disabled.get()) {
-                                handler.connectionError(new IOException("dataSource disabled"), conn);
-                                conn.close("disabled dataHost");
+                                handler.connectionError(new IOException("dbInstance disabled"), conn);
+                                conn.close("disabled dbInstance");
                             } else if (mustWrite && isReadInstance()) {
-                                handler.connectionError(new IOException("writeSource switched"), conn);
+                                handler.connectionError(new IOException("primary dbInstance switched"), conn);
                             } else {
                                 takeCon(conn, handler, attachment, schema);
                             }
@@ -426,7 +426,7 @@ public abstract class PhysicalDbInstance {
     public void getNewConnection(String schema, final ResponseHandler handler,
                                  final Object attachment, boolean mustWrite, boolean forceCreate) throws IOException {
         if (disabled.get()) {
-            throw new IOException("the dataSource is disabled [" + this.name + "]");
+            throw new IOException("the dbInstance is disabled [" + this.name + "]");
         } else if (!this.createNewCount()) {
             if (forceCreate) {
                 this.connectionCount.incrementAndGet();
@@ -467,7 +467,7 @@ public abstract class PhysicalDbInstance {
         BackendConnection con = this.conMap.tryTakeCon(schema, autocommit);
         if (con == null) {
             if (disabled.get()) {
-                throw new IOException("the dataSource is disabled [" + this.name + "]");
+                throw new IOException("the dbInstance is disabled [" + this.name + "]");
             } else if (!this.createNewCount()) {
                 String maxConError = "the max active Connections size can not be max than maxCon data host[" + this.getDbGroupConfig().getName() + "." + this.getName() + "]";
                 LOGGER.warn(maxConError);
@@ -610,10 +610,10 @@ public abstract class PhysicalDbInstance {
     }
 
 
-    public boolean equals(PhysicalDbInstance dataSource) {
-        return dataSource.getConfig().getUser().equals(this.getConfig().getUser()) && dataSource.getConfig().getUrl().equals(this.getConfig().getUrl()) &&
-                dataSource.getConfig().getPassword().equals(this.getConfig().getPassword()) && dataSource.getConfig().getInstanceName().equals(this.getConfig().getInstanceName()) &&
-                dataSource.isDisabled() == this.isDisabled() && dataSource.getConfig().getReadWeight() == this.getConfig().getReadWeight();
+    public boolean equals(PhysicalDbInstance dbInstance) {
+        return dbInstance.getConfig().getUser().equals(this.getConfig().getUser()) && dbInstance.getConfig().getUrl().equals(this.getConfig().getUrl()) &&
+                dbInstance.getConfig().getPassword().equals(this.getConfig().getPassword()) && dbInstance.getConfig().getInstanceName().equals(this.getConfig().getInstanceName()) &&
+                dbInstance.isDisabled() == this.isDisabled() && dbInstance.getConfig().getReadWeight() == this.getConfig().getReadWeight();
     }
 
     public boolean equals(Object obj) {
@@ -638,7 +638,7 @@ public abstract class PhysicalDbInstance {
 
     @Override
     public String toString() {
-        return "dataSource[name=" + name +
+        return "dbInstance[name=" + name +
                 ",disabled=" +
                 disabled.toString() + ",maxCon=" +
                 size + "]";

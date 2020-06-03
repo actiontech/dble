@@ -20,18 +20,18 @@ import java.util.Map;
  *
  * @author songwie
  */
-public class DataSourceSyncRecorder {
+public class DbInstanceSyncRecorder {
 
     private Map<String, String> records;
     private final List<Record> asyncRecords; //value,time
-    private static final Logger LOGGER = LoggerFactory.getLogger(DataSourceSyncRecorder.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DbInstanceSyncRecorder.class);
 
 
     private static final long SWAP_TIME = 24 * 60 * 60 * 1000L;
 
     private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-    public DataSourceSyncRecorder() {
+    public DbInstanceSyncRecorder() {
         this.records = new HashMap<>();
         this.asyncRecords = new LinkedList<>();
     }
@@ -54,7 +54,7 @@ public class DataSourceSyncRecorder {
             }
         } catch (Exception e) {
             this.asyncRecords.add(new Record(time, -1));
-            LOGGER.info("record DataSourceSyncRecorder error " + e.getMessage());
+            LOGGER.info("record DbInstanceSyncRecorder error " + e.getMessage());
         }
 
     }

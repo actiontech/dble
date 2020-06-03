@@ -136,16 +136,16 @@ public class XMLDbLoader {
             int readCnt = 0;
             for (int r = 0; r < dbInstances.getLength(); r++) {
                 Element dbInstance = (Element) dbInstances.item(r);
-                DbInstanceConfig tmpDataSourceConfig = createDbInstanceConf(name, dbInstance);
-                String instanceName = tmpDataSourceConfig.getInstanceName();
+                DbInstanceConfig tmpDbInstanceConfig = createDbInstanceConf(name, dbInstance);
+                String instanceName = tmpDbInstanceConfig.getInstanceName();
                 if (instanceNames.contains(instanceName)) {
                     throw new ConfigException("dbGroup[" + name + "]'s child host name [" + instanceName + "]  duplicated!");
                 } else {
                     instanceNames.add(instanceName);
                 }
-                if (tmpDataSourceConfig.isPrimary()) {
+                if (tmpDbInstanceConfig.isPrimary()) {
                     if (writeDbConf == null) {
-                        writeDbConf = tmpDataSourceConfig;
+                        writeDbConf = tmpDbInstanceConfig;
                     } else {
                         throw new ConfigException("dbGroup[" + name + "] has multi primary instance!");
                     }
@@ -153,7 +153,7 @@ public class XMLDbLoader {
                     if (readCnt == readHostSize) {
                         throw new ConfigException("dbGroup[" + name + "] has no primary instance!");
                     }
-                    readDbConfList[readCnt++] = tmpDataSourceConfig;
+                    readDbConfList[readCnt++] = tmpDbInstanceConfig;
                 }
             }
             DbGroupConfig dbGroupConf = new DbGroupConfig(name, writeDbConf, readDbConfList, delayThreshold);
@@ -225,19 +225,19 @@ public class XMLDbLoader {
         return nodes;
     }
 
-    private PhysicalDbInstance createDataSource(DbGroupConfig conf, DbInstanceConfig node,
+    private PhysicalDbInstance createDbInstance(DbGroupConfig conf, DbInstanceConfig node,
                                                 boolean isRead) {
         node.setIdleTimeout(SystemConfig.getInstance().getIdleTimeout());
         return new MySQLInstance(node, conf, isRead);
     }
 
     private PhysicalDbGroup getPhysicalDBPoolSingleWH(DbGroupConfig conf) {
-        //create PhysicalDatasource for write host
-        PhysicalDbInstance writeSource = createDataSource(conf, conf.getWriteInstanceConfig(), false);
+        //create PhysicalDbInstance for write host
+        PhysicalDbInstance writeSource = createDbInstance(conf, conf.getWriteInstanceConfig(), false);
         PhysicalDbInstance[] readSources = new PhysicalDbInstance[conf.getReadInstanceConfigs().length];
         int i = 0;
         for (DbInstanceConfig readNode : conf.getReadInstanceConfigs()) {
-            readSources[i++] = createDataSource(conf, readNode, true);
+            readSources[i++] = createDbInstance(conf, readNode, true);
         }
 
         return new PhysicalDbGroup(conf.getName(), conf, writeSource, readSources, conf.getRwSplitMode());

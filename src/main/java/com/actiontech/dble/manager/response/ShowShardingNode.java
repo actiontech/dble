@@ -31,7 +31,7 @@ import java.text.NumberFormat;
 import java.util.*;
 
 /**
- * ShowDataNode
+ * ShowShardingNode
  *
  * @author mycat
  * @author mycat
@@ -53,7 +53,7 @@ public final class ShowShardingNode {
         FIELDS[i] = PacketUtil.getField("NAME", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
-        FIELDS[i] = PacketUtil.getField("DBGROUP", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("DB_GROUP", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("SCHEMA_EXISTS", Fields.FIELD_TYPE_VAR_STRING);

@@ -112,9 +112,9 @@ public final class ShowHeartbeat {
         List<RowDataPacket> list = new LinkedList<>();
         ServerConfig conf = DbleServer.getInstance().getConfig();
         // host nodes
-        Map<String, PhysicalDbGroup> dataHosts = conf.getDbGroups();
-        for (PhysicalDbGroup pool : dataHosts.values()) {
-            for (PhysicalDbInstance ds : pool.getAllDataSources()) {
+        Map<String, PhysicalDbGroup> dbGroups = conf.getDbGroups();
+        for (PhysicalDbGroup pool : dbGroups.values()) {
+            for (PhysicalDbInstance ds : pool.getAllDbInstances()) {
                 MySQLHeartbeat hb = ds.getHeartbeat();
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                 row.add(ds.getName().getBytes());

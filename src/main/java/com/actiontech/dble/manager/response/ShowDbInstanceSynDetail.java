@@ -17,11 +17,15 @@ import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
-import com.actiontech.dble.statistic.DataSourceSyncRecorder;
+import com.actiontech.dble.route.parser.ManagerParseShow;
+import com.actiontech.dble.statistic.DbInstanceSyncRecorder;
+import com.actiontech.dble.statistic.DbInstanceSyncRecorder.Record;
 import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -30,11 +34,11 @@ import java.util.Map;
 /**
  * @author songwie
  */
-public final class ShowDatasourceSyn {
-    private ShowDatasourceSyn() {
+public final class ShowDbInstanceSynDetail {
+    private ShowDbInstanceSynDetail() {
     }
 
-    private static final int FIELD_COUNT = 13;
+    private static final int FIELD_COUNT = 9;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
@@ -66,28 +70,16 @@ public final class ShowDatasourceSyn {
         FIELDS[i] = PacketUtil.getField("MASTER_USER", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
 
+        FIELDS[i] = PacketUtil.getField("TIME", Fields.FIELD_TYPE_DATETIME);
+        FIELDS[i++].setPacketId(++packetId);
+
         FIELDS[i] = PacketUtil.getField("SECONDS_BEHIND_MASTER", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].setPacketId(++packetId);
-
-        FIELDS[i] = PacketUtil.getField("SLAVE_IO_RUNNING", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].setPacketId(++packetId);
-
-        FIELDS[i] = PacketUtil.getField("SLAVE_SQL_RUNNING", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].setPacketId(++packetId);
-
-        FIELDS[i] = PacketUtil.getField("SLAVE_IO_STATE", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[i++].setPacketId(++packetId);
-
-        FIELDS[i] = PacketUtil.getField("CONNECT_RETRY", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].setPacketId(++packetId);
-
-        FIELDS[i] = PacketUtil.getField("LAST_IO_ERROR", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i].setPacketId(++packetId);
 
         EOF.setPacketId(++packetId);
     }
 
-    public static void response(ManagerConnection c) {
+    public static void response(ManagerConnection c, String stmt) {
         ByteBuffer buffer = c.allocate();
 
         // write header
@@ -104,7 +96,8 @@ public final class ShowDatasourceSyn {
         // write rows
         byte packetId = EOF.getPacketId();
 
-        for (RowDataPacket row : getRows(c.getCharset().getResults())) {
+        String name = ManagerParseShow.getWhereParameter(stmt);
+        for (RowDataPacket row : getRows(name, c.getCharset().getResults())) {
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);
         }
@@ -118,43 +111,44 @@ public final class ShowDatasourceSyn {
         c.write(buffer);
     }
 
-    private static List<RowDataPacket> getRows(String charset) {
+    private static List<RowDataPacket> getRows(String name, String charset) {
         List<RowDataPacket> list = new LinkedList<>();
         ServerConfig conf = DbleServer.getInstance().getConfig();
         // host nodes
-        Map<String, PhysicalDbGroup> dataHosts = conf.getDbGroups();
-        for (Map.Entry<String, PhysicalDbGroup> entry : dataHosts.entrySet()) {
-            String datahost = entry.getKey();
+        Map<String, PhysicalDbGroup> dbGroups = conf.getDbGroups();
+        for (Map.Entry<String, PhysicalDbGroup> entry : dbGroups.entrySet()) {
+            String dbGroupName = entry.getKey();
             PhysicalDbGroup pool = entry.getValue();
-            for (PhysicalDbInstance ds : pool.getAllActiveDataSources()) {
+            for (PhysicalDbInstance ds : pool.getAllActiveDbInstances()) {
                 if (ds.isDisabled()) {
                     continue;
                 }
                 MySQLHeartbeat hb = ds.getHeartbeat();
-                DataSourceSyncRecorder record = hb.getAsyncRecorder();
+                DbInstanceSyncRecorder record = hb.getAsyncRecorder();
                 Map<String, String> states = record.getRecords();
-                RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-                if (!states.isEmpty()) {
-                    row.add(StringUtil.encode(datahost, charset));
-                    row.add(StringUtil.encode(ds.getName(), charset));
-                    row.add(StringUtil.encode(ds.getConfig().getIp(), charset));
-                    row.add(LongUtil.toBytes(ds.getConfig().getPort()));
-                    row.add(StringUtil.encode(states.get("Master_Host"), charset));
-                    row.add(LongUtil.toBytes(Long.parseLong(states.get("Master_Port"))));
-                    row.add(StringUtil.encode(states.get("Master_User"), charset));
-                    String seconds = states.get("Seconds_Behind_Master");
-                    row.add(seconds == null ? null : LongUtil.toBytes(Long.parseLong(seconds)));
-                    row.add(StringUtil.encode(states.get("Slave_IO_Running"), charset));
-                    row.add(StringUtil.encode(states.get("Slave_SQL_Running"), charset));
-                    row.add(StringUtil.encode(states.get("Slave_IO_State"), charset));
-                    row.add(LongUtil.toBytes(Long.parseLong(states.get("Connect_Retry"))));
-                    row.add(StringUtil.encode(states.get("Last_IO_Error"), charset));
+                if (name.equals(ds.getName())) {
+                    List<Record> data = record.getAsyncRecords();
+                    for (Record r : data) {
+                        RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+                        row.add(StringUtil.encode(dbGroupName, charset));
+                        row.add(StringUtil.encode(ds.getName(), charset));
+                        row.add(StringUtil.encode(ds.getConfig().getIp(), charset));
+                        row.add(LongUtil.toBytes(ds.getConfig().getPort()));
+                        row.add(StringUtil.encode(states.get("Master_Host"), charset));
+                        row.add(LongUtil.toBytes(Long.parseLong(states.get("Master_Port"))));
+                        row.add(StringUtil.encode(states.get("Master_User"), charset));
+                        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                        String time = sdf.format(new Date(r.getTime()));
+                        row.add(StringUtil.encode(time, charset));
+                        row.add(LongUtil.toBytes((Long) r.getValue()));
 
-                    list.add(row);
+                        list.add(row);
+                    }
+                    break;
                 }
+
             }
         }
         return list;
     }
-
 }

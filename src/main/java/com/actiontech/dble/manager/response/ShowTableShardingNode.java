@@ -71,7 +71,7 @@ public final class ShowTableShardingNode {
     public static void execute(ManagerConnection c, String tableInfo) {
         Matcher ma = PATTERN_FOR_TABLE_INFO.matcher(tableInfo);
         if (!ma.matches()) {
-            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The Correct Query Format Is:show @@datanodes where schema='?' and table ='?'");
+            c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "The Correct Query Format Is:show @@shardingnodes where schema='?' and table ='?'");
             return;
         }
         String schemaName = StringUtil.removeAllApostrophe(ma.group(1));

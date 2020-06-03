@@ -50,7 +50,7 @@ public final class AuthUtil {
 
         // check dbGroup without writeHost flag
         if (!DbleServer.getInstance().getConfig().isFullyConfigured() && !isManagerConn) {
-            return "Access denied for user '" + user + "', because there are some empty dataHosts/fake dataSources";
+            return "Access denied for user '" + user + "', because there are some empty dbGroup/fake dbInstance";
         }
 
         if (userConfig instanceof ShardingUserConfig) {

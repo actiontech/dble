@@ -186,7 +186,7 @@ public class SavePointHandler extends MultiNodeHandler {
     @Override
     public void connectionClose(final BackendConnection conn, final String reason) {
         LOGGER.warn("backend connection closed:" + reason + ", conn info:" + conn);
-        String errMsg = "Connection {DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
+        String errMsg = "Connection {dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
                 ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
         this.setFail(errMsg);
         RouteResultsetNode rNode = (RouteResultsetNode) conn.getAttachment();

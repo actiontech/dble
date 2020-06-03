@@ -59,7 +59,7 @@ public class DbXmlWriteJob implements Runnable {
 
 
     private void changeHostInfo(DBGroup dbGroupBean, PhysicalDbGroup dbGroup) {
-        Map<String, PhysicalDbInstance> physicalDbInstances = dbGroup.getAllDataSourceMap();
+        Map<String, PhysicalDbInstance> physicalDbInstances = dbGroup.getAllDbInstanceMap();
         for (DBInstance dbInstanceBean : dbGroupBean.getDbInstance()) {
             PhysicalDbInstance dbInstance = physicalDbInstances.get(dbInstanceBean.getName());
             if (dbInstance != null) {

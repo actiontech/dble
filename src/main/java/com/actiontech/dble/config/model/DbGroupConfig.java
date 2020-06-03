@@ -55,7 +55,7 @@ public class DbGroupConfig {
         if (rwSplitMode >= 0 && rwSplitMode <= 2) {
             this.rwSplitMode = rwSplitMode;
         } else {
-            throw new ConfigException("dataHost " + name + " rwSplitMode should be between 0 and 2!");
+            throw new ConfigException("dbGroup " + name + " rwSplitMode should be between 0 and 2!");
         }
     }
 

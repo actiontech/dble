@@ -45,8 +45,8 @@ public final class Scheduler {
         scheduler.scheduleWithFixedDelay(DbleServer.getInstance().processorCheck(), 0L, SystemConfig.getInstance().getProcessorCheckPeriod(), TimeUnit.MILLISECONDS);
         scheduler.scheduleAtFixedRate(shardingNodeConHeartBeatCheck(shardingNodeIdleCheckPeriod), 0L, shardingNodeIdleCheckPeriod, TimeUnit.MILLISECONDS);
         //dbGroup heartBeat  will be influence by dbGroupWithoutWR
-        scheduler.scheduleAtFixedRate(dataSourceHeartbeat(), 0L, SystemConfig.getInstance().getShardingNodeHeartbeatPeriod(), TimeUnit.MILLISECONDS);
-        scheduler.scheduleAtFixedRate(dataSourceOldConsClear(), 0L, DEFAULT_OLD_CONNECTION_CLEAR_PERIOD, TimeUnit.MILLISECONDS);
+        scheduler.scheduleAtFixedRate(dbInstanceHeartbeat(), 0L, SystemConfig.getInstance().getShardingNodeHeartbeatPeriod(), TimeUnit.MILLISECONDS);
+        scheduler.scheduleAtFixedRate(dbInstanceOldConsClear(), 0L, DEFAULT_OLD_CONNECTION_CLEAR_PERIOD, TimeUnit.MILLISECONDS);
         scheduler.scheduleWithFixedDelay(xaSessionCheck(), 0L, SystemConfig.getInstance().getXaSessionCheckPeriod(), TimeUnit.MILLISECONDS);
         scheduler.scheduleWithFixedDelay(xaLogClean(), 0L, SystemConfig.getInstance().getXaLogCleanPeriod(), TimeUnit.MILLISECONDS);
         scheduler.scheduleWithFixedDelay(resultSetMapClear(), 0L, SystemConfig.getInstance().getClearBigSQLResultSetMapMs(), TimeUnit.MILLISECONDS);
@@ -95,7 +95,7 @@ public final class Scheduler {
     }
 
     // heartbeat for data source
-    private Runnable dataSourceHeartbeat() {
+    private Runnable dbInstanceHeartbeat() {
         return new Runnable() {
             @Override
             public void run() {
@@ -118,7 +118,7 @@ public final class Scheduler {
     /**
      * after reload @@config_all ,clean old connection
      */
-    private Runnable dataSourceOldConsClear() {
+    private Runnable dbInstanceOldConsClear() {
         return new Runnable() {
             @Override
             public void run() {

@@ -51,12 +51,12 @@ public abstract class GetTableMetaHandler {
         ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(shardingNode);
         PhysicalDbInstance ds = dn.getDbGroup().getWriteSource();
         if (ds.isAlive()) {
-            logger.info("Datasource is alive start sqljob for dataNode:" + shardingNode);
+            logger.info("dbInstance is alive start sqljob for shardingNode:" + shardingNode);
             MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new TableStructureListener(shardingNode, tables, ds));
             MultiTablesMetaJob sqlJob = new MultiTablesMetaJob(sbSql.toString(), dn.getDatabase(), resultHandler, ds, logger.isReload());
             sqlJob.run();
         } else {
-            logger.info("Datasource is not alive start sqljob for dataNode:" + shardingNode);
+            logger.info("dbInstance is not alive start sqljob for shardingNode:" + shardingNode);
             MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new TableStructureListener(shardingNode, tables, null));
             MultiTablesMetaJob sqlJob = new MultiTablesMetaJob(sbSql.toString(), shardingNode, resultHandler, false, logger.isReload());
             sqlJob.run();
@@ -113,7 +113,7 @@ public abstract class GetTableMetaHandler {
                 handleTable(shardingNode, table, isView, createSQL);
             }
 
-            logger.info("dataNode normally count down:" + shardingNode + " for schema " + schema);
+            logger.info("shardingNode normally count down:" + shardingNode + " for schema " + schema);
             countdown(shardingNode, expectedTables);
         }
     }

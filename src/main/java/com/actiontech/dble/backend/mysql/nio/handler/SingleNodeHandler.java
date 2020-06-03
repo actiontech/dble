@@ -137,7 +137,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         ErrorPacket errPacket = new ErrorPacket();
         errPacket.setPacketId(++packetId);
         errPacket.setErrNo(ErrorCode.ER_DATA_HOST_ABORTING_CONNECTION);
-        String errMsg = "Backend connect Error, Connection{DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
+        String errMsg = "Backend connect Error, Connection{dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
         errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
         backConnectionErr(errPacket, conn, true);
     }
@@ -412,7 +412,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         }
         connClosed = true;
         LOGGER.warn("Backend connect Closed, reason is [" + reason + "], Connection info:" + conn);
-        reason = "Connection {DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
+        reason = "Connection {dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
                 ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
         ErrorPacket err = new ErrorPacket();
         err.setPacketId(++packetId);

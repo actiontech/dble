@@ -81,9 +81,9 @@ public class ConfigInitializer implements ProblemReporter {
         if (this.dbGroups.isEmpty()) {
             return;
         } else {
-            //Mark all dataSource whether they are fake or not
+            //Mark all dbInstance whether they are fake or not
             for (PhysicalDbGroup dbGroup : this.dbGroups.values()) {
-                for (PhysicalDbInstance source : dbGroup.getAllDataSources()) {
+                for (PhysicalDbInstance source : dbGroup.getAllDbInstances()) {
                     if (checkSourceFake(source)) {
                         source.setFakeNode(true);
                     } else if (!source.isDisabled()) {
@@ -166,14 +166,14 @@ public class ConfigInitializer implements ProblemReporter {
         Set<String> errNodeKeys = new HashSet<>();
         Set<String> errSourceKeys = new HashSet<>();
         BoolPtr isConnectivity = new BoolPtr(true);
-        BoolPtr isAllDataSourceConnected = new BoolPtr(true);
+        BoolPtr isAllDbInstanceConnected = new BoolPtr(true);
         for (Map.Entry<String, List<Pair<String, String>>> entry : hostSchemaMap.entrySet()) {
             String hostName = entry.getKey();
             List<Pair<String, String>> nodeList = entry.getValue();
             PhysicalDbGroup pool = dbGroups.get(hostName);
 
             checkMaxCon(pool);
-            for (PhysicalDbInstance ds : pool.getAllDataSources()) {
+            for (PhysicalDbInstance ds : pool.getAllDbInstances()) {
                 if (ds.getConfig().isDisabled()) {
                     errorInfos.add(new ErrorInfo("Backend", "WARNING", "dbGroup[" + pool.getGroupName() + "," + ds.getName() + "] is disabled"));
                     LOGGER.info("dbGroup[" + ds.getDbGroupConfig().getName() + "] is disabled,just mark testing failed and skip it");
@@ -185,12 +185,12 @@ public class ConfigInitializer implements ProblemReporter {
                     ds.setTestConnSuccess(false);
                     continue;
                 }
-                testDataSource(errNodeKeys, errSourceKeys, isConnectivity, isAllDataSourceConnected, nodeList, pool, ds);
+                testDbInstance(errNodeKeys, errSourceKeys, isConnectivity, isAllDbInstanceConnected, nodeList, pool, ds);
             }
         }
 
-        if (!isAllDataSourceConnected.get()) {
-            StringBuilder sb = new StringBuilder("SelfCheck### there are some datasource connection failed, pls check these datasource:");
+        if (!isAllDbInstanceConnected.get()) {
+            StringBuilder sb = new StringBuilder("SelfCheck### there are some dbInstance connection failed, pls check these dbInstance:");
             for (String key : errSourceKeys) {
                 sb.append("{");
                 sb.append(key);
@@ -200,7 +200,7 @@ public class ConfigInitializer implements ProblemReporter {
         }
 
         if (!isConnectivity.get()) {
-            StringBuilder sb = new StringBuilder("SelfCheck### there are some data node connection failed, pls check these datasource:");
+            StringBuilder sb = new StringBuilder("SelfCheck### there are some sharding node connection failed, pls check these dbInstance:");
             for (String key : errNodeKeys) {
                 sb.append("{");
                 sb.append(key);
@@ -218,36 +218,36 @@ public class ConfigInitializer implements ProblemReporter {
                 schemasCount++;
             }
         }
-        for (PhysicalDbInstance dataSource : pool.getAllDataSources()) {
-            if (dataSource.getConfig().getMaxCon() < Math.max(schemasCount + 1, dataSource.getConfig().getMinCon())) {
-                errorInfos.add(new ErrorInfo("Xml", "NOTICE", "dbGroup[" + pool.getGroupName() + "." + dataSource.getConfig().getInstanceName() + "] maxCon too little,would be change to " +
-                        Math.max(schemasCount + 1, dataSource.getConfig().getMinCon())));
+        for (PhysicalDbInstance dbInstance : pool.getAllDbInstances()) {
+            if (dbInstance.getConfig().getMaxCon() < Math.max(schemasCount + 1, dbInstance.getConfig().getMinCon())) {
+                errorInfos.add(new ErrorInfo("Xml", "NOTICE", "dbGroup[" + pool.getGroupName() + "." + dbInstance.getConfig().getInstanceName() + "] maxCon too little,would be change to " +
+                        Math.max(schemasCount + 1, dbInstance.getConfig().getMinCon())));
             }
 
-            if (Math.max(schemasCount + 1, dataSource.getConfig().getMinCon()) != dataSource.getConfig().getMinCon()) {
+            if (Math.max(schemasCount + 1, dbInstance.getConfig().getMinCon()) != dbInstance.getConfig().getMinCon()) {
                 errorInfos.add(new ErrorInfo("Xml", "NOTICE", "dbGroup[" + pool.getGroupName() + "] minCon too little, Dble would init dbGroup" +
                         " with " + (schemasCount + 1) + " connections"));
             }
         }
     }
 
-    private void testDataSource(Set<String> errNodeKeys, Set<String> errSourceKeys, BoolPtr isConnectivity,
-                                BoolPtr isAllDataSourceConnected, List<Pair<String, String>> nodeList, PhysicalDbGroup pool, PhysicalDbInstance ds) {
+    private void testDbInstance(Set<String> errNodeKeys, Set<String> errSourceKeys, BoolPtr isConnectivity,
+                                BoolPtr isAllDbInstanceConnected, List<Pair<String, String>> nodeList, PhysicalDbGroup pool, PhysicalDbInstance ds) {
         boolean isMaster = ds == pool.getWriteSource();
-        String dataSourceName = "dbInstance[" + ds.getDbGroupConfig().getName() + "." + ds.getName() + "]";
+        String dbInstanceName = "dbInstance[" + ds.getDbGroupConfig().getName() + "." + ds.getName() + "]";
         try {
             BoolPtr isDSConnectedPtr = new BoolPtr(false);
             TestTask testDsTask = new TestTask(ds, isDSConnectedPtr);
             testDsTask.start();
             testDsTask.join(3000);
-            boolean isDataSourceConnected = isDSConnectedPtr.get();
-            ds.setTestConnSuccess(isDataSourceConnected);
-            if (!isDataSourceConnected) {
+            boolean isDbInstanceConnected = isDSConnectedPtr.get();
+            ds.setTestConnSuccess(isDbInstanceConnected);
+            if (!isDbInstanceConnected) {
                 isConnectivity.set(false);
-                isAllDataSourceConnected.set(false);
-                errSourceKeys.add(dataSourceName);
+                isAllDbInstanceConnected.set(false);
+                errSourceKeys.add(dbInstanceName);
                 errorInfos.add(new ErrorInfo("Backend", "WARNING", "Can't connect to [" + ds.getDbGroupConfig().getName() + "," + ds.getName() + "]"));
-                markDataSourceSchemaFail(errNodeKeys, nodeList, dataSourceName);
+                markDbInstanceSchemaFail(errNodeKeys, nodeList, dbInstanceName);
             } else {
                 BoolPtr isSchemaConnectedPtr = new BoolPtr(true);
                 TestSchemasTask testSchemaTask = new TestSchemasTask(ds, nodeList, errNodeKeys, isSchemaConnectedPtr, isMaster);
@@ -263,15 +263,15 @@ public class ConfigInitializer implements ProblemReporter {
             }
         } catch (InterruptedException e) {
             isConnectivity.set(false);
-            isAllDataSourceConnected.set(false);
-            errSourceKeys.add(dataSourceName);
-            markDataSourceSchemaFail(errNodeKeys, nodeList, dataSourceName);
+            isAllDbInstanceConnected.set(false);
+            errSourceKeys.add(dbInstanceName);
+            markDbInstanceSchemaFail(errNodeKeys, nodeList, dbInstanceName);
         }
     }
 
-    private void markDataSourceSchemaFail(Set<String> errKeys, List<Pair<String, String>> nodeList, String dataSourceName) {
+    private void markDbInstanceSchemaFail(Set<String> errKeys, List<Pair<String, String>> nodeList, String dbInstanceName) {
         for (Pair<String, String> node : nodeList) {
-            String key = dataSourceName + ",sharding_node[" + node.getKey() + "],sharding[" + node.getValue() + "]";
+            String key = dbInstanceName + ",sharding_node[" + node.getKey() + "],sharding[" + node.getValue() + "]";
             errKeys.add(key);
             shardingNodes.get(node.getKey()).setSchemaExists(false);
             LOGGER.warn("SelfCheck### test " + key + " database connection failed ");

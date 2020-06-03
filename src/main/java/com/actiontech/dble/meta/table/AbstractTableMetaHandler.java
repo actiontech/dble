@@ -96,7 +96,7 @@ public abstract class AbstractTableMetaHandler {
             }
             if (!result.isSuccess()) {
                 //not thread safe
-                String warnMsg = "Can't get table " + tableName + "'s config from DataNode:" + shardingNode + "! Maybe the table is not initialized!";
+                String warnMsg = "Can't get table " + tableName + "'s config from shardingNode:" + shardingNode + "! Maybe the table is not initialized!";
                 logger.warn(warnMsg);
                 AlertUtil.alertSelf(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, warnMsg, AlertUtil.genSingleLabel("TABLE", tableId));
                 ToResolveContainer.TABLE_LACK.add(tableId);
@@ -176,7 +176,7 @@ public abstract class AbstractTableMetaHandler {
             for (Map.Entry<String, List<String>> entry : shardingNodeTableStructureSQLMap.entrySet()) {
                 StringBuilder stringBuilder = new StringBuilder();
                 for (String dn : entry.getValue()) {
-                    stringBuilder.append("DataNode:[").append(dn).append("]");
+                    stringBuilder.append("shardingNode:[").append(dn).append("]");
                 }
                 stringBuilder.append(":").append(entry);
                 logger.info(stringBuilder.toString());

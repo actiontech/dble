@@ -199,7 +199,7 @@ public class SchemaConfig {
     }
 
     /**
-     * sharding's default dataNode,used for show tables
+     * sharding's default shardingNode,used for show tables
      */
     private String buildMetaShardingNodes() {
         if (!isEmpty(shardingNode)) {

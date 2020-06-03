@@ -65,7 +65,7 @@ public class CheckSumChecker extends AbstractConsistencyChecker {
         } else {
             LOGGER.warn("Global Consistency Check fail for table :" + schema + "-" + tableName);
             StringBuilder sb = new StringBuilder("Error when check Global Consistency, Table ");
-            sb.append(tableName).append(" dataNode ");
+            sb.append(tableName).append(" shardingNode ");
             for (SQLQueryResult<List<Map<String, String>>> r : elist) {
                 LOGGER.info("error node is : " + r.getTableName() + "-" + r.getShardingNode());
                 sb.append(r.getShardingNode()).append(",");

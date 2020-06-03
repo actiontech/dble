@@ -66,14 +66,14 @@ public class ShardingNode {
     }
 
     /**
-     * get connection from the same datasource
+     * get connection from the same dbInstance
      *
      */
     public void getConnectionFromSameSource(String schema, boolean autocommit,
                                             BackendConnection exitsCon, ResponseHandler handler,
                                             Object attachment) throws Exception {
 
-        PhysicalDbInstance ds = this.dbGroup.findDatasource(exitsCon);
+        PhysicalDbInstance ds = this.dbGroup.findDbInstance(exitsCon);
         if (ds == null) {
             throw new RuntimeException("can't find exits connection, maybe finished " + exitsCon);
         } else {
@@ -87,8 +87,8 @@ public class ShardingNode {
                     " and schema db is " + this.database);
         }
         if (!dbGroup.isInitSuccess() && !dbGroup.init()) {
-            throw new RuntimeException("DataNode[" + dbGroup.getGroupName() + "]'s init error, please check it can be connected. " +
-                    "The current Node is {DataHost[" + dbGroup.getWriteSource().getConfig().getUrl() + ",Schema[" + schema + "]}");
+            throw new RuntimeException("dbGroup[" + dbGroup.getGroupName() + "]'s init error, please check it can be connected. " +
+                    "The current Node is {dbGroup[" + dbGroup.getWriteSource().getConfig().getUrl() + ",Schema[" + schema + "]}");
         }
     }
 
@@ -107,7 +107,7 @@ public class ShardingNode {
         } else {
             if (rrs.getRunOnSlave()) {
                 if (!dbGroup.getReadCon(schema, autoCommit, handler, attachment)) {
-                    throw new IllegalArgumentException("no valid readHost in DataHost:" + dbGroup.getGroupName());
+                    throw new IllegalArgumentException("no valid read dbInstance in dbGroup:" + dbGroup.getGroupName());
                 }
             } else {
                 rrs.setCanRunInReadDB(false);
@@ -120,7 +120,7 @@ public class ShardingNode {
         if (runOnSlave == null) {
             PhysicalDbInstance readSource = dbGroup.getRWSplistNode();
             if (!readSource.isAlive()) {
-                String heartbeatError = "the dbInstance[" + readSource.getConfig().getUrl() + "] can't reach. Please check the dataHost status";
+                String heartbeatError = "the dbInstance[" + readSource.getConfig().getUrl() + "] can't reach. Please check the dbInstance status";
                 if (dbGroup.getDbGroupConfig().isShowSlaveSql()) {
                     heartbeatError += ",Tip:heartbeat[show slave status] need the SUPER or REPLICATION CLIENT privilege(s)";
                 }
@@ -133,7 +133,7 @@ public class ShardingNode {
         } else if (runOnSlave) {
             PhysicalDbInstance source = dbGroup.getRandomAliveReadNode();
             if (source == null) {
-                throw new IllegalArgumentException("no valid readHost in DataHost:" + dbGroup.getGroupName());
+                throw new IllegalArgumentException("no valid dbInstance in dbGroup:" + dbGroup.getGroupName());
             }
             return source.getConnection(schema, autoCommit, attachment);
         } else {
@@ -146,7 +146,7 @@ public class ShardingNode {
                 writeSource.setWriteCount();
                 return writeSource.getConnection(schema, autoCommit, attachment);
             } else {
-                throw new IllegalArgumentException("Invalid DataSource:" + dbGroup.getGroupName());
+                throw new IllegalArgumentException("Invalid dbGroup:" + dbGroup.getGroupName());
             }
         }
     }
@@ -166,7 +166,7 @@ public class ShardingNode {
             writeSource.setWriteCount();
             writeSource.getConnection(schema, autoCommit, handler, attachment, true);
         } else {
-            throw new IllegalArgumentException("Invalid DataSource:" + dbGroup.getGroupName());
+            throw new IllegalArgumentException("Invalid dbGroup:" + dbGroup.getGroupName());
         }
     }
 }

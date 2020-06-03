@@ -150,7 +150,7 @@ public class SetTestJob implements ResponseHandler, Runnable {
 
     @Override
     public String toString() {
-        return "SQLJob [dataNodeOrDatabase=" +
+        return "SQLJob [Database=" +
                 databaseName + ",sql=" + sql + ",  jobHandler=" +
                 jobHandler + "]";
     }

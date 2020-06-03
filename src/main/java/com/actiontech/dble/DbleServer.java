@@ -295,7 +295,7 @@ public final class DbleServer {
 
     private void initDbGroup() {
         Map<String, PhysicalDbGroup> dbGroups = this.getConfig().getDbGroups();
-        LOGGER.info("Initialize dataHost ...");
+        LOGGER.info("Initialize dbGroup ...");
         for (PhysicalDbGroup node : dbGroups.values()) {
             node.init();
             node.startHeartbeat();

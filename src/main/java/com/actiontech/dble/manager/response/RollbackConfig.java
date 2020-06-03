@@ -247,7 +247,7 @@ public final class RollbackConfig {
             throw new Exception("Reload status error ,other client or cluster may in reload");
         }
         ServerConfig conf = DbleServer.getInstance().getConfig();
-        Map<String, PhysicalDbGroup> dataHosts = conf.getBackupDbGroups();
+        Map<String, PhysicalDbGroup> dbGroups = conf.getBackupDbGroups();
         Map<Pair<String, String>, UserConfig> users = conf.getBackupUsers();
         Map<String, SchemaConfig> schemas = conf.getBackupSchemas();
         Map<String, ShardingNode> shardingNodes = conf.getBackupShardingNodes();
@@ -257,18 +257,18 @@ public final class RollbackConfig {
             boolean rollbackStatus = true;
             String errorMsg = null;
             if (conf.isFullyConfigured()) {
-                for (PhysicalDbGroup dn : dataHosts.values()) {
+                for (PhysicalDbGroup dn : dbGroups.values()) {
                     dn.init();
                     if (!dn.isInitSuccess()) {
                         rollbackStatus = false;
-                        errorMsg = "dataHost[" + dn.getGroupName() + "] inited failure";
+                        errorMsg = "dbGroup[" + dn.getGroupName() + "] inited failure";
                         break;
                     }
                 }
                 // INIT FAILED
                 if (!rollbackStatus) {
-                    for (PhysicalDbGroup dn : dataHosts.values()) {
-                        dn.clearDataSources("rollbackup config");
+                    for (PhysicalDbGroup dn : dbGroups.values()) {
+                        dn.clearDbInstances("rollbackup config");
                         dn.stopHeartbeat();
                     }
                     throw new Exception(errorMsg);
@@ -276,10 +276,10 @@ public final class RollbackConfig {
             }
             final Map<String, PhysicalDbGroup> cNodes = conf.getDbGroups();
             // apply
-            boolean result = conf.rollback(users, schemas, shardingNodes, dataHosts, erRelations, backIsFullyConfiged);
+            boolean result = conf.rollback(users, schemas, shardingNodes, dbGroups, erRelations, backIsFullyConfiged);
             // stop old resource heartbeat
             for (PhysicalDbGroup dn : cNodes.values()) {
-                dn.clearDataSources("clear old config ");
+                dn.clearDbInstances("clear old config ");
                 dn.stopHeartbeat();
             }
             if (!backIsFullyConfiged) {

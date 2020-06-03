@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public abstract class AbstractSchemaMetaHandler {
     protected final ReloadLogHelper logger;
-    //shard-DataNode-Set when the set to be count down into the empty,means that all the dataNode have finished
+    //shard-ShardingNode-Set when the set to be count down into the empty,means that all the shardingNode have finished
     private volatile Set<String> shardDNSet = new HashSet<>();
     //defaultDNflag  has no default Node/default Node has no table/ default Node table return finish ---- false
     // sharding has default Node & default Node has not return yet  ---- true
@@ -53,7 +53,7 @@ public abstract class AbstractSchemaMetaHandler {
 
     void countDownSingleTable() {
         if (defaultDNflag.compareAndSet(true, false)) {
-            logger.info("single dataNode countdown[" + schema + "]");
+            logger.info("single shardingNode countdown[" + schema + "]");
             countDown();
         }
     }
@@ -102,7 +102,7 @@ public abstract class AbstractSchemaMetaHandler {
             }
         }
 
-        logger.infoList("try to execute show create table in [" + schema + "] dataNodes:", shardDNSet);
+        logger.infoList("try to execute show create table in [" + schema + "] shardingNode:", shardDNSet);
         ConfigTableMetaHandler tableHandler = new ConfigTableMetaHandler(this, schema, selfNode, logger.isReload());
         tableHandler.execute(shardingNodeMap);
         if (!existTable) {
@@ -158,7 +158,7 @@ public abstract class AbstractSchemaMetaHandler {
 
 
     void countDownShardTable(String shardingNode) {
-        logger.info("shard dataNode count down[" + schema + "][" + shardingNode + "] ");
+        logger.info("shardingNode count down[" + schema + "][" + shardingNode + "] ");
         if (countDownShardDN(shardingNode)) {
             long version = System.currentTimeMillis();
             for (Map.Entry<String, Map<String, List<String>>> tablesStruct : tablesStructMap.entrySet()) {
@@ -188,7 +188,7 @@ public abstract class AbstractSchemaMetaHandler {
                                 ToResolveContainer.TABLE_NOT_CONSISTENT_IN_SHARDINGS, tableId);
                     }
 
-                    String tableDetailId = "DataNode[" + tableStruct.values().iterator().next() + "]:Table[" + tableName + "]";
+                    String tableDetailId = "sharding_node[" + tableStruct.values().iterator().next() + "]:Table[" + tableName + "]";
                     if (ToResolveContainer.TABLE_LACK.contains(tableId)) {
                         AlertUtil.alertSelfResolve(AlarmCode.TABLE_LACK, Alert.AlertLevel.WARN, AlertUtil.genSingleLabel("TABLE", tableDetailId),
                                 ToResolveContainer.TABLE_LACK, tableId);
@@ -197,7 +197,7 @@ public abstract class AbstractSchemaMetaHandler {
                     handleSingleMetaData(tableMeta);
                 }
             }
-            logger.info("shard dataNode finish countdown to schema [" + schema + "]");
+            logger.info("shardingNode finish countdown to schema [" + schema + "]");
             countDown();
         }
 
@@ -212,7 +212,7 @@ public abstract class AbstractSchemaMetaHandler {
         for (Map.Entry<String, List<String>> entry : tableStruct.entrySet()) {
             StringBuilder stringBuilder = new StringBuilder("{");
             for (String dn : entry.getValue()) {
-                stringBuilder.append("DataNode:[").append(dn).append("]");
+                stringBuilder.append("shardingNode:[").append(dn).append("]");
             }
             stringBuilder.append("}_Struct:").append(entry.getKey());
             logger.info(stringBuilder.toString());

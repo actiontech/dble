@@ -15,7 +15,7 @@ import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
 import com.actiontech.dble.backend.mysql.nio.handler.GetConnectionHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
-import com.actiontech.dble.config.helper.GetAndSyncDataSourceKeyVariables;
+import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.cluster.zkprocess.parse.JsonProcessBase;
 import com.actiontech.dble.cluster.zkprocess.zookeeper.process.DbInstanceStatus;
@@ -68,7 +68,7 @@ public class PhysicalDbGroup {
         for (PhysicalDbInstance s : readSources) {
             allSourceMap.put(s.getName(), s);
         }
-        setDataSourceProps();
+        setDbInstanceProps();
     }
 
     public PhysicalDbGroup(PhysicalDbGroup org) {
@@ -112,7 +112,7 @@ public class PhysicalDbGroup {
         return true;
     }
 
-    PhysicalDbInstance findDatasource(BackendConnection exitsCon) {
+    PhysicalDbInstance findDbInstance(BackendConnection exitsCon) {
         MySQLConnection con = (MySQLConnection) exitsCon;
         PhysicalDbInstance source = allSourceMap.get(con.getPool().getName());
         if (source != null && source == con.getPool()) {
@@ -156,7 +156,7 @@ public class PhysicalDbGroup {
             if (source != null) {
                 source.doHeartbeat();
             } else {
-                LOGGER.warn(groupName + " current dataSource is null!");
+                LOGGER.warn(groupName + " current dbInstance is null!");
             }
         }
     }
@@ -184,15 +184,15 @@ public class PhysicalDbGroup {
         }
     }
 
-    public void clearDataSources(String reason) {
+    public void clearDbInstances(String reason) {
         for (PhysicalDbInstance source : allSourceMap.values()) {
-            LOGGER.info("clear datasource of pool  " + this.groupName + " ds:" + source.getConfig());
+            LOGGER.info("clear dbInstance of pool  " + this.groupName + " ds:" + source.getConfig());
             source.clearCons(reason);
             source.stopHeartbeat();
         }
     }
 
-    public Collection<PhysicalDbInstance> getAllActiveDataSources() {
+    public Collection<PhysicalDbInstance> getAllActiveDbInstances() {
         if (this.dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF) {
             return allSourceMap.values();
         } else {
@@ -201,32 +201,32 @@ public class PhysicalDbGroup {
     }
 
 
-    public Collection<PhysicalDbInstance> getAllDataSources() {
+    public Collection<PhysicalDbInstance> getAllDbInstances() {
         return new LinkedList<>(allSourceMap.values());
     }
 
 
-    public Map<String, PhysicalDbInstance> getAllDataSourceMap() {
+    public Map<String, PhysicalDbInstance> getAllDbInstanceMap() {
         return allSourceMap;
     }
 
     void getRWSplistCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
         PhysicalDbInstance theNode = getRWSplistNode();
         if (theNode.isDisabled() || theNode.isFakeNode()) {
-            if (this.getAllActiveDataSources().size() > 0) {
-                theNode = this.getAllActiveDataSources().iterator().next();
+            if (this.getAllActiveDbInstances().size() > 0) {
+                theNode = this.getAllActiveDbInstances().iterator().next();
             } else {
                 if (theNode.isDisabled()) {
-                    String errorMsg = "the dataHost[" + theNode.getDbGroupConfig().getName() + "] is disabled, please check it";
+                    String errorMsg = "the dbGroup[" + theNode.getDbGroupConfig().getName() + "] is disabled, please check it";
                     throw new IOException(errorMsg);
                 } else {
-                    String errorMsg = "the dataHost[" + theNode.getDbGroupConfig().getName() + "] is a fake node, please check it";
+                    String errorMsg = "the dbGroup[" + theNode.getDbGroupConfig().getName() + "] is a fake node, please check it";
                     throw new IOException(errorMsg);
                 }
             }
         }
         if (!theNode.isAlive()) {
-            String heartbeatError = "dbInstance[" + theNode.getConfig().getUrl() + "] can't reach. Please check the dataHost status";
+            String heartbeatError = "dbInstance[" + theNode.getConfig().getUrl() + "] can't reach. Please check the dbInstance status";
             if (dbGroupConfig.isShowSlaveSql()) {
                 heartbeatError += ",Tip:heartbeat[show slave status] need the SUPER or REPLICATION CLIENT privilege(s)";
             }
@@ -259,7 +259,7 @@ public class PhysicalDbGroup {
         }
 
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("select read source " + theNode.getName() + " for dataHost:" + this.getGroupName());
+            LOGGER.debug("select read dbInstance " + theNode.getName() + " for dbGroup:" + this.getGroupName());
         }
         theNode.setReadCount();
         return theNode;
@@ -306,7 +306,7 @@ public class PhysicalDbGroup {
         return readSources;
     }
 
-    private void setDataSourceProps() {
+    private void setDbInstanceProps() {
         for (PhysicalDbInstance ds : this.allSourceMap.values()) {
             ds.setDbGroup(this);
         }
@@ -329,7 +329,7 @@ public class PhysicalDbGroup {
         if (ds.getConfig().getMaxCon() < initSize) {
             ds.getConfig().setMaxCon(initSize);
             ds.setSize(initSize);
-            LOGGER.warn("maxCon is less than the initSize of dataHost:" + initSize + " change the maxCon into " + initSize);
+            LOGGER.warn("maxCon is less than the initSize of dbInstance:" + initSize + " change the maxCon into " + initSize);
         }
 
         LOGGER.info("init backend mysql source ,create connections total " + initSize + " for " + ds.getName());
@@ -343,7 +343,7 @@ public class PhysicalDbGroup {
             if (ds.getTotalConCount() <= 0) {
                 ds.initMinConnection(null, true, getConHandler, null);
             } else {
-                LOGGER.info("connection with null schema has been created,because we tested the connection of the datasource at first");
+                LOGGER.info("connection with null schema has been created,because we tested the connection of the dbInstance at first");
                 getConHandler.initIncrement();
                 hasConnectionInPool = true;
             }
@@ -405,11 +405,11 @@ public class PhysicalDbGroup {
             HaConfigManager.getInstance().updateDbGroupConf(createDisableSnapshot(this, nameList), syncWriteConf);
 
             for (String dsName : nameList) {
-                PhysicalDbInstance datasource = allSourceMap.get(dsName);
-                if (datasource.setDisabled(true)) {
+                PhysicalDbInstance dbInstance = allSourceMap.get(dsName);
+                if (dbInstance.setDisabled(true)) {
                     //clear old resource
-                    datasource.clearCons("ha command disable datasource");
-                    datasource.stopHeartbeat();
+                    dbInstance.clearCons("ha command disable dbInstance");
+                    dbInstance.stopHeartbeat();
                 }
             }
             return this.getClusterHaJson();
@@ -425,8 +425,8 @@ public class PhysicalDbGroup {
     private PhysicalDbGroup createDisableSnapshot(PhysicalDbGroup org, String[] nameList) {
         PhysicalDbGroup snapshot = new PhysicalDbGroup(org);
         for (String dsName : nameList) {
-            PhysicalDbInstance datasource = snapshot.allSourceMap.get(dsName);
-            datasource.setDisabled(true);
+            PhysicalDbInstance dbInstance = snapshot.allSourceMap.get(dsName);
+            dbInstance.setDisabled(true);
         }
         return snapshot;
     }
@@ -442,9 +442,9 @@ public class PhysicalDbGroup {
             HaConfigManager.getInstance().updateDbGroupConf(createEnableSnapshot(this, nameList), syncWriteConf);
 
             for (String dsName : nameList) {
-                PhysicalDbInstance datasource = allSourceMap.get(dsName);
-                if (datasource.setDisabled(false)) {
-                    datasource.startHeartbeat();
+                PhysicalDbInstance dbInstance = allSourceMap.get(dsName);
+                if (dbInstance.setDisabled(false)) {
+                    dbInstance.startHeartbeat();
                 }
             }
             return this.getClusterHaJson();
@@ -460,8 +460,8 @@ public class PhysicalDbGroup {
     private PhysicalDbGroup createEnableSnapshot(PhysicalDbGroup org, String[] nameList) {
         PhysicalDbGroup snapshot = new PhysicalDbGroup(org);
         for (String dsName : nameList) {
-            PhysicalDbInstance datasource = snapshot.allSourceMap.get(dsName);
-            datasource.setDisabled(false);
+            PhysicalDbInstance dbInstance = snapshot.allSourceMap.get(dsName);
+            dbInstance.setDisabled(false);
         }
         return snapshot;
     }
@@ -476,14 +476,14 @@ public class PhysicalDbGroup {
             PhysicalDbInstance newWriteHost = allSourceMap.get(writeHost);
             writeSource.setReadInstance(true);
             //close all old master connection ,so that new write query would not put into the old writeHost
-            writeSource.clearCons("ha command switch datasource");
+            writeSource.clearCons("ha command switch dbInstance");
             if (!newWriteHost.isDisabled()) {
-                GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(newWriteHost, true);
+                GetAndSyncDbInstanceKeyVariables task = new GetAndSyncDbInstanceKeyVariables(newWriteHost, true);
                 KeyVariables variables = task.call();
                 if (variables != null) {
                     newWriteHost.setReadOnly(variables.isReadOnly());
                 } else {
-                    LOGGER.warn(" GetAndSyncDataSourceKeyVariables failed, set newWriteHost ReadOnly");
+                    LOGGER.warn(" GetAndSyncDbInstanceKeyVariables failed, set new Primary dbInstance ReadOnly");
                     newWriteHost.setReadOnly(true);
                 }
             }
@@ -525,22 +525,22 @@ public class PhysicalDbGroup {
                     if (phys.setDisabled(status.isDisable())) {
                         if (status.isDisable()) {
                             //clear old resource
-                            phys.clearCons("ha command disable datasource");
+                            phys.clearCons("ha command disable dbInstance");
                             phys.stopHeartbeat();
                         } else {
-                            //change dataSource from disable to enable ,start heartbeat
+                            //change dbInstance from disable to enable ,start heartbeat
                             phys.startHeartbeat();
                         }
                     }
                     if (status.isPrimary() &&
                             phys != writeSource) {
                         writeSource.setReadInstance(true);
-                        writeSource.clearCons("ha command switch datasource");
+                        writeSource.clearCons("ha command switch dbInstance");
                         phys.setReadInstance(false);
                         writeSource = phys;
                     }
                 } else {
-                    LOGGER.warn("Can match dataSource" + status.getName() + ".Check for the config file please");
+                    LOGGER.warn("Can match dbInstance " + status.getName() + ".Check for the config file please");
                 }
             }
             HaConfigManager.getInstance().updateDbGroupConf(this, false);
@@ -570,7 +570,7 @@ public class PhysicalDbGroup {
         if (instanceName != null) {
             for (String dn : instanceName.split(",")) {
                 boolean find = false;
-                for (PhysicalDbInstance pds : this.getAllDataSources()) {
+                for (PhysicalDbInstance pds : this.getAllDbInstances()) {
                     if (pds.getName().equals(dn)) {
                         find = true;
                         break;

@@ -126,7 +126,7 @@ public abstract class FrontendAuthenticator implements NIOHandler {
         Pair<String, String> user = new Pair<>(auth.getUser(), auth.getTenant());
         UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(user);
         if (userConfig instanceof RwSplitUserConfig) {
-            return "this version is not support rwSplitUser";
+            return "this version does not support rwSplitUser";
         }
         return null;
     }

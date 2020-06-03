@@ -186,7 +186,7 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
 
     @Override
     public String toString() {
-        return "SQLJob [dataNode=" +
+        return "SQLJob [shardingNode=" +
                 shardingNode + ",schema=" +
                 schema + ",sql=" + sql + ",  jobHandler=" +
                 jobHandler + "]";

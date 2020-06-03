@@ -19,7 +19,7 @@ import java.sql.SQLNonTransientException;
 import java.util.Map;
 
 /**
- * HintDataNodeHandler
+ * HintShardingNodeHandler
  *
  * @author zhuam
  */

@@ -134,7 +134,7 @@ public class ConfigTest {
         PhysicalDbGroup pool = dbGroups.get("localhost2");
 
         ArrayList<PhysicalDbInstance> okSources = new ArrayList<PhysicalDbInstance>();
-        okSources.addAll(pool.getAllActiveDataSources());
+        okSources.addAll(pool.getAllActiveDbInstances());
         PhysicalDbInstance source = pool.randomSelect(okSources, true);
 
         Assert.assertTrue(source != null);

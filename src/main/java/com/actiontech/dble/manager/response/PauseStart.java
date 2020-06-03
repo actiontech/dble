@@ -13,7 +13,7 @@ import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.server.ServerConnection;
-import com.actiontech.dble.singleton.PauseDatanodeManager;
+import com.actiontech.dble.singleton.PauseShardingNodeManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +64,7 @@ public final class PauseStart {
         int connectionTimeOut = ma.group(6) == null ? DEFAULT_CONNECTION_TIME_OUT : Integer.parseInt(ma.group(6)) * 1000;
         int queueLimit = ma.group(4) == null ? DEFAULT_QUEUE_LIMIT : Integer.parseInt(ma.group(4));
         Set<String> shardingNodes = new HashSet<>(Arrays.asList(shardingNode.split(",")));
-        //check dataNodes
+        //check shardingNode
         for (String singleDn : shardingNodes) {
             if (DbleServer.getInstance().getConfig().getShardingNodes().get(singleDn) == null) {
                 c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "ShardingNode " + singleDn + " did not exists");
@@ -74,28 +74,28 @@ public final class PauseStart {
 
 
         //clusterPauseNotic
-        if (!PauseDatanodeManager.getInstance().clusterPauseNotic(shardingNode, connectionTimeOut, queueLimit)) {
+        if (!PauseShardingNodeManager.getInstance().clusterPauseNotic(shardingNode, connectionTimeOut, queueLimit)) {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Other node in cluster is pausing");
             return;
         }
 
 
-        if (!PauseDatanodeManager.getInstance().startPausing(connectionTimeOut, shardingNodes, queueLimit)) {
+        if (!PauseShardingNodeManager.getInstance().startPausing(connectionTimeOut, shardingNodes, queueLimit)) {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "Some shardingNodes is paused, please resume first");
             return;
         }
 
 
-        //self pause the dataNode
+        //self pause the shardingNode
         long timeOut = Long.parseLong(ma.group(2)) * 1000;
         long beginTime = System.currentTimeMillis();
         boolean recycleFinish = waitForSelfPause(beginTime, timeOut, shardingNodes);
 
         LOGGER.info("wait finished " + recycleFinish);
         if (!recycleFinish) {
-            if (PauseDatanodeManager.getInstance().tryResume()) {
+            if (PauseShardingNodeManager.getInstance().tryResume()) {
                 try {
-                    PauseDatanodeManager.getInstance().resumeCluster();
+                    PauseShardingNodeManager.getInstance().resumeCluster();
                 } catch (Exception e) {
                     LOGGER.warn(e.getMessage());
                 }
@@ -106,7 +106,7 @@ public final class PauseStart {
 
         } else {
             try {
-                if (PauseDatanodeManager.getInstance().waitForCluster(c, beginTime, timeOut)) {
+                if (PauseShardingNodeManager.getInstance().waitForCluster(c, beginTime, timeOut)) {
                     OK.write(c);
                 }
             } catch (Exception e) {
@@ -119,7 +119,7 @@ public final class PauseStart {
 
     private static boolean waitForSelfPause(long beginTime, long timeOut, Set<String> shardingNodes) {
         boolean recycleFinish = false;
-        while ((System.currentTimeMillis() - beginTime < timeOut) && PauseDatanodeManager.getInstance().getIsPausing().get()) {
+        while ((System.currentTimeMillis() - beginTime < timeOut) && PauseShardingNodeManager.getInstance().getIsPausing().get()) {
             boolean nextTurn = false;
             for (NIOProcessor processor : DbleServer.getInstance().getFrontProcessors()) {
                 for (Map.Entry<Long, FrontendConnection> entry : processor.getFrontends().entrySet()) {

@@ -125,7 +125,7 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
         byte lastPacketId = packetId;
         errPacket.setPacketId(++lastPacketId);
         errPacket.setErrNo(ErrorCode.ER_ABORTING_CONNECTION);
-        reason = "Connection {DataHost[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
+        reason = "Connection {dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "],threadID[" +
                 ((MySQLConnection) conn).getThreadId() + "]} was closed ,reason is [" + reason + "]";
         errPacket.setMessage(StringUtil.encode(reason, session.getSource().getCharset().getResults()));
         err = errPacket;

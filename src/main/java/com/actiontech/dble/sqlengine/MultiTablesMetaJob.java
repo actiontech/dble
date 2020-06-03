@@ -166,7 +166,7 @@ public class MultiTablesMetaJob implements ResponseHandler, Runnable {
 
     @Override
     public String toString() {
-        return "SQLJob [dataNode=" +
+        return "SQLJob [shardingNode=" +
                 shardingNode + ",schema=" +
                 schema + ",sql=" + sql + ",  jobHandler=" +
                 jobHandler + "]";

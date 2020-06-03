@@ -38,9 +38,9 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static com.actiontech.dble.cluster.zkprocess.zookeeper.process.PauseInfo.PAUSE;
 
-public final class PauseDatanodeManager {
-    protected static final Logger LOGGER = LoggerFactory.getLogger(PauseDatanodeManager.class);
-    private static final PauseDatanodeManager INSTANCE = new PauseDatanodeManager();
+public final class PauseShardingNodeManager {
+    protected static final Logger LOGGER = LoggerFactory.getLogger(PauseShardingNodeManager.class);
+    private static final PauseShardingNodeManager INSTANCE = new PauseShardingNodeManager();
     private ReentrantLock pauseLock = new ReentrantLock();
     private volatile Set<String> shardingNodes = null;
     private Map<String, Set<String>> pauseMap = new ConcurrentHashMap<>();
@@ -49,11 +49,11 @@ public final class PauseDatanodeManager {
 
     private volatile PauseEndThreadPool pauseThreadPool = null;
 
-    private PauseDatanodeManager() {
+    private PauseShardingNodeManager() {
 
     }
 
-    public static PauseDatanodeManager getInstance() {
+    public static PauseShardingNodeManager getInstance() {
         return INSTANCE;
     }
 
@@ -77,7 +77,7 @@ public final class PauseDatanodeManager {
     }
 
     public void lockWithShardingNodes(Set<String> shardingNodeSet) {
-        LOGGER.info("Lock dataNodes with set size of" + shardingNodeSet.size());
+        LOGGER.info("Lock shardingNodes with set size of" + shardingNodeSet.size());
         this.shardingNodes = shardingNodeSet;
         for (Entry<String, SchemaConfig> entry : DbleServer.getInstance().getConfig().getSchemas().entrySet()) {
             if (shardingNodes.contains(entry.getValue().getShardingNode())) {
@@ -228,8 +228,8 @@ public final class PauseDatanodeManager {
                     }
                 } else if (System.currentTimeMillis() - beginTime > timeOut) {
                     LOGGER.info("wait for cluster timeout, try to resume the self & others");
-                    PauseDatanodeManager.getInstance().resume();
-                    PauseDatanodeManager.getInstance().resumeCluster();
+                    PauseShardingNodeManager.getInstance().resume();
+                    PauseShardingNodeManager.getInstance().resumeCluster();
                     c.writeErrMessage(1003, "There are some node in cluster can't recycle backend");
                     return false;
                 }
@@ -252,7 +252,7 @@ public final class PauseDatanodeManager {
             ClusterHelper.waitingForAllTheNode(null, ClusterPathUtil.getPauseResumePath());
 
 
-            PauseDatanodeManager.getInstance().getuDistributeLock().release();
+            PauseShardingNodeManager.getInstance().getuDistributeLock().release();
             ClusterHelper.cleanPath(ClusterPathUtil.getPauseShardingNodePath());
         }
 

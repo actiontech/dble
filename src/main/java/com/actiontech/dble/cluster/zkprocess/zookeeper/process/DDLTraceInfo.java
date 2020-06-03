@@ -59,7 +59,7 @@ public class DDLTraceInfo {
             for (Map.Entry<MySQLConnection, DDLConnectionStatus> entry : testConnections.entrySet()) {
                 sb.append("\n[DDL][").append(id).append("] connection:");
                 sb.append(entry.getKey().getId()).append(" status: ").append(entry.getValue());
-                sb.append(" dataNode: ").append(((RouteResultsetNode) entry.getKey().getAttachment()).getName());
+                sb.append(" shardingNode: ").append(((RouteResultsetNode) entry.getKey().getAttachment()).getName());
 
             }
         }

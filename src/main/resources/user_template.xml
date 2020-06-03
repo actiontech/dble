@@ -13,7 +13,7 @@
 	License for the specific language governing permissions and - limitations
 	under the License. -->
 <!DOCTYPE dble:user SYSTEM "user.dtd">
-<dble:user xmlns:dble="http://dble.cloud/" version="3.0">
+<dble:user xmlns:dble="http://dble.cloud/" version="4.0">
     <managerUser name="man1" password="654321" whiteIPs="127.0.0.1,0:0:0:0:0:0:0:1" readOnly="false"/>
     <managerUser name="user" usingDecrypt="true" readOnly="true" password="AqEkFEuIFAX6g2TJQnp4cJ2r7Yc0Z4/KBsZqKhT8qSz18Aj91e8lxO49BKQElC6OFfW4c38pCYa8QGFTub7pnw==" />
 

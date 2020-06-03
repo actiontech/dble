@@ -55,7 +55,7 @@ public class DryRunGetNodeTablesHandler extends GetNodeTablesHandler {
             SpecialSqlJob sqlJob = new SpecialSqlJob(SQL, phyShardingNode.getDatabase(), resultHandler, ds, list);
             sqlJob.run();
         } else {
-            list.add(new ErrorInfo("Backend", "WARNING", "dataNode[" + phyShardingNode.getName() + "] has no available writeHost,The table in this dataNode has not checked"));
+            list.add(new ErrorInfo("Backend", "WARNING", "shardingNode[" + phyShardingNode.getName() + "] has no available primary dbinstance,The table in this shardingNode has not checked"));
             handleFinished();
         }
     }
@@ -81,7 +81,7 @@ public class DryRunGetNodeTablesHandler extends GetNodeTablesHandler {
         @Override
         public void onResult(SQLQueryResult<List<Map<String, String>>> result) {
             if (!result.isSuccess()) {
-                String warnMsg = "Can't show tables from DataNode:" + phyShardingNode + "! Maybe the data node is not initialized!";
+                String warnMsg = "Can't show tables from shardingNode:" + phyShardingNode + "! Maybe the data node is not initialized!";
                 LOGGER.warn(warnMsg);
                 handleFinished();
                 return;

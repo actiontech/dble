@@ -63,7 +63,7 @@ public class PhysicalDbGroupDiff {
         boolean sameFlag = false;
         if (oldHost.equals(newWriteHost) && oldRHost.length == newReadHost.length) {
             //compare the newReadHost is the same
-            sameFlag = calculateForDataSources(oldRHost, newReadHost);
+            sameFlag = calculateForDbInstances(oldRHost, newReadHost);
         }
 
         if (sameFlag) {
@@ -79,7 +79,7 @@ public class PhysicalDbGroupDiff {
     }
 
 
-    private boolean calculateForDataSources(PhysicalDbInstance[] olds, PhysicalDbInstance[] news) {
+    private boolean calculateForDbInstances(PhysicalDbInstance[] olds, PhysicalDbInstance[] news) {
         if (olds != null) {
             for (int k = 0; k < olds.length; k++) {
                 if (!olds[k].equals(news[k])) {

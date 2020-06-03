@@ -114,7 +114,7 @@ public class DbInstanceConfig {
 
     @Override
     public String toString() {
-        return "DataSourceConfig [hostName=" + instanceName + ", url=" + url + "]";
+        return "DbInstanceConfig [hostName=" + instanceName + ", url=" + url + "]";
     }
 
 }

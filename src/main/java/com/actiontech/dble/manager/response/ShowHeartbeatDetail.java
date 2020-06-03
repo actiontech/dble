@@ -112,9 +112,9 @@ public final class ShowHeartbeatDetail {
         int port = 0;
         MySQLHeartbeat hb = null;
 
-        Map<String, PhysicalDbGroup> dataHosts = conf.getDbGroups();
-        for (PhysicalDbGroup pool : dataHosts.values()) {
-            for (PhysicalDbInstance ds : pool.getAllActiveDataSources()) {
+        Map<String, PhysicalDbGroup> dbGroups = conf.getDbGroups();
+        for (PhysicalDbGroup pool : dbGroups.values()) {
+            for (PhysicalDbInstance ds : pool.getAllActiveDbInstances()) {
                 if (name.equals(ds.getName())) {
                     hb = ds.getHeartbeat();
                     ip = ds.getConfig().getIp();

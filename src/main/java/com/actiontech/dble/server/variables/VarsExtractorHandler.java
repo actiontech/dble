@@ -39,7 +39,7 @@ public class VarsExtractorHandler {
 
     public SystemVariables execute() {
         OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_VARIABLES_COLS, new MysqlVarsListener(this));
-        PhysicalDbInstance ds = getPhysicalDatasource();
+        PhysicalDbInstance ds = getPhysicalDbInstance();
         this.usedDataource = ds;
         if (ds != null) {
             OneTimeConnJob sqlJob = new OneTimeConnJob(MYSQL_SHOW_VARIABLES, null, resultHandler, ds);
@@ -51,7 +51,7 @@ public class VarsExtractorHandler {
         return systemVariables;
     }
 
-    private PhysicalDbInstance getPhysicalDatasource() {
+    private PhysicalDbInstance getPhysicalDbInstance() {
         PhysicalDbInstance ds = null;
         for (PhysicalDbGroup dbGroup : dbGroups.values()) {
             PhysicalDbInstance dsTest = dbGroup.getWriteSource();
@@ -64,7 +64,7 @@ public class VarsExtractorHandler {
         }
         if (ds == null) {
             for (PhysicalDbGroup dbGroup : dbGroups.values()) {
-                for (PhysicalDbInstance dsTest : dbGroup.getAllActiveDataSources()) {
+                for (PhysicalDbInstance dsTest : dbGroup.getAllActiveDbInstances()) {
                     if (dsTest.isTestConnSuccess()) {
                         ds = dsTest;
                         break;

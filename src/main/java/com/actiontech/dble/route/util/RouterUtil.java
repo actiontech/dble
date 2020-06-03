@@ -951,13 +951,6 @@ public final class RouterUtil {
     }
 
 
-    /**
-     * no shard-ing table dataNode
-     *
-     * @param schemaConfig the SchemaConfig info
-     * @param tableName    the TableName
-     * @return dataNode DataNode of no-sharding table
-     */
     public static String isNoSharding(SchemaConfig schemaConfig, String tableName) throws SQLNonTransientException {
         if (schemaConfig == null || ProxyMeta.getInstance().getTmManager().getSyncView(schemaConfig.getName(), tableName) instanceof QueryNode) {
             return null;
@@ -975,13 +968,6 @@ public final class RouterUtil {
         return null;
     }
 
-    /**
-     * no shard-ing table dataNode
-     *
-     * @param schemaConfig the SchemaConfig info
-     * @param tableName    the TableName
-     * @return dataNode DataNode of no-sharding table
-     */
     public static String isNoShardingDDL(SchemaConfig schemaConfig, String tableName) {
         if (schemaConfig == null) {
             return null;

@@ -43,7 +43,7 @@ import com.actiontech.dble.server.status.SlowQueryLog;
 import com.actiontech.dble.server.trace.TraceRecord;
 import com.actiontech.dble.server.trace.TraceResult;
 import com.actiontech.dble.singleton.DDLTraceManager;
-import com.actiontech.dble.singleton.PauseDatanodeManager;
+import com.actiontech.dble.singleton.PauseShardingNodeManager;
 import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.statistic.stat.QueryTimeCost;
 import com.actiontech.dble.statistic.stat.QueryTimeCostContainer;
@@ -449,10 +449,10 @@ public class NonBlockingSession implements Session {
             LOGGER.debug(s.append(source).append(rrs).toString() + " rrs ");
         }
 
-        if (PauseDatanodeManager.getInstance().getIsPausing().get() &&
-                !PauseDatanodeManager.getInstance().checkTarget(target) &&
-                PauseDatanodeManager.getInstance().checkRRS(rrs)) {
-            if (PauseDatanodeManager.getInstance().waitForResume(rrs, this.getSource(), CONTINUE_TYPE_SINGLE)) {
+        if (PauseShardingNodeManager.getInstance().getIsPausing().get() &&
+                !PauseShardingNodeManager.getInstance().checkTarget(target) &&
+                PauseShardingNodeManager.getInstance().checkRRS(rrs)) {
+            if (PauseShardingNodeManager.getInstance().waitForResume(rrs, this.getSource(), CONTINUE_TYPE_SINGLE)) {
                 return;
             }
         }
@@ -469,7 +469,7 @@ public class NonBlockingSession implements Session {
                 }
             } else {
                 source.writeErrMessage(ErrorCode.ER_NO_DB_ERROR,
-                        "No dataNode found ,please check tables defined in schema:" + source.getSchema());
+                        "No shardingNode found ,please check tables defined in schema:" + source.getSchema());
             }
             return;
         }
@@ -586,10 +586,10 @@ public class NonBlockingSession implements Session {
         PlanUtil.checkTablesPrivilege(source, node, ast);
         node = MyOptimizer.optimize(node);
 
-        if (PauseDatanodeManager.getInstance().getIsPausing().get() &&
-                !PauseDatanodeManager.getInstance().checkTarget(target) &&
-                PauseDatanodeManager.getInstance().checkReferedTableNodes(node.getReferedTableNodes())) {
-            if (PauseDatanodeManager.getInstance().waitForResume(rrs, this.source, CONTINUE_TYPE_MULTIPLE)) {
+        if (PauseShardingNodeManager.getInstance().getIsPausing().get() &&
+                !PauseShardingNodeManager.getInstance().checkTarget(target) &&
+                PauseShardingNodeManager.getInstance().checkReferedTableNodes(node.getReferedTableNodes())) {
+            if (PauseShardingNodeManager.getInstance().waitForResume(rrs, this.source, CONTINUE_TYPE_MULTIPLE)) {
                 return;
             }
         }
@@ -685,7 +685,7 @@ public class NonBlockingSession implements Session {
         if (nodes == null || nodes.length == 0 || nodes[0].getName() == null ||
                 nodes[0].getName().equals("")) {
             source.writeErrMessage(ErrorCode.ER_NO_DB_ERROR,
-                    "No dataNode found ,please check tables defined in schema:" + source.getSchema());
+                    "No shardingNode found ,please check tables defined in schema:" + source.getSchema());
             return;
         }
         LockTablesHandler handler = new LockTablesHandler(this, rrs);

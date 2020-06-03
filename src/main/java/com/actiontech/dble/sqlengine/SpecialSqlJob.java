@@ -102,7 +102,7 @@ public class SpecialSqlJob extends SQLJob {
         String errMsg = "error response errNo:" + errPg.getErrNo() + ", " + new String(errPg.getMessage()) +
                 " from of sql :" + sql + " at con:" + conn;
 
-        list.add(new ErrorInfo("Meta", "WARNING", "Execute show tables in dataNode[" + ds.getName() + "." + schema + "] get error"));
+        list.add(new ErrorInfo("Meta", "WARNING", "Execute show tables in shardingNode[" + ds.getName() + "." + schema + "] get error"));
 
         LOGGER.info(errMsg);
         doFinished(true);
@@ -112,7 +112,7 @@ public class SpecialSqlJob extends SQLJob {
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
         if (doFinished(true)) {
-            list.add(new ErrorInfo("Meta", "WARNING", "Execute show tables in dataNode[" + ds.getName() + "." + schema + "] get connection closed"));
+            list.add(new ErrorInfo("Meta", "WARNING", "Execute show tables in shardingNode[" + ds.getName() + "." + schema + "] get connection closed"));
         }
     }
 

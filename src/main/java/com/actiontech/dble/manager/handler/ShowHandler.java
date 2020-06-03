@@ -76,14 +76,14 @@ public final class ShowHandler {
                 break;
             }
             case ManagerParseShow.DB_INSTANCE:
-                ShowDataSource.execute(c, null);
+                ShowDbInstance.execute(c, null);
                 break;
             case ManagerParseShow.DB_INSTANCE_WHERE: {
                 String name = stmt.substring(rs >>> 8).trim();
                 if (StringUtil.isEmpty(name)) {
                     c.writeErrMessage(ErrorCode.ER_YES, "Unsupported statement");
                 } else {
-                    ShowDataSource.execute(c, name);
+                    ShowDbInstance.execute(c, name);
                 }
                 break;
             }
@@ -171,10 +171,10 @@ public final class ShowHandler {
                 ShowHeartbeatDetail.response(c, stmt);
                 break;
             case ManagerParseShow.DB_INSTANCE_SYNC://by songwie
-                ShowDatasourceSyn.response(c);
+                ShowDbInstanceSyn.response(c);
                 break;
             case ManagerParseShow.DB_INSTANCE_SYNC_DETAIL://by songwie
-                ShowDatasourceSynDetail.response(c, stmt);
+                ShowDbInstanceSynDetail.response(c, stmt);
                 break;
             case ManagerParseShow.DIRECTMEMORY:
                 ShowDirectMemory.execute(c);

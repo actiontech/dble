@@ -61,7 +61,6 @@ public final class CacheService {
             }
             boolean on = isSwitchOn(props);
             if (on) {
-                createRootLayedCachePool(props);
                 createSpecificPool(props, isLowerCaseTableNames);
             } else {
                 LOGGER.info("cache don't be used currently! if use, please switch on options in cheservice.properties");
@@ -84,34 +83,6 @@ public final class CacheService {
             }
         }
         return use;
-    }
-
-    private void createRootLayedCachePool(Properties props) throws Exception {
-        String layedCacheType = props.getProperty("layedpool.TableID2DataNodeCacheType");
-        String cacheDefault = props.getProperty("layedpool.TableID2DataNodeCache");
-        if (cacheDefault != null && layedCacheType != null) {
-            throw new java.lang.IllegalArgumentException(
-                    "invalid cache config, layedpool.TableID2DataNodeCacheType and " +
-                            "layedpool.TableID2DataNodeCache don't coexist");
-        } else if (cacheDefault == null && layedCacheType == null) {
-            return;
-        }
-
-        final String rootlayedCacheName = "TableID2DataNodeCache";
-        int size = 0;
-        int timeOut = 0;
-        if (layedCacheType != null) {
-            props.remove("layedpool.TableID2DataNodeCacheType");
-        } else {
-            String value = (String) props.get("layedpool.TableID2DataNodeCache");
-            props.remove("layedpool.TableID2DataNodeCache");
-
-            String[] valueItems = value.split(",");
-            layedCacheType = valueItems[0];
-            size = Integer.parseInt(valueItems[1]);
-            timeOut = Integer.parseInt(valueItems[2]);
-        }
-        createLayeredPool(rootlayedCacheName, layedCacheType, size, timeOut);
     }
 
     private void createSpecificPool(Properties props, boolean isLowerCaseTableNames) throws Exception {
@@ -203,14 +174,6 @@ public final class CacheService {
         CachePoolFactory cacheFact = getCacheFact(type);
         CachePool cachePool = cacheFact.createCachePool(poolName, cacheSize, expireSeconds);
         allPools.put(poolName, cachePool);
-    }
-
-    private void createLayeredPool(String cacheName, String type, int size, int expireSeconds) {
-        checkExists(cacheName);
-        LOGGER.info("create layer cache pool " + cacheName + " of type " + type + " ,default cache size " +
-                size + " ,default expire seconds" + expireSeconds);
-        DefaultLayedCachePool layerdPool = new DefaultLayedCachePool(cacheName, this.getCacheFact(type), size, expireSeconds);
-        this.allPools.put(cacheName, layerdPool);
     }
 
     /**

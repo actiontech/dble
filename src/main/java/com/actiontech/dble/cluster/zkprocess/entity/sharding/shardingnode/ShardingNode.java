@@ -51,7 +51,7 @@ public class ShardingNode implements Named {
 
     @Override
     public String toString() {
-        String builder = "DataNode [name=" +
+        String builder = "ShardingNode [name=" +
                 name +
                 ", dbGroup=" +
                 dbGroup +

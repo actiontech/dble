@@ -67,9 +67,9 @@ public class DbGroupResponseListener implements PathChildrenCacheListener {
         if (!info.getStartId().equals(SystemConfig.getInstance().getInstanceName()) &&
                 info.getStatus() == HaInfo.HaStatus.SUCCESS) {
             int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.RESPONSE_NOTIFY, HaInfo.HaStartType.CLUSTER_NOTIFY, HaInfo.HaStage.RESPONSE_NOTIFY.toString());
-            PhysicalDbGroup dataHost = (PhysicalDbGroup) DbleServer.getInstance().getConfig().getDbGroups().get(info.getDbGroupName());
+            PhysicalDbGroup dbGroup = DbleServer.getInstance().getConfig().getDbGroups().get(info.getDbGroupName());
             String jsonString = new String(zkConn.getData().forPath(ClusterPathUtil.getHaStatusPath(info.getDbGroupName())), "UTF-8");
-            dataHost.changeIntoLatestStatus(jsonString);
+            dbGroup.changeIntoLatestStatus(jsonString);
             //response to kv
             ZKUtils.createTempNode(path, SystemConfig.getInstance().getInstanceName(), ClusterPathUtil.SUCCESS.getBytes());
             HaConfigManager.getInstance().haFinish(id, null, data);

@@ -9,7 +9,7 @@ import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.config.ProblemReporter;
-import com.actiontech.dble.config.helper.GetAndSyncDataSourceKeyVariables;
+import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.SystemConfig;
 import org.apache.commons.lang.StringUtils;
@@ -275,7 +275,7 @@ public final class ConfigUtil {
             String hostName = entry.getKey();
             PhysicalDbGroup pool = entry.getValue();
 
-            for (PhysicalDbInstance ds : pool.getAllDataSources()) {
+            for (PhysicalDbInstance ds : pool.getAllDbInstances()) {
                 if (ds.isDisabled() || !ds.isTestConnSuccess() || ds.isFakeNode()) {
                     continue;
                 }
@@ -299,7 +299,7 @@ public final class ConfigUtil {
 
     private static void getKeyVariablesForDataSource(ExecutorService service, PhysicalDbInstance ds, String hostName, Map<String, Future<KeyVariables>> keyVariablesTaskMap, boolean needSync) {
         String dataSourceName = genDataSourceKey(hostName, ds.getName());
-        GetAndSyncDataSourceKeyVariables task = new GetAndSyncDataSourceKeyVariables(ds, needSync);
+        GetAndSyncDbInstanceKeyVariables task = new GetAndSyncDbInstanceKeyVariables(ds, needSync);
         Future<KeyVariables> future = service.submit(task);
         keyVariablesTaskMap.put(dataSourceName, future);
     }

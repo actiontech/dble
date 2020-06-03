@@ -86,7 +86,7 @@ public class DBGroup implements Named {
 
     @Override
     public String toString() {
-        String builder = "DataHost [rwSplitMode=" +
+        String builder = "dbGroup [rwSplitMode=" +
                 rwSplitMode +
                 ", name=" +
                 name +

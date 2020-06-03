@@ -21,8 +21,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class SyncDataSourceKeyVariables implements Callable<Boolean> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SyncDataSourceKeyVariables.class);
+public class SyncDbInstanceKeyVariables implements Callable<Boolean> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SyncDbInstanceKeyVariables.class);
     private ReentrantLock lock = new ReentrantLock();
     private volatile boolean isFinish = false;
     private Condition finishCond = lock.newCondition();
@@ -32,7 +32,7 @@ public class SyncDataSourceKeyVariables implements Callable<Boolean> {
     private final String isolationName;
 
 
-    public SyncDataSourceKeyVariables(KeyVariables keyVariables, PhysicalDbInstance ds) {
+    public SyncDbInstanceKeyVariables(KeyVariables keyVariables, PhysicalDbInstance ds) {
         this.keyVariables = keyVariables;
         this.ds = ds;
         isolationName = VersionUtil.getIsolationNameByVersion(ds.getDsVersion());
@@ -40,7 +40,7 @@ public class SyncDataSourceKeyVariables implements Callable<Boolean> {
 
     @Override
     public Boolean call() throws Exception {
-        OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(new String[0], new SyncDataSourceKeyVariablesCallBack());
+        OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(new String[0], new SyncDbInstanceKeyVariablesCallBack());
         String sql = genQuery();
 
         OneTimeConnJob sqlJob = new OneTimeConnJob(sql, null, resultHandler, ds);
@@ -105,7 +105,7 @@ public class SyncDataSourceKeyVariables implements Callable<Boolean> {
         return sql.toString();
     }
 
-    private class SyncDataSourceKeyVariablesCallBack implements SQLQueryResultListener<SQLQueryResult<Map<String, String>>> {
+    private class SyncDbInstanceKeyVariablesCallBack implements SQLQueryResultListener<SQLQueryResult<Map<String, String>>> {
         @Override
         public void onResult(SQLQueryResult<Map<String, String>> result) {
             success.set(result.isSuccess());

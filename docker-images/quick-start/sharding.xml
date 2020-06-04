@@ -1,0 +1,110 @@
+<?xml version="1.0"?>
+<!--
+  ~ Copyright (C) 2016-2020 ActionTech.
+  ~ License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+  -->
+
+<!DOCTYPE dble:sharding SYSTEM "sharding.dtd">
+<dble:sharding xmlns:dble="http://dble.cloud/" version="4.0">
+
+    <schema name="testdb"  sqlMaxLimit="100">
+        <shardingTable name="tb_enum_sharding" shardingNode="dn1,dn2" sqlMaxLimit="200" function="func_enum" shardingColumn="code"/>
+        <shardingTable name="tb_range_sharding" shardingNode="dn1,dn2,dn3" function="func_range" shardingColumn="id"/>
+        <!--er tables-->
+        <shardingTable name="tb_hash_sharding" shardingNode="dn1,dn2" function="func_common_hash" shardingColumn="id"/>
+        <shardingTable name="tb_hash_sharding_er1" shardingNode="dn1,dn2" function="func_common_hash" shardingColumn="id"/>
+        <shardingTable name="tb_hash_sharding_er2" shardingNode="dn1,dn2" function="func_common_hash" shardingColumn="id2"/>
+        <shardingTable name="tb_hash_sharding_er3" shardingNode="dn1,dn2" function="func_common_hash" shardingColumn="id" incrementColumn="id2"/>
+
+        <shardingTable name="tb_uneven_hash" shardingNode="dn1,dn2,dn3" function="func_uneven_hash" shardingColumn="id"/>
+
+        <shardingTable name="tb_mod" shardingNode="dn1,dn2,dn3,dn4" function="func_mod" shardingColumn="id" sqlRequiredSharding="true"/>
+
+        <shardingTable name="tb_jump_hash" shardingNode="dn1,dn2" function="func_jumpHash" shardingColumn="code"/>
+
+        <shardingTable name="tb_hash_string" shardingNode="dn1,dn2,dn3,dn4" function="func_hashString" shardingColumn="code"/>
+
+        <shardingTable name="tb_date" shardingNode="dn1,dn2,dn3,dn4" function="func_date" shardingColumn="create_date"/>
+
+        <shardingTable name="tb_pattern" shardingNode="dn1,dn2" function="func_pattern" shardingColumn="id"/>
+        <!--global  tables-->
+        <globalTable name="tb_global1" shardingNode="dn1,dn2" sqlMaxLimit="103" />
+        <globalTable name="tb_global2" shardingNode="dn1,dn2,dn3,dn4" cron="0 0 0 * * ?" checkClass="CHECKSUM"/>
+        <!--single node table-->
+        <singleTable name="tb_single" shardingNode="dn6" sqlMaxLimit="105"/>
+        <!--er tables-->
+        <shardingTable name="tb_parent" shardingNode="dn1,dn2" function="func_common_hash" shardingColumn="id">
+            <childTable name="tb_child1" joinColumn="child1_id" parentColumn="id" sqlMaxLimit="201">
+                <childTable name="tb_grandson1" joinColumn="grandson1_id" parentColumn="child1_id"/>
+                <childTable name="tb_grandson2" joinColumn="grandson2_id" parentColumn="child1_id2"/>
+            </childTable>
+            <childTable name="tb_child2" joinColumn="child2_id" parentColumn="id"/>
+            <childTable name="tb_child3" joinColumn="child3_id" parentColumn="id2"/>
+        </shardingTable>
+    </schema>
+    <!-- sharding testdb2 route to database named dn5 in localhost2  -->
+    <schema name="testdb2" shardingNode="dn5"/>
+    <shardingNode name="dn1" dbGroup="dbGroup1" database="db_1"/>
+    <shardingNode name="dn2" dbGroup="dbGroup2" database="db_2"/>
+    <shardingNode name="dn3" dbGroup="dbGroup1" database="db_3"/>
+    <shardingNode name="dn4" dbGroup="dbGroup2" database="db_4"/>
+    <shardingNode name="dn5" dbGroup="dbGroup1" database="db_5"/>
+    <shardingNode name="dn6" dbGroup="dbGroup2" database="db_6"/>
+    <!-- enum partition -->
+    <function name="func_enum" class="Enum">
+        <property name="mapFile">partition-enum.txt</property>
+        <property name="defaultNode">0</property><!--the default is -1,means unexpected value will report error-->
+        <property name="type">0</property><!--0 means key is a number, 1 means key is a string-->
+    </function>
+    <!-- number range partition -->
+    <function name="func_range" class="NumberRange">
+        <property name="mapFile">partition-number-range.txt</property>
+        <property name="defaultNode">0</property><!--he default is -1,means unexpected value will report error-->
+    </function>
+    <!-- Hash partition,when partitionLength=1, it is a mod partition, MAX(sum(count*length[i]) must not more then 2880-->
+    <function name="func_common_hash" class="Hash">
+        <property name="partitionCount">2</property>
+        <property name="partitionLength">512</property>
+    </function>
+    <!-- Hash partition,when partitionLength=1, it is a mod partition, MAX(sum(count*length[i]) must not more then 2880-->
+    <function name="func_uneven_hash" class="Hash">
+        <property name="partitionCount">2,1</property>
+        <property name="partitionLength">256,512</property>
+    </function>
+    <!-- eg:  mod 4 -->
+    <function name="func_mod" class="Hash">
+        <property name="partitionCount">4</property>
+        <property name="partitionLength">1</property>
+    </function>
+    <!-- jumpStringHash partition for string-->
+    <function name="func_jumpHash" class="jumpStringHash">
+        <property name="partitionCount">2</property>
+        <property name="hashSlice">0:2</property>
+    </function>
+    <!-- Hash partition for string-->
+    <function name="func_hashString" class="StringHash">
+        <property name="partitionCount">4</property>
+        <property name="partitionLength">256</property>
+        <property name="hashSlice">0:2</property>
+        <!--<property name="hashSlice">-4:0</property> -->
+    </function>
+    <!-- date partition  4 case:
+    1.set sEndDate and defaultNode: input <sBeginDate ,router to defaultNode; input>sEndDate ,mod the period
+    2.set sEndDate, but no defaultNode:input <sBeginDate report error; input>sEndDate ,mod the period
+    3.set defaultNode without sEndDate: input <sBeginDate router to defaultNode;input>sBeginDate + (node size)*sPartionDay-1 will report error(expected is defaultNode,but can't control now)
+    4.sEndDate and defaultNode are all not set: input <sBeginDate report error;input>sBeginDate + (node size)*sPartionDay-1 will report error
+     -->
+    <function name="func_date" class="Date">
+        <property name="dateFormat">yyyy-MM-dd</property>
+        <property name="sBeginDate">2015-01-01</property>
+        <property name="sEndDate">2015-01-31</property> <!--if not set sEndDate,then in fact ,the sEndDate = sBeginDate+ (node size)*sPartionDay-1 -->
+        <property name="sPartionDay">10</property>
+        <property name="defaultNode">0</property><!--the default is -1-->
+    </function>
+    <!-- pattern partition : mapFile must contains all value of 0~patternValue-1,key and value must be Continuous increase-->
+    <function name="func_pattern" class="PatternRange">
+        <property name="mapFile">partition-pattern.txt</property>
+        <property name="patternValue">1024</property>
+        <property name="defaultNode">0</property><!--contains string which is not number,router to default node-->
+    </function>
+</dble:sharding>

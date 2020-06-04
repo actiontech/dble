@@ -25,6 +25,7 @@ import com.actiontech.dble.singleton.SequenceManager;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLObject;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
 import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
@@ -112,7 +113,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
     }
 
     @Override
-    SQLSelect acceptVisitor(SQLStatement stmt, ServerSchemaStatVisitor visitor) {
+    SQLSelect acceptVisitor(SQLObject stmt, ServerSchemaStatVisitor visitor) {
         MySqlInsertStatement insert = (MySqlInsertStatement) stmt;
         insert.getQuery().accept(visitor);
         return insert.getQuery();

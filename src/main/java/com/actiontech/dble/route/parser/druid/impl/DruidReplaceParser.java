@@ -26,6 +26,7 @@ import com.actiontech.dble.singleton.SequenceManager;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLObject;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
@@ -114,7 +115,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
     }
 
     @Override
-    SQLSelect acceptVisitor(SQLStatement stmt, ServerSchemaStatVisitor visitor) {
+    SQLSelect acceptVisitor(SQLObject stmt, ServerSchemaStatVisitor visitor) {
         SQLReplaceStatement replace = (SQLReplaceStatement) stmt;
         replace.getQuery().accept(visitor);
         return replace.getQuery().getSubQuery();
@@ -315,7 +316,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
      *
      * @param schemaInfo  SchemaInfo
      * @param replaceStmt MySqlInsertStatement
-     * @param joinColumn     joinColumn
+     * @param joinColumn  joinColumn
      * @return -1 means no join key,otherwise means the index
      * @throws SQLNonTransientException if not find
      */

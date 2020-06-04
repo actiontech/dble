@@ -55,4 +55,13 @@ public final class CollectionUtil {
         return false;
     }
 
+    public static boolean contaionSpecificObject(Collection collection, Object obj) {
+        for (Object x : collection) {
+            if (x == obj) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

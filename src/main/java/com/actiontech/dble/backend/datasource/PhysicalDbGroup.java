@@ -254,7 +254,7 @@ public class PhysicalDbGroup {
             }
             case RW_SPLIT_OFF:
             default:
-                // return default write data source
+                // return default primary dbInstance
                 theNode = this.getWriteSource();
         }
 

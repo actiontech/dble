@@ -114,7 +114,7 @@ public class MySQLHeartbeat {
         this.isChecking.set(false);
         this.message = errMsg;
         setError();
-        Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getDbGroupConfig().getName() + "-" + this.source.getConfig().getInstanceName());
+        Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", this.source.getDbGroupConfig().getName() + "-" + this.source.getConfig().getInstanceName());
         AlertUtil.alert(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "heartbeat status:" + this.status, "mysql", this.source.getConfig().getId(), labels);
     }
 
@@ -132,7 +132,7 @@ public class MySQLHeartbeat {
                 break;
         }
         if (this.status != OK_STATUS) {
-            Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getDbGroupConfig().getName() + "-" + this.source.getConfig().getInstanceName());
+            Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", this.source.getDbGroupConfig().getName() + "-" + this.source.getConfig().getInstanceName());
             AlertUtil.alert(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "heartbeat status:" + this.status, "mysql", this.source.getConfig().getId(), labels);
         }
     }
@@ -158,7 +158,7 @@ public class MySQLHeartbeat {
                 this.status = OK_STATUS;
                 this.errorCount = 0;
                 this.startErrorTime.set(-1);
-                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", this.source.getDbGroupConfig().getName() + "-" + this.source.getConfig().getInstanceName());
+                Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", this.source.getDbGroupConfig().getName() + "-" + this.source.getConfig().getInstanceName());
                 AlertUtil.alertResolve(AlarmCode.HEARTBEAT_FAIL, Alert.AlertLevel.WARN, "mysql", this.source.getConfig().getId(), labels);
         }
         if (isStop) {

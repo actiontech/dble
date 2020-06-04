@@ -94,7 +94,7 @@ public final class Scheduler {
         };
     }
 
-    // heartbeat for data source
+    // heartbeat for dbInstance
     private Runnable dbInstanceHeartbeat() {
         return new Runnable() {
             @Override

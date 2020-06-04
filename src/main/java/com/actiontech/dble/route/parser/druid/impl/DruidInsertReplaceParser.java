@@ -39,7 +39,7 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
             checkDefaultValues(joinColumnVal, tc, schemaInfo.getSchema(), tc.getJoinColumn());
             Set<String> shardingNodeSet = RouterUtil.ruleCalculate(rrs, tc.getDirectRouteTC(), columnRoute, false);
             if (shardingNodeSet.size() != 1) {
-                throw new SQLNonTransientException("parent key can't find  valid data node ,expect 1 but found: " + shardingNodeSet.size());
+                throw new SQLNonTransientException("parent key can't find  valid shardingNode ,expect 1 but found: " + shardingNodeSet.size());
             }
             String dn = shardingNodeSet.iterator().next();
             if (SQLJob.LOGGER.isDebugEnabled()) {
@@ -147,7 +147,7 @@ abstract class DruidInsertReplaceParser extends DefaultDruidParser {
             //get child result will be blocked, so use ComplexQueryExecutor
             @Override
             public void run() {
-                // route by sql query root parent's data node
+                // route by sql query root parent's shardingNode
                 String findRootTBSql = tc.getLocateRTableKeySql() + joinColumnVal;
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("to find root parent's node sql :" + findRootTBSql);

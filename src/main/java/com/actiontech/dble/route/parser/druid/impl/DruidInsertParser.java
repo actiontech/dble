@@ -177,7 +177,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
      * @param rrs             RouteResultset
      * @param partitionColumn partitionColumn
      * @param insertStmt      insertStmt
-     * @throws SQLNonTransientException if not find an valid data node
+     * @throws SQLNonTransientException if not find an valid shardingNode
      */
     private void parserSingleInsert(SchemaInfo schemaInfo, RouteResultset rrs, String partitionColumn,
                                     MySqlInsertStatement insertStmt) throws SQLNonTransientException {
@@ -190,7 +190,7 @@ public class DruidInsertParser extends DruidInsertReplaceParser {
         checkDefaultValues(shardingValue, tableConfig, schemaInfo.getSchema(), partitionColumn);
         Integer nodeIndex = algorithm.calculate(shardingValue);
         if (nodeIndex == null || nodeIndex >= tableConfig.getShardingNodes().size()) {
-            String msg = "can't find any valid data node :" + schemaInfo.getTable() + " -> " + partitionColumn + " -> " + shardingValue;
+            String msg = "can't find any valid shardingNode :" + schemaInfo.getTable() + " -> " + partitionColumn + " -> " + shardingValue;
             LOGGER.info(msg);
             throw new SQLNonTransientException(msg);
         }

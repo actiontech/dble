@@ -366,7 +366,7 @@ public final class RouterUtil {
         if (tc.getDirectRouteTC() != null) {
             Set<String> nodeSet = ruleCalculate(rrs, tc.getDirectRouteTC(), colRoutePairSet, false);
             if (nodeSet.isEmpty()) {
-                throw new SQLNonTransientException("parent key can't find  valid data node ,expect 1 but found: " + nodeSet.size());
+                throw new SQLNonTransientException("parent key can't find  valid shardingNode ,expect 1 but found: " + nodeSet.size());
             }
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("found partition node (using parent partition rule directly) for child table to insert  " + nodeSet + " sql :" + rrs.getStatement());
@@ -452,13 +452,13 @@ public final class RouterUtil {
     private static String ruleCalculateSingleValue(TableConfig tc, String value) {
         Integer nodeIndex = tc.getRule().getRuleAlgorithm().calculate(value);
         if (nodeIndex == null) {
-            String msg = "can't find any valid data node in table[" + tc.getName() +
+            String msg = "can't find any valid shardingNode in table[" + tc.getName() +
                     "] -> column[" + tc.getPartitionColumn() + "] -> value[" + value + "]";
             LOGGER.info(msg);
             throw new IllegalArgumentException(msg);
         }
         if (nodeIndex < 0 || nodeIndex >= tc.getShardingNodes().size()) {
-            String msg = "Can't find a valid data node for specified node index in table[" + tc.getName() +
+            String msg = "Can't find a valid shardingNode for specified node index in table[" + tc.getName() +
                     "] -> column[" + tc.getPartitionColumn() + "] -> value[" + value + "]" + ",Index : " + nodeIndex;
             LOGGER.info(msg);
             throw new IllegalArgumentException(msg);
@@ -643,7 +643,7 @@ public final class RouterUtil {
         /*
          * multi-table it must be ER OR   global* normal , global* er
          */
-        //map <table,data_nodes>
+        //map <table,sharding_nodes>
         Map<Pair<String, String>, Set<String>> tablesRouteMap = new HashMap<>();
 
         Map<Pair<String, String>, Map<String, ColumnRoute>> tablesAndConditions = routeUnit.getTablesAndConditions();
@@ -703,7 +703,7 @@ public final class RouterUtil {
         /*
          * multi-table it must be ER OR   global* normal , global* er
          */
-        //map <table,data_nodes>
+        //map <table,sharding_nodes>
         Map<Pair<String, String>, Set<String>> tablesRouteMap = new HashMap<>();
 
         Map<Pair<String, String>, Map<String, ColumnRoute>> tablesAndConditions = routeUnit.getTablesAndConditions();
@@ -745,7 +745,7 @@ public final class RouterUtil {
         boolean isFirstAdd = true;
         for (Map.Entry<Pair<String, String>, Set<String>> entry : tablesRouteMap.entrySet()) {
             if (entry.getValue() == null || entry.getValue().size() == 0) {
-                throw new SQLNonTransientException("parent key can't find any valid data node ");
+                throw new SQLNonTransientException("parent key can't find any valid shardingNode ");
             } else {
                 if (isFirstAdd) {
                     retNodesSet.addAll(entry.getValue());
@@ -935,7 +935,7 @@ public final class RouterUtil {
 
         if (shardingNodeSet.isEmpty()) {
             throw new SQLNonTransientException(
-                    "parent key can't find any valid data node ");
+                    "parent key can't find any valid shardingNode ");
         }
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("found partition nodes (using parent partition rule directly) for child table to update  " +

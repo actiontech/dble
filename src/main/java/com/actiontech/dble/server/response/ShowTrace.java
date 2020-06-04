@@ -28,7 +28,7 @@ public final class ShowTrace {
         FIELDS[1] = PacketUtil.getField("START(ms)", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[2] = PacketUtil.getField("END(ms)", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[3] = PacketUtil.getField("DURATION(ms)", Fields.FIELD_TYPE_VAR_STRING);
-        FIELDS[4] = PacketUtil.getField("DATA_NODE", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[4] = PacketUtil.getField("SHARDING_NODE", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[5] = PacketUtil.getField("SQL/REF", Fields.FIELD_TYPE_VAR_STRING);
     }
     public static void response(ServerConnection c) {

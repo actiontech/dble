@@ -171,16 +171,16 @@ public class MySQLDetector implements SQLQueryResultListener<SQLQueryResult<Map<
                 LOGGER.warn(errMsg + ", set heartbeat Error");
                 if (variables != null) {
                     AlertUtil.alert(AlarmCode.DB_INSTANCE_LOWER_CASE_ERROR, Alert.AlertLevel.WARN, errMsg, "mysql", this.heartbeat.getSource().getConfig().getId(), labels);
-                    ToResolveContainer.DATA_HOST_LOWER_CASE_ERROR.add(con.getHost() + ":" + con.getPort());
+                    ToResolveContainer.DB_INSTANCE_LOWER_CASE_ERROR.add(con.getHost() + ":" + con.getPort());
                 }
                 heartbeat.setErrorResult(errMsg);
                 return true;
             } else {
                 String url = con.getHost() + ":" + con.getPort();
-                if (ToResolveContainer.DATA_HOST_LOWER_CASE_ERROR.contains(url)) {
+                if (ToResolveContainer.DB_INSTANCE_LOWER_CASE_ERROR.contains(url)) {
                     Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", url);
                     AlertUtil.alertResolve(AlarmCode.DB_INSTANCE_LOWER_CASE_ERROR, Alert.AlertLevel.WARN, "mysql", this.heartbeat.getSource().getConfig().getId(), labels,
-                            ToResolveContainer.DATA_HOST_LOWER_CASE_ERROR, url);
+                            ToResolveContainer.DB_INSTANCE_LOWER_CASE_ERROR, url);
                 }
                 if (!source.isSalveOrRead()) { // writehost checkRecoverFail read only
                     source.setReadOnly(variables.isReadOnly());

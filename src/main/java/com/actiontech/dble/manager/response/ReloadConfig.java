@@ -304,7 +304,7 @@ public final class ReloadConfig {
         }
         ReloadLogHelper.info("reload config: load all xml info end", LOGGER);
 
-        ReloadLogHelper.info("reload config: get variables from random alive data host start", LOGGER);
+        ReloadLogHelper.info("reload config: get variables from random alive dbGroup start", LOGGER);
 
         try {
             loader.testConnection();
@@ -347,9 +347,9 @@ public final class ReloadConfig {
         ServerConfig serverConfig = new ServerConfig(loader);
 
         if (newSystemVariables.isLowerCaseTableNames() && loader.isFullyConfigured()) {
-            ReloadLogHelper.info("reload config: data host's lowerCaseTableNames=1, lower the config properties start", LOGGER);
+            ReloadLogHelper.info("reload config: dbGroup's lowerCaseTableNames=1, lower the config properties start", LOGGER);
             serverConfig.reviseLowerCase();
-            ReloadLogHelper.info("reload config: data host's lowerCaseTableNames=1, lower the config properties end", LOGGER);
+            ReloadLogHelper.info("reload config: dbGroup's lowerCaseTableNames=1, lower the config properties end", LOGGER);
         }
         checkTestConnIfNeed(loadAllMode, loader);
 
@@ -371,9 +371,9 @@ public final class ReloadConfig {
 
 
         /* 2.2 init the lDbInstance with diff*/
-        ReloadLogHelper.info("reload config: init new data host  start", LOGGER);
+        ReloadLogHelper.info("reload config: init new dbGroup start", LOGGER);
         String reasonMsg = initDbGroupByMap(mergedDbGroups, newShardingNodes, loader.isFullyConfigured());
-        ReloadLogHelper.info("reload config: init new data host end", LOGGER);
+        ReloadLogHelper.info("reload config: init new dbGroup end", LOGGER);
         if (reasonMsg == null) {
             /* 2.3 apply new conf */
             ReloadLogHelper.info("reload config: apply new config start", LOGGER);
@@ -404,7 +404,7 @@ public final class ReloadConfig {
 
     private static void initFailed(Map<String, PhysicalDbGroup> newDbGroups) throws Exception {
         // INIT FAILED
-        ReloadLogHelper.info("reload failed, clear previously created data sources ", LOGGER);
+        ReloadLogHelper.info("reload failed, clear previously created dbInstances ", LOGGER);
         for (PhysicalDbGroup dbGroup : newDbGroups.values()) {
             dbGroup.clearDbInstances("reload config");
             dbGroup.stopHeartbeat();
@@ -422,9 +422,9 @@ public final class ReloadConfig {
         ReloadLogHelper.info("reload config: get variables from random node end", LOGGER);
 
         if (newSystemVariables.isLowerCaseTableNames() && loader.isFullyConfigured()) {
-            ReloadLogHelper.info("reload config: data host's lowerCaseTableNames=1, lower the config properties start", LOGGER);
+            ReloadLogHelper.info("reload config: dbGroup's lowerCaseTableNames=1, lower the config properties start", LOGGER);
             serverConfig.reviseLowerCase();
-            ReloadLogHelper.info("reload config: data host's lowerCaseTableNames=1, lower the config properties end", LOGGER);
+            ReloadLogHelper.info("reload config: dbGroup's lowerCaseTableNames=1, lower the config properties end", LOGGER);
         }
         checkTestConnIfNeed(loadAllMode, loader);
 
@@ -434,9 +434,9 @@ public final class ReloadConfig {
         Map<ERTable, Set<ERTable>> newErRelations = serverConfig.getErRelations();
 
 
-        ReloadLogHelper.info("reload config: init new data host  start", LOGGER);
+        ReloadLogHelper.info("reload config: init new dbGroup start", LOGGER);
         String reasonMsg = initDbGroupByMap(newDbGroups, newShardingNodes, loader.isFullyConfigured());
-        ReloadLogHelper.info("reload config: init new data host end", LOGGER);
+        ReloadLogHelper.info("reload config: init new dbGroup end", LOGGER);
         if (reasonMsg == null) {
             /* 2.3 apply new conf */
             ReloadLogHelper.info("reload config: apply new config start", LOGGER);
@@ -468,9 +468,9 @@ public final class ReloadConfig {
     private static void checkTestConnIfNeed(int loadAllMode, ConfigInitializer loader) throws Exception {
         if ((loadAllMode & ManagerParseConfig.OPTS_MODE) == 0 && loader.isFullyConfigured()) {
             try {
-                ReloadLogHelper.info("reload config: test all data Nodes start", LOGGER);
+                ReloadLogHelper.info("reload config: test all shardingNodes start", LOGGER);
                 loader.testConnection();
-                ReloadLogHelper.info("reload config: test all data Nodes end", LOGGER);
+                ReloadLogHelper.info("reload config: test all shardingNodes end", LOGGER);
             } catch (Exception e) {
                 throw new Exception(e);
             }
@@ -483,9 +483,9 @@ public final class ReloadConfig {
         newSystemVariables = handler.execute();
         if (newSystemVariables == null) {
             if (loader.isFullyConfigured()) {
-                throw new Exception("Can't get variables from any data host, because all of data host can't connect to MySQL correctly");
+                throw new Exception("Can't get variables from any dbInstance, because all of dbGroup can't connect to MySQL correctly");
             } else {
-                ReloadLogHelper.info("reload config: no valid data host ,keep variables as old", LOGGER);
+                ReloadLogHelper.info("reload config: no valid dbGroup ,keep variables as old", LOGGER);
                 newSystemVariables = DbleServer.getInstance().getSystemVariables();
             }
         }

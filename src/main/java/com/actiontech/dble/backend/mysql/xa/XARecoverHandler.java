@@ -110,7 +110,7 @@ public class XARecoverHandler {
             } else {
                 String msg = String.format("[CALLBACK][XA %s host:%s port:%s scheme:%s state:%s ] when server start,but failed.Please check backend mysql.", logEntry.getCoordinatorId(), logEntry.getHost(), logEntry.getPort(), logEntry.getSchema(), txState.getState());
                 LOGGER.warn(msg);
-                Map<String, String> labels = AlertUtil.genSingleLabel("data_host", "operator " + operator);
+                Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", "operator " + operator);
                 AlertUtil.alertSelf(AlarmCode.XA_RECOVER_FAIL, Alert.AlertLevel.WARN, msg, labels);
             }
             signalDone();

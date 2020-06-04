@@ -195,7 +195,7 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
         ErrorPacket errPacket = new ErrorPacket();
         byte lastPacketId = packetId;
         errPacket.setPacketId(++lastPacketId);
-        errPacket.setErrNo(ErrorCode.ER_DATA_HOST_ABORTING_CONNECTION);
+        errPacket.setErrNo(ErrorCode.ER_DB_INSTANCE_ABORTING_CONNECTION);
         String errMsg = "Backend connect Error, Connection{dbInstance[" + conn.getHost() + ":" + conn.getPort() + "],Schema[" + conn.getSchema() + "]} refused";
         errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
         err = errPacket;

@@ -168,7 +168,7 @@ public abstract class AbstractTableMetaHandler {
         }
 
         private synchronized void consistentWarning() {
-            String errorMsg = "Table [" + tableName + "] structure are not consistent in different data node!";
+            String errorMsg = "Table [" + tableName + "] structure are not consistent in different shardingNode!";
             logger.warn(errorMsg);
             AlertUtil.alertSelf(AlarmCode.TABLE_NOT_CONSISTENT_IN_SHARDINGS, Alert.AlertLevel.WARN, errorMsg, AlertUtil.genSingleLabel("TABLE", schema + "." + tableName));
             ToResolveContainer.TABLE_NOT_CONSISTENT_IN_SHARDINGS.add(schema + "." + tableName);

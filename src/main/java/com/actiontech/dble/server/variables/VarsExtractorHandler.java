@@ -46,7 +46,7 @@ public class VarsExtractorHandler {
             sqlJob.run();
             waitDone();
         } else {
-            LOGGER.warn("No Data host is alive, server can not get 'show variables' result");
+            LOGGER.warn("No dbInstance is alive, server can not get 'show variables' result");
         }
         return systemVariables;
     }

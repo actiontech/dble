@@ -93,7 +93,7 @@ public abstract class GetNodeTablesHandler {
             }
             if (!result.isSuccess()) {
                 //not thread safe
-                String warnMsg = "Can't show tables from shardingNode:" + shardingNode + "! Maybe the data node is not initialized!";
+                String warnMsg = "Can't show tables from shardingNode:" + shardingNode + "! Maybe the shardingNode is not initialized!";
                 LOGGER.warn(warnMsg);
                 if (ds != null) {
                     Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", ds.getDbGroupConfig().getName() + "-" + ds.getConfig().getInstanceName());

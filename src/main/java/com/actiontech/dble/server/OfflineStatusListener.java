@@ -78,7 +78,7 @@ public class OfflineStatusListener implements PathChildrenCacheListener {
                 }
                 //other status should be unlocked
                 LOGGER.warn(" service instance[" + crashNode + "] has crashed. " +
-                        "Please manually check ddl status on every data node and delete ddl node [" + ddlNodePath + "]  from zookeeper " +
+                        "Please manually check ddl status on every shardingNode and delete ddl node [" + ddlNodePath + "]  from zookeeper " +
                         "after every instance received this message");
             }
         } catch (Exception e) {

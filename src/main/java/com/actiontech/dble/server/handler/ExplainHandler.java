@@ -57,7 +57,7 @@ public final class ExplainHandler {
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
 
     static {
-        FIELDS[0] = PacketUtil.getField("DATA_NODE", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[0] = PacketUtil.getField("SHARDING_NODE", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[1] = PacketUtil.getField("TYPE", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[2] = PacketUtil.getField("SQL/REF", Fields.FIELD_TYPE_VAR_STRING);
     }

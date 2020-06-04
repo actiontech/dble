@@ -46,7 +46,7 @@ public class DbGroupHaResponse implements ClusterXmlLoader {
             dbGroup.changeIntoLatestStatus(configValue.getValue());
             HaConfigManager.getInstance().haFinish(id, null, configValue.getValue());
         } else {
-            //data_host_locks events,we only try to response to the DISABLE,ignore others
+            //dbGroup_locks events,we only try to response to the DISABLE,ignore others
             HaInfo info = new HaInfo(configValue.getValue());
             if (info.getLockType() == HaInfo.HaType.DISABLE &&
                     !info.getStartId().equals(SystemConfig.getInstance().getInstanceName()) &&

@@ -81,7 +81,7 @@ public final class ClusterToXml {
 
             if (ClusterConfig.getInstance().isNeedSyncHa()) {
                 Thread thread5 = new Thread(dbGroupHaListener);
-                thread5.setName("DATA_HOST_HA_LISTENER");
+                thread5.setName("DB_GROUP_HA_LISTENER");
                 thread5.start();
             }
 

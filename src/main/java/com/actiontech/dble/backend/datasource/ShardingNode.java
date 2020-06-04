@@ -141,7 +141,7 @@ public class ShardingNode {
             if (dbGroup.isInitSuccess()) {
                 PhysicalDbInstance writeSource = dbGroup.getWriteSource();
                 if (writeSource.isReadOnly()) {
-                    throw new IllegalArgumentException("The Data Source[" + writeSource.getConfig().getUrl() + "] is running with the --read-only option so it cannot execute this statement");
+                    throw new IllegalArgumentException("The dbInstance[" + writeSource.getConfig().getUrl() + "] is running with the --read-only option so it cannot execute this statement");
                 }
                 writeSource.setWriteCount();
                 return writeSource.getConnection(schema, autoCommit, attachment);
@@ -161,7 +161,7 @@ public class ShardingNode {
                 throw new IllegalArgumentException("[" + writeSource.getDbGroupConfig().getName() + "." + writeSource.getConfig().getInstanceName() + "] is fake node");
             }
             if (writeSource.isReadOnly()) {
-                throw new IllegalArgumentException("The Data Source[" + writeSource.getConfig().getUrl() + "] is running with the --read-only option so it cannot execute this statement");
+                throw new IllegalArgumentException("The dbInstance[" + writeSource.getConfig().getUrl() + "] is running with the --read-only option so it cannot execute this statement");
             }
             writeSource.setWriteCount();
             writeSource.getConnection(schema, autoCommit, handler, attachment, true);

@@ -225,7 +225,7 @@ public class ServerConfig {
                     reloadSchema.add(oldSchema);
                 } else {
                     if (newSchemaConfig.getShardingNode() != null) { // reload config_all
-                        //check data node and dbGroup change
+                        //check shardingNode and dbGroup change
                         List<String> strShardingNodes = Collections.singletonList(newSchemaConfig.getShardingNode());
                         if (isShardingNodeChanged(strShardingNodes, newShardingNodes)) {
                             delSchema.add(oldSchema);
@@ -353,7 +353,7 @@ public class ServerConfig {
             } catch (Exception e) {
                 throw new SQLNonTransientException("HaConfigManager init failed", "HY000", ErrorCode.ER_YES);
             }
-            // old data host
+            // old dbGroup
             // 1 stop heartbeat
             // 2 backup
             //--------------------------------------------
@@ -370,7 +370,7 @@ public class ServerConfig {
             this.schemas2 = this.schemas;
             this.erRelations2 = this.erRelations;
             this.fullyConfigured2 = this.fullyConfigured;
-            // new data host
+            // new dbGroup
             // 1 start heartbeat
             // 2 apply the configure
             //---------------------------------------------------

@@ -453,7 +453,7 @@ public class XMLShardingLoader {
                     "partition size : " + String.valueOf(tableConf.getRule().getRuleAlgorithm().getPartitionNum()) + " < table shardingnode size : " + String.valueOf(tableConf.getShardingNodes().size()));
         }
         // else {
-        // table data node size == rule function partition size
+        // table shardingNode size == rule function partition size
         //}
     }
 

@@ -44,6 +44,7 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
             if (sqlType == ServerParse.SHOW) {
                 rrs.setStatement(origSQL);
                 rrs = RouterUtil.routeToSingleNode(rrs, schema.getRandomShardingNode());
+                sc.getSession2().endParse();
             } else {
                 rrs = routeNormalSqlWithAST(schema, origSQL, rrs, sc, isExplain);
             }

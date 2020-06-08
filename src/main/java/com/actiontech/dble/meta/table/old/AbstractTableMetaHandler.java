@@ -91,7 +91,7 @@ public abstract class AbstractTableMetaHandler {
         }
 
         @Override
-        public void onResult(SQLQueryResult<Map<String, String>> result) {
+        public synchronized void onResult(SQLQueryResult<Map<String, String>> result) {
             String tableId = "DataNode[" + dataNode + "]:Table[" + tableName + "]";
             String key = null;
             if (ds != null) {

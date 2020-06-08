@@ -64,11 +64,12 @@ public class DdlChildResponse implements ClusterXmlLoader {
                     throw t;
                 }
 
-            } else if (ddlInfo.getStatus() == DDLInfo.DDLStatus.SUCCESS && !KvBean.DELETE.equals(configValue.getChangeType()) &&
-                    lockMap.containsKey(fullName)) {
+            } else if (ddlInfo.getStatus() == DDLInfo.DDLStatus.SUCCESS && !KvBean.DELETE.equals(configValue.getChangeType())) {
                 LOGGER.info("ddl execute success notice");
                 // if the start node is done the ddl execute
-                lockMap.remove(fullName);
+                if (lockMap.containsKey(fullName)) {
+                    lockMap.remove(fullName);
+                }
 
                 ClusterDelayProvider.delayBeforeUpdateMeta();
                 //to judge the table is be drop

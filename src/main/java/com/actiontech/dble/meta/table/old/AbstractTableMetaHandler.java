@@ -91,7 +91,7 @@ public abstract class AbstractTableMetaHandler {
         }
 
         @Override
-        public synchronized void onResult(SQLQueryResult<Map<String, String>> result) {
+        public void onResult(SQLQueryResult<Map<String, String>> result) {
             String tableId = "DataNode[" + dataNode + "]:Table[" + tableName + "]";
             String key = null;
             if (ds != null) {
@@ -122,20 +122,22 @@ public abstract class AbstractTableMetaHandler {
                 }
             }
 
-            String currentSql = result.getResult().get(MYSQL_SHOW_CREATE_TABLE_COLS[1]);
-            if (dataNodeTableStructureSQLMap.containsKey(currentSql)) {
-                List<String> dataNodeList = dataNodeTableStructureSQLMap.get(currentSql);
-                dataNodeList.add(dataNode);
-            } else {
-                List<String> dataNodeList = new LinkedList<>();
-                dataNodeList.add(dataNode);
-                dataNodeTableStructureSQLMap.put(currentSql, dataNodeList);
-            }
+            synchronized (dataNodeTableStructureSQLMap) {
+                String currentSql = result.getResult().get(MYSQL_SHOW_CREATE_TABLE_COLS[1]);
+                if (dataNodeTableStructureSQLMap.containsKey(currentSql)) {
+                    List<String> dataNodeList = dataNodeTableStructureSQLMap.get(currentSql);
+                    dataNodeList.add(dataNode);
+                } else {
+                    List<String> dataNodeList = new LinkedList<>();
+                    dataNodeList.add(dataNode);
+                    dataNodeTableStructureSQLMap.put(currentSql, dataNodeList);
+                }
 
-            if (nodesNumber.decrementAndGet() == 0) {
-                StructureMeta.TableMeta tableMeta = genTableMeta();
-                handlerTable(tableMeta);
-                countdown();
+                if (nodesNumber.decrementAndGet() == 0) {
+                    StructureMeta.TableMeta tableMeta = genTableMeta();
+                    handlerTable(tableMeta);
+                    countdown();
+                }
             }
         }
 

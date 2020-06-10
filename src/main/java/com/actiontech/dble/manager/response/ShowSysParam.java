@@ -77,7 +77,7 @@ public final class ShowSysParam {
             paramValues.add(new ParamInfo("clusterIP", ClusterConfig.getInstance().getClusterIP(), "dble cluster center address, If clusterMode is zk, it is a full address with port"));
             paramValues.add(new ParamInfo("clusterPort", ClusterConfig.getInstance().getClusterPort() == 0 ? "" : ClusterConfig.getInstance().getClusterPort() + "", "dble cluster center address's port"));
             paramValues.add(new ParamInfo("rootPath", ClusterConfig.getInstance().getRootPath(), "dble cluster center's root path, the default value is /dble"));
-            paramValues.add(new ParamInfo("clusterID", ClusterConfig.getInstance().getClusterID(), "dble cluster id"));
+            paramValues.add(new ParamInfo("clusterId", ClusterConfig.getInstance().getClusterId(), "dble cluster Id"));
             paramValues.add(new ParamInfo("needHaSync", ClusterConfig.getInstance().isNeedSyncHa() + "", "Whether dble use cluster ha, The default value is false"));
         }
         paramValues.add(new ParamInfo("showBinlogStatusTimeout", ClusterConfig.getInstance().getShowBinlogStatusTimeout() + "ms", "The time out from show @@binlog.status.The default value is 60000ms"));

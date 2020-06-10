@@ -7,8 +7,8 @@ package com.actiontech.dble.sqlengine;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.config.ErrorCode;
@@ -49,7 +49,7 @@ public class TransformSQLJob implements ResponseHandler, Runnable {
                 ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), false, true, node, this, node);
             } else {
-                ds.getConnection(databaseName, true, this, null, false);
+                ds.getConnection(databaseName, this, null, false);
             }
         } catch (Exception e) {
             LOGGER.warn("can't get connection", e);

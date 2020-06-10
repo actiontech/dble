@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.config;
 
 import com.actiontech.dble.DbleServer;
@@ -360,7 +360,7 @@ public class ServerConfig {
             if (recycleDbGroups != null) {
                 for (PhysicalDbGroup oldDbGroup : recycleDbGroups.values()) {
                     if (oldDbGroup != null) {
-                        oldDbGroup.stopHeartbeat();
+                        oldDbGroup.stop("reload config, recycle old group");
                     }
                 }
             }
@@ -374,13 +374,13 @@ public class ServerConfig {
             // 1 start heartbeat
             // 2 apply the configure
             //---------------------------------------------------
-            if (changeOrAddDbGroups != null) {
-                for (PhysicalDbGroup newDbGroup : changeOrAddDbGroups.values()) {
-                    if (newDbGroup != null && isFullyConfigured) {
-                        newDbGroup.startHeartbeat();
-                    }
-                }
-            }
+            //            if (changeOrAddDbGroups != null) {
+            //                for (PhysicalDbGroup newDbGroup : changeOrAddDbGroups.values()) {
+            //                    if (newDbGroup != null && isFullyConfigured) {
+            //                                    newDbGroup.startHeartbeat();
+            //                    }
+            //                }
+            //            }
             this.shardingNodes = newShardingNodes;
             this.dbGroups = newDbGroups;
             this.fullyConfigured = isFullyConfigured;

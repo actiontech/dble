@@ -10,15 +10,13 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
-import com.actiontech.dble.backend.mysql.nio.handler.GetConnectionHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
-import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
-import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.cluster.zkprocess.parse.JsonProcessBase;
 import com.actiontech.dble.cluster.zkprocess.zookeeper.process.DbInstanceStatus;
+import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
+import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.config.model.DbGroupConfig;
 import com.actiontech.dble.singleton.HaConfigManager;
 import com.google.gson.Gson;
@@ -31,7 +29,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -40,8 +37,6 @@ public class PhysicalDbGroup {
     public static final String JSON_NAME = "dbGroup";
     public static final String JSON_LIST = "dbInstance";
 
-    private volatile PhysicalDbInstance writeSource;
-    private Map<String, PhysicalDbInstance> allSourceMap = new HashMap<>();
     public static final int RW_SPLIT_OFF = 0;
     private static final int RW_SPLIT_ALL_SLAVES = 1;
     private static final int RW_SPLIT_ALL = 2;
@@ -49,26 +44,29 @@ public class PhysicalDbGroup {
     public static final int WEIGHT = 0;
 
     private final String groupName;
-    private final int rwSplitMode;
     private final DbGroupConfig dbGroupConfig;
-    private final ThreadLocalRandom random = ThreadLocalRandom.current();
-    private volatile boolean initSuccess = false;
+    private volatile PhysicalDbInstance writeDbInstance;
+    private Map<String, PhysicalDbInstance> allSourceMap = new HashMap<>();
+
+    private final int rwSplitMode;
     protected String[] schemas;
+    private final ThreadLocalRandom random = ThreadLocalRandom.current();
 
     private final ReentrantReadWriteLock adjustLock = new ReentrantReadWriteLock();
 
-
-    public PhysicalDbGroup(String name, DbGroupConfig config, PhysicalDbInstance writeSource, PhysicalDbInstance[] readSources, int rwSplitMode) {
+    public PhysicalDbGroup(String name, DbGroupConfig config, PhysicalDbInstance writeDbInstances, PhysicalDbInstance[] readDbInstances, int rwSplitMode) {
         this.groupName = name;
         this.rwSplitMode = rwSplitMode;
         this.dbGroupConfig = config;
-        this.writeSource = writeSource;
-        allSourceMap.put(writeSource.getName(), writeSource);
 
-        for (PhysicalDbInstance s : readSources) {
-            allSourceMap.put(s.getName(), s);
+        writeDbInstances.setDbGroup(this);
+        this.writeDbInstance = writeDbInstances;
+        allSourceMap.put(writeDbInstances.getName(), writeDbInstances);
+
+        for (PhysicalDbInstance readDbInstance : readDbInstances) {
+            readDbInstance.setDbGroup(this);
+            allSourceMap.put(readDbInstance.getName(), readDbInstance);
         }
-        setDbInstanceProps();
     }
 
     public PhysicalDbGroup(PhysicalDbGroup org) {
@@ -79,17 +77,11 @@ public class PhysicalDbGroup {
         for (Map.Entry<String, PhysicalDbInstance> entry : org.allSourceMap.entrySet()) {
             MySQLInstance newSource = new MySQLInstance((MySQLInstance) entry.getValue());
             allSourceMap.put(entry.getKey(), newSource);
-            if (entry.getValue() == org.writeSource) {
-                writeSource = newSource;
+            if (entry.getValue() == org.writeDbInstance) {
+                writeDbInstance = newSource;
             }
         }
     }
-
-
-    public boolean isInitSuccess() {
-        return initSuccess;
-    }
-
 
     public String[] getSchemas() {
         return schemas;
@@ -114,8 +106,9 @@ public class PhysicalDbGroup {
 
     PhysicalDbInstance findDbInstance(BackendConnection exitsCon) {
         MySQLConnection con = (MySQLConnection) exitsCon;
-        PhysicalDbInstance source = allSourceMap.get(con.getPool().getName());
-        if (source != null && source == con.getPool()) {
+        PhysicalDbInstance source = con.getDbInstance();
+        PhysicalDbInstance target = allSourceMap.get(source.getName());
+        if (source == target) {
             return source;
         }
         LOGGER.info("can't find connection in pool " + this.groupName + " con:" + exitsCon);
@@ -123,72 +116,33 @@ public class PhysicalDbGroup {
     }
 
     boolean isSlave(PhysicalDbInstance ds) {
-        return !(writeSource == ds);
+        return !(writeDbInstance == ds);
     }
 
-
-    public PhysicalDbInstance getWriteSource() {
-        return writeSource;
+    public PhysicalDbInstance getWriteDbInstance() {
+        return writeDbInstance;
     }
 
-    public boolean init() {
-        if (rwSplitMode != 0) {
-            for (Map.Entry<String, PhysicalDbInstance> entry : allSourceMap.entrySet()) {
-                if (initSource(entry.getValue())) {
-                    initSuccess = true;
-                    LOGGER.info(groupName + " " + entry.getKey() + " init success");
-                }
-            }
-        } else {
-            if (initSource(writeSource)) {
-                initSuccess = true;
-                LOGGER.info(groupName + " " + writeSource.getName() + " init success");
-            }
+    public void init() {
+        if (rwSplitMode == 0) {
+            writeDbInstance.init();
+            return;
         }
-        if (!initSuccess) {
-            LOGGER.warn(groupName + " init failure");
-        }
-        return initSuccess;
-    }
 
-    public void doHeartbeat() {
-        for (PhysicalDbInstance source : allSourceMap.values()) {
-            if (source != null) {
-                source.doHeartbeat();
-            } else {
-                LOGGER.warn(groupName + " current dbInstance is null!");
-            }
+        for (Map.Entry<String, PhysicalDbInstance> entry : allSourceMap.entrySet()) {
+            entry.getValue().init();
         }
     }
 
-    public void heartbeatCheck(long ildCheckPeriod) {
-        for (PhysicalDbInstance ds : allSourceMap.values()) {
-            // only read node or all write node
-            // and current write node will check
-            if (ds != null && (ds.getHeartbeat().getStatus() == MySQLHeartbeat.OK_STATUS) &&
-                    (ds.isReadInstance() || ds == this.getWriteSource())) {
-                ds.connectionHeatBeatCheck(ildCheckPeriod);
-            }
+    public void stopHeartbeat(String reason) {
+        for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
+            dbInstance.stopHeartbeat(reason);
         }
     }
 
-    public void startHeartbeat() {
-        for (PhysicalDbInstance source : allSourceMap.values()) {
-            source.startHeartbeat();
-        }
-    }
-
-    public void stopHeartbeat() {
-        for (PhysicalDbInstance source : allSourceMap.values()) {
-            source.stopHeartbeat();
-        }
-    }
-
-    public void clearDbInstances(String reason) {
-        for (PhysicalDbInstance source : allSourceMap.values()) {
-            LOGGER.info("clear dbInstance of pool  " + this.groupName + " ds:" + source.getConfig());
-            source.clearCons(reason);
-            source.stopHeartbeat();
+    public void stop(String reason) {
+        for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
+            dbInstance.stop(reason);
         }
     }
 
@@ -196,22 +150,20 @@ public class PhysicalDbGroup {
         if (this.dbGroupConfig.getRwSplitMode() != RW_SPLIT_OFF) {
             return allSourceMap.values();
         } else {
-            return Collections.singletonList(writeSource);
+            return Collections.singletonList(writeDbInstance);
         }
     }
-
 
     public Collection<PhysicalDbInstance> getAllDbInstances() {
         return new LinkedList<>(allSourceMap.values());
     }
 
-
     public Map<String, PhysicalDbInstance> getAllDbInstanceMap() {
         return allSourceMap;
     }
 
-    void getRWSplistCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws Exception {
-        PhysicalDbInstance theNode = getRWSplistNode();
+    void getRWSplitCon(String schema, ResponseHandler handler, Object attachment) throws Exception {
+        PhysicalDbInstance theNode = getRWSplitNode();
         if (theNode.isDisabled() || theNode.isFakeNode()) {
             if (this.getAllActiveDbInstances().size() > 0) {
                 theNode = this.getAllActiveDbInstances().iterator().next();
@@ -235,10 +187,12 @@ public class PhysicalDbGroup {
             AlertUtil.alert(AlarmCode.DB_INSTANCE_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", theNode.getConfig().getId(), labels);
             throw new IOException(heartbeatError);
         }
-        theNode.getConnection(schema, autocommit, handler, attachment, false);
+        BackendConnection conn = theNode.getConnection(schema, theNode.getConfig().getConnectionTimeout());
+        conn.setAttachment(attachment);
+        handler.connectionAcquired(conn);
     }
 
-    PhysicalDbInstance getRWSplistNode() {
+    PhysicalDbInstance getRWSplitNode() {
         PhysicalDbInstance theNode;
         ArrayList<PhysicalDbInstance> okSources;
         switch (rwSplitMode) {
@@ -255,17 +209,17 @@ public class PhysicalDbGroup {
             case RW_SPLIT_OFF:
             default:
                 // return default primary dbInstance
-                theNode = this.getWriteSource();
+                theNode = this.writeDbInstance;
         }
 
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("select read dbInstance " + theNode.getName() + " for dbGroup:" + this.getGroupName());
         }
-        theNode.setReadCount();
+        theNode.incrementReadCount();
         return theNode;
     }
 
-    PhysicalDbInstance getRandomAliveReadNode() throws Exception {
+    PhysicalDbInstance getRandomAliveReadNode() {
         if (rwSplitMode == RW_SPLIT_OFF) {
             return null;
         } else {
@@ -273,7 +227,7 @@ public class PhysicalDbGroup {
         }
     }
 
-    boolean getReadCon(String schema, boolean autocommit, ResponseHandler handler, Object attachment) throws
+    boolean getReadCon(String schema, ResponseHandler handler, Object attachment) throws
             Exception {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("!readSources.isEmpty() " + (allSourceMap.values().size() > 1));
@@ -281,15 +235,17 @@ public class PhysicalDbGroup {
         if (allSourceMap.values().size() > 1) {
             PhysicalDbInstance theNode = getRandomAliveReadNode();
             if (theNode != null) {
-                theNode.setReadCount();
-                theNode.getConnection(schema, autocommit, handler, attachment, false);
+                theNode.incrementReadCount();
+                BackendConnection conn = theNode.getConnection(schema, theNode.getConfig().getConnectionTimeout());
+                conn.setAttachment(attachment);
+                handler.connectionAcquired(conn);
                 return true;
             } else {
                 LOGGER.info("read host is not available.");
                 return false;
             }
         } else {
-            LOGGER.info("read host is empty, readSources is empty.");
+            LOGGER.info("read host is empty, read dbInstance is empty.");
             return false;
         }
     }
@@ -298,7 +254,7 @@ public class PhysicalDbGroup {
         PhysicalDbInstance[] readSources = new PhysicalDbInstance[allSourceMap.size() - 1];
         int i = 0;
         for (PhysicalDbInstance source : allSourceMap.values()) {
-            if (source.getName().equals(writeSource.getName())) {
+            if (source.getName().equals(writeDbInstance.getName())) {
                 continue;
             }
             readSources[i++] = source;
@@ -306,87 +262,16 @@ public class PhysicalDbGroup {
         return readSources;
     }
 
-    private void setDbInstanceProps() {
-        for (PhysicalDbInstance ds : this.allSourceMap.values()) {
-            ds.setDbGroup(this);
-        }
-    }
-
-
-    private boolean initSource(PhysicalDbInstance ds) {
-        if (ds.getConfig().isDisabled() || ds.isFakeNode()) {
-            LOGGER.info(ds.getConfig().getInstanceName() + " is disabled or fakeNode, skipped");
-            return true;
-        }
-        int initSize = ds.getConfig().getMinCon();
-        if (initSize < this.schemas.length + 1) {
-            initSize = this.schemas.length + 1;
-            LOGGER.warn("minCon size is less than (the count of schema +1), so dble will create at least 1 conn for every schema and an empty schema conn, " +
-                    "minCon size before:{}, now:{}", ds.getConfig().getMinCon(), initSize);
-            ds.getConfig().setMinCon(initSize);
-        }
-
-        if (ds.getConfig().getMaxCon() < initSize) {
-            ds.getConfig().setMaxCon(initSize);
-            ds.setSize(initSize);
-            LOGGER.warn("maxCon is less than the initSize of dbInstance:" + initSize + " change the maxCon into " + initSize);
-        }
-
-        LOGGER.info("init backend mysql source ,create connections total " + initSize + " for " + ds.getName());
-
-        CopyOnWriteArrayList<BackendConnection> list = new CopyOnWriteArrayList<>();
-        GetConnectionHandler getConHandler = new GetConnectionHandler(list, initSize);
-        // long start = System.currentTimeMillis();
-        // long timeOut = start + 5000 * 1000L;
-        boolean hasConnectionInPool = false;
-        try {
-            if (ds.getTotalConCount() <= 0) {
-                ds.initMinConnection(null, true, getConHandler, null);
-            } else {
-                LOGGER.info("connection with null schema has been created,because we tested the connection of the dbInstance at first");
-                getConHandler.initIncrement();
-                hasConnectionInPool = true;
-            }
-        } catch (Exception e) {
-            LOGGER.warn("init connection with schema null error", e);
-        }
-
-        for (int i = 0; i < initSize - 1; i++) {
-            try {
-                ds.initMinConnection(this.schemas[i % schemas.length], true, getConHandler, null);
-            } catch (Exception e) {
-                LOGGER.warn(ds.getName() + " init connection error.", e);
-            }
-        }
-
-
-        long timeOut = System.currentTimeMillis() + 60 * 1000;
-
-        // waiting for finish
-        while (!getConHandler.finished() && (System.currentTimeMillis() < timeOut)) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                /*
-                 * hardly triggered no error is needed
-                 */
-                LOGGER.info("initError", e);
-            }
-        }
-        LOGGER.info("init result :" + getConHandler.getStatusInfo());
-        return !list.isEmpty() || hasConnectionInPool;
-    }
-
     private ArrayList<PhysicalDbInstance> getAllActiveRWSources(boolean includeWriteNode, boolean filterWithDelayThreshold) {
         ArrayList<PhysicalDbInstance> okSources = new ArrayList<>(allSourceMap.values().size());
-        if (writeSource.isAlive() && includeWriteNode) {
-            okSources.add(writeSource);
+        if (writeDbInstance.isAlive() && includeWriteNode) {
+            okSources.add(writeDbInstance);
         }
         for (PhysicalDbInstance ds : allSourceMap.values()) {
-            if (ds == writeSource) {
+            if (ds == writeDbInstance) {
                 continue;
             }
-            if (ds.isAlive() && (!filterWithDelayThreshold || canSelectAsReadNode(ds))) {
+            if (ds.isAlive() && (!filterWithDelayThreshold || ds.canSelectAsReadNode())) {
                 okSources.add(ds);
             }
         }
@@ -401,21 +286,11 @@ public class PhysicalDbGroup {
         lock.readLock().lock();
         adjustLock.writeLock().lock();
         try {
-
             HaConfigManager.getInstance().updateDbGroupConf(createDisableSnapshot(this, nameList), syncWriteConf);
-
             for (String dsName : nameList) {
-                PhysicalDbInstance dbInstance = allSourceMap.get(dsName);
-                if (dbInstance.setDisabled(true)) {
-                    //clear old resource
-                    dbInstance.clearCons("ha command disable dbInstance");
-                    dbInstance.stopHeartbeat();
-                }
+                allSourceMap.get(dsName).disable("ha command disable dbInstance");
             }
             return this.getClusterHaJson();
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
         } finally {
             lock.readLock().unlock();
             adjustLock.writeLock().unlock();
@@ -442,15 +317,9 @@ public class PhysicalDbGroup {
             HaConfigManager.getInstance().updateDbGroupConf(createEnableSnapshot(this, nameList), syncWriteConf);
 
             for (String dsName : nameList) {
-                PhysicalDbInstance dbInstance = allSourceMap.get(dsName);
-                if (dbInstance.setDisabled(false)) {
-                    dbInstance.startHeartbeat();
-                }
+                allSourceMap.get(dsName).enable();
             }
             return this.getClusterHaJson();
-        } catch (Exception e) {
-            LOGGER.warn("enableHosts Exception ", e);
-            throw e;
         } finally {
             lock.readLock().unlock();
             adjustLock.writeLock().unlock();
@@ -474,9 +343,9 @@ public class PhysicalDbGroup {
             HaConfigManager.getInstance().updateDbGroupConf(createSwitchSnapshot(writeHost), syncWriteConf);
 
             PhysicalDbInstance newWriteHost = allSourceMap.get(writeHost);
-            writeSource.setReadInstance(true);
+            writeDbInstance.setReadInstance(true);
             //close all old master connection ,so that new write query would not put into the old writeHost
-            writeSource.clearCons("ha command switch dbInstance");
+            writeDbInstance.closeAllConnection("ha command switch dbInstance");
             if (!newWriteHost.isDisabled()) {
                 GetAndSyncDbInstanceKeyVariables task = new GetAndSyncDbInstanceKeyVariables(newWriteHost, true);
                 KeyVariables variables = task.call();
@@ -488,7 +357,7 @@ public class PhysicalDbGroup {
                 }
             }
             newWriteHost.setReadInstance(false);
-            writeSource = newWriteHost;
+            writeDbInstance = newWriteHost;
             return this.getClusterHaJson();
         } catch (Exception e) {
             LOGGER.warn("switchMaster Exception ", e);
@@ -502,9 +371,9 @@ public class PhysicalDbGroup {
     private PhysicalDbGroup createSwitchSnapshot(String writeHost) {
         PhysicalDbGroup snapshot = new PhysicalDbGroup(this);
         PhysicalDbInstance newWriteHost = snapshot.allSourceMap.get(writeHost);
-        snapshot.writeSource.setReadInstance(true);
+        snapshot.writeDbInstance.setReadInstance(true);
         newWriteHost.setReadInstance(false);
-        snapshot.writeSource = newWriteHost;
+        snapshot.writeDbInstance = newWriteHost;
         return snapshot;
     }
 
@@ -520,24 +389,20 @@ public class PhysicalDbGroup {
             }.getType();
             List<DbInstanceStatus> list = base.toBeanformJson(jsonObj.get(JSON_LIST).toString(), parseType);
             for (DbInstanceStatus status : list) {
-                PhysicalDbInstance phys = allSourceMap.get(status.getName());
-                if (phys != null) {
-                    if (phys.setDisabled(status.isDisable())) {
-                        if (status.isDisable()) {
-                            //clear old resource
-                            phys.clearCons("ha command disable dbInstance");
-                            phys.stopHeartbeat();
-                        } else {
-                            //change dbInstance from disable to enable ,start heartbeat
-                            phys.startHeartbeat();
-                        }
+                PhysicalDbInstance dbInstance = allSourceMap.get(status.getName());
+                if (dbInstance != null) {
+                    if (status.isDisable()) {
+                        //clear old resource
+                        dbInstance.disable("ha command disable dbInstance");
+                    } else {
+                        //change dbInstance from disable to enable ,start heartbeat
+                        dbInstance.enable();
                     }
-                    if (status.isPrimary() &&
-                            phys != writeSource) {
-                        writeSource.setReadInstance(true);
-                        writeSource.clearCons("ha command switch dbInstance");
-                        phys.setReadInstance(false);
-                        writeSource = phys;
+                    if (status.isPrimary() && dbInstance != writeDbInstance) {
+                        writeDbInstance.setReadInstance(true);
+                        writeDbInstance.closeAllConnection("ha command switch dbInstance");
+                        dbInstance.setReadInstance(false);
+                        writeDbInstance = dbInstance;
                     }
                 } else {
                     LOGGER.warn("Can match dbInstance " + status.getName() + ".Check for the config file please");
@@ -591,7 +456,7 @@ public class PhysicalDbGroup {
     public PhysicalDbInstance randomSelect(ArrayList<PhysicalDbInstance> okSources, boolean useWriteWhenEmpty) {
         if (okSources.isEmpty()) {
             if (useWriteWhenEmpty) {
-                return this.getWriteSource();
+                return writeDbInstance;
             } else {
                 return null;
             }
@@ -621,27 +486,14 @@ public class PhysicalDbGroup {
         }
     }
 
-
     private boolean checkSlaveSynStatus() {
         return (dbGroupConfig.getDelayThreshold() != -1) &&
                 (dbGroupConfig.isShowSlaveSql());
     }
 
-    private boolean canSelectAsReadNode(PhysicalDbInstance theSource) {
-        Integer slaveBehindMaster = theSource.getHeartbeat().getSlaveBehindMaster();
-        int dbSynStatus = theSource.getHeartbeat().getDbSynStatus();
-        if (slaveBehindMaster == null || dbSynStatus == MySQLHeartbeat.DB_SYN_ERROR) {
-            return false;
-        }
-        boolean isSync = dbSynStatus == MySQLHeartbeat.DB_SYN_NORMAL;
-        boolean isNotDelay = slaveBehindMaster < this.dbGroupConfig.getDelayThreshold();
-        return isSync && isNotDelay;
-    }
-
-
     boolean equalsBaseInfo(PhysicalDbGroup pool) {
         return pool.getDbGroupConfig().getName().equals(this.dbGroupConfig.getName()) &&
-                pool.getDbGroupConfig().getHearbeatSQL().equals(this.dbGroupConfig.getHearbeatSQL()) &&
+                pool.getDbGroupConfig().getHeartbeatSQL().equals(this.dbGroupConfig.getHeartbeatSQL()) &&
                 pool.getDbGroupConfig().getHeartbeatTimeout() == this.dbGroupConfig.getHeartbeatTimeout() &&
                 pool.getDbGroupConfig().getErrorRetryCount() == this.dbGroupConfig.getErrorRetryCount() &&
                 pool.getDbGroupConfig().getRwSplitMode() == this.dbGroupConfig.getRwSplitMode() &&

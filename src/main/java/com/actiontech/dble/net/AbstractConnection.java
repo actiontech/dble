@@ -178,6 +178,7 @@ public abstract class AbstractConnection implements NIOConnection {
         this.id = id;
     }
 
+    @Override
     public boolean isIdleTimeout() {
         return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime, lastReadTime) + idleTimeout;
     }
@@ -551,6 +552,7 @@ public abstract class AbstractConnection implements NIOConnection {
             if (processor != null) {
                 processor.removeConnection(this);
             }
+
             this.cleanup();
             isSupportCompress = false;
 

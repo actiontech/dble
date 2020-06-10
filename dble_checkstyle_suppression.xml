@@ -16,6 +16,7 @@
     <suppress checks=".*" files="AlertBlockQueue.java"/>
     <suppress checks=".*" files="UshardInterface.java"/>
     <suppress checks=".*" files="DbleClusterGrpc.java"/>
+    <suppress checks=".*" files="EvictionTimer.java"/>
     <suppress checks="Indentation" files="MyTime.java"/>
     <suppress checks="CyclomaticComplexity" files="MyTime.java"/>
     <suppress checks="CyclomaticComplexity" files="TimSort.java"/>

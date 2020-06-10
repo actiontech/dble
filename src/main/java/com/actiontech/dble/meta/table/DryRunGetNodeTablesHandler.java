@@ -43,7 +43,7 @@ public class DryRunGetNodeTablesHandler extends GetNodeTablesHandler {
     public void execute() {
         String mysqlShowTableCol = "Tables_in_" + phyShardingNode.getDatabase();
         String[] mysqlShowTableCols = new String[]{mysqlShowTableCol};
-        PhysicalDbInstance tds = phyShardingNode.getDbGroup().getWriteSource();
+        PhysicalDbInstance tds = phyShardingNode.getDbGroup().getWriteDbInstance();
         PhysicalDbInstance ds = null;
         if (tds != null) {
             if (tds.isTestConnSuccess()) {

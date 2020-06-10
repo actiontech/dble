@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.config;
 
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
@@ -80,22 +80,21 @@ public class ConfigInitializer implements ProblemReporter {
     private void checkWriteHost() {
         if (this.dbGroups.isEmpty()) {
             return;
-        } else {
-            //Mark all dbInstance whether they are fake or not
-            for (PhysicalDbGroup dbGroup : this.dbGroups.values()) {
-                for (PhysicalDbInstance source : dbGroup.getAllDbInstances()) {
-                    if (checkSourceFake(source)) {
-                        source.setFakeNode(true);
-                    } else if (!source.isDisabled()) {
-                        this.fullyConfigured = true;
-                    }
+        }
+        //Mark all dbInstance whether they are fake or not
+        for (PhysicalDbGroup dbGroup : this.dbGroups.values()) {
+            for (PhysicalDbInstance source : dbGroup.getAllDbInstances()) {
+                if (checkSourceFake(source)) {
+                    source.setFakeNode(true);
+                } else if (!source.isDisabled()) {
+                    this.fullyConfigured = true;
                 }
             }
-            // if there are dbGroups exists. no empty shardingNodes allowed
-            for (ShardingNode shardingNode : this.shardingNodes.values()) {
-                if (shardingNode.getDbGroup() == null) {
-                    throw new ConfigException("dbGroup not exists " + shardingNode.getDbGroupName());
-                }
+        }
+        // if there are dbGroups exists. no empty shardingNodes allowed
+        for (ShardingNode shardingNode : this.shardingNodes.values()) {
+            if (shardingNode.getDbGroup() == null) {
+                throw new ConfigException("dbGroup not exists " + shardingNode.getDbGroupName());
             }
         }
     }
@@ -219,12 +218,12 @@ public class ConfigInitializer implements ProblemReporter {
             }
         }
         for (PhysicalDbInstance dbInstance : pool.getAllDbInstances()) {
-            if (dbInstance.getConfig().getMaxCon() < Math.max(schemasCount + 1, dbInstance.getConfig().getMinCon())) {
+            if (dbInstance.getConfig().getMaxTotal() < Math.max(schemasCount + 1, dbInstance.getConfig().getMinIdle())) {
                 errorInfos.add(new ErrorInfo("Xml", "NOTICE", "dbGroup[" + pool.getGroupName() + "." + dbInstance.getConfig().getInstanceName() + "] maxCon too little,would be change to " +
-                        Math.max(schemasCount + 1, dbInstance.getConfig().getMinCon())));
+                        Math.max(schemasCount + 1, dbInstance.getConfig().getMinIdle())));
             }
 
-            if (Math.max(schemasCount + 1, dbInstance.getConfig().getMinCon()) != dbInstance.getConfig().getMinCon()) {
+            if (Math.max(schemasCount + 1, dbInstance.getConfig().getMinIdle()) != dbInstance.getConfig().getMinIdle()) {
                 errorInfos.add(new ErrorInfo("Xml", "NOTICE", "dbGroup[" + pool.getGroupName() + "] minCon too little, Dble would init dbGroup" +
                         " with " + (schemasCount + 1) + " connections"));
             }
@@ -233,7 +232,7 @@ public class ConfigInitializer implements ProblemReporter {
 
     private void testDbInstance(Set<String> errNodeKeys, Set<String> errSourceKeys, BoolPtr isConnectivity,
                                 BoolPtr isAllDbInstanceConnected, List<Pair<String, String>> nodeList, PhysicalDbGroup pool, PhysicalDbInstance ds) {
-        boolean isMaster = ds == pool.getWriteSource();
+        boolean isMaster = ds == pool.getWriteDbInstance();
         String dbInstanceName = "dbInstance[" + ds.getDbGroupConfig().getName() + "." + ds.getName() + "]";
         try {
             BoolPtr isDSConnectedPtr = new BoolPtr(false);
@@ -315,8 +314,6 @@ public class ConfigInitializer implements ProblemReporter {
     public Map<ERTable, Set<ERTable>> getErRelations() {
         return erRelations;
     }
-
-
 
     private Map<String, ShardingNode> initShardingNodes(Map<String, ShardingNodeConfig> nodeConf) {
         Map<String, ShardingNode> nodes = new HashMap<>(nodeConf.size());

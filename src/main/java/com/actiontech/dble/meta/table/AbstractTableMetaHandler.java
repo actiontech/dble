@@ -57,7 +57,7 @@ public abstract class AbstractTableMetaHandler {
                 return;
             }
             ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(shardingNode);
-            PhysicalDbInstance ds = dn.getDbGroup().getWriteSource();
+            PhysicalDbInstance ds = dn.getDbGroup().getWriteDbInstance();
             String sql = SQL_PREFIX + "`" + tableName + "`";
             if (ds.isAlive()) {
                 OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(MYSQL_SHOW_CREATE_TABLE_COLS, new MySQLTableStructureListener(shardingNode, System.currentTimeMillis(), ds));

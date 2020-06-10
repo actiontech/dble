@@ -34,7 +34,7 @@ public class OneTimeConnJob extends SQLJob {
 
     public void run() {
         try {
-            ds.getNewConnection(schema, this, null, false, true);
+            ds.createConnectionSkipPool(schema, this);
         } catch (Exception e) {
             this.connectionError(e, null);
         }

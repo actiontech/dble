@@ -1,14 +1,14 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
-import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.ServerConfig;
@@ -28,7 +28,7 @@ public final class ShowDbInstance {
     private ShowDbInstance() {
     }
 
-    private static final int FIELD_COUNT = 12;
+    private static final int FIELD_COUNT = 11;
     private static final ResultSetHeaderPacket HEADER = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] FIELDS = new FieldPacket[FIELD_COUNT];
     private static final EOFPacket EOF = new EOFPacket();
@@ -60,9 +60,6 @@ public final class ShowDbInstance {
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("SIZE", Fields.FIELD_TYPE_LONG);
-        FIELDS[i++].setPacketId(++packetId);
-
-        FIELDS[i] = PacketUtil.getField("EXECUTE", Fields.FIELD_TYPE_LONGLONG);
         FIELDS[i++].setPacketId(++packetId);
 
         FIELDS[i] = PacketUtil.getField("READ_LOAD", Fields.FIELD_TYPE_LONG);
@@ -127,18 +124,16 @@ public final class ShowDbInstance {
     private static RowDataPacket getRow(String dbGroup, PhysicalDbInstance ds,
                                         String charset) {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-        int idleCount = ds.getIdleCount();
         row.add(StringUtil.encode(dbGroup, charset));
         row.add(StringUtil.encode(ds.getName(), charset));
         row.add(StringUtil.encode(ds.getConfig().getIp(), charset));
         row.add(IntegerUtil.toBytes(ds.getConfig().getPort()));
         row.add(StringUtil.encode(ds.isReadInstance() ? "R" : "W", charset));
-        row.add(IntegerUtil.toBytes(ds.getTotalConCount() - idleCount));
-        row.add(IntegerUtil.toBytes(idleCount));
-        row.add(IntegerUtil.toBytes(ds.getSize()));
-        row.add(LongUtil.toBytes(ds.getExecuteCount()));
-        row.add(LongUtil.toBytes(ds.getReadCount()));
-        row.add(LongUtil.toBytes(ds.getWriteCount()));
+        row.add(IntegerUtil.toBytes(ds.getActiveConnections()));
+        row.add(IntegerUtil.toBytes(ds.getIdleConnections()));
+        row.add(LongUtil.toBytes(ds.getTotalConnections()));
+        row.add(LongUtil.toBytes(ds.getCount(true)));
+        row.add(LongUtil.toBytes(ds.getCount(false)));
         row.add(StringUtil.encode(ds.isDisabled() ? "true" : "false", charset));
         return row;
     }

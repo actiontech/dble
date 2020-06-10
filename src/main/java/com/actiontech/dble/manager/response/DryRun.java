@@ -124,8 +124,8 @@ public final class DryRun {
             }
         }
 
-        if (handler.getUsedDataource() != null) {
-            handler.getUsedDataource().clearCons("dry run end");
+        if (handler.getUsedDbInstance() != null) {
+            handler.getUsedDbInstance().closeAllConnection("dry run end");
         }
 
         userCheck(list, serverConfig);

@@ -6,17 +6,10 @@
 package com.actiontech.dble.backend.mysql.nio.handler;
 
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.net.mysql.FieldPacket;
-import com.actiontech.dble.net.mysql.PingPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * heartbeat check for mysql connections
@@ -24,33 +17,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author wuzhih
  */
 public class ConnectionHeartBeatHandler implements ResponseHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionHeartBeatHandler.class);
-
-    protected final ReentrantLock lock = new ReentrantLock();
-    final Condition condition = lock.newCondition();
-
-
-    public void doHeartBeat(BackendConnection conn) {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("do heartbeat for con " + conn);
-        }
-        lock.lock();
-        try {
-            conn.setResponseHandler(this);
-            MySQLConnection mCon = (MySQLConnection) conn;
-            mCon.write(mCon.writeToBuffer(PingPacket.PING, mCon.allocate()));
-            long validateTime = 2;
-            if (!condition.await(validateTime, TimeUnit.SECONDS)) {
-                //if the thread be waked up by timer than close the connection
-                conn.close("heartbeat timeout ");
-            }
-        } catch (Exception e) {
-            executeException(conn, e);
-        } finally {
-            lock.unlock();
-        }
-    }
-
 
     /**
      * if the query returns ok than just release the connection
@@ -61,13 +27,7 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
      */
     @Override
     public void okResponse(byte[] ok, BackendConnection conn) {
-        lock.lock();
-        try {
-            condition.signal();
-            conn.release();
-        } finally {
-            lock.unlock();
-        }
+        conn.pong();
     }
 
     /**
@@ -79,30 +39,6 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
      */
     @Override
     public void errorResponse(byte[] data, BackendConnection conn) {
-        lock.lock();
-        try {
-            condition.signal();
-            conn.close("heatbeat return error");
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    /**
-     * if the heartbeat throws the Exception than close the connection
-     *
-     * @param c
-     * @param e
-     */
-    private void executeException(BackendConnection c, Throwable e) {
-        lock.lock();
-        try {
-            condition.signal();
-            c.close("heatbeat exception:" + e);
-            LOGGER.info("executeException   ", e);
-        } finally {
-            lock.unlock();
-        }
     }
 
     /**
@@ -114,13 +50,7 @@ public class ConnectionHeartBeatHandler implements ResponseHandler {
      */
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
-        lock.lock();
-        try {
-            condition.signal();
-            LOGGER.info("connection closed " + conn + " reason:" + reason);
-        } finally {
-            lock.unlock();
-        }
+
     }
 
     /**

@@ -41,7 +41,7 @@ public class ShowProcesslistHandler {
     public void execute() {
         String sbSql = SQL.replace("{0}", StringUtils.join(threadIds, ','));
         ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(shardingNode);
-        PhysicalDbInstance ds = dn.getDbGroup().getWriteSource();
+        PhysicalDbInstance ds = dn.getDbGroup().getWriteDbInstance();
         if (ds.isAlive()) {
             MultiRowSQLQueryResultHandler resultHandler = new MultiRowSQLQueryResultHandler(MYSQL_SHOW_PROCESSLIST_COLS, new MySQLShowProcesslistListener());
             SQLJob sqlJob = new SQLJob(sbSql, dn.getDatabase(), resultHandler, ds);

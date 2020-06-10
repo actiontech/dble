@@ -19,14 +19,8 @@ public class PhysicalDbGroupDiff {
     public static final String CHANGE_TYPE_NO = "NO_CHANGE";
 
     private String changeType = null;
-
-    private PhysicalDbGroup orgPool = null;
-
-    private PhysicalDbGroup newPool = null;
-
-
-    //private Set<BaseInfoDiff> baseDiff = null;
-
+    private PhysicalDbGroup orgPool;
+    private PhysicalDbGroup newPool;
 
     public PhysicalDbGroupDiff(PhysicalDbGroup newPool, PhysicalDbGroup orgPool) {
         this.orgPool = orgPool;
@@ -49,15 +43,14 @@ public class PhysicalDbGroupDiff {
         }
     }
 
-
     private Set<PhysicalDbInstanceDiff> createHostChangeSet(PhysicalDbGroup newDbGroup, PhysicalDbGroup orgDbGroup) {
         Set<PhysicalDbInstanceDiff> hostDiff = new HashSet<>();
 
         //add or not change
-        PhysicalDbInstance newWriteHost = newDbGroup.getWriteSource();
+        PhysicalDbInstance newWriteHost = newDbGroup.getWriteDbInstance();
         PhysicalDbInstance[] newReadHost = newDbGroup.getReadSources();
 
-        PhysicalDbInstance oldHost = orgDbGroup.getWriteSource();
+        PhysicalDbInstance oldHost = orgDbGroup.getWriteDbInstance();
         PhysicalDbInstance[] oldRHost = orgDbGroup.getReadSources();
 
         boolean sameFlag = false;
@@ -78,7 +71,6 @@ public class PhysicalDbGroupDiff {
         return hostDiff;
     }
 
-
     private boolean calculateForDbInstances(PhysicalDbInstance[] olds, PhysicalDbInstance[] news) {
         if (olds != null) {
             for (int k = 0; k < olds.length; k++) {
@@ -91,7 +83,6 @@ public class PhysicalDbGroupDiff {
         }
         return true;
     }
-
 
     public String getChangeType() {
         return changeType;

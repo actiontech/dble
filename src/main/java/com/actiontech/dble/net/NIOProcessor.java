@@ -9,6 +9,7 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.stage.XAStage;
 import com.actiontech.dble.backend.mysql.xa.TxState;
+import com.actiontech.dble.backend.pool.PooledEntry;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.server.ServerConnection;
@@ -193,7 +194,7 @@ public final class NIOProcessor {
                 }
             }
             // close the conn which executeTimeOut
-            if (!c.isDDL() && c.isBorrowed() && c.isExecuting() && c.getLastTime() < TimeUtil.currentTimeMillis() - sqlTimeout) {
+            if (!c.isDDL() && c.getState() == PooledEntry.STATE_IN_USE && c.isExecuting() && c.getLastTime() < TimeUtil.currentTimeMillis() - sqlTimeout) {
                 LOGGER.info("found backend connection SQL timeout ,close it " + c);
                 c.close("sql timeout");
             }
@@ -206,7 +207,6 @@ public final class NIOProcessor {
                 if (c instanceof AbstractConnection) {
                     checkConSendQueue((AbstractConnection) c);
                 }
-                c.idleCheck();
             }
         }
     }

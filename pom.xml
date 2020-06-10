@@ -23,7 +23,7 @@
         <project.build.sourceEncoding>
             UTF-8
         </project.build.sourceEncoding>
-        <grpc.version>1.4.0</grpc.version><!-- CURRENT_GRPC_VERSION -->
+        <grpc.version>1.5.0</grpc.version><!-- CURRENT_GRPC_VERSION -->
     </properties>
     <repositories>
         <repository>

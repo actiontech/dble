@@ -140,7 +140,7 @@ public final class ShowTableShardingNode {
         int sequence = 0;
         for (String shardingNode : shardingNodes) {
             ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(shardingNode);
-            DbInstanceConfig dbConfig = dn.getDbGroup().getWriteSource().getConfig();
+            DbInstanceConfig dbConfig = dn.getDbGroup().getWriteDbInstance().getConfig();
             RowDataPacket row = new RowDataPacket(FIELD_COUNT);
             row.add(StringUtil.encode(dn.getName(), charset));
             row.add(LongUtil.toBytes(sequence));

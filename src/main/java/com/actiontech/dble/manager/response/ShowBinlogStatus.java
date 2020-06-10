@@ -347,7 +347,7 @@ public final class ShowBinlogStatus {
         rows = new CopyOnWriteArrayList<>();
         for (PhysicalDbGroup pool : allPools) {
             //if WRITE_RANDOM_NODE ,may the binlog is not ready.
-            final PhysicalDbInstance source = pool.getWriteSource();
+            final PhysicalDbInstance source = pool.getWriteDbInstance();
             OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(FIELDS,
                     new SQLQueryResultListener<SQLQueryResult<Map<String, String>>>() {
                         @Override

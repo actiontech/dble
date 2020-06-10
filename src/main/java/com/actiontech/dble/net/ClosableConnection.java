@@ -17,7 +17,7 @@ public interface ClosableConnection {
 
     boolean isClosed();
 
-    void idleCheck();
+    boolean isIdleTimeout();
 
     long getStartupTime();
 

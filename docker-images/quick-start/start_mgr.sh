@@ -26,14 +26,6 @@ mysql -h$S -p3306 -uroot -p123456 \
 done
 
 
-echo "View the two groups of MGR as follows:"
-for M in ${ip_master_arr[@]}
-do
-    mysql -h$M -p3306 -uroot -p123456 \
-      -e "SHOW STATUS LIKE 'group_replication_primary_member';" \
-      -e "SELECT * FROM performance_schema.replication_group_members;"
-done
-
 
 
 

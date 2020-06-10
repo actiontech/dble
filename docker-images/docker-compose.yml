@@ -206,7 +206,7 @@ services:
           "--loose-group-replication-single-primary-mode=ON",
           "--loose-group-replication-enforce-update-everywhere-checks=OFF"]
   dble-server:
-        image: mgr-dble-server:v1
+        image: actiontech/dble:latest
         container_name: dble-server
         hostname: dble-server
         privileged: true

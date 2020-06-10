@@ -28,7 +28,7 @@
         <!ATTLIST schema sqlMaxLimit NMTOKEN #IMPLIED>
 
         <!ELEMENT shardingTable (childTable*)>
-        <!ATTLIST shardingTable name NMTOKEN #REQUIRED>
+        <!ATTLIST shardingTable name CDATA #REQUIRED>
         <!ATTLIST shardingTable shardingNode CDATA #REQUIRED>
         <!ATTLIST shardingTable shardingColumn NMTOKEN #REQUIRED>
         <!ATTLIST shardingTable function NMTOKEN #REQUIRED>
@@ -37,14 +37,14 @@
         <!ATTLIST shardingTable sqlMaxLimit NMTOKEN #IMPLIED>
 
         <!ELEMENT globalTable  EMPTY>
-        <!ATTLIST globalTable name NMTOKEN #REQUIRED>
+        <!ATTLIST globalTable name CDATA #REQUIRED>
         <!ATTLIST globalTable shardingNode CDATA #REQUIRED>
         <!ATTLIST globalTable sqlMaxLimit NMTOKEN #IMPLIED>
         <!ATTLIST globalTable checkClass NMTOKEN #IMPLIED>
         <!ATTLIST globalTable cron CDATA #IMPLIED>
 
         <!ELEMENT singleTable EMPTY>
-        <!ATTLIST singleTable name NMTOKEN #REQUIRED>
+        <!ATTLIST singleTable name CDATA #REQUIRED>
         <!ATTLIST singleTable shardingNode CDATA #REQUIRED>
         <!ATTLIST singleTable sqlMaxLimit NMTOKEN #IMPLIED>
 

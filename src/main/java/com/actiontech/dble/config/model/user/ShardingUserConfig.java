@@ -15,8 +15,8 @@ public class ShardingUserConfig extends ServerUserConfig {
     private Set<String> schemas;
     private UserPrivilegesConfig privilegesConfig;
 
-    public ShardingUserConfig(String name, String password, String strWhiteIPs, int maxCon) {
-        super(name, password, strWhiteIPs, maxCon);
+    public ShardingUserConfig(String name, String password, String strWhiteIPs, String strMaxCon) {
+        super(name, password, strWhiteIPs, strMaxCon);
     }
 
 

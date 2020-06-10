@@ -90,7 +90,7 @@ public class XMLUserLoader {
             if (node instanceof Element) {
                 Element element = (Element) node;
                 String[] baseInfo = getBaseUserInfo(element, xmlFile);
-                ManagerUserConfig managerUser = new ManagerUserConfig(baseInfo[0], baseInfo[1], baseInfo[2]);
+                ManagerUserConfig managerUser = new ManagerUserConfig(baseInfo[0], baseInfo[1], baseInfo[2], baseInfo[3]);
                 String userName = managerUser.getName();
                 Pair<String, String> user = new Pair<>(userName, "");
                 if (users.containsKey(user)) {
@@ -115,7 +115,7 @@ public class XMLUserLoader {
             if (node instanceof Element) {
                 Element element = (Element) node;
                 String[] baseInfo = getBaseUserInfo(element, xmlFile);
-                ShardingUserConfig shardingUser = new ShardingUserConfig(baseInfo[0], baseInfo[1], baseInfo[2]);
+                ShardingUserConfig shardingUser = new ShardingUserConfig(baseInfo[0], baseInfo[1], baseInfo[2], baseInfo[3]);
                 String userName = shardingUser.getName();
                 String tenant = element.getAttribute("tenant");
                 Pair<String, String> user = new Pair<>(userName, tenant);
@@ -137,16 +137,6 @@ public class XMLUserLoader {
                 }
                 String[] strArray = SplitUtil.split(schemas, ',', true);
                 shardingUser.setSchemas(new HashSet<>(Arrays.asList(strArray)));
-
-                int maxCon = -1;
-                String strMaxCon = element.getAttribute("maxCon");
-                if (!StringUtil.isEmpty(strMaxCon)) {
-                    maxCon = Integer.parseInt(strMaxCon);
-                    if (maxCon < 0) {
-                        maxCon = -1;
-                    }
-                }
-                shardingUser.setMaxCon(maxCon);
 
                 String blacklist = element.getAttribute("blacklist");
                 if (!StringUtil.isEmpty(blacklist)) {
@@ -171,7 +161,7 @@ public class XMLUserLoader {
             if (node instanceof Element) {
                 Element element = (Element) node;
                 String[] baseInfo = getBaseUserInfo(element, xmlFile);
-                RwSplitUserConfig rwSplitUser = new RwSplitUserConfig(baseInfo[0], baseInfo[1], baseInfo[2]);
+                RwSplitUserConfig rwSplitUser = new RwSplitUserConfig(baseInfo[0], baseInfo[1], baseInfo[2], baseInfo[3]);
                 String userName = rwSplitUser.getName();
                 String tenant = element.getAttribute("tenant");
                 Pair<String, String> user = new Pair<>(userName, tenant);
@@ -185,16 +175,6 @@ public class XMLUserLoader {
                     throw new ConfigException("User[name:" + userName + ",tenant:" + tenant + "]'s dbGroup is empty");
                 }
                 rwSplitUser.setDbGroup(dbGroup);
-
-                int maxCon = -1;
-                String strMaxCon = element.getAttribute("maxCon");
-                if (!StringUtil.isEmpty(strMaxCon)) {
-                    maxCon = Integer.parseInt(strMaxCon);
-                    if (maxCon < 0) {
-                        maxCon = -1;
-                    }
-                }
-                rwSplitUser.setMaxCon(maxCon);
 
                 String blacklist = element.getAttribute("blacklist");
                 if (!StringUtil.isEmpty(blacklist)) {
@@ -258,7 +238,8 @@ public class XMLUserLoader {
         }
 
         String strWhiteIPs = element.getAttribute("whiteIPs");
-        return new String[]{name, password, strWhiteIPs};
+        String strMaxCon = element.getAttribute("maxCon");
+        return new String[]{name, password, strWhiteIPs, strMaxCon};
     }
 
     private void checkVersion(Element root) {

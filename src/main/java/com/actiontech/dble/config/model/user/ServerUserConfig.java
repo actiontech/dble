@@ -11,8 +11,8 @@ public class ServerUserConfig extends UserConfig {
     private String tenant;
     private WallProvider blacklist;
 
-    public ServerUserConfig(String name, String password, String strWhiteIPs, int maxCon) {
-        super(name, password, strWhiteIPs, maxCon);
+    public ServerUserConfig(String name, String password, String strWhiteIPs, String strMaxCon) {
+        super(name, password, strWhiteIPs, strMaxCon);
     }
 
     public String getTenant() {

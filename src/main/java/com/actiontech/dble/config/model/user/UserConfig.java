@@ -15,11 +15,13 @@ public class UserConfig {
     protected final String name;
     protected final String password;
     protected final Set<String> whiteIPs;
+    protected int maxCon;
 
-    public UserConfig(String name, String password, String strWhiteIPs) {
+    public UserConfig(String name, String password, String strWhiteIPs, int maxCon) {
         this.name = name;
         this.password = password;
         this.whiteIPs = genWhiteIPs(strWhiteIPs);
+        this.maxCon = maxCon;
     }
 
     private Set<String> genWhiteIPs(String strWhiteIPs) {
@@ -45,4 +47,12 @@ public class UserConfig {
         return whiteIPs;
     }
 
+
+    public int getMaxCon() {
+        return maxCon;
+    }
+
+    public void setMaxCon(int maxCon) {
+        this.maxCon = maxCon;
+    }
 }

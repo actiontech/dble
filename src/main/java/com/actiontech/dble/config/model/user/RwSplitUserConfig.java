@@ -8,8 +8,8 @@ package com.actiontech.dble.config.model.user;
 public class RwSplitUserConfig extends ServerUserConfig {
     private String dbGroup;
 
-    public RwSplitUserConfig(String name, String password, String strWhiteIPs) {
-        super(name, password, strWhiteIPs);
+    public RwSplitUserConfig(String name, String password, String strWhiteIPs, int maxCon) {
+        super(name, password, strWhiteIPs, maxCon);
     }
 
     public String getDbGroup() {

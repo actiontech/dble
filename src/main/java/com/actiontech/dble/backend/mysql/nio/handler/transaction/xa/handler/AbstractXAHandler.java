@@ -40,6 +40,9 @@ public abstract class AbstractXAHandler extends MultiNodeHandler {
 
     protected void changeStageTo(XAStage newStage) {
         if (newStage != null) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("xa stage will change to {}", newStage.getStage());
+            }
             this.reset();
             this.currentStage = newStage;
             this.currentStage.onEnterStage();

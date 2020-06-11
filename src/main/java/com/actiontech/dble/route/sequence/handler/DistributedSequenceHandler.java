@@ -70,7 +70,7 @@ public class DistributedSequenceHandler implements Closeable, SequenceHandler {
         }
         long maxInstanceId = ~(-1L << instanceIdBits);
         if (instanceId > maxInstanceId || instanceId < 0) {
-            throw new IllegalArgumentException(String.format("instance Id can't be greater than %d or less than 0", maxInstanceId));
+            throw new IllegalArgumentException(String.format("instanceId can't be greater than %d or less than 0", maxInstanceId));
         }
 
         try {

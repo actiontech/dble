@@ -2,6 +2,7 @@
 
 echo "dble init&start in docker"
 
+sh /opt/dble/bin/start_mgr.sh
 sh /opt/dble/bin/dble start
 sh /opt/dble/bin/wait-for-it.sh 127.0.0.1:8066
 mysql -P9066 -u man1 -h 127.0.0.1 -p654321 -e "create database @@shardingNode ='dn1,dn2,dn3,dn4,dn5,dn6'"

@@ -137,7 +137,7 @@ public final class XAStateLog {
                             logs.add(log);
                         }
                     }
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     LOGGER.warn("logCollection deep copy error, leader Xid is:" + xaTxId, e);
                     logs.clear();
                 } finally {

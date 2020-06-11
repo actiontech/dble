@@ -6,6 +6,7 @@
 package com.actiontech.dble.config.model.user;
 
 import com.actiontech.dble.util.SplitUtil;
+import com.actiontech.dble.util.StringUtil;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -15,11 +16,21 @@ public class UserConfig {
     protected final String name;
     protected final String password;
     protected final Set<String> whiteIPs;
+    protected int maxCon;
 
-    public UserConfig(String name, String password, String strWhiteIPs) {
+    public UserConfig(String name, String password, String strWhiteIPs, String strMaxCon) {
         this.name = name;
         this.password = password;
         this.whiteIPs = genWhiteIPs(strWhiteIPs);
+
+        int maxConn = -1;
+        if (!StringUtil.isEmpty(strMaxCon)) {
+            maxConn = Integer.parseInt(strMaxCon);
+            if (maxConn < 0) {
+                maxConn = -1;
+            }
+        }
+        this.maxCon = maxConn;
     }
 
     private Set<String> genWhiteIPs(String strWhiteIPs) {
@@ -45,4 +56,8 @@ public class UserConfig {
         return whiteIPs;
     }
 
+
+    public int getMaxCon() {
+        return maxCon;
+    }
 }

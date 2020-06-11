@@ -9,7 +9,6 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.SecurityUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.user.ManagerUserConfig;
-import com.actiontech.dble.config.model.user.ServerUserConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.net.FrontendConnection;
@@ -66,10 +65,7 @@ public final class AuthUtil {
         }
 
         //check maxconnection
-        int userLimit = -1;
-        if (!(userConfig instanceof ManagerUserConfig)) {
-            userLimit = ((ServerUserConfig) userConfig).getMaxCon();
-        }
+        int userLimit = userConfig.getMaxCon();
         switch (FrontendUserManager.getInstance().maxConnectionCheck(user, userLimit, userConfig instanceof ManagerUserConfig)) {
             case SERVER_MAX:
                 return "Access denied for user '" + user + "',too many connections for dble server";

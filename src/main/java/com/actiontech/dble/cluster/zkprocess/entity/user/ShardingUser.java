@@ -16,8 +16,6 @@ public class ShardingUser extends User {
     @XmlAttribute
     protected String tenant;
     @XmlAttribute
-    protected Integer maxCon;
-    @XmlAttribute
     protected Boolean readOnly;
     @XmlAttribute
     protected String blacklist;
@@ -39,14 +37,6 @@ public class ShardingUser extends User {
 
     public void setTenant(String tenant) {
         this.tenant = tenant;
-    }
-
-    public Integer getMaxCon() {
-        return maxCon;
-    }
-
-    public void setMaxCon(Integer maxCon) {
-        this.maxCon = maxCon;
     }
 
     public Boolean getReadOnly() {
@@ -79,7 +69,6 @@ public class ShardingUser extends User {
         sb.append("ShardingUser{").append(super.toString());
         sb.append(", schemas=").append(schemas);
         sb.append(", tenant=").append(tenant);
-        sb.append(", maxCon=").append(maxCon);
         sb.append(", readOnly=").append(readOnly);
         sb.append(", blacklist=").append(blacklist);
 

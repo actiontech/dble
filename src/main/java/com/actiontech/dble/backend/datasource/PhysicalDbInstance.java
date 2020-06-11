@@ -469,7 +469,7 @@ public abstract class PhysicalDbInstance {
             if (disabled.get()) {
                 throw new IOException("the dbInstance is disabled [" + this.name + "]");
             } else if (!this.createNewCount()) {
-                String maxConError = "the max active Connections size can not be max than maxCon dbInstance[" + this.getDbGroupConfig().getName() + "." + this.getName() + "]";
+                String maxConError = "the max active Connections size can not be max than maxCon for dbInstance[" + this.getDbGroupConfig().getName() + "." + this.getName() + "]";
                 LOGGER.warn(maxConError);
                 Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
                 AlertUtil.alert(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, maxConError, "dble", this.getConfig().getId(), labels);

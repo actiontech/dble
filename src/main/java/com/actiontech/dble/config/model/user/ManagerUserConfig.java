@@ -8,8 +8,8 @@ package com.actiontech.dble.config.model.user;
 public class ManagerUserConfig extends UserConfig {
     private boolean readOnly;
 
-    public ManagerUserConfig(String name, String password, String strWhiteIPs) {
-        super(name, password, strWhiteIPs);
+    public ManagerUserConfig(String name, String password, String strWhiteIPs, String strMaxCon) {
+        super(name, password, strWhiteIPs, strMaxCon);
         if (whiteIPs.size() > 0) {
             whiteIPs.add("127.0.0.1");
             whiteIPs.add("0:0:0:0:0:0:0:1");

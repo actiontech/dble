@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.config.model;
 
 import com.actiontech.dble.backend.mysql.CharsetUtil;
@@ -17,11 +17,14 @@ import java.io.IOException;
 
 public final class SystemConfig {
     private static final SystemConfig INSTANCE = new SystemConfig();
+
     public static SystemConfig getInstance() {
         return INSTANCE;
     }
+
     private SystemConfig() {
     }
+
     static final long DEFAULT_IDLE_TIMEOUT = 30 * 60 * 1000L;
     private static final String WARNING_FORMAT = "Property [ %s ] '%d' in bootstrap.cnf is illegal, use %d replaced";
 
@@ -500,7 +503,6 @@ public final class SystemConfig {
     }
 
 
-
     public int getTxIsolation() {
         return txIsolation;
     }
@@ -634,7 +636,6 @@ public final class SystemConfig {
     }
 
 
-
     public boolean isUseDefaultPageNumber() {
         return useDefaultPageNumber;
     }
@@ -732,10 +733,10 @@ public final class SystemConfig {
     }
 
 
-
     public String getServerId() {
         return serverId;
     }
+
     @SuppressWarnings("unused")
     public void setServerId(String serverId) {
         this.serverId = serverId;
@@ -754,6 +755,7 @@ public final class SystemConfig {
     public int getInstanceId() {
         return instanceId;
     }
+
     @SuppressWarnings("unused")
     public void setInstanceId(int instanceId) {
         this.instanceId = instanceId;
@@ -1007,7 +1009,11 @@ public final class SystemConfig {
 
     @SuppressWarnings("unused")
     public void setWriteToBackendExecutor(int writeToBackendExecutor) {
-        this.writeToBackendExecutor = writeToBackendExecutor;
+        if (writeToBackendExecutor > 0) {
+            this.writeToBackendExecutor = writeToBackendExecutor;
+        } else if (this.problemReporter != null) {
+            problemReporter.warn(String.format(WARNING_FORMAT, "writeToBackendExecutor", writeToBackendExecutor, this.writeToBackendExecutor));
+        }
     }
 
     public int getEnableSlowLog() {
@@ -1190,6 +1196,7 @@ public final class SystemConfig {
     public void setFakeMySQLVersion(String mysqlVersion) {
         this.fakeMySQLVersion = mysqlVersion;
     }
+
     @Override
     public String toString() {
         return "SystemConfig [" +

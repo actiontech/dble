@@ -29,6 +29,7 @@
         <!ATTLIST managerUser usingDecrypt NMTOKEN #IMPLIED>
         <!ATTLIST managerUser whiteIPs CDATA #IMPLIED>
         <!ATTLIST managerUser readOnly NMTOKEN #IMPLIED>
+        <!ATTLIST managerUser maxCon NMTOKEN #IMPLIED>
 
         <!ELEMENT rwSplitUser EMPTY>
         <!ATTLIST rwSplitUser name NMTOKEN #REQUIRED>

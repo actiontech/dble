@@ -24,22 +24,13 @@ import java.io.IOException;
 import java.sql.SQLNonTransientException;
 
 /**
- * Deprecated:
  * <p>
  * use ZK(get InstanceID from ZK) Or local file (set InstanceID) generate a sequence
  * ID :long 63 bits
  * |threadId(9)|instanceId(9)|increment(6)|current time millis(39 digits ,used for 17 years)|
  * <p/>
  *
- * @author Hash Zhang
- * @version 1.0
- * @time 00:08:03 2016/5/3
- * <p>
- * Now:
- * <p>
- * clusterId 4bits
- * <p>
- * |threadId|instanceId|clusterId|increment|current time millis|
+ * |threadId|instanceId|increment|current time millis|
  */
 public class DistributedSequenceHandler implements Closeable, SequenceHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(DistributedSequenceHandler.class);

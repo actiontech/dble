@@ -42,7 +42,7 @@ public class IncrSequenceZKHandlerTest {
         incrSequenceZKHandler = new IncrSequenceZKHandler[MAX_CONNECTION];
         results = new ConcurrentSkipListSet();
         ClusterConfig.getInstance().setRootPath("/dble");
-        ClusterConfig.getInstance().setClusterID("test");
+        ClusterConfig.getInstance().setClusterId("test");
     }
 
     @Test

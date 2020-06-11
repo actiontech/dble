@@ -39,7 +39,7 @@ public final class ClusterConfig {
     private String clusterIP;
     private int clusterPort;
     private String rootPath = null;
-    private String clusterID = null;
+    private String clusterId = null;
     private boolean needSyncHa = false;
     private int sequenceHandlerType = SEQUENCE_HANDLER_LOCAL_TIME;
     private long showBinlogStatusTimeout = 60 * 1000;
@@ -86,12 +86,12 @@ public final class ClusterConfig {
         this.rootPath = rootPath;
     }
 
-    public String getClusterID() {
-        return clusterID;
+    public String getClusterId() {
+        return clusterId;
     }
 
-    public void setClusterID(String clusterID) {
-        this.clusterID = clusterID;
+    public void setClusterId(String clusterId) {
+        this.clusterId = clusterId;
     }
 
     public boolean isNeedSyncHa() {
@@ -156,7 +156,7 @@ public final class ClusterConfig {
                 ", ipAddress=" + clusterIP +
                 ", port=" + clusterPort +
                 ", rootPath=" + rootPath +
-                ", clusterID=" + clusterID +
+                ", clusterId=" + clusterId +
                 ", needSyncHa=" + needSyncHa +
                 ", showBinlogStatusTimeout=" + showBinlogStatusTimeout +
                 ", sequenceHandlerType=" + sequenceHandlerType +

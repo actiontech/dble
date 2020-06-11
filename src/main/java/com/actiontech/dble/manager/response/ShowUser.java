@@ -98,7 +98,8 @@ public final class ShowUser {
             row.add(StringUtil.encode(user.getName(), charset));
             row.add(StringUtil.encode("Y", charset));
             row.add(StringUtil.encode(mUser.isReadOnly() ? "Y" : "N", charset));
-            row.add(StringUtil.encode("-", charset));
+            int maxCon = mUser.getMaxCon();
+            row.add(StringUtil.encode(maxCon == -1 ? "no limit" : maxCon + "", charset));
         } else {
             RwSplitUserConfig rUser = (RwSplitUserConfig) user;
             if (rUser.getTenant() != null) {

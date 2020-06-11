@@ -14,6 +14,7 @@ RUN version=$(curl "https://github.com/actiontech/dble/releases/latest"|awk -F "
 COPY quick-start/*.xml /opt/dble/conf/
 COPY quick-start/*.cnf /opt/dble/conf/
 COPY quick-start/docker_init_start.sh /opt/dble/bin/
+COPY quick-start/start_mgr.sh /opt/dble/bin/
 COPY wait-for-it.sh /opt/dble/bin/
 
 RUN chmod 777 /opt/dble/bin/*

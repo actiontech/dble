@@ -73,7 +73,7 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
 
         IdWorker(long startTimeMillisecond) {
             if (SystemConfig.getInstance().getInstanceId() > MAX_INSTANCE_ID || SystemConfig.getInstance().getInstanceId() < 0) {
-                throw new IllegalArgumentException(String.format("worker Id can't be greater than %d or less than 0", MAX_INSTANCE_ID));
+                throw new IllegalArgumentException(String.format("instanceId can't be greater than %d or less than 0", MAX_INSTANCE_ID));
             }
             this.instanceId = SystemConfig.getInstance().getInstanceId();
             this.startTimeMillisecond = startTimeMillisecond;

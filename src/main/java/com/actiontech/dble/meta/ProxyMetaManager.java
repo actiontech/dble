@@ -320,22 +320,7 @@ public class ProxyMetaManager {
 
     private void tryAddSyncMetaLock() throws Exception {
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            DistributeLock lock;
-            if (ClusterConfig.getInstance().isUseZK()) {
-                lock = new ZkDistributeLock(ClusterPathUtil.getSyncMetaLockPath(), String.valueOf(System.currentTimeMillis()));
-            } else {
-                lock = new ClusterGeneralDistributeLock(ClusterPathUtil.getSyncMetaLockPath(), String.valueOf(System.currentTimeMillis()));
-            }
             int times = 0;
-            while (!lock.acquire()) {
-                if (times % 60 == 0) {
-                    LOGGER.info("tryAddSyncMetaLock failed");
-                    times = 0;
-                }
-                times++;
-            }
-            DistributeLockManager.addLock(lock);
-            times = 0;
             String ddlPath = ClusterPathUtil.getDDLPath();
             while (ClusterHelper.getChildrenSize(ddlPath) > 0) {
                 LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
@@ -345,6 +330,22 @@ public class ProxyMetaManager {
                 }
                 times++;
             }
+            DistributeLock lock;
+            if (ClusterConfig.getInstance().isUseZK()) {
+                lock = new ZkDistributeLock(ClusterPathUtil.getSyncMetaLockPath(), String.valueOf(System.currentTimeMillis()));
+            } else {
+                lock = new ClusterGeneralDistributeLock(ClusterPathUtil.getSyncMetaLockPath(), String.valueOf(System.currentTimeMillis()));
+            }
+            times = 0;
+            while (!lock.acquire()) {
+                if (times % 60 == 0) {
+                    LOGGER.info("tryAddSyncMetaLock failed");
+                    times = 0;
+                }
+                times++;
+            }
+            DistributeLockManager.addLock(lock);
+
         }
     }
 

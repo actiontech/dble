@@ -40,4 +40,28 @@ public final class CollectionUtil {
     public static boolean isEmpty(Map<?, ?> map) {
         return map == null || map.isEmpty();
     }
+
+    public static boolean containDuplicate(Collection list, Object obj) {
+        boolean findOne = false;
+        for (Object x : list) {
+            if (x.equals(obj)) {
+                if (!findOne) {
+                    findOne = true;
+                } else {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public static boolean contaionSpecificObject(Collection collection, Object obj) {
+        for (Object x : collection) {
+            if (x == obj) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

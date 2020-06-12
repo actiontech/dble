@@ -9,6 +9,7 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.plan.common.item.function.ItemCreate;
 import com.actiontech.dble.route.util.ConditionUtil;
 import com.actiontech.dble.route.util.RouterUtil;
+import com.actiontech.dble.util.CollectionUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLName;
@@ -18,6 +19,7 @@ import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
 import com.alibaba.druid.sql.visitor.SQLEvalVisitorUtils;
 import com.alibaba.druid.stat.TableStat;
@@ -40,8 +42,12 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     private boolean inSelect = false;
     private boolean inOuterJoin = false;
     private List<SQLSelect> subQueryList = new ArrayList<>();
+
+
+    private List<SQLSelect> firstClassSubQueryList = new ArrayList();
     private Map<String, String> aliasMap = new LinkedHashMap<>();
     private List<String> selectTableList = new ArrayList<>();
+    private List<SQLExprTableSource> motifyTableSourceList = new ArrayList<>();
     private String currentTable;
     private boolean firstSelectBlock = true;
     private boolean containsInnerFunction = false;
@@ -61,17 +67,39 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         return notSupportMsg;
     }
 
+    private void addSubQuery(SQLSelect subQuery) {
+        if (!CollectionUtil.contaionSpecificObject(subQueryList, subQuery)) {
+            subQueryList.add(subQuery);
+            SQLObject ob = subQuery.getParent();
+            for (; ; ob = ob.getParent()) {
+                if (ob != null) {
+                    if (ob instanceof SQLQueryExpr || ob instanceof SQLBinaryOpExpr) {
+                        continue;
+                    } else if (ob instanceof MySqlUpdateStatement) {
+                        firstClassSubQueryList.add(subQuery);
+                    } else if (ob instanceof MySqlDeleteStatement) {
+                        firstClassSubQueryList.add(subQuery);
+                    } else {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+
     @Override
     public boolean visit(SQLInSubQueryExpr x) {
         super.visit(x);
-        subQueryList.add(x.getSubQuery());
+        addSubQuery(x.getSubQuery());
         return true;
     }
 
     @Override
     public boolean visit(SQLQueryExpr x) {
         super.visit(x);
-        subQueryList.add(x.getSubQuery());
+        addSubQuery(x.getSubQuery());
         return true;
     }
 
@@ -85,28 +113,28 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     @Override
     public boolean visit(SQLExistsExpr x) {
         super.visit(x);
-        subQueryList.add(x.getSubQuery());
+        addSubQuery(x.getSubQuery());
         return true;
     }
 
     @Override
     public boolean visit(SQLAllExpr x) {
         super.visit(x);
-        subQueryList.add(x.getSubQuery());
+        addSubQuery(x.getSubQuery());
         return true;
     }
 
     @Override
     public boolean visit(SQLSomeExpr x) {
         super.visit(x);
-        subQueryList.add(x.getSubQuery());
+        addSubQuery(x.getSubQuery());
         return true;
     }
 
     @Override
     public boolean visit(SQLAnyExpr x) {
         super.visit(x);
-        subQueryList.add(x.getSubQuery());
+        addSubQuery(x.getSubQuery());
         return true;
     }
 
@@ -340,19 +368,47 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     @Override
     public boolean visit(SQLUpdateStatement x) {
         aliasMap.clear();
-        SQLName identName = x.getTableName();
-        if (identName != null) {
-            String ident = identName.toString();
-            currentTable = ident;
+        if (x.getTableSource() instanceof SQLJoinTableSource) {
+            SQLJoinTableSource tableSource = (SQLJoinTableSource) x.getTableSource();
+            if (tableSource.getRight() instanceof SQLExprTableSource) {
+                String ident = tableSource.getRight().toString();
+                putAliasToMap(ident, ident.replace("`", ""));
+                String alias = tableSource.getRight().getAlias();
+                if (alias != null) {
+                    putAliasToMap(alias, ident.replace("`", ""));
+                }
+                motifyTableSourceList.add((SQLExprTableSource) tableSource.getRight());
+            } else {
+                tableSource.getRight().accept(this);
+            }
 
-            putAliasToMap(ident, ident.replace("`", ""));
-            String alias = x.getTableSource().getAlias();
-            if (alias != null) {
-                putAliasToMap(alias, ident.replace("`", ""));
+            if (tableSource.getLeft() instanceof SQLExprTableSource) {
+                String ident = tableSource.getLeft().toString();
+                putAliasToMap(ident, ident.replace("`", ""));
+                String alias = tableSource.getLeft().getAlias();
+                if (alias != null) {
+                    putAliasToMap(alias, ident.replace("`", ""));
+                }
+                motifyTableSourceList.add((SQLExprTableSource) tableSource.getLeft());
+            } else {
+                tableSource.getLeft().accept(this);
             }
         } else {
-            x.getTableSource().accept(this);
+            SQLName identName = x.getTableName();
+            if (identName != null) {
+                String ident = identName.toString();
+                currentTable = ident;
+
+                putAliasToMap(ident, ident.replace("`", ""));
+                String alias = x.getTableSource().getAlias();
+                if (alias != null) {
+                    putAliasToMap(alias, ident.replace("`", ""));
+                }
+            } else {
+                x.getTableSource().accept(this);
+            }
         }
+
 
         accept(x.getItems());
         accept(x.getWhere());
@@ -361,11 +417,17 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
     }
 
     @Override
+    public boolean visit(SQLUpdateSetItem x) {
+        return true;
+    }
+
+    @Override
     public boolean visit(SQLExprTableSource x) {
         if (this.isSimpleExprTableSource(x)) {
             String ident = x.getExpr().toString();
             currentTable = ident;
             selectTableList.add(ident);
+            motifyTableSourceList.add(x);
             String alias = x.getAlias();
             if (alias != null && !aliasMap.containsKey(alias)) {
                 putAliasToMap(alias, ident.replace("`", ""));
@@ -538,7 +600,6 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
     /**
      * get table name of field in between expr
-     *
      */
     private String getOwnerTableName(SQLBetweenExpr betweenExpr, String column) {
         if (aliasMap.size() == 1) { //only has 1 table
@@ -583,7 +644,6 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
      * if the Expr in splitedExprList is still  a OR-Expr just deal with it
      * <p>
      * This function only recursively all child splitedExpr and make them split again
-     *
      */
     private void loopFindSubOrCondition(List<WhereUnit> whereUnitList) {
         List<WhereUnit> subWhereUnits = new ArrayList<>();
@@ -640,7 +700,6 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
      * we try to add a derivative relationship "xtest.id = mtest.id"
      * so when there has limit in mtest.id the xtest.id can also get the limit
      * P.S.:Only order insensitive operator can be optimize,like = or <=>
-     *
      */
     private void relationMerge(Set<Relationship> relationships) {
         HashSet<Relationship> loopReSet = new HashSet<>();
@@ -672,7 +731,6 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
      * A = B and B = A the result size is 0
      * when the result size is 2,we can know that there is 3 columns in  2 relationships
      * and the derivative relationship may be needed
-     *
      */
     private void addAndCheckDuplicate(List<Column> tempSet, Column tmp) {
         if (tempSet.contains(tmp)) {
@@ -701,7 +759,6 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
      * turn all the condition in or into conditionList
      * exp (conditionA OR conditionB) into conditionList{conditionA,conditionB}
      * so the conditionA,conditionB can be group with outer conditions
-     *
      */
     private void resetConditionsFromWhereUnit(WhereUnit whereUnit) {
         List<List<Condition>> retList = new ArrayList<>();
@@ -733,7 +790,6 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
 
     /**
      * split on conditions into whereUnit..splitedExprList
-     *
      */
     private void splitUntilNoOr(WhereUnit whereUnit) {
         if (whereUnit.isFinishedParse()) {
@@ -860,5 +916,19 @@ public class ServerSchemaStatVisitor extends MySqlSchemaStatVisitor {
         whereUnit.setOrConditionList(retList);
         whereUnit.addOutRelationships(this.relationships);
         return whereUnit;
+    }
+
+    public List<SQLSelect> getFirstClassSubQueryList() {
+        return firstClassSubQueryList;
+    }
+
+
+    public List<WhereUnit> getWhereUnits() {
+        return whereUnits;
+    }
+
+
+    public List<SQLExprTableSource> getMotifyTableSourceList() {
+        return motifyTableSourceList;
     }
 }

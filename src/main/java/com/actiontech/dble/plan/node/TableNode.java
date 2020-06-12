@@ -14,8 +14,10 @@ import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.plan.NamedField;
 import com.actiontech.dble.plan.common.item.Item;
+import com.actiontech.dble.plan.common.item.ItemBasicConstant;
 import com.actiontech.dble.plan.common.item.ItemField;
 import com.actiontech.dble.plan.util.ToStringUtil;
+import com.actiontech.dble.route.parser.druid.RouteTableConfigInfo;
 import com.alibaba.druid.sql.ast.SQLHint;
 
 import java.sql.SQLNonTransientException;
@@ -125,6 +127,14 @@ public class TableNode extends PlanNode {
             }
         }
 
+    }
+
+    @Override
+    public RouteTableConfigInfo findFieldSourceFromIndex(int index) throws Exception {
+        if (columnsSelected.get(index) instanceof ItemBasicConstant) {
+            return new RouteTableConfigInfo(schema, null, null, columnsSelected.get(index));
+        }
+        return new RouteTableConfigInfo(schema, DbleServer.getInstance().getConfig().getSchemas().get(schema).getTables().get(tableName), alias, null);
     }
 
     @Override

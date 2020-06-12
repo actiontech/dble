@@ -13,60 +13,78 @@ import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.net.ConnectionException;
 import com.actiontech.dble.route.RouteResultset;
+import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
+import com.actiontech.dble.route.parser.util.Pair;
+import com.actiontech.dble.route.util.ConditionUtil;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.handler.ExplainHandler;
+import com.actiontech.dble.server.util.SchemaUtil;
 import com.actiontech.dble.singleton.ProxyMeta;
-import com.actiontech.dble.sqlengine.SQLJob;
-import com.actiontech.dble.sqlengine.mpp.ColumnRoute;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLCharExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.druid.sql.ast.expr.SQLNullExpr;
+import com.alibaba.druid.sql.ast.statement.SQLSelect;
+import com.google.common.collect.ImmutableList;
 
+import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 
-abstract class DruidInsertReplaceParser extends DefaultDruidParser {
-    static RouteResultset routeByERParentColumn(RouteResultset rrs, TableConfig tc, String joinColumnVal, SchemaInfo schemaInfo)
-            throws SQLNonTransientException {
-        if (tc.getDirectRouteTC() != null) {
-            ColumnRoute columnRoute = new ColumnRoute(joinColumnVal);
-            checkDefaultValues(joinColumnVal, tc, schemaInfo.getSchema(), tc.getJoinColumn());
-            Set<String> shardingNodeSet = RouterUtil.ruleCalculate(rrs, tc.getDirectRouteTC(), columnRoute, false);
-            if (shardingNodeSet.size() != 1) {
-                throw new SQLNonTransientException("parent key can't find  valid shardingNode ,expect 1 but found: " + shardingNodeSet.size());
-            }
-            String dn = shardingNodeSet.iterator().next();
-            if (SQLJob.LOGGER.isDebugEnabled()) {
-                SQLJob.LOGGER.debug("found partion node (using parent partition rule directly) for child table to insert  " + dn + " sql :" + rrs.getStatement());
-            }
-            return RouterUtil.routeToSingleNode(rrs, dn);
-        }
-        return null;
-    }
+abstract class DruidInsertReplaceParser extends DruidModifyParser {
 
 
     /**
-     * check if the column is not null and the
+     * The insert/replace .... select route function interface
+     * check the insert table config and category discussion with
+     * + single node table
+     * + sharding table
+     * + multi-node global table
+     *
+     * @param sc
+     * @param rrs
+     * @param stmt
+     * @param visitor
+     * @param schemaInfo
+     * @throws SQLException
      */
-    static void checkDefaultValues(String columnValue, TableConfig tableConfig, String schema, String partitionColumn) throws SQLNonTransientException {
-        if (columnValue == null || "null".equalsIgnoreCase(columnValue)) {
-            TableMeta meta = ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schema, tableConfig.getName());
-            for (TableMeta.ColumnMeta columnMeta : meta.getColumns()) {
-                if (!columnMeta.isCanNull()) {
-                    if (columnMeta.getName().equalsIgnoreCase(partitionColumn)) {
-                        String msg = "Sharding column can't be null when the table in MySQL column is not null";
-                        LOGGER.info(msg);
-                        throw new SQLNonTransientException(msg);
-                    }
-                }
-            }
+    protected void tryRouteInsertQuery(ServerConnection sc, RouteResultset rrs, SQLStatement stmt, ServerSchemaStatVisitor visitor, SchemaUtil.SchemaInfo schemaInfo) throws SQLException {
+        // insert into .... select ....
+        SQLSelect select = acceptVisitor(stmt, visitor);
+        String tableName = schemaInfo.getTable();
+        SchemaConfig schema = schemaInfo.getSchemaConfig();
+        TableConfig tc = schema.getTables().get(tableName);
+
+        Collection<String> routeShardingNodes;
+        if (tc == null || tc.isNoSharding() || (tc.isGlobalTable() && tc.getShardingNodes().size() == 1)) {
+            //only require when all the table and the route condition route to same node
+            Map<String, String> tableAliasMap = getTableAliasMap(schema.getName(), visitor.getAliasMap());
+            ctx.setRouteCalculateUnits(ConditionUtil.buildRouteCalculateUnits(visitor.getAllWhereUnit(), tableAliasMap, schema.getName()));
+            checkForSingleNodeTable(visitor, tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0), rrs);
+            routeShardingNodes = ImmutableList.of(tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0));
+            //RouterUtil.routeToSingleNode(rrs, tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0));
+        } else if (tc.isGlobalTable() && tc.getShardingNodes().size() > 1) {
+            routeShardingNodes = checkForMultiNodeGlobal(visitor, tc, schema);
+        } else {
+            routeShardingNodes = checkForShardingTable(visitor, select, sc, rrs, tc, schemaInfo, stmt, schema);
         }
+
+        //finally route for the result
+        RouterUtil.routeToMultiNode(false, rrs, routeShardingNodes, true);
+
+        String sql = rrs.getStatement();
+        for (Pair<String, String> table : ctx.getTables()) {
+            String schemaName = table.getKey();
+            sql = RouterUtil.removeSchema(sql, schemaName);
+        }
+        rrs.setStatement(sql);
+
+        rrs.setFinishedRoute(true);
     }
 
     static String shardingValueToSting(SQLExpr valueExpr) throws SQLNonTransientException {

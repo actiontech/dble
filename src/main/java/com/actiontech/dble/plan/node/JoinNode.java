@@ -16,6 +16,7 @@ import com.actiontech.dble.plan.common.item.function.operator.cmpfunc.ItemFuncEq
 import com.actiontech.dble.plan.util.FilterUtils;
 import com.actiontech.dble.plan.util.PlanUtil;
 import com.actiontech.dble.plan.util.ToStringUtil;
+import com.actiontech.dble.route.parser.druid.RouteTableConfigInfo;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.util.StringUtil;
 
@@ -88,6 +89,27 @@ public class JoinNode extends PlanNode {
         addChild(right);
         setKeepFieldSchema(left.isKeepFieldSchema() || right.isKeepFieldSchema());
     }
+
+    @Override
+    public RouteTableConfigInfo findFieldSourceFromIndex(int index) throws Exception {
+        if (columnsSelected.size() > index) {
+            Item sourceColumns = columnsSelected.get(index);
+            for (PlanNode pn : this.getChildren()) {
+                if (pn.getAlias() != null && pn.getAlias().equals(sourceColumns.getTableName())) {
+                    for (int i = 0; i < pn.columnsSelected.size(); i++) {
+                        Item cSelected = pn.columnsSelected.get(i);
+                        if (cSelected.getAlias() != null && cSelected.getAlias().equals(sourceColumns.getItemName())) {
+                            return this.getChild().findFieldSourceFromIndex(i);
+                        } else if (cSelected.getAlias() == null && cSelected.getItemName().equals(sourceColumns.getItemName())) {
+                            return this.getChild().findFieldSourceFromIndex(i);
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
 
     @Override
     public void setUpFields() {

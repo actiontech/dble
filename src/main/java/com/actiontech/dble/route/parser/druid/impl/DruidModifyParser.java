@@ -422,15 +422,15 @@ abstract class DruidModifyParser extends DefaultDruidParser {
             TableConfig tConfig = tSchema.getTables().get(tName);
             if (tConfig == null || (tConfig.getRule() == null && !tConfig.isGlobalTable())) {
                 if (tConfig == null && tSchema.getShardingNode().equals(dataNode)) {
-                    break;
+                    continue;
                 } else if (tConfig != null && tConfig.getShardingNodes().get(0).equals(dataNode)) {
-                    break;
+                    continue;
                 } else {
                     throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
                 }
             } else if (tConfig.isGlobalTable()) {
                 if (tConfig.getShardingNodes().contains(dataNode)) {
-                    break;
+                    continue;
                 } else {
                     throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
                 }
@@ -488,9 +488,9 @@ abstract class DruidModifyParser extends DefaultDruidParser {
             TableConfig tConfig = tSchema.getTables().get(tName);
             if (tConfig == null || (tConfig.getRule() == null && !tConfig.isGlobalTable())) {
                 if (tConfig == null && tSchema.getShardingNode().equals(dataNode)) {
-                    break;
+                    continue;
                 } else if (tConfig != null && tConfig.getShardingNodes().get(0).equals(dataNode)) {
-                    break;
+                    continue;
                 } else {
                     throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
                 }

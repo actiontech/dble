@@ -19,7 +19,7 @@ import com.actiontech.dble.config.helper.GetAndSyncDbInstanceKeyVariables;
 import com.actiontech.dble.config.helper.KeyVariables;
 import com.actiontech.dble.cluster.zkprocess.parse.JsonProcessBase;
 import com.actiontech.dble.cluster.zkprocess.zookeeper.process.DbInstanceStatus;
-import com.actiontech.dble.config.model.DbGroupConfig;
+import com.actiontech.dble.config.model.db.DbGroupConfig;
 import com.actiontech.dble.singleton.HaConfigManager;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;

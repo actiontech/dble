@@ -5,8 +5,6 @@
 
 package com.actiontech.dble.config.model.user;
 
-import com.actiontech.dble.config.model.UserPrivilegesConfig;
-
 import java.util.HashSet;
 import java.util.Set;
 

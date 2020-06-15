@@ -12,9 +12,9 @@ import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroupDiff;
 import com.actiontech.dble.backend.datasource.ShardingNode;
-import com.actiontech.dble.config.model.ERTable;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.model.sharding.table.ERTable;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.util.ConfigException;
@@ -252,15 +252,18 @@ public class ServerConfig {
     }
 
     private void calcTableDiffForMetaData(Map<String, ShardingNode> newShardingNodes, int loadAllMode, List<Pair<String, String>> delTables, List<Pair<String, String>> reloadTables, String oldSchema, SchemaConfig newSchemaConfig, SchemaConfig oldSchemaConfig) {
-        for (Map.Entry<String, TableConfig> tableEntry : oldSchemaConfig.getTables().entrySet()) {
+        for (Map.Entry<String, BaseTableConfig> tableEntry : oldSchemaConfig.getTables().entrySet()) {
             String oldTable = tableEntry.getKey();
-            TableConfig newTableConfig = newSchemaConfig.getTables().get(oldTable);
+            BaseTableConfig newTableConfig = newSchemaConfig.getTables().get(oldTable);
             if (newTableConfig == null) {
                 delTables.add(new Pair<>(oldSchema, oldTable));
             } else {
-                TableConfig oldTableConfig = tableEntry.getValue();
-                if (!newTableConfig.getShardingNodes().equals(oldTableConfig.getShardingNodes()) ||
-                        newTableConfig.getTableType() != oldTableConfig.getTableType()) {
+                BaseTableConfig oldTableConfig = tableEntry.getValue();
+                if (newTableConfig.getClass() != oldTableConfig.getClass()) {
+                    Pair<String, String> table = new Pair<>(oldSchema, oldTable);
+                    delTables.add(table);
+                    reloadTables.add(table);
+                } else if (!newTableConfig.getShardingNodes().equals(oldTableConfig.getShardingNodes())) {
                     Pair<String, String> table = new Pair<>(oldSchema, oldTable);
                     delTables.add(table);
                     reloadTables.add(table);

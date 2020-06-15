@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.meta.table;
 
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 
 import java.util.Collections;
 import java.util.HashSet;

@@ -10,9 +10,8 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.savepoint.SavePointHandler;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.user.ServerUserConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.config.util.AuthUtil;
@@ -411,8 +410,7 @@ public class ServerConnection extends FrontendConnection {
             if (noShardingNode != null) {
                 RouterUtil.routeToSingleNode(rrs, noShardingNode);
             } else {
-                TableConfig tc = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
-                if (tc == null) {
+                if (schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable()) == null) {
                     // check view
                     ShowCreateView.response(this, schemaInfo.getSchema(), schemaInfo.getTable());
                     return;

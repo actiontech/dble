@@ -7,9 +7,10 @@ package com.actiontech.dble.plan.node;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.config.model.TableConfig.TableTypeEnum;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.model.sharding.table.GlobalTableConfig;
+import com.actiontech.dble.config.model.sharding.table.SingleTableConfig;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.plan.NamedField;
@@ -73,7 +74,7 @@ public class TableNode extends PlanNode {
             throw new RuntimeException("schema " + this.schema + " doesn't exist!");
         }
         this.tableMeta = metaManager.getSyncTableMeta(this.schema, this.tableName);
-        TableConfig tableConfig = schemaConfig.getTables().get(this.tableName);
+        BaseTableConfig tableConfig = schemaConfig.getTables().get(this.tableName);
         if (this.tableMeta == null) {
             String errorMsg = "table " + this.tableName + " doesn't exist!";
             if (tableConfig != null || schemaConfig.getShardingNode() != null) {
@@ -85,7 +86,7 @@ public class TableNode extends PlanNode {
         if (tableConfig == null) {
             this.setNoshardNode(new HashSet<>(Collections.singletonList(schemaConfig.getShardingNode())));
         } else {
-            if (tableConfig.getTableType() != TableTypeEnum.TYPE_GLOBAL_TABLE && !tableConfig.isNoSharding()) {
+            if (!(tableConfig instanceof GlobalTableConfig) && !(tableConfig instanceof SingleTableConfig)) {
                 this.unGlobalTableCount = 1;
             }
             this.setNoshardNode(new HashSet<>(tableConfig.getShardingNodes()));

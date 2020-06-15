@@ -1,11 +1,14 @@
 package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.backend.datasource.check.AbstractConsistencyChecker;
-import com.actiontech.dble.backend.datasource.check.GlobalCheckJob;
 import com.actiontech.dble.backend.datasource.check.CheckSumChecker;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
-import org.quartz.*;
+import com.actiontech.dble.backend.datasource.check.GlobalCheckJob;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.model.sharding.table.GlobalTableConfig;
+import org.quartz.JobDetail;
+import org.quartz.SchedulerFactory;
+import org.quartz.Trigger;
 import org.quartz.impl.StdSchedulerFactory;
 
 import java.io.IOException;
@@ -45,11 +48,14 @@ public final class CronScheduler {
             scheduler.start();
 
             for (Map.Entry<String, SchemaConfig> se : schemaConfigs.entrySet()) {
-                for (Map.Entry<String, TableConfig> te : se.getValue().getTables().entrySet()) {
-                    TableConfig config = te.getValue();
-                    if (config.isGlobalTable() && config.isGlobalCheck()) {
-                        globalTableConsistencyCheck(config);
-                        add(se.getKey(), te.getValue(), config.getCron());
+                for (Map.Entry<String, BaseTableConfig> te : se.getValue().getTables().entrySet()) {
+                    BaseTableConfig config = te.getValue();
+                    if (config instanceof GlobalTableConfig) {
+                        GlobalTableConfig tableConfig = (GlobalTableConfig) config;
+                        if (tableConfig.isGlobalCheck()) {
+                            globalTableConsistencyCheck(tableConfig);
+                            add(se.getKey(), tableConfig);
+                        }
                     }
                 }
             }
@@ -60,8 +66,8 @@ public final class CronScheduler {
         }
     }
 
-    private void add(String schema, TableConfig tableConfig, String cron) throws Exception {
-        String name = new StringBuilder().append(schema).append("-").append(tableConfig.getName()).toString();
+    private void add(String schema, GlobalTableConfig tableConfig) throws Exception {
+        String name = schema + "-" + tableConfig.getName();
 
         JobDetail job = newJob(GlobalCheckJob.class).
                 withIdentity(name, name).
@@ -72,14 +78,14 @@ public final class CronScheduler {
 
         Trigger trigger = newTrigger().
                 withIdentity("trigger-for-" + schema + "-" + tableConfig.getName(), name).
-                withSchedule(cronSchedule(cron)).
+                withSchedule(cronSchedule(tableConfig.getCron())).
                 forJob(name, name).
                 build();
 
         scheduler.scheduleJob(job, trigger);
     }
 
-    private void globalTableConsistencyCheck(TableConfig tc) throws Exception {
+    private void globalTableConsistencyCheck(GlobalTableConfig tc) throws Exception {
         String clazz = tc.getGlobalCheckClass();
         final Class<?> clz;
 

@@ -11,9 +11,9 @@ import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.config.*;
 import com.actiontech.dble.config.model.ClusterConfig;
-import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.config.model.user.ManagerUserConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
@@ -156,7 +156,7 @@ public final class DryRun {
         Map<String, Set<String>> tableMap = showShardingNodeTable(serverConfig, isLowerCase, list);
 
         for (SchemaConfig schema : serverConfig.getSchemas().values()) {
-            for (TableConfig table : schema.getTables().values()) {
+            for (BaseTableConfig table : schema.getTables().values()) {
                 StringBuilder sb = new StringBuilder("");
                 for (String exDn : table.getShardingNodes()) {
                     if (tableMap.get(exDn) != null && !tableMap.get(exDn).contains(table.getName())) {

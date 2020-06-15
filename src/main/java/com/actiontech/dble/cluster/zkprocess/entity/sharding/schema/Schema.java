@@ -28,7 +28,7 @@ public class Schema implements Named {
     protected String shardingNode;
 
     @XmlElementRefs({
-            @XmlElementRef(name = "SingleTable", type = SingleTable.class),
+            @XmlElementRef(name = "SingleTableConfig", type = SingleTable.class),
             @XmlElementRef(name = "ShardingTable", type = ShardingTable.class),
             @XmlElementRef(name = "GlobalTable", type = GlobalTable.class)
     })

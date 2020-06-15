@@ -6,7 +6,7 @@ package com.actiontech.dble.config.loader.xml;
 
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.Versions;
-import com.actiontech.dble.config.model.UserPrivilegesConfig;
+import com.actiontech.dble.config.model.user.UserPrivilegesConfig;
 import com.actiontech.dble.config.model.user.ManagerUserConfig;
 import com.actiontech.dble.config.model.user.RwSplitUserConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;

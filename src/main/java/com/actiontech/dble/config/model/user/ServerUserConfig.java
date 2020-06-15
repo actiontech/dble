@@ -7,7 +7,7 @@ package com.actiontech.dble.config.model.user;
 
 import com.alibaba.druid.wall.WallProvider;
 
-public class ServerUserConfig extends UserConfig {
+public abstract class ServerUserConfig extends UserConfig {
     private String tenant;
     private WallProvider blacklist;
 

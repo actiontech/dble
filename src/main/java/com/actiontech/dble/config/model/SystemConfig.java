@@ -27,7 +27,7 @@ public final class SystemConfig {
     private SystemConfig() {
     }
 
-    static final long DEFAULT_IDLE_TIMEOUT = 30 * 60 * 1000L;
+    public static final long DEFAULT_IDLE_TIMEOUT = 30 * 60 * 1000L;
     private static final String WARNING_FORMAT = "Property [ %s ] '%d' in bootstrap.cnf is illegal, use %d replaced";
 
     /*

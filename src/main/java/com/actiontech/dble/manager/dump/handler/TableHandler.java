@@ -1,6 +1,7 @@
 package com.actiontech.dble.manager.dump.handler;
 
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.manager.dump.DumpException;
 import com.actiontech.dble.manager.dump.DumpFileContext;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
@@ -25,7 +26,7 @@ public class TableHandler extends DefaultHandler {
         if (sqlStatement instanceof MySqlCreateTableStatement) {
             tableName = StringUtil.removeBackQuote(((MySqlCreateTableStatement) sqlStatement).getTableSource().getName().getSimpleName());
             context.setTable(tableName);
-            if (context.getTableType() == TableType.DEFAULT) {
+            if (!(context.getTableConfig() instanceof ShardingTableConfig)) {
                 return null;
             }
             boolean isChanged = preHandleCreateTable(context, sqlStatement);
@@ -48,18 +49,17 @@ public class TableHandler extends DefaultHandler {
      * @return whether statement is changed
      */
     private boolean preHandleCreateTable(DumpFileContext context, SQLStatement sqlStatement) {
-        TableConfig tableConfig = context.getTableConfig();
+        BaseTableConfig tableConfig = context.getTableConfig();
         List<SQLTableElement> columns = ((MySqlCreateTableStatement) sqlStatement).getTableElementList();
         boolean isChanged = false;
-        if (tableConfig.isAutoIncrement() || tableConfig.getPartitionColumn() != null) {
-            // check columns for sharing column index or increment column index
-            isChanged = checkColumns(context, columns);
-            // partition column check
-            if (tableConfig.getPartitionColumn() != null && context.getPartitionColumnIndex() == -1) {
+        if (tableConfig instanceof ShardingTableConfig) {
+            ShardingTableConfig shardingTableConfig = (ShardingTableConfig) tableConfig;
+            isChanged = checkColumns(context, columns, shardingTableConfig.getShardingColumn(), shardingTableConfig.getIncrementColumn());
+            if (context.getPartitionColumnIndex() == -1) {
                 throw new DumpException("can't find partition column in create.");
             }
             // increment column check
-            if (tableConfig.isAutoIncrement() && context.getIncrementColumnIndex() == -1) {
+            if (shardingTableConfig.getIncrementColumn() != null && context.getIncrementColumnIndex() == -1) {
                 throw new DumpException("can't find increment column in create.");
             }
         }
@@ -73,10 +73,8 @@ public class TableHandler extends DefaultHandler {
      * @param columns
      * @return whether column is changed
      */
-    private boolean checkColumns(DumpFileContext context, List<SQLTableElement> columns) {
+    private boolean checkColumns(DumpFileContext context, List<SQLTableElement> columns, String shardingColumn, String incrementColumn) {
         SQLTableElement column;
-        TableConfig tableConfig = context.getTableConfig();
-        boolean isAutoIncrement = tableConfig.isAutoIncrement();
         boolean isChanged = false;
         for (int j = 0; j < columns.size(); j++) {
             column = columns.get(j);
@@ -85,7 +83,7 @@ public class TableHandler extends DefaultHandler {
             }
             String columnName = StringUtil.removeBackQuote(((SQLColumnDefinition) column).getNameAsString());
             // find index of increment column
-            if (isAutoIncrement && columnName.equalsIgnoreCase(tableConfig.getIncrementColumn())) {
+            if (incrementColumn != null && columnName.equalsIgnoreCase(incrementColumn)) {
                 // check data type of increment column
                 // if the column is increment column, data type must be bigint.
                 SQLColumnDefinition columnDef = (SQLColumnDefinition) column;
@@ -97,7 +95,7 @@ public class TableHandler extends DefaultHandler {
                 context.setIncrementColumnIndex(j);
             }
             // find index of partition column
-            if (columnName.equalsIgnoreCase(tableConfig.getPartitionColumn())) {
+            if (shardingColumn != null && columnName.equalsIgnoreCase(shardingColumn)) {
                 context.setPartitionColumnIndex(j);
             }
         }

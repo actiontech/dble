@@ -6,8 +6,8 @@
 package com.actiontech.dble.route.parser.druid.impl;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.subquery.ItemSubQuery;
 import com.actiontech.dble.plan.node.*;
@@ -43,7 +43,7 @@ public class DruidLockTableParser extends DefaultDruidParser {
             String table = schemaInfo.getTable();
             String schemaName = schemaInfo.getSchema();
             SchemaConfig schemaConfig = schemaInfo.getSchemaConfig();
-            TableConfig tableConfig = schemaConfig.getTables().get(table);
+            BaseTableConfig tableConfig = schemaConfig.getTables().get(table);
             if (tableConfig != null) {
                 handleConfigTable(shardingNodeToLocks, tableConfig, item.getTableSource().getAlias(), item.getLockType());
                 continue;
@@ -82,7 +82,7 @@ public class DruidLockTableParser extends DefaultDruidParser {
     /**
      * handle single config table lock
      */
-    private void handleConfigTable(Map<String, Set<String>> shardingNodeToLocks, TableConfig tableConfig, String alias, MySqlLockTableStatement.LockType lockType) {
+    private void handleConfigTable(Map<String, Set<String>> shardingNodeToLocks, BaseTableConfig tableConfig, String alias, MySqlLockTableStatement.LockType lockType) {
         List<String> shardingNodes = tableConfig.getShardingNodes();
         for (String shardingNode : shardingNodes) {
             StringBuilder sbItem = new StringBuilder(tableConfig.getName());
@@ -115,7 +115,7 @@ public class DruidLockTableParser extends DefaultDruidParser {
         for (Map.Entry<String, Set<String>> entry : tableMap.entrySet()) {
             SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(entry.getKey());
             for (String table : entry.getValue()) {
-                TableConfig tableConfig = schemaConfig.getTables().get(table);
+                BaseTableConfig tableConfig = schemaConfig.getTables().get(table);
                 if (tableConfig != null) {
                     handleConfigTable(shardingNodeToLocks, tableConfig, alias == null ? null : "view_" + alias + "_" + table, lockType);
                 } else if (ProxyMeta.getInstance().getTmManager().getSyncTableMeta(schemaConfig.getName(), table) != null) {

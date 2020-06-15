@@ -85,35 +85,41 @@ public class DruidUpdateParser extends DruidModifyParser {
 
             String tableName = schemaInfo.getTable();
             TableConfig tc = schema.getTables().get(tableName);
-            checkTableExists(tc, schema.getName(), tableName, ShardingPrivileges.CheckType.UPDATE);
+            String noShardingNode = RouterUtil.isNoSharding(schema, tableName);
 
             if (visitor.getFirstClassSubQueryList().size() > 0) {
                 routeForModifySubQueryList(rrs, tc, visitor, schema);
                 return schema;
+            } else if (noShardingNode != null) {
+                RouterUtil.routeToSingleNode(rrs, noShardingNode);
+                rrs.setFinishedRoute(true);
+                return schema;
             }
 
+            checkTableExists(tc, schema.getName(), tableName, ShardingPrivileges.CheckType.UPDATE);
             if (tc.isGlobalTable()) {
                 RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), tc.isGlobalTable());
                 rrs.setFinishedRoute(true);
                 return schema;
-            }
-            String partitionColumn = tc.getPartitionColumn();
-            String joinColumn = tc.getJoinColumn();
+            } else {
+                String partitionColumn = tc.getPartitionColumn();
+                String joinColumn = tc.getJoinColumn();
 
-            confirmShardColumnNotUpdated(update, schema, tableName, partitionColumn, joinColumn, rrs);
+                confirmShardColumnNotUpdated(update, schema, tableName, partitionColumn, joinColumn, rrs);
 
-            confirmChildColumnNotUpdated(update, schema, tableName);
+                confirmChildColumnNotUpdated(update, schema, tableName);
 
-            if (schema.getTables().get(tableName).isGlobalTable() && ctx.getTables().size() > 1) {
-                throw new SQLNonTransientException("global table is not supported in multi table related update " + tableName);
-            }
+                if (schema.getTables().get(tableName).isGlobalTable() && ctx.getTables().size() > 1) {
+                    throw new SQLNonTransientException("global table is not supported in multi table related update " + tableName);
+                }
 
-            if (update.getLimit() != null) {
-                this.updateAndDeleteLimitRoute(rrs, tableName, schema);
-            }
+                if (update.getLimit() != null) {
+                    this.updateAndDeleteLimitRoute(rrs, tableName, schema);
+                }
 
-            if (ctx.getTables().size() == 0) {
-                ctx.addTable(new Pair<>(schema.getName(), tableName));
+                if (ctx.getTables().size() == 0) {
+                    ctx.addTable(new Pair<>(schema.getName(), tableName));
+                }
             }
         }
         return schema;

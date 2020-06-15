@@ -46,7 +46,7 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
      * @author sw
      * <p>
      * Now:
-     * 64 bit ID 30 (millisecond high 30 )+5(DATA_CENTER_ID)+5(WORKER_ID)+12(autoincrement)+12 (millisecond low 12)
+     * 64 bit ID 30 (millisecond high 30 )+10(instance_ID)+12(autoincrement)+12 (millisecond low 12)
      */
     static class IdWorker {
         private static final long TIMESTAMP_LOW_BITS = 12L;
@@ -66,7 +66,7 @@ public final class IncrSequenceTimeHandler implements SequenceHandler {
         private static final long SEQUENCE_MASK = ~(-1L << SEQUENCE_BITS);
 
         private long lastTimestamp;
-        private final int instanceId;
+        private final long instanceId;
         private final long startTimeMillisecond;
         private final long deadline;
         private long sequence = 0L;

@@ -11,11 +11,11 @@ import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
-import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.StringUtil;
 
@@ -61,7 +61,7 @@ public final class ShowDatabases {
 
         // write rows
         ServerConfig conf = DbleServer.getInstance().getConfig();
-        Map<Pair<String, String>, UserConfig> users = conf.getUsers();
+        Map<UserName, UserConfig> users = conf.getUsers();
         UserConfig user = users == null ? null : users.get(c.getUser());
         if (user != null) {
             ShardingUserConfig shardingUser = (ShardingUserConfig) user;

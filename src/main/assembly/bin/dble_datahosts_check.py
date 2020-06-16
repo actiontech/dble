@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from xml.dom.minidom import parse
-import xml.dom.minidom
 import MySQLdb
 import MySQLdb.cursors
-from optparse import OptionParser
-import logging.config
+import xml.dom.minidom
+
 import decode
+
 
 # Get manager user infomation.
 

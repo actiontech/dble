@@ -2,13 +2,11 @@
 # -*- coding: utf-8 -*-
 # reference from https://segmentfault.com/a/1190000017792696 and support length of 94
 
-# 系统库
-import six
-import logging
-import coloredlogs
+import base64
 # 第三方库
 import rsa
-import base64
+# 系统库
+import six
 
 PUB_KEY_STRING = 'MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAKHGwq7q2RmwuRgKxBypQHw0mYu4BQZ3eMsTrdK8E6igRcxsobUC7uT0SoxIjl1WveWniCASejoQtn/BY6hVKWsCAwEAAQ=='
 

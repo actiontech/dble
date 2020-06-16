@@ -5,8 +5,8 @@
 
 package com.actiontech.dble.route.parser.druid.impl.ddl;
 
-import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.cluster.zkprocess.zookeeper.process.DDLInfo;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.route.RouteResultset;

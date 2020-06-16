@@ -11,8 +11,8 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.user.ManagerUserConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.FrontendConnection;
-import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +25,7 @@ public final class AuthUtil {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthUtil.class);
 
-    public static String authority(final FrontendConnection source, Pair<String, String> user, byte[] pwd, String schema, boolean isManagerConn) {
+    public static String authority(final FrontendConnection source, UserName user, byte[] pwd, String schema, boolean isManagerConn) {
         UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(user);
         if (userConfig == null) {
             return "Access denied for user '" + user + "' with host '" + source.getHost() + "'";

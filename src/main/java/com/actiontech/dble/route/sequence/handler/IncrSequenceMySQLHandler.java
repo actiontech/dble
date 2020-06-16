@@ -10,13 +10,9 @@ import com.actiontech.dble.route.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
 import java.sql.SQLNonTransientException;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class IncrSequenceMySQLHandler implements SequenceHandler {
 

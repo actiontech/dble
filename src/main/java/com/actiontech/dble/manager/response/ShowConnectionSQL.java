@@ -106,7 +106,7 @@ public final class ShowConnectionSQL {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(LongUtil.toBytes(c.getId()));
         row.add(StringUtil.encode(c.getHost(), charset));
-        row.add(StringUtil.encode(c.getUserInfo(), charset));
+        row.add(StringUtil.encode(c.getUser().toString(), charset));
         if (c instanceof ServerConnection) {
             row.add(StringUtil.encode(((ServerConnection) c).getSchema(), charset));
         } else {

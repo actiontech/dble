@@ -12,11 +12,18 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-public abstract class UserConfig {
+public class UserConfig {
     protected final String name;
     protected final String password;
     protected final Set<String> whiteIPs;
-    protected int maxCon;
+    protected final int maxCon;
+
+    public UserConfig(UserConfig user) {
+        this.name = user.name;
+        this.password = user.password;
+        this.whiteIPs = user.whiteIPs;
+        this.maxCon = user.maxCon;
+    }
 
     public UserConfig(String name, String password, String strWhiteIPs, String strMaxCon) {
         this.name = name;

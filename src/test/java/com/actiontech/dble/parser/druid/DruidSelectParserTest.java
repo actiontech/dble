@@ -18,9 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 /**
  * Created by Hash Zhang on 2016/4/29.
  * Modified by Hash Zhang on 2016/5/25 add testGroupByWithViewAlias.

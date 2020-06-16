@@ -5,13 +5,13 @@
 */
 package com.actiontech.dble.server.response;
 
-import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.parser.ScriptPrepareParse;
 
-import java.util.List;
 import java.util.LinkedList;
+import java.util.List;
 
 public final class SptPrepare {
     private SptPrepare() {

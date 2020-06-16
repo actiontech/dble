@@ -5,8 +5,8 @@
 */
 package com.actiontech.dble.server.response;
 
-import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.server.ServerConnection;
 
 public final class SptDrop {

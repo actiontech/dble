@@ -3,16 +3,12 @@ package com.actiontech.dble.manager.response;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.config.model.user.ManagerUserConfig;
-import com.actiontech.dble.config.model.user.RwSplitUserConfig;
-import com.actiontech.dble.config.model.user.ShardingUserConfig;
-import com.actiontech.dble.config.model.user.UserConfig;
+import com.actiontech.dble.config.model.user.*;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
-import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
@@ -64,8 +60,8 @@ public final class ShowUser {
 
         // write rows
         byte packetId = EOF.getPacketId();
-        Map<Pair<String, String>, UserConfig> users = DbleServer.getInstance().getConfig().getUsers();
-        for (Map.Entry<Pair<String, String>, UserConfig> entry: users.entrySet()) {
+        Map<UserName, UserConfig> users = DbleServer.getInstance().getConfig().getUsers();
+        for (Map.Entry<UserName, UserConfig> entry: users.entrySet()) {
             RowDataPacket row = getRow(entry.getValue(), c.getCharset().getResults());
             row.setPacketId(++packetId);
             buffer = row.write(buffer, c, true);

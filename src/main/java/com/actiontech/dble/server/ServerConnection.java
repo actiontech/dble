@@ -14,6 +14,7 @@ import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.user.ServerUserConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.config.util.AuthUtil;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.FrontendConnection;
@@ -252,7 +253,7 @@ public class ServerConnection extends FrontendConnection {
         AuthSwitchResponsePackage authSwitchResponse = new AuthSwitchResponsePackage();
         authSwitchResponse.read(data);
         changeUserPacket.setPassword(authSwitchResponse.getAuthPluginData());
-        String errMsg = AuthUtil.authority(this, new Pair<>(changeUserPacket.getUser(), changeUserPacket.getTenant()), changeUserPacket.getPassword(), changeUserPacket.getDatabase(), false);
+        String errMsg = AuthUtil.authority(this, new UserName(changeUserPacket.getUser(), changeUserPacket.getTenant()), changeUserPacket.getPassword(), changeUserPacket.getDatabase(), false);
         byte packetId = (byte) (authSwitchResponse.getPacketId() + 1);
         if (errMsg == null) {
             changeUserSuccess(changeUserPacket, packetId);
@@ -262,7 +263,7 @@ public class ServerConnection extends FrontendConnection {
     }
 
     private void changeUserSuccess(ChangeUserPacket newUser, byte packetId) {
-        Pair<String, String> user = new Pair<>(newUser.getUser(), newUser.getTenant());
+        UserName user = new UserName(newUser.getUser(), newUser.getTenant());
         this.setUser(user);
         this.setUserConfig((ServerUserConfig) DbleServer.getInstance().getConfig().getUsers().get(user));
         this.setSchema(newUser.getDatabase());

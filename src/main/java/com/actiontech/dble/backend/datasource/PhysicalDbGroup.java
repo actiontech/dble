@@ -187,9 +187,8 @@ public class PhysicalDbGroup {
             AlertUtil.alert(AlarmCode.DB_INSTANCE_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", theNode.getConfig().getId(), labels);
             throw new IOException(heartbeatError);
         }
-        BackendConnection conn = theNode.getConnection(schema, theNode.getConfig().getConnectionTimeout());
-        conn.setAttachment(attachment);
-        handler.connectionAcquired(conn);
+
+        theNode.getConnection(schema, handler, attachment, false);
     }
 
     PhysicalDbInstance getRWSplitNode() {
@@ -227,8 +226,7 @@ public class PhysicalDbGroup {
         }
     }
 
-    boolean getReadCon(String schema, ResponseHandler handler, Object attachment) throws
-            Exception {
+    boolean getReadCon(String schema, ResponseHandler handler, Object attachment) throws Exception {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("!readSources.isEmpty() " + (allSourceMap.values().size() > 1));
         }
@@ -236,9 +234,7 @@ public class PhysicalDbGroup {
             PhysicalDbInstance theNode = getRandomAliveReadNode();
             if (theNode != null) {
                 theNode.incrementReadCount();
-                BackendConnection conn = theNode.getConnection(schema, theNode.getConfig().getConnectionTimeout());
-                conn.setAttachment(attachment);
-                handler.connectionAcquired(conn);
+                theNode.getConnection(schema, handler, attachment, false);
                 return true;
             } else {
                 LOGGER.info("read host is not available.");

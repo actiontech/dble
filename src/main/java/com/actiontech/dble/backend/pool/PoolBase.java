@@ -22,19 +22,32 @@ public class PoolBase {
     protected final DbInstanceConfig config;
     protected final PhysicalDbInstance instance;
 
-    private volatile boolean testOnCreate = false;
-    private volatile boolean testOnBorrow = false;
-    private volatile boolean testOnReturn = false;
-    private volatile boolean testWhileIdle = false;
-    private volatile long timeBetweenEvictionRunsMillis = -1L;
-    private volatile int numTestsPerEvictionRun = 3;
-    private volatile long evictorShutdownTimeoutMillis = 10000L;
+    private final long connectionTimeout;
+    private final long connectionHeartbeatTimeout;
+    private final boolean testOnCreate;
+    private final boolean testOnBorrow;
+    private final boolean testOnReturn;
+    private final boolean testWhileIdle;
+    private final long timeBetweenEvictionRunsMillis;
+    private final int numTestsPerEvictionRun;
+    private final long evictorShutdownTimeoutMillis;
+    private final long idleTimeout;
 
-    public PoolBase(DbInstanceConfig config, PhysicalDbInstance instance) {
-        this.config = config;
+    public PoolBase(DbInstanceConfig dbConfig, PhysicalDbInstance instance) {
+        this.config = dbConfig;
         this.instance = instance;
 
-        setConfig(config);
+        PoolConfig poolConfig = dbConfig.getPoolConfig();
+        this.testOnBorrow = poolConfig.getTestOnBorrow();
+        this.testOnCreate = poolConfig.getTestOnCreate();
+        this.testOnReturn = poolConfig.getTestOnReturn();
+        this.testWhileIdle = poolConfig.getTestWhileIdle();
+        this.connectionHeartbeatTimeout = poolConfig.getConnectionHeartbeatTimeout();
+        this.connectionTimeout = poolConfig.getConnectionTimeout();
+        this.timeBetweenEvictionRunsMillis = poolConfig.getTimeBetweenEvictionRunsMillis();
+        this.numTestsPerEvictionRun = poolConfig.getNumTestsPerEvictionRun();
+        this.evictorShutdownTimeoutMillis = poolConfig.getEvictorShutdownTimeoutMillis();
+        this.idleTimeout = poolConfig.getIdleTimeout();
     }
 
     /**
@@ -109,185 +122,28 @@ public class PoolBase {
         return channel;
     }
 
-    /**
-     * Initializes the receiver with the given configuration.
-     *
-     * @param config Initialization source.
-     */
-    protected void setConfig(DbInstanceConfig config) {
-        setTestOnCreate(config.isTestOnCreate());
-        setTestOnBorrow(config.isTestOnBorrow());
-        setTestOnReturn(config.isTestOnReturn());
-        setTestWhileIdle(config.isTestWhileIdle());
-        setNumTestsPerEvictionRun(config.getNumTestsPerEvictionRun());
-        setTimeBetweenEvictionRunsMillis(config.getTimeBetweenEvictionRunsMillis());
-        setEvictorShutdownTimeoutMillis(config.getEvictorShutdownTimeoutMillis());
-    }
-
-    /**
-     * Returns whether objects created for the pool will be validated before
-     * being returned from the <code>borrowObject()</code> method. Validation is
-     * performed by the <code>validateObject()</code> method of the factory
-     * associated with the pool. If the object fails to validate, then
-     * <code>borrowObject()</code> will fail.
-     *
-     * @return <code>true</code> if newly created objects are validated before
-     * being returned from the <code>borrowObject()</code> method
-     * @see #setTestOnCreate
-     * @since 2.2
-     */
     public final boolean getTestOnCreate() {
         return testOnCreate;
     }
 
-    /**
-     * Sets whether objects created for the pool will be validated before
-     * being returned from the <code>borrowObject()</code> method. Validation is
-     * performed by the <code>validateObject()</code> method of the factory
-     * associated with the pool. If the object fails to validate, then
-     * <code>borrowObject()</code> will fail.
-     *
-     * @param testOnCreate <code>true</code> if newly created objects should be
-     *                     validated before being returned from the
-     *                     <code>borrowObject()</code> method
-     * @see #getTestOnCreate
-     * @since 2.2
-     */
-    public final void setTestOnCreate(final boolean testOnCreate) {
-        this.testOnCreate = testOnCreate;
-    }
-
-    /**
-     * Returns whether objects borrowed from the pool will be validated before
-     * being returned from the <code>borrowObject()</code> method. Validation is
-     * performed by the <code>validateObject()</code> method of the factory
-     * associated with the pool. If the object fails to validate, it will be
-     * removed from the pool and destroyed, and a new attempt will be made to
-     * borrow an object from the pool.
-     *
-     * @return <code>true</code> if objects are validated before being returned
-     * from the <code>borrowObject()</code> method
-     * @see #setTestOnBorrow
-     */
     public final boolean getTestOnBorrow() {
         return testOnBorrow;
     }
 
-    /**
-     * Sets whether objects borrowed from the pool will be validated before
-     * being returned from the <code>borrowObject()</code> method. Validation is
-     * performed by the <code>validateObject()</code> method of the factory
-     * associated with the pool. If the object fails to validate, it will be
-     * removed from the pool and destroyed, and a new attempt will be made to
-     * borrow an object from the pool.
-     *
-     * @param testOnBorrow <code>true</code> if objects should be validated
-     *                     before being returned from the
-     *                     <code>borrowObject()</code> method
-     * @see #getTestOnBorrow
-     */
-    public final void setTestOnBorrow(final boolean testOnBorrow) {
-        this.testOnBorrow = testOnBorrow;
-    }
-
-    /**
-     * Returns whether objects borrowed from the pool will be validated when
-     * they are returned to the pool via the <code>returnObject()</code> method.
-     * Validation is performed by the <code>validateObject()</code> method of
-     * the factory associated with the pool. Returning objects that fail validation
-     * are destroyed rather then being returned the pool.
-     *
-     * @return <code>true</code> if objects are validated on return to
-     * the pool via the <code>returnObject()</code> method
-     * @see #setTestOnReturn
-     */
     public final boolean getTestOnReturn() {
         return testOnReturn;
     }
 
-    /**
-     * Sets whether objects borrowed from the pool will be validated when
-     * they are returned to the pool via the <code>returnObject()</code> method.
-     * Validation is performed by the <code>validateObject()</code> method of
-     * the factory associated with the pool. Returning objects that fail validation
-     * are destroyed rather then being returned the pool.
-     *
-     * @param testOnReturn <code>true</code> if objects are validated on
-     *                     return to the pool via the
-     *                     <code>returnObject()</code> method
-     * @see #getTestOnReturn
-     */
-    public final void setTestOnReturn(final boolean testOnReturn) {
-        this.testOnReturn = testOnReturn;
-    }
-
-    /**
-     * Returns whether objects sitting idle in the pool will be validated by the
-     * idle object evictor (if any - see
-     * {@link #setTimeBetweenEvictionRunsMillis(long)}). Validation is performed
-     * by the <code>validateObject()</code> method of the factory associated
-     * with the pool. If the object fails to validate, it will be removed from
-     * the pool and destroyed.
-     *
-     * @return <code>true</code> if objects will be validated by the evictor
-     * @see #setTestWhileIdle
-     * @see #setTimeBetweenEvictionRunsMillis
-     */
     public final boolean getTestWhileIdle() {
         return testWhileIdle;
     }
 
-    /**
-     * Returns whether objects sitting idle in the pool will be validated by the
-     * idle object evictor (if any - see
-     * {@link #setTimeBetweenEvictionRunsMillis(long)}). Validation is performed
-     * by the <code>validateObject()</code> method of the factory associated
-     * with the pool. If the object fails to validate, it will be removed from
-     * the pool and destroyed.  Note that setting this property has no effect
-     * unless the idle object evictor is enabled by setting
-     * <code>timeBetweenEvictionRunsMillis</code> to a positive value.
-     *
-     * @param testWhileIdle <code>true</code> so objects will be validated by the evictor
-     * @see #getTestWhileIdle
-     * @see #setTimeBetweenEvictionRunsMillis
-     */
-    public final void setTestWhileIdle(final boolean testWhileIdle) {
-        this.testWhileIdle = testWhileIdle;
-    }
-
-    /**
-     * Returns the number of milliseconds to sleep between runs of the idle
-     * object evictor thread. When non-positive, no idle object evictor thread
-     * will be run.
-     *
-     * @return number of milliseconds to sleep between evictor runs
-     * @see #setTimeBetweenEvictionRunsMillis
-     */
     public final long getTimeBetweenEvictionRunsMillis() {
         return timeBetweenEvictionRunsMillis;
     }
 
-    /**
-     * Sets the number of milliseconds to sleep between runs of the idle object evictor thread.
-     * <ul>
-     * <li>When positive, the idle object evictor thread starts.</li>
-     * <li>When non-positive, no idle object evictor thread runs.</li>
-     * </ul>
-     *
-     * @param timeBetweenEvictionRunsMillis number of milliseconds to sleep between evictor runs
-     * @see #getTimeBetweenEvictionRunsMillis
-     */
-    public final void setTimeBetweenEvictionRunsMillis(
-            final long timeBetweenEvictionRunsMillis) {
-        this.timeBetweenEvictionRunsMillis = timeBetweenEvictionRunsMillis;
-    }
-
     public final int getNumTestsPerEvictionRun() {
         return numTestsPerEvictionRun;
-    }
-
-    public final void setNumTestsPerEvictionRun(final int numTestsPerEvictionRun) {
-        this.numTestsPerEvictionRun = numTestsPerEvictionRun;
     }
 
     /**
@@ -302,17 +158,15 @@ public class PoolBase {
         return evictorShutdownTimeoutMillis;
     }
 
-    /**
-     * Sets the timeout that will be used when waiting for the Evictor to
-     * shutdown if this pool is closed and it is the only pool still using the
-     * the value for the Evictor.
-     *
-     * @param evictorShutdownTimeoutMillis the timeout in milliseconds that
-     *                                     will be used while waiting for the
-     *                                     Evictor to shut down.
-     */
-    public final void setEvictorShutdownTimeoutMillis(
-            final long evictorShutdownTimeoutMillis) {
-        this.evictorShutdownTimeoutMillis = evictorShutdownTimeoutMillis;
+    public long getConnectionTimeout() {
+        return connectionTimeout;
+    }
+
+    public long getConnectionHeartbeatTimeout() {
+        return connectionHeartbeatTimeout;
+    }
+
+    public long getIdleTimeout() {
+        return idleTimeout;
     }
 }

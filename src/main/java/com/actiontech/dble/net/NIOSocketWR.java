@@ -9,8 +9,6 @@ import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.config.FlowControllerConfig;
 import com.actiontech.dble.singleton.WriteQueueFlowController;
 import com.actiontech.dble.util.TimeUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -21,7 +19,7 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class NIOSocketWR extends SocketWR {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NIOSocketWR.class);
+
     private SelectionKey processKey;
     private static final int OP_NOT_READ = ~SelectionKey.OP_READ;
     private static final int OP_NOT_WRITE = ~SelectionKey.OP_WRITE;

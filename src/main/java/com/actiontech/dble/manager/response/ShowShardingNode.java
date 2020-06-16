@@ -153,7 +153,7 @@ public final class ShowShardingNode {
             int idle = ds.getIdleConnections(node.getDatabase());
             row.add(IntegerUtil.toBytes(active));
             row.add(IntegerUtil.toBytes(idle));
-            row.add(IntegerUtil.toBytes(ds.getConfig().getMaxTotal()));
+            row.add(IntegerUtil.toBytes(ds.getConfig().getMaxCon()));
             row.add(LongUtil.toBytes(0));
             long recoveryTime = ds.getHeartbeatRecoveryTime() - TimeUtil.currentTimeMillis();
             row.add(LongUtil.toBytes(recoveryTime > 0 ? recoveryTime / 1000L : -1L));

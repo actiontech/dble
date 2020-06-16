@@ -8,11 +8,11 @@ package com.actiontech.dble.config.loader.xml;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
+import com.actiontech.dble.backend.pool.PoolConfig;
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.model.DbGroupConfig;
 import com.actiontech.dble.config.model.DbInstanceConfig;
-import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.config.util.ParameterMapping;
@@ -176,7 +176,7 @@ public class XMLDbLoader {
         if (!nameMatcher.matches()) {
             throw new ConfigException("dbInstance name " + name + " show be use " + DbGroupHAHandler.DB_NAME_FORMAT + "!");
         }
-        if (empty(name) || empty(nodeUrl) || empty(user)) {
+        if (StringUtil.isEmpty(name) || StringUtil.isEmpty(nodeUrl) || StringUtil.isEmpty(user)) {
             throw new ConfigException(
                     "dbGroup " + dbGroup +
                             " define error,some attributes of this element is empty: " +
@@ -194,32 +194,30 @@ public class XMLDbLoader {
         boolean primary = Boolean.parseBoolean(primaryStr);
 
         DbInstanceConfig conf = new DbInstanceConfig(name, ip, port, nodeUrl, user, password, disabled, primary);
-        // init properties of connection pool
-        Properties poolProperties = ConfigUtil.loadElements(node);
-        ParameterMapping.mapping(conf, poolProperties, problemReporter);
-        if (poolProperties.size() > 0) {
-            throw new ConfigException("These properties of system are not recognized: " + StringUtil.join(poolProperties.stringPropertyNames(), ","));
-        }
-
         String readWeightStr = ConfigUtil.checkAndGetAttribute(node, "readWeight", String.valueOf(PhysicalDbGroup.WEIGHT), problemReporter);
         int readWeight = Integer.parseInt(readWeightStr);
         int maxCon = Integer.parseInt(node.getAttribute("maxCon"));
         int minCon = Integer.parseInt(node.getAttribute("minCon"));
-        conf.setMaxTotal(maxCon);
-        conf.setMinIdle(minCon);
+        conf.setMaxCon(maxCon);
+        conf.setMinCon(minCon);
         conf.setReadWeight(readWeight);
         String id = node.getAttribute("id");
-        if (!"".equals(id)) {
-            conf.setId(id);
-        } else {
+        if (StringUtil.isEmpty(id)) {
             conf.setId(name);
+        } else {
+            conf.setId(id);
         }
 
-        return conf;
-    }
+        // init properties of connection pool
+        PoolConfig poolConfig = new PoolConfig();
+        Properties poolProperties = ConfigUtil.loadElements(node);
+        ParameterMapping.mapping(poolConfig, poolProperties, problemReporter);
+        if (poolProperties.size() > 0) {
+            throw new ConfigException("These properties of system are not recognized: " + StringUtil.join(poolProperties.stringPropertyNames(), ","));
+        }
+        conf.setPoolConfig(poolConfig);
 
-    private boolean empty(String dnName) {
-        return dnName == null || dnName.length() == 0;
+        return conf;
     }
 
     private Map<String, PhysicalDbGroup> initDbGroups(Map<String, DbGroupConfig> nodeConf) {
@@ -232,9 +230,7 @@ public class XMLDbLoader {
         return nodes;
     }
 
-    private PhysicalDbInstance createDbInstance(DbGroupConfig conf, DbInstanceConfig node,
-                                                boolean isRead) {
-        node.setIdleTimeout(SystemConfig.getInstance().getIdleTimeout());
+    private PhysicalDbInstance createDbInstance(DbGroupConfig conf, DbInstanceConfig node, boolean isRead) {
         return new MySQLInstance(node, conf, isRead);
     }
 

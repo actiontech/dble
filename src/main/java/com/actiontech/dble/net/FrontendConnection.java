@@ -47,6 +47,7 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     protected FrontendQueryHandler queryHandler;
     protected String executeSql;
+    protected final long idleTimeout = SystemConfig.getInstance().getIdleTimeout();
 
     public FrontendConnection(NetworkChannel channel) throws IOException {
         super(channel);

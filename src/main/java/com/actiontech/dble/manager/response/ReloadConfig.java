@@ -6,13 +6,9 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroupDiff;
-import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.datasource.ShardingNode;
-import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
-import com.actiontech.dble.backend.pool.PooledEntry;
 import com.actiontech.dble.btrace.provider.ClusterDelayProvider;
 import com.actiontech.dble.cluster.ClusterHelper;
 import com.actiontech.dble.cluster.ClusterPathUtil;
@@ -38,7 +34,6 @@ import com.actiontech.dble.meta.ReloadManager;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.ManagerParseConfig;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.ServerConnection;
@@ -388,7 +383,6 @@ public final class ReloadConfig {
                 }
                 FrontendUserManager.getInstance().initForLatest(newUsers, SystemConfig.getInstance().getMaxCon());
                 ReloadLogHelper.info("reload config: apply new config end", LOGGER);
-                recycleOldBackendConnections(recycleHosts, ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
                 if (!loader.isFullyConfigured()) {
                     recycleServerConnections();
                 }
@@ -450,7 +444,6 @@ public final class ReloadConfig {
                 }
                 FrontendUserManager.getInstance().initForLatest(newUsers, SystemConfig.getInstance().getMaxCon());
                 ReloadLogHelper.info("reload config: apply new config end", LOGGER);
-                recycleOldBackendConnections(config.getBackupDbGroups(), ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
                 if (!loader.isFullyConfigured()) {
                     recycleServerConnections();
                 }
@@ -492,30 +485,6 @@ public final class ReloadConfig {
         return newSystemVariables;
     }
 
-    private static void findAndcloseFrontCon(BackendConnection con) {
-        if (con instanceof MySQLConnection) {
-            MySQLConnection mcon1 = (MySQLConnection) con;
-            for (NIOProcessor processor : DbleServer.getInstance().getFrontProcessors()) {
-                for (FrontendConnection fcon : processor.getFrontends().values()) {
-                    if (fcon instanceof ServerConnection) {
-                        ServerConnection scon = (ServerConnection) fcon;
-                        Map<RouteResultsetNode, BackendConnection> bons = scon.getSession2().getTargetMap();
-                        for (BackendConnection bcon : bons.values()) {
-                            if (bcon instanceof MySQLConnection) {
-                                MySQLConnection mcon2 = (MySQLConnection) bcon;
-                                if (mcon1 == mcon2) {
-                                    //frontEnd kill change to frontEnd close ,it's not necessary to use kill
-                                    scon.close("reload config all");
-                                    return;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     private static void recycleServerConnections() {
         for (NIOProcessor processor : DbleServer.getInstance().getFrontProcessors()) {
             for (FrontendConnection fcon : processor.getFrontends().values()) {
@@ -525,50 +494,6 @@ public final class ReloadConfig {
                 }
             }
         }
-    }
-
-    private static void recycleOldBackendConnections(Map<String, PhysicalDbGroup> recycleMap, boolean closeFrontCon) {
-        for (PhysicalDbGroup dbGroup : recycleMap.values()) {
-            dbGroup.stopHeartbeat("recycle old connections");
-            long oldTimestamp = System.currentTimeMillis();
-            for (PhysicalDbInstance ds : dbGroup.getAllActiveDbInstances()) {
-                for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
-                    for (BackendConnection con : processor.getBackends().values()) {
-                        if (con instanceof MySQLConnection) {
-                            MySQLConnection mysqlCon = (MySQLConnection) con;
-                            if (mysqlCon.getDbInstance() == ds) {
-                                if (con.getState() == PooledEntry.STATE_IN_USE) {
-                                    if (closeFrontCon) {
-                                        ReloadLogHelper.info("old active backend conn will be forced closed by closing front conn, conn info:" + mysqlCon, LOGGER);
-                                        findAndcloseFrontCon(con);
-                                    } else {
-                                        ReloadLogHelper.info("old active backend conn will be added to old pool, conn info:" + mysqlCon, LOGGER);
-                                        con.setOldTimestamp(oldTimestamp);
-                                        NIOProcessor.BACKENDS_OLD.add(con);
-                                    }
-                                } else {
-                                    ReloadLogHelper.info("old idle backend conn will be closed, conn info:" + mysqlCon, LOGGER);
-                                    con.close("old idle conn for reload merge");
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        if (closeFrontCon) {
-            for (NIOProcessor processor : DbleServer.getInstance().getBackendProcessors()) {
-                for (BackendConnection con : processor.getBackends().values()) {
-                    if (con instanceof MySQLConnection) {
-                        MySQLConnection mysqlCon = (MySQLConnection) con;
-                        if (mysqlCon.getOldTimestamp() != 0) {
-                            findAndcloseFrontCon(con);
-                        }
-                    }
-                }
-            }
-        }
-
     }
 
     private static void distinguishDbGroup(Map<String, PhysicalDbGroup> newDbGroups, Map<String, PhysicalDbGroup> oldDbGroups,

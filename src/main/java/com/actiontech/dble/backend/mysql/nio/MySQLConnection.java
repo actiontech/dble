@@ -640,17 +640,21 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
 
     }
 
-
+    @Override
     public long getLastTime() {
         return lastTime;
     }
 
-    public void setLastTime(long lastTime) {
-        this.lastTime = lastTime;
+    public void close() {
+        close("normal", false);
     }
 
-    public void close() {
-        close("normal");
+    public void close(String reason, boolean closeFrontConn) {
+        if (closeFrontConn) {
+            session.getSource().close(reason);
+        } else {
+            close("normal");
+        }
     }
 
     /**
@@ -727,7 +731,7 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
                     handler.connectionClose(conn, reason);
                     respHandler = null;
                 } catch (Throwable e) {
-                    LOGGER.warn("get error close mysqlconnection ", e);
+                    LOGGER.warn("get error close mysql connection ", e);
                 }
             }
         });

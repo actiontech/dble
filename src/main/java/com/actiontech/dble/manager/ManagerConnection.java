@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.manager;
 
 import com.actiontech.dble.backend.BackendConnection;
@@ -22,6 +22,7 @@ public class ManagerConnection extends FrontendConnection {
     private static final long AUTH_TIMEOUT = 15 * 1000L;
     private volatile boolean skipIdleCheck = false;
     private ManagerUserConfig userConfig;
+
     public ManagerConnection(NetworkChannel channel) throws IOException {
         super(channel);
         this.handler = new ManagerAuthenticator(this);
@@ -34,6 +35,7 @@ public class ManagerConnection extends FrontendConnection {
     public void setUserConfig(ManagerUserConfig userConfig) {
         this.userConfig = userConfig;
     }
+
     @Override
     public void handlerQuery(String sql) {
         // execute
@@ -44,15 +46,15 @@ public class ManagerConnection extends FrontendConnection {
             writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Query unsupported!");
         }
     }
-    @Override
+
+
     public boolean isIdleTimeout() {
         if (skipIdleCheck) {
             return false;
         } else if (isAuthenticated) {
-            return super.isIdleTimeout();
+            return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime, lastReadTime) + idleTimeout;
         } else {
-            return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime,
-                    lastReadTime) + AUTH_TIMEOUT;
+            return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime, lastReadTime) + AUTH_TIMEOUT;
         }
     }
 

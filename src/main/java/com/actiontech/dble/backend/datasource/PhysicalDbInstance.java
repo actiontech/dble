@@ -84,22 +84,22 @@ public abstract class PhysicalDbInstance {
             return;
         }
 
-        int size = config.getMinIdle();
+        int size = config.getMinCon();
         String[] physicalSchemas = dbGroup.getSchemas();
         int initSize = physicalSchemas.length + 1;
         if (size < initSize) {
             LOGGER.warn("For db instance[{}], minIdle is less than (the count of schema +1), so dble will create at least 1 conn for every schema and empty schema, " +
                     "minCon size before:{}, now:{}", new Object[]{name, size, initSize});
-            config.setMinIdle(initSize);
+            config.setMinCon(initSize);
         }
 
-        size = config.getMaxTotal();
+        size = config.getMaxCon();
         if (size < initSize) {
             LOGGER.warn("For db instance[{}], maxTotal[{}] is less than the initSize of dataHost,change the maxCon into {}", new Object[]{name, size, initSize});
-            config.setMaxTotal(initSize);
+            config.setMaxCon(initSize);
         }
 
-        this.connectionPool.startEvictor(config.getTimeBetweenEvictionRunsMillis());
+        this.connectionPool.startEvictor();
         startHeartbeat();
     }
 
@@ -114,13 +114,25 @@ public abstract class PhysicalDbInstance {
             throw new IOException("primary dbInstance switched");
         }
 
-        BackendConnection con = getConnection(schema, config.getConnectionTimeout());
-        con.setAttachment(attachment);
-        handler.connectionAcquired(con);
+        DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                BackendConnection con = null;
+                try {
+                    con = getConnection(schema, config.getPoolConfig().getConnectionTimeout());
+                } catch (IOException e) {
+                    handler.connectionError(e, con);
+                    return;
+                }
+                con.setAttachment(attachment);
+                handler.connectionAcquired(con);
+            }
+        });
     }
 
+    // don't block business executor, complex query use
     public BackendConnection getConnection(String schema, final Object attachment) throws IOException {
-        BackendConnection con = getConnection(schema, config.getConnectionTimeout());
+        BackendConnection con = getConnection(schema, config.getPoolConfig().getConnectionTimeout());
         con.setAttachment(attachment);
         return con;
     }
@@ -144,16 +156,15 @@ public abstract class PhysicalDbInstance {
                     break; // We timed out... break and throw exception
                 }
 
-                if (!StringUtil.equals(conn.getSchema(), schema)) {
-                    // need do sharding syn in before sql send
-                    conn.setSchema(schema);
-                }
-
                 final long now = System.currentTimeMillis();
-                if (conn.isClosed() || config.isTestOnBorrow()) {
+                if (config.getPoolConfig().getTestOnBorrow()) {
                     conn.close("(connection is evicted or dead)"); // Throw away the dead connection (passed max age or failed alive test)
                     timeout = hardTimeout - (now - startTime);
                 } else {
+                    if (!StringUtil.equals(conn.getSchema(), schema)) {
+                        // need do sharding syn in before sql send
+                        conn.setSchema(schema);
+                    }
                     return conn;
                 }
             } while (timeout > 0L);
@@ -411,7 +422,7 @@ public abstract class PhysicalDbInstance {
         return "dbInstance[name=" + name +
                 ",disabled=" +
                 disabled.toString() + ",maxCon=" +
-                config.getMaxTotal() + "]";
+                config.getMaxCon() + "]";
     }
 
 }

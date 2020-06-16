@@ -19,6 +19,7 @@ import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
+import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.route.parser.ManagerParseConfig;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.variables.SystemVariables;
@@ -360,6 +361,7 @@ public class ServerConfig {
             if (recycleDbGroups != null) {
                 for (PhysicalDbGroup oldDbGroup : recycleDbGroups.values()) {
                     if (oldDbGroup != null) {
+                        ReloadLogHelper.info("reload config, recycle old group. old active backend conn will be close", LOGGER);
                         oldDbGroup.stop("reload config, recycle old group");
                     }
                 }

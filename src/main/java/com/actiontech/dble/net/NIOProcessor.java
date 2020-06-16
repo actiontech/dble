@@ -19,7 +19,6 @@ import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,7 +46,7 @@ public final class NIOProcessor {
 
     private AtomicInteger frontEndsLength = new AtomicInteger(0);
 
-    public NIOProcessor(String name, BufferPool bufferPool) throws IOException {
+    public NIOProcessor(String name, BufferPool bufferPool) {
         this.name = name;
         this.bufferPool = bufferPool;
         this.frontends = new ConcurrentHashMap<>();
@@ -146,19 +145,21 @@ public final class NIOProcessor {
             } else {
                 // very important ,for some data maybe not sent
                 checkConSendQueue(c);
-                if (c instanceof ServerConnection && c.isIdleTimeout()) {
+                if (c instanceof ServerConnection) {
                     ServerConnection s = (ServerConnection) c;
-                    String xaStage = s.getSession2().getTransactionManager().getXAStage();
-                    if (xaStage != null) {
-                        if (!xaStage.equals(XAStage.COMMIT_FAIL_STAGE) && !xaStage.equals(XAStage.ROLLBACK_FAIL_STAGE)) {
-                            // Active/IDLE/PREPARED XA FrontendS will be rollbacked
-                            s.close("Idle Timeout");
-                            XASessionCheck.getInstance().addRollbackSession(s.getSession2());
+                    if (s.isIdleTimeout()) {
+                        String xaStage = s.getSession2().getTransactionManager().getXAStage();
+                        if (xaStage != null) {
+                            if (!xaStage.equals(XAStage.COMMIT_FAIL_STAGE) && !xaStage.equals(XAStage.ROLLBACK_FAIL_STAGE)) {
+                                // Active/IDLE/PREPARED XA FrontendS will be rollbacked
+                                s.close("Idle Timeout");
+                                XASessionCheck.getInstance().addRollbackSession(s.getSession2());
+                            }
+                        } else {
+                            s.close("idle timeout");
                         }
-                        continue;
                     }
                 }
-                c.idleCheck();
             }
         }
     }

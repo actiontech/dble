@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.net;
 
 import com.actiontech.dble.DbleServer;
@@ -67,8 +67,6 @@ public abstract class AbstractConnection implements NIOConnection {
     protected final ConcurrentLinkedQueue<byte[]> compressUnfinishedDataQueue = new ConcurrentLinkedQueue<>();
     protected volatile Map<String, String> usrVariables;
     protected volatile Map<String, String> sysVariables;
-
-    private long idleTimeout;
 
     private final SocketWR socketWR;
 
@@ -149,10 +147,6 @@ public abstract class AbstractConnection implements NIOConnection {
         return socketWR;
     }
 
-    public void setIdleTimeout(long idleTimeout) {
-        this.idleTimeout = idleTimeout;
-    }
-
     public int getLocalPort() {
         return localPort;
     }
@@ -160,7 +154,6 @@ public abstract class AbstractConnection implements NIOConnection {
     public String getHost() {
         return host;
     }
-
 
     public int getPort() {
         return port;
@@ -178,11 +171,6 @@ public abstract class AbstractConnection implements NIOConnection {
         this.id = id;
     }
 
-    @Override
-    public boolean isIdleTimeout() {
-        return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime, lastReadTime) + idleTimeout;
-    }
-
     public Map<String, String> getUsrVariables() {
         return usrVariables;
     }
@@ -194,7 +182,6 @@ public abstract class AbstractConnection implements NIOConnection {
     public NetworkChannel getChannel() {
         return channel;
     }
-
 
     public void setReadBufferChunk(int readBufferChunk) {
         this.readBufferChunk = readBufferChunk;
@@ -576,13 +563,6 @@ public abstract class AbstractConnection implements NIOConnection {
         return isClosed;
     }
 
-    public void idleCheck() {
-        if (isIdleTimeout()) {
-            LOGGER.info(toString() + " idle timeout");
-            close(" idle ");
-        }
-    }
-
     protected synchronized void cleanup() {
 
         if (readBuffer != null) {
@@ -679,7 +659,7 @@ public abstract class AbstractConnection implements NIOConnection {
     }
 
     public void onConnectFinish() {
-        LOGGER.debug("The backend conntinon has finished connecting");
+        LOGGER.debug("The backend connection has finished connecting");
     }
 
     public void setSocketParams(boolean isFrontChannel) throws IOException {
@@ -704,7 +684,6 @@ public abstract class AbstractConnection implements NIOConnection {
         channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
 
         this.setMaxPacketSize(system.getMaxPacketSize());
-        this.setIdleTimeout(system.getIdleTimeout());
         this.initCharacterSet(system.getCharset());
         this.setReadBufferChunk(soRcvBuf);
     }
@@ -754,8 +733,7 @@ public abstract class AbstractConnection implements NIOConnection {
     }
 
     /*
-    start flow control because of the write queue in this connection to long
-
+     * start flow control because of the write queue in this connection to long
      */
     public abstract void startFlowControl(BackendConnection bcon);
 

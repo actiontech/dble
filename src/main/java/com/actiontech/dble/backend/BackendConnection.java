@@ -28,8 +28,6 @@ public interface BackendConnection extends ClosableConnection, PooledEntry {
 
     void setAttachment(Object attachment);
 
-    void setLastTime(long currentTimeMillis);
-
     void pong();
 
     boolean setResponseHandler(ResponseHandler commandHandler);

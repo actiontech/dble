@@ -79,11 +79,10 @@ public class ServerConnection extends FrontendConnection {
     private FrontendPrepareHandler prepareHandler;
     private LoadDataInfileHandler loadDataInfileHandler;
     private boolean sessionReadOnly = false;
-    private volatile boolean multStatementAllow = false;
+    private volatile boolean multiStatementAllow = false;
     private ServerUserConfig userConfig;
 
-    public ServerConnection(NetworkChannel channel)
-            throws IOException {
+    public ServerConnection(NetworkChannel channel) throws IOException {
         super(channel);
 
         this.handler = new ServerUserAuthenticator(this);
@@ -121,13 +120,11 @@ public class ServerConnection extends FrontendConnection {
         this.userConfig = userConfig;
     }
 
-    @Override
     public boolean isIdleTimeout() {
         if (isAuthenticated) {
-            return super.isIdleTimeout();
+            return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime, lastReadTime) + idleTimeout;
         } else {
-            return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime,
-                    lastReadTime) + AUTH_TIMEOUT;
+            return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime, lastReadTime) + AUTH_TIMEOUT;
         }
     }
 
@@ -216,14 +213,13 @@ public class ServerConnection extends FrontendConnection {
         this.loadDataInfileHandler = loadDataInfileHandler;
     }
 
-    public boolean isMultStatementAllow() {
-        return multStatementAllow;
+    public boolean isMultiStatementAllow() {
+        return multiStatementAllow;
     }
 
-    public void setMultStatementAllow(boolean multStatementAllow) {
-        this.multStatementAllow = multStatementAllow;
+    public void setMultiStatementAllow(boolean multiStatementAllow) {
+        this.multiStatementAllow = multiStatementAllow;
     }
-
 
     public void setPrepareHandler(FrontendPrepareHandler prepareHandler) {
         this.prepareHandler = prepareHandler;
@@ -525,7 +521,6 @@ public class ServerConnection extends FrontendConnection {
     }
 
 
-
     public void stmtPrepare(byte[] data) {
         if (prepareHandler != null) {
             MySQLMessage mm = new MySQLMessage(data);
@@ -567,11 +562,11 @@ public class ServerConnection extends FrontendConnection {
             mm.position(5);
             int optCommand = mm.readUB2();
             if (optCommand == 0) {
-                this.multStatementAllow = true;
+                this.multiStatementAllow = true;
                 write(writeToBuffer(EOFPacket.EOF, allocate()));
                 return;
             } else if (optCommand == 1) {
-                this.multStatementAllow = false;
+                this.multiStatementAllow = false;
                 write(writeToBuffer(EOFPacket.EOF, allocate()));
                 return;
             }
@@ -845,6 +840,9 @@ public class ServerConnection extends FrontendConnection {
 
     @Override
     public synchronized void close(String reason) {
+        if (isClosed) {
+            return;
+        }
         super.close(reason);
         if (session != null) {
             TsQueriesCounter.getInstance().addToHistory(session);

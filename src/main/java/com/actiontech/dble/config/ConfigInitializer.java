@@ -218,12 +218,12 @@ public class ConfigInitializer implements ProblemReporter {
             }
         }
         for (PhysicalDbInstance dbInstance : pool.getAllDbInstances()) {
-            if (dbInstance.getConfig().getMaxTotal() < Math.max(schemasCount + 1, dbInstance.getConfig().getMinIdle())) {
+            if (dbInstance.getConfig().getMaxCon() < Math.max(schemasCount + 1, dbInstance.getConfig().getMinCon())) {
                 errorInfos.add(new ErrorInfo("Xml", "NOTICE", "dbGroup[" + pool.getGroupName() + "." + dbInstance.getConfig().getInstanceName() + "] maxCon too little,would be change to " +
-                        Math.max(schemasCount + 1, dbInstance.getConfig().getMinIdle())));
+                        Math.max(schemasCount + 1, dbInstance.getConfig().getMinCon())));
             }
 
-            if (Math.max(schemasCount + 1, dbInstance.getConfig().getMinIdle()) != dbInstance.getConfig().getMinIdle()) {
+            if (Math.max(schemasCount + 1, dbInstance.getConfig().getMinCon()) != dbInstance.getConfig().getMinCon()) {
                 errorInfos.add(new ErrorInfo("Xml", "NOTICE", "dbGroup[" + pool.getGroupName() + "] minCon too little, Dble would init dbGroup" +
                         " with " + (schemasCount + 1) + " connections"));
             }

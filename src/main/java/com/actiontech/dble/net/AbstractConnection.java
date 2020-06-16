@@ -751,7 +751,7 @@ public abstract class AbstractConnection implements NIOConnection {
         this.flowControlled = flowControlled;
     }
 
-    public void updateLastReadTime(){
+    public void updateLastReadTime() {
         this.lastReadTime = TimeUtil.currentTimeMillis();
     }
 

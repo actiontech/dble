@@ -26,6 +26,7 @@ import com.actiontech.dble.singleton.SequenceManager;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.ast.SQLObject;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
@@ -62,10 +63,8 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
             return schema;
         }
         if (replace.getQuery() != null) {
-            //replace into ...select with sharding not supported
-            String msg = "`INSERT ... SELECT Syntax` is not supported!";
-            LOGGER.info(msg);
-            throw new SQLNonTransientException(msg);
+            tryRouteInsertQuery(sc, rrs, stmt, visitor, schemaInfo);
+            return schema;
         }
 
         //check the config of target table
@@ -115,6 +114,32 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         return schema;
     }
 
+    @Override
+    SQLSelect acceptVisitor(SQLObject stmt, ServerSchemaStatVisitor visitor) {
+        SQLReplaceStatement replace = (SQLReplaceStatement) stmt;
+        replace.getQuery().accept(visitor);
+        return replace.getQuery().getSubQuery();
+    }
+
+    @Override
+    int tryGetShardingColIndex(SchemaInfo schemaInfo, SQLStatement stmt, String partitionColumn) throws SQLNonTransientException {
+        return tryGetShardingColIndex(schemaInfo, (SQLReplaceStatement) stmt, partitionColumn);
+    }
+
+    /**
+     * find the index of the key in column list
+     *
+     * @param schemaInfo      SchemaInfo
+     * @param replaceStmt     SQLReplaceStatement
+     * @param partitionColumn partitionColumn
+     * @return the index of the partition column
+     * @throws SQLNonTransientException if not find
+     */
+    private int tryGetShardingColIndex(SchemaInfo schemaInfo, SQLReplaceStatement replaceStmt, String partitionColumn) throws SQLNonTransientException {
+        int shardingColIndex = getShardingColIndex(schemaInfo, replaceStmt.getColumns(), partitionColumn);
+        if (shardingColIndex != -1) return shardingColIndex;
+        throw new SQLNonTransientException("bad insert sql, sharding column/joinKey:" + partitionColumn + " not provided," + replaceStmt);
+    }
 
     /**
      * check if the nosharding tables are Involved
@@ -291,7 +316,7 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
      *
      * @param schemaInfo  SchemaInfo
      * @param replaceStmt MySqlInsertStatement
-     * @param joinColumn     joinColumn
+     * @param joinColumn  joinColumn
      * @return -1 means no join key,otherwise means the index
      * @throws SQLNonTransientException if not find
      */
@@ -299,21 +324,6 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         return tryGetShardingColIndex(schemaInfo, replaceStmt, joinColumn);
     }
 
-
-    /**
-     * find the index of the key in column list
-     *
-     * @param schemaInfo      SchemaInfo
-     * @param replaceStmt     SQLReplaceStatement
-     * @param partitionColumn partitionColumn
-     * @return the index of the partition column
-     * @throws SQLNonTransientException if not find
-     */
-    private int tryGetShardingColIndex(SchemaInfo schemaInfo, SQLReplaceStatement replaceStmt, String partitionColumn) throws SQLNonTransientException {
-        int shardingColIndex = getShardingColIndex(schemaInfo, replaceStmt.getColumns(), partitionColumn);
-        if (shardingColIndex != -1) return shardingColIndex;
-        throw new SQLNonTransientException("bad insert sql, sharding column/joinColumn:" + partitionColumn + " not provided," + replaceStmt);
-    }
 
     /**
      * insert into .... select .... OR insert into table() values (),(),....
@@ -400,4 +410,6 @@ public class DruidReplaceParser extends DruidInsertReplaceParser {
         rrs.setNodes(nodes);
         rrs.setFinishedRoute(true);
     }
+
+
 }

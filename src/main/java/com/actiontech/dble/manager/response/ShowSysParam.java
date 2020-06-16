@@ -77,7 +77,7 @@ public final class ShowSysParam {
             paramValues.add(new ParamInfo("clusterIP", ClusterConfig.getInstance().getClusterIP(), "dble cluster center address, If clusterMode is zk, it is a full address with port"));
             paramValues.add(new ParamInfo("clusterPort", ClusterConfig.getInstance().getClusterPort() == 0 ? "" : ClusterConfig.getInstance().getClusterPort() + "", "dble cluster center address's port"));
             paramValues.add(new ParamInfo("rootPath", ClusterConfig.getInstance().getRootPath(), "dble cluster center's root path, the default value is /dble"));
-            paramValues.add(new ParamInfo("clusterID", ClusterConfig.getInstance().getClusterID(), "dble cluster id"));
+            paramValues.add(new ParamInfo("clusterId", ClusterConfig.getInstance().getClusterId(), "dble cluster Id"));
             paramValues.add(new ParamInfo("needHaSync", ClusterConfig.getInstance().isNeedSyncHa() + "", "Whether dble use cluster ha, The default value is false"));
         }
         paramValues.add(new ParamInfo("showBinlogStatusTimeout", ClusterConfig.getInstance().getShowBinlogStatusTimeout() + "ms", "The time out from show @@binlog.status.The default value is 60000ms"));
@@ -94,12 +94,12 @@ public final class ShowSysParam {
         paramValues.add(new ParamInfo("bindIp", sysConfig.getBindIp() + "", "The host where the server is running. The default is 0.0.0.0"));
         paramValues.add(new ParamInfo("serverPort", sysConfig.getServerPort() + "", "User connection port. The default number is 8066"));
         paramValues.add(new ParamInfo("managerPort", sysConfig.getManagerPort() + "", "Manager connection port. The default number is 9066"));
-        paramValues.add(new ParamInfo("processors", sysConfig.getProcessors() + "", "The size of frontend NIOProcessor, the default is the number of processors available to the Java virtual machine"));
-        paramValues.add(new ParamInfo("backendProcessors", sysConfig.getBackendProcessors() + "", "The size of backend NIOProcessor, the default is the number of processors available to the Java virtual machine"));
-        paramValues.add(new ParamInfo("processorExecutor", sysConfig.getProcessorExecutor() + "", "The size of fixed thread pool named of frontend businessExecutor,the default is the number of processors available to the Java virtual machine * 2"));
-        paramValues.add(new ParamInfo("backendProcessorExecutor", sysConfig.getBackendProcessorExecutor() + "", "The size of fixed thread pool named of backend businessExecutor,the default is the number of processors available to the Java virtual machine * 2"));
+        paramValues.add(new ParamInfo("processors", sysConfig.getProcessors() + "", "The size of frontend NIOProcessor, the default value is the number of processors available to the Java virtual machine"));
+        paramValues.add(new ParamInfo("backendProcessors", sysConfig.getBackendProcessors() + "", "The size of backend NIOProcessor, the default value is the number of processors available to the Java virtual machine"));
+        paramValues.add(new ParamInfo("processorExecutor", sysConfig.getProcessorExecutor() + "", "The size of fixed thread pool named of frontend businessExecutor,the default value is the number of processors available to the Java virtual machine * 2"));
+        paramValues.add(new ParamInfo("backendProcessorExecutor", sysConfig.getBackendProcessorExecutor() + "", "The size of fixed thread pool named of backend businessExecutor,the default value is the number of processors available to the Java virtual machine * 2"));
         paramValues.add(new ParamInfo("complexExecutor", sysConfig.getComplexExecutor() + "", "The size of fixed thread pool named of writeToBackendExecutor,the default is the number of processors available to the Java virtual machine * 2"));
-        paramValues.add(new ParamInfo("writeToBackendExecutor", sysConfig.getWriteToBackendExecutor() + "", "The executor for complex query.The default value is min(8,processorExecutor)"));
+        paramValues.add(new ParamInfo("writeToBackendExecutor", sysConfig.getWriteToBackendExecutor() + "", "The executor for complex query.The default value is min(8, default value of processorExecutor)"));
         paramValues.add(new ParamInfo("serverBacklog", sysConfig.getServerBacklog() + "", "The NIO/AIO reactor backlog,the max of create connection request at one time.The default value is 2048"));
         paramValues.add(new ParamInfo("maxCon", sysConfig.getMaxCon() + "", "The number of max connections the server allowed "));
         paramValues.add(new ParamInfo("useCompression", sysConfig.getUseCompression() + "", "Whether the Compression is enable,The default number is 0 "));

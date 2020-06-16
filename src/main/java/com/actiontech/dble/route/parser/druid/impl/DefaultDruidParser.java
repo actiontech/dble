@@ -82,7 +82,7 @@ public class DefaultDruidParser implements DruidParser {
         return schemaConfig;
     }
 
-    private Map<String, String> getTableAliasMap(String defaultSchemaName, Map<String, String> originTableAliasMap) {
+    protected Map<String, String> getTableAliasMap(String defaultSchemaName, Map<String, String> originTableAliasMap) {
         if (originTableAliasMap == null) {
             return null;
         }

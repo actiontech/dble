@@ -21,6 +21,8 @@ public class User {
     protected String usingDecrypt;
     @XmlAttribute
     protected String whiteIPs;
+    @XmlAttribute
+    protected Integer maxCon;
 
     public String getName() {
         return name;
@@ -55,12 +57,22 @@ public class User {
         this.whiteIPs = whiteIPs;
     }
 
+
+    public Integer getMaxCon() {
+        return maxCon;
+    }
+
+    public void setMaxCon(Integer maxCon) {
+        this.maxCon = maxCon;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("name=").append(name);
         sb.append(", password=").append(password);
         sb.append(", usingDecrypt=").append(usingDecrypt);
+        sb.append(", maxCon=").append(maxCon);
         sb.append(", whiteIPs=").append(whiteIPs);
         return sb.toString();
     }

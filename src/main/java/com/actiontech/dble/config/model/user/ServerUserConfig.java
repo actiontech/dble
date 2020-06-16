@@ -9,11 +9,10 @@ import com.alibaba.druid.wall.WallProvider;
 
 public class ServerUserConfig extends UserConfig {
     private String tenant;
-    private int maxCon;
     private WallProvider blacklist;
 
-    public ServerUserConfig(String name, String password, String strWhiteIPs) {
-        super(name, password, strWhiteIPs);
+    public ServerUserConfig(String name, String password, String strWhiteIPs, String strMaxCon) {
+        super(name, password, strWhiteIPs, strMaxCon);
     }
 
     public String getTenant() {
@@ -22,14 +21,6 @@ public class ServerUserConfig extends UserConfig {
 
     public void setTenant(String tenant) {
         this.tenant = tenant;
-    }
-
-    public int getMaxCon() {
-        return maxCon;
-    }
-
-    public void setMaxCon(int maxCon) {
-        this.maxCon = maxCon;
     }
 
     public WallProvider getBlacklist() {

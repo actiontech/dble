@@ -76,7 +76,7 @@ public final class GlobalTableProcessor {
                     if (left.getUnGlobalTableCount() == 0) { // left node is global,left join will not push down
                         tn.setNoshardNode(null);
                         status = false;
-                    } else if (left.type() == PlanNode.PlanNodeType.TABLE || !PlanUtil.isERNode(left)) {
+                    } else if (left.type() == PlanNode.PlanNodeType.TABLE || PlanUtil.isERNode(left)) {
                         if (!isGlobalTableBigEnough(jn)) {
                             tn.setNoshardNode(null);
                             status = false;

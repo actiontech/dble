@@ -751,6 +751,10 @@ public abstract class AbstractConnection implements NIOConnection {
         this.flowControlled = flowControlled;
     }
 
+    public void updateLastReadTime() {
+        this.lastReadTime = TimeUtil.currentTimeMillis();
+    }
+
     /*
     start flow control because of the write queue in this connection to long
 

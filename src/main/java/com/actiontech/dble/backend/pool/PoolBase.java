@@ -64,14 +64,19 @@ public class PoolBase {
             conn.setSchema(schema);
             conn.setHandler(new MySQLConnectionAuthenticator(conn, new MySQLConnectionListener() {
                 @Override
-                public void onSuccess(BackendConnection conn) {
+                public void onCreateSuccess(BackendConnection conn) {
                     handler.connectionAcquired(conn);
                 }
 
                 @Override
-                public void onError(BackendConnection conn, Throwable e) {
+                public void onCreateFail(BackendConnection conn, Throwable e) {
                     handler.connectionError(e, conn);
                 }
+
+                @Override
+                public void onHeartbeatSuccess(BackendConnection conn) {
+                }
+
             }));
 
             if (channel instanceof AsynchronousSocketChannel) {
@@ -106,7 +111,7 @@ public class PoolBase {
             return conn;
 
         } catch (IOException ioe) {
-            listener.onError(null, ioe);
+            listener.onCreateFail(null, ioe);
             return null;
         }
     }

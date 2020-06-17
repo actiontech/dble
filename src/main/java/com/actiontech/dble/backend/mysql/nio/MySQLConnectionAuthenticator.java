@@ -37,7 +37,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
 
     public void connectionError(MySQLConnection c, Throwable e) {
         if (listener != null) {
-            listener.onError(c, e);
+            listener.onCreateFail(c, e);
         }
     }
 
@@ -73,7 +73,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
                         source.setSupportCompress(true);
                     }
                     if (listener != null) {
-                        listener.onSuccess(source);
+                        listener.onCreateSuccess(source);
                     }
                     break;
                 case ErrorPacket.FIELD_COUNT:
@@ -122,7 +122,7 @@ public class MySQLConnectionAuthenticator implements NIOHandler {
         } catch (Exception e) {
             LOGGER.warn(e.getMessage());
             if (listener != null) {
-                listener.onError(source, e);
+                listener.onCreateFail(source, e);
             }
         }
     }

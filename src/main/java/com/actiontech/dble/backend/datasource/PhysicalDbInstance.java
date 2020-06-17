@@ -8,6 +8,7 @@ package com.actiontech.dble.backend.datasource;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
+import com.actiontech.dble.backend.mysql.nio.handler.ConnectionHeartBeatHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.backend.pool.ConnectionPool;
 import com.actiontech.dble.backend.pool.PooledEntry;
@@ -158,15 +159,21 @@ public abstract class PhysicalDbInstance {
 
                 final long now = System.currentTimeMillis();
                 if (config.getPoolConfig().getTestOnBorrow()) {
-                    conn.close("(connection is evicted or dead)"); // Throw away the dead connection (passed max age or failed alive test)
-                    timeout = hardTimeout - (now - startTime);
-                } else {
-                    if (!StringUtil.equals(conn.getSchema(), schema)) {
-                        // need do sharding syn in before sql send
-                        conn.setSchema(schema);
+                    ConnectionHeartBeatHandler heartBeatHandler = new ConnectionHeartBeatHandler(conn, true, connectionPool);
+                    boolean isFinished = heartBeatHandler.ping(config.getPoolConfig().getConnectionHeartbeatTimeout());
+                    if (!isFinished) {
+                        conn.close("connection test fail after create"); // Throw away the dead connection (passed max age or failed alive test)
+                        timeout = hardTimeout - (now - startTime);
+                        continue;
                     }
-                    return conn;
                 }
+
+                if (!StringUtil.equals(conn.getSchema(), schema)) {
+                    // need do sharding syn in before sql send
+                    conn.setSchema(schema);
+                }
+                return conn;
+
             } while (timeout > 0L);
         } catch (InterruptedException e) {
             throw new IOException(name + " - Interrupted during connection acquisition", e);
@@ -339,9 +346,9 @@ public abstract class PhysicalDbInstance {
         heartbeat.stop(reason);
     }
 
-    public void stop(String reason) {
+    public void stop(String reason, boolean closeFront) {
         heartbeat.stop(reason);
-        connectionPool.stop(reason);
+        connectionPool.stop(reason, closeFront);
     }
 
     public void closeAllConnection(String reason) {

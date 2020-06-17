@@ -30,7 +30,6 @@ import com.actiontech.dble.util.PasswordAuthPlugin;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import com.actiontech.dble.util.exception.UnknownTxIsolationException;
-import io.netty.util.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,7 +107,6 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
     private volatile boolean testing = false;
     private volatile String closeReason = null;
     private volatile BackEndCleaner recycler = null;
-    private volatile Timeout pingTimeOut;
 
     private static long initClientFlags() {
         int flag = 0;
@@ -358,14 +356,9 @@ public class MySQLConnection extends AbstractConnection implements BackendConnec
 
     }
 
-    public void ping(Timeout timeout) {
-        pingTimeOut = timeout;
+    @Override
+    public void ping() {
         write(PingPacket.PING);
-    }
-
-    public void pong() {
-        pingTimeOut.cancel();
-        state.lazySet(STATE_NOT_IN_USE);
     }
 
     private WriteToBackendTask sendQueryCmdTask(String query, CharsetNames clientCharset) {

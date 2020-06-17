@@ -12,7 +12,9 @@ import com.actiontech.dble.backend.BackendConnection;
  */
 public interface MySQLConnectionListener {
 
-    void onSuccess(BackendConnection conn);
+    void onCreateSuccess(BackendConnection conn);
 
-    void onError(BackendConnection conn, Throwable e);
+    void onCreateFail(BackendConnection conn, Throwable e);
+
+    void onHeartbeatSuccess(BackendConnection conn);
 }

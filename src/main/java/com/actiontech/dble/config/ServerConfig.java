@@ -362,7 +362,7 @@ public class ServerConfig {
                 for (PhysicalDbGroup oldDbGroup : recycleDbGroups.values()) {
                     if (oldDbGroup != null) {
                         ReloadLogHelper.info("reload config, recycle old group. old active backend conn will be close", LOGGER);
-                        oldDbGroup.stop("reload config, recycle old group");
+                        oldDbGroup.stop("reload config, recycle old group", ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
                     }
                 }
             }

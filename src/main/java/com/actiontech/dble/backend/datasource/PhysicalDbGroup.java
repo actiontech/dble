@@ -134,15 +134,13 @@ public class PhysicalDbGroup {
         }
     }
 
-    public void stopHeartbeat(String reason) {
-        for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
-            dbInstance.stopHeartbeat(reason);
-        }
+    public void stop(String reason) {
+        stop(reason, false);
     }
 
-    public void stop(String reason) {
+    public void stop(String reason, boolean closeFront) {
         for (PhysicalDbInstance dbInstance : allSourceMap.values()) {
-            dbInstance.stop(reason);
+            dbInstance.stop(reason, closeFront);
         }
     }
 

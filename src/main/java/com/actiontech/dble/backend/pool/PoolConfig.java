@@ -8,6 +8,7 @@ public class PoolConfig {
     private static final long CONNECTION_TIMEOUT = SECONDS.toMillis(30);
     private static final long CON_HEARTBEAT_TIMEOUT = MILLISECONDS.toMillis(20);
     private static final long DEFAULT_IDLE_TIMEOUT = 30 * 60 * 1000L;
+    private static final long HOUSEKEEPING_PERIOD_MS = SECONDS.toMillis(30);
 
     private volatile long connectionTimeout = CONNECTION_TIMEOUT;
     private volatile long connectionHeartbeatTimeout = CON_HEARTBEAT_TIMEOUT;
@@ -15,10 +16,10 @@ public class PoolConfig {
     private volatile boolean testOnBorrow = false;
     private volatile boolean testOnReturn = false;
     private volatile boolean testWhileIdle = false;
-    private volatile long timeBetweenEvictionRunsMillis = -1L;
+    private volatile long timeBetweenEvictionRunsMillis = HOUSEKEEPING_PERIOD_MS;
     private volatile int numTestsPerEvictionRun = 3;
     private volatile long evictorShutdownTimeoutMillis = 10000L;
-    private long idleTimeout = DEFAULT_IDLE_TIMEOUT;
+    private volatile long idleTimeout = DEFAULT_IDLE_TIMEOUT;
 
     public PoolConfig() {
     }

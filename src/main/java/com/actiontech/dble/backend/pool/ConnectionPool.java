@@ -5,12 +5,8 @@ import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnectionListener;
 import com.actiontech.dble.backend.mysql.nio.handler.ConnectionHeartBeatHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
-import com.actiontech.dble.backend.pool.util.TimerHolder;
 import com.actiontech.dble.config.model.DbInstanceConfig;
 import com.actiontech.dble.net.NIOProcessor;
-import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +24,6 @@ import static com.actiontech.dble.backend.mysql.nio.MySQLConnection.*;
 public class ConnectionPool extends PoolBase implements MySQLConnectionListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionPool.class);
-    private static final ResponseHandler CON_HEARTBEAT_HANDLER = new ConnectionHeartBeatHandler();
 
     private final QueuedSequenceSynchronizer synchronizer;
     private final AtomicInteger waiters;
@@ -117,10 +112,11 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
 
 
     public void release(final BackendConnection conn) {
-
-        //        if (getTestOnReturn()) {
-        //
-        //        }
+        if (getTestOnReturn()) {
+            ConnectionHeartBeatHandler heartBeatHandler = new ConnectionHeartBeatHandler(conn, false, this);
+            heartBeatHandler.ping(getConnectionHeartbeatTimeout());
+            return;
+        }
 
         conn.lazySet(STATE_NOT_IN_USE);
         synchronizer.signal();
@@ -155,28 +151,27 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
     }
 
     @Override
-    public void onSuccess(BackendConnection conn) {
+    public void onCreateSuccess(BackendConnection conn) {
+        allConnections.add(conn);
         if (getTestOnCreate()) {
-            MySQLConnection mysqlCon = (MySQLConnection) conn;
-            mysqlCon.setResponseHandler(CON_HEARTBEAT_HANDLER);
-            mysqlCon.ping(TimerHolder.getTimer().newTimeout(new TimerTask() {
-                @Override
-                public void run(Timeout timeout) throws Exception {
-                    conn.closeWithoutRsp("conn heart timeout");
-                }
-            }, getConnectionHeartbeatTimeout(), TimeUnit.MILLISECONDS));
+            ConnectionHeartBeatHandler heartBeatHandler = new ConnectionHeartBeatHandler(conn, false, this);
+            heartBeatHandler.ping(getConnectionHeartbeatTimeout());
             return;
         }
 
         conn.lazySet(STATE_NOT_IN_USE);
-        allConnections.add(conn);
         synchronizer.signal();
     }
 
     @Override
-    public void onError(BackendConnection conn, Throwable e) {
+    public void onCreateFail(BackendConnection conn, Throwable e) {
         LOGGER.warn("create connection fail " + e.getMessage());
         totalConnections.decrementAndGet();
+    }
+
+    public void onHeartbeatSuccess(BackendConnection conn) {
+        conn.lazySet(STATE_NOT_IN_USE);
+        synchronizer.signal();
     }
 
     public int getCount(final int... states) {
@@ -276,12 +271,16 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
      * Closes the keyed object pool. Once the pool is closed
      */
     public void stop(final String closureReason) {
+        stop(closureReason, false);
+    }
+
+    public void stop(final String closureReason, boolean closeFront) {
         if (isClosed.getAndSet(true)) {
             return;
         }
 
         stopEvictor();
-        closeAllConnections(closureReason);
+        closeAllConnections(closureReason, closeFront);
     }
 
     private void evict() {
@@ -305,14 +304,8 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
                 conn.close("connection has passed idleTimeout");
                 removable--;
             } else if (getTestWhileIdle() && conn.compareAndSet(STATE_NOT_IN_USE, STATE_HEARTBEAT)) {
-                MySQLConnection mysqlCon = (MySQLConnection) conn;
-                mysqlCon.setResponseHandler(CON_HEARTBEAT_HANDLER);
-                mysqlCon.ping(TimerHolder.getTimer().newTimeout(new TimerTask() {
-                    @Override
-                    public void run(Timeout timeout) throws Exception {
-                        conn.closeWithoutRsp("conn heart timeout");
-                    }
-                }, getConnectionHeartbeatTimeout(), TimeUnit.MILLISECONDS));
+                ConnectionHeartBeatHandler heartBeatHandler = new ConnectionHeartBeatHandler(conn, false, this);
+                heartBeatHandler.ping(getConnectionHeartbeatTimeout());
             }
         }
 
@@ -353,7 +346,7 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
      */
     private void logPoolState(String... prefix) {
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("{}stats (total={}, active={}, idle={}, idleTest={} waiting={})", new Object[]{(prefix.length > 0 ? prefix[0] : ""),
+            LOGGER.debug("{} db instance[{}] stats (total={}, active={}, idle={}, idleTest={} waiting={})", new Object[]{(prefix.length > 0 ? prefix[0] : ""), config.getInstanceName(),
                     allConnections.size() - getCount(STATE_REMOVED), getCount(STATE_IN_USE), getCount(STATE_NOT_IN_USE), getCount(STATE_HEARTBEAT), getThreadsAwaitingConnection()});
         }
     }
@@ -422,27 +415,5 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
         void cancel() {
             scheduledFuture.cancel(false);
         }
-    }
-
-    class ConnectionListener {
-
-        public void onCreateSuccess(BackendConnection conn) {
-            if (getTestOnCreate()) {
-                MySQLConnection mysqlCon = (MySQLConnection) conn;
-                mysqlCon.setResponseHandler(CON_HEARTBEAT_HANDLER);
-                mysqlCon.ping(TimerHolder.getTimer().newTimeout(new TimerTask() {
-                    @Override
-                    public void run(Timeout timeout) throws Exception {
-                        conn.closeWithoutRsp("conn heart timeout");
-                    }
-                }, getConnectionHeartbeatTimeout(), TimeUnit.MILLISECONDS));
-                return;
-            }
-
-            conn.lazySet(STATE_NOT_IN_USE);
-            allConnections.add(conn);
-            synchronizer.signal();
-        }
-
     }
 }

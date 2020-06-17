@@ -28,7 +28,7 @@ public interface BackendConnection extends ClosableConnection, PooledEntry {
 
     void setAttachment(Object attachment);
 
-    void pong();
+    void ping();
 
     boolean setResponseHandler(ResponseHandler commandHandler);
 

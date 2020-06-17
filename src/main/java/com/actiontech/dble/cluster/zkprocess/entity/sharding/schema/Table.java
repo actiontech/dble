@@ -7,7 +7,9 @@ package com.actiontech.dble.cluster.zkprocess.entity.sharding.schema;
 
 import com.actiontech.dble.cluster.zkprocess.entity.Named;
 
-import javax.xml.bind.annotation.*;
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlSeeAlso;
+import javax.xml.bind.annotation.XmlTransient;
 
 @XmlTransient
 @XmlSeeAlso({SingleTable.class, ShardingTable.class, GlobalTable.class})

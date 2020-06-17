@@ -8,10 +8,6 @@ import java.sql.SQLNonTransientException;
 
 public class DefaultHandler implements StatementHandler {
 
-    public enum TableType {
-        SHARDING, INCREMENT, DEFAULT
-    }
-
     @Override
     public SQLStatement preHandle(DumpFileContext context, String stmt) throws SQLNonTransientException {
         return null;

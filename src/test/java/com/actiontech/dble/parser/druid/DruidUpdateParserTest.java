@@ -5,8 +5,9 @@
 
 package com.actiontech.dble.parser.druid;
 
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.impl.DruidUpdateParser;
 import com.alibaba.druid.sql.ast.SQLExpr;
@@ -91,18 +92,18 @@ public class DruidUpdateParserTest {
         SQLStatement sqlStatement = statementList.get(0);
         MySqlUpdateStatement update = (MySqlUpdateStatement) sqlStatement;
         SchemaConfig schemaConfig = mock(SchemaConfig.class);
-        Map<String, TableConfig> tables = mock(Map.class);
-        TableConfig tableConfig = mock(TableConfig.class);
+        Map<String, BaseTableConfig> tables = mock(Map.class);
+        ShardingTableConfig tableConfig = mock(ShardingTableConfig.class);
         String tableName = "hotnews";
         when((schemaConfig).getTables()).thenReturn(tables);
         when(tables.get(tableName)).thenReturn(tableConfig);
-        when(tableConfig.getParentTC()).thenReturn(null);
+        when(tableConfig.getShardingColumn()).thenReturn("ID");
         RouteResultset routeResultset = new RouteResultset(sql, 11);
         Class c = DruidUpdateParser.class;
-        Method method = c.getDeclaredMethod("confirmShardColumnNotUpdated", new Class[]{SQLUpdateStatement.class, SchemaConfig.class, String.class, String.class, String.class, RouteResultset.class});
+        Method method = c.getDeclaredMethod("confirmColumnNotUpdated", new Class[]{SQLUpdateStatement.class, BaseTableConfig.class, RouteResultset.class});
         method.setAccessible(true);
         try {
-            method.invoke(c.newInstance(), update, schemaConfig, tableName, "ID", "", routeResultset);
+            method.invoke(c.newInstance(), update, tableConfig, routeResultset);
             if (throwException) {
                 System.out.println("Not passed without exception is not correct");
                 Assert.assertTrue(false);

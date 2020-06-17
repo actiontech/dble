@@ -1,6 +1,6 @@
 package com.actiontech.dble.route.parser.druid;
 
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 
 /**
  * Created by szf on 2020/5/26.
@@ -9,12 +9,12 @@ public class RouteTableConfigInfo {
 
 
     private String schema;
-    private TableConfig tableConfig;
+    private BaseTableConfig tableConfig;
     private String alias;
     private Object value;
 
 
-    public RouteTableConfigInfo(String schema, TableConfig tableConfig, String alias, Object value) {
+    public RouteTableConfigInfo(String schema, BaseTableConfig tableConfig, String alias, Object value) {
         this.schema = schema;
         this.tableConfig = tableConfig;
         this.alias = alias;
@@ -30,11 +30,11 @@ public class RouteTableConfigInfo {
         this.schema = schema;
     }
 
-    public TableConfig getTableConfig() {
+    public BaseTableConfig getTableConfig() {
         return tableConfig;
     }
 
-    public void setTableConfig(TableConfig tableConfig) {
+    public void setTableConfig(BaseTableConfig tableConfig) {
         this.tableConfig = tableConfig;
     }
 

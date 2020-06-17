@@ -7,9 +7,9 @@ package com.actiontech.dble.config.loader.xml;
 
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.Versions;
-import com.actiontech.dble.config.model.*;
-import com.actiontech.dble.config.model.TableConfig.TableTypeEnum;
-import com.actiontech.dble.config.model.rule.RuleConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.ShardingNodeConfig;
+import com.actiontech.dble.config.model.sharding.table.*;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.config.util.ParameterMapping;
@@ -139,7 +139,7 @@ public class XMLShardingLoader {
                 shardingNodes = null;
             }
             //load tables from sharding
-            Map<String, TableConfig> tables = loadTables(schemaElement, lowerCaseNames, sqlMaxLimit);
+            Map<String, BaseTableConfig> tables = loadTables(schemaElement, lowerCaseNames, sqlMaxLimit);
             if (schemas.containsKey(name)) {
                 throw new ConfigException("schema " + name + " duplicated!");
             }
@@ -224,31 +224,31 @@ public class XMLShardingLoader {
         erRelations.putAll(schemaFkERMap);
     }
 
-    private Map<String, TableConfig> loadTables(Element node, boolean isLowerCaseNames, int schemaMaxLimit) {
-        Map<String, TableConfig> tables = new HashMap<>();
+    private Map<String, BaseTableConfig> loadTables(Element node, boolean isLowerCaseNames, int schemaMaxLimit) {
+        Map<String, BaseTableConfig> tables = new HashMap<>();
         loadShardingTables(node, isLowerCaseNames, tables, schemaMaxLimit);
         loadGlobalTables(node, isLowerCaseNames, tables, schemaMaxLimit);
         loadSingleTables(node, isLowerCaseNames, tables, schemaMaxLimit);
         return tables;
     }
 
-    private void loadShardingTables(Element node, boolean isLowerCaseNames, Map<String, TableConfig> tables, int schemaMaxLimit) {
+    private void loadShardingTables(Element node, boolean isLowerCaseNames, Map<String, BaseTableConfig> tables, int schemaMaxLimit) {
         NodeList nodeList = node.getElementsByTagName("shardingTable");
         for (int i = 0; i < nodeList.getLength(); i++) {
             Element tableElement = (Element) nodeList.item(i);
-
             String tableNameElement = tableElement.getAttribute("name");
+            if (StringUtil.isEmpty(tableNameElement)) {
+                throw new ConfigException("one of tables' name is empty");
+            }
             String sqlMaxLimitStr = tableElement.getAttribute("sqlMaxLimit");
             int sqlMaxLimit = getSqlMaxLimit(sqlMaxLimitStr, schemaMaxLimit);
-
-            //table type is global or not
-            TableTypeEnum tableType = TableTypeEnum.TYPE_SHARDING_TABLE;
 
             //shardingNode of table
             String column = tableElement.getAttribute("shardingColumn");
             if (StringUtil.isEmpty(column)) {
                 throw new ConfigException("shardingColumn of " + tableNameElement + " is empty");
             }
+            column = column.toUpperCase();
             String functionName = tableElement.getAttribute("function");
 
             if (StringUtil.isEmpty(functionName)) {
@@ -258,14 +258,20 @@ public class XMLShardingLoader {
             if (algorithm == null) {
                 throw new ConfigException("can't find function of name :" + functionName + " in table " + tableNameElement);
             }
-            RuleConfig rule = new RuleConfig(column.toUpperCase(), functionName, algorithm);
 
             //sqlRequiredSharding?
             String sqlRequiredShardingStr = ConfigUtil.checkAndGetAttribute(tableElement, "sqlRequiredSharding", "false", problemReporter);
             boolean sqlRequiredSharding = Boolean.parseBoolean(sqlRequiredShardingStr);
 
-            String shardingNodes = tableElement.getAttribute("shardingNode");
-
+            String shardingNodeRef = tableElement.getAttribute("shardingNode");
+            if (StringUtil.isEmpty(shardingNodeRef)) {
+                throw new ConfigException("shardingNode of " + tableNameElement + " is empty");
+            }
+            String[] theShardingNodes = SplitUtil.split(shardingNodeRef, ',', '$', '-');
+            if (theShardingNodes.length <= 1) {
+                throw new ConfigException("invalid shardingNode config: " + shardingNodeRef + " for ShardingTableConfig " + tableNameElement + ", please use SingleTable");
+            }
+            List<String> lstShardingNode = Arrays.asList(theShardingNodes);
             if (isLowerCaseNames) {
                 tableNameElement = tableNameElement.toLowerCase();
             }
@@ -277,13 +283,13 @@ public class XMLShardingLoader {
                 if (tableName.contains("`")) {
                     tableName = tableName.replaceAll("`", "");
                 }
-                TableConfig table = new TableConfig(tableName, sqlMaxLimit, tableType,
-                        shardingNodes, rule, sqlRequiredSharding, incrementColumn,
-                        null, null, false);
-                checkShardingNodeExists(table.getShardingNodes());
-                if (table.getRule() != null) {
-                    checkRuleSuitTable(table);
+                if (StringUtil.isEmpty(tableName)) {
+                    throw new ConfigException("one of table name of " + tableNameElement + " is empty");
                 }
+                ShardingTableConfig table = new ShardingTableConfig(tableName, sqlMaxLimit,
+                        lstShardingNode, incrementColumn, algorithm, column, sqlRequiredSharding);
+                checkShardingNodeExists(table.getShardingNodes());
+                checkRuleSuitTable(table, functionName);
                 if (tables.containsKey(table.getName())) {
                     throw new ConfigException("table " + tableName + " duplicated!");
                 }
@@ -291,36 +297,39 @@ public class XMLShardingLoader {
             }
             // child table must know its unique father
             if (tableNames.length == 1) {
-                TableConfig parentTable = tables.get(tableNames[0]);
+                ShardingTableConfig parentTable = (ShardingTableConfig) (tables.get(tableNames[0]));
                 // process child tables
-                processChildTables(tables, parentTable, shardingNodes, tableElement, isLowerCaseNames, schemaMaxLimit);
+                processChildTables(tables, parentTable, lstShardingNode, tableElement, isLowerCaseNames, schemaMaxLimit);
             }
         }
     }
 
 
 
-    private void loadGlobalTables(Element node, boolean isLowerCaseNames, Map<String, TableConfig> tables, int schemaMaxLimit) {
+    private void loadGlobalTables(Element node, boolean isLowerCaseNames, Map<String, BaseTableConfig> tables, int schemaMaxLimit) {
         NodeList nodeList = node.getElementsByTagName("globalTable");
         for (int i = 0; i < nodeList.getLength(); i++) {
             Element tableElement = (Element) nodeList.item(i);
+            String tableNameElement = tableElement.getAttribute("name");
+            if (StringUtil.isEmpty(tableNameElement)) {
+                throw new ConfigException("one of tables' name is empty");
+            }
             //limit size of the table
             String sqlMaxLimitStr = tableElement.getAttribute("sqlMaxLimit");
             int sqlMaxLimit = getSqlMaxLimit(sqlMaxLimitStr, schemaMaxLimit);
-
-            //table type is global or not
-            TableTypeEnum tableType = TableTypeEnum.TYPE_GLOBAL_TABLE;
-
             String shardingNodeRef = tableElement.getAttribute("shardingNode");
-
-            String tableNameElement = tableElement.getAttribute("name");
+            if (StringUtil.isEmpty(shardingNodeRef)) {
+                throw new ConfigException("shardingNode of " + tableNameElement + " is empty");
+            }
+            String[] theShardingNodes = SplitUtil.split(shardingNodeRef, ',', '$', '-');
+            if (theShardingNodes.length <= 1) {
+                throw new ConfigException("invalid shardingNode config: " + shardingNodeRef + " for GlobalTableConfig " + tableNameElement + ", please use SingleTable");
+            }
             if (isLowerCaseNames) {
                 tableNameElement = tableNameElement.toLowerCase();
             }
             String[] tableNames = tableNameElement.split(",");
 
-            //if autoIncrement,it will use sequence handler
-            String incrementColumn = tableElement.hasAttribute("incrementColumn") ? tableElement.getAttribute("incrementColumn").toUpperCase() : null;
             boolean globalCheck = false;
             String checkClass = GLOBAL_TABLE_CHECK_DEFAULT;
             String corn = GLOBAL_TABLE_CHECK_DEFAULT_CRON;
@@ -334,13 +343,12 @@ public class XMLShardingLoader {
                 if (tableName.contains("`")) {
                     tableName = tableName.replaceAll("`", "");
                 }
-                TableConfig table = new TableConfig(tableName, sqlMaxLimit, tableType,
-                        shardingNodeRef, null, false, incrementColumn,
+                if (StringUtil.isEmpty(tableName)) {
+                    throw new ConfigException("one of table name of " + tableNameElement + " is empty");
+                }
+                GlobalTableConfig table = new GlobalTableConfig(tableName, sqlMaxLimit, Arrays.asList(theShardingNodes),
                         corn, checkClass, globalCheck);
                 checkShardingNodeExists(table.getShardingNodes());
-                if (table.getRule() != null) {
-                    checkRuleSuitTable(table);
-                }
                 if (tables.containsKey(table.getName())) {
                     throw new ConfigException("table " + tableName + " duplicated!");
                 }
@@ -349,22 +357,25 @@ public class XMLShardingLoader {
         }
     }
 
-    private void loadSingleTables(Element node, boolean isLowerCaseNames, Map<String, TableConfig> tables, int schemaMaxLimit) {
+    private void loadSingleTables(Element node, boolean isLowerCaseNames, Map<String, BaseTableConfig> tables, int schemaMaxLimit) {
         NodeList nodeList = node.getElementsByTagName("singleTable");
         for (int i = 0; i < nodeList.getLength(); i++) {
             Element tableElement = (Element) nodeList.item(i);
+            String tableNameElement = tableElement.getAttribute("name");
+            if (StringUtil.isEmpty(tableNameElement)) {
+                throw new ConfigException("one of tables' name is empty");
+            }
             //limit size of the table
             String sqlMaxLimitStr = tableElement.getAttribute("sqlMaxLimit");
             int sqlMaxLimit = getSqlMaxLimit(sqlMaxLimitStr, schemaMaxLimit);
-
-
-            //table type is global or not
-            TableTypeEnum tableType = TableTypeEnum.TYPE_SHARDING_TABLE;
-
             String shardingNodeRef = tableElement.getAttribute("shardingNode");
-
-
-            String tableNameElement = tableElement.getAttribute("name");
+            if (StringUtil.isEmpty(shardingNodeRef)) {
+                throw new ConfigException("shardingNode of " + tableNameElement + " is empty");
+            }
+            String[] theShardingNodes = SplitUtil.split(shardingNodeRef, ',', '$', '-');
+            if (theShardingNodes.length != 1) {
+                throw new ConfigException("invalid shardingNode config: " + shardingNodeRef + " for SingleTableConfig " + tableNameElement);
+            }
             if (isLowerCaseNames) {
                 tableNameElement = tableNameElement.toLowerCase();
             }
@@ -374,24 +385,21 @@ public class XMLShardingLoader {
                 if (tableName.contains("`")) {
                     tableName = tableName.replaceAll("`", "");
                 }
-                TableConfig table = new TableConfig(tableName, sqlMaxLimit, tableType,
-                        shardingNodeRef, null, false, null,
-                        null, null, false);
-                checkShardingNodeExists(table.getShardingNodes());
-                if (table.getRule() != null) {
-                    checkRuleSuitTable(table);
+                if (StringUtil.isEmpty(tableName)) {
+                    throw new ConfigException("one of table name of " + tableNameElement + " is empty");
                 }
+                SingleTableConfig table = new SingleTableConfig(tableName, sqlMaxLimit, Arrays.asList(theShardingNodes));
+                checkShardingNodeExists(table.getShardingNodes());
                 if (tables.containsKey(table.getName())) {
                     throw new ConfigException("table " + tableName + " duplicated!");
                 }
                 tables.put(table.getName(), table);
             }
-
         }
     }
 
 
-    private void processChildTables(Map<String, TableConfig> tables, TableConfig parentTable, String strDatoNodes,
+    private void processChildTables(Map<String, BaseTableConfig> tables, BaseTableConfig parentTable, List<String> lstShardingNode,
                                     Element tableNode, boolean isLowerCaseNames, int schemaMaxLimit) {
 
         // parse child tables
@@ -402,9 +410,12 @@ public class XMLShardingLoader {
                 continue;
             }
             Element childTbElement = (Element) theNode;
-            String cdTbName = childTbElement.getAttribute("name");
+            String tableName = childTbElement.getAttribute("name");
+            if (StringUtil.isEmpty(tableName)) {
+                throw new ConfigException("one of table [" + parentTable.getName() + "]'s child name is empty");
+            }
             if (isLowerCaseNames) {
-                cdTbName = cdTbName.toLowerCase();
+                tableName = tableName.toLowerCase();
             }
 
             String sqlMaxLimitStr = childTbElement.getAttribute("sqlMaxLimit");
@@ -413,17 +424,17 @@ public class XMLShardingLoader {
             //join key ,the parent's column
             String joinColumn = childTbElement.getAttribute("joinColumn").toUpperCase();
             String parentColumn = childTbElement.getAttribute("parentColumn").toUpperCase();
+            //if autoIncrement,it will use sequence handler
             String incrementColumn = childTbElement.hasAttribute("incrementColumn") ? childTbElement.getAttribute("incrementColumn").toUpperCase() : null;
-            TableConfig table = new TableConfig(cdTbName, sqlMaxLimit,
-                    TableTypeEnum.TYPE_SHARDING_TABLE, strDatoNodes, null, false, parentTable, joinColumn, parentColumn, incrementColumn,
-                    null, null, false);
+            ChildTableConfig table = new ChildTableConfig(tableName, sqlMaxLimit, lstShardingNode,
+                    parentTable, joinColumn, parentColumn, incrementColumn);
 
             if (tables.containsKey(table.getName())) {
                 throw new ConfigException("table " + table.getName() + " duplicated!");
             }
             tables.put(table.getName(), table);
             //child table may also have children
-            processChildTables(tables, table, strDatoNodes, childTbElement, isLowerCaseNames, schemaMaxLimit);
+            processChildTables(tables, table, lstShardingNode, childTbElement, isLowerCaseNames, schemaMaxLimit);
         }
     }
 
@@ -441,16 +452,16 @@ public class XMLShardingLoader {
     /**
      * shard table shardingnode(2) < function count(3) and check failed
      */
-    private void checkRuleSuitTable(TableConfig tableConf) {
-        AbstractPartitionAlgorithm function = tableConf.getRule().getRuleAlgorithm();
+    private void checkRuleSuitTable(ShardingTableConfig tableConf, String functionName) {
+        AbstractPartitionAlgorithm function = tableConf.getFunction();
         int suitValue = function.suitableFor(tableConf.getShardingNodes().size());
         if (suitValue < 0) {
             throw new ConfigException("Illegal table conf : table [ " + tableConf.getName() + " ] rule function [ " +
-                    tableConf.getRule().getFunctionName() + " ] partition size : " + tableConf.getRule().getRuleAlgorithm().getPartitionNum() + " > table shardingnode size : " +
+                    functionName + " ] partition size : " + tableConf.getShardingColumn() + " > table shardingNode size : " +
                     tableConf.getShardingNodes().size() + ", please make sure table shardingnode size = function partition size");
         } else if (suitValue > 0) {
-            problemReporter.warn("table conf : table [ " + tableConf.getName() + " ] rule function [ " + tableConf.getRule().getFunctionName() + " ] " +
-                    "partition size : " + String.valueOf(tableConf.getRule().getRuleAlgorithm().getPartitionNum()) + " < table shardingnode size : " + String.valueOf(tableConf.getShardingNodes().size()));
+            problemReporter.warn("table conf : table [ " + tableConf.getName() + " ] rule function [ " + functionName + " ] " +
+                    "partition size : " + String.valueOf(tableConf.getFunction().getPartitionNum()) + " < table shardingNode size : " + String.valueOf(tableConf.getShardingNodes().size()));
         }
         // else {
         // table shardingNode size == rule function partition size
@@ -598,7 +609,7 @@ public class XMLShardingLoader {
                 Class<?> clz = Class.forName(clazz);
                 //all function must be extend from AbstractPartitionAlgorithm
                 if (!AbstractPartitionAlgorithm.class.isAssignableFrom(clz)) {
-                    throw new IllegalArgumentException("rule function must implements " +
+                    throw new ConfigException("rule function must implements " +
                             AbstractPartitionAlgorithm.class.getName() + ", name=" + name);
                 }
                 return (AbstractPartitionAlgorithm) clz.newInstance();

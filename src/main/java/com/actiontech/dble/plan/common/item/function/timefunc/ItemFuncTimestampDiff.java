@@ -13,8 +13,8 @@ import com.actiontech.dble.plan.common.time.MySQLTime;
 import com.actiontech.dble.plan.common.time.MyTime;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntervalUnit;
+import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
 
 import java.math.BigInteger;
 import java.util.ArrayList;

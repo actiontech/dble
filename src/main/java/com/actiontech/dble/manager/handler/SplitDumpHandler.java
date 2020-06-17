@@ -3,7 +3,7 @@ package com.actiontech.dble.manager.handler;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.manager.dump.*;
 import com.actiontech.dble.manager.response.DumpFileError;

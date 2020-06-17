@@ -7,7 +7,6 @@ package com.actiontech.dble.manager.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.singleton.CustomMySQLHa;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.config.ErrorCode;
@@ -15,6 +14,7 @@ import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.manager.response.*;
 import com.actiontech.dble.route.parser.ManagerParseShow;
 import com.actiontech.dble.server.status.SlowQueryLog;
+import com.actiontech.dble.singleton.CustomMySQLHa;
 import com.actiontech.dble.sqlengine.TransformSQLJob;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLStatement;

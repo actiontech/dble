@@ -7,7 +7,7 @@ package com.actiontech.dble.server.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.server.ServerConnection;

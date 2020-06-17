@@ -6,7 +6,7 @@
 package com.actiontech.dble.plan.node;
 
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.ERTable;
+import com.actiontech.dble.config.model.sharding.table.ERTable;
 import com.actiontech.dble.plan.NamedField;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;

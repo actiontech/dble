@@ -8,8 +8,8 @@ package com.actiontech.dble.route.parser.druid.impl;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.FetchStoreNodeOfChildTableHandler;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.*;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.net.ConnectionException;
 import com.actiontech.dble.route.RouteResultset;
@@ -32,7 +32,9 @@ import com.google.common.collect.ImmutableList;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 import static com.actiontech.dble.server.util.SchemaUtil.SchemaInfo;
 
@@ -58,20 +60,22 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
         SQLSelect select = acceptVisitor(stmt, visitor);
         String tableName = schemaInfo.getTable();
         SchemaConfig schema = schemaInfo.getSchemaConfig();
-        TableConfig tc = schema.getTables().get(tableName);
+        BaseTableConfig tc = schema.getTables().get(tableName);
 
         Collection<String> routeShardingNodes;
-        if (tc == null || tc.isNoSharding() || (tc.isGlobalTable() && tc.getShardingNodes().size() == 1)) {
+        if (tc == null || tc instanceof SingleTableConfig) {
             //only require when all the table and the route condition route to same node
             Map<String, String> tableAliasMap = getTableAliasMap(schema.getName(), visitor.getAliasMap());
             ctx.setRouteCalculateUnits(ConditionUtil.buildRouteCalculateUnits(visitor.getAllWhereUnit(), tableAliasMap, schema.getName()));
             checkForSingleNodeTable(visitor, tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0), rrs);
             routeShardingNodes = ImmutableList.of(tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0));
             //RouterUtil.routeToSingleNode(rrs, tc == null ? schema.getShardingNode() : tc.getShardingNodes().get(0));
-        } else if (tc.isGlobalTable() && tc.getShardingNodes().size() > 1) {
-            routeShardingNodes = checkForMultiNodeGlobal(visitor, tc, schema);
+        } else if (tc instanceof GlobalTableConfig) {
+            routeShardingNodes = checkForMultiNodeGlobal(visitor, (GlobalTableConfig) tc, schema);
+        } else if (tc instanceof ShardingTableConfig) {
+            routeShardingNodes = checkForShardingTable(visitor, select, sc, rrs, (ShardingTableConfig) tc, schemaInfo, stmt, schema);
         } else {
-            routeShardingNodes = checkForShardingTable(visitor, select, sc, rrs, tc, schemaInfo, stmt, schema);
+            throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
         }
 
         //finally route for the result
@@ -160,7 +164,7 @@ abstract class DruidInsertReplaceParser extends DruidModifyParser {
     }
 
 
-    void fetchChildTableToRoute(TableConfig tc, String joinColumnVal, ServerConnection sc, SchemaConfig schema, String sql, RouteResultset rrs, boolean isExplain) {
+    void fetchChildTableToRoute(ChildTableConfig tc, String joinColumnVal, ServerConnection sc, SchemaConfig schema, String sql, RouteResultset rrs, boolean isExplain) {
         DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
             //get child result will be blocked, so use ComplexQueryExecutor
             @Override

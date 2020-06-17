@@ -8,8 +8,8 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.meta.TableMeta;
@@ -87,10 +87,10 @@ public abstract class AbstractSchemaMetaHandler {
 
         // tables in config
         Map<String, Set<String>> shardingNodeMap = new HashMap<>();
-        for (Map.Entry<String, TableConfig> entry : filterConfigTables().entrySet()) {
+        for (Map.Entry<String, BaseTableConfig> entry : filterConfigTables().entrySet()) {
             existTable = true;
             String tableName = entry.getKey();
-            TableConfig tbConfig = entry.getValue();
+            BaseTableConfig tbConfig = entry.getValue();
             for (String shardingNode : tbConfig.getShardingNodes()) {
                 Set<String> tables = shardingNodeMap.get(shardingNode);
                 if (tables == null) {
@@ -117,8 +117,8 @@ public abstract class AbstractSchemaMetaHandler {
         return showTablesHandler.getTables();
     }
 
-    private Map<String, TableConfig> filterConfigTables() {
-        Map<String, TableConfig> newReload = new HashMap<>();
+    private Map<String, BaseTableConfig> filterConfigTables() {
+        Map<String, BaseTableConfig> newReload = new HashMap<>();
         if (filterTables == null) {
             newReload = schemaConfig.getTables();
         } else {

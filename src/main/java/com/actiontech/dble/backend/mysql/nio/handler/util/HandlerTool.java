@@ -11,8 +11,8 @@ import com.actiontech.dble.backend.mysql.nio.handler.builder.sqlvisitor.MysqlVis
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler.HandlerType;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
@@ -316,7 +316,7 @@ public final class HandlerTool {
             ShardingNode dbNode = DbleServer.getInstance().getConfig().getShardingNodes().get(schemaConfig.getShardingNode());
             return dbNode.getDatabase().equals(sourceSchema);
         }
-        TableConfig tbConfig = schemaConfig.getTables().get(table);
+        BaseTableConfig tbConfig = schemaConfig.getTables().get(table);
         if (tbConfig == null) {
             ShardingNode dbNode = DbleServer.getInstance().getConfig().getShardingNodes().get(schemaConfig.getShardingNode());
             return dbNode.getDatabase().equals(sourceSchema);

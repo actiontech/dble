@@ -23,7 +23,6 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.sql.SQLException;
 import java.util.Arrays;
-
 import java.util.Base64;
 
 public final class PasswordAuthPlugin {

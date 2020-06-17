@@ -5,7 +5,7 @@
 
 package com.actiontech.dble.statistic;
 
-import com.actiontech.dble.route.parser.util.Pair;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.server.parser.ServerParse;
 import com.actiontech.dble.statistic.stat.QueryConditionAnalyzer;
 import com.actiontech.dble.statistic.stat.QueryResult;
@@ -75,9 +75,9 @@ public class TestConcurrentSafety {
     public void testQueryConditionAnalyzer() throws InterruptedException {
 
 
-        final QueryResult qr = new QueryResult(new Pair<>("zhuam", null), ServerParse.SELECT, sql, 0, 0, 0, 0, 0, 0);
-        final QueryResult qr2 = new QueryResult(new Pair<>("zhuam", null), ServerParse.SELECT, sql2, 0, 0, 0, 0, 0, 0);
-        final QueryResult qr3 = new QueryResult(new Pair<>("zhuam", null), ServerParse.SELECT, sql3, 0, 0, 0, 0, 0, 0);
+        final QueryResult qr = new QueryResult(new UserName("zhuam", null), ServerParse.SELECT, sql, 0, 0, 0, 0, 0, 0);
+        final QueryResult qr2 = new QueryResult(new UserName("zhuam", null), ServerParse.SELECT, sql2, 0, 0, 0, 0, 0, 0);
+        final QueryResult qr3 = new QueryResult(new UserName("zhuam", null), ServerParse.SELECT, sql3, 0, 0, 0, 0, 0, 0);
 
         final QueryConditionAnalyzer analyzer = QueryConditionAnalyzer.getInstance();
         analyzer.setCf("dynamic&fnum");

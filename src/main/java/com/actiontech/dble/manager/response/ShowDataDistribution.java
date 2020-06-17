@@ -9,8 +9,9 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.model.sharding.table.SingleTableConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
@@ -74,12 +75,12 @@ public final class ShowDataDistribution {
             c.writeErrMessage(ErrorCode.ER_YES, "The schema " + schemaInfo[0] + " is no sharding schema");
             return;
         }
-        TableConfig tableConfig = schemaConfig.getTables().get(schemaInfo[1]);
+        BaseTableConfig tableConfig = schemaConfig.getTables().get(schemaInfo[1]);
         if (tableConfig == null) {
             c.writeErrMessage(ErrorCode.ER_YES, "The table " + name + " doesn‘t exist");
             return;
-        } else if (tableConfig.isNoSharding()) {
-            c.writeErrMessage(ErrorCode.ER_YES, "The table " + name + " is no sharding table");
+        } else if (tableConfig instanceof SingleTableConfig) {
+            c.writeErrMessage(ErrorCode.ER_YES, "The table " + name + " is Single table");
             return;
         }
         ReentrantLock lock = new ReentrantLock();

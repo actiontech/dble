@@ -60,7 +60,7 @@ public final class SelectUser implements InnerFuncResponse {
     }
 
     private static byte[] getUser(ServerConnection c) {
-        return StringUtil.encode(c.getUser().getKey() + '@' + c.getHost(), c.getCharset().getResults());
+        return StringUtil.encode(c.getUser().toString() + '@' + c.getHost(), c.getCharset().getResults());
     }
 
     public static byte setCurrentPacket(ServerConnection c) {

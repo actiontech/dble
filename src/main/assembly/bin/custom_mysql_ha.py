@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import time
 import logging.config
+import time
+
 import dble_datahosts_check as Dhcheck
+
 
 # Need to update.
 

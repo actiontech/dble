@@ -12,7 +12,9 @@ import com.actiontech.dble.server.NonBlockingSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static com.actiontech.dble.config.ErrorCode.ER_SP_DOES_NOT_EXIST;
 

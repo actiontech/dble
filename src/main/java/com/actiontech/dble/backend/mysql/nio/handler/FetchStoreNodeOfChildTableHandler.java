@@ -22,7 +22,6 @@ import com.actiontech.dble.singleton.CacheService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -53,7 +52,7 @@ public class FetchStoreNodeOfChildTableHandler implements ResponseHandler {
         this.session = session;
     }
 
-    public String execute(String schema, ArrayList<String> shardingNodes) throws ConnectionException {
+    public String execute(String schema, List<String> shardingNodes) throws ConnectionException {
         String key = schema + ":" + sql;
         CachePool cache = CacheService.getCachePoolByName("ER_SQL2PARENTID");
         if (cache != null) {

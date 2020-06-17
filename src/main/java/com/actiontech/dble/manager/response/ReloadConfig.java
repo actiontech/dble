@@ -26,10 +26,11 @@ import com.actiontech.dble.config.ConfigInitializer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.ClusterConfig;
-import com.actiontech.dble.config.model.ERTable;
-import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.ERTable;
 import com.actiontech.dble.config.model.user.UserConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.meta.ReloadLogHelper;
@@ -39,7 +40,6 @@ import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.mysql.OkPacket;
 import com.actiontech.dble.route.RouteResultsetNode;
 import com.actiontech.dble.route.parser.ManagerParseConfig;
-import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.server.variables.SystemVariables;
 import com.actiontech.dble.server.variables.VarsExtractorHandler;
@@ -353,7 +353,7 @@ public final class ReloadConfig {
         }
         checkTestConnIfNeed(loadAllMode, loader);
 
-        Map<Pair<String, String>, UserConfig> newUsers = serverConfig.getUsers();
+        Map<UserName, UserConfig> newUsers = serverConfig.getUsers();
         Map<String, SchemaConfig> newSchemas = serverConfig.getSchemas();
         Map<String, ShardingNode> newShardingNodes = serverConfig.getShardingNodes();
         Map<ERTable, Set<ERTable>> newErRelations = serverConfig.getErRelations();
@@ -428,7 +428,7 @@ public final class ReloadConfig {
         }
         checkTestConnIfNeed(loadAllMode, loader);
 
-        Map<Pair<String, String>, UserConfig> newUsers = serverConfig.getUsers();
+        Map<UserName, UserConfig> newUsers = serverConfig.getUsers();
         Map<String, SchemaConfig> newSchemas = serverConfig.getSchemas();
         Map<String, ShardingNode> newShardingNodes = serverConfig.getShardingNodes();
         Map<ERTable, Set<ERTable>> newErRelations = serverConfig.getErRelations();

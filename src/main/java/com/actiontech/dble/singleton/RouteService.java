@@ -6,7 +6,7 @@
 package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.config.Versions;
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
 import com.actiontech.dble.route.handler.HintHandler;

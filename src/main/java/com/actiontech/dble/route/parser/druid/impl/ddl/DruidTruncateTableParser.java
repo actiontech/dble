@@ -6,7 +6,7 @@
 package com.actiontech.dble.route.parser.druid.impl.ddl;
 
 import com.actiontech.dble.cluster.zkprocess.zookeeper.process.DDLInfo;
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.parser.druid.impl.DefaultDruidParser;

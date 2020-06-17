@@ -8,8 +8,8 @@ package com.actiontech.dble.route.util;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.*;
 import com.actiontech.dble.plan.node.QueryNode;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
@@ -268,8 +268,8 @@ public final class RouterUtil {
     public static void routeToDDLNode(SchemaInfo schemaInfo, RouteResultset rrs) throws SQLException {
         String stmt = getFixedSql(removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
         List<String> shardingNodes;
-        Map<String, TableConfig> tables = schemaInfo.getSchemaConfig().getTables();
-        TableConfig tc = tables.get(schemaInfo.getTable());
+        Map<String, BaseTableConfig> tables = schemaInfo.getSchemaConfig().getTables();
+        BaseTableConfig tc = tables.get(schemaInfo.getTable());
         if (tc != null) {
             shardingNodes = tc.getShardingNodes();
         } else {
@@ -334,7 +334,7 @@ public final class RouterUtil {
         routeToSingleNode(rrs, shardingNode);
     }
 
-    public static String getRandomShardingNode(ArrayList<String> shardingNodes) {
+    public static String getRandomShardingNode(List<String> shardingNodes) {
         int index = rand.nextInt(shardingNodes.size());
         ArrayList<String> x = new ArrayList<>(shardingNodes);
         Map<String, ShardingNode> shardingNodeMap = DbleServer.getInstance().getConfig().getShardingNodes();
@@ -350,17 +350,17 @@ public final class RouterUtil {
     }
 
     private static String getRandomShardingNode(SchemaConfig schema, String table) throws SQLException {
-        Map<String, TableConfig> tables = schema.getTables();
-        TableConfig tc;
+        Map<String, BaseTableConfig> tables = schema.getTables();
+        BaseTableConfig tc;
         if (tables != null && (tc = tables.get(table)) != null) {
-            return tc.getRandomShardingNode();
+            return RouterUtil.getRandomShardingNode(tc.getShardingNodes());
         } else {
             String msg = "Table '" + schema.getName() + "." + table + "' doesn't exist";
             throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
         }
     }
 
-    private static Set<String> ruleByJoinValueCalculate(RouteResultset rrs, TableConfig tc,
+    private static Set<String> ruleByJoinValueCalculate(RouteResultset rrs, ChildTableConfig tc,
                                                         ColumnRoute colRoutePairSet) throws SQLNonTransientException {
         Set<String> retNodeSet = new LinkedHashSet<>();
         if (tc.getDirectRouteTC() != null) {
@@ -379,7 +379,7 @@ public final class RouterUtil {
         return retNodeSet;
     }
 
-    public static Set<String> ruleCalculate(RouteResultset rrs, TableConfig tc, ColumnRoute columnRoute, boolean ignoreNull) {
+    public static Set<String> ruleCalculate(RouteResultset rrs, ShardingTableConfig tc, ColumnRoute columnRoute, boolean ignoreNull) {
         Set<String> routeNodeSet = new LinkedHashSet<>();
         if (columnRoute.getColValue() != null) {
             String value = columnRoute.getColValue();
@@ -402,7 +402,7 @@ public final class RouterUtil {
             Set<String> rangeNodeSet = new LinkedHashSet<>();
             boolean isFirst = true;
             for (RangeValue rangeValue : columnRoute.getRangeValues()) { // get Intersection from all between and
-                Integer[] nodeRange = tc.getRule().getRuleAlgorithm().calculateRange(String.valueOf(rangeValue.getBeginValue()), String.valueOf(rangeValue.getEndValue()));
+                Integer[] nodeRange = tc.getFunction().calculateRange(String.valueOf(rangeValue.getBeginValue()), String.valueOf(rangeValue.getEndValue()));
                 if (nodeRange != null) {
                     if (isFirst) {
                         if (nodeRange.length == 0) {
@@ -449,17 +449,17 @@ public final class RouterUtil {
         return routeNodeSet;
     }
 
-    private static String ruleCalculateSingleValue(TableConfig tc, String value) {
-        Integer nodeIndex = tc.getRule().getRuleAlgorithm().calculate(value);
+    private static String ruleCalculateSingleValue(ShardingTableConfig tc, String value) {
+        Integer nodeIndex = tc.getFunction().calculate(value);
         if (nodeIndex == null) {
             String msg = "can't find any valid shardingNode in table[" + tc.getName() +
-                    "] -> column[" + tc.getPartitionColumn() + "] -> value[" + value + "]";
+                    "] -> column[" + tc.getShardingColumn() + "] -> value[" + value + "]";
             LOGGER.info(msg);
             throw new IllegalArgumentException(msg);
         }
         if (nodeIndex < 0 || nodeIndex >= tc.getShardingNodes().size()) {
             String msg = "Can't find a valid shardingNode for specified node index in table[" + tc.getName() +
-                    "] -> column[" + tc.getPartitionColumn() + "] -> value[" + value + "]" + ",Index : " + nodeIndex;
+                    "] -> column[" + tc.getShardingColumn() + "] -> value[" + value + "]" + ",Index : " + nodeIndex;
             LOGGER.info(msg);
             throw new IllegalArgumentException(msg);
         }
@@ -473,19 +473,19 @@ public final class RouterUtil {
         Set<String> tmpResultNodes = new HashSet<>();
 
         Set<Pair<String, String>> tablesSet = new HashSet<>(ctx.getTables());
-        Set<Pair<String, TableConfig>> globalTables = new HashSet<>();
+        Set<Pair<String, BaseTableConfig>> globalTables = new HashSet<>();
         for (Pair<String, String> table : ctx.getTables()) {
             String schemaName = table.getKey();
             String tableName = table.getValue();
             SchemaConfig schema = DbleServer.getInstance().getConfig().getSchemas().get(schemaName);
             schemaList.add(schemaName);
-            TableConfig tableConfig = schema.getTables().get(tableName);
+            BaseTableConfig tableConfig = schema.getTables().get(tableName);
             if (tableConfig == null) {
                 if (tryRouteNoShardingTablesToOneNode(tmpResultNodes, tablesSet, table, schemaName, tableName, schema))
                     return null;
-            } else if (tableConfig.isGlobalTable()) {
+            } else if (tableConfig instanceof GlobalTableConfig) {
                 globalTables.add(new Pair<>(schemaName, tableConfig));
-            } else if (schema.getTables().get(tableName).getShardingNodes().size() == 1) {
+            } else if (tableConfig instanceof SingleTableConfig) {
                 tmpResultNodes.add(schema.getTables().get(tableName).getShardingNodes().get(0));
                 tablesSet.remove(table);
                 if (tmpResultNodes.size() != 1) {
@@ -509,14 +509,14 @@ public final class RouterUtil {
                         String schemaName = table.getKey();
                         String tableName = table.getValue();
                         SchemaConfig schema = DbleServer.getInstance().getConfig().getSchemas().get(schemaName);
-                        TableConfig tableConfig = schema.getTables().get(tableName);
+                        BaseTableConfig tableConfig = schema.getTables().get(tableName);
                         if (!tryCalcNodeForShardingColumn(rrs, tmpResultNodes, tablesSet, entry, table, tableConfig)) {
                             return null;
                         }
                     }
                 }
-                for (Pair<String, TableConfig> table : globalTables) {
-                    TableConfig tb = table.getValue();
+                for (Pair<String, BaseTableConfig> table : globalTables) {
+                    BaseTableConfig tb = table.getValue();
                     tmpResultNodes.retainAll(tb.getShardingNodes());
                     tablesSet.remove(new Pair<>(table.getKey(), tb.getName()));
                 }
@@ -541,10 +541,10 @@ public final class RouterUtil {
 
     }
 
-    private static String tryRouteGlobalTablesToOneNode(Set<String> tmpResultNodes, Set<Pair<String, TableConfig>> globalTables) {
+    private static String tryRouteGlobalTablesToOneNode(Set<String> tmpResultNodes, Set<Pair<String, BaseTableConfig>> globalTables) {
         boolean isFirstTable = true;
-        for (Pair<String, TableConfig> table : globalTables) {
-            TableConfig tb = table.getValue();
+        for (Pair<String, BaseTableConfig> table : globalTables) {
+            BaseTableConfig tb = table.getValue();
             if (isFirstTable) {
                 tmpResultNodes.addAll(tb.getShardingNodes());
                 isFirstTable = false;
@@ -582,24 +582,24 @@ public final class RouterUtil {
     public static boolean tryCalcNodeForShardingColumn(
             RouteResultset rrs, Set<String> resultNodes, Set<Pair<String, String>> tablesSet,
             Map.Entry<Pair<String, String>, Map<String, ColumnRoute>> entry, Pair<String, String> table,
-            TableConfig tableConfig) throws SQLNonTransientException {
+            BaseTableConfig tableConfig) throws SQLNonTransientException {
         if (tableConfig == null) {
             return false; //  alias table, may subquery
         }
-        if (tableConfig.getPartitionColumn() == null) {
-            return true;
-        }
 
-        String joinColumn = tableConfig.getJoinColumn();
-        String partitionCol = tableConfig.getPartitionColumn();
 
         // where filter contains partition column
 
         Map<String, ColumnRoute> columnsMap = entry.getValue();
-        if (partitionCol != null && columnsMap.get(partitionCol) != null) {
+        if (tableConfig instanceof ShardingTableConfig) {
+            ShardingTableConfig shardingTableConfig = (ShardingTableConfig) tableConfig;
+            String partitionCol = shardingTableConfig.getShardingColumn();
             ColumnRoute partitionValue = columnsMap.get(partitionCol);
+            if (partitionValue == null) {
+                return false;
+            }
             try {
-                Set<String> shardingNodeSet = ruleCalculate(rrs, tableConfig, partitionValue, false);
+                Set<String> shardingNodeSet = ruleCalculate(rrs, shardingTableConfig, partitionValue, false);
                 resultNodes.addAll(shardingNodeSet);
             } catch (Exception e) { //complex filter
                 return true;
@@ -608,9 +608,14 @@ public final class RouterUtil {
             if (resultNodes.size() != 1) {
                 return false;
             }
-        } else if (joinColumn != null && columnsMap.get(joinColumn) != null) {
+        } else if (tableConfig instanceof ChildTableConfig) {
+            ChildTableConfig childTableConfig = (ChildTableConfig) tableConfig;
+            String joinColumn = childTableConfig.getJoinColumn();
             ColumnRoute joinColumnValue = columnsMap.get(joinColumn);
-            Set<String> shardingNodeSet = ruleByJoinValueCalculate(rrs, tableConfig, joinColumnValue);
+            if (joinColumnValue == null) {
+                return false;
+            }
+            Set<String> shardingNodeSet = ruleByJoinValueCalculate(rrs, (ChildTableConfig) tableConfig, joinColumnValue);
             if (shardingNodeSet.size() > 1) {
                 return false;
             }
@@ -664,8 +669,8 @@ public final class RouterUtil {
             if (testShardingNode != null && tablesRouteMap.size() == 0) {
                 return RouterUtil.routeToSingleNode(rrs, testShardingNode);
             }
-            TableConfig tableConfig = schema.getTables().get(tableName);
-            if (tableConfig != null && !tableConfig.isGlobalTable() && tablesRouteMap.get(table) == null) { //the other is single table
+            BaseTableConfig tableConfig = schema.getTables().get(tableName);
+            if (tableConfig != null && !(tableConfig instanceof GlobalTableConfig) && tablesRouteMap.get(table) == null) { //the other is single table
                 tablesRouteMap.put(table, new HashSet<>());
                 tablesRouteMap.get(table).addAll(tableConfig.getShardingNodes());
             }
@@ -725,8 +730,8 @@ public final class RouterUtil {
             if (testShardingNode != null && tablesRouteMap.size() == 0) {
                 return RouterUtil.routeToSingleNode(rrs, testShardingNode);
             }
-            TableConfig tableConfig = schema.getTables().get(tableName);
-            if (tableConfig != null && !tableConfig.isGlobalTable() && tablesRouteMap.get(table) == null) { //the other is single table
+            BaseTableConfig tableConfig = schema.getTables().get(tableName);
+            if (tableConfig != null && !(tableConfig instanceof GlobalTableConfig) && tablesRouteMap.get(table) == null) { //the other is single table
                 tablesRouteMap.put(table, new HashSet<>());
                 tablesRouteMap.get(table).addAll(tableConfig.getShardingNodes());
             }
@@ -769,18 +774,18 @@ public final class RouterUtil {
     public static RouteResultset tryRouteForOneTable(SchemaConfig schema,
                                                      RouteCalculateUnit routeUnit, String tableName, RouteResultset rrs,
                                                      boolean isSelect) throws SQLException {
-        TableConfig tc = schema.getTables().get(tableName);
+        BaseTableConfig tc = schema.getTables().get(tableName);
         if (tc == null) {
             String msg = "Table '" + schema.getName() + "." + tableName + "' doesn't exist";
             throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
         }
 
-        if (tc.isGlobalTable()) {
+        if (tc instanceof GlobalTableConfig) {
             if (isSelect) {
                 // global select ,not cache route result
                 rrs.setSqlRouteCacheAble(false);
                 rrs.setGlobalTable(true);
-                String randomShardingNode = tc.getRandomShardingNode();
+                String randomShardingNode = RouterUtil.getRandomShardingNode(tc.getShardingNodes());
                 rrs = routeToSingleNode(rrs, randomShardingNode);
                 List<String> globalBackupNodes = new ArrayList<>(tc.getShardingNodes().size() - 1);
                 for (String shardingNode : tc.getShardingNodes()) {
@@ -793,19 +798,15 @@ public final class RouterUtil {
             } else { //insert into all global table's node
                 return routeToMultiNode(false, rrs, tc.getShardingNodes(), true);
             }
-        } else { //single table or shard-ing table
-
-            Pair<String, String> table = new Pair<>(schema.getName(), tableName);
-            if (!checkSQLRequiredSharding(schema, routeUnit, tc, table)) {
-                throw new IllegalArgumentException("route rule for table " + schema.getName() + "." +
-                        tc.getName() + " is required: " + rrs.getStatement());
-
-            }
-            if ((tc.getPartitionColumn() == null && tc.getParentTC() == null) ||
-                    (tc.getParentTC() != null && tc.getDirectRouteTC() == null)) {
-                // single table or one of the children of complex ER table
+        } else if (tc instanceof SingleTableConfig) {
+            return routeToSingleNode(rrs, tc.getShardingNodes().get(0));
+        } else if (tc instanceof ChildTableConfig) {
+            ChildTableConfig childConfig = (ChildTableConfig) tc;
+            if ((childConfig.getParentTC() != null && childConfig.getDirectRouteTC() == null)) {
+                // one of the children of complex ER table
                 return routeToMultiNode(rrs.isSqlRouteCacheAble(), rrs, tc.getShardingNodes());
             } else {
+                Pair<String, String> table = new Pair<>(schema.getName(), tableName);
                 Map<Pair<String, String>, Set<String>> tablesRouteMap = new HashMap<>();
                 if (routeUnit.getTablesAndConditions() != null && routeUnit.getTablesAndConditions().size() > 0) {
                     RouterUtil.findRouterForTablesInOneSchema(schema, rrs, routeUnit.getTablesAndConditions(), tablesRouteMap, true);
@@ -819,6 +820,25 @@ public final class RouterUtil {
                     return routeToMultiNode(rrs.isSqlRouteCacheAble(), rrs, tablesRouteMap.get(table));
                 }
             }
+        } else { //shard-ing table
+            Pair<String, String> table = new Pair<>(schema.getName(), tableName);
+            if (!checkSQLRequiredSharding(schema, routeUnit, (ShardingTableConfig) tc, table)) {
+                throw new IllegalArgumentException("route rule for table " + schema.getName() + "." +
+                        tc.getName() + " is required: " + rrs.getStatement());
+
+            }
+            Map<Pair<String, String>, Set<String>> tablesRouteMap = new HashMap<>();
+            if (routeUnit.getTablesAndConditions() != null && routeUnit.getTablesAndConditions().size() > 0) {
+                RouterUtil.findRouterForTablesInOneSchema(schema, rrs, routeUnit.getTablesAndConditions(), tablesRouteMap, true);
+                if (rrs.isFinishedRoute()) {
+                    return rrs;
+                }
+            }
+            if (tablesRouteMap.get(table) == null) {
+                return routeToMultiNode(rrs.isSqlRouteCacheAble(), rrs, tc.getShardingNodes());
+            } else {
+                return routeToMultiNode(rrs.isSqlRouteCacheAble(), rrs, tablesRouteMap.get(table));
+            }
         }
     }
 
@@ -827,8 +847,8 @@ public final class RouterUtil {
      * @param tc     TableConfig
      * @return true for passed
      */
-    private static boolean checkSQLRequiredSharding(SchemaConfig schema, RouteCalculateUnit routeUnit, TableConfig tc, Pair<String, String> table) {
-        if (!tc.isSQLRequiredSharding()) {
+    private static boolean checkSQLRequiredSharding(SchemaConfig schema, RouteCalculateUnit routeUnit, ShardingTableConfig tc, Pair<String, String> table) {
+        if (!tc.isSqlRequiredSharding()) {
             return true;
         }
         boolean hasRequiredValue = false;
@@ -838,7 +858,7 @@ public final class RouterUtil {
             for (Map.Entry<String, ColumnRoute> condition : routeUnit.getTablesAndConditions().get(table).entrySet()) {
                 String colName = RouterUtil.getFixedSql(RouterUtil.removeSchema(condition.getKey(), schema.getName()));
                 //condition is partition column
-                if (colName.equals(tc.getPartitionColumn())) {
+                if (colName.equals(tc.getShardingColumn())) {
                     hasRequiredValue = true;
                     break;
                 }
@@ -861,11 +881,16 @@ public final class RouterUtil {
             Pair<String, String> table = entry.getKey();
             String tableName = table.getValue();
             SchemaConfig schema = schemaMap.get(table);
-            TableConfig tableConfig = schema.getTables().get(tableName);
-            if (tableConfig != null && !tableConfig.isGlobalTable() && schema.getTables().get(tableName).getShardingNodes().size() != 1) {
-                //shard-ing table,childTable or others
-                if (findRouterWithConditionsForTable(rrs, tablesRouteMap, table, tableConfig, entry.getValue()))
-                    return;
+            BaseTableConfig tableConfig = schema.getTables().get(tableName);
+
+            if (tableConfig != null) {
+                if ((tableConfig instanceof ShardingTableConfig)) {
+                    if (findRouterWithConditionsForShardingTable(rrs, tablesRouteMap, table, (ShardingTableConfig) tableConfig, entry.getValue()))
+                        return;
+                } else if (tableConfig instanceof ChildTableConfig) {
+                    if (findRouterWithConditionsForChildTable(rrs, tablesRouteMap, table, (ChildTableConfig) tableConfig, entry.getValue()))
+                        return;
+                }
             }
         }
     }
@@ -883,7 +908,7 @@ public final class RouterUtil {
         for (Map.Entry<Pair<String, String>, Map<String, ColumnRoute>> entry : tablesAndConditions.entrySet()) {
             Pair<String, String> table = entry.getKey();
             String tableName = table.getValue();
-            TableConfig tableConfig = schema.getTables().get(tableName);
+            BaseTableConfig tableConfig = schema.getTables().get(tableName);
             if (tableConfig == null) {
                 if (isSingleTable) {
                     String msg = " Table '" + schema.getName() + "." + tableName + "' doesn't exist";
@@ -895,18 +920,22 @@ public final class RouterUtil {
                 }
             }
             //shard-ing table,childTable or others . global table or single node shard-ing table will router later
-            if (!tableConfig.isGlobalTable() && schema.getTables().get(tableName).getShardingNodes().size() != 1) {
-                if (findRouterWithConditionsForTable(rrs, tablesRouteMap, table, tableConfig, entry.getValue())) return;
+            if ((tableConfig instanceof ShardingTableConfig)) {
+                if (findRouterWithConditionsForShardingTable(rrs, tablesRouteMap, table, (ShardingTableConfig) tableConfig, entry.getValue()))
+                    return;
+            } else if (tableConfig instanceof ChildTableConfig) {
+                if (findRouterWithConditionsForChildTable(rrs, tablesRouteMap, table, (ChildTableConfig) tableConfig, entry.getValue()))
+                    return;
             }
         }
     }
 
-    private static boolean findRouterWithConditionsForTable(
+    private static boolean findRouterWithConditionsForShardingTable(
             RouteResultset rrs, Map<Pair<String, String>, Set<String>> tablesRouteMap,
-            Pair<String, String> table, TableConfig tableConfig,
+            Pair<String, String> table, ShardingTableConfig tableConfig,
             Map<String, ColumnRoute> columnsMap) throws SQLNonTransientException {
-        String joinColumn = tableConfig.getJoinColumn();
-        String partitionCol = tableConfig.getPartitionColumn();
+
+        String partitionCol = tableConfig.getShardingColumn();
         boolean isFoundPartitionValue = partitionCol != null && columnsMap.get(partitionCol) != null;
 
         // where filter contains partition column
@@ -917,7 +946,23 @@ public final class RouterUtil {
                 tablesRouteMap.computeIfAbsent(table, k -> new HashSet<>());
                 tablesRouteMap.get(table).addAll(shardingNodeSet);
             }
-        } else if (joinColumn != null && columnsMap.get(joinColumn) != null) {
+        } else {
+            //no partition column,router to all nodes
+            tablesRouteMap.computeIfAbsent(table, k -> new HashSet<>());
+            tablesRouteMap.get(table).addAll(tableConfig.getShardingNodes());
+        }
+        return false;
+    }
+
+    private static boolean findRouterWithConditionsForChildTable(
+            RouteResultset rrs, Map<Pair<String, String>, Set<String>> tablesRouteMap,
+            Pair<String, String> table, ChildTableConfig tableConfig,
+            Map<String, ColumnRoute> columnsMap) throws SQLNonTransientException {
+
+        String joinColumn = tableConfig.getJoinColumn();
+
+        // where filter contains partition column
+        if (joinColumn != null && columnsMap.get(joinColumn) != null) {
             routerForJoinTable(rrs, tableConfig, columnsMap, joinColumn);
             return true;
         } else {
@@ -929,7 +974,7 @@ public final class RouterUtil {
     }
 
 
-    private static void routerForJoinTable(RouteResultset rrs, TableConfig tableConfig, Map<String, ColumnRoute> columnsMap, String joinColumn) throws SQLNonTransientException {
+    private static void routerForJoinTable(RouteResultset rrs, ChildTableConfig tableConfig, Map<String, ColumnRoute> columnsMap, String joinColumn) throws SQLNonTransientException {
         //childTable  (if it's ER JOIN of select)must find root table,remove childTable, only left root table
         ColumnRoute joinColumnValue = columnsMap.get(joinColumn);
         Set<String> shardingNodeSet = ruleByJoinValueCalculate(rrs, tableConfig, joinColumnValue);
@@ -959,11 +1004,11 @@ public final class RouterUtil {
         if (schemaConfig.isNoSharding()) { //sharding without table
             return schemaConfig.getShardingNode();
         }
-        TableConfig tbConfig = schemaConfig.getTables().get(tableName);
+        BaseTableConfig tbConfig = schemaConfig.getTables().get(tableName);
         if (tbConfig == null && schemaConfig.getShardingNode() != null) {
             return schemaConfig.getShardingNode();
         }
-        if (tbConfig != null && tbConfig.isNoSharding()) {
+        if (tbConfig != null && tbConfig instanceof SingleTableConfig) {
             return tbConfig.getShardingNodes().get(0);
         }
         return null;
@@ -976,11 +1021,11 @@ public final class RouterUtil {
         if (schemaConfig.isNoSharding()) { //sharding without table
             return schemaConfig.getShardingNode();
         }
-        TableConfig tbConfig = schemaConfig.getTables().get(tableName);
+        BaseTableConfig tbConfig = schemaConfig.getTables().get(tableName);
         if (tbConfig == null && schemaConfig.getShardingNode() != null) {
             return schemaConfig.getShardingNode();
         }
-        if (tbConfig != null && tbConfig.isNoSharding()) {
+        if (tbConfig != null && (tbConfig instanceof SingleTableConfig)) {
             return tbConfig.getShardingNodes().get(0);
         }
         return null;

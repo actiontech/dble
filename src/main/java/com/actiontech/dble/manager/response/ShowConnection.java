@@ -214,7 +214,7 @@ public final class ShowConnection {
             isMatch = fc.getHost().equals(whereInfo.get("host"));
         }
         if (whereInfo.get("user") != null) {
-            isMatch = isMatch && fc.getUser().getKey().equals(whereInfo.get("user"));
+            isMatch = isMatch && fc.getUser().toString().equals(whereInfo.get("user"));
         }
         return isMatch;
     }
@@ -226,7 +226,7 @@ public final class ShowConnection {
         row.add(StringUtil.encode(c.getHost(), charset));
         row.add(IntegerUtil.toBytes(c.getPort()));
         row.add(IntegerUtil.toBytes(c.getLocalPort()));
-        row.add(StringUtil.encode(c.getUserInfo(), charset));
+        row.add(StringUtil.encode(c.getUser().toString(), charset));
         if (c instanceof ServerConnection) {
             row.add(StringUtil.encode(((ServerConnection) c).getSchema(), charset));
         } else {

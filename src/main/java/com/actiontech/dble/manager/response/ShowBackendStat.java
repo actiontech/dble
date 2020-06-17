@@ -20,8 +20,8 @@ import com.actiontech.dble.util.LongUtil;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * ShowBackend

@@ -11,8 +11,10 @@ import com.actiontech.dble.backend.mysql.nio.handler.builder.BaseHandlerBuilder;
 import com.actiontech.dble.backend.mysql.nio.handler.builder.HandlerBuilder;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.model.sharding.table.ChildTableConfig;
+import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
@@ -185,11 +187,14 @@ public final class ExplainHandler {
         SchemaUtil.SchemaInfo schemaInfo = SchemaUtil.getSchemaInfo(c.getUser(), schemaName, tableSource);
         String tableName = schemaInfo.getTable();
         schema = schemaInfo.getSchemaConfig();
-        TableConfig tableConfig = schema.getTables().get(tableName);
-        if (tableConfig == null) {
-            return false;
-        } else if (tableConfig.isAutoIncrement()) {
-            return true;
+        BaseTableConfig tableConfig = schema.getTables().get(tableName);
+        if (tableConfig != null) {
+            if (tableConfig instanceof ShardingTableConfig && ((ShardingTableConfig) tableConfig).getIncrementColumn() != null) {
+                return true;
+            }
+            if (tableConfig instanceof ChildTableConfig && ((ChildTableConfig) tableConfig).getIncrementColumn() != null) {
+                return true;
+            }
         }
         return false;
     }

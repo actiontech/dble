@@ -5,9 +5,9 @@
 
 package com.actiontech.dble.config.privileges;
 
-import com.actiontech.dble.config.model.UserPrivilegesConfig;
 import com.actiontech.dble.config.model.user.ServerUserConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
+import com.actiontech.dble.config.model.user.UserPrivilegesConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

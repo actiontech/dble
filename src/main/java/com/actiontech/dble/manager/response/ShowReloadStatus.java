@@ -16,9 +16,7 @@ import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
 
-import static com.actiontech.dble.meta.ReloadStatus.RELOAD_END_NORMAL;
-import static com.actiontech.dble.meta.ReloadStatus.RELOAD_INTERRUPUTED;
-import static com.actiontech.dble.meta.ReloadStatus.RELOAD_STATUS_NONE;
+import static com.actiontech.dble.meta.ReloadStatus.*;
 
 /**
  * Created by szf on 2019/7/15.

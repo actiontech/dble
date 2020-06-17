@@ -6,23 +6,20 @@
 package com.actiontech.dble.config.model.user;
 
 public class ManagerUserConfig extends UserConfig {
-    private boolean readOnly;
+    private final boolean readOnly;
 
-    public ManagerUserConfig(String name, String password, String strWhiteIPs, String strMaxCon) {
-        super(name, password, strWhiteIPs, strMaxCon);
+    public ManagerUserConfig(UserConfig user, boolean readOnly) {
+        super(user);
         if (whiteIPs.size() > 0) {
             whiteIPs.add("127.0.0.1");
             whiteIPs.add("0:0:0:0:0:0:0:1");
         }
+        this.readOnly = readOnly;
     }
 
 
     public boolean isReadOnly() {
         return readOnly;
-    }
-
-    public void setReadOnly(boolean readOnly) {
-        this.readOnly = readOnly;
     }
 
 }

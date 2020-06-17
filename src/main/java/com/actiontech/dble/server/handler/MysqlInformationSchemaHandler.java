@@ -11,9 +11,9 @@ import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
-import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.StringUtil;
 
@@ -39,7 +39,7 @@ public final class MysqlInformationSchemaHandler {
      */
     public static void handle(ServerConnection c, FieldPacket[] fields) {
         ServerConfig conf = DbleServer.getInstance().getConfig();
-        Map<Pair<String, String>, UserConfig> users = conf.getUsers();
+        Map<UserName, UserConfig> users = conf.getUsers();
         UserConfig user = users == null ? null : users.get(c.getUser());
         RowDataPacket[] rows = null;
         if (user != null) {

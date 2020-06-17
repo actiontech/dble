@@ -637,7 +637,7 @@ public class DruidSelectParser extends DefaultDruidParser {
                 return schema.getDefaultMaxLimit(); // get sharding's configure
             }
             // no condition
-            return allConditions.get(table) == null ? -1 : tableConfig.getMaxLimit();
+            return allConditions.get(table) == null ? tableConfig.getMaxLimit() : -1;
         } else { // no table or multi-table
             return -1;
         }

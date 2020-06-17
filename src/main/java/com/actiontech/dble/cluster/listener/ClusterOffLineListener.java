@@ -153,7 +153,7 @@ public class ClusterOffLineListener implements Runnable {
             } else {
                 LOGGER.info("rewrite server wait for online status inited");
             }
-            return true;
+            return init;
         } catch (Exception e) {
             LOGGER.warn("rewrite server online status failed: ", e);
             //alert

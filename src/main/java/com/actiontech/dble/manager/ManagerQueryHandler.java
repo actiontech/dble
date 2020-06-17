@@ -43,6 +43,8 @@ public class ManagerQueryHandler implements FrontendQueryHandler {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(String.valueOf(c) + sql);
         }
+
+        source.setExecuteSql(sql);
         int rs = ManagerParse.parse(sql);
         int sqlType = rs & 0xff;
         if (readOnly && sqlType != ManagerParse.SELECT && sqlType != ManagerParse.SHOW) {

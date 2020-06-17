@@ -125,7 +125,13 @@ public final class ShowConnectionSQL {
             row.add(StringUtil.encode(executeSql, charset));
             row.add(StringUtil.encode(sc.getSession2().getSessionStage().toString(), charset));
         } else {
-            row.add(StringUtil.encode("", charset));
+
+            String executeSql = "";
+            ManagerConnection sc = (ManagerConnection) c;
+            if (sc.getExecuteSql() != null) {
+                executeSql = sc.getExecuteSql().length() <= 1024 ? sc.getExecuteSql() : sc.getExecuteSql().substring(0, 1024);
+            }
+            row.add(StringUtil.encode(executeSql, charset));
             row.add(StringUtil.encode("Manager connection", charset));
         }
         return row;

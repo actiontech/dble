@@ -70,4 +70,10 @@ public class UserName {
         }
         return o1 == o2 || o1.equals(o2);
     }
+
+
+    public String getTenant() {
+        return tenant;
+    }
+
 }

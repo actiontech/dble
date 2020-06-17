@@ -43,7 +43,7 @@ public class XMLUserLoader {
         return users;
     }
 
-    public void loadXml(String dtdFile, String xmlFile) {
+    private void loadXml(String dtdFile, String xmlFile) {
         //read user.xml
         InputStream dtd = null;
         InputStream xml = null;
@@ -111,10 +111,9 @@ public class XMLUserLoader {
                 UserConfig baseInfo = getBaseUserInfo(element, xmlFile);
 
                 String userName = baseInfo.getName();
-                String tenant = element.getAttribute("tenant");
-                UserName user = new UserName(userName, tenant);
+                UserName user = new UserName(userName, element.getAttribute("tenant"));
                 if (users.containsKey(user)) {
-                    throw new ConfigException("User [name:" + userName + ",tenant:" + tenant + "] has already existed");
+                    throw new ConfigException("User [" + user + "] has already existed");
                 }
                 String readOnlyStr = element.getAttribute("readOnly");
                 boolean readOnly = false;
@@ -125,7 +124,7 @@ public class XMLUserLoader {
 
                 String schemas = element.getAttribute("schemas").trim();
                 if (StringUtil.isEmpty(schemas)) {
-                    throw new ConfigException("User[name:" + userName + ",tenant:" + tenant + "]'s schemas is empty");
+                    throw new ConfigException("User [" + user + "]'s schemas is empty");
                 }
                 String[] strArray = SplitUtil.split(schemas, ',', true);
 
@@ -134,13 +133,13 @@ public class XMLUserLoader {
                 if (!StringUtil.isEmpty(blacklist)) {
                     wallProvider = blackListMap.get(blacklist);
                     if (wallProvider == null) {
-                        problemReporter.warn("blacklist[" + blacklist + "] for user [name:" + userName + ",tenant:" + tenant + "]  is not found, it will be ignore");
+                        problemReporter.warn("blacklist[" + blacklist + "] for user [" + user + "]  is not found, it will be ignore");
                     }
                 }
                 // load DML Privileges
                 UserPrivilegesConfig privilegesConfig = loadPrivileges(element);
 
-                ShardingUserConfig shardingUser = new ShardingUserConfig(baseInfo, tenant, wallProvider, readOnly, new HashSet<>(Arrays.asList(strArray)), privilegesConfig);
+                ShardingUserConfig shardingUser = new ShardingUserConfig(baseInfo, user.getTenant(), wallProvider, readOnly, new HashSet<>(Arrays.asList(strArray)), privilegesConfig);
                 users.put(user, shardingUser);
             }
         }
@@ -154,14 +153,13 @@ public class XMLUserLoader {
                 Element element = (Element) node;
                 UserConfig baseInfo = getBaseUserInfo(element, xmlFile);
                 String userName = baseInfo.getName();
-                String tenant = element.getAttribute("tenant");
-                UserName user = new UserName(userName, tenant);
+                UserName user = new UserName(userName, element.getAttribute("tenant"));
                 if (users.containsKey(user)) {
-                    throw new ConfigException("User [name:" + userName + ",tenant:" + tenant + "] has already existed");
+                    throw new ConfigException("User [" + user + "] has already existed");
                 }
                 String dbGroup = element.getAttribute("dbGroup").trim();
                 if (StringUtil.isEmpty(dbGroup)) {
-                    throw new ConfigException("User[name:" + userName + ",tenant:" + tenant + "]'s dbGroup is empty");
+                    throw new ConfigException("User[" + user + "]'s dbGroup is empty");
                 }
 
                 String blacklist = element.getAttribute("blacklist");
@@ -169,11 +167,11 @@ public class XMLUserLoader {
                 if (!StringUtil.isEmpty(blacklist)) {
                     wallProvider = blackListMap.get(blacklist);
                     if (wallProvider == null) {
-                        problemReporter.warn("blacklist[" + blacklist + "] for user [name:" + userName + ",tenant:" + tenant + "]  is not found, it will be ignore");
+                        problemReporter.warn("blacklist[" + blacklist + "] for user [" + user + "]  is not found, it will be ignore");
                     }
                 }
 
-                RwSplitUserConfig rwSplitUser = new RwSplitUserConfig(baseInfo, tenant, wallProvider, dbGroup);
+                RwSplitUserConfig rwSplitUser = new RwSplitUserConfig(baseInfo, user.getTenant(), wallProvider, dbGroup);
                 users.put(user, rwSplitUser);
             }
         }

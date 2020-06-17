@@ -279,21 +279,14 @@ public class DruidSelectParser extends DefaultDruidParser {
                 }
             } else {
                 if (isDistinct && !isNeedOptimizer(itemExpr)) {
-                    if (tc instanceof ShardingTableConfig) {
-                        ShardingTableConfig tableConfig = (ShardingTableConfig) tc;
-                        if (itemExpr instanceof SQLIdentifierExpr) {
-                            SQLIdentifierExpr item = (SQLIdentifierExpr) itemExpr;
-                            if (item.getSimpleName().equalsIgnoreCase(tableConfig.getShardingColumn())) {
-                                hasPartitionColumn = true;
-                            }
-                            addToAliaColumn(aliaColumns, selectItem);
-                        } else if (itemExpr instanceof SQLPropertyExpr) {
-                            SQLPropertyExpr item = (SQLPropertyExpr) itemExpr;
-                            if (item.getSimpleName().equalsIgnoreCase(tableConfig.getShardingColumn())) {
-                                hasPartitionColumn = true;
-                            }
-                            addToAliaColumn(aliaColumns, selectItem);
-                        }
+                    if (itemExpr instanceof SQLIdentifierExpr) {
+                        SQLIdentifierExpr item = (SQLIdentifierExpr) itemExpr;
+                        hasPartitionColumn = hasShardingColumn(tc, item.getSimpleName());
+                        addToAliaColumn(aliaColumns, selectItem);
+                    } else if (itemExpr instanceof SQLPropertyExpr) {
+                        SQLPropertyExpr item = (SQLPropertyExpr) itemExpr;
+                        hasPartitionColumn = hasShardingColumn(tc, item.getSimpleName());
+                        addToAliaColumn(aliaColumns, selectItem);
                     }
                 } else if (isSumFuncOrSubQuery(schema.getName(), itemExpr)) {
                     rrs.setNeedOptimizer(true);
@@ -318,19 +311,12 @@ public class DruidSelectParser extends DefaultDruidParser {
                 if (isNeedOptimizer(groupByItem)) {
                     rrs.setNeedOptimizer(true);
                     return;
-                } else if (tc instanceof ShardingTableConfig) {
-                    ShardingTableConfig tableConfig = (ShardingTableConfig) tc;
-                    if (groupByItem instanceof SQLIdentifierExpr) {
-                        SQLIdentifierExpr item = (SQLIdentifierExpr) groupByItem;
-                        if (item.getSimpleName().equalsIgnoreCase(tableConfig.getShardingColumn())) {
-                            hasPartitionColumn = true;
-                        }
-                    } else if (groupByItem instanceof SQLPropertyExpr) {
-                        SQLPropertyExpr item = (SQLPropertyExpr) groupByItem;
-                        if (item.getSimpleName().equalsIgnoreCase(tableConfig.getShardingColumn())) {
-                            hasPartitionColumn = true;
-                        }
-                    }
+                } else if (groupByItem instanceof SQLIdentifierExpr) {
+                    SQLIdentifierExpr item = (SQLIdentifierExpr) groupByItem;
+                    hasPartitionColumn = hasShardingColumn(tc, item.getSimpleName());
+                } else if (groupByItem instanceof SQLPropertyExpr) {
+                    SQLPropertyExpr item = (SQLPropertyExpr) groupByItem;
+                    hasPartitionColumn = hasShardingColumn(tc, item.getSimpleName());
                 }
             }
             if (groupBy.getItems().size() > 0 && !hasPartitionColumn) {
@@ -342,6 +328,10 @@ public class DruidSelectParser extends DefaultDruidParser {
                 rrs.setNeedOptimizer(true);
             }
         }
+    }
+
+    private boolean hasShardingColumn(BaseTableConfig tc, String columnName) {
+        return tc instanceof ShardingTableConfig && columnName.equalsIgnoreCase(((ShardingTableConfig) tc).getShardingColumn());
     }
 
     private boolean isSumFuncOrSubQuery(String schema, SQLExpr itemExpr) {

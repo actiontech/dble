@@ -432,13 +432,10 @@ abstract class DruidModifyParser extends DefaultDruidParser {
             SchemaConfig tSchema = DbleServer.getInstance().getConfig().getSchemas().get(sName);
             BaseTableConfig tConfig = tSchema.getTables().get(tName);
             if (tConfig == null) {
-                if (tSchema.getShardingNode().equals(dataNode)) {
-                    continue;
-                } else {
+                if (!tSchema.getShardingNode().equals(dataNode)) {
                     throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
                 }
-            }
-            if (tConfig instanceof SingleTableConfig) {
+            } else if (tConfig instanceof SingleTableConfig) {
                 if (!tConfig.getShardingNodes().get(0).equals(dataNode)) {
                     throw new SQLNonTransientException(MODIFY_SQL_NOT_SUPPORT_MESSAGE);
                 }

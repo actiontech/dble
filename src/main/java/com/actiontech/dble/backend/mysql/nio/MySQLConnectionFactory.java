@@ -7,7 +7,7 @@ package com.actiontech.dble.backend.mysql.nio;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
-import com.actiontech.dble.config.model.DbInstanceConfig;
+import com.actiontech.dble.config.model.db.DbInstanceConfig;
 import com.actiontech.dble.net.NIOConnector;
 import com.actiontech.dble.net.factory.BackendConnectionFactory;
 

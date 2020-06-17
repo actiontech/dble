@@ -9,11 +9,11 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.user.RwSplitUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.config.util.AuthUtil;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.NIOHandler;
 import com.actiontech.dble.net.mysql.*;
-import com.actiontech.dble.route.parser.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,7 +87,7 @@ public abstract class FrontendAuthenticator implements NIOHandler {
         }
 
         // check mysql client user
-        String errMsg = AuthUtil.authority(source, new Pair<>(authPacket.getUser(), authPacket.getTenant()), authPacket.getPassword(), authPacket.getDatabase(), this instanceof ManagerAuthenticator);
+        String errMsg = AuthUtil.authority(source, new UserName(authPacket.getUser(), authPacket.getTenant()), authPacket.getPassword(), authPacket.getDatabase(), this instanceof ManagerAuthenticator);
         //this version is not support rwSplitUser
         if (errMsg == null) {
             errMsg = rejectRwSplitUser(authPacket);
@@ -123,7 +123,7 @@ public abstract class FrontendAuthenticator implements NIOHandler {
 
     //todo: delete next version
     private String rejectRwSplitUser(AuthPacket auth) {
-        Pair<String, String> user = new Pair<>(auth.getUser(), auth.getTenant());
+        UserName user = new UserName(auth.getUser(), auth.getTenant());
         UserConfig userConfig = DbleServer.getInstance().getConfig().getUsers().get(user);
         if (userConfig instanceof RwSplitUserConfig) {
             return "this version does not support rwSplitUser";

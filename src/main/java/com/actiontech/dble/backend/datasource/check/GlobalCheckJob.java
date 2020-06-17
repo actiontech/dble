@@ -3,7 +3,7 @@ package com.actiontech.dble.backend.datasource.check;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.table.GlobalTableConfig;
 import com.actiontech.dble.manager.response.CheckGlobalConsistency;
 import com.actiontech.dble.singleton.ProxyMeta;
 import org.quartz.Job;
@@ -13,7 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLNonTransientException;
-import java.util.*;
+import java.util.Map;
 
 
 /**
@@ -25,14 +25,14 @@ public class GlobalCheckJob implements Job {
     public static final String GLOBAL_TABLE_CHECK_COUNT = "COUNT";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GlobalCheckJob.class);
-    private volatile TableConfig tc;
+    private volatile GlobalTableConfig tc;
     private volatile String schema;
     private volatile CheckGlobalConsistency handler;
 
     public GlobalCheckJob() {
     }
 
-    public GlobalCheckJob(TableConfig tc, String schema, CheckGlobalConsistency handler) {
+    public GlobalCheckJob(GlobalTableConfig tc, String schema, CheckGlobalConsistency handler) {
         this.tc = tc;
         this.schema = schema;
         this.handler = handler;
@@ -83,7 +83,7 @@ public class GlobalCheckJob implements Job {
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
-        tc = (TableConfig) context.getJobDetail().getJobDataMap().get("tableConfig");
+        tc = (GlobalTableConfig) context.getJobDetail().getJobDataMap().get("TableConfig");
         schema = (String) context.getJobDetail().getJobDataMap().get("schema");
         handler = null;
         this.checkGlobalTable();

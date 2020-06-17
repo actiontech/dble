@@ -5,11 +5,11 @@
 
 package com.actiontech.dble.cluster.zkprocess.entity;
 
-import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.cluster.zkprocess.entity.user.BlackList;
 import com.actiontech.dble.cluster.zkprocess.entity.user.ManagerUser;
 import com.actiontech.dble.cluster.zkprocess.entity.user.RwSplitUser;
 import com.actiontech.dble.cluster.zkprocess.entity.user.ShardingUser;
+import com.actiontech.dble.config.Versions;
 
 import javax.xml.bind.annotation.*;
 import java.util.List;

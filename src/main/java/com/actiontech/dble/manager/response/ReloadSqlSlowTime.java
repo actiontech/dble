@@ -6,9 +6,9 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.OkPacket;
-import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.statistic.stat.UserStat;
 import com.actiontech.dble.statistic.stat.UserStatAnalyzer;
 import org.slf4j.Logger;
@@ -28,7 +28,7 @@ public final class ReloadSqlSlowTime {
             return;
         }
 
-        Map<Pair<String, String>, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
+        Map<UserName, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
         for (UserStat userStat : statMap.values()) {
             userStat.setSlowTime(time);
         }

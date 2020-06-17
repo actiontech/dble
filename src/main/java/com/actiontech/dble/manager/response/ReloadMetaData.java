@@ -6,8 +6,8 @@
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.cluster.zkprocess.zookeeper.process.ConfStatus;
+import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.meta.ReloadManager;
 import com.actiontech.dble.net.mysql.OkPacket;

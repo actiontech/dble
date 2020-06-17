@@ -5,8 +5,8 @@
 
 package com.actiontech.dble.cluster.zkprocess.entity;
 
-import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.cluster.zkprocess.entity.dbGroups.DBGroup;
+import com.actiontech.dble.config.Versions;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;

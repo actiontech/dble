@@ -9,7 +9,7 @@ import com.actiontech.dble.alarm.AlarmCode;
 import com.actiontech.dble.alarm.Alert;
 import com.actiontech.dble.alarm.AlertUtil;
 import com.actiontech.dble.alarm.ToResolveContainer;
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.meta.ViewMeta;

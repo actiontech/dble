@@ -5,7 +5,6 @@
 
 package com.actiontech.dble.plan.optimizer;
 
-import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.ItemInt;
 import com.actiontech.dble.plan.common.item.function.ItemFunc;
@@ -15,6 +14,7 @@ import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCond;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondAnd;
 import com.actiontech.dble.plan.common.item.function.operator.logic.ItemCondOr;
 import com.actiontech.dble.plan.node.JoinNode;
+import com.actiontech.dble.plan.node.PlanNode;
 import com.actiontech.dble.plan.util.FilterUtils;
 import com.actiontech.dble.plan.util.PlanUtil;
 

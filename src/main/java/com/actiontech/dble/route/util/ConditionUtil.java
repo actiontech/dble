@@ -6,7 +6,9 @@
 package com.actiontech.dble.route.util;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.model.sharding.table.ChildTableConfig;
+import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.route.parser.druid.RouteCalculateUnit;
 import com.actiontech.dble.route.parser.druid.WhereUnit;
 import com.actiontech.dble.route.parser.util.Pair;
@@ -106,7 +108,7 @@ public final class ConditionUtil {
             }
             return null;
         }
-        TableConfig tableConfig = DbleServer.getInstance().getConfig().getSchemas().get(schemaName).getTables().get(tableName);
+        BaseTableConfig tableConfig = DbleServer.getInstance().getConfig().getSchemas().get(schemaName).getTables().get(tableName);
         if (tableConfig == null) {
             if (LOGGER.isTraceEnabled()) {
                 LOGGER.trace("condition [" + condition + "] will be pruned for table is not config " + tableName);
@@ -122,16 +124,20 @@ public final class ConditionUtil {
             }
             return null;
         }
-        String partitionCol = tableConfig.getPartitionColumn();
-
-        String columnName = StringUtil.removeBackQuote(condition.getColumn().getName().toUpperCase());
-        if (columnName.equals(partitionCol)) {
-            return genNewCondition(tableFullName, columnName, operator, condition.getValues());
+        if (tableConfig instanceof ShardingTableConfig) {
+            String partitionCol = ((ShardingTableConfig) tableConfig).getShardingColumn();
+            String columnName = StringUtil.removeBackQuote(condition.getColumn().getName().toUpperCase());
+            if (columnName.equals(partitionCol)) {
+                return genNewCondition(tableFullName, columnName, operator, condition.getValues());
+            }
         }
 
-        String joinColumn = tableConfig.getJoinColumn();
-        if (joinColumn != null && columnName.equals(joinColumn)) {
-            return genNewCondition(tableFullName, columnName, operator, condition.getValues());
+        if (tableConfig instanceof ChildTableConfig) {
+            String joinColumn = ((ChildTableConfig) tableConfig).getJoinColumn();
+            String columnName = StringUtil.removeBackQuote(condition.getColumn().getName().toUpperCase());
+            if (joinColumn != null && columnName.equals(joinColumn)) {
+                return genNewCondition(tableFullName, columnName, operator, condition.getValues());
+            }
         }
         if (LOGGER.isTraceEnabled()) {
             LOGGER.trace("condition [" + condition + "] will be pruned for columnName is not shardingcolumn/joinkey");

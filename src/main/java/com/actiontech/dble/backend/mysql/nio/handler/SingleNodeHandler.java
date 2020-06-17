@@ -14,11 +14,11 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.FlowControllerConfig;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.log.transaction.TxnLogHelper;
 import com.actiontech.dble.net.mysql.*;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.RouteResultsetNode;
-import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.NonBlockingSession;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.singleton.WriteQueueFlowController;
@@ -164,7 +164,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
 
     protected void backConnectionErr(ErrorPacket errPkg, BackendConnection conn, boolean syncFinished) {
         ServerConnection source = session.getSource();
-        Pair<String, String> errUser = source.getUser();
+        UserName errUser = source.getUser();
         String errHost = source.getHost();
         int errPort = source.getLocalPort();
 

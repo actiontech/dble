@@ -1,6 +1,6 @@
 package com.actiontech.dble.manager.dump;
 
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.manager.dump.handler.StatementHandler;
 import com.actiontech.dble.manager.dump.handler.StatementHandlerManager;
 import com.actiontech.dble.server.parser.ServerParse;

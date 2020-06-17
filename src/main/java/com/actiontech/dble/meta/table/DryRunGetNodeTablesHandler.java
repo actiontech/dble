@@ -5,8 +5,8 @@
 
 package com.actiontech.dble.meta.table;
 
-import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
+import com.actiontech.dble.backend.datasource.ShardingNode;
 import com.actiontech.dble.config.ErrorInfo;
 import com.actiontech.dble.sqlengine.MultiRowSQLQueryResultHandler;
 import com.actiontech.dble.sqlengine.SQLQueryResult;

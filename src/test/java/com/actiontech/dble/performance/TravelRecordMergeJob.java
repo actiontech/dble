@@ -8,9 +8,6 @@ package com.actiontech.dble.performance;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 

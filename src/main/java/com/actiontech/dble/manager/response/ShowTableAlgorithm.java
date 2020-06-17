@@ -9,15 +9,14 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.config.model.rule.RuleConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.*;
 import com.actiontech.dble.manager.ManagerConnection;
-import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
@@ -52,7 +51,7 @@ public final class ShowTableAlgorithm {
     }
 
     private enum TableType {
-        GLOBAL, SHARDING, CHILD, BASE, SHARDING_SINGLE
+        GLOBAL, SHARDING, CHILD, BASE, SINGLE
     }
 
     public static void execute(ManagerConnection c, String tableInfo) {
@@ -70,7 +69,7 @@ public final class ShowTableAlgorithm {
 
         SchemaConfig schemaConfig = DbleServer.getInstance().getConfig().getSchemas().get(schemaName);
         TableType tableType = null;
-        TableConfig tableConfig = null;
+        BaseTableConfig tableConfig = null;
         if (schemaConfig == null) {
             c.writeErrMessage(ErrorCode.ER_UNKNOWN_ERROR, "the schema [" + schemaName + "] does not exists");
             return;
@@ -87,12 +86,12 @@ public final class ShowTableAlgorithm {
                 } else if (ProxyMeta.getInstance().getTmManager().checkTableExists(schemaName, tableName)) {
                     tableType = TableType.BASE;
                 }
-            } else if (tableConfig.isGlobalTable()) {
+            } else if (tableConfig instanceof GlobalTableConfig) {
                 tableType = TableType.GLOBAL;
-            } else if (tableConfig.getParentTC() != null) {
+            } else if (tableConfig instanceof ChildTableConfig) {
                 tableType = TableType.CHILD;
-            } else if (tableConfig.getRule() == null) {
-                tableType = TableType.SHARDING_SINGLE;
+            } else if (tableConfig instanceof SingleTableConfig) {
+                tableType = TableType.SINGLE;
             } else {
                 tableType = TableType.SHARDING;
             }
@@ -129,7 +128,7 @@ public final class ShowTableAlgorithm {
         c.write(buffer);
     }
 
-    private static List<RowDataPacket> getRows(TableConfig tableConfig, TableType tableType, String charset) {
+    private static List<RowDataPacket> getRows(BaseTableConfig tableConfig, TableType tableType, String charset) {
         List<RowDataPacket> list = new ArrayList<>();
         switch (tableType) {
             case GLOBAL: {
@@ -153,7 +152,7 @@ public final class ShowTableAlgorithm {
                 list.add(row);
                 break;
             }
-            case SHARDING_SINGLE: {
+            case SINGLE: {
                 RowDataPacket row = new RowDataPacket(FIELD_COUNT);
                 row.add(StringUtil.encode("TYPE", charset));
                 row.add(StringUtil.encode("SINGLE TABLE", charset));
@@ -166,16 +165,16 @@ public final class ShowTableAlgorithm {
                 typeRow.add(StringUtil.encode("SHARDING TABLE", charset));
                 list.add(typeRow);
 
-                RuleConfig rule = tableConfig.getRule();
+                ShardingTableConfig shardingTableConfig = (ShardingTableConfig) tableConfig;
                 RowDataPacket columnRow = new RowDataPacket(FIELD_COUNT);
                 columnRow.add(StringUtil.encode("COLUMN", charset));
-                columnRow.add(StringUtil.encode(rule.getColumn(), charset));
+                columnRow.add(StringUtil.encode(shardingTableConfig.getShardingColumn(), charset));
                 list.add(columnRow);
                 RowDataPacket classRow = new RowDataPacket(FIELD_COUNT);
                 classRow.add(StringUtil.encode("CLASS", charset));
-                classRow.add(StringUtil.encode(rule.getRuleAlgorithm().getClass().getName(), charset));
+                classRow.add(StringUtil.encode(shardingTableConfig.getFunction().getClass().getName(), charset));
                 list.add(classRow);
-                for (Map.Entry<String, String> pairs : rule.getRuleAlgorithm().getAllProperties().entrySet()) {
+                for (Map.Entry<String, String> pairs : shardingTableConfig.getFunction().getAllProperties().entrySet()) {
                     RowDataPacket propertyRow = new RowDataPacket(FIELD_COUNT);
                     propertyRow.add(StringUtil.encode(pairs.getKey(), charset));
                     propertyRow.add(StringUtil.encode(pairs.getValue(), charset));

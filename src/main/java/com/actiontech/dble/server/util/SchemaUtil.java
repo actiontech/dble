@@ -7,13 +7,13 @@ package com.actiontech.dble.server.util;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.config.privileges.ShardingPrivileges;
 import com.actiontech.dble.plan.common.item.function.ItemCreate;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
-import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.route.util.RouterUtil;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.StringUtil;
@@ -66,7 +66,7 @@ public final class SchemaUtil {
     }
 
 
-    public static SchemaInfo getSchemaInfo(Pair<String, String> user, SchemaConfig schemaConfig, String fullTableName) throws SQLException {
+    public static SchemaInfo getSchemaInfo(UserName user, SchemaConfig schemaConfig, String fullTableName) throws SQLException {
         SchemaInfo schemaInfo = new SchemaInfo();
         if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
             fullTableName = fullTableName.toLowerCase();
@@ -98,7 +98,7 @@ public final class SchemaUtil {
         return schemaInfo;
     }
 
-    public static SchemaInfo getSchemaInfo(Pair<String, String> user, String schema, SQLExpr expr, String tableAlias) throws SQLException {
+    public static SchemaInfo getSchemaInfo(UserName user, String schema, SQLExpr expr, String tableAlias) throws SQLException {
         SchemaInfo schemaInfo = new SchemaInfo();
         if (expr instanceof SQLPropertyExpr) {
             SQLPropertyExpr propertyExpr = (SQLPropertyExpr) expr;
@@ -140,7 +140,7 @@ public final class SchemaUtil {
         return schemaInfo;
     }
 
-    public static SchemaInfo getSchemaInfo(Pair<String, String> user, String schema, SQLExprTableSource tableSource) throws SQLException {
+    public static SchemaInfo getSchemaInfo(UserName user, String schema, SQLExprTableSource tableSource) throws SQLException {
         return getSchemaInfo(user, schema, tableSource.getExpr(), tableSource.getAlias());
     }
 

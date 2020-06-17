@@ -7,10 +7,10 @@ package com.actiontech.dble.net.handler;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.model.user.ManagerUserConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.mysql.AuthPacket;
-import com.actiontech.dble.route.parser.util.Pair;
 
 public class ManagerAuthenticator extends FrontendAuthenticator {
     public ManagerAuthenticator(FrontendConnection source) {
@@ -21,7 +21,7 @@ public class ManagerAuthenticator extends FrontendAuthenticator {
     protected void setConnProperties(AuthPacket auth) {
         ManagerConnection sc = (ManagerConnection) source;
         sc.setAuthenticated(true);
-        Pair<String, String> user = new Pair<>(auth.getUser(), "");
+        UserName user = new UserName(auth.getUser(), "");
         sc.setUser(user);
         sc.setUserConfig((ManagerUserConfig) (DbleServer.getInstance().getConfig().getUsers().get(user)));
         sc.initCharsetIndex(auth.getCharsetIndex());

@@ -6,11 +6,11 @@
 package com.actiontech.dble.cache;
 
 import com.actiontech.dble.cache.impl.EnchachePool;
-import org.junit.Assert;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.config.CacheConfiguration;
 import net.sf.ehcache.config.MemoryUnit;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class EnCachePoolTest {

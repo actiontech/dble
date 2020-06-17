@@ -50,7 +50,7 @@
             </childTable>
             <childTable name="customer_addr" joinColumn="customer_id" parentColumn="id"/>
         </shardingTable>
-        <globalTable name="globalsn"  shardingNode="dn1"/>
+        <singleTable name="globalsn"  shardingNode="dn1"/>
     </schema>
 
     <schema name="mysqldb" sqlMaxLimit="100">

@@ -239,7 +239,7 @@ public class MySQLHeartbeat {
             long timeDiff = System.currentTimeMillis() - this.startErrorTime.longValue();
             if (timeDiff >= heartbeatTimeout) {
                 if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("error heartbaet continued for more than " + timeDiff + " Milliseconds and heartbeat Timeout is " + heartbeatTimeout + " Milliseconds");
+                    LOGGER.debug("error heartbeat continued for more than " + timeDiff + " Milliseconds and heartbeat Timeout is " + heartbeatTimeout + " Milliseconds");
                 }
                 return false;
             }

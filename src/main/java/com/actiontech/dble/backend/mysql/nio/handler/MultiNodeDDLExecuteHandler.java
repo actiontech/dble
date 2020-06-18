@@ -181,7 +181,6 @@ public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements
                     session.resetMultiStatementStatus();
                     handleEndPacket(err.toBytes(), false);
                 } else {
-                    DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.META_UPDATE, source);
                     boolean metaInitial = session.handleSpecial(rrs, true, null);
                     if (!metaInitial) {
                         DDLTraceManager.getInstance().endDDL(source, "ddl end with meta failure");

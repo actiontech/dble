@@ -475,9 +475,9 @@ public class ServerConfig {
         for (UserConfig uc : users.values()) {
             if (uc instanceof ShardingUserConfig) {
                 ShardingUserConfig shardingUser = (ShardingUserConfig) uc;
+                shardingUser.changeMapToLowerCase();
                 if (shardingUser.getPrivilegesConfig() != null) {
                     shardingUser.getPrivilegesConfig().changeMapToLowerCase();
-                    shardingUser.changeMapToLowerCase();
                 }
             }
         }
@@ -530,12 +530,9 @@ public class ServerConfig {
                 if (uc instanceof ShardingUserConfig) {
                     ShardingUserConfig shardingUser = (ShardingUserConfig) uc;
                     Set<String> authSchemas = shardingUser.getSchemas();
-                    if (authSchemas == null) {
-                        throw new ConfigException("SelfCheck### User[name:" + shardingUser.getName() + ",tenant:" + shardingUser.getTenant() + "] referred schemas is empty!");
-                    }
                     for (String schema : authSchemas) {
                         if (!schemas.containsKey(schema)) {
-                            String errMsg = "SelfCheck### User[name:" + shardingUser.getName() + ",tenant:" + shardingUser.getTenant() + "] is not exist!";
+                            String errMsg = "SelfCheck### User[name:" + shardingUser.getName() + (shardingUser.getTenant() == null ? "" : ",tenant:" + shardingUser.getTenant()) + "]'s schema [" + schema + "] is not exist!";
                             throw new ConfigException(errMsg);
                         }
                     }

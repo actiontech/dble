@@ -11,6 +11,11 @@
 -Xmx4G
 -Xms1G
 -XX:MaxDirectMemorySize=2G
+-XX:+PrintHeapAtGC
+-XX:+PrintGCDateStamps
+-Xloggc:./logs/gc_%t_%p.log
+-XX:+PrintGCTimeStamps
+-XX:+PrintGCDetails
 #  base config
 -DhomePath=.
 -DinstanceName=1

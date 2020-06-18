@@ -30,10 +30,9 @@ public class ChildTableConfig extends BaseTableConfig {
     }
 
     @Override
-    public BaseTableConfig lowerCaseCopy(BaseTableConfig old) {
-        ChildTableConfig oldChild = (ChildTableConfig) old;
-        return new ChildTableConfig(oldChild.name.toLowerCase(), oldChild.maxLimit, oldChild.shardingNodes,
-                oldChild.parentTC, oldChild.joinColumn, oldChild.parentColumn, oldChild.incrementColumn);
+    public BaseTableConfig lowerCaseCopy(BaseTableConfig parent) {
+        return new ChildTableConfig(this.name.toLowerCase(), this.maxLimit, this.shardingNodes,
+                parent, this.joinColumn, this.parentColumn, this.incrementColumn);
     }
 
 

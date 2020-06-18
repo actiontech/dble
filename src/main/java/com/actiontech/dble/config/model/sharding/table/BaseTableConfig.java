@@ -33,5 +33,5 @@ public abstract class BaseTableConfig {
         return shardingNodes;
     }
 
-    public abstract BaseTableConfig lowerCaseCopy(BaseTableConfig old);
+    public abstract BaseTableConfig lowerCaseCopy(BaseTableConfig parent);
 }

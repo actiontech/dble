@@ -49,11 +49,6 @@
             <url>https://repo1.maven.org/maven2/</url>
         </pluginRepository>
         <pluginRepository>
-            <id>repo2</id>
-            <name>Human Readable Name for this Mirror.</name>
-            <url>https://repo2.maven.org/maven2/</url>
-        </pluginRepository>
-        <pluginRepository>
             <id>jenkins</id>
             <name>Jenkins Releases Repository</name>
             <url>https://repo.jenkins-ci.org/releases/</url>
@@ -74,7 +69,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>19.0</version>
+            <version>24.1.1-jre</version>
         </dependency>
         <dependency>
             <groupId>com.alibaba</groupId>
@@ -206,12 +201,24 @@
         <dependency>
             <groupId>org.apache.curator</groupId>
             <artifactId>curator-framework</artifactId>
-            <version>2.11.0</version>
+            <version>4.2.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.zookeeper</groupId>
+                    <artifactId>zookeeper</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.curator</groupId>
             <artifactId>curator-recipes</artifactId>
-            <version>2.11.0</version>
+            <version>4.2.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.zookeeper</groupId>
+                    <artifactId>zookeeper</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.curator</groupId>
@@ -223,7 +230,16 @@
                     <groupId>log4j</groupId>
                     <artifactId>log4j</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.apache.zookeeper</groupId>
+                    <artifactId>zookeeper</artifactId>
+                </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.zookeeper</groupId>
+            <artifactId>zookeeper</artifactId>
+            <version>3.4.6</version>
         </dependency>
         <!-- joda time execute time -->
         <dependency>

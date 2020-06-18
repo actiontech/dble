@@ -190,6 +190,9 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         lock.lock();
         try {
             if (writeToClient.compareAndSet(false, true)) {
+                if (rrs.isLoadData()) {
+                    session.getSource().getLoadDataInfileHandler().clear();
+                }
                 if (buffer != null) {
                     /* SELECT 9223372036854775807 + 1;    response: field_count, field, eof, err */
                     buffer = source.writeToBuffer(errPkg.toBytes(), buffer);
@@ -247,27 +250,6 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         }
     }
 
-    protected void executeMetaDataFailed(BackendConnection conn) {
-        ErrorPacket errPacket = new ErrorPacket();
-        errPacket.setPacketId(++packetId);
-        errPacket.setErrNo(ErrorCode.ER_META_DATA);
-        String errMsg = "Create TABLE OK, but generate metedata failed. The reason may be that the current druid parser can not recognize part of the sql" +
-                " or the user for backend mysql does not have permission to execute the heartbeat sql.";
-        errPacket.setMessage(StringUtil.encode(errMsg, session.getSource().getCharset().getResults()));
-
-        session.setBackendResponseEndTime((MySQLConnection) conn);
-        session.releaseConnectionIfSafe(conn, false);
-        session.setResponseTime(false);
-        session.multiStatementPacket(errPacket, packetId);
-        boolean multiStatementFlag = session.getIsMultiStatement().get();
-        doSqlStat();
-        if (writeToClient.compareAndSet(false, true)) {
-            errPacket.write(session.getSource());
-        }
-        session.multiStatementNextSql(multiStatementFlag);
-    }
-
-
     /**
      * select
      * <p>
@@ -300,7 +282,7 @@ public class SingleNodeHandler implements ResponseHandler, LoadDataResponseHandl
         session.multiStatementNextSql(multiStatementFlag);
     }
 
-    private void doSqlStat() {
+    protected void doSqlStat() {
         if (SystemConfig.getInstance().getUseSqlStat() == 1) {
             long netInBytes = 0;
             if (rrs.getStatement() != null) {

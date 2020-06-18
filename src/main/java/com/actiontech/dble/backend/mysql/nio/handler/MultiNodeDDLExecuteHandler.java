@@ -30,7 +30,7 @@ import java.util.HashSet;
 /**
  * @author mycat
  */
-public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler implements LoadDataResponseHandler {
+public class MultiNodeDDLExecuteHandler extends MultiNodeQueryHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeQueryHandler.class);
 
     public MultiNodeDDLExecuteHandler(RouteResultset rrs, NonBlockingSession session) {

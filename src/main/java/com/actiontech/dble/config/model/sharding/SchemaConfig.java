@@ -160,8 +160,10 @@ public class SchemaConfig {
             Iterator<BaseTableConfig> its = valueList.iterator();
             while (its.hasNext()) {
                 ChildTableConfig tc = (ChildTableConfig) (its.next());
-                if (newTables.containsKey(tc.getParentTC().getName().toLowerCase())) {
-                    newTables.put(tc.getName().toLowerCase(), tc.lowerCaseCopy(newTables.get(tc.getParentTC().getName().toLowerCase())));
+                String parentName = tc.getParentTC().getName().toLowerCase();
+                if (newTables.containsKey(parentName)) {
+                    BaseTableConfig parent = newTables.get(parentName);
+                    newTables.put(tc.getName().toLowerCase(), tc.lowerCaseCopy(parent));
                     its.remove();
                 }
             }

@@ -33,8 +33,7 @@ public class GlobalTableConfig extends BaseTableConfig {
     }
 
     @Override
-    public BaseTableConfig lowerCaseCopy(BaseTableConfig old) {
-        GlobalTableConfig oldTable = (GlobalTableConfig) old;
-        return new GlobalTableConfig(oldTable.name.toLowerCase(), oldTable.maxLimit, oldTable.shardingNodes, oldTable.cron, oldTable.globalCheckClass, oldTable.globalCheck);
+    public BaseTableConfig lowerCaseCopy(BaseTableConfig parent) {
+        return new GlobalTableConfig(this.name.toLowerCase(), this.maxLimit, this.shardingNodes, this.cron, this.globalCheckClass, this.globalCheck);
     }
 }

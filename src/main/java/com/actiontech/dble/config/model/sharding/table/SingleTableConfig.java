@@ -14,7 +14,7 @@ public final class SingleTableConfig extends BaseTableConfig {
     }
 
     @Override
-    public BaseTableConfig lowerCaseCopy(BaseTableConfig old) {
-        return new SingleTableConfig(old.name.toLowerCase(), old.maxLimit, old.shardingNodes);
+    public BaseTableConfig lowerCaseCopy(BaseTableConfig parent) {
+        return new SingleTableConfig(this.name.toLowerCase(), this.maxLimit, this.shardingNodes);
     }
 }

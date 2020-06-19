@@ -8,6 +8,7 @@ package com.actiontech.dble.config.util;
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.util.BooleanUtil;
 import com.actiontech.dble.util.StringUtil;
+import com.actiontech.dble.util.SystemProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,23 +76,25 @@ public final class ParameterMapping {
     }
 
 
-    public static void mapping(Object object, ProblemReporter problemReporter) throws IllegalAccessException,
+    public static Properties mapping(Object object) throws IllegalAccessException,
             InvocationTargetException {
+        Properties systemProperties = (Properties) (System.getProperties().clone());
+        for (String key : SystemProperty.getInnerProperties()) {
+            systemProperties.remove(key);
+        }
         PropertyDescriptor[] pds = getDescriptors(object.getClass());
         for (PropertyDescriptor pd : pds) {
-            String valStr = System.getProperty(pd.getName());
+            String propertyName = pd.getName();
+            String valStr = systemProperties.getProperty(propertyName);
             if (valStr == null) {
                 continue;
             }
             Object value = valStr;
             Class<?> cls = pd.getPropertyType();
             if (cls == null) {
-                if (problemReporter != null) {
-                    problemReporter.warn("unknown property [ " + pd.getName() + " ], skip");
-                } else {
-                    LOGGER.warn("unknown property [ " + pd.getName() + " ], skip");
-                }
-                continue;
+                String msg = "unknown property [ " + pd.getName() + " ], skip";
+                LOGGER.warn(msg);
+                throw new ConfigException(msg);
             }
 
             if (!StringUtil.isEmpty(valStr)) {
@@ -101,12 +104,9 @@ public final class ParameterMapping {
                 try {
                     value = convert(cls, valStr);
                 } catch (NumberFormatException nfe) {
-                    if (problemReporter != null) {
-                        problemReporter.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + ", skip");
-                    } else {
-                        LOGGER.warn("property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + ", skip");
-                    }
-                    continue;
+                    String msg = "property [ " + pd.getName() + " ] '" + valStr + "' data type should be " + cls.toString() + ", skip";
+                    LOGGER.warn(msg);
+                    throw new ConfigException(msg);
                 }
             }
             if (value != null) {
@@ -115,7 +115,9 @@ public final class ParameterMapping {
                     method.invoke(object, value);
                 }
             }
+            systemProperties.remove(propertyName);
         }
+        return systemProperties;
     }
 
     /**

@@ -44,7 +44,7 @@ public final class KillDdlLock {
         if (ClusterConfig.getInstance().isClusterEnable()) {
             String fullName = StringUtil.getUFullName(schema, table);
             String tableDDLPath = ClusterPathUtil.getDDLPath(fullName);
-            if (ClusterConfig.getInstance().isUseZK()) {
+            if (ClusterConfig.getInstance().useZkMode()) {
                 try {
                     ZKUtils.getConnection().delete().deletingChildrenIfNeeded().forPath(tableDDLPath);
                 } catch (Exception e) {

@@ -95,7 +95,7 @@ public final class ReloadConfig {
 
     private static boolean reloadWithCluster(ManagerConnection c, int loadAllMode) {
         DistributeLock distributeLock;
-        if (ClusterConfig.getInstance().isUseZK()) {
+        if (ClusterConfig.getInstance().useZkMode()) {
             distributeLock = new ZkDistributeLock(ClusterPathUtil.getConfChangeLockPath(), SystemConfig.getInstance().getInstanceName());
         } else {
             distributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getConfChangeLockPath(),
@@ -113,7 +113,7 @@ public final class ReloadConfig {
                     writeErrorResult(c, "Reload status error ,other client or cluster may in reload");
                     return true;
                 }
-                if (ClusterConfig.getInstance().isUseZK()) {
+                if (ClusterConfig.getInstance().useZkMode()) {
                     reloadWithZookeeper(loadAllMode, ZKUtils.getConnection(), c);
                 } else {
                     reloadWithUcore(loadAllMode, c);

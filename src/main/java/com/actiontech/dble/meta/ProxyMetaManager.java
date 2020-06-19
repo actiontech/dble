@@ -331,7 +331,7 @@ public class ProxyMetaManager {
                 times++;
             }
             DistributeLock lock;
-            if (ClusterConfig.getInstance().isUseZK()) {
+            if (ClusterConfig.getInstance().useZkMode()) {
                 lock = new ZkDistributeLock(ClusterPathUtil.getSyncMetaLockPath(), String.valueOf(System.currentTimeMillis()));
             } else {
                 lock = new ClusterGeneralDistributeLock(ClusterPathUtil.getSyncMetaLockPath(), String.valueOf(System.currentTimeMillis()));
@@ -351,7 +351,7 @@ public class ProxyMetaManager {
 
     private void releaseSyncMetaLock() throws Exception {
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            if (ClusterConfig.getInstance().isUseZK()) {
+            if (ClusterConfig.getInstance().useZkMode()) {
                 //add watcher
                 ZKUtils.addChildPathCache(ClusterPathUtil.getDDLPath(), new DDLChildListener());
                 //add tow ha status && ha lock watcher
@@ -369,7 +369,7 @@ public class ProxyMetaManager {
 
     private void initViewMeta() {
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            if (ClusterConfig.getInstance().isUseZK()) {
+            if (ClusterConfig.getInstance().useZkMode()) {
                 loadViewFromKV();
             } else {
                 loadViewFromCKV();
@@ -557,7 +557,7 @@ public class ProxyMetaManager {
             String tableDDLPath = ClusterPathUtil.getDDLPath(tableFullName);
             String ddlLockPath = ClusterPathUtil.getDDLLockPath(tableFullName);
             DistributeLock lock;
-            if (ClusterConfig.getInstance().isUseZK()) {
+            if (ClusterConfig.getInstance().useZkMode()) {
                 lock = new ZkDistributeLock(ddlLockPath, ddlInfo.toString());
             } else {
                 lock = new ClusterGeneralDistributeLock(ddlLockPath, ddlInfo.toString());
@@ -576,7 +576,7 @@ public class ProxyMetaManager {
     public void notifyResponseClusterDDL(String schema, String table, String sql, DDLInfo.DDLStatus ddlStatus, DDLInfo.DDLType ddlType, boolean needNotifyOther) throws Exception {
         ClusterDelayProvider.delayAfterDdlExecuted();
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            if (ClusterConfig.getInstance().isUseZK()) {
+            if (ClusterConfig.getInstance().useZkMode()) {
                 notifyResponseZKDdl(schema, table, sql, ddlStatus, ddlType, needNotifyOther);
             } else {
                 notifyResponseUcoreDDL(schema, table, sql, ddlStatus, ddlType, needNotifyOther);

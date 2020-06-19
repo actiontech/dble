@@ -70,7 +70,7 @@ public final class RollbackConfig {
 
     private static boolean rollbackWithCluster(ManagerConnection c) {
         DistributeLock distributeLock;
-        if (ClusterConfig.getInstance().isUseZK()) {
+        if (ClusterConfig.getInstance().useZkMode()) {
             distributeLock = new ZkDistributeLock(ClusterPathUtil.getConfChangeLockPath(),
                     SystemConfig.getInstance().getInstanceName());
         } else {
@@ -84,7 +84,7 @@ public final class RollbackConfig {
             }
             ClusterDelayProvider.delayAfterReloadLock();
             try {
-                if (ClusterConfig.getInstance().isUseZK()) {
+                if (ClusterConfig.getInstance().useZkMode()) {
                     rollbackWithZk(ZKUtils.getConnection(), c);
                 } else {
                     rollbackWithUcore(c);

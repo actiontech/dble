@@ -1,9 +1,9 @@
 package com.actiontech.dble.manager.dump;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
-import com.actiontech.dble.manager.dump.handler.DefaultHandler;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.model.sharding.table.ChildTableConfig;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,10 +21,9 @@ public final class DumpFileContext {
 
     // current table
     private String table;
-    private TableConfig tableConfig;
+    private BaseTableConfig tableConfig;
     private int partitionColumnIndex = -1;
     private int incrementColumnIndex = -1;
-    private DefaultHandler.TableType tableType = null;
 
     // other
     private boolean isSkip = false;
@@ -97,30 +96,17 @@ public final class DumpFileContext {
         if (this.tableConfig == null && this.defaultShardingNode == null) {
             throw new DumpException("schema " + schema + " has no default node.");
         }
-        if (this.tableConfig != null && this.tableConfig.getParentTC() != null) {
+        if (this.tableConfig != null && this.tableConfig instanceof ChildTableConfig) {
             throw new DumpException("can't process child table, skip.");
         }
-        if (this.tableConfig != null) {
-            if (tableConfig.getPartitionColumn() != null) {
-                this.tableType = DefaultHandler.TableType.SHARDING;
-                return;
-            } else if (tableConfig.isAutoIncrement()) {
-                this.tableType = DefaultHandler.TableType.INCREMENT;
-                return;
-            }
-        }
-        this.tableType = DefaultHandler.TableType.DEFAULT;
+
     }
 
-    public DefaultHandler.TableType getTableType() {
-        return tableType;
-    }
-
-    public TableConfig getTableConfig() {
+    public BaseTableConfig getTableConfig() {
         return tableConfig;
     }
 
-    public void setTableConfig(TableConfig tableConfig) {
+    public void setTableConfig(BaseTableConfig tableConfig) {
         this.tableConfig = tableConfig;
     }
 

@@ -1,9 +1,13 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
-package com.actiontech.dble.config.model;
+ * Copyright (C) 2016-2020 ActionTech.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
+package com.actiontech.dble.config.model.sharding;
+
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.model.sharding.table.ChildTableConfig;
+import com.actiontech.dble.config.model.sharding.table.ERTable;
+import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 
 import java.util.*;
 
@@ -13,7 +17,7 @@ import java.util.*;
 public class SchemaConfig {
     private final Random random = new Random();
     private final String name;
-    private final Map<String, TableConfig> tables;
+    private final Map<String, BaseTableConfig> tables;
     private final boolean noSharding;
     private final String shardingNode;
     private final String metaShardingNode;
@@ -28,7 +32,7 @@ public class SchemaConfig {
     private Map<String, Set<ERTable>> funcNodeERMap;
 
     public SchemaConfig(String name, String shardingNode,
-                        Map<String, TableConfig> tables, int defaultMaxLimit) {
+                        Map<String, BaseTableConfig> tables, int defaultMaxLimit) {
         this.name = name;
         this.shardingNode = shardingNode;
         this.tables = tables;
@@ -79,56 +83,48 @@ public class SchemaConfig {
         if (tables == null || tables.isEmpty()) {
             return;
         }
-        for (TableConfig tc : tables.values()) {
-            TableConfig parent = tc.getParentTC();
-            if (parent == null) {
-                // noraml table may has the same function add date node with other tables
-                TableConfig root = tc.getDirectRouteTC();
-                if (tc.isGlobalTable() || tc.getRule() == null) {
-                    continue;
-                }
-                String key = tc.getRule().getRuleAlgorithm().getName() + "_" + root.getShardingNodes().toString();
-                String column = root.getRule().getColumn();
+        for (BaseTableConfig tc : tables.values()) {
+            if (tc instanceof ShardingTableConfig) {
+                // normal table may has the same function add date node with other tables
+                ShardingTableConfig shardingTable = (ShardingTableConfig) tc;
+                String key = shardingTable.getFunction().getAlias() + "_" + shardingTable.getShardingNodes().toString();
+                String column = shardingTable.getShardingColumn();
                 if (funcNodeERMap == null) {
                     funcNodeERMap = new HashMap<>();
                 }
-                Set<ERTable> eraTables = funcNodeERMap.get(key);
-                if (eraTables == null) {
-                    eraTables = new HashSet<>();
-                    funcNodeERMap.put(key, eraTables);
-                }
+                Set<ERTable> eraTables = funcNodeERMap.computeIfAbsent(key, k -> new HashSet<>());
                 eraTables.add(new ERTable(name, tc.getName(), column));
-                continue;
-            }
-            if (parent.getDirectRouteTC() == null || tc.getDirectRouteTC() == null) {
-                if (fkErRelations == null) {
-                    fkErRelations = new HashMap<>();
-                }
-                ERTable parentTable = new ERTable(name, parent.getName(), tc.getParentColumn());
-                ERTable childTable = new ERTable(name, tc.getName(), tc.getJoinColumn());
-                Set<ERTable> relationParent = fkErRelations.get(parentTable);
-                if (relationParent == null) {
-                    relationParent = new HashSet<>(1);
-                }
-                relationParent.add(childTable);
-                fkErRelations.put(parentTable, relationParent);
-
-                Set<ERTable> relationChild = fkErRelations.get(childTable);
-                if (relationChild == null) {
-                    relationChild = new HashSet<>(1);
-                }
-                relationChild.add(parentTable);
-                fkErRelations.put(childTable, relationChild);
-            } else {
-                if (tc.getDirectRouteTC() != null) {
-                    TableConfig root = tc.getDirectRouteTC();
-                    String key = root.getRule().getRuleAlgorithm().getAlias() + "_" + root.getShardingNodes().toString();
+            } else if (tc instanceof ChildTableConfig) {
+                ChildTableConfig childTableConfig = (ChildTableConfig) tc;
+                BaseTableConfig parent = childTableConfig.getParentTC();
+                if (childTableConfig.getDirectRouteTC() != null) {
+                    ShardingTableConfig root = childTableConfig.getDirectRouteTC();
+                    String key = root.getFunction().getAlias() + "_" + root.getShardingNodes().toString();
                     if (funcNodeERMap == null) {
                         funcNodeERMap = new HashMap<>();
                     }
                     Set<ERTable> erTables = funcNodeERMap.computeIfAbsent(key, k -> new HashSet<>());
-                    erTables.add(new ERTable(name, tc.getName(), tc.getJoinColumn()));
-                    erTables.add(new ERTable(name, parent.getName(), tc.getParentColumn()));
+                    erTables.add(new ERTable(name, childTableConfig.getName(), childTableConfig.getJoinColumn()));
+                    erTables.add(new ERTable(name, parent.getName(), childTableConfig.getParentColumn()));
+                } else {
+                    if (fkErRelations == null) {
+                        fkErRelations = new HashMap<>();
+                    }
+                    ERTable parentTable = new ERTable(name, parent.getName(), childTableConfig.getParentColumn());
+                    ERTable childTable = new ERTable(name, childTableConfig.getName(), childTableConfig.getJoinColumn());
+                    Set<ERTable> relationParent = fkErRelations.get(parentTable);
+                    if (relationParent == null) {
+                        relationParent = new HashSet<>(1);
+                    }
+                    relationParent.add(childTable);
+                    fkErRelations.put(parentTable, relationParent);
+
+                    Set<ERTable> relationChild = fkErRelations.get(childTable);
+                    if (relationChild == null) {
+                        relationChild = new HashSet<>(1);
+                    }
+                    relationChild.add(parentTable);
+                    fkErRelations.put(childTable, relationChild);
                 }
             }
         }
@@ -142,30 +138,32 @@ public class SchemaConfig {
         return shardingNode;
     }
 
-    public Map<String, TableConfig> getTables() {
+    public Map<String, BaseTableConfig> getTables() {
         return tables;
     }
 
-    private Map<String, TableConfig> getLowerCaseTables() {
-        Map<String, TableConfig> newTables = new HashMap<>();
+    private Map<String, BaseTableConfig> getLowerCaseTables() {
+        Map<String, BaseTableConfig> newTables = new HashMap<>();
 
         //first round is only get the top tables
-        List<TableConfig> valueList = new ArrayList<>(tables.values());
-        Iterator<TableConfig> it = valueList.iterator();
+        List<BaseTableConfig> valueList = new ArrayList<>(tables.values());
+        Iterator<BaseTableConfig> it = valueList.iterator();
         while (it.hasNext()) {
-            TableConfig tc = it.next();
-            if (tc.getParentTC() == null) {
+            BaseTableConfig tc = it.next();
+            if (!(tc instanceof ChildTableConfig)) {
                 newTables.put(tc.getName().toLowerCase(), tc.lowerCaseCopy(null));
                 it.remove();
             }
         }
 
         while (valueList.size() > 0) {
-            Iterator<TableConfig> its = valueList.iterator();
+            Iterator<BaseTableConfig> its = valueList.iterator();
             while (its.hasNext()) {
-                TableConfig tc = its.next();
-                if (newTables.containsKey(tc.getParentTC().getName().toLowerCase())) {
-                    newTables.put(tc.getName().toLowerCase(), tc.lowerCaseCopy(newTables.get(tc.getParentTC().getName().toLowerCase())));
+                ChildTableConfig tc = (ChildTableConfig) (its.next());
+                String parentName = tc.getParentTC().getName().toLowerCase();
+                if (newTables.containsKey(parentName)) {
+                    BaseTableConfig parent = newTables.get(parentName);
+                    newTables.put(tc.getName().toLowerCase(), tc.lowerCaseCopy(parent));
                     its.remove();
                 }
             }
@@ -205,7 +203,7 @@ public class SchemaConfig {
         if (!isEmpty(shardingNode)) {
             return shardingNode;
         } else {
-            for (TableConfig tc : tables.values()) {
+            for (BaseTableConfig tc : tables.values()) {
                 return tc.getShardingNodes().get(0);
             }
             throw new RuntimeException(name + " in Sharding mode schema must have at least one table ");
@@ -218,7 +216,7 @@ public class SchemaConfig {
             set.add(shardingNode);
         }
         if (!noSharding) {
-            for (TableConfig tc : tables.values()) {
+            for (BaseTableConfig tc : tables.values()) {
                 set.addAll(tc.getShardingNodes());
             }
         }

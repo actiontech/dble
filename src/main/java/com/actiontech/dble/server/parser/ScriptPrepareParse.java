@@ -5,12 +5,12 @@
 */
 package com.actiontech.dble.server.parser;
 
-import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.route.parser.util.ParseUtil;
+import com.actiontech.dble.server.ServerConnection;
 import org.apache.commons.lang.StringEscapeUtils;
 
-import java.util.List;
 import java.util.LinkedList;
+import java.util.List;
 
 public final class ScriptPrepareParse {
     public static final int OTHER = -1;

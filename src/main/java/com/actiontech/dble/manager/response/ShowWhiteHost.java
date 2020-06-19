@@ -9,12 +9,12 @@ import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.config.model.user.UserConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
-import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
@@ -61,8 +61,8 @@ public final class ShowWhiteHost {
         // write rows
         byte packetId = EOF.getPacketId();
 
-        Map<Pair<String, String>, UserConfig> map = DbleServer.getInstance().getConfig().getUsers();
-        for (Map.Entry<Pair<String, String>, UserConfig> entry : map.entrySet()) {
+        Map<UserName, UserConfig> map = DbleServer.getInstance().getConfig().getUsers();
+        for (Map.Entry<UserName, UserConfig> entry : map.entrySet()) {
             if (entry.getValue().getWhiteIPs().size() > 0) {
                 for (String whiteIP : entry.getValue().getWhiteIPs()) {
                     RowDataPacket row = getRow(whiteIP, entry.getKey().toString(), c.getCharset().getResults());

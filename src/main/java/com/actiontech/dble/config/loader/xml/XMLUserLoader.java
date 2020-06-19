@@ -6,15 +6,10 @@ package com.actiontech.dble.config.loader.xml;
 
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.Versions;
-import com.actiontech.dble.config.model.UserPrivilegesConfig;
-import com.actiontech.dble.config.model.user.ManagerUserConfig;
-import com.actiontech.dble.config.model.user.RwSplitUserConfig;
-import com.actiontech.dble.config.model.user.ShardingUserConfig;
-import com.actiontech.dble.config.model.user.UserConfig;
+import com.actiontech.dble.config.model.user.*;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.config.util.ParameterMapping;
-import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.SplitUtil;
@@ -32,7 +27,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 public class XMLUserLoader {
-    private final Map<Pair<String, String>, UserConfig> users;
+    private final Map<UserName, UserConfig> users;
     private static final String DEFAULT_DTD = "/user.dtd";
     private static final String DEFAULT_XML = "/user.xml";
     private ProblemReporter problemReporter;
@@ -44,11 +39,11 @@ public class XMLUserLoader {
     }
 
     @SuppressWarnings("unchecked")
-    public Map<Pair<String, String>, UserConfig> getUsers() {
+    public Map<UserName, UserConfig> getUsers() {
         return users;
     }
 
-    public void loadXml(String dtdFile, String xmlFile) {
+    private void loadXml(String dtdFile, String xmlFile) {
         //read user.xml
         InputStream dtd = null;
         InputStream xml = null;
@@ -89,12 +84,10 @@ public class XMLUserLoader {
             Node node = list.item(i);
             if (node instanceof Element) {
                 Element element = (Element) node;
-                String[] baseInfo = getBaseUserInfo(element, xmlFile);
-                ManagerUserConfig managerUser = new ManagerUserConfig(baseInfo[0], baseInfo[1], baseInfo[2], baseInfo[3]);
-                String userName = managerUser.getName();
-                Pair<String, String> user = new Pair<>(userName, "");
+                UserConfig baseInfo = getBaseUserInfo(element, xmlFile);
+                UserName user = new UserName(baseInfo.getName());
                 if (users.containsKey(user)) {
-                    throw new ConfigException("User [name:" + userName + "] has already existed");
+                    throw new ConfigException("User [name:" + baseInfo.getName() + "] has already existed");
                 }
                 String readOnlyStr = element.getAttribute("readOnly");
                 boolean readOnly = false;
@@ -102,7 +95,8 @@ public class XMLUserLoader {
                     readOnlyStr = ConfigUtil.checkBoolAttribute("readOnly", readOnlyStr, "false", problemReporter, xmlFile);
                     readOnly = Boolean.parseBoolean(readOnlyStr);
                 }
-                managerUser.setReadOnly(readOnly);
+
+                ManagerUserConfig managerUser = new ManagerUserConfig(baseInfo, readOnly);
                 users.put(user, managerUser);
             }
         }
@@ -114,41 +108,38 @@ public class XMLUserLoader {
             Node node = list.item(i);
             if (node instanceof Element) {
                 Element element = (Element) node;
-                String[] baseInfo = getBaseUserInfo(element, xmlFile);
-                ShardingUserConfig shardingUser = new ShardingUserConfig(baseInfo[0], baseInfo[1], baseInfo[2], baseInfo[3]);
-                String userName = shardingUser.getName();
-                String tenant = element.getAttribute("tenant");
-                Pair<String, String> user = new Pair<>(userName, tenant);
+                UserConfig baseInfo = getBaseUserInfo(element, xmlFile);
+
+                String userName = baseInfo.getName();
+                UserName user = new UserName(userName, element.getAttribute("tenant"));
                 if (users.containsKey(user)) {
-                    throw new ConfigException("User [name:" + userName + ",tenant:" + tenant + "] has already existed");
+                    throw new ConfigException("User [" + user + "] has already existed");
                 }
-                shardingUser.setTenant(tenant);
                 String readOnlyStr = element.getAttribute("readOnly");
                 boolean readOnly = false;
                 if (!StringUtil.isEmpty(readOnlyStr)) {
                     readOnlyStr = ConfigUtil.checkBoolAttribute("readOnly", readOnlyStr, "false", problemReporter, xmlFile);
                     readOnly = Boolean.parseBoolean(readOnlyStr);
                 }
-                shardingUser.setReadOnly(readOnly);
 
                 String schemas = element.getAttribute("schemas").trim();
                 if (StringUtil.isEmpty(schemas)) {
-                    throw new ConfigException("User[name:" + userName + ",tenant:" + tenant + "]'s schemas is empty");
+                    throw new ConfigException("User [" + user + "]'s schemas is empty");
                 }
                 String[] strArray = SplitUtil.split(schemas, ',', true);
-                shardingUser.setSchemas(new HashSet<>(Arrays.asList(strArray)));
 
                 String blacklist = element.getAttribute("blacklist");
+                WallProvider wallProvider = null;
                 if (!StringUtil.isEmpty(blacklist)) {
-                    WallProvider wallProvider = blackListMap.get(blacklist);
+                    wallProvider = blackListMap.get(blacklist);
                     if (wallProvider == null) {
-                        problemReporter.warn("blacklist[" + blacklist + "] for user [name:" + userName + ",tenant:" + tenant + "]  is not found, it will be ignore");
-                    } else {
-                        shardingUser.setBlacklist(wallProvider);
+                        problemReporter.warn("blacklist[" + blacklist + "] for user [" + user + "]  is not found, it will be ignore");
                     }
                 }
                 // load DML Privileges
-                loadPrivileges(shardingUser, element);
+                UserPrivilegesConfig privilegesConfig = loadPrivileges(element);
+
+                ShardingUserConfig shardingUser = new ShardingUserConfig(baseInfo, user.getTenant(), wallProvider, readOnly, new HashSet<>(Arrays.asList(strArray)), privilegesConfig);
                 users.put(user, shardingUser);
             }
         }
@@ -160,31 +151,27 @@ public class XMLUserLoader {
             Node node = list.item(i);
             if (node instanceof Element) {
                 Element element = (Element) node;
-                String[] baseInfo = getBaseUserInfo(element, xmlFile);
-                RwSplitUserConfig rwSplitUser = new RwSplitUserConfig(baseInfo[0], baseInfo[1], baseInfo[2], baseInfo[3]);
-                String userName = rwSplitUser.getName();
-                String tenant = element.getAttribute("tenant");
-                Pair<String, String> user = new Pair<>(userName, tenant);
+                UserConfig baseInfo = getBaseUserInfo(element, xmlFile);
+                String userName = baseInfo.getName();
+                UserName user = new UserName(userName, element.getAttribute("tenant"));
                 if (users.containsKey(user)) {
-                    throw new ConfigException("User [name:" + userName + ",tenant:" + tenant + "] has already existed");
+                    throw new ConfigException("User [" + user + "] has already existed");
                 }
-                rwSplitUser.setTenant(tenant);
-
                 String dbGroup = element.getAttribute("dbGroup").trim();
                 if (StringUtil.isEmpty(dbGroup)) {
-                    throw new ConfigException("User[name:" + userName + ",tenant:" + tenant + "]'s dbGroup is empty");
+                    throw new ConfigException("User[" + user + "]'s dbGroup is empty");
                 }
-                rwSplitUser.setDbGroup(dbGroup);
 
                 String blacklist = element.getAttribute("blacklist");
+                WallProvider wallProvider = null;
                 if (!StringUtil.isEmpty(blacklist)) {
-                    WallProvider wallProvider = blackListMap.get(blacklist);
+                    wallProvider = blackListMap.get(blacklist);
                     if (wallProvider == null) {
-                        problemReporter.warn("blacklist[" + blacklist + "] for user [name:" + userName + ",tenant:" + tenant + "]  is not found, it will be ignore");
-                    } else {
-                        rwSplitUser.setBlacklist(wallProvider);
+                        problemReporter.warn("blacklist[" + blacklist + "] for user [" + user + "]  is not found, it will be ignore");
                     }
                 }
+
+                RwSplitUserConfig rwSplitUser = new RwSplitUserConfig(baseInfo, user.getTenant(), wallProvider, dbGroup);
                 users.put(user, rwSplitUser);
             }
         }
@@ -222,14 +209,15 @@ public class XMLUserLoader {
 
     }
 
-    /**
-     * @param element root
-     * @param xmlFile file
-     * @return name, password, strWhiteIPs
-     */
-    private String[] getBaseUserInfo(Element element, String xmlFile) {
+    private UserConfig getBaseUserInfo(Element element, String xmlFile) {
         String name = element.getAttribute("name");
+        if (StringUtil.isEmpty(name)) {
+            throw new ConfigException("one of users' name is empty");
+        }
         String password = element.getAttribute("password");
+        if (StringUtil.isEmpty(password)) {
+            throw new ConfigException("password of " + name + " is empty");
+        }
         String usingDecryptStr = element.getAttribute("usingDecrypt");
         if (!StringUtil.isEmpty(usingDecryptStr)) {
             usingDecryptStr = ConfigUtil.checkBoolAttribute("usingDecrypt", usingDecryptStr, "false", problemReporter, xmlFile);
@@ -239,7 +227,7 @@ public class XMLUserLoader {
 
         String strWhiteIPs = element.getAttribute("whiteIPs");
         String strMaxCon = element.getAttribute("maxCon");
-        return new String[]{name, password, strWhiteIPs, strMaxCon};
+        return new UserConfig(name, password, strWhiteIPs, strMaxCon);
     }
 
     private void checkVersion(Element root) {
@@ -260,11 +248,13 @@ public class XMLUserLoader {
         }
     }
 
-    private void loadPrivileges(ShardingUserConfig userConfig, Element node) {
-        UserPrivilegesConfig privilegesConfig = new UserPrivilegesConfig();
-
+    private UserPrivilegesConfig loadPrivileges(Element node) {
         NodeList privilegesNodes = node.getElementsByTagName("privileges");
         int privilegesNodesLength = privilegesNodes.getLength();
+        if (privilegesNodesLength == 0) {
+            return null;
+        }
+        UserPrivilegesConfig privilegesConfig = new UserPrivilegesConfig();
         for (int i = 0; i < privilegesNodesLength; i++) {
             Element privilegesNode = (Element) privilegesNodes.item(i);
             String checkStr = ConfigUtil.checkAndGetAttribute(privilegesNode, "check", "false", problemReporter);
@@ -306,6 +296,6 @@ public class XMLUserLoader {
                 privilegesConfig.addSchemaPrivilege(name1, schemaPrivilege);
             }
         }
-        userConfig.setPrivilegesConfig(privilegesConfig);
+        return privilegesConfig;
     }
 }

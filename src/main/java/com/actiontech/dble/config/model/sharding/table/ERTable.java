@@ -3,7 +3,7 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.config.model;
+package com.actiontech.dble.config.model.sharding.table;
 
 public class ERTable {
     private final String table;

@@ -5,10 +5,11 @@
 
 package com.actiontech.dble.route.parser.druid.impl;
 
-import com.actiontech.dble.config.privileges.ShardingPrivileges.CheckType;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.model.sharding.table.GlobalTableConfig;
 import com.actiontech.dble.config.privileges.ShardingPrivileges;
+import com.actiontech.dble.config.privileges.ShardingPrivileges.CheckType;
 import com.actiontech.dble.route.RouteResultset;
 import com.actiontech.dble.route.parser.druid.ServerSchemaStatVisitor;
 import com.actiontech.dble.route.util.RouterUtil;
@@ -25,7 +26,8 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 
 import java.sql.SQLException;
 import java.sql.SQLNonTransientException;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * see http://dev.mysql.com/doc/refman/5.7/en/delete.html
@@ -56,8 +58,8 @@ public class DruidDeleteParser extends DruidModifyParser {
 
             boolean isAllGlobal = true;
             for (SchemaInfo schemaInfo : schemaInfos) {
-                TableConfig tc = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
-                if (tc == null || !tc.isGlobalTable()) {
+                BaseTableConfig tc = schemaInfo.getSchemaConfig().getTables().get(schemaInfo.getTable());
+                if (tc == null || !(tc instanceof GlobalTableConfig)) {
                     isAllGlobal = false;
                     break;
                 }
@@ -83,7 +85,7 @@ public class DruidDeleteParser extends DruidModifyParser {
                 throw new SQLNonTransientException(msg);
             }
             schema = schemaInfo.getSchemaConfig();
-            TableConfig tc = schema.getTables().get(schemaInfo.getTable());
+            BaseTableConfig tc = schema.getTables().get(schemaInfo.getTable());
             rrs.setStatement(RouterUtil.removeSchema(rrs.getStatement(), schemaInfo.getSchema()));
             super.visitorParse(schema, rrs, stmt, visitor, sc, isExplain);
 
@@ -99,8 +101,8 @@ public class DruidDeleteParser extends DruidModifyParser {
             }
             checkTableExists(tc, schema.getName(), tableName, CheckType.DELETE);
 
-            if (tc.isGlobalTable()) {
-                RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), tc.isGlobalTable());
+            if (tc instanceof GlobalTableConfig) {
+                RouterUtil.routeToMultiNode(false, rrs, tc.getShardingNodes(), true);
                 rrs.setFinishedRoute(true);
                 return schema;
             }

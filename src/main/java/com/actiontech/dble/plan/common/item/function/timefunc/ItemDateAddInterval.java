@@ -14,9 +14,9 @@ import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.plan.common.time.*;
 import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntervalExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIntervalUnit;
+import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
 
 import java.util.ArrayList;
 import java.util.List;

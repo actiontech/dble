@@ -17,9 +17,9 @@ import com.actiontech.dble.cluster.ClusterPathUtil;
 import com.actiontech.dble.cluster.zkprocess.comm.ZkConfig;
 import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.ClusterConfig;
-import com.actiontech.dble.config.model.SchemaConfig;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.config.util.ConfigUtil;
 import com.actiontech.dble.log.transaction.TxnLogProcessor;
 import com.actiontech.dble.manager.ManagerConnectionFactory;
@@ -476,7 +476,7 @@ public final class DbleServer {
             }
             outLoop:
             for (SchemaConfig schema : DbleServer.getInstance().getConfig().getSchemas().values()) {
-                for (TableConfig table : schema.getTables().values()) {
+                for (BaseTableConfig table : schema.getTables().values()) {
                     for (String shardingNode : table.getShardingNodes()) {
                         ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(shardingNode);
                         if (participantLogEntry.compareAddress(dn.getDbGroup().getWriteDbInstance().getConfig().getIp(), dn.getDbGroup().getWriteDbInstance().getConfig().getPort(), dn.getDatabase())) {

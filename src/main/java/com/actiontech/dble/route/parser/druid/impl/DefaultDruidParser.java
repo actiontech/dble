@@ -7,8 +7,8 @@ package com.actiontech.dble.route.parser.druid.impl;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.config.privileges.ShardingPrivileges;
 import com.actiontech.dble.plan.common.ptr.StringPtr;
 import com.actiontech.dble.route.RouteResultset;
@@ -143,7 +143,7 @@ public class DefaultDruidParser implements DruidParser {
     }
 
 
-    void checkTableExists(TableConfig tc, String schemaName, String tableName, ShardingPrivileges.CheckType chekcType) throws SQLException {
+    void checkTableExists(BaseTableConfig tc, String schemaName, String tableName, ShardingPrivileges.CheckType chekcType) throws SQLException {
         if (tc == null) {
             if (ProxyMeta.getInstance().getTmManager().getSyncView(schemaName, tableName) != null) {
                 String msg = "View '" + schemaName + "." + tableName + "' Not Support " + chekcType;

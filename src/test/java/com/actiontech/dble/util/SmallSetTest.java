@@ -5,8 +5,8 @@
 */
 package com.actiontech.dble.util;
 
-import org.junit.Assert;
 import junit.framework.TestCase;
+import org.junit.Assert;
 
 import java.util.Collection;
 import java.util.Iterator;

@@ -8,10 +8,12 @@ package com.actiontech.dble.route.parser.druid.impl;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.config.ErrorCode;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.model.sharding.table.GlobalTableConfig;
+import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.config.privileges.ShardingPrivileges;
 import com.actiontech.dble.config.privileges.ShardingPrivileges.CheckType;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
 import com.actiontech.dble.meta.TableMeta;
 import com.actiontech.dble.plan.common.item.Item;
 import com.actiontech.dble.plan.common.item.function.ItemCreate;
@@ -138,7 +140,7 @@ public class DruidSelectParser extends DefaultDruidParser {
             RouterUtil.routeToSingleNode(rrs, noShardingNode);
         } else {
             //route for configured table
-            TableConfig tc = schema.getTables().get(schemaInfo.getTable());
+            BaseTableConfig tc = schema.getTables().get(schemaInfo.getTable());
             if (tc == null) {
                 String msg = "Table '" + schema.getName() + "." + schemaInfo.getTable() + "' doesn't exist";
                 throw new SQLException(msg, "42S02", ErrorCode.ER_NO_SUCH_TABLE);
@@ -227,7 +229,7 @@ public class DruidSelectParser extends DefaultDruidParser {
 
 
     private void parseOrderAggGroupMysql(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
-                                         MySqlSelectQueryBlock mysqlSelectQuery, TableConfig tc) throws SQLException {
+                                         MySqlSelectQueryBlock mysqlSelectQuery, BaseTableConfig tc) throws SQLException {
         //simple merge of ORDER BY has bugs,so optimizer here
         if (mysqlSelectQuery.getOrderBy() != null) {
             tryAddLimit(tc, mysqlSelectQuery);
@@ -238,7 +240,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         parseAggGroupCommon(schema, stmt, rrs, mysqlSelectQuery, tc);
     }
 
-    private void parseAggExprCommon(SchemaConfig schema, RouteResultset rrs, MySqlSelectQueryBlock mysqlSelectQuery, Map<String, String> aliaColumns, TableConfig tc, boolean isDistinct) throws SQLException {
+    private void parseAggExprCommon(SchemaConfig schema, RouteResultset rrs, MySqlSelectQueryBlock mysqlSelectQuery, Map<String, String> aliaColumns, BaseTableConfig tc, boolean isDistinct) throws SQLException {
         List<SQLSelectItem> selectList = mysqlSelectQuery.getSelectList();
         boolean hasPartitionColumn = false;
         for (SQLSelectItem selectItem : selectList) {
@@ -279,15 +281,11 @@ public class DruidSelectParser extends DefaultDruidParser {
                 if (isDistinct && !isNeedOptimizer(itemExpr)) {
                     if (itemExpr instanceof SQLIdentifierExpr) {
                         SQLIdentifierExpr item = (SQLIdentifierExpr) itemExpr;
-                        if (item.getSimpleName().equalsIgnoreCase(tc.getPartitionColumn())) {
-                            hasPartitionColumn = true;
-                        }
+                        hasPartitionColumn = hasShardingColumn(tc, item.getSimpleName());
                         addToAliaColumn(aliaColumns, selectItem);
                     } else if (itemExpr instanceof SQLPropertyExpr) {
                         SQLPropertyExpr item = (SQLPropertyExpr) itemExpr;
-                        if (item.getSimpleName().equalsIgnoreCase(tc.getPartitionColumn())) {
-                            hasPartitionColumn = true;
-                        }
+                        hasPartitionColumn = hasShardingColumn(tc, item.getSimpleName());
                         addToAliaColumn(aliaColumns, selectItem);
                     }
                 } else if (isSumFuncOrSubQuery(schema.getName(), itemExpr)) {
@@ -305,7 +303,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         parseGroupCommon(rrs, mysqlSelectQuery, tc);
     }
 
-    private void parseGroupCommon(RouteResultset rrs, MySqlSelectQueryBlock mysqlSelectQuery, TableConfig tc) {
+    private void parseGroupCommon(RouteResultset rrs, MySqlSelectQueryBlock mysqlSelectQuery, BaseTableConfig tc) {
         if (mysqlSelectQuery.getGroupBy() != null) {
             SQLSelectGroupByClause groupBy = mysqlSelectQuery.getGroupBy();
             boolean hasPartitionColumn = false;
@@ -315,14 +313,10 @@ public class DruidSelectParser extends DefaultDruidParser {
                     return;
                 } else if (groupByItem instanceof SQLIdentifierExpr) {
                     SQLIdentifierExpr item = (SQLIdentifierExpr) groupByItem;
-                    if (item.getSimpleName().equalsIgnoreCase(tc.getPartitionColumn())) {
-                        hasPartitionColumn = true;
-                    }
+                    hasPartitionColumn = hasShardingColumn(tc, item.getSimpleName());
                 } else if (groupByItem instanceof SQLPropertyExpr) {
                     SQLPropertyExpr item = (SQLPropertyExpr) groupByItem;
-                    if (item.getSimpleName().equalsIgnoreCase(tc.getPartitionColumn())) {
-                        hasPartitionColumn = true;
-                    }
+                    hasPartitionColumn = hasShardingColumn(tc, item.getSimpleName());
                 }
             }
             if (groupBy.getItems().size() > 0 && !hasPartitionColumn) {
@@ -334,6 +328,10 @@ public class DruidSelectParser extends DefaultDruidParser {
                 rrs.setNeedOptimizer(true);
             }
         }
+    }
+
+    private boolean hasShardingColumn(BaseTableConfig tc, String columnName) {
+        return tc instanceof ShardingTableConfig && columnName.equalsIgnoreCase(((ShardingTableConfig) tc).getShardingColumn());
     }
 
     private boolean isSumFuncOrSubQuery(String schema, SQLExpr itemExpr) {
@@ -386,7 +384,7 @@ public class DruidSelectParser extends DefaultDruidParser {
     }
 
     private void parseAggGroupCommon(SchemaConfig schema, SQLStatement stmt, RouteResultset rrs,
-                                     MySqlSelectQueryBlock mysqlSelectQuery, TableConfig tc) throws SQLException {
+                                     MySqlSelectQueryBlock mysqlSelectQuery, BaseTableConfig tc) throws SQLException {
         Map<String, String> aliaColumns = new HashMap<>();
         boolean isDistinct = (mysqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCT) || (mysqlSelectQuery.getDistionOption() == SQLSetQuantifier.DISTINCTROW);
         parseAggExprCommon(schema, rrs, mysqlSelectQuery, aliaColumns, tc, isDistinct);
@@ -594,8 +592,8 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
         Pair<String, String> table = ctx.getTables().get(0);
         String tableName = table.getValue();
-        TableConfig tc = schema.getTables().get(tableName);
-        if (tc == null || (ctx.getTables().size() == 1 && tc.isGlobalTable())) {
+        BaseTableConfig tc = schema.getTables().get(tableName);
+        if (tc == null || (ctx.getTables().size() == 1 && tc instanceof GlobalTableConfig)) {
             return false;
         } else {
             //single table
@@ -611,7 +609,7 @@ public class DruidSelectParser extends DefaultDruidParser {
         }
     }
 
-    private void tryAddLimit(TableConfig tableConfig,
+    private void tryAddLimit(BaseTableConfig tableConfig,
                              MySqlSelectQueryBlock mysqlSelectQuery) {
         if (mysqlSelectQuery.getLimit() != null) {
             return;
@@ -634,12 +632,12 @@ public class DruidSelectParser extends DefaultDruidParser {
         } else if (ctx.getTables().size() == 1) {
             Pair<String, String> table = ctx.getTables().get(0);
             String tableName = table.getValue();
-            TableConfig tableConfig = schema.getTables().get(tableName);
+            BaseTableConfig tableConfig = schema.getTables().get(tableName);
             if (tableConfig == null) {
                 return schema.getDefaultMaxLimit(); // get sharding's configure
             }
             // no condition
-            return allConditions.get(table) == null ? -1 : tableConfig.getMaxLimit();
+            return allConditions.get(table) == null ? tableConfig.getMaxLimit() : -1;
         } else { // no table or multi-table
             return -1;
         }

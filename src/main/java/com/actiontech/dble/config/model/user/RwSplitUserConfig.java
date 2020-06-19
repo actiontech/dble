@@ -5,19 +5,18 @@
 
 package com.actiontech.dble.config.model.user;
 
-public class RwSplitUserConfig extends ServerUserConfig {
-    private String dbGroup;
+import com.alibaba.druid.wall.WallProvider;
 
-    public RwSplitUserConfig(String name, String password, String strWhiteIPs, String strMaxCon) {
-        super(name, password, strWhiteIPs, strMaxCon);
+public class RwSplitUserConfig extends ServerUserConfig {
+    private final String dbGroup;
+
+    public RwSplitUserConfig(UserConfig user, String tenant, WallProvider blacklist, String dbGroup) {
+        super(user, tenant, blacklist);
+        this.dbGroup = dbGroup;
     }
 
     public String getDbGroup() {
         return dbGroup;
-    }
-
-    public void setDbGroup(String dbGroup) {
-        this.dbGroup = dbGroup;
     }
 
 

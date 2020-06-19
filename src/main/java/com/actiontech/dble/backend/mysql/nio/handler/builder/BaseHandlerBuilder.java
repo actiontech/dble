@@ -17,8 +17,8 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.SingleR
 import com.actiontech.dble.backend.mysql.nio.handler.query.impl.subquery.SubQueryHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.CallBackHandler;
 import com.actiontech.dble.config.ErrorCode;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.plan.Order;
 import com.actiontech.dble.plan.common.exception.MySQLOutPutException;
@@ -407,7 +407,7 @@ public abstract class BaseHandlerBuilder {
         return randomDatenode;
     }
 
-    TableConfig getTableConfig(String schema, String table) {
+    BaseTableConfig getTableConfig(String schema, String table) {
         SchemaConfig schemaConfig = schemaConfigMap.get(schema);
         if (schemaConfig == null)
             return null;

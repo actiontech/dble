@@ -9,8 +9,8 @@ import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.manager.response.CheckFullMetaData;
 import com.actiontech.dble.manager.response.CheckGlobalConsistency;
 import com.actiontech.dble.manager.response.ShowTime;
-import com.actiontech.dble.singleton.ProxyMeta;
 import com.actiontech.dble.route.parser.ManagerParseCheck;
+import com.actiontech.dble.singleton.ProxyMeta;
 
 /**
  * @author huqing.yan

@@ -106,7 +106,7 @@ public final class ShowConnectionSQL {
         RowDataPacket row = new RowDataPacket(FIELD_COUNT);
         row.add(LongUtil.toBytes(c.getId()));
         row.add(StringUtil.encode(c.getHost(), charset));
-        row.add(StringUtil.encode(c.getUserInfo(), charset));
+        row.add(StringUtil.encode(c.getUser().toString(), charset));
         if (c instanceof ServerConnection) {
             row.add(StringUtil.encode(((ServerConnection) c).getSchema(), charset));
         } else {
@@ -125,7 +125,13 @@ public final class ShowConnectionSQL {
             row.add(StringUtil.encode(executeSql, charset));
             row.add(StringUtil.encode(sc.getSession2().getSessionStage().toString(), charset));
         } else {
-            row.add(StringUtil.encode("", charset));
+
+            String executeSql = "";
+            ManagerConnection sc = (ManagerConnection) c;
+            if (sc.getExecuteSql() != null) {
+                executeSql = sc.getExecuteSql().length() <= 1024 ? sc.getExecuteSql() : sc.getExecuteSql().substring(0, 1024);
+            }
+            row.add(StringUtil.encode(executeSql, charset));
             row.add(StringUtil.encode("Manager connection", charset));
         }
         return row;

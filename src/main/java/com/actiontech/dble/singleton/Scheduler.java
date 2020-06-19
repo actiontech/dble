@@ -6,8 +6,8 @@ import com.actiontech.dble.backend.mysql.xa.XAStateLog;
 import com.actiontech.dble.backend.pool.PooledEntry;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.net.NIOProcessor;
-import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.statistic.stat.SqlResultSizeRecorder;
 import com.actiontech.dble.statistic.stat.ThreadWorkUsage;
 import com.actiontech.dble.statistic.stat.UserStat;
@@ -150,9 +150,9 @@ public final class Scheduler {
                     long bufferCapacity = pool.capacity();
                     long bufferUsagePercent = (bufferCapacity - bufferSize) * 100 / bufferCapacity;
                     if (bufferUsagePercent < SystemConfig.getInstance().getBufferUsagePercent()) {
-                        Map<Pair<String, String>, UserStat> map = UserStatAnalyzer.getInstance().getUserStatMap();
-                        Set<Pair<String, String>> userSet = DbleServer.getInstance().getConfig().getUsers().keySet();
-                        for (Pair<String, String> user : userSet) {
+                        Map<UserName, UserStat> map = UserStatAnalyzer.getInstance().getUserStatMap();
+                        Set<UserName> userSet = DbleServer.getInstance().getConfig().getUsers().keySet();
+                        for (UserName user : userSet) {
                             UserStat userStat = map.get(user);
                             if (userStat != null) {
                                 SqlResultSizeRecorder recorder = userStat.getSqlResultSizeRecorder();
@@ -174,7 +174,7 @@ public final class Scheduler {
         return new Runnable() {
             @Override
             public void run() {
-                Map<Pair<String, String>, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
+                Map<UserName, UserStat> statMap = UserStatAnalyzer.getInstance().getUserStatMap();
                 for (UserStat userStat : statMap.values()) {
                     userStat.getSqlLastStat().recycle();
                     userStat.getSqlRecorder().recycle();

@@ -12,8 +12,11 @@ import com.actiontech.dble.backend.mysql.nio.handler.query.DMLResponseHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.util.HandlerTool;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.config.model.SchemaConfig;
-import com.actiontech.dble.config.model.TableConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
+import com.actiontech.dble.config.model.sharding.table.GlobalTableConfig;
+import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
+import com.actiontech.dble.config.model.sharding.table.SingleTableConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.manager.handler.PackageBufINf;
 import com.actiontech.dble.meta.SchemaMeta;
@@ -253,12 +256,20 @@ public final class ShowTables {
             pattern = Pattern.compile(p, Pattern.CASE_INSENSITIVE);
         }
         Map<String, SchemaConfig> schemas = DbleServer.getInstance().getConfig().getSchemas();
-        for (TableConfig tbConfig : schemas.get(cSchema).getTables().values()) {
+        for (BaseTableConfig tbConfig : schemas.get(cSchema).getTables().values()) {
             String tbName = tbConfig.getName();
             if (tableMeta.get(tbName) != null && (pattern == null || pattern.matcher(tbName).matches())) {
                 String tbType = "BASE TABLE";
                 if (info.isAll()) {
-                    tbType = tbConfig.getTableType() == TableConfig.TableTypeEnum.TYPE_GLOBAL_TABLE ? "GLOBAL TABLE" : "SHARDING TABLE";
+                    if (tbConfig instanceof ShardingTableConfig) {
+                        tbType = "SHARDING TABLE";
+                    } else if (tbConfig instanceof GlobalTableConfig) {
+                        tbType = "GLOBAL TABLE";
+                    } else if (tbConfig instanceof SingleTableConfig) {
+                        tbType = "SINGLE TABLE";
+                    } else {
+                        tbType = "CHILD TABLE";
+                    }
                 }
                 tableMap.put(tbName, tbType);
             }

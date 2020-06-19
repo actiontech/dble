@@ -6,7 +6,7 @@
 package com.actiontech.dble.singleton;
 
 import com.actiontech.dble.config.model.user.UserConfig;
-import com.actiontech.dble.route.parser.util.Pair;
+import com.actiontech.dble.config.model.user.UserName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +27,7 @@ public final class FrontendUserManager {
 
     private ReentrantLock maxConLock = new ReentrantLock();
 
-    private Map<Pair<String, String>, Integer> userConnectionMap = new ConcurrentHashMap<>();
+    private Map<UserName, Integer> userConnectionMap = new ConcurrentHashMap<>();
 
     private int serverMaxConnection;
 
@@ -37,7 +37,7 @@ public final class FrontendUserManager {
 
     }
 
-    public void countDown(Pair<String, String> user, boolean isManager) {
+    public void countDown(UserName user, boolean isManager) {
         maxConLock.lock();
         try {
             if (!isManager) {
@@ -53,9 +53,9 @@ public final class FrontendUserManager {
         }
     }
 
-    public void initForLatest(Map<Pair<String, String>, UserConfig> userConfigMap, int serverLimit) {
+    public void initForLatest(Map<UserName, UserConfig> userConfigMap, int serverLimit) {
         serverMaxConnection = serverLimit;
-        for (Pair<String, String> user : userConfigMap.keySet()) {
+        for (UserName user : userConfigMap.keySet()) {
             if (!userConnectionMap.containsKey(user)) {
                 userConnectionMap.put(user, 0);
             }
@@ -64,7 +64,7 @@ public final class FrontendUserManager {
     }
 
 
-    public CheckStatus maxConnectionCheck(Pair<String, String> user, int userLimit, boolean isManager) {
+    public CheckStatus maxConnectionCheck(UserName user, int userLimit, boolean isManager) {
 
         maxConLock.lock();
         try {

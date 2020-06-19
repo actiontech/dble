@@ -3,15 +3,15 @@ package com.actiontech.dble.manager.response;
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.config.Fields;
-import com.actiontech.dble.config.model.UserPrivilegesConfig;
 import com.actiontech.dble.config.model.user.ShardingUserConfig;
 import com.actiontech.dble.config.model.user.UserConfig;
+import com.actiontech.dble.config.model.user.UserName;
+import com.actiontech.dble.config.model.user.UserPrivilegesConfig;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.mysql.EOFPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
-import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.util.StringUtil;
 
 import java.nio.ByteBuffer;
@@ -71,9 +71,9 @@ public final class ShowUserPrivilege {
 
         // write rows
         byte packetId = EOF.getPacketId();
-        Map<Pair<String, String>, UserConfig> users = DbleServer.getInstance().getConfig().getUsers();
-        for (Map.Entry<Pair<String, String>, UserConfig> entry: users.entrySet()) {
-            Pair<String, String> userName = entry.getKey();
+        Map<UserName, UserConfig> users = DbleServer.getInstance().getConfig().getUsers();
+        for (Map.Entry<UserName, UserConfig> entry: users.entrySet()) {
+            UserName userName = entry.getKey();
             UserConfig user = entry.getValue();
             // skip manager
             if (!(user instanceof ShardingUserConfig)) {

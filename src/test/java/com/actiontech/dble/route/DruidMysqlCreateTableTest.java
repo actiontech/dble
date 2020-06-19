@@ -6,9 +6,9 @@
 package com.actiontech.dble.route;
 
 import com.actiontech.dble.config.ServerConfig;
-import com.actiontech.dble.config.model.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
-import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.ServerConnection;
 import com.actiontech.dble.util.StringUtil;
 import com.alibaba.druid.sql.ast.SQLExpr;
@@ -49,7 +49,7 @@ public class DruidMysqlCreateTableTest {
 
         routeStrategy = RouteStrategyFactory.getRouteStrategy();
 
-        sc.setUser(new Pair<>("test",null));
+        sc.setUser(new UserName("test",null));
     }
 
     @Test

@@ -13,8 +13,13 @@ import com.actiontech.dble.config.helper.TestTask;
 import com.actiontech.dble.config.loader.xml.XMLDbLoader;
 import com.actiontech.dble.config.loader.xml.XMLShardingLoader;
 import com.actiontech.dble.config.loader.xml.XMLUserLoader;
-import com.actiontech.dble.config.model.*;
+import com.actiontech.dble.config.model.ClusterConfig;
+import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.config.model.sharding.SchemaConfig;
+import com.actiontech.dble.config.model.sharding.ShardingNodeConfig;
+import com.actiontech.dble.config.model.sharding.table.ERTable;
 import com.actiontech.dble.config.model.user.UserConfig;
+import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.plan.common.ptr.BoolPtr;
 import com.actiontech.dble.route.parser.util.Pair;
@@ -31,7 +36,7 @@ public class ConfigInitializer implements ProblemReporter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigInitializer.class);
 
-    private volatile Map<Pair<String, String>, UserConfig> users;
+    private volatile Map<UserName, UserConfig> users;
     private volatile Map<String, SchemaConfig> schemas;
     private volatile Map<String, ShardingNode> shardingNodes;
     private volatile Map<String, PhysicalDbGroup> dbGroups;
@@ -295,7 +300,7 @@ public class ConfigInitializer implements ProblemReporter {
     }
 
 
-    public Map<Pair<String, String>, UserConfig> getUsers() {
+    public Map<UserName, UserConfig> getUsers() {
         return users;
     }
 

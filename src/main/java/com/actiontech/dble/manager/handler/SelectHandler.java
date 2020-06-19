@@ -60,7 +60,7 @@ public final class SelectHandler {
                     Iterator<PhysicalDbGroup> iterator = DbleServer.getInstance().getConfig().getDbGroups().values().iterator();
                     if (iterator.hasNext()) {
                         PhysicalDbGroup pool = iterator.next();
-                        final PhysicalDbInstance source = pool.getWriteSource();
+                        final PhysicalDbInstance source = pool.getWriteDbInstance();
                         TransformSQLJob sqlJob = new TransformSQLJob(stmt, null, source, c);
                         sqlJob.run();
                     } else {

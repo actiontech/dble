@@ -104,12 +104,8 @@ public class GetAndSyncDbInstanceKeyVariables implements Callable<KeyVariables> 
                         break;
                 }
                 keyVariables.setTargetIsolation(SystemConfig.getInstance().getTxIsolation());
-
                 keyVariables.setMaxPacketSize(Integer.parseInt(result.getResult().get(COLUMN_MAX_PACKET)));
                 keyVariables.setTargetMaxPacketSize(SystemConfig.getInstance().getMaxPacketSize() + KeyVariables.MARGIN_PACKET_SIZE);
-
-
-
                 keyVariables.setReadOnly(result.getResult().get(COLUMN_READONLY).equals("1"));
 
                 if (needSync) {

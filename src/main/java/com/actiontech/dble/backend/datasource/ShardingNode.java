@@ -67,17 +67,15 @@ public class ShardingNode {
 
     /**
      * get connection from the same dbInstance
-     *
      */
-    public void getConnectionFromSameSource(String schema, boolean autocommit,
-                                            BackendConnection exitsCon, ResponseHandler handler,
+    public void getConnectionFromSameSource(String schema, BackendConnection exitsCon, ResponseHandler handler,
                                             Object attachment) throws Exception {
 
         PhysicalDbInstance ds = this.dbGroup.findDbInstance(exitsCon);
         if (ds == null) {
             throw new RuntimeException("can't find exits connection, maybe finished " + exitsCon);
         } else {
-            ds.getConnection(schema, autocommit, handler, attachment, false);
+            ds.getConnection(schema, handler, attachment, false);
         }
     }
 
@@ -86,39 +84,35 @@ public class ShardingNode {
             throw new RuntimeException("invalid param ,connection request db is :" + schema +
                     " and schema db is " + this.database);
         }
-        if (!dbGroup.isInitSuccess() && !dbGroup.init()) {
-            throw new RuntimeException("dbGroup[" + dbGroup.getGroupName() + "]'s init error, please check it can be connected. " +
-                    "The current Node is {dbGroup[" + dbGroup.getWriteSource().getConfig().getUrl() + ",Schema[" + schema + "]}");
-        }
     }
 
     public void getConnection(String schema, boolean isMustWrite, boolean autoCommit, RouteResultsetNode rrs,
                               ResponseHandler handler, Object attachment) throws Exception {
         if (isMustWrite) {
-            getWriteNodeConnection(schema, autoCommit, handler, attachment);
+            getWriteNodeConnection(schema, handler, attachment);
             return;
         }
         if (rrs.getRunOnSlave() == null) {
             if (rrs.canRunINReadDB(autoCommit)) {
-                dbGroup.getRWSplistCon(schema, autoCommit, handler, attachment);
+                dbGroup.getRWSplitCon(schema, handler, attachment);
             } else {
-                getWriteNodeConnection(schema, autoCommit, handler, attachment);
+                getWriteNodeConnection(schema, handler, attachment);
             }
         } else {
             if (rrs.getRunOnSlave()) {
-                if (!dbGroup.getReadCon(schema, autoCommit, handler, attachment)) {
+                if (!dbGroup.getReadCon(schema, handler, attachment)) {
                     throw new IllegalArgumentException("no valid read dbInstance in dbGroup:" + dbGroup.getGroupName());
                 }
             } else {
                 rrs.setCanRunInReadDB(false);
-                getWriteNodeConnection(schema, autoCommit, handler, attachment);
+                getWriteNodeConnection(schema, handler, attachment);
             }
         }
     }
 
-    public BackendConnection getConnection(String schema, boolean autoCommit, Boolean runOnSlave, Object attachment) throws Exception {
+    public BackendConnection getConnection(String schema, Boolean runOnSlave, Object attachment) throws Exception {
         if (runOnSlave == null) {
-            PhysicalDbInstance readSource = dbGroup.getRWSplistNode();
+            PhysicalDbInstance readSource = dbGroup.getRWSplitNode();
             if (!readSource.isAlive()) {
                 String heartbeatError = "the dbInstance[" + readSource.getConfig().getUrl() + "] can't reach. Please check the dbInstance status";
                 if (dbGroup.getDbGroupConfig().isShowSlaveSql()) {
@@ -129,44 +123,36 @@ public class ShardingNode {
                 AlertUtil.alert(AlarmCode.DB_INSTANCE_CAN_NOT_REACH, Alert.AlertLevel.WARN, heartbeatError, "mysql", readSource.getConfig().getId(), labels);
                 throw new IOException(heartbeatError);
             }
-            return readSource.getConnection(schema, autoCommit, attachment);
+            return readSource.getConnection(schema, attachment);
         } else if (runOnSlave) {
             PhysicalDbInstance source = dbGroup.getRandomAliveReadNode();
             if (source == null) {
                 throw new IllegalArgumentException("no valid dbInstance in dbGroup:" + dbGroup.getGroupName());
             }
-            return source.getConnection(schema, autoCommit, attachment);
+            return source.getConnection(schema, attachment);
         } else {
             checkRequest(schema);
-            if (dbGroup.isInitSuccess()) {
-                PhysicalDbInstance writeSource = dbGroup.getWriteSource();
-                if (writeSource.isReadOnly()) {
-                    throw new IllegalArgumentException("The dbInstance[" + writeSource.getConfig().getUrl() + "] is running with the --read-only option so it cannot execute this statement");
-                }
-                writeSource.setWriteCount();
-                return writeSource.getConnection(schema, autoCommit, attachment);
-            } else {
-                throw new IllegalArgumentException("Invalid dbGroup:" + dbGroup.getGroupName());
-            }
-        }
-    }
-
-    private void getWriteNodeConnection(String schema, boolean autoCommit, ResponseHandler handler, Object attachment) throws IOException {
-        checkRequest(schema);
-        if (dbGroup.isInitSuccess()) {
-            PhysicalDbInstance writeSource = dbGroup.getWriteSource();
-            if (writeSource.isDisabled()) {
-                throw new IllegalArgumentException("[" + writeSource.getDbGroupConfig().getName() + "." + writeSource.getConfig().getInstanceName() + "] is disabled");
-            } else if (writeSource.isFakeNode()) {
-                throw new IllegalArgumentException("[" + writeSource.getDbGroupConfig().getName() + "." + writeSource.getConfig().getInstanceName() + "] is fake node");
-            }
+            PhysicalDbInstance writeSource = dbGroup.getWriteDbInstance();
             if (writeSource.isReadOnly()) {
                 throw new IllegalArgumentException("The dbInstance[" + writeSource.getConfig().getUrl() + "] is running with the --read-only option so it cannot execute this statement");
             }
-            writeSource.setWriteCount();
-            writeSource.getConnection(schema, autoCommit, handler, attachment, true);
-        } else {
-            throw new IllegalArgumentException("Invalid dbGroup:" + dbGroup.getGroupName());
+            writeSource.incrementWriteCount();
+            return writeSource.getConnection(schema, attachment);
         }
+    }
+
+    private void getWriteNodeConnection(String schema, ResponseHandler handler, Object attachment) throws IOException {
+        checkRequest(schema);
+        PhysicalDbInstance writeSource = dbGroup.getWriteDbInstance();
+        if (writeSource.isDisabled()) {
+            throw new IllegalArgumentException("[" + writeSource.getDbGroupConfig().getName() + "." + writeSource.getConfig().getInstanceName() + "] is disabled");
+        } else if (writeSource.isFakeNode()) {
+            throw new IllegalArgumentException("[" + writeSource.getDbGroupConfig().getName() + "." + writeSource.getConfig().getInstanceName() + "] is fake node");
+        }
+        if (writeSource.isReadOnly()) {
+            throw new IllegalArgumentException("The dbInstance[" + writeSource.getConfig().getUrl() + "] is running with the --read-only option so it cannot execute this statement");
+        }
+        writeSource.incrementWriteCount();
+        writeSource.getConnection(schema, handler, attachment, true);
     }
 }

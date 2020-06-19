@@ -8,6 +8,7 @@ package com.actiontech.dble.manager.response;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
+import com.actiontech.dble.backend.pool.PooledEntry;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.manager.ManagerConnection;
 import com.actiontech.dble.net.NIOProcessor;
@@ -101,7 +102,7 @@ public final class ShowBackendOld {
         row.add(LongUtil.toBytes(c.getNetOutBytes()));
         row.add(LongUtil.toBytes((TimeUtil.currentTimeMillis() - c.getStartupTime()) / 1000L));
         row.add(LongUtil.toBytes(c.getLastTime()));
-        boolean isBorrowed = c.isBorrowed();
+        boolean isBorrowed = c.getState() == PooledEntry.STATE_IN_USE;
         row.add(isBorrowed ? "true".getBytes() : "false".getBytes());
         return row;
     }

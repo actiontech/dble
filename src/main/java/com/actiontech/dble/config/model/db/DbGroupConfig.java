@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 package com.actiontech.dble.config.model.db;
@@ -17,7 +18,7 @@ public class DbGroupConfig {
     private int rwSplitMode = PhysicalDbGroup.RW_SPLIT_OFF;
     private final DbInstanceConfig writeInstanceConfig;
     private final DbInstanceConfig[] readInstanceConfigs;
-    private String hearbeatSQL;
+    private String heartbeatSQL;
     private boolean isShowSlaveSql = false;
     private boolean isSelectReadOnlySql = false;
     private int delayThreshold = -1;
@@ -66,13 +67,12 @@ public class DbGroupConfig {
         return readInstanceConfigs;
     }
 
-
-    public String getHearbeatSQL() {
-        return hearbeatSQL;
+    public String getHeartbeatSQL() {
+        return heartbeatSQL;
     }
 
-    public void setHearbeatSQL(String heartbeatSQL) {
-        this.hearbeatSQL = heartbeatSQL;
+    public void setHeartbeatSQL(String heartbeatSQL) {
+        this.heartbeatSQL = heartbeatSQL;
         Matcher matcher = HP_PATTERN_SHOW_SLAVE_STATUS.matcher(heartbeatSQL);
         if (matcher.find()) {
             isShowSlaveSql = true;

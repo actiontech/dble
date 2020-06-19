@@ -56,7 +56,7 @@ public class BaseSelectHandler extends BaseDMLHandler {
         } else {
             ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(rrss.getName());
             //autocommit is session.getWriteSource().isAutocommit() && !session.getWriteSource().isTxStart()
-            final BackendConnection newConn = dn.getConnection(dn.getDatabase(), autocommit, rrss.getRunOnSlave(), rrss);
+            final BackendConnection newConn = dn.getConnection(dn.getDatabase(), rrss.getRunOnSlave(), rrss);
             session.bindConnection(rrss, newConn);
             newConn.setResponseHandler(this);
             ((MySQLConnection) newConn).setRowDataFlowing(true);

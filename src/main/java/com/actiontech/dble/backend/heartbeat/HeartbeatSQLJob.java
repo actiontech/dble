@@ -3,15 +3,15 @@
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
 
-package com.actiontech.dble.sqlengine;
+package com.actiontech.dble.backend.heartbeat;
 
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.net.mysql.ErrorPacket;
 import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
+import com.actiontech.dble.sqlengine.SQLJobHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,10 +28,9 @@ public class HeartbeatSQLJob implements ResponseHandler {
     private AtomicBoolean finished = new AtomicBoolean(false);
     private MySQLHeartbeat heartbeat;
 
-    public HeartbeatSQLJob(MySQLHeartbeat heartbeat, final BackendConnection conn, SQLJobHandler jobHandler) {
+    public HeartbeatSQLJob(MySQLHeartbeat heartbeat, SQLJobHandler jobHandler) {
         super();
         this.sql = heartbeat.getHeartbeatSQL();
-        this.connection = conn;
         this.jobHandler = jobHandler;
         this.heartbeat = heartbeat;
     }
@@ -46,13 +45,26 @@ public class HeartbeatSQLJob implements ResponseHandler {
 
     @Override
     public void connectionAcquired(final BackendConnection conn) {
-        LOGGER.warn("should be not reach here");
+        this.connection = conn;
+        conn.setResponseHandler(this);
+        ((MySQLConnection) conn).setComplexQuery(true);
+        try {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("do heartbeat,conn is " + conn);
+            }
+            conn.query(sql);
+        } catch (Exception e) { // (UnsupportedEncodingException e) {
+            doFinished(true);
+        }
     }
 
     public void execute() {
-        connection.setResponseHandler(this);
-        ((MySQLConnection) connection).setComplexQuery(true);
+        // reset
+        finished.set(false);
         try {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("do heartbeat,conn is " + connection);
+            }
             connection.query(sql);
         } catch (Exception e) { // (UnsupportedEncodingException e) {
             doFinished(true);
@@ -116,9 +128,11 @@ public class HeartbeatSQLJob implements ResponseHandler {
 
     @Override
     public void connectionClose(BackendConnection conn, String reason) {
-        LOGGER.warn("heartbeat conn for sql[" + sql + "] is closed, due to " + reason);
-        heartbeat.setErrorResult("heartbeat conn is closed, due to " + reason);
-        doFinished(true);
+        LOGGER.warn("heartbeat conn for sql[" + sql + "] is closed, due to " + reason + ", we will try immedia");
+        if (heartbeat.isChecking()) {
+            doFinished(false);
+        }
+        heartbeat.getSource().createConnectionSkipPool(null, this);
     }
 
     @Override

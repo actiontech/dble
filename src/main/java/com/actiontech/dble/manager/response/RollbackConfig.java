@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
@@ -256,24 +256,9 @@ public final class RollbackConfig {
         Map<ERTable, Set<ERTable>> erRelations = conf.getBackupErRelations();
         boolean backIsFullyConfiged = conf.backIsFullyConfiged();
         if (conf.canRollbackAll()) {
-            boolean rollbackStatus = true;
-            String errorMsg = null;
             if (conf.isFullyConfigured()) {
                 for (PhysicalDbGroup dn : dbGroups.values()) {
                     dn.init();
-                    if (!dn.isInitSuccess()) {
-                        rollbackStatus = false;
-                        errorMsg = "dbGroup[" + dn.getGroupName() + "] inited failure";
-                        break;
-                    }
-                }
-                // INIT FAILED
-                if (!rollbackStatus) {
-                    for (PhysicalDbGroup dn : dbGroups.values()) {
-                        dn.clearDbInstances("rollbackup config");
-                        dn.stopHeartbeat();
-                    }
-                    throw new Exception(errorMsg);
                 }
             }
             final Map<String, PhysicalDbGroup> cNodes = conf.getDbGroups();
@@ -281,8 +266,7 @@ public final class RollbackConfig {
             boolean result = conf.rollback(users, schemas, shardingNodes, dbGroups, erRelations, backIsFullyConfiged);
             // stop old resource heartbeat
             for (PhysicalDbGroup dn : cNodes.values()) {
-                dn.clearDbInstances("clear old config ");
-                dn.stopHeartbeat();
+                dn.stop("initial failed, rollback up config");
             }
             if (!backIsFullyConfiged) {
                 for (NIOProcessor processor : DbleServer.getInstance().getFrontProcessors()) {

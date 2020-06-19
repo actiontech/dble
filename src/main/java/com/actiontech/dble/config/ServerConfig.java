@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.config;
 
 import com.actiontech.dble.DbleServer;
@@ -20,6 +20,7 @@ import com.actiontech.dble.config.model.user.UserConfig;
 import com.actiontech.dble.config.model.user.UserName;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
+import com.actiontech.dble.meta.ReloadLogHelper;
 import com.actiontech.dble.route.parser.ManagerParseConfig;
 import com.actiontech.dble.route.parser.util.Pair;
 import com.actiontech.dble.server.variables.SystemVariables;
@@ -364,7 +365,8 @@ public class ServerConfig {
             if (recycleDbGroups != null) {
                 for (PhysicalDbGroup oldDbGroup : recycleDbGroups.values()) {
                     if (oldDbGroup != null) {
-                        oldDbGroup.stopHeartbeat();
+                        ReloadLogHelper.info("reload config, recycle old group. old active backend conn will be close", LOGGER);
+                        oldDbGroup.stop("reload config, recycle old group", ((loadAllMode & ManagerParseConfig.OPTF_MODE) != 0));
                     }
                 }
             }
@@ -378,13 +380,13 @@ public class ServerConfig {
             // 1 start heartbeat
             // 2 apply the configure
             //---------------------------------------------------
-            if (changeOrAddDbGroups != null) {
-                for (PhysicalDbGroup newDbGroup : changeOrAddDbGroups.values()) {
-                    if (newDbGroup != null && isFullyConfigured) {
-                        newDbGroup.startHeartbeat();
-                    }
-                }
-            }
+            //            if (changeOrAddDbGroups != null) {
+            //                for (PhysicalDbGroup newDbGroup : changeOrAddDbGroups.values()) {
+            //                    if (newDbGroup != null && isFullyConfigured) {
+            //                                    newDbGroup.startHeartbeat();
+            //                    }
+            //                }
+            //            }
             this.shardingNodes = newShardingNodes;
             this.dbGroups = newDbGroups;
             this.fullyConfigured = isFullyConfigured;

@@ -758,22 +758,17 @@ public class NonBlockingSession implements Session {
     public void releaseConnection(RouteResultsetNode rrn, boolean debug, final boolean needClose) {
         if (rrn != null) {
             BackendConnection c = target.remove(rrn);
-            if (c != null) {
-                if (debug) {
-                    LOGGER.debug("release connection " + c);
+            if (c != null && !c.isClosed()) {
+                if (source.isFlowControlled()) {
+                    releaseConnectionFromFlowCntrolled(c);
                 }
-                if (!c.isClosed()) {
-                    if (source.isFlowControlled()) {
-                        releaseConnectionFromFlowCntrolled(c);
-                    }
-                    if (c.isAutocommit()) {
-                        c.release();
-                    } else if (needClose) {
-                        //c.rollback();
-                        c.close("the need to be closed");
-                    } else {
-                        c.release();
-                    }
+                if (c.isAutocommit()) {
+                    c.release();
+                } else if (needClose) {
+                    //c.rollback();
+                    c.close("the need to be closed");
+                } else {
+                    c.release();
                 }
             }
         }
@@ -786,13 +781,9 @@ public class NonBlockingSession implements Session {
             if (theCon == con) {
                 iterator.remove();
                 con.release();
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("release connection " + con);
-                }
                 break;
             }
         }
-
     }
 
     public void waitFinishConnection(RouteResultsetNode rrn) {
@@ -862,14 +853,11 @@ public class NonBlockingSession implements Session {
         }
 
         for (Entry<RouteResultsetNode, BackendConnection> en : toKilled.entrySet()) {
-            KillConnectionHandler kill = new KillConnectionHandler(
-                    en.getValue(), this);
+            KillConnectionHandler kill = new KillConnectionHandler(en.getValue(), this);
             ServerConfig conf = DbleServer.getInstance().getConfig();
-            ShardingNode dn = conf.getShardingNodes().get(
-                    en.getKey().getName());
+            ShardingNode dn = conf.getShardingNodes().get(en.getKey().getName());
             try {
-                dn.getConnectionFromSameSource(en.getValue().getSchema(), true, en.getValue(),
-                        kill, en.getKey());
+                dn.getConnectionFromSameSource(en.getValue().getSchema(), en.getValue(), kill, en.getKey());
             } catch (Exception e) {
                 LOGGER.info("get killer connection failed for " + en.getKey(), e);
                 kill.connectionError(e, null);
@@ -915,7 +903,7 @@ public class NonBlockingSession implements Session {
                 ServerConfig conf = DbleServer.getInstance().getConfig();
                 ShardingNode dn = conf.getShardingNodes().get(node.getName());
                 try {
-                    MySQLConnection newConn = (MySQLConnection) dn.getConnection(dn.getDatabase(), errConn.isAutocommit(), false, errConn.getAttachment());
+                    MySQLConnection newConn = (MySQLConnection) dn.getConnection(dn.getDatabase(), false, errConn.getAttachment());
                     newConn.setXaStatus(errConn.getXaStatus());
                     newConn.setSession(this);
                     if (!newConn.setResponseHandler(queryHandler)) {

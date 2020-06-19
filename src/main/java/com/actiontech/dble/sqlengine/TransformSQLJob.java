@@ -49,7 +49,7 @@ public class TransformSQLJob implements ResponseHandler, Runnable {
                 ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), false, true, node, this, node);
             } else {
-                ds.getConnection(databaseName, true, this, null, false);
+                ds.getConnection(databaseName, this, null, false);
             }
         } catch (Exception e) {
             LOGGER.warn("can't get connection", e);

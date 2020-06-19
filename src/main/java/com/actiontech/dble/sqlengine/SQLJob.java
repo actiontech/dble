@@ -69,7 +69,7 @@ public class SQLJob implements ResponseHandler, Runnable, Cloneable {
                 ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), isMustWriteNode, true, node, this, node);
             } else {
-                ds.getConnection(schema, true, this, null, isMustWriteNode);
+                ds.getConnection(schema, this, null, isMustWriteNode);
             }
         } catch (Exception e) {
             LOGGER.warn("can't get connection", e);

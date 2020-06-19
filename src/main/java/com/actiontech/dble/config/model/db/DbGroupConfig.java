@@ -3,7 +3,7 @@
  * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
  * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
  */
-package com.actiontech.dble.config.model;
+package com.actiontech.dble.config.model.db;
 
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.config.util.ConfigException;

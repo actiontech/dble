@@ -211,8 +211,7 @@ public class PoolConfig {
      *                                     will be used while waiting for the
      *                                     Evictor to shut down.
      */
-    public final void setEvictorShutdownTimeoutMillis(
-            final long evictorShutdownTimeoutMillis) {
+    public final void setEvictorShutdownTimeoutMillis(final long evictorShutdownTimeoutMillis) {
         this.evictorShutdownTimeoutMillis = evictorShutdownTimeoutMillis;
     }
 

@@ -7,7 +7,7 @@ import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnectionAuthenticator;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnectionListener;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
-import com.actiontech.dble.config.model.DbInstanceConfig;
+import com.actiontech.dble.config.model.db.DbInstanceConfig;
 import com.actiontech.dble.net.NIOConnector;
 
 import java.io.IOException;

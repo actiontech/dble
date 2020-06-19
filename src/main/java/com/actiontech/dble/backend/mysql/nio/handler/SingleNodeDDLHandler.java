@@ -68,8 +68,7 @@ public class SingleNodeDDLHandler extends SingleNodeHandler {
         boolean executeResponse = conn.syncAndExecute();
         if (executeResponse) {
             DDLTraceManager.getInstance().updateConnectionStatus(session.getSource(), (MySQLConnection) conn, DDLTraceInfo.DDLConnectionStatus.CONN_EXECUTE_SUCCESS);
-            DDLTraceManager.getInstance().updateDDLStatus(DDLTraceInfo.DDLStage.META_UPDATE, session.getSource());
-            //handleSpecial
+            // handleSpecial
             boolean metaInitial = session.handleSpecial(rrs, true, null);
             if (!metaInitial) {
                 DDLTraceManager.getInstance().endDDL(session.getSource(), "ddl end with meta failure");

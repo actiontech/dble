@@ -49,7 +49,7 @@ public class ServerUserAuthenticator extends FrontendAuthenticator {
             sc.setSchema(auth.getDatabase());
             sc.initCharsetIndex(auth.getCharsetIndex());
             sc.setHandler(new ShardingUserCommandHandler(sc));
-            sc.setMultStatementAllow(auth.isMultStatementAllow());
+            sc.setMultiStatementAllow(auth.isMultStatementAllow());
             sc.setClientFlags(auth.getClientFlags());
             boolean clientCompress = Capabilities.CLIENT_COMPRESS == (Capabilities.CLIENT_COMPRESS & auth.getClientFlags());
             boolean usingCompress = SystemConfig.getInstance().getUseCompression() == 1;

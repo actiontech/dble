@@ -6,77 +6,191 @@
 package com.actiontech.dble.backend.datasource;
 
 import com.actiontech.dble.DbleServer;
-import com.actiontech.dble.alarm.AlarmCode;
-import com.actiontech.dble.alarm.Alert;
-import com.actiontech.dble.alarm.AlertUtil;
-import com.actiontech.dble.alarm.ToResolveContainer;
 import com.actiontech.dble.backend.BackendConnection;
-import com.actiontech.dble.backend.ConMap;
-import com.actiontech.dble.backend.ConQueue;
 import com.actiontech.dble.backend.heartbeat.MySQLHeartbeat;
 import com.actiontech.dble.backend.mysql.nio.handler.ConnectionHeartBeatHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.DelegateResponseHandler;
-import com.actiontech.dble.backend.mysql.nio.handler.NewConnectionRespHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
+import com.actiontech.dble.backend.pool.ConnectionPool;
+import com.actiontech.dble.backend.pool.PooledEntry;
+import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.db.DbGroupConfig;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
+import com.actiontech.dble.singleton.Scheduler;
 import com.actiontech.dble.util.StringUtil;
 import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public abstract class PhysicalDbInstance {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PhysicalDbInstance.class);
 
     private final String name;
-    private int size;
     private final DbInstanceConfig config;
-    private final ConMap conMap = new ConMap();
-    private MySQLHeartbeat heartbeat;
     private volatile boolean readInstance;
-    private volatile long heartbeatRecoveryTime;
+
     private final DbGroupConfig dbGroupConfig;
     private PhysicalDbGroup dbGroup;
-    private final AtomicInteger connectionCount;
-    private volatile AtomicBoolean disabled;
-    private volatile boolean autocommitSynced = false;
-    private volatile boolean isolationSynced = false;
+    private final AtomicBoolean disabled;
+    private String dsVersion;
+    private volatile boolean autocommitSynced;
+    private volatile boolean isolationSynced;
     private volatile boolean testConnSuccess = false;
     private volatile boolean readOnly = false;
     private volatile boolean fakeNode = false;
-    private AtomicLong readCount = new AtomicLong(0);
-    private AtomicLong writeCount = new AtomicLong(0);
-    private String dsVersion;
+    private final LongAdder readCount = new LongAdder();
+    private final LongAdder writeCount = new LongAdder();
+
+    private final AtomicBoolean isInitial = new AtomicBoolean(false);
+
+    // connection pool
+    private ConnectionPool connectionPool;
+    protected MySQLHeartbeat heartbeat;
+    private volatile long heartbeatRecoveryTime;
+
 
     public PhysicalDbInstance(DbInstanceConfig config, DbGroupConfig dbGroupConfig, boolean isReadNode) {
-        this.size = config.getMaxCon();
         this.config = config;
         this.name = config.getInstanceName();
         this.dbGroupConfig = dbGroupConfig;
-        heartbeat = this.createHeartBeat();
+        this.heartbeat = new MySQLHeartbeat(this);
         this.readInstance = isReadNode;
-        this.connectionCount = new AtomicInteger();
         this.disabled = new AtomicBoolean(config.isDisabled());
+        this.connectionPool = new ConnectionPool(config, this);
     }
 
     public PhysicalDbInstance(PhysicalDbInstance org) {
-        this.size = org.size;
         this.config = org.config;
         this.name = org.name;
         this.dbGroupConfig = org.dbGroupConfig;
         this.readInstance = org.readInstance;
-        this.connectionCount = org.connectionCount;
         this.disabled = new AtomicBoolean(org.disabled.get());
+    }
+
+    public void init() {
+        if (disabled.get() || fakeNode) {
+            LOGGER.info("{} is disabled or a fakeNode, skip initialization", name);
+            return;
+        }
+
+        if (!isInitial.compareAndSet(false, true)) {
+            LOGGER.info("{} has been initialized, skip", name);
+            return;
+        }
+
+        int size = config.getMinCon();
+        String[] physicalSchemas = dbGroup.getSchemas();
+        int initSize = physicalSchemas.length + 1;
+        if (size < initSize) {
+            LOGGER.warn("For db instance[{}], minIdle is less than (the count of schema +1), so dble will create at least 1 conn for every schema and empty schema, " +
+                    "minCon size before:{}, now:{}", new Object[]{name, size, initSize});
+            config.setMinCon(initSize);
+        }
+
+        size = config.getMaxCon();
+        if (size < initSize) {
+            LOGGER.warn("For db instance[{}], maxTotal[{}] is less than the initSize of dataHost,change the maxCon into {}", new Object[]{name, size, initSize});
+            config.setMaxCon(initSize);
+        }
+
+        this.connectionPool.startEvictor();
+        startHeartbeat();
+    }
+
+    public void createConnectionSkipPool(String schema, ResponseHandler handler) {
+        connectionPool.newConnection(schema, handler);
+    }
+
+    public void getConnection(String schema, final ResponseHandler handler,
+                              final Object attachment, boolean mustWrite) throws IOException {
+
+        if (mustWrite && readInstance) {
+            throw new IOException("primary dbInstance switched");
+        }
+
+        DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                BackendConnection con = null;
+                try {
+                    con = getConnection(schema, config.getPoolConfig().getConnectionTimeout());
+                } catch (IOException e) {
+                    handler.connectionError(e, con);
+                    return;
+                }
+                con.setAttachment(attachment);
+                handler.connectionAcquired(con);
+            }
+        });
+    }
+
+    // execute in complex executor guard by business executor
+    public BackendConnection getConnection(String schema, final Object attachment) throws IOException {
+        BackendConnection con = getConnection(schema, config.getPoolConfig().getConnectionTimeout());
+        con.setAttachment(attachment);
+        return con;
+    }
+
+    public BackendConnection getConnection(final String schema, final long hardTimeout) throws IOException {
+        if (this.connectionPool == null) {
+            throw new IOException("connection pool isn't initalized");
+        }
+
+        if (disabled.get()) {
+            throw new IOException("the dbInstance[" + name + "] is disabled.");
+        }
+
+        final long startTime = System.currentTimeMillis();
+
+        try {
+            long timeout = hardTimeout;
+            do {
+                final BackendConnection conn = this.connectionPool.borrow(schema, timeout, MILLISECONDS);
+                if (conn == null) {
+                    break; // We timed out... break and throw exception
+                }
+
+                final long now = System.currentTimeMillis();
+                if (config.getPoolConfig().getTestOnBorrow()) {
+                    ConnectionHeartBeatHandler heartBeatHandler = new ConnectionHeartBeatHandler(conn, true, connectionPool);
+                    boolean isFinished = heartBeatHandler.ping(config.getPoolConfig().getConnectionHeartbeatTimeout());
+                    if (!isFinished) {
+                        conn.close("connection test fail after create"); // Throw away the dead connection (passed max age or failed alive test)
+                        timeout = hardTimeout - (now - startTime);
+                        continue;
+                    }
+                }
+
+                if (!StringUtil.equals(conn.getSchema(), schema)) {
+                    // need do sharding syn in before sql send
+                    conn.setSchema(schema);
+                }
+                return conn;
+
+            } while (timeout > 0L);
+        } catch (InterruptedException e) {
+            throw new IOException(name + " - Interrupted during connection acquisition", e);
+        }
+
+        throw new IOException(name + " - Connection is not available, request timed out after " + (System.currentTimeMillis() - startTime) + "ms.");
+    }
+
+    public void release(BackendConnection connection) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("release {}", connection);
+        }
+        connectionPool.release(connection);
+    }
+
+    public void close(BackendConnection connection) {
+        connectionPool.close(connection);
     }
 
     public void setTestConnSuccess(boolean testConnSuccess) {
@@ -95,20 +209,27 @@ public abstract class PhysicalDbInstance {
         this.readOnly = readOnly;
     }
 
-    public long getReadCount() {
-        return readCount.get();
+    public long getHeartbeatRecoveryTime() {
+        return heartbeatRecoveryTime;
     }
 
-    void setReadCount() {
-        readCount.addAndGet(1);
+    public void setHeartbeatRecoveryTime(long heartbeatRecoveryTime) {
+        this.heartbeatRecoveryTime = heartbeatRecoveryTime;
     }
 
-    public long getWriteCount() {
-        return writeCount.get();
+    public long getCount(boolean isRead) {
+        if (isRead) {
+            return readCount.longValue();
+        }
+        return writeCount.longValue();
     }
 
-    void setWriteCount() {
-        writeCount.addAndGet(1);
+    public void incrementReadCount() {
+        readCount.increment();
+    }
+
+    public void incrementWriteCount() {
+        writeCount.increment();
     }
 
     public DbGroupConfig getDbGroupConfig() {
@@ -132,10 +253,6 @@ public abstract class PhysicalDbInstance {
         this.readInstance = value;
     }
 
-    public int getSize() {
-        return size;
-    }
-
     public void setDbGroup(PhysicalDbGroup dbGroup) {
         this.dbGroup = dbGroup;
     }
@@ -143,8 +260,6 @@ public abstract class PhysicalDbInstance {
     public PhysicalDbGroup getDbGroup() {
         return dbGroup;
     }
-
-    public abstract MySQLHeartbeat createHeartBeat();
 
     public boolean isAutocommitSynced() {
         return autocommitSynced;
@@ -162,10 +277,6 @@ public abstract class PhysicalDbInstance {
         this.isolationSynced = isolationSynced;
     }
 
-    public void setSize(int size) {
-        this.size = size;
-    }
-
     public String getDsVersion() {
         return dsVersion;
     }
@@ -178,44 +289,8 @@ public abstract class PhysicalDbInstance {
         return name;
     }
 
-    public long getExecuteCount() {
-        long executeCount = 0;
-        for (ConQueue queue : conMap.getAllConQueue()) {
-            executeCount += queue.getExecuteCount();
-
-        }
-        return executeCount;
-    }
-
-    public long getExecuteCountForSchema(String schema) {
-        ConQueue queue = conMap.getSchemaConQueue(schema);
-        return queue == null ? 0 : queue.getExecuteCount();
-
-    }
-
-    public int getActiveCountForSchema(String schema) {
-        return conMap.getActiveCountForSchema(schema, this);
-    }
-
-    public int getIdleCountForSchema(String schema) {
-        ConQueue queue = conMap.getSchemaConQueue(schema);
-        if (queue == null) {
-            return 0;
-        } else {
-            return queue.getAutoCommitCons().size() + queue.getManCommitCons().size();
-        }
-    }
-
     public MySQLHeartbeat getHeartbeat() {
         return heartbeat;
-    }
-
-    public int getIdleCount() {
-        int total = 0;
-        for (ConQueue queue : conMap.getAllConQueue()) {
-            total += queue.getAutoCommitCons().size() + queue.getManCommitCons().size();
-        }
-        return total;
     }
 
     public boolean isSalveOrRead() {
@@ -226,414 +301,127 @@ public abstract class PhysicalDbInstance {
         }
     }
 
-    void connectionHeatBeatCheck(long conHeartBeatPeriod) {
-
-        long hearBeatTime = TimeUtil.currentTimeMillis() - conHeartBeatPeriod;
-
-        for (ConQueue queue : conMap.getAllConQueue()) {
-            longIdleHeartBeat(queue.getAutoCommitCons(), hearBeatTime);
-            longIdleHeartBeat(queue.getManCommitCons(), hearBeatTime);
-        }
-
-        //the following is about the idle connection number control
-        int idleCons = getIdleCount();
-        int totalCount = this.getTotalConCount();
-        int createCount = (config.getMinCon() - idleCons) / 3;
-
-        // create if idle too little
-        if ((createCount > 0) && totalCount < size) {
-            createByIdleLittle(idleCons, createCount);
-        } else if (idleCons > config.getMinCon()) {
-            closeByIdleMany(idleCons - config.getMinCon(), idleCons);
-        }
-    }
-
-
-    /**
-     * check if the connection is not be used for a while & do connection heart beat
-     *
-     * @param linkedQueue
-     * @param hearBeatTime
-     */
-    private void longIdleHeartBeat(ConcurrentLinkedQueue<BackendConnection> linkedQueue, long hearBeatTime) {
-        long length = linkedQueue.size();
-        for (int i = 0; i < length; i++) {
-            BackendConnection con = linkedQueue.poll();
-            if (con == null) {
-                break;
-            } else if (con.isClosed()) {
-                continue;
-            } else if (con.getLastTime() < hearBeatTime) { //if the connection is idle for a long time
-                con.setBorrowed(true);
-                new ConnectionHeartBeatHandler().doHeartBeat(con);
-            } else {
-                linkedQueue.offer(con);
-                break;
-            }
-        }
-    }
-
-
-    private void closeByIdleMany(int idleCloseCount, int idleCons) {
-        LOGGER.info("too many ilde cons ,close some for datasouce  " + name + " want close :" + idleCloseCount + " total idle " + idleCons);
-        List<BackendConnection> readyCloseCons = new ArrayList<BackendConnection>(idleCloseCount);
-        for (ConQueue queue : conMap.getAllConQueue()) {
-            int closeNumber = (queue.getManCommitCons().size() + queue.getAutoCommitCons().size()) * idleCloseCount / idleCons;
-            readyCloseCons.addAll(queue.getIdleConsToClose(closeNumber));
-        }
-
-        for (BackendConnection idleCon : readyCloseCons) {
-            if (idleCon.isBorrowed()) {
-                LOGGER.info("find idle con is using " + idleCon);
-            }
-            idleCon.close("too many idle con");
-        }
-    }
-
-    private void createByIdleLittle(int idleCons, int createCount) {
-        LOGGER.info("create connections ,because idle connection not enough ,cur is " +
-                idleCons + ", minCon is " + this.getConfig().getMinCon() + " for " + name);
-
-        final String[] schemas = dbGroup.getSchemas();
-        for (int i = 0; i < createCount; i++) {
-            NewConnectionRespHandler simpleHandler = new NewConnectionRespHandler();
-            try {
-                if (!disabled.get() && this.createNewCount()) {
-                    // creat new connection
-                    this.createNewConnection(simpleHandler, null, schemas[i % schemas.length], false);
-                    simpleHandler.getBackConn().release();
-                } else {
-                    break;
-                }
-                if (ToResolveContainer.CREATE_CONN_FAIL.contains(this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName())) {
-                    Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
-                    AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", this.getConfig().getId(),
-                            labels, ToResolveContainer.CREATE_CONN_FAIL, this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
-                }
-            } catch (IOException e) {
-                String errMsg = "create connection err:";
-                LOGGER.warn(errMsg, e);
-                Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
-                AlertUtil.alert(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, errMsg + e.getMessage(), "mysql", this.getConfig().getId(), labels);
-                ToResolveContainer.CREATE_CONN_FAIL.add(this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
-            }
-        }
-    }
-
-    public int getTotalConCount() {
-        return this.connectionCount.get();
-    }
-
-    private boolean createNewCount() {
-        int result = this.connectionCount.incrementAndGet();
-        if (result > size) {
-            this.connectionCount.decrementAndGet();
-            return false;
-        }
-        return true;
-    }
-
-    public void clearCons(String reason) {
-        this.conMap.clearConnections(reason, this);
-    }
-
-
-    void startHeartbeat() {
-        if (!this.isDisabled() && !this.isFakeNode()) {
-            heartbeat.start();
-            heartbeat.heartbeat();
-        }
-    }
-
-    void stopHeartbeat() {
-        heartbeat.stop();
-    }
-
-    void doHeartbeat() {
-        if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
-            return;
-        }
-        if (!this.isDisabled() && !this.isFakeNode()) {
-            heartbeat.heartbeat();
-        }
-    }
-
-    private BackendConnection takeCon(BackendConnection conn, String schema) {
-        conn.setBorrowed(true);
-
-        if (!StringUtil.equals(conn.getSchema(), schema)) {
-            // need do sharding syn in before sql send
-            conn.setSchema(schema);
-        }
-        if (schema != null) {
-            ConQueue queue = conMap.createAndGetSchemaConQueue(schema);
-            queue.incExecuteCount();
-        }
-        // update last time, the schedule job will not close it
-        conn.setLastTime(System.currentTimeMillis());
-        return conn;
-    }
-
-    private void takeCon(BackendConnection conn,
-                         final ResponseHandler handler, final Object attachment,
-                         String schema) {
-        if (ToResolveContainer.CREATE_CONN_FAIL.contains(this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName())) {
-            Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
-            AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", this.getConfig().getId(), labels,
-                    ToResolveContainer.CREATE_CONN_FAIL, this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
-        }
-        takeCon(conn, schema);
-        conn.setAttachment(attachment);
-        handler.connectionAcquired(conn);
-    }
-
-    private void createNewConnection(final ResponseHandler handler, final Object attachment,
-                                     final String schema, final boolean mustWrite) {
-        // aysn create connection
-        DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
-            public void run() {
-                try {
-                    createNewConnection(new DelegateResponseHandler(handler) {
-                        @Override
-                        public void connectionError(Throwable e, BackendConnection conn) {
-                            Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", dbGroupConfig.getName() + "-" + config.getInstanceName());
-                            AlertUtil.alert(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "createNewConn Error" + e.getMessage(), "mysql", config.getId(), labels);
-                            ToResolveContainer.CREATE_CONN_FAIL.add(dbGroupConfig.getName() + "-" + config.getInstanceName());
-                            handler.connectionError(e, conn);
-                        }
-
-                        @Override
-                        public void connectionAcquired(BackendConnection conn) {
-                            if (disabled.get()) {
-                                handler.connectionError(new IOException("dbInstance disabled"), conn);
-                                conn.close("disabled dbInstance");
-                            } else if (mustWrite && isReadInstance()) {
-                                handler.connectionError(new IOException("primary dbInstance switched"), conn);
-                            } else {
-                                takeCon(conn, handler, attachment, schema);
-                            }
-                        }
-                    }, schema);
-                } catch (IOException e) {
-                    handler.connectionError(e, null);
-                }
-            }
-        });
-    }
-
-    protected abstract void createNewConnection(ResponseHandler handler, String schema) throws IOException;
-
-    public void getNewConnection(String schema, final ResponseHandler handler,
-                                 final Object attachment, boolean mustWrite, boolean forceCreate) throws IOException {
-        if (disabled.get()) {
-            throw new IOException("the dbInstance is disabled [" + this.name + "]");
-        } else if (!this.createNewCount()) {
-            if (forceCreate) {
-                this.connectionCount.incrementAndGet();
-                LOGGER.warn("connection pool [" + dbGroupConfig.getName() + "." + this.name + "] has reached maxCon, but we still try to create new connection for important task");
-                createNewConnection(handler, attachment, schema, mustWrite);
-            } else {
-                String maxConError = "the max active Connections size can not be max than maxCon for dbInstance[" + this.getDbGroupConfig().getName() + "." + this.getName() + "]";
-                LOGGER.warn(maxConError);
-                Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
-                AlertUtil.alert(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, maxConError, "dble", this.getConfig().getId(), labels);
-                ToResolveContainer.REACH_MAX_CON.add(this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
-                throw new IOException(maxConError);
-            }
-        } else { // create connection
-            if (ToResolveContainer.REACH_MAX_CON.contains(this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName())) {
-                Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
-                AlertUtil.alertResolve(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, "dble", this.getConfig().getId(), labels,
-                        ToResolveContainer.REACH_MAX_CON, this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
-
-            }
-            LOGGER.info("no idle connection in pool [" + dbGroupConfig.getName() + "." + this.name + "],create new connection for schema: " + schema);
-            createNewConnection(handler, attachment, schema, mustWrite);
-        }
-    }
-
-    public void getConnection(String schema, boolean autocommit, final ResponseHandler handler,
-                              final Object attachment, boolean mustWrite) throws IOException {
-        BackendConnection con = this.conMap.tryTakeCon(schema, autocommit);
-        if (con != null) {
-            takeCon(con, handler, attachment, schema);
-        } else {
-            getNewConnection(schema, handler, attachment, mustWrite, false);
-        }
-    }
-
-
-    public BackendConnection getConnection(String schema, boolean autocommit, final Object attachment) throws IOException {
-        BackendConnection con = this.conMap.tryTakeCon(schema, autocommit);
-        if (con == null) {
-            if (disabled.get()) {
-                throw new IOException("the dbInstance is disabled [" + this.name + "]");
-            } else if (!this.createNewCount()) {
-                String maxConError = "the max active Connections size can not be max than maxCon for dbInstance[" + this.getDbGroupConfig().getName() + "." + this.getName() + "]";
-                LOGGER.warn(maxConError);
-                Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
-                AlertUtil.alert(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, maxConError, "dble", this.getConfig().getId(), labels);
-                ToResolveContainer.REACH_MAX_CON.add(this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
-                throw new IOException(maxConError);
-            } else { // create connection
-                if (ToResolveContainer.REACH_MAX_CON.contains(this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName())) {
-                    Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
-                    AlertUtil.alertResolve(AlarmCode.REACH_MAX_CON, Alert.AlertLevel.WARN, "dble", this.getConfig().getId(), labels,
-                            ToResolveContainer.REACH_MAX_CON, this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
-                }
-                LOGGER.info("no ilde connection in pool,create new connection for " + this.name + " of schema " + schema);
-                con = createNewBackendConnection(schema);
-            }
-        }
-        con = takeCon(con, schema);
-        con.setAttachment(attachment);
-        return con;
-    }
-
-    public BackendConnection getConnectionForHeartbeat(String schema) throws IOException {
-        BackendConnection con;
-        if (!disabled.get()) {
-            if (!this.createNewCount()) {
-                ConQueue queue = conMap.getSchemaConQueue(null);
-                BackendConnection conIdle = queue.takeIdleCon(true);
-                this.connectionCount.incrementAndGet();
-                if (conIdle != null) {
-                    conIdle.close("create new connection for heartbeat, so close an old idle con");
-                } else {
-                    LOGGER.warn("now connection in pool and reached maxCon, but still try to create new connection for heartbeat ");
-                }
-                con = createNewBackendConnection(schema);
-            } else { // create connection
-                LOGGER.info("create new connection for heartbeat ");
-                con = createNewBackendConnection(schema);
-            }
-        } else {
-            return null;
-        }
-        con = takeCon(con, schema);
-        con.setAttachment(null);
-        return con;
-    }
-
-    private BackendConnection createNewBackendConnection(String schema) throws IOException {
-        BackendConnection con;
-        try {
-            NewConnectionRespHandler simpleHandler = new NewConnectionRespHandler();
-            this.createNewConnection(simpleHandler, schema);
-            con = simpleHandler.getBackConn();
-            if (ToResolveContainer.CREATE_CONN_FAIL.contains(this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName())) {
-                Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
-                AlertUtil.alertResolve(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "mysql", this.getConfig().getId(), labels,
-                        ToResolveContainer.CREATE_CONN_FAIL, this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
-            }
-        } catch (IOException e) {
-            Map<String, String> labels = AlertUtil.genSingleLabel("dbInstance", this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
-            AlertUtil.alert(AlarmCode.CREATE_CONN_FAIL, Alert.AlertLevel.WARN, "createNewConn Error" + e.getMessage(), "mysql", this.getConfig().getId(), labels);
-            ToResolveContainer.CREATE_CONN_FAIL.add(this.getDbGroupConfig().getName() + "-" + this.getConfig().getInstanceName());
-            throw e;
-        }
-        return con;
-    }
-
-    void initMinConnection(String schema, boolean autocommit, final ResponseHandler handler,
-                           final Object attachment) throws IOException {
-        LOGGER.info("create new connection for " +
-                this.name + " of schema " + schema);
-        if (this.createNewCount()) {
-            createNewConnection(handler, attachment, schema, false);
-        }
-    }
-
-    private void returnCon(BackendConnection c) {
-        if (c.isClosed()) {
-            return;
-        }
-
-        c.setAttachment(null);
-        c.setBorrowed(false);
-        c.setLastTime(TimeUtil.currentTimeMillis());
-
-        String errMsg = null;
-
-        boolean ok;
-        ConQueue queue = this.conMap.createAndGetSchemaConQueue(c.getSchema());
-        if (c.isAutocommit()) {
-            ok = queue.getAutoCommitCons().offer(c);
-        } else {
-            ok = queue.getManCommitCons().offer(c);
-        }
-        if (!ok) {
-            errMsg = "can't return to pool ,so close con " + c;
-        }
-        if (errMsg != null) {
-            LOGGER.info(errMsg);
-            c.close(errMsg);
-        }
-    }
-
-    public void releaseChannel(BackendConnection c) {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("release channel " + c);
-        }
-        // release connection
-        returnCon(c);
-    }
-
-    public void connectionClosed(BackendConnection conn) {
-        //only used in mysqlConneciton synchronized function
-        this.connectionCount.decrementAndGet();
-        ConQueue queue = this.conMap.getSchemaConQueue(conn.getSchema());
-        if (queue != null) {
-            queue.removeCon(conn);
-        }
-    }
-
     /**
      * used for init or reload
      */
     public abstract boolean testConnection() throws IOException;
 
-    public long getHeartbeatRecoveryTime() {
-        return heartbeatRecoveryTime;
-    }
-
-    public void setHeartbeatRecoveryTime(long heartbeatRecoveryTime) {
-        this.heartbeatRecoveryTime = heartbeatRecoveryTime;
-    }
-
     public DbInstanceConfig getConfig() {
         return config;
     }
 
+    boolean canSelectAsReadNode() {
+        Integer slaveBehindMaster = heartbeat.getSlaveBehindMaster();
+        int dbSynStatus = heartbeat.getDbSynStatus();
+        if (slaveBehindMaster == null || dbSynStatus == MySQLHeartbeat.DB_SYN_ERROR) {
+            return false;
+        }
+        boolean isSync = dbSynStatus == MySQLHeartbeat.DB_SYN_NORMAL;
+        boolean isNotDelay = slaveBehindMaster < this.dbGroupConfig.getDelayThreshold();
+        return isSync && isNotDelay;
+    }
+
+    void startHeartbeat() {
+        if (this.isDisabled() || this.isFakeNode()) {
+            LOGGER.info("the instance[{}] is disabled or fake node, skip to start heartbeat.", name);
+            return;
+        }
+
+        heartbeat.start();
+        heartbeat.setScheduledFuture(Scheduler.getInstance().getScheduledExecutor().scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                if (DbleServer.getInstance().getConfig().isFullyConfigured()) {
+                    if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
+                        return;
+                    }
+
+                    heartbeat.heartbeat();
+                }
+            }
+        }, 0L, SystemConfig.getInstance().getShardingNodeHeartbeatPeriod(), TimeUnit.MILLISECONDS));
+    }
+
+    void stopHeartbeat(String reason) {
+        heartbeat.stop(reason);
+    }
+
+    public void stop(String reason, boolean closeFront) {
+        heartbeat.stop(reason);
+        connectionPool.stop(reason, closeFront);
+    }
+
+    public void closeAllConnection(String reason) {
+        this.connectionPool.closeAllConnections(reason);
+    }
+
     public boolean isAlive() {
-        return !disabled.get() && !isFakeNode() && ((heartbeat.getStatus() == MySQLHeartbeat.INIT_STATUS && testConnSuccess) || heartbeat.isHeartBeatOK());
-    }
-
-
-    public boolean equals(PhysicalDbInstance dbInstance) {
-        return dbInstance.getConfig().getUser().equals(this.getConfig().getUser()) && dbInstance.getConfig().getUrl().equals(this.getConfig().getUrl()) &&
-                dbInstance.getConfig().getPassword().equals(this.getConfig().getPassword()) && dbInstance.getConfig().getInstanceName().equals(this.getConfig().getInstanceName()) &&
-                dbInstance.isDisabled() == this.isDisabled() && dbInstance.getConfig().getReadWeight() == this.getConfig().getReadWeight();
-    }
-
-    public boolean equals(Object obj) {
-        return super.equals(obj);
-    }
-
-    public int hashCode() {
-        return super.hashCode();
+        return !disabled.get() && !isFakeNode() && heartbeat.isHeartBeatOK();
     }
 
     public boolean isDisabled() {
         return disabled.get();
     }
 
-    boolean setDisabled(boolean value) {
-        if (value) {
-            return disabled.compareAndSet(false, true);
-        } else {
-            return disabled.compareAndSet(true, false);
+    public void setDisabled(boolean isDisabled) {
+        disabled.set(isDisabled);
+    }
+
+    public boolean disable(String reason) {
+        if (disabled.compareAndSet(false, true)) {
+            stopHeartbeat(reason);
+            connectionPool.closeAllConnections(reason);
+            return true;
         }
+        return false;
+    }
+
+    public boolean enable() {
+        if (disabled.compareAndSet(true, false)) {
+            startHeartbeat();
+            return true;
+        }
+        return false;
+    }
+
+    public final int getActiveConnections() {
+        return connectionPool.getCount(PooledEntry.STATE_IN_USE);
+    }
+
+    public final int getActiveConnections(String schema) {
+        return connectionPool.getCount(schema, PooledEntry.STATE_IN_USE);
+    }
+
+    public final int getIdleConnections() {
+        return connectionPool.getCount(PooledEntry.STATE_NOT_IN_USE);
+    }
+
+    public final int getIdleConnections(String schema) {
+        return connectionPool.getCount(schema, PooledEntry.STATE_NOT_IN_USE);
+    }
+
+    public final int getTotalConnections() {
+        return connectionPool.size() - connectionPool.getCount(PooledEntry.STATE_REMOVED);
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (!(other instanceof PhysicalDbInstance)) {
+            return false;
+        }
+
+        PhysicalDbInstance dbInstance = (PhysicalDbInstance) other;
+        return dbInstance.getConfig().getUser().equals(this.getConfig().getUser()) && dbInstance.getConfig().getUrl().equals(this.getConfig().getUrl()) &&
+                dbInstance.getConfig().getPassword().equals(this.getConfig().getPassword()) && dbInstance.getConfig().getInstanceName().equals(this.getConfig().getInstanceName()) &&
+                dbInstance.isDisabled() == this.isDisabled() && dbInstance.getConfig().getReadWeight() == this.getConfig().getReadWeight();
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
     }
 
     @Override
@@ -641,7 +429,7 @@ public abstract class PhysicalDbInstance {
         return "dbInstance[name=" + name +
                 ",disabled=" +
                 disabled.toString() + ",maxCon=" +
-                size + "]";
+                config.getMaxCon() + "]";
     }
 
 }

@@ -47,8 +47,8 @@ public class SetTestJob implements ResponseHandler, Runnable {
         try {
             Map<String, PhysicalDbGroup> dbGroups = DbleServer.getInstance().getConfig().getDbGroups();
             for (PhysicalDbGroup dbGroup : dbGroups.values()) {
-                if (dbGroup.getWriteSource().isAlive()) {
-                    dbGroup.getWriteSource().getConnection(databaseName, true, this, null, false);
+                if (dbGroup.getWriteDbInstance().isAlive()) {
+                    dbGroup.getWriteDbInstance().getConnection(databaseName, this, null, false);
                     sendTest = true;
                     break;
                 }

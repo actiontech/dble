@@ -72,7 +72,7 @@ public final class DatabaseHandler {
         final AtomicInteger numberCount = new AtomicInteger(shardingNodes.size());
         for (final String shardingNode : shardingNodes) {
             ShardingNode dn = allShardingNodes.get(shardingNode);
-            final PhysicalDbInstance ds = dn.getDbGroup().getWriteSource();
+            final PhysicalDbInstance ds = dn.getDbGroup().getWriteDbInstance();
             final String schema = dn.getDatabase();
             OneRawSQLQueryResultHandler resultHandler = new OneRawSQLQueryResultHandler(new String[0], new SQLQueryResultListener<SQLQueryResult<Map<String, String>>>() {
                 @Override

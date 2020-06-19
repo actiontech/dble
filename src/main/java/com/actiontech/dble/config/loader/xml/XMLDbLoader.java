@@ -8,25 +8,25 @@ package com.actiontech.dble.config.loader.xml;
 import com.actiontech.dble.backend.datasource.PhysicalDbGroup;
 import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.nio.MySQLInstance;
+import com.actiontech.dble.backend.pool.PoolConfig;
 import com.actiontech.dble.config.ProblemReporter;
 import com.actiontech.dble.config.Versions;
-import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.db.DbGroupConfig;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ConfigUtil;
+import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.manager.handler.DbGroupHAHandler;
 import com.actiontech.dble.util.DecryptUtil;
 import com.actiontech.dble.util.ResourceUtil;
+import com.actiontech.dble.util.StringUtil;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -99,7 +99,7 @@ public class XMLDbLoader {
         }
     }
 
-    private void loadDbGroups(Element root) {
+    private void loadDbGroups(Element root) throws InvocationTargetException, IllegalAccessException {
         NodeList list = root.getElementsByTagName("dbGroup");
         for (int i = 0, n = list.getLength(); i < n; ++i) {
             Set<String> instanceNames = new HashSet<>();
@@ -159,14 +159,14 @@ public class XMLDbLoader {
             DbGroupConfig dbGroupConf = new DbGroupConfig(name, writeDbConf, readDbConfList, delayThreshold);
 
             dbGroupConf.setRwSplitMode(rwSplitMode);
-            dbGroupConf.setHearbeatSQL(heartbeatSQL);
+            dbGroupConf.setHeartbeatSQL(heartbeatSQL);
             dbGroupConf.setHeartbeatTimeout(Integer.parseInt(strHBTimeout) * 1000);
             dbGroupConf.setErrorRetryCount(Integer.parseInt(strHBErrorRetryCount));
             dbGroupConfigs.put(dbGroupConf.getName(), dbGroupConf);
         }
     }
 
-    private DbInstanceConfig createDbInstanceConf(String dbGroup, Element node) {
+    private DbInstanceConfig createDbInstanceConf(String dbGroup, Element node) throws InvocationTargetException, IllegalAccessException {
 
         String name = node.getAttribute("name");
         String nodeUrl = node.getAttribute("url");
@@ -176,7 +176,7 @@ public class XMLDbLoader {
         if (!nameMatcher.matches()) {
             throw new ConfigException("dbInstance name " + name + " show be use " + DbGroupHAHandler.DB_NAME_FORMAT + "!");
         }
-        if (empty(name) || empty(nodeUrl) || empty(user)) {
+        if (StringUtil.isEmpty(name) || StringUtil.isEmpty(nodeUrl) || StringUtil.isEmpty(user)) {
             throw new ConfigException(
                     "dbGroup " + dbGroup +
                             " define error,some attributes of this element is empty: " +
@@ -190,29 +190,34 @@ public class XMLDbLoader {
         password = DecryptUtil.dbHostDecrypt(usingDecrypt, name, user, password);
         String disabledStr = ConfigUtil.checkAndGetAttribute(node, "disabled", "false", problemReporter);
         boolean disabled = Boolean.parseBoolean(disabledStr);
-        String readWeightStr = ConfigUtil.checkAndGetAttribute(node, "readWeight", String.valueOf(PhysicalDbGroup.WEIGHT), problemReporter);
-        int readWeight = Integer.parseInt(readWeightStr);
-        int maxCon = Integer.parseInt(node.getAttribute("maxCon"));
-        int minCon = Integer.parseInt(node.getAttribute("minCon"));
         String primaryStr = ConfigUtil.checkAndGetAttribute(node, "primary", "false", problemReporter);
         boolean primary = Boolean.parseBoolean(primaryStr);
 
         DbInstanceConfig conf = new DbInstanceConfig(name, ip, port, nodeUrl, user, password, disabled, primary);
+        String readWeightStr = ConfigUtil.checkAndGetAttribute(node, "readWeight", String.valueOf(PhysicalDbGroup.WEIGHT), problemReporter);
+        int readWeight = Integer.parseInt(readWeightStr);
+        int maxCon = Integer.parseInt(node.getAttribute("maxCon"));
+        int minCon = Integer.parseInt(node.getAttribute("minCon"));
         conf.setMaxCon(maxCon);
         conf.setMinCon(minCon);
         conf.setReadWeight(readWeight);
         String id = node.getAttribute("id");
-        if (!"".equals(id)) {
-            conf.setId(id);
-        } else {
+        if (StringUtil.isEmpty(id)) {
             conf.setId(name);
+        } else {
+            conf.setId(id);
         }
 
-        return conf;
-    }
+        // init properties of connection pool
+        PoolConfig poolConfig = new PoolConfig();
+        Properties poolProperties = ConfigUtil.loadElements(node);
+        ParameterMapping.mapping(poolConfig, poolProperties, problemReporter);
+        if (poolProperties.size() > 0) {
+            throw new ConfigException("These properties of system are not recognized: " + StringUtil.join(poolProperties.stringPropertyNames(), ","));
+        }
+        conf.setPoolConfig(poolConfig);
 
-    private boolean empty(String dnName) {
-        return dnName == null || dnName.length() == 0;
+        return conf;
     }
 
     private Map<String, PhysicalDbGroup> initDbGroups(Map<String, DbGroupConfig> nodeConf) {
@@ -225,9 +230,7 @@ public class XMLDbLoader {
         return nodes;
     }
 
-    private PhysicalDbInstance createDbInstance(DbGroupConfig conf, DbInstanceConfig node,
-                                                boolean isRead) {
-        node.setIdleTimeout(SystemConfig.getInstance().getIdleTimeout());
+    private PhysicalDbInstance createDbInstance(DbGroupConfig conf, DbInstanceConfig node, boolean isRead) {
         return new MySQLInstance(node, conf, isRead);
     }
 

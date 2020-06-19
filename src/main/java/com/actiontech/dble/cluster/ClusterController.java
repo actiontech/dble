@@ -8,6 +8,7 @@ package com.actiontech.dble.cluster;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ParameterMapping;
+import com.actiontech.dble.config.util.StartProblemReporter;
 import com.actiontech.dble.util.ResourceUtil;
 import com.actiontech.dble.util.StringUtil;
 import com.google.common.base.Strings;
@@ -76,7 +77,7 @@ public final class ClusterController {
         }
         ClusterConfig clusterConfig = ClusterConfig.getInstance();
 
-        ParameterMapping.mapping(clusterConfig, pros, null);
+        ParameterMapping.mapping(clusterConfig, pros, StartProblemReporter.getInstance());
         if (pros.size() > 0) {
             String[] propItem = new String[pros.size()];
             pros.keySet().toArray(propItem);

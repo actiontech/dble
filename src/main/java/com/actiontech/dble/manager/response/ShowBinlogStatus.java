@@ -84,7 +84,7 @@ public final class ShowBinlogStatus {
     public static void execute(ManagerConnection c) {
         long timeout = ClusterConfig.getInstance().getShowBinlogStatusTimeout();
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            if (ClusterConfig.getInstance().isUseZK()) {
+            if (ClusterConfig.getInstance().useZkMode()) {
                 showBinlogWithZK(c, timeout);
             } else {
                 showBinlogWithUcore(c, timeout);

@@ -130,7 +130,7 @@ public final class DryRun {
 
         userCheck(list, serverConfig);
 
-        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().isUseZK()) {
+        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().useZkMode()) {
             ucoreConnectionTest(list);
         } else {
             list.add(new ErrorInfo("Cluster", "NOTICE", "Dble is in single mod"));

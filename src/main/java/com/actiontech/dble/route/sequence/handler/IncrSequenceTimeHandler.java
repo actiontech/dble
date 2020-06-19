@@ -7,8 +7,6 @@ package com.actiontech.dble.route.sequence.handler;
 
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.util.DateUtil;
-import com.actiontech.dble.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,22 +15,10 @@ import java.sql.SQLNonTransientException;
 public final class IncrSequenceTimeHandler implements SequenceHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(IncrSequenceTimeHandler.class);
 
-    private static final long DEFAULT_START_TIMESTAMP = 1288834974657L; //Thu Nov 04 09:42:54 CST 2010
     private IdWorker workey;
 
     public void load(boolean isLowerCaseTableNames) {
-        long startTimeMilliseconds = DEFAULT_START_TIMESTAMP;
-        try {
-            String startTimeStr = ClusterConfig.getInstance().getSequenceStartTime();
-            if (!StringUtil.isEmpty(startTimeStr)) {
-                startTimeMilliseconds = DateUtil.parseDate(startTimeStr).getTime();
-                if (startTimeMilliseconds > System.currentTimeMillis()) {
-                    LOGGER.warn("START_TIME in cluster.cnf mustn't be over than dble start time, starting from 2010-11-04 09:42:54");
-                }
-            }
-        } catch (Exception pe) {
-            LOGGER.warn("START_TIME in cluster.cnf parse exception, starting from 2010-11-04 09:42:54");
-        }
+        long startTimeMilliseconds = ClusterConfig.getInstance().sequenceStartTime();
         workey = new IdWorker(startTimeMilliseconds);
     }
 

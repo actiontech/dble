@@ -28,7 +28,7 @@ public final class SystemConfig {
     }
 
     public static final long DEFAULT_IDLE_TIMEOUT = 30 * 60 * 1000L;
-    private static final String WARNING_FORMAT = "Property [ %s ] '%d' in bootstrap.cnf is illegal, use %d replaced";
+    private static final String WARNING_FORMAT = "Property [ %s ] '%d' in bootstrap.cnf is illegal, you may need use the default value %d replaced";
 
     /*
      * the supported  protocol version of MySQL

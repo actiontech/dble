@@ -131,7 +131,7 @@ public abstract class PhysicalDbInstance {
         });
     }
 
-    // don't block business executor, complex query use
+    // execute in complex executor guard by business executor
     public BackendConnection getConnection(String schema, final Object attachment) throws IOException {
         BackendConnection con = getConnection(schema, config.getPoolConfig().getConnectionTimeout());
         con.setAttachment(attachment);

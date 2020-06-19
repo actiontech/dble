@@ -169,6 +169,7 @@ public class ConnectionPool extends PoolBase implements MySQLConnectionListener 
         totalConnections.decrementAndGet();
     }
 
+    @Override
     public void onHeartbeatSuccess(BackendConnection conn) {
         conn.lazySet(STATE_NOT_IN_USE);
         synchronizer.signal();

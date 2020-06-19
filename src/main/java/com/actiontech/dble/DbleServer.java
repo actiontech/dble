@@ -383,7 +383,7 @@ public final class DbleServer {
 
     private void initOnlineStatus() throws Exception {
         if (ClusterConfig.getInstance().isClusterEnable()) {
-            if (ClusterConfig.getInstance().isUseZK()) {
+            if (ClusterConfig.getInstance().useZkMode()) {
                 ZkConfig.tryDeleteOldOnline();
                 // online
                 ZKUtils.createOnline(ClusterPathUtil.getOnlinePath(), SystemConfig.getInstance().getInstanceName(), OnlineStatus.getInstance());
@@ -519,7 +519,7 @@ public final class DbleServer {
      * covert the collection to array
      **/
     private CoordinatorLogEntry[] getCoordinatorLogEntries() {
-        Repository fileRepository = ClusterConfig.getInstance().isClusterEnable() && ClusterConfig.getInstance().isUseZK() ? new KVStoreRepository() : new FileSystemRepository();
+        Repository fileRepository = ClusterConfig.getInstance().isClusterEnable() && ClusterConfig.getInstance().useZkMode() ? new KVStoreRepository() : new FileSystemRepository();
         Collection<CoordinatorLogEntry> allCoordinatorLogEntries = fileRepository.getAllCoordinatorLogEntries(true);
         fileRepository.close();
         if (allCoordinatorLogEntries == null) {

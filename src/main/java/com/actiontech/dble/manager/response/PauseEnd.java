@@ -45,7 +45,7 @@ public final class PauseEnd {
 
     public static void resume(ManagerConnection c) {
         LOGGER.info("resume start from command");
-        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().isUseZK()) {
+        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().useZkMode()) {
             try {
                 KvBean value = ClusterHelper.getKV(ClusterPathUtil.getPauseShardingNodePath());
                 if (value.getValue() == null || "".equals(value.getValue())) {

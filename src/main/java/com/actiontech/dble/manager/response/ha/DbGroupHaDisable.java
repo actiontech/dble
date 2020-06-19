@@ -66,7 +66,7 @@ public final class DbGroupHaDisable {
 
             int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.LOCAL_CHANGE, HaInfo.HaStartType.LOCAL_COMMAND, disable.group(0));
             if (ClusterConfig.getInstance().isNeedSyncHa()) {
-                if (ClusterConfig.getInstance().isUseZK()) {
+                if (ClusterConfig.getInstance().useZkMode()) {
                     if (!disableWithZK(id, dh, subHostName, mc)) {
                         return;
                     }

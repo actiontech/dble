@@ -5,22 +5,24 @@
 
 package com.actiontech.dble.config.model;
 
+import com.actiontech.dble.config.ProblemReporter;
+import com.actiontech.dble.config.util.StartProblemReporter;
+import com.actiontech.dble.util.DateUtil;
+import com.actiontech.dble.util.StringUtil;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import java.text.ParseException;
 import java.util.Map;
 import java.util.Properties;
 
 import static com.actiontech.dble.cluster.ClusterController.CONFIG_MODE_ZK;
 
 public final class ClusterConfig {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ClusterConfig.class);
     private static final ClusterConfig INSTANCE = new ClusterConfig();
-
+    private ProblemReporter problemReporter = StartProblemReporter.getInstance();
     public static ClusterConfig getInstance() {
         return INSTANCE;
     }
@@ -45,6 +47,8 @@ public final class ClusterConfig {
     private long showBinlogStatusTimeout = 60 * 1000;
     private String sequenceStartTime;
     private boolean sequenceInstanceByZk = true;
+
+    private long startTimeMilliseconds = 1288834974657L; //Thu Nov 04 09:42:54 CST 2010
 
     public boolean isClusterEnable() {
         return clusterEnable;
@@ -111,7 +115,7 @@ public final class ClusterConfig {
         if (showBinlogStatusTimeout > 0) {
             this.showBinlogStatusTimeout = showBinlogStatusTimeout;
         } else {
-            LOGGER.warn("showBinlogStatusTimeout value is " + showBinlogStatusTimeout + ", it will use default value:" + this.showBinlogStatusTimeout);
+            problemReporter.warn("showBinlogStatusTimeout value is " + showBinlogStatusTimeout + ", it will use default value:" + this.showBinlogStatusTimeout);
         }
     }
 
@@ -124,7 +128,7 @@ public final class ClusterConfig {
         if (sequenceHandlerType >= 1 && sequenceHandlerType <= 4) {
             this.sequenceHandlerType = sequenceHandlerType;
         } else {
-            LOGGER.warn("sequenceHandlerType value is " + sequenceHandlerType + ", it will use default value:" + this.sequenceHandlerType);
+            problemReporter.warn("sequenceHandlerType value is " + sequenceHandlerType + ", it will use default value:" + this.sequenceHandlerType);
         }
     }
 
@@ -144,9 +148,24 @@ public final class ClusterConfig {
 
     @SuppressWarnings("unused")
     public void setSequenceStartTime(String sequenceStartTime) {
+        if (!StringUtil.isEmpty(sequenceStartTime)) {
+            long startMilliseconds = 0;
+            try {
+                startMilliseconds = DateUtil.parseDate(sequenceStartTime).getTime();
+            } catch (ParseException e) {
+                problemReporter.warn("sequenceStartTime in cluster.cnf parse exception, starting from 2010-11-04 09:42:54");
+            }
+            if (startMilliseconds > System.currentTimeMillis()) {
+                problemReporter.warn("sequenceStartTime in cluster.cnf mustn't be over than dble start time, starting from 2010-11-04 09:42:54");
+            }
+            this.startTimeMilliseconds = startMilliseconds;
+        }
         this.sequenceStartTime = sequenceStartTime;
     }
 
+    public long sequenceStartTime() {
+        return startTimeMilliseconds;
+    }
 
     @Override
     public String toString() {
@@ -176,7 +195,7 @@ public final class ClusterConfig {
         return props;
     }
 
-    public boolean isUseZK() {
+    public boolean useZkMode() {
         return CONFIG_MODE_ZK.equals(ClusterConfig.getInstance().getClusterMode());
     }
 }

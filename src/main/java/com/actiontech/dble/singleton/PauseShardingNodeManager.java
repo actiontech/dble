@@ -194,7 +194,7 @@ public final class PauseShardingNodeManager {
 
 
     public boolean clusterPauseNotic(String shardingNode, int timeOut, int queueLimit) {
-        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().isUseZK()) {
+        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().useZkMode()) {
             try {
                 uDistributeLock = new ClusterGeneralDistributeLock(ClusterPathUtil.getPauseShardingNodePath(),
                         new PauseInfo(SystemConfig.getInstance().getInstanceName(), shardingNode, PAUSE, timeOut, queueLimit).toString());
@@ -214,7 +214,7 @@ public final class PauseShardingNodeManager {
 
 
     public boolean waitForCluster(ManagerConnection c, long beginTime, long timeOut) throws Exception {
-        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().isUseZK()) {
+        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().useZkMode()) {
             Map<String, String> expectedMap = ClusterToXml.getOnlineMap();
             StringBuffer sb = new StringBuffer();
             for (; ; ) {
@@ -240,7 +240,7 @@ public final class PauseShardingNodeManager {
 
 
     public void resumeCluster() throws Exception {
-        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().isUseZK()) {
+        if (ClusterConfig.getInstance().isClusterEnable() && !ClusterConfig.getInstance().useZkMode()) {
             ClusterHelper.setKV(ClusterPathUtil.getPauseResumePath(),
                     new PauseInfo(SystemConfig.getInstance().getInstanceName(), " ", PauseInfo.RESUME, 0, 0).toString());
 

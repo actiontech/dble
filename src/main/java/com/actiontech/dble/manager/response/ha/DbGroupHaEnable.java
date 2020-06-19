@@ -61,7 +61,7 @@ public final class DbGroupHaEnable {
 
             int id = HaConfigManager.getInstance().haStart(HaInfo.HaStage.LOCAL_CHANGE, HaInfo.HaStartType.LOCAL_COMMAND, enable.group(0));
             if (ClusterConfig.getInstance().isNeedSyncHa()) {
-                if (ClusterConfig.getInstance().isUseZK()) {
+                if (ClusterConfig.getInstance().useZkMode()) {
                     if (!enableWithZK(id, dbGroup, dbInstanceName, mc)) {
                         return;
                     }

@@ -58,7 +58,7 @@ public final class DbGroupHaSwitch {
                 return;
             }
             if (ClusterConfig.getInstance().isNeedSyncHa()) {
-                if (ClusterConfig.getInstance().isUseZK()) {
+                if (ClusterConfig.getInstance().useZkMode()) {
                     if (!switchWithZK(id, dh, masterName, mc)) {
                         return;
                     }

@@ -8,9 +8,7 @@ package com.actiontech.dble.route.sequence.handler;
 
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.util.DateUtil;
 import com.actiontech.dble.util.KVPathUtil;
-import com.actiontech.dble.util.StringUtil;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
@@ -34,7 +32,6 @@ import java.sql.SQLNonTransientException;
  */
 public class DistributedSequenceHandler implements Closeable, SequenceHandler {
     protected static final Logger LOGGER = LoggerFactory.getLogger(DistributedSequenceHandler.class);
-    private static final long DEFAULT_START_TIMESTAMP = 1288834974657L; //Thu Nov 04 09:42:54 CST 2010
     private static DistributedSequenceHandler instance = new DistributedSequenceHandler();
 
     private final long threadIdBits = 9L;
@@ -52,7 +49,7 @@ public class DistributedSequenceHandler implements Closeable, SequenceHandler {
     private long nextID = 0L;
     private static final String INSTANCE_PATH = KVPathUtil.getSequencesInstancePath();
     private volatile boolean ready = false;
-    private long startTimeMilliseconds = DEFAULT_START_TIMESTAMP;
+    private final long startTimeMilliseconds = ClusterConfig.getInstance().sequenceStartTime();
     private long deadline = 0L;
 
     private CuratorFramework client;
@@ -73,19 +70,7 @@ public class DistributedSequenceHandler implements Closeable, SequenceHandler {
             throw new IllegalArgumentException(String.format("instanceId can't be greater than %d or less than 0", maxInstanceId));
         }
 
-        try {
-            String startTimeStr = ClusterConfig.getInstance().getSequenceStartTime();
-            if (!StringUtil.isEmpty(startTimeStr)) {
-                startTimeMilliseconds = DateUtil.parseDate(startTimeStr).getTime();
-                if (startTimeMilliseconds > System.currentTimeMillis()) {
-                    LOGGER.warn("START_TIME in cluster.cnf mustn't be over than dble start time, starting from 2010-11-04 09:42:54");
-                }
-            }
-        } catch (Exception pe) {
-            LOGGER.warn("START_TIME in cluster.cnf parse exception, starting from 2010-11-04 09:42:54");
-        } finally {
-            this.deadline = startTimeMilliseconds + (1L << 39);
-        }
+        this.deadline = startTimeMilliseconds + (1L << 39);
     }
 
     public void initializeZK() {

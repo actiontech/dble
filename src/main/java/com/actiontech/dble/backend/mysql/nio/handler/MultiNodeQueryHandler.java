@@ -588,6 +588,10 @@ public class MultiNodeQueryHandler extends MultiNodeHandler implements LoadDataR
 
     void handleEndPacket(byte[] data, AutoTxOperation txOperation, boolean isSuccess) {
         ServerConnection source = session.getSource();
+        if (rrs.isLoadData()) {
+            source.getLoadDataInfileHandler().clear();
+        }
+
         if (source.isAutocommit() && !source.isTxStart() && this.modifiedSQL && !this.session.isKilled()) {
             //Implicit Distributed Transaction,send commit or rollback automatically
             TransactionHandler handler = new AutoCommitHandler(session, data, rrs.getNodes(), errConnection);

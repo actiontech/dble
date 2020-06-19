@@ -7,6 +7,7 @@ package com.actiontech.dble.backend.mysql.nio;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
+import com.actiontech.dble.backend.datasource.PhysicalDbInstance;
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.backend.mysql.xa.TxState;
@@ -14,6 +15,7 @@ import com.actiontech.dble.btrace.provider.XaDelayProvider;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.Isolations;
 import com.actiontech.dble.config.model.SystemConfig;
+import com.actiontech.dble.config.model.db.DbInstanceConfig;
 import com.actiontech.dble.net.AbstractConnection;
 import com.actiontech.dble.net.NIOProcessor;
 import com.actiontech.dble.net.handler.BackEndCleaner;
@@ -42,15 +44,54 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * @author mycat
+ * @author mycatc
  */
-public class MySQLConnection extends AbstractConnection implements
-        BackendConnection {
+public class MySQLConnection extends AbstractConnection implements BackendConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLConnection.class);
+
+    public static final Comparator<BackendConnection> LAST_ACCESS_COMPARABLE;
+    private static final CommandPacket COMMIT = new CommandPacket();
+    private static final CommandPacket ROLLBACK = new CommandPacket();
+
+    static {
+        COMMIT.setPacketId(0);
+        COMMIT.setCommand(MySQLPacket.COM_QUERY);
+        COMMIT.setArg("commit".getBytes());
+        ROLLBACK.setPacketId(0);
+        ROLLBACK.setCommand(MySQLPacket.COM_QUERY);
+        ROLLBACK.setArg("rollback".getBytes());
+    }
+
+    static {
+        LAST_ACCESS_COMPARABLE = new Comparator<BackendConnection>() {
+            @Override
+            public int compare(final BackendConnection entryOne, final BackendConnection entryTwo) {
+                return Long.compare(entryOne.getLastTime(), entryTwo.getLastTime());
+            }
+        };
+    }
+
+    private AtomicInteger state = new AtomicInteger(INITIAL);
+
+    @Override
+    public boolean compareAndSet(int expect, int update) {
+        return state.compareAndSet(expect, update);
+    }
+
+    @Override
+    public void lazySet(int update) {
+        state.lazySet(update);
+    }
+
+    @Override
+    public int getState() {
+        return state.get();
+    }
+
     private volatile long lastTime;
     private volatile String schema = null;
     private volatile String oldSchema;
-    private volatile boolean borrowed = false;
+
     private volatile boolean isDDL = false;
     private volatile boolean isRowDataFlowing = false;
     private volatile boolean isExecuting = false;
@@ -94,20 +135,7 @@ public class MySQLConnection extends AbstractConnection implements
         return flag;
     }
 
-
-    private static final CommandPacket COMMIT = new CommandPacket();
-    private static final CommandPacket ROLLBACK = new CommandPacket();
-
-    static {
-        COMMIT.setPacketId(0);
-        COMMIT.setCommand(MySQLPacket.COM_QUERY);
-        COMMIT.setArg("commit".getBytes());
-        ROLLBACK.setPacketId(0);
-        ROLLBACK.setCommand(MySQLPacket.COM_QUERY);
-        ROLLBACK.setArg("rollback".getBytes());
-    }
-
-    private MySQLInstance pool;
+    private volatile PhysicalDbInstance dbInstance;
     private boolean fromSlaveDB;
     private long threadId;
     private HandshakeV10Packet handshake;
@@ -119,9 +147,15 @@ public class MySQLConnection extends AbstractConnection implements
     private boolean isolationSynced;
     private volatile ResponseHandler respHandler;
 
-    public MySQLConnection(NetworkChannel channel, boolean fromSlaveDB, boolean autocommitSynced, boolean isolationSynced) {
+    public MySQLConnection(NetworkChannel channel, DbInstanceConfig config, boolean fromSlaveDB, boolean autocommitSynced, boolean isolationSynced) {
         super(channel);
+        this.host = config.getIp();
+        this.port = config.getPort();
+        this.user = config.getUser();
+        this.password = config.getPassword();
+        this.fromSlaveDB = !config.isPrimary();
         this.lastTime = TimeUtil.currentTimeMillis();
+
         this.autocommitSynced = autocommitSynced;
         boolean sysAutocommit = SystemConfig.getInstance().getAutocommit() == 1;
         this.autocommit = sysAutocommit == autocommitSynced; // T + T-> T, T + F-> F, F +T ->F, F + F->T
@@ -201,12 +235,12 @@ public class MySQLConnection extends AbstractConnection implements
         }
     }
 
-    public MySQLInstance getPool() {
-        return pool;
+    public PhysicalDbInstance getDbInstance() {
+        return dbInstance;
     }
 
-    public void setPool(MySQLInstance pool) {
-        this.pool = pool;
+    public void setDbInstance(PhysicalDbInstance instance) {
+        this.dbInstance = instance;
     }
 
     public void setUser(String user) {
@@ -320,6 +354,11 @@ public class MySQLConnection extends AbstractConnection implements
             packet.write(this);
         }
 
+    }
+
+    @Override
+    public void ping() {
+        write(PingPacket.PING);
     }
 
     private WriteToBackendTask sendQueryCmdTask(String query, CharsetNames clientCharset) {
@@ -594,17 +633,21 @@ public class MySQLConnection extends AbstractConnection implements
 
     }
 
-
+    @Override
     public long getLastTime() {
         return lastTime;
     }
 
-    public void setLastTime(long lastTime) {
-        this.lastTime = lastTime;
+    public void close() {
+        close("normal", false);
     }
 
-    public void close() {
-        close("normal");
+    public void close(String reason, boolean closeFrontConn) {
+        if (closeFrontConn) {
+            session.getSource().close(reason);
+        } else {
+            close("normal");
+        }
     }
 
     /**
@@ -681,7 +724,7 @@ public class MySQLConnection extends AbstractConnection implements
                     handler.connectionClose(conn, reason);
                     respHandler = null;
                 } catch (Throwable e) {
-                    LOGGER.warn("get error close mysqlconnection ", e);
+                    LOGGER.warn("get error close mysql connection ", e);
                 }
             }
         });
@@ -713,7 +756,10 @@ public class MySQLConnection extends AbstractConnection implements
     private synchronized void innerTerminate(String reason) {
         if (!isClosed()) {
             super.close(reason);
-            pool.connectionClosed(this);
+            // heartbeat conn is null
+            if (dbInstance != null) {
+                dbInstance.close(this);
+            }
         }
     }
 
@@ -761,7 +807,7 @@ public class MySQLConnection extends AbstractConnection implements
         setResponseHandler(null);
         setSession(null);
         logResponse.set(false);
-        pool.releaseChannel(this);
+        dbInstance.release(this);
     }
 
 
@@ -821,17 +867,6 @@ public class MySQLConnection extends AbstractConnection implements
     }
 
     @Override
-    public boolean isBorrowed() {
-        return borrowed;
-    }
-
-    @Override
-    public void setBorrowed(boolean borrowed) {
-        this.lastTime = TimeUtil.currentTimeMillis();
-        this.borrowed = borrowed;
-    }
-
-    @Override
     public String toString() {
         StringBuilder result = new StringBuilder();
         result.append("MySQLConnection [backendId=");
@@ -844,8 +879,6 @@ public class MySQLConnection extends AbstractConnection implements
         result.append(schema);
         result.append(", old schema=");
         result.append(oldSchema);
-        result.append(", borrowed=");
-        result.append(borrowed);
         result.append(", fromSlaveDB=");
         result.append(fromSlaveDB);
         result.append(", mysqlId=");
@@ -890,7 +923,6 @@ public class MySQLConnection extends AbstractConnection implements
     public String compactInfo() {
         return "MySQLConnection host=" + host + ", port=" + port + ", schema=" + schema;
     }
-
 
     @Override
     public boolean isDDL() {

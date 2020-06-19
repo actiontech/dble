@@ -1,8 +1,8 @@
 /*
-* Copyright (C) 2016-2020 ActionTech.
-* based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
-* License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
-*/
+ * Copyright (C) 2016-2020 ActionTech.
+ * based on code by MyCATCopyrightHolder Copyright (c) 2013, OpenCloudDB/MyCAT.
+ * License: http://www.gnu.org/licenses/gpl.html GPL version 2 or higher.
+ */
 package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
@@ -38,7 +38,7 @@ public final class StopHeartbeat {
             for (String key : keys.getKey()) {
                 PhysicalDbGroup dn = dns.get(key);
                 if (dn != null) {
-                    dn.getWriteSource().setHeartbeatRecoveryTime(TimeUtil.currentTimeMillis() + time);
+                    dn.getWriteDbInstance().setHeartbeatRecoveryTime(TimeUtil.currentTimeMillis() + time);
                     ++count;
                     StringBuilder s = new StringBuilder();
                     s.append(dn.getGroupName()).append(" stop heartbeat '");

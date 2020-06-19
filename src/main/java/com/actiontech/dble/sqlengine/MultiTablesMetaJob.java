@@ -66,7 +66,7 @@ public class MultiTablesMetaJob implements ResponseHandler, Runnable {
                 ShardingNode dn = DbleServer.getInstance().getConfig().getShardingNodes().get(node.getName());
                 dn.getConnection(dn.getDatabase(), isMustWriteNode, true, node, this, node);
             } else {
-                ds.getConnection(schema, true, this, null, false);
+                ds.getConnection(schema, this, null, false);
             }
         } catch (Exception e) {
             logger.warn("can't get connection" + shardingNode, e);

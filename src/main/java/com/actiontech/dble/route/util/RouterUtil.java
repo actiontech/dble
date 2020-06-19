@@ -339,7 +339,7 @@ public final class RouterUtil {
         ArrayList<String> x = new ArrayList<>(shardingNodes);
         Map<String, ShardingNode> shardingNodeMap = DbleServer.getInstance().getConfig().getShardingNodes();
         while (x.size() > 1) {
-            if (shardingNodeMap.get(x.get(index)).getDbGroup().getWriteSource().isAlive()) {
+            if (shardingNodeMap.get(x.get(index)).getDbGroup().getWriteDbInstance().isAlive()) {
                 return x.get(index);
             }
             x.remove(index);

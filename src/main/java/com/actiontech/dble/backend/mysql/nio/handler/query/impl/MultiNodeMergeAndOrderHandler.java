@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.backend.mysql.nio.handler.query.impl;
 
+import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.util.ArrayMinHeap;
@@ -51,18 +52,36 @@ public class MultiNodeMergeAndOrderHandler extends MultiNodeMergeHandler {
     }
 
     @Override
-    public void execute() throws Exception {
+    public void execute() {
         synchronized (exeHandlers) {
             if (terminate.get())
                 return;
-            for (BaseSelectHandler exeHandler : exeHandlers) {
-                session.setHandlerStart(exeHandler); //base start execute
-                MySQLConnection exeConn = exeHandler.initConnection();
-                if (exeConn != null) {
-                    exeConn.setComplexQuery(true);
-                    queues.put(exeConn, new LinkedBlockingQueue<>(queueSize));
-                    exeHandler.execute(exeConn);
-                }
+
+            if (Thread.currentThread().getName().contains("complexQueryExecutor")) {
+                doExecute();
+            } else {
+                DbleServer.getInstance().getComplexQueryExecutor().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        doExecute();
+                    }
+                });
+            }
+        }
+    }
+
+    private void doExecute() {
+        for (BaseSelectHandler exeHandler : exeHandlers) {
+            session.setHandlerStart(exeHandler); //base start execute
+            MySQLConnection exeConn = null;
+            try {
+                exeConn = exeHandler.initConnection();
+                exeConn.setComplexQuery(true);
+                queues.put(exeConn, new LinkedBlockingQueue<>(queueSize));
+                exeHandler.execute(exeConn);
+            } catch (Exception e) {
+                exeHandler.connectionError(e, exeConn);
+                return;
             }
         }
     }

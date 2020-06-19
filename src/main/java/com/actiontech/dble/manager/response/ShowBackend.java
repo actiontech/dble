@@ -7,9 +7,11 @@ package com.actiontech.dble.manager.response;
 
 import com.actiontech.dble.DbleServer;
 import com.actiontech.dble.backend.BackendConnection;
+import com.actiontech.dble.backend.heartbeat.HeartbeatSQLJob;
 import com.actiontech.dble.backend.mysql.PacketUtil;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
+import com.actiontech.dble.backend.pool.PooledEntry;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Fields;
 import com.actiontech.dble.manager.ManagerConnection;
@@ -19,7 +21,6 @@ import com.actiontech.dble.net.mysql.FieldPacket;
 import com.actiontech.dble.net.mysql.ResultSetHeaderPacket;
 import com.actiontech.dble.net.mysql.RowDataPacket;
 import com.actiontech.dble.route.factory.RouteStrategyFactory;
-import com.actiontech.dble.sqlengine.HeartbeatSQLJob;
 import com.actiontech.dble.util.*;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -67,7 +68,7 @@ public final class ShowBackend {
         FIELDS[i++].setPacketId(++packetId);
         // fields[i] = PacketUtil.getField("run", Fields.FIELD_TYPE_VAR_STRING);
         // fields[i++].packetId = ++packetId;
-        FIELDS[i] = PacketUtil.getField("BORROWED", Fields.FIELD_TYPE_VAR_STRING);
+        FIELDS[i] = PacketUtil.getField("STATE", Fields.FIELD_TYPE_VAR_STRING);
         FIELDS[i++].setPacketId(++packetId);
         FIELDS[i] = PacketUtil.getField("SEND_QUEUE", Fields.FIELD_TYPE_LONG);
         FIELDS[i++].setPacketId(++packetId);
@@ -198,6 +199,7 @@ public final class ShowBackend {
         if (!(c instanceof MySQLConnection)) {
             return null;
         }
+        int state = c.getState();
         MySQLConnection conn = (MySQLConnection) c;
         row.add(conn.getProcessor().getName().getBytes());
         row.add(LongUtil.toBytes(c.getId()));
@@ -209,7 +211,7 @@ public final class ShowBackend {
         row.add(LongUtil.toBytes(c.getNetOutBytes()));
         row.add(LongUtil.toBytes((TimeUtil.currentTimeMillis() - c.getStartupTime()) / 1000L));
         row.add(c.isClosed() ? "true".getBytes() : "false".getBytes());
-        row.add(c.isBorrowed() ? "true".getBytes() : "false".getBytes());
+        row.add(stateStr(state).getBytes());
         row.add(IntegerUtil.toBytes(conn.getWriteQueue().size()));
         row.add((conn.getSchema() == null ? "NULL" : conn.getSchema()).getBytes());
         row.add(conn.getCharset().getClient().getBytes());
@@ -221,12 +223,31 @@ public final class ShowBackend {
         row.add(StringUtil.encode(conn.getStringOfUsrVariables(), charset));
         row.add(StringUtil.encode(conn.getXaStatus().toString(), charset));
         row.add(StringUtil.encode(FormatUtil.formatDate(conn.getOldTimestamp()), charset));
-        if (c.isBorrowed()) {
+        if (state == PooledEntry.INITIAL) {
             ResponseHandler handler = ((MySQLConnection) c).getRespHandler();
-            row.add(handler != null && handler instanceof HeartbeatSQLJob ? "true".getBytes() : "false".getBytes());
+            row.add(handler instanceof HeartbeatSQLJob ? "true".getBytes() : "false".getBytes());
         } else {
             row.add("false".getBytes());
         }
         return row;
+    }
+
+    public static String stateStr(int state) {
+        switch (state) {
+            case PooledEntry.STATE_IN_USE:
+                return "IN USE";
+            case PooledEntry.STATE_NOT_IN_USE:
+                return "IDLE";
+            case PooledEntry.STATE_REMOVED:
+                return "REMOVED";
+            case PooledEntry.STATE_HEARTBEAT:
+                return "HEARTBEAT CHECK";
+            case PooledEntry.STATE_RESERVED:
+                return "EVICT";
+            case PooledEntry.INITIAL:
+                return "IN CREATION OR OUT OF POOL";
+            default:
+                return "UNKNOWN STATE";
+        }
     }
 }

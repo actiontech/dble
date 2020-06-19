@@ -9,6 +9,7 @@ import com.actiontech.dble.backend.BackendConnection;
 import com.actiontech.dble.backend.mysql.nio.MySQLConnection;
 import com.actiontech.dble.backend.mysql.nio.handler.transaction.xa.stage.XAStage;
 import com.actiontech.dble.backend.mysql.xa.TxState;
+import com.actiontech.dble.backend.pool.PooledEntry;
 import com.actiontech.dble.buffer.BufferPool;
 import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.server.ServerConnection;
@@ -18,7 +19,6 @@ import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,7 +46,7 @@ public final class NIOProcessor {
 
     private AtomicInteger frontEndsLength = new AtomicInteger(0);
 
-    public NIOProcessor(String name, BufferPool bufferPool) throws IOException {
+    public NIOProcessor(String name, BufferPool bufferPool) {
         this.name = name;
         this.bufferPool = bufferPool;
         this.frontends = new ConcurrentHashMap<>();
@@ -145,19 +145,21 @@ public final class NIOProcessor {
             } else {
                 // very important ,for some data maybe not sent
                 checkConSendQueue(c);
-                if (c instanceof ServerConnection && c.isIdleTimeout()) {
+                if (c instanceof ServerConnection) {
                     ServerConnection s = (ServerConnection) c;
-                    String xaStage = s.getSession2().getTransactionManager().getXAStage();
-                    if (xaStage != null) {
-                        if (!xaStage.equals(XAStage.COMMIT_FAIL_STAGE) && !xaStage.equals(XAStage.ROLLBACK_FAIL_STAGE)) {
-                            // Active/IDLE/PREPARED XA FrontendS will be rollbacked
-                            s.close("Idle Timeout");
-                            XASessionCheck.getInstance().addRollbackSession(s.getSession2());
+                    if (s.isIdleTimeout()) {
+                        String xaStage = s.getSession2().getTransactionManager().getXAStage();
+                        if (xaStage != null) {
+                            if (!xaStage.equals(XAStage.COMMIT_FAIL_STAGE) && !xaStage.equals(XAStage.ROLLBACK_FAIL_STAGE)) {
+                                // Active/IDLE/PREPARED XA FrontendS will be rollbacked
+                                s.close("Idle Timeout");
+                                XASessionCheck.getInstance().addRollbackSession(s.getSession2());
+                            }
+                        } else {
+                            s.close("idle timeout");
                         }
-                        continue;
                     }
                 }
-                c.idleCheck();
             }
         }
     }
@@ -193,7 +195,7 @@ public final class NIOProcessor {
                 }
             }
             // close the conn which executeTimeOut
-            if (!c.isDDL() && c.isBorrowed() && c.isExecuting() && c.getLastTime() < TimeUtil.currentTimeMillis() - sqlTimeout) {
+            if (!c.isDDL() && c.getState() == PooledEntry.STATE_IN_USE && c.isExecuting() && c.getLastTime() < TimeUtil.currentTimeMillis() - sqlTimeout) {
                 LOGGER.info("found backend connection SQL timeout ,close it " + c);
                 c.close("sql timeout");
             }
@@ -206,7 +208,6 @@ public final class NIOProcessor {
                 if (c instanceof AbstractConnection) {
                     checkConSendQueue((AbstractConnection) c);
                 }
-                c.idleCheck();
             }
         }
     }

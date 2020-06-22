@@ -10,6 +10,7 @@ import com.actiontech.dble.config.ServerConfig;
 import com.actiontech.dble.config.model.sharding.SchemaConfig;
 import com.actiontech.dble.config.model.sharding.table.BaseTableConfig;
 import com.actiontech.dble.config.model.sharding.table.GlobalTableConfig;
+import com.actiontech.dble.config.model.sharding.table.ShardingTableConfig;
 import com.actiontech.dble.config.model.sharding.table.SingleTableConfig;
 import com.actiontech.dble.meta.ProxyMetaManager;
 import com.actiontech.dble.meta.TableMeta;
@@ -134,8 +135,26 @@ public class TableNode extends PlanNode {
     public RouteTableConfigInfo findFieldSourceFromIndex(int index) throws Exception {
         if (columnsSelected.get(index) instanceof ItemBasicConstant) {
             return new RouteTableConfigInfo(schema, null, null, columnsSelected.get(index));
+        } else {
+            BaseTableConfig info = DbleServer.getInstance().getConfig().getSchemas().get(schema).getTables().get(tableName);
+            if (info instanceof ShardingTableConfig) {
+                ShardingTableConfig shardingTableConfig = (ShardingTableConfig) info;
+                if (DbleServer.getInstance().getSystemVariables().isLowerCaseTableNames()) {
+                    if (shardingTableConfig.getShardingColumn().equalsIgnoreCase(columnsSelected.get(index).getItemName())) {
+                        return new RouteTableConfigInfo(schema, DbleServer.getInstance().getConfig().
+                                getSchemas().get(schema).getTables().get(tableName), alias, null);
+                    }
+                } else {
+                    if (shardingTableConfig.getShardingColumn().equals(columnsSelected.get(index).getItemName())) {
+                        return new RouteTableConfigInfo(schema, DbleServer.getInstance().getConfig().
+                                getSchemas().get(schema).getTables().get(tableName), alias, null);
+                    }
+                }
+            } else {
+                return null;
+            }
         }
-        return new RouteTableConfigInfo(schema, DbleServer.getInstance().getConfig().getSchemas().get(schema).getTables().get(tableName), alias, null);
+        return null;
     }
 
     @Override

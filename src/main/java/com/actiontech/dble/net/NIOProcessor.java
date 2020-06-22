@@ -145,9 +145,9 @@ public final class NIOProcessor {
             } else {
                 // very important ,for some data maybe not sent
                 checkConSendQueue(c);
-                if (c instanceof ServerConnection) {
-                    ServerConnection s = (ServerConnection) c;
-                    if (s.isIdleTimeout()) {
+                if (c.isIdleTimeout()) {
+                    if (c instanceof ServerConnection) {
+                        ServerConnection s = (ServerConnection) c;
                         String xaStage = s.getSession2().getTransactionManager().getXAStage();
                         if (xaStage != null) {
                             if (!xaStage.equals(XAStage.COMMIT_FAIL_STAGE) && !xaStage.equals(XAStage.ROLLBACK_FAIL_STAGE)) {
@@ -155,10 +155,10 @@ public final class NIOProcessor {
                                 s.close("Idle Timeout");
                                 XASessionCheck.getInstance().addRollbackSession(s.getSession2());
                             }
-                        } else {
-                            s.close("idle timeout");
+                            return;
                         }
                     }
+                    c.close("idle timeout");
                 }
             }
         }

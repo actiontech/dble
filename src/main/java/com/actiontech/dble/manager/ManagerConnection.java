@@ -10,7 +10,6 @@ import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.model.user.ManagerUserConfig;
 import com.actiontech.dble.net.FrontendConnection;
 import com.actiontech.dble.net.handler.ManagerAuthenticator;
-import com.actiontech.dble.util.TimeUtil;
 
 import java.io.IOException;
 import java.nio.channels.NetworkChannel;
@@ -19,7 +18,7 @@ import java.nio.channels.NetworkChannel;
  * @author mycat
  */
 public class ManagerConnection extends FrontendConnection {
-    private static final long AUTH_TIMEOUT = 15 * 1000L;
+
     private volatile boolean skipIdleCheck = false;
     private ManagerUserConfig userConfig;
 
@@ -47,15 +46,12 @@ public class ManagerConnection extends FrontendConnection {
         }
     }
 
-
+    @Override
     public boolean isIdleTimeout() {
         if (skipIdleCheck) {
             return false;
-        } else if (isAuthenticated) {
-            return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime, lastReadTime) + idleTimeout;
-        } else {
-            return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime, lastReadTime) + AUTH_TIMEOUT;
         }
+        return super.isIdleTimeout();
     }
 
     @Override

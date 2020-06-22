@@ -12,7 +12,6 @@ import com.actiontech.dble.backend.mysql.nio.handler.ConnectionHeartBeatHandler;
 import com.actiontech.dble.backend.mysql.nio.handler.ResponseHandler;
 import com.actiontech.dble.backend.pool.ConnectionPool;
 import com.actiontech.dble.backend.pool.PooledEntry;
-import com.actiontech.dble.config.model.SystemConfig;
 import com.actiontech.dble.config.model.db.DbGroupConfig;
 import com.actiontech.dble.config.model.db.DbInstanceConfig;
 import com.actiontech.dble.singleton.Scheduler;
@@ -90,18 +89,17 @@ public abstract class PhysicalDbInstance {
         int initSize = physicalSchemas.length + 1;
         if (size < initSize) {
             LOGGER.warn("For db instance[{}], minIdle is less than (the count of schema +1), so dble will create at least 1 conn for every schema and empty schema, " +
-                    "minCon size before:{}, now:{}", new Object[]{name, size, initSize});
+                    "minCon size before:{}, now:{}", name, size, initSize);
             config.setMinCon(initSize);
         }
 
         size = config.getMaxCon();
         if (size < initSize) {
-            LOGGER.warn("For db instance[{}], maxTotal[{}] is less than the initSize of dataHost,change the maxCon into {}", new Object[]{name, size, initSize});
+            LOGGER.warn("For db instance[{}], maxTotal[{}] is less than the initSize of dataHost,change the maxCon into {}", name, size, initSize);
             config.setMaxCon(initSize);
         }
 
-        this.connectionPool.startEvictor();
-        startHeartbeat();
+        start("initial");
     }
 
     public void createConnectionSkipPool(String schema, ResponseHandler handler) {
@@ -321,7 +319,7 @@ public abstract class PhysicalDbInstance {
         return isSync && isNotDelay;
     }
 
-    void startHeartbeat() {
+    private void startHeartbeat() {
         if (this.isDisabled() || this.isFakeNode()) {
             LOGGER.info("the instance[{}] is disabled or fake node, skip to start heartbeat.", name);
             return;
@@ -339,11 +337,13 @@ public abstract class PhysicalDbInstance {
                     heartbeat.heartbeat();
                 }
             }
-        }, 0L, SystemConfig.getInstance().getShardingNodeHeartbeatPeriod(), TimeUnit.MILLISECONDS));
+        }, 0L, config.getPoolConfig().getHeartbeatPeriodMillis(), TimeUnit.MILLISECONDS));
     }
 
-    void stopHeartbeat(String reason) {
-        heartbeat.stop(reason);
+    public void start(String reason) {
+        LOGGER.info("start connection pool of physical db instance[{}], due to {}", name, reason);
+        this.connectionPool.startEvictor();
+        startHeartbeat();
     }
 
     public void stop(String reason, boolean closeFront) {
@@ -369,8 +369,7 @@ public abstract class PhysicalDbInstance {
 
     public boolean disable(String reason) {
         if (disabled.compareAndSet(false, true)) {
-            stopHeartbeat(reason);
-            connectionPool.closeAllConnections(reason);
+            stop(reason, false);
             return true;
         }
         return false;
@@ -378,7 +377,7 @@ public abstract class PhysicalDbInstance {
 
     public boolean enable() {
         if (disabled.compareAndSet(true, false)) {
-            startHeartbeat();
+            start("execute manger cmd of enable");
             return true;
         }
         return false;
@@ -414,9 +413,11 @@ public abstract class PhysicalDbInstance {
         }
 
         PhysicalDbInstance dbInstance = (PhysicalDbInstance) other;
-        return dbInstance.getConfig().getUser().equals(this.getConfig().getUser()) && dbInstance.getConfig().getUrl().equals(this.getConfig().getUrl()) &&
-                dbInstance.getConfig().getPassword().equals(this.getConfig().getPassword()) && dbInstance.getConfig().getInstanceName().equals(this.getConfig().getInstanceName()) &&
-                dbInstance.isDisabled() == this.isDisabled() && dbInstance.getConfig().getReadWeight() == this.getConfig().getReadWeight();
+        DbInstanceConfig dbInstanceConfig = dbInstance.getConfig();
+        return dbInstanceConfig.getUser().equals(this.getConfig().getUser()) && dbInstanceConfig.getUrl().equals(this.getConfig().getUrl()) &&
+                dbInstanceConfig.getPassword().equals(this.getConfig().getPassword()) && dbInstanceConfig.getInstanceName().equals(this.getConfig().getInstanceName()) &&
+                dbInstance.isDisabled() == this.isDisabled() && dbInstanceConfig.getReadWeight() == this.getConfig().getReadWeight() &&
+                dbInstanceConfig.getPoolConfig().equals(this.getConfig().getPoolConfig());
     }
 
     @Override

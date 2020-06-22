@@ -22,32 +22,9 @@ public class PoolBase {
     protected final DbInstanceConfig config;
     protected final PhysicalDbInstance instance;
 
-    private final long connectionTimeout;
-    private final long connectionHeartbeatTimeout;
-    private final boolean testOnCreate;
-    private final boolean testOnBorrow;
-    private final boolean testOnReturn;
-    private final boolean testWhileIdle;
-    private final long timeBetweenEvictionRunsMillis;
-    private final int numTestsPerEvictionRun;
-    private final long evictorShutdownTimeoutMillis;
-    private final long idleTimeout;
-
     public PoolBase(DbInstanceConfig dbConfig, PhysicalDbInstance instance) {
         this.config = dbConfig;
         this.instance = instance;
-
-        PoolConfig poolConfig = dbConfig.getPoolConfig();
-        this.testOnBorrow = poolConfig.getTestOnBorrow();
-        this.testOnCreate = poolConfig.getTestOnCreate();
-        this.testOnReturn = poolConfig.getTestOnReturn();
-        this.testWhileIdle = poolConfig.getTestWhileIdle();
-        this.connectionHeartbeatTimeout = poolConfig.getConnectionHeartbeatTimeout();
-        this.connectionTimeout = poolConfig.getConnectionTimeout();
-        this.timeBetweenEvictionRunsMillis = poolConfig.getTimeBetweenEvictionRunsMillis();
-        this.numTestsPerEvictionRun = poolConfig.getNumTestsPerEvictionRun();
-        this.evictorShutdownTimeoutMillis = poolConfig.getEvictorShutdownTimeoutMillis();
-        this.idleTimeout = poolConfig.getIdleTimeout();
     }
 
     /**
@@ -127,51 +104,4 @@ public class PoolBase {
         return channel;
     }
 
-    public final boolean getTestOnCreate() {
-        return testOnCreate;
-    }
-
-    public final boolean getTestOnBorrow() {
-        return testOnBorrow;
-    }
-
-    public final boolean getTestOnReturn() {
-        return testOnReturn;
-    }
-
-    public final boolean getTestWhileIdle() {
-        return testWhileIdle;
-    }
-
-    public final long getTimeBetweenEvictionRunsMillis() {
-        return timeBetweenEvictionRunsMillis;
-    }
-
-    public final int getNumTestsPerEvictionRun() {
-        return numTestsPerEvictionRun;
-    }
-
-    /**
-     * Gets the timeout that will be used when waiting for the Evictor to
-     * shutdown if this pool is closed and it is the only pool still using the
-     * the value for the Evictor.
-     *
-     * @return The timeout in milliseconds that will be used while waiting for
-     * the Evictor to shut down.
-     */
-    public final long getEvictorShutdownTimeoutMillis() {
-        return evictorShutdownTimeoutMillis;
-    }
-
-    public long getConnectionTimeout() {
-        return connectionTimeout;
-    }
-
-    public long getConnectionHeartbeatTimeout() {
-        return connectionHeartbeatTimeout;
-    }
-
-    public long getIdleTimeout() {
-        return idleTimeout;
-    }
 }

@@ -39,7 +39,6 @@ import com.actiontech.dble.singleton.TsQueriesCounter;
 import com.actiontech.dble.util.CompressUtil;
 import com.actiontech.dble.util.SplitUtil;
 import com.actiontech.dble.util.StringUtil;
-import com.actiontech.dble.util.TimeUtil;
 import com.alibaba.druid.wall.WallCheckResult;
 import com.alibaba.druid.wall.WallProvider;
 import org.slf4j.Logger;
@@ -61,7 +60,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class ServerConnection extends FrontendConnection {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerConnection.class);
-    private static final long AUTH_TIMEOUT = 15 * 1000L;
+
     private volatile int txIsolation;
     private volatile boolean autocommit;
     private volatile boolean txStarted;
@@ -118,14 +117,6 @@ public class ServerConnection extends FrontendConnection {
 
     public void setUserConfig(ServerUserConfig userConfig) {
         this.userConfig = userConfig;
-    }
-
-    public boolean isIdleTimeout() {
-        if (isAuthenticated) {
-            return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime, lastReadTime) + idleTimeout;
-        } else {
-            return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime, lastReadTime) + AUTH_TIMEOUT;
-        }
     }
 
     public int getTxIsolation() {
@@ -269,7 +260,6 @@ public class ServerConnection extends FrontendConnection {
         ok.setPacketId(packetId);
         ok.write(this);
     }
-
 
     @Override
     protected void setRequestTime() {

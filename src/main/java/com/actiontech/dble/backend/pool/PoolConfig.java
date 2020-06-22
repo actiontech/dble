@@ -1,14 +1,20 @@
 package com.actiontech.dble.backend.pool;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static java.util.concurrent.TimeUnit.*;
 
 public class PoolConfig {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(PoolConfig.class);
+    private static final String WARNING_FORMAT = "Property [ %s ] '%d' in db.xml is illegal, use the default value %d replaced";
+
     private static final long CONNECTION_TIMEOUT = SECONDS.toMillis(30);
     private static final long CON_HEARTBEAT_TIMEOUT = MILLISECONDS.toMillis(20);
-    private static final long DEFAULT_IDLE_TIMEOUT = 30 * 60 * 1000L;
+    public static final long DEFAULT_IDLE_TIMEOUT = MINUTES.toMillis(10);
     private static final long HOUSEKEEPING_PERIOD_MS = SECONDS.toMillis(30);
+    private static final long DEFAULT_HEARTBEAT_PERIOD = SECONDS.toMillis(10);
 
     private volatile long connectionTimeout = CONNECTION_TIMEOUT;
     private volatile long connectionHeartbeatTimeout = CON_HEARTBEAT_TIMEOUT;
@@ -20,6 +26,7 @@ public class PoolConfig {
     private volatile int numTestsPerEvictionRun = 3;
     private volatile long evictorShutdownTimeoutMillis = 10000L;
     private volatile long idleTimeout = DEFAULT_IDLE_TIMEOUT;
+    private volatile long heartbeatPeriodMillis = DEFAULT_HEARTBEAT_PERIOD;
 
     public PoolConfig() {
     }
@@ -177,9 +184,12 @@ public class PoolConfig {
      * @param timeBetweenEvictionRunsMillis number of milliseconds to sleep between evictor runs
      * @see #getTimeBetweenEvictionRunsMillis
      */
-    public final void setTimeBetweenEvictionRunsMillis(
-            final long timeBetweenEvictionRunsMillis) {
-        this.timeBetweenEvictionRunsMillis = timeBetweenEvictionRunsMillis;
+    public final void setTimeBetweenEvictionRunsMillis(final long timeBetweenEvictionRunsMillis) {
+        if (timeBetweenEvictionRunsMillis <= 0) {
+            LOGGER.warn(String.format(WARNING_FORMAT, "timeBetweenEvictionRunsMillis", timeBetweenEvictionRunsMillis, this.timeBetweenEvictionRunsMillis));
+        } else {
+            this.timeBetweenEvictionRunsMillis = timeBetweenEvictionRunsMillis;
+        }
     }
 
     public final int getNumTestsPerEvictionRun() {
@@ -212,7 +222,11 @@ public class PoolConfig {
      *                                     Evictor to shut down.
      */
     public final void setEvictorShutdownTimeoutMillis(final long evictorShutdownTimeoutMillis) {
-        this.evictorShutdownTimeoutMillis = evictorShutdownTimeoutMillis;
+        if (connectionTimeout <= 0) {
+            LOGGER.warn(String.format(WARNING_FORMAT, "evictorShutdownTimeoutMillis", evictorShutdownTimeoutMillis, this.evictorShutdownTimeoutMillis));
+        } else {
+            this.evictorShutdownTimeoutMillis = evictorShutdownTimeoutMillis;
+        }
     }
 
     public long getConnectionTimeout() {
@@ -220,7 +234,11 @@ public class PoolConfig {
     }
 
     public void setConnectionTimeout(long connectionTimeout) {
-        this.connectionTimeout = connectionTimeout;
+        if (connectionTimeout <= 0) {
+            LOGGER.warn(String.format(WARNING_FORMAT, "connectionTimeout", connectionTimeout, this.connectionTimeout));
+        } else {
+            this.connectionTimeout = connectionTimeout;
+        }
     }
 
     public long getConnectionHeartbeatTimeout() {
@@ -228,7 +246,11 @@ public class PoolConfig {
     }
 
     public void setConnectionHeartbeatTimeout(long connectionHeartbeatTimeout) {
-        this.connectionHeartbeatTimeout = connectionHeartbeatTimeout;
+        if (connectionHeartbeatTimeout <= 0) {
+            LOGGER.warn(String.format(WARNING_FORMAT, "connectionHeartbeatTimeout", connectionHeartbeatTimeout, this.connectionHeartbeatTimeout));
+        } else {
+            this.connectionHeartbeatTimeout = connectionHeartbeatTimeout;
+        }
     }
 
     public long getIdleTimeout() {
@@ -236,6 +258,47 @@ public class PoolConfig {
     }
 
     public void setIdleTimeout(long idleTimeout) {
-        this.idleTimeout = idleTimeout;
+        if (idleTimeout < 0) {
+            LOGGER.warn(String.format(WARNING_FORMAT, "idleTimeout", idleTimeout, this.idleTimeout));
+        } else {
+            this.idleTimeout = idleTimeout;
+        }
+    }
+
+    public long getHeartbeatPeriodMillis() {
+        return heartbeatPeriodMillis;
+    }
+
+    public void setHeartbeatPeriodMillis(long heartbeatPeriodMillis) {
+        if (heartbeatPeriodMillis < 0) {
+            LOGGER.warn(String.format(WARNING_FORMAT, "bufferUsagePercent", heartbeatPeriodMillis, this.heartbeatPeriodMillis));
+        } else {
+            this.heartbeatPeriodMillis = heartbeatPeriodMillis;
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        PoolConfig that = (PoolConfig) o;
+
+        if (connectionTimeout != that.connectionTimeout) return false;
+        if (connectionHeartbeatTimeout != that.connectionHeartbeatTimeout) return false;
+        if (testOnCreate != that.testOnCreate) return false;
+        if (testOnBorrow != that.testOnBorrow) return false;
+        if (testOnReturn != that.testOnReturn) return false;
+        if (testWhileIdle != that.testWhileIdle) return false;
+        if (timeBetweenEvictionRunsMillis != that.timeBetweenEvictionRunsMillis) return false;
+        if (numTestsPerEvictionRun != that.numTestsPerEvictionRun) return false;
+        if (evictorShutdownTimeoutMillis != that.evictorShutdownTimeoutMillis) return false;
+        if (idleTimeout != that.idleTimeout) return false;
+        return heartbeatPeriodMillis == that.heartbeatPeriodMillis;
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
     }
 }

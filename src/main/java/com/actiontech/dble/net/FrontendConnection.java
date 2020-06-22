@@ -7,6 +7,7 @@ package com.actiontech.dble.net;
 
 import com.actiontech.dble.backend.mysql.CharsetUtil;
 import com.actiontech.dble.backend.mysql.MySQLMessage;
+import com.actiontech.dble.backend.pool.PoolConfig;
 import com.actiontech.dble.config.Capabilities;
 import com.actiontech.dble.config.ErrorCode;
 import com.actiontech.dble.config.Versions;
@@ -20,6 +21,7 @@ import com.actiontech.dble.server.response.Ping;
 import com.actiontech.dble.singleton.FrontendUserManager;
 import com.actiontech.dble.util.RandomUtil;
 import com.actiontech.dble.util.StringUtil;
+import com.actiontech.dble.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +38,7 @@ import java.nio.channels.SocketChannel;
 public abstract class FrontendConnection extends AbstractConnection {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FrontendConnection.class);
+    private static final long AUTH_TIMEOUT = 15 * 1000L;
 
     protected byte[] seed;
     protected UserName user;
@@ -47,7 +50,7 @@ public abstract class FrontendConnection extends AbstractConnection {
 
     protected FrontendQueryHandler queryHandler;
     protected String executeSql;
-    protected final long idleTimeout = SystemConfig.getInstance().getIdleTimeout();
+    protected final long idleTimeout = PoolConfig.DEFAULT_IDLE_TIMEOUT;
 
     public FrontendConnection(NetworkChannel channel) throws IOException {
         super(channel);
@@ -144,6 +147,7 @@ public abstract class FrontendConnection extends AbstractConnection {
     public String getSchema() {
         return schema;
     }
+
     public void initCharsetIndex(int ci) {
         String name = CharsetUtil.getCharset(ci);
         if (name != null) {
@@ -222,7 +226,16 @@ public abstract class FrontendConnection extends AbstractConnection {
     public abstract void startProcess();
 
     protected abstract void markFinished();
+
     protected abstract void setSchema(String schema);
+
+    public boolean isIdleTimeout() {
+        if (isAuthenticated) {
+            return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime, lastReadTime) + idleTimeout;
+        } else {
+            return TimeUtil.currentTimeMillis() > Math.max(lastWriteTime, lastReadTime) + AUTH_TIMEOUT;
+        }
+    }
 
     @Override
     public void register() throws IOException {

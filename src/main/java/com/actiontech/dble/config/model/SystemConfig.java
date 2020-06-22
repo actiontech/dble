@@ -27,7 +27,6 @@ public final class SystemConfig {
     private SystemConfig() {
     }
 
-    public static final long DEFAULT_IDLE_TIMEOUT = 30 * 60 * 1000L;
     private static final String WARNING_FORMAT = "Property [ %s ] '%d' in bootstrap.cnf is illegal, you may need use the default value %d replaced";
 
     /*
@@ -74,13 +73,8 @@ public final class SystemConfig {
     private int checkTableConsistency = 0;
     private long checkTableConsistencyPeriod = 30 * 60 * 1000;
 
-    //heartbeat check period
-    private long shardingNodeIdleCheckPeriod = 5 * 60 * 1000L;
-    private long shardingNodeHeartbeatPeriod = 10 * 1000L;
-
     //processor check conn
     private long processorCheckPeriod = 1000L;
-    private long idleTimeout = DEFAULT_IDLE_TIMEOUT;
     // sql execute timeout (second)
     private long sqlExecuteTimeout = 300;
 
@@ -407,19 +401,6 @@ public final class SystemConfig {
         }
     }
 
-    public long getIdleTimeout() {
-        return idleTimeout;
-    }
-
-    @SuppressWarnings("unused")
-    public void setIdleTimeout(long idleTimeout) {
-        if (idleTimeout > 0) {
-            this.idleTimeout = idleTimeout;
-        } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "idleTimeout", idleTimeout, this.idleTimeout));
-        }
-    }
-
     public long getProcessorCheckPeriod() {
         return processorCheckPeriod;
     }
@@ -456,32 +437,6 @@ public final class SystemConfig {
             this.xaLogCleanPeriod = xaLogCleanPeriod;
         } else {
             problemReporter.warn(String.format(WARNING_FORMAT, "xaLogCleanPeriod", xaLogCleanPeriod, this.xaLogCleanPeriod));
-        }
-    }
-
-    public long getShardingNodeIdleCheckPeriod() {
-        return shardingNodeIdleCheckPeriod;
-    }
-
-    @SuppressWarnings("unused")
-    public void setShardingNodeIdleCheckPeriod(long shardingNodeIdleCheckPeriod) {
-        if (shardingNodeIdleCheckPeriod > 0) {
-            this.shardingNodeIdleCheckPeriod = shardingNodeIdleCheckPeriod;
-        } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "shardingNodeIdleCheckPeriod", shardingNodeIdleCheckPeriod, this.shardingNodeIdleCheckPeriod));
-        }
-    }
-
-    public long getShardingNodeHeartbeatPeriod() {
-        return shardingNodeHeartbeatPeriod;
-    }
-
-    @SuppressWarnings("unused")
-    public void setShardingNodeHeartbeatPeriod(long shardingNodeHeartbeatPeriod) {
-        if (shardingNodeHeartbeatPeriod > 0) {
-            this.shardingNodeHeartbeatPeriod = shardingNodeHeartbeatPeriod;
-        } else {
-            problemReporter.warn(String.format(WARNING_FORMAT, "shardingNodeHeartbeatPeriod", shardingNodeHeartbeatPeriod, this.shardingNodeHeartbeatPeriod));
         }
     }
 
@@ -1224,10 +1179,7 @@ public final class SystemConfig {
                 ", txIsolation=" + txIsolation +
                 ", checkTableConsistency=" + checkTableConsistency +
                 ", checkTableConsistencyPeriod=" + checkTableConsistencyPeriod +
-                ", shardingNodeIdleCheckPeriod=" + shardingNodeIdleCheckPeriod +
-                ", shardingNodeHeartbeatPeriod=" + shardingNodeHeartbeatPeriod +
                 ", processorCheckPeriod=" + processorCheckPeriod +
-                ", idleTimeout=" + idleTimeout +
                 ", sqlExecuteTimeout=" + sqlExecuteTimeout +
                 ", recordTxn=" + recordTxn +
                 ", transactionLogBaseDir=" + transactionLogBaseDir +

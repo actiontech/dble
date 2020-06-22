@@ -376,17 +376,6 @@ public class ServerConfig {
             this.schemas2 = this.schemas;
             this.erRelations2 = this.erRelations;
             this.fullyConfigured2 = this.fullyConfigured;
-            // new dbGroup
-            // 1 start heartbeat
-            // 2 apply the configure
-            //---------------------------------------------------
-            //            if (changeOrAddDbGroups != null) {
-            //                for (PhysicalDbGroup newDbGroup : changeOrAddDbGroups.values()) {
-            //                    if (newDbGroup != null && isFullyConfigured) {
-            //                                    newDbGroup.startHeartbeat();
-            //                    }
-            //                }
-            //            }
             this.shardingNodes = newShardingNodes;
             this.dbGroups = newDbGroups;
             this.fullyConfigured = isFullyConfigured;

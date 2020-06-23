@@ -80,7 +80,6 @@ public final class SystemConfigLoader {
 
     public static Properties readBootStrapDynamicConf() throws IOException {
         Properties pros = new Properties();
-        InputStream configISNew = null;
         try (InputStream configIS = ResourceUtil.getResourceAsStream(BOOT_STRAP_DYNAMIC_FILE_NAME)) {
             if (configIS == null) {
                 //create
@@ -88,22 +87,12 @@ public final class SystemConfigLoader {
                 path = new File(path).getPath() + BOOT_STRAP_DYNAMIC_FILE_NAME;
                 FileUtils.createFile(path);
                 LOGGER.info("create file: " + BOOT_STRAP_DYNAMIC_FILE_NAME);
-                configISNew = ResourceUtil.getResourceAsStream(BOOT_STRAP_DYNAMIC_FILE_NAME);
-                pros.load(configISNew);
             } else {
                 pros.load(configIS);
             }
         } catch (IOException e) {
             LOGGER.warn("readBootStrapDynamicConf error:", e);
             throw e;
-        } finally {
-            try {
-                if (configISNew != null) {
-                    configISNew.close();
-                }
-            } catch (Exception e2) {
-                //ignore error
-            }
         }
         return pros;
     }

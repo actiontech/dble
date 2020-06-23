@@ -5,6 +5,7 @@
 
 package com.actiontech.dble.config.loader;
 
+import com.actiontech.dble.backend.mysql.store.fs.FileUtils;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
@@ -18,6 +19,7 @@ import com.actiontech.dble.util.SystemProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,6 +31,8 @@ public final class SystemConfigLoader {
     private static final Logger LOGGER = LoggerFactory.getLogger(SystemConfigLoader.class);
     private static final String BOOT_STRAP_FILE_NAME = "/bootstrap.cnf";
     public static final String BOOT_STRAP_DYNAMIC_FILE_NAME = "/bootstrap.dynamic.cnf";
+    public static final String LOCAL_WRITE_PATH = "./";
+
     private SystemConfigLoader() {
     }
 
@@ -84,10 +88,14 @@ public final class SystemConfigLoader {
         Properties pros = new Properties();
         try (InputStream configIS = ResourceUtil.getResourceAsStream(BOOT_STRAP_DYNAMIC_FILE_NAME)) {
             if (configIS == null) {
-                LOGGER.info(BOOT_STRAP_DYNAMIC_FILE_NAME + " is not exists");
-                return pros;
+                //create
+                String path = ResourceUtil.getResourcePathFromRoot(LOCAL_WRITE_PATH);
+                path = new File(path).getPath() + BOOT_STRAP_DYNAMIC_FILE_NAME;
+                FileUtils.createFile(path);
+                LOGGER.info("create file: " + BOOT_STRAP_DYNAMIC_FILE_NAME);
+            } else {
+                pros.load(configIS);
             }
-            pros.load(configIS);
         } catch (IOException e) {
             LOGGER.warn("readBootStrapDynamicConf error:", e);
             throw e;

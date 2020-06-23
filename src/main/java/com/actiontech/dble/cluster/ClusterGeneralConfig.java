@@ -14,7 +14,6 @@ import com.actiontech.dble.config.model.ClusterConfig;
 
 import java.io.IOException;
 
-import static com.actiontech.dble.backend.mysql.nio.handler.ResetConnHandler.LOGGER;
 import static com.actiontech.dble.cluster.ClusterController.*;
 
 /**
@@ -30,52 +29,42 @@ public final class ClusterGeneralConfig {
 
     }
 
-    public static ClusterGeneralConfig initConfig() {
-        if (ClusterConfig.getInstance().isClusterEnable()) {
-            switch (ClusterConfig.getInstance().getClusterMode()) {
-                case CONFIG_MODE_USHARD:
-                    INSTANCE.clusterSender = new UshardSender();
-                    INSTANCE.clusterType = CONFIG_MODE_USHARD;
-                    break;
-                case CONFIG_MODE_UCORE:
-                    INSTANCE.clusterSender = new UcoreSender();
-                    INSTANCE.clusterType = CONFIG_MODE_UCORE;
-                    break;
-                case CONFIG_MODE_ZK:
-                    INSTANCE.clusterType = CONFIG_MODE_ZK;
-                    break;
-                default:
-                    String clazz = ClusterConfig.getInstance().getClusterMode();
-                    try {
-                        INSTANCE.clusterType = CONFIG_MODE_CUSTOMIZATION;
-                        Class<?> clz = Class.forName(clazz);
-                        //all function must be extend from AbstractPartitionAlgorithm
-                        if (!AbstractClusterSender.class.isAssignableFrom(clz)) {
-                            throw new IllegalArgumentException("No ClusterSender AS " + clazz);
-                        }
-                        INSTANCE.clusterSender = (AbstractClusterSender) clz.newInstance();
-                    } catch (Exception e) {
-                        throw new RuntimeException("Get error when try to create " + clazz);
+    static void initConfig() {
+        switch (ClusterConfig.getInstance().getClusterMode()) {
+            case CONFIG_MODE_USHARD:
+                INSTANCE.clusterSender = new UshardSender();
+                INSTANCE.clusterType = CONFIG_MODE_USHARD;
+                break;
+            case CONFIG_MODE_UCORE:
+                INSTANCE.clusterSender = new UcoreSender();
+                INSTANCE.clusterType = CONFIG_MODE_UCORE;
+                break;
+            case CONFIG_MODE_ZK:
+                INSTANCE.clusterType = CONFIG_MODE_ZK;
+                break;
+            default:
+                String clazz = ClusterConfig.getInstance().getClusterMode();
+                try {
+                    INSTANCE.clusterType = CONFIG_MODE_CUSTOMIZATION;
+                    Class<?> clz = Class.forName(clazz);
+                    //all function must be extend from AbstractPartitionAlgorithm
+                    if (!AbstractClusterSender.class.isAssignableFrom(clz)) {
+                        throw new IllegalArgumentException("No ClusterSender AS " + clazz);
                     }
-            }
-        } else {
-            INSTANCE.clusterType = "No Cluster";
-            LOGGER.info("No Cluster Config .......start in single mode");
+                    INSTANCE.clusterSender = (AbstractClusterSender) clz.newInstance();
+                } catch (Exception e) {
+                    throw new RuntimeException("Get error when try to create " + clazz);
+                }
         }
-
-        return INSTANCE;
     }
 
 
-    public static void initData() throws IOException {
-        if (ClusterConfig.getInstance().isClusterEnable()) {
-            if (CONFIG_MODE_ZK.equals(ClusterConfig.getInstance().getClusterMode())) {
-                ZkConfig.initZk();
-            } else {
-                INSTANCE.clusterSender.initCluster();
-                ClusterToXml.loadKVtoFile();
-
-            }
+    static void initData() throws IOException {
+        if (CONFIG_MODE_ZK.equals(ClusterConfig.getInstance().getClusterMode())) {
+            ZkConfig.initZk();
+        } else {
+            INSTANCE.clusterSender.initCluster();
+            ClusterToXml.loadKVtoFile();
         }
     }
 

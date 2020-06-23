@@ -19,7 +19,6 @@
 #  base config
 -DhomePath=.
 -DinstanceName=1
-# valid for sequenceHandlerType=2 or 3
 -DinstanceId=1
 -DserverId=xxx1
 #-DbindIp=0.0.0.0
@@ -69,7 +68,6 @@
 #  processor check conn
 -DprocessorCheckPeriod=1000
 -DsqlExecuteTimeout=3000
--DidleTimeout=1800000
 
 
 #-DbackSocket unit:bytes

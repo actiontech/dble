@@ -8,7 +8,6 @@ package com.actiontech.dble.config.loader;
 import com.actiontech.dble.config.Versions;
 import com.actiontech.dble.config.model.ClusterConfig;
 import com.actiontech.dble.config.model.SystemConfig;
-import com.actiontech.dble.config.util.ConfigException;
 import com.actiontech.dble.config.util.ParameterMapping;
 import com.actiontech.dble.config.util.StartProblemReporter;
 import com.actiontech.dble.memory.unsafe.Platform;
@@ -99,7 +98,7 @@ public final class SystemConfigLoader {
         SystemConfig systemConfig = SystemConfig.getInstance();
 
         //-D properties
-        Properties system = ParameterMapping.mapping(systemConfig);
+        Properties system = ParameterMapping.mapping(systemConfig, StartProblemReporter.getInstance());
 
         if (systemConfig.getInstanceName() == null) {
             // if not start with wrapper , usually for debug
@@ -131,7 +130,7 @@ public final class SystemConfigLoader {
                 }
             }
             if (propItem.size() > 0) {
-                throw new ConfigException("These properties of system are not recognized: " + StringUtil.join(propItem, ","));
+                StartProblemReporter.getInstance().addError("These properties in bootstrap.cnf or bootstrap.dynamic.cnf are not recognized: " + StringUtil.join(propItem, ","));
             }
         }
         if (systemConfig.isUseDefaultPageNumber()) {
@@ -154,13 +153,12 @@ public final class SystemConfigLoader {
             if (validVersion) {
                 Versions.setServerVersion(systemConfig.getFakeMySQLVersion());
             } else {
-                throw new ConfigException("The specified MySQL Version (" + systemConfig.getFakeMySQLVersion() + ") is not valid, " +
+                StartProblemReporter.getInstance().addError("The specified MySQL Version (" + systemConfig.getFakeMySQLVersion() + ") is not valid, " +
                         "the version should look like 'x.y.z'.");
             }
         }
-        if (ClusterConfig.getInstance().isClusterEnable()) {
-            LOGGER.info("use cluster, can not use simple python ha, so setUseOuterHa = true");
-            systemConfig.setUseOuterHa(true);
+        if (ClusterConfig.getInstance().isClusterEnable() && !systemConfig.isUseOuterHa()) {
+            StartProblemReporter.getInstance().addError("when use cluster mode, you can not use simple python ha, so please set useOuterHa=true in bootstrap.cnf");
         }
     }
 

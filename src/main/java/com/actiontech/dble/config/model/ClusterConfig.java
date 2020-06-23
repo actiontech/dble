@@ -115,7 +115,7 @@ public final class ClusterConfig {
         if (showBinlogStatusTimeout > 0) {
             this.showBinlogStatusTimeout = showBinlogStatusTimeout;
         } else {
-            problemReporter.warn("showBinlogStatusTimeout value is " + showBinlogStatusTimeout + ", it will use default value:" + this.showBinlogStatusTimeout);
+            problemReporter.warn("showBinlogStatusTimeout value is " + showBinlogStatusTimeout + ", you can use default value:" + this.showBinlogStatusTimeout);
         }
     }
 
@@ -153,10 +153,10 @@ public final class ClusterConfig {
             try {
                 startMilliseconds = DateUtil.parseDate(sequenceStartTime).getTime();
             } catch (ParseException e) {
-                problemReporter.warn("sequenceStartTime in cluster.cnf parse exception, starting from 2010-11-04 09:42:54");
+                problemReporter.warn("sequenceStartTime in cluster.cnf parse exception, you can use default value 2010-11-04 09:42:54");
             }
             if (startMilliseconds > System.currentTimeMillis()) {
-                problemReporter.warn("sequenceStartTime in cluster.cnf mustn't be over than dble start time, starting from 2010-11-04 09:42:54");
+                problemReporter.warn("sequenceStartTime in cluster.cnf mustn't be over than dble start time, you can use default value 2010-11-04 09:42:54");
             }
             this.startTimeMilliseconds = startMilliseconds;
         }
